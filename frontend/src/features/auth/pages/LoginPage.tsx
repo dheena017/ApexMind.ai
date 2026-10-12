@@ -57,9 +57,12 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     onNavigate(destination);
   };
 
-  const googleClientId =
+  const googleClientId = (
     (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_CLIENT_ID) ||
-    '';
+    ''
+  )
+    .replace(/^["']|["']$/g, '')
+    .trim();
 
   // Check for remembered creator session
   const [rememberedUser] = useState<any>(() => {

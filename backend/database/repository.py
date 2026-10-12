@@ -322,63 +322,8 @@ def toggle_automation(job_id: str) -> List[Dict[str, Any]]:
     return get_automations()
 
 def get_media_library() -> Dict[str, Any]:
-    import json
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM media_tracks")
-    tracks = []
-    for r in cursor.fetchall():
-        freq = []
-        if r["frequency_data"]:
-            try:
-                freq = json.loads(r["frequency_data"])
-            except Exception:
-                freq = []
-        tracks.append({
-            "id": r["id"],
-            "title": r["title"],
-            "genre": r["genre"],
-            "duration": r["duration"],
-            "bpm": r["bpm"],
-            "copyrightFree": bool(r["copyright_free"]),
-            "license": r["license"],
-            "frequencyData": freq,
-        })
-
-    cursor.execute("SELECT * FROM visual_backdrops")
-    backdrops = [
-        {
-            "id": r["id"],
-            "name": r["name"],
-            "category": r["category"],
-            "aspectRatio": r["aspect_ratio"],
-            "previewColor": r["preview_color"],
-            "textColor": r["text_color"],
-            "particleEffect": r["particle_effect"],
-        }
-        for r in cursor.fetchall()
-    ]
-
-    cursor.execute("SELECT * FROM voice_profiles")
-    voices = [
-        {
-            "id": r["id"],
-            "name": r["name"],
-            "gender": r["gender"],
-            "style": r["style"],
-            "speed": r["speed"],
-        }
-        for r in cursor.fetchall()
-    ]
-
-    conn.close()
-    logger.info(f"Loaded media catalog assets: {len(tracks)} tracks, {len(backdrops)} backdrops, {len(voices)} voices")
-    return {
-        "musicTracks": tracks,
-        "visualBackdrops": backdrops,
-        "voiceProfiles": voices,
-    }
+    from backend.features.workspace.media_catalog import get_static_media_catalog
+    return get_static_media_catalog()
 
 
 def upsert_user(
