@@ -84,16 +84,28 @@ export const workspaceApi = {
   },
 
   // Fetch quote memory catalog to avoid repetition
-  async getQuoteMemory(): Promise<{ totalQuotesInMemory: number; quotes: string[] }> {
+  async getQuoteMemory(): Promise<{ totalQuotesInMemory: number; quotes: string[]; memoryStore?: any[] }> {
     const start = performance.now();
     const res = await fetch('/api/quote-memory');
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/quote-memory', res.status, duration);
     const data = await res.json();
     return {
-      totalQuotesInMemory: data.totalQuotesInMemory || (data.quotes ? data.quotes.length : 0),
+      totalQuotesInMemory: data.totalQuotesSaved || data.totalQuotesInMemory || (data.memoryStore ? data.memoryStore.length : 0),
       quotes: data.quotes || [],
+      memoryStore: data.memoryStore || [],
     };
+  },
+
+  // Fetch connected YouTube channel info
+  async getConnectedChannels(): Promise<any[]> {
+    try {
+      const res = await fetch('/api/youtube/channels');
+      const data = await res.json();
+      return data.channels || [];
+    } catch {
+      return [];
+    }
   },
 
   // Clear quote memory

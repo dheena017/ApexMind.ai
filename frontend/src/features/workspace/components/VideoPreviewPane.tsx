@@ -91,7 +91,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   // Active subtitle text matching current playback position
   const activeSubtitle = (() => {
     if (!script.subtitles || script.subtitles.length === 0) {
-      return script.hook || script.quote || 'TOP 5 HABIT HACKS!';
+      return script.hook || script.quote || '';
     }
     const current = script.subtitles.find(
       (s) => currentTime >= s.start && currentTime <= s.start + (s.duration || 3)
@@ -100,7 +100,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     if (currentTime > 0 && script.subtitles.length > 0) {
       return script.cta || script.subtitles[script.subtitles.length - 1].text;
     }
-    return script.hook || script.subtitles[0]?.text || 'TOP 5 HABIT HACKS!';
+    return script.hook || script.subtitles[0]?.text || '';
   })();
 
   return (
@@ -150,9 +150,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               <span className="text-[9px] font-mono-studio font-bold text-white/80">9:16 VERTICAL HD</span>
             </div>
 
-            <div className="flex items-center gap-1 text-[9px] font-semibold text-white/70 bg-black/50 px-2 py-0.5 rounded-full border border-white/10">
+            <div className="flex items-center gap-1 text-[9px] font-semibold text-white/70 bg-black/50 px-2.5 py-0.5 rounded-full border border-white/10">
               <Sparkles className="w-2.5 h-2.5" style={{ color: theme.accentColor }} />
-              <span className="truncate max-w-[100px]">{script.speechStyle || 'Motivation'}</span>
+              <span className="truncate max-w-[130px]">{script.speechStyle || 'AI Director'}</span>
             </div>
           </div>
 
@@ -164,7 +164,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               textShadow: theme.titleShadow,
             }}
           >
-            {script.title || 'MASTER YOUR DAY'}
+            {script.title || 'UNTITLED SHORTS REEL'}
           </h1>
         </div>
 
@@ -176,16 +176,25 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           >
             • LIVE SUBTITLES •
           </span>
-          <p
-            className="font-black uppercase text-white leading-tight transition-all duration-150"
-            style={{
-              fontSize: 'clamp(12px, 3.8vw, 17px)',
-              textShadow: '0 2px 14px rgba(0,0,0,0.95), 0 0 25px rgba(255,255,255,0.4)',
-              maxWidth: '92%',
-            }}
-          >
-            {activeSubtitle}
-          </p>
+          {activeSubtitle ? (
+            <p
+              className="font-black uppercase text-white leading-tight transition-all duration-150 animate-fade-in"
+              style={{
+                fontSize: 'clamp(13px, 4vw, 18px)',
+                textShadow: '0 2px 14px rgba(0,0,0,0.95), 0 0 25px rgba(255,255,255,0.4)',
+                maxWidth: '92%',
+              }}
+            >
+              {activeSubtitle}
+            </p>
+          ) : (
+            <div className="flex flex-col items-center justify-center space-y-1.5 opacity-60">
+              <Sparkles className="w-5 h-5 text-[#60A5FA] animate-pulse" />
+              <p className="text-[11px] font-mono-studio text-white/70 uppercase tracking-widest text-center">
+                Ready to Generate AI Script
+              </p>
+            </div>
+          )}
 
           {/* Audio generation loading indicator */}
           {loadingAudio && (
@@ -199,38 +208,40 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         {/* ── BOTTOM SECTION: Metadata & Transport Controls ──────────── */}
         <div className="relative z-20 p-3 pt-0 space-y-2">
           {/* Channel Name, Voice, Music & Hashtags */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[9px] text-white/80">
-              <span className="font-bold flex items-center gap-1">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[9px] text-white/90">
+              <span className="font-bold flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded-md border border-white/10">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: theme.accentColor }} />
-                {channelName}
+                <span>{channelName}</span>
               </span>
-              <div className="flex items-center gap-2 text-white/70">
-                <span className="flex items-center gap-1 font-mono-studio">
+              <div className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1 font-mono-studio bg-black/40 px-2 py-0.5 rounded-md border border-white/10 text-white/90">
                   <Mic className="w-2.5 h-2.5 text-[#60A5FA]" />
-                  {selectedVoice}
+                  <span>{selectedVoice}</span>
                 </span>
                 {activeMusic && (
-                  <span className="flex items-center gap-1 truncate max-w-[90px] font-mono-studio">
+                  <span className="flex items-center gap-1 font-mono-studio bg-black/40 px-2 py-0.5 rounded-md border border-white/10 text-white/90">
                     <Music2 className="w-2.5 h-2.5 text-[#34D399]" />
-                    {activeMusic.title}
+                    <span className="truncate max-w-[110px]">{activeMusic.title}</span>
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Hashtags */}
-            <div className="flex flex-wrap gap-1">
-              {(script.hashtags || ['#Shorts', '#Motivation']).slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[8px] font-semibold"
-                  style={{ color: theme.accentColor }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+            {/* Dynamic Hashtags */}
+            {script.hashtags && script.hashtags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {script.hashtags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[8px] font-semibold"
+                    style={{ color: theme.accentColor }}
+                  >
+                    {tag.startsWith('#') ? tag : `#${tag}`}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Dynamic Audio Waveform */}

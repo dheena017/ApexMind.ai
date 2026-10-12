@@ -90,7 +90,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             onChange={(e) => onUpdateScript({ hook: e.target.value })}
             rows={2}
             className="w-full bg-[#0E0E0E] border border-[#262626] rounded-lg p-2 text-xs text-white outline-none focus:border-[#3B82F6] font-medium resize-none transition-colors"
-            placeholder="Top 5 Habit Hacks! / The quietest people often fight the loudest battles."
+            placeholder="Enter an attention-grabbing 3-5 word hook spoken in the first 2 seconds..."
           />
 
           <div className="flex items-center justify-between text-[10px] text-[#6B7280] pt-0.5">
@@ -126,7 +126,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             onChange={(e) => onUpdateScript({ quote: e.target.value })}
             rows={3}
             className="w-full bg-[#0E0E0E] border border-[#262626] rounded-lg p-2 text-xs text-white outline-none focus:border-[#3B82F6] font-medium resize-none transition-colors leading-relaxed"
-            placeholder="True power is never loud. It compounds in silence while nobody is watching..."
+            placeholder="Enter the motivational monologue / quote body..."
           />
 
           <div className="flex items-center justify-between pt-1 border-t border-[#262626] text-[11px] text-[#9CA3AF]">

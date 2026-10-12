@@ -23,13 +23,17 @@ except Exception as e:
 
 DEFAULT_SCRIPT_MODEL = "gemini-2.5-flash"
 
-# Model Registry: Maps user-selected model IDs directly to official Gemini API models
+# Model Registry: Maps model IDs strictly to active, available Google Gemini API models
 SUPPORTED_SCRIPT_MODELS: Dict[str, str] = {
+    # Actively available Google Gemini models
     "gemini-2.5-flash": "gemini-2.5-flash",
     "gemini-2.5-pro": "gemini-2.5-pro",
-    "gemini-2.0-flash": "gemini-2.0-flash",
-    "gemini-2.0-flash-lite": "gemini-2.0-flash-lite",
-    # Legacy / alias keys mapped directly to high-capacity models without if/else branching
+    "gemini-2.5-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-flash-latest": "gemini-flash-latest",
+    "gemini-pro-latest": "gemini-pro-latest",
+    # Deprecated/legacy alias fallbacks to prevent 404
+    "gemini-2.0-flash": "gemini-2.5-flash",
+    "gemini-2.0-flash-lite": "gemini-2.5-flash-lite",
     "claude-3-7-sonnet": "gemini-2.5-pro",
     "gpt-4o": "gemini-2.5-pro",
 }

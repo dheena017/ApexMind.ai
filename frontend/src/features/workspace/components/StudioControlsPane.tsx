@@ -67,11 +67,13 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   canPublish,
   publishedSuccess,
 }) => {
-  // Fallback voice options
-  const displayVoices = voices.length > 0 ? voices.slice(0, 3) : [
-    { id: 'Fenrir', name: 'Fenrir (Stoic Leader)', gender: 'Male', style: 'Deep, grounded, authoritative wisdom...', speed: '0.95x' },
-    { id: 'Kore', name: 'Kore (Inspiring)', gender: 'Female', style: 'Clear, high-conviction motivation...', speed: '1.0x' },
-    { id: 'Zephyr', name: 'Zephyr (Calm Focus)', gender: 'Female', style: 'Smooth, meditative resilience...', speed: '0.9x' },
+  // Display all available voices from the backend catalog
+  const displayVoices = voices.length > 0 ? voices : [
+    { id: 'Fenrir', name: 'Fenrir', gender: 'Male', style: 'Deep, powerful, stoic leader', speed: '0.95x' },
+    { id: 'Kore', name: 'Kore', gender: 'Female', style: 'Clear, inspiring, authoritative', speed: '1.0x' },
+    { id: 'Puck', name: 'Puck', gender: 'Male', style: 'Energetic, high-octane motivational', speed: '1.05x' },
+    { id: 'Zephyr', name: 'Zephyr', gender: 'Female', style: 'Smooth, calming wisdom & meditation', speed: '0.9x' },
+    { id: 'Charon', name: 'Charon', gender: 'Male', style: 'Grit & relentless focus', speed: '1.0x' },
   ];
 
   return (

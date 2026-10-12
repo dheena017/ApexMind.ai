@@ -18,7 +18,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   user,
   unreadCount,
   onNavigate,
-  projectTitle = 'Master Your Day',
+  projectTitle = 'New Project',
 }) => {
   return (
     <header className="h-14 shrink-0 z-30 w-full bg-[#121212] border-b border-[#2F2F2F] px-3 sm:px-6 flex items-center justify-between gap-4 font-sans-studio select-none">

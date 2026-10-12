@@ -3,11 +3,11 @@ import { Sparkles, Wand2, ShieldCheck, FileText, Plus, ChevronDown, Cpu } from '
 import { Button } from '@/src/shared/ui/common';
 
 export const AI_MODELS = [
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
-  { id: 'claude-3-7-sonnet', name: 'Claude 3.7 Sonnet' },
-  { id: 'gpt-4o', name: 'GPT-4o Studio' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Ultra Fast)' },
+  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Cinematic Scripting)' },
+  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite (Lightweight)' },
+  { id: 'gemini-flash-latest', name: 'Gemini Flash Latest' },
+  { id: 'gemini-pro-latest', name: 'Gemini Pro Latest' },
 ];
 
 interface AIAgentCreatorPaneProps {

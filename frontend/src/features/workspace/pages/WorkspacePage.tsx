@@ -13,6 +13,7 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
 
   // AI Model & Script Generation
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+  const [channelName, setChannelName] = useState('ApexMind');
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
   const [loadingAgent, setLoadingAgent] = useState(false);
@@ -22,25 +23,18 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
   const [publishedSuccess, setPublishedSuccess] = useState(false);
   const [memoryCount, setMemoryCount] = useState(0);
 
-  // Script State (Live dynamic data)
+  // Script State (Live dynamic data - no hardcoded mock scripts)
   const [script, setScript] = useState<GeneratedScript>({
-    title: 'MASTER YOUR DAY',
-    hook: 'Top 5 Habit Hacks!',
-    quote:
-      'True power is never loud. It compounds in silence while nobody is watching, through early mornings and relentless consistency.',
-    cta: 'Stay silent. Let the results make the noise.',
-    speechStyle: 'Stoic, deep, grounded, powerful',
+    title: '',
+    hook: '',
+    quote: '',
+    cta: '',
+    speechStyle: '',
     visualTheme: 'v1',
     recommendedVoice: 'Fenrir',
-    tags: ['stoic', 'mindset', 'discipline', 'shorts'],
-    hashtags: ['#Shorts', '#Motivation', '#Grit'],
-    subtitles: [
-      { text: 'Top 5 Habit Hacks!', start: 0.0, duration: 2.8 },
-      { text: 'True power is never loud.', start: 2.8, duration: 2.0 },
-      { text: 'It compounds in silence while nobody is watching.', start: 4.8, duration: 3.5 },
-      { text: 'Through early mornings and relentless consistency.', start: 8.3, duration: 3.2 },
-      { text: 'Stay silent. Let the results make the noise.', start: 11.5, duration: 3.0 },
-    ],
+    tags: [],
+    hashtags: [],
+    subtitles: [],
   });
 
   // Media Library Catalog (Loaded dynamically from SQLite backend)
@@ -60,12 +54,21 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
   const [duration, setDuration] = useState(15);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Load Media Library & Quote Memory from live backend API
+  // Load Media Library, Channels & Quote Memory from live backend API
   useEffect(() => {
     async function loadData() {
       try {
-        consoleLogger.info('Studio', 'Loading live media library and quote memory...');
-        const media = await workspaceApi.getMediaLibrary();
+        consoleLogger.info('Studio', 'Loading live media library, channels, and quote memory...');
+        const [channels, media, mem] = await Promise.all([
+          workspaceApi.getConnectedChannels(),
+          workspaceApi.getMediaLibrary(),
+          workspaceApi.getQuoteMemory(),
+        ]);
+
+        if (channels && channels.length > 0) {
+          setChannelName(channels[0].name || channels[0].handle || 'ApexMind');
+        }
+
         setMusicTracks(media.musicTracks || []);
         setBackdrops(media.visualBackdrops || []);
         setVoices(media.voiceProfiles || []);
@@ -80,10 +83,31 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
           setSelectedMusic(media.musicTracks[0].id);
         }
 
-        const mem = await workspaceApi.getQuoteMemory();
         setMemoryCount(mem.totalQuotesInMemory || 0);
+
+        // Load the latest real quote from memory if available
+        if (mem.memoryStore && mem.memoryStore.length > 0) {
+          const latest = mem.memoryStore[0];
+          const loadedScript: GeneratedScript = {
+            title: latest.title,
+            hook: latest.hook,
+            quote: latest.quote,
+            cta: 'Stay silent. Let your results speak.',
+            speechStyle: 'Stoic, deep, grounded, powerful',
+            visualTheme: 'v1',
+            recommendedVoice: 'Fenrir',
+            tags: ['motivation', 'discipline', 'mindset', 'shorts'],
+            hashtags: ['#Shorts', '#Motivation', '#Grit'],
+            subtitles: [
+              { text: latest.hook, start: 0.0, duration: 2.5 },
+              { text: latest.quote, start: 2.5, duration: 7.5 },
+              { text: 'Stay silent. Let your results speak.', start: 10.0, duration: 3.0 },
+            ],
+          };
+          setScript(loadedScript);
+        }
       } catch (err) {
-        consoleLogger.error('Studio', 'Failed to load initial media library data:', err);
+        consoleLogger.error('Studio', 'Failed to load initial workspace data:', err);
       }
     }
     loadData();
@@ -286,13 +310,25 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
                 onSwitchToEditor={() => setActiveLeftPane('editor')}
                 onStartNewVideo={() => {
                   setAgentPrompt('');
-                  setScript((prev) => ({
-                    ...prev,
-                    title: 'NEW MOTIVATION SHORT',
+                  setAudioUrl(null);
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.src = '';
+                  }
+                  setIsPlaying(false);
+                  setCurrentTime(0);
+                  setScript({
+                    title: '',
                     hook: '',
                     quote: '',
+                    cta: '',
+                    speechStyle: '',
+                    visualTheme: 'v1',
+                    recommendedVoice: selectedVoice || 'Fenrir',
+                    tags: [],
+                    hashtags: [],
                     subtitles: [],
-                  }));
+                  });
                 }}
               />
             ) : (
@@ -304,13 +340,25 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
                 onStartNewVideo={() => {
                   setAgentPrompt('');
                   setActiveLeftPane('prompt');
-                  setScript((prev) => ({
-                    ...prev,
-                    title: 'NEW MOTIVATION SHORT',
+                  setAudioUrl(null);
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.src = '';
+                  }
+                  setIsPlaying(false);
+                  setCurrentTime(0);
+                  setScript({
+                    title: '',
                     hook: '',
                     quote: '',
+                    cta: '',
+                    speechStyle: '',
+                    visualTheme: 'v1',
+                    recommendedVoice: selectedVoice || 'Fenrir',
+                    tags: [],
+                    hashtags: [],
                     subtitles: [],
-                  }));
+                  });
                 }}
               />
             )}
@@ -332,6 +380,7 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
               currentTime={currentTime}
               duration={duration}
               onSeek={handleSeek}
+              channelName={channelName}
             />
           </div>
         </div>

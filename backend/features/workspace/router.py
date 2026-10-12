@@ -30,7 +30,7 @@ router = APIRouter(tags=["Workspace Studio"])
     summary="Generate motivational script",
     description="Generate viral YouTube Shorts script using Gemini AI with memory deduplication."
 )
-async def post_generate_script(payload: GenerateScriptRequest):
+def post_generate_script(payload: GenerateScriptRequest):
     try:
         return generate_script(
             category=payload.category or "Stoic Mindset & Discipline",
@@ -52,7 +52,7 @@ async def post_generate_script(payload: GenerateScriptRequest):
     summary="Generate voiceover TTS",
     description="Synthesize high-converting audio voiceover using Gemini TTS."
 )
-async def post_generate_voiceover(payload: GenerateVoiceoverRequest):
+def post_generate_voiceover(payload: GenerateVoiceoverRequest):
     if not payload.text.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
