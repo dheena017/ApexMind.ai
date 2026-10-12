@@ -14,4 +14,6 @@ export interface GoogleAuthPayload {
   name?: string;
   picture?: string;
   sub?: string;
+  accessToken?: string;
+  channel?: any;
 }

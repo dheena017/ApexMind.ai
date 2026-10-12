@@ -23,6 +23,8 @@ def authenticate_google_user(
     name: Optional[str] = None,
     picture: Optional[str] = None,
     sub: Optional[str] = None,
+    access_token: Optional[str] = None,
+    channel: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Authenticates a user via Google.
@@ -84,6 +86,49 @@ def authenticate_google_user(
         google_id=google_id,
         provider="google",
     )
+
+    # If YouTube OAuth access token was authorized, fetch or link YouTube channel
+    if access_token and not channel:
+        try:
+            import requests
+            yt_res = requests.get(
+                "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=5,
+            )
+            if yt_res.status_code == 200:
+                yt_data = yt_res.json()
+                items = yt_data.get("items", [])
+                if items:
+                    c_item = items[0]
+                    c_snip = c_item.get("snippet", {})
+                    c_stats = c_item.get("statistics", {})
+                    channel = {
+                        "channelName": c_snip.get("title"),
+                        "handle": c_snip.get("customUrl") or f"@{c_snip.get('title', '').lower().replace(' ', '')}",
+                        "avatarUrl": (c_snip.get("thumbnails", {}).get("default", {})).get("url"),
+                        "subscribers": int(c_stats.get("subscriberCount", 0)),
+                        "videosUploaded": int(c_stats.get("videoCount", 0)),
+                        "niche": "Motivational Quotes",
+                    }
+        except Exception as yt_fetch_err:
+            logger.warning(f"YouTube data fetch note: {yt_fetch_err}")
+
+    if channel:
+        try:
+            from backend.features.youtube.service import connect_youtube_channel
+            connect_youtube_channel(
+                name=channel.get("channelName") or channel.get("name"),
+                handle=channel.get("handle"),
+                niche=channel.get("niche", "Motivational Quotes"),
+                avatar_url=channel.get("avatarUrl"),
+                subscribers=channel.get("subscribers", 0),
+                videos_uploaded=channel.get("videosUploaded", 0),
+                auto_resolve=False,
+            )
+            logger.info(f"Auto-connected YouTube channel for {verified_email}: {channel.get('channelName')}")
+        except Exception as yt_conn_err:
+            logger.warning(f"Could not auto-connect YouTube channel: {yt_conn_err}")
 
     token = f"ga_{uuid.uuid4().hex}"
     logger.info(f"Google login successful for user: {user['name']} ({user['email']})")

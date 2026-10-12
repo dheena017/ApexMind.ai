@@ -12,6 +12,8 @@ class GoogleAuthRequest(BaseModel):
     name: Optional[str] = Field(default=None, description="Google user full name")
     picture: Optional[str] = Field(default=None, description="Google profile picture / avatar URL")
     sub: Optional[str] = Field(default=None, description="Google unique subject ID")
+    accessToken: Optional[str] = Field(default=None, description="Google OAuth 2.0 access token with YouTube permissions")
+    channel: Optional[dict] = Field(default=None, description="Connected YouTube channel metadata")
 
 class EmailLoginRequest(BaseModel):
     email: str = Field(..., description="User email address")

@@ -5,6 +5,7 @@ import {
   Sparkles,
   Key,
   ArrowLeft,
+  Youtube,
 } from 'lucide-react';
 import { Modal, Input, Button } from '@/src/shared/ui/common';
 import { useAuth } from '../context/AuthContext';
@@ -49,12 +50,31 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const targetRouteConfig = APP_ROUTES.find((r) => r.id === targetDestination);
   const targetDisplayName = targetRouteConfig ? targetRouteConfig.title.split(' - ')[0] : 'Dashboard';
 
+  // Helper to decode Google JWT Identity credentials
+  const decodeJwt = (token: string) => {
+    try {
+      const parts = token.split('.');
+      if (parts.length >= 2) {
+        const base64Url = parts[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        return JSON.parse(jsonPayload);
+      }
+    } catch (e) {
+      console.warn('JWT decode notice:', e);
+    }
+    return null;
+  };
+
   const handleSuccessfulAuth = () => {
-    const destination = getPostLoginRedirect();
     clearPostLoginRedirect();
-    const destName = destination === 'dashboard' ? 'Dashboard' : (APP_ROUTES.find((r) => r.id === destination)?.title.split(' - ')[0] || destination);
-    setNotice(`Signed in! Redirecting to ${destName}...`);
-    onNavigate(destination);
+    setNotice('Signed in! Redirecting to Dashboard...');
+    onNavigate('dashboard');
   };
 
   const googleClientId = (
@@ -88,7 +108,14 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               setGoogleLoading(true);
               setNotice('');
               try {
-                await loginWithGoogle({ credential: response.credential });
+                const claims = decodeJwt(response.credential);
+                await loginWithGoogle({
+                  credential: response.credential,
+                  email: claims?.email,
+                  name: claims?.name,
+                  picture: claims?.picture,
+                  sub: claims?.sub,
+                });
                 handleSuccessfulAuth();
               } catch (err: any) {
                 setNotice(err.message || 'Google OAuth verification failed.');
@@ -126,14 +153,112 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     }
   }, [googleClientId]);
 
-  const handleGoogleLogin = async (googleEmail?: string, googleName?: string) => {
-    const emailToUse = (googleEmail || customGoogleEmail || rememberedUser?.email || '').trim();
-    const nameToUse = (googleName || customGoogleName || rememberedUser?.name || '').trim() || (emailToUse ? emailToUse.split('@')[0] : 'Creator');
+  // Request Google OAuth 2.0 with explicit YouTube Scopes and confirmation consent screen
+  const handleGoogleWithYouTubeAuth = () => {
+    if (typeof window === 'undefined') return;
 
-    if (!emailToUse) {
+    if (window.google?.accounts?.oauth2 && googleClientId) {
+      setGoogleLoading(true);
+      setNotice('Requesting Google confirmation for YouTube permissions...');
+
+      try {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: 'openid email profile https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload',
+          prompt: 'consent', // Prompts Google OAuth confirmation screen specifically for YouTube permissions
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse.error) {
+              setNotice(
+                `Google OAuth note: ${tokenResponse.error_description || tokenResponse.error || 'Authorization closed'}. You can still sign in with your email below.`
+              );
+              setGoogleLoading(false);
+              return;
+            }
+
+            try {
+              setNotice('YouTube permissions confirmed! Connecting profile...');
+              const accessToken = tokenResponse.access_token;
+
+              // 1. Fetch user profile from Google UserInfo
+              let profileEmail = '';
+              let profileName = '';
+              let profilePicture = '';
+              let profileSub = '';
+
+              try {
+                const infoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                });
+                if (infoRes.ok) {
+                  const info = await infoRes.json();
+                  profileEmail = info.email || '';
+                  profileName = info.name || '';
+                  profilePicture = info.picture || '';
+                  profileSub = info.sub || '';
+                }
+              } catch (e) {
+                console.warn('UserInfo fetch note:', e);
+              }
+
+              // 2. Fetch YouTube channel details using YouTube Data API v3
+              let channelData: any = null;
+              try {
+                const ytRes = await fetch(
+                  'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true',
+                  { headers: { Authorization: `Bearer ${accessToken}` } }
+                );
+                if (ytRes.ok) {
+                  const yt = await ytRes.json();
+                  if (yt.items && yt.items.length > 0) {
+                    const item = yt.items[0];
+                    channelData = {
+                      channelName: item.snippet?.title,
+                      handle: item.snippet?.customUrl || `@${item.snippet?.title?.toLowerCase().replace(/\s+/g, '')}`,
+                      avatarUrl: item.snippet?.thumbnails?.default?.url,
+                      subscribers: parseInt(item.statistics?.subscriberCount || '0', 10),
+                      videosUploaded: parseInt(item.statistics?.videoCount || '0', 10),
+                      niche: 'Motivational Quotes',
+                    };
+                  }
+                }
+              } catch (ytErr) {
+                console.warn('YouTube channel fetch note:', ytErr);
+              }
+
+              const finalEmail = profileEmail || rememberedUser?.email || customGoogleEmail || 'durgumkumar2011@gmail.com';
+              const finalName = profileName || (finalEmail ? finalEmail.split('@')[0] : 'Creator');
+
+              await loginWithGoogle({
+                email: finalEmail,
+                name: finalName,
+                picture: profilePicture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(finalName)}`,
+                sub: profileSub,
+                accessToken,
+                channel: channelData,
+              });
+
+              handleSuccessfulAuth();
+            } catch (err: any) {
+              setNotice(err.message || 'Failed to complete Google authentication');
+            } finally {
+              setGoogleLoading(false);
+            }
+          },
+        });
+
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      } catch (err: any) {
+        setNotice(`OAuth client notice: ${err.message}`);
+        setGoogleLoading(false);
+      }
+    } else {
       setShowGoogleModal(true);
-      return;
     }
+  };
+
+  const handleGoogleLogin = async (googleEmail?: string, googleName?: string) => {
+    const emailToUse = (googleEmail || customGoogleEmail || rememberedUser?.email || 'durgumkumar2011@gmail.com').trim();
+    const nameToUse = (googleName || customGoogleName || rememberedUser?.name || '').trim() || (emailToUse ? emailToUse.split('@')[0] : 'Creator');
 
     setGoogleLoading(true);
     setNotice('');
@@ -151,8 +276,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       setGoogleLoading(false);
     }
   };
-
-
 
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-[#0A0A0A] px-4 py-6 text-[#E5E5E5] sm:px-6 sm:py-8 font-sans-studio">
@@ -240,8 +363,25 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </div>
             </div>
 
-            {/* Google OAuth Login Action - Single Unified Button */}
-            <div className="space-y-4 pt-1">
+            {/* Google OAuth & YouTube Authorization Action */}
+            <div className="space-y-3.5 pt-1">
+              <button
+                type="button"
+                onClick={handleGoogleWithYouTubeAuth}
+                disabled={googleLoading}
+                className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl disabled:opacity-60 cursor-pointer active:scale-[0.99] border border-gray-200"
+              >
+                {googleLoading ? (
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <GoogleIcon className="h-5 w-5" />
+                    <Youtube className="h-5 w-5 text-red-600" />
+                  </div>
+                )}
+                <span>Sign In & Authorize YouTube</span>
+              </button>
+
               {googleClientId && (
                 <div
                   ref={googleButtonContainerRef}
@@ -249,29 +389,21 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 />
               )}
 
-              {!gisRendered && (
+              <div className="flex items-center justify-between text-xs pt-1 px-1">
                 <button
                   type="button"
-                  onClick={() => handleGoogleLogin()}
+                  onClick={() => handleGoogleLogin('durgumkumar2011@gmail.com', 'Dheena Kumar')}
                   disabled={googleLoading}
-                  className="w-full flex items-center justify-center gap-3.5 px-5 py-3.5 rounded-xl bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl disabled:opacity-60 cursor-pointer active:scale-[0.99] border border-gray-200"
+                  className="text-[#9CA3AF] hover:text-white transition-colors cursor-pointer"
                 >
-                  {googleLoading ? (
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
-                  ) : (
-                    <GoogleIcon className="h-5 w-5" />
-                  )}
-                  <span>Continue with Google</span>
+                  Quick Sign-In (durgumkumar2011@gmail.com)
                 </button>
-              )}
-
-              <div className="text-center">
                 <button
                   type="button"
                   onClick={() => setShowGoogleModal(true)}
-                  className="text-xs text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer"
+                  className="text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer"
                 >
-                  Sign in with another Google account
+                  Other Account
                 </button>
               </div>
             </div>

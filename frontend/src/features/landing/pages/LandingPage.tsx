@@ -1,36 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Sparkles, Youtube, Play, Zap, Shield, Wand2, Volume2, ArrowRight, CheckCircle2, Captions, CalendarClock, CircleHelp, FileText } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import LandingFooter from '../components/LandingFooter';
 
 export default function LandingPage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const [demoTopic, setDemoTopic] = useState('Building unstoppable consistency');
-  const [demoQuote, setDemoQuote] = useState('When motivation fades, discipline takes the wheel. Do what needs to be done, especially when you do not feel like it.');
-  const [generatingDemo, setGeneratingDemo] = useState(false);
-
-  const handleGenerateDemo = async () => {
-    setGeneratingDemo(true);
-    try {
-      const res = await fetch('/api/generate-script', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: 'Stoic Mindset & Discipline',
-          topic: demoTopic || 'Overcoming fear and taking massive action',
-        }),
-      });
-      const data = await res.json();
-      if (data.data?.quote) {
-        setDemoQuote(data.data.quote);
-      }
-    } catch {
-      // Continue with current preview
-    } finally {
-      setGeneratingDemo(false);
-    }
-  };
-
-
   return (
     <div className="w-full h-screen flex flex-col bg-[#0A0A0A] text-[#E5E5E5] overflow-hidden">
       {/* Fixed Top Bar - Sits above the scrollable area */}
@@ -123,19 +96,21 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
                 <span className="text-xs text-[#60A5FA] font-medium">Gemini 3.8 Flash Powered</span>
               </div>
 
-              {/* Live Preview Box */}
+              {/* Studio Canvas Preview */}
               <div className="relative aspect-[9/16] max-h-95 mx-auto rounded-xl bg-gradient-to-br from-[#0A0A0A] via-[#121212] to-[#1E1E1E] p-6 flex flex-col justify-between border border-[#3B82F6]/30 overflow-hidden shadow-inner">
                 <div className="flex items-center justify-between text-xs text-gray-300">
-                  <span className="bg-[#3B82F6]/20 px-2 py-0.5 rounded text-[#60A5FA] font-mono-studio">LIVE PREVIEW</span>
+                  <span className="bg-[#3B82F6]/20 px-2 py-0.5 rounded text-[#60A5FA] font-mono-studio">STUDIO CANVAS</span>
                   <span className="font-mono-studio text-[#9CA3AF]">00:28 / 1080p</span>
                 </div>
 
                 <div className="text-center space-y-3 py-6">
-                  <span className="text-xs uppercase font-semibold text-[#60A5FA] tracking-wider">Stoic Wisdom</span>
+                  <span className="text-xs uppercase font-semibold text-[#60A5FA] tracking-wider">
+                    Stoic Mindset & Discipline
+                  </span>
                   <p className="text-lg font-extrabold text-white leading-snug drop-shadow-md">
-                    "When the world tries to slow you down, remember why you started."
+                    "When motivation fades, discipline takes the wheel. Do what needs to be done."
                   </p>
-                  <p className="text-xs text-[#93C5FD] font-medium">Voiceover: Fenrir (Gemini TTS 24kHz)</p>
+                  <p className="text-xs text-[#93C5FD] font-medium">Voiceover: Fenrir (Studio TTS 24kHz)</p>
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs text-gray-300">
@@ -149,7 +124,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
 
               <div className="flex gap-2">
                 <Button variant="primary" className="w-full text-xs" onClick={() => onNavigate('workspace')}>
-                  Try Interactive Generator
+                  Open Creation Studio
                 </Button>
               </div>
             </div>
@@ -277,53 +252,71 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
             </Button>
           </div>
 
-          <div className="lg:col-span-7 bg-[#1E1E1E] border border-[#2F2F2F] rounded-2xl p-6 space-y-6">
+          <div className="lg:col-span-7 bg-[#1E1E1E] border border-[#2F2F2F] rounded-2xl p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-[#2F2F2F]">
               <span className="text-sm font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#3B82F6]" />
-                AI Script & Quote Preview
+                Automated Content Engine
               </span>
-              <span className="text-xs text-[#9CA3AF]">Instant Preview</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live Production Pipeline
+              </span>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">Enter Topic or Quote Theme</label>
-              <div className="flex gap-2">
-                <input
-                  value={demoTopic}
-                  onChange={(e) => setDemoTopic(e.target.value)}
-                  className="flex-1 bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] rounded-xl px-4 py-3 outline-none focus:border-[#3B82F6]"
-                  placeholder="E.g., Overcoming Fear & Taking Immediate Action"
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={generatingDemo}
-                  onClick={handleGenerateDemo}
-                  icon={<Sparkles className={`w-3.5 h-3.5 ${generatingDemo ? 'animate-spin' : ''}`} />}
-                >
-                  {generatingDemo ? 'Drafting…' : 'Generate'}
-                </Button>
+            <div className="space-y-3.5">
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#2F2F2F] flex items-start gap-4">
+                <div className="p-2.5 rounded-lg bg-[#3B82F6]/10 text-[#60A5FA] shrink-0">
+                  <Wand2 className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-white">AI Script & Retention Hooks</h4>
+                    <span className="text-[11px] font-mono-studio text-[#60A5FA]">Gemini 2.5 Flash</span>
+                  </div>
+                  <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                    Generates viral-structured motivational hooks, body reasoning, and impactful takeaways customized for YouTube Shorts.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#2F2F2F] flex items-start gap-4">
+                <div className="p-2.5 rounded-lg bg-[#3B82F6]/10 text-[#60A5FA] shrink-0">
+                  <Volume2 className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-white">24kHz Neural Studio Speech</h4>
+                    <span className="text-[11px] font-mono-studio text-[#93C5FD]">Fenrir / Puck / Aoede</span>
+                  </div>
+                  <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                    Ultra-natural human inflections with auto-synced word-level subtitles and copyright-safe royalty-free ambient audio tracks.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#2F2F2F] flex items-start gap-4">
+                <div className="p-2.5 rounded-lg bg-red-500/10 text-red-400 shrink-0">
+                  <Youtube className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-white">Direct YouTube Shorts Publisher</h4>
+                    <span className="text-[11px] font-mono-studio text-red-400">OAuth v3 Verified</span>
+                  </div>
+                  <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                    Instant or scheduled publishing with algorithm-optimized hashtags, descriptions, and channel performance sync.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#121212] border border-[#2F2F2F] space-y-3">
-              <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
-                <span>Generated Script Preview</span>
-                <span className="text-[#60A5FA]">Gemini 3.8 Flash</span>
-              </div>
-              <p className="text-sm text-[#E5E5E5] font-medium leading-relaxed italic">
-                "{demoQuote}"
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-[#9CA3AF]">Ready to synthesize voiceover and publish?</span>
-              <Button size="sm" onClick={() => onNavigate('workspace')}>
-                Create Full Video
+            <div className="pt-2 flex items-center justify-between border-t border-[#2F2F2F]">
+              <span className="text-xs text-[#9CA3AF]">Ready to generate your first motivational Short?</span>
+              <Button size="sm" icon={<Zap className="w-3.5 h-3.5" />} onClick={() => onNavigate('workspace')}>
+                Launch Studio
               </Button>
             </div>
-
           </div>
         </div>
       </section>

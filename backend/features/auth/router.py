@@ -36,6 +36,8 @@ async def post_google_auth(payload: GoogleAuthRequest):
             name=payload.name,
             picture=payload.picture,
             sub=payload.sub,
+            access_token=payload.accessToken,
+            channel=payload.channel,
         )
         return data
     except Exception as e:
@@ -85,8 +87,6 @@ async def get_me(authorization: Optional[str] = Header(None)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve creator profile."
         )
-
-
 @router.post(
     "/logout",
     response_model=LogoutResponse,

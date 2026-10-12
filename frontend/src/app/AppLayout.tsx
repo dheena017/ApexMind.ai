@@ -63,7 +63,7 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sidebarOpen]);
 
-  if (activePage === 'landing' || activePage === 'login' || !isAuthenticated) {
+  if (activePage === 'landing' || activePage === 'login' || activePage === 'loading' || !isAuthenticated) {
     return <>{children}</>;
   }
 

@@ -5,6 +5,7 @@ declare module 'lucide-react';
 interface Window {
   google?: {
     accounts: {
+      oauth2: any;
       id: {
         initialize: (config: {
           client_id: string;

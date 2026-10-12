@@ -70,10 +70,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async (payload?: GoogleAuthPayload): Promise<UserProfile> => {
     setIsLoading(true);
     try {
-      if (!payload || !payload.email) {
+      if (!payload) {
+        throw new Error('Google account details are required to sign in.');
+      }
+
+      const finalPayload: GoogleAuthPayload = { ...payload };
+
+      // If credential exists but email wasn't provided, decode JWT claims client-side
+      if (finalPayload.credential && !finalPayload.email) {
+        try {
+          const parts = finalPayload.credential.split('.');
+          if (parts.length >= 2) {
+            const base64Url = parts[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+              atob(base64)
+                .split('')
+                .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+            );
+            const decoded = JSON.parse(jsonPayload);
+            if (decoded?.email) {
+              finalPayload.email = decoded.email;
+              finalPayload.name = finalPayload.name || decoded.name;
+              finalPayload.picture = finalPayload.picture || decoded.picture;
+              finalPayload.sub = finalPayload.sub || decoded.sub;
+            }
+          }
+        } catch {
+          // Handled by backend token verification
+        }
+      }
+
+      if (!finalPayload.email && !finalPayload.credential && !finalPayload.accessToken) {
         throw new Error('Google account email is required to sign in.');
       }
-      const authData = await authApi.googleLogin(payload);
+
+      const authData = await authApi.googleLogin(finalPayload);
       setUser(authData.user);
       localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
       localStorage.setItem('apexmind_token', authData.token);
@@ -82,7 +115,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
-
 
   const loginWithEmail = async (email: string, password?: string): Promise<UserProfile> => {
     setIsLoading(true);
