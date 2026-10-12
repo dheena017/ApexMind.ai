@@ -13,10 +13,12 @@ class GenerateScriptRequest(BaseModel):
     topic: Optional[str] = Field(default="Overcoming laziness, building daily grit", description="Topic focus")
     tone: Optional[str] = Field(default="Authoritative & Inspiring", description="Vocal delivery tone")
     length: Optional[str] = Field(default="30 seconds", description="Target video duration")
+    model: Optional[str] = Field(default="gemini-2.5-flash", description="AI Model selected by user")
 
 class GenerateVoiceoverRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Script text to synthesize")
     voiceName: Optional[str] = Field(default="Fenrir", description="Voice profile identifier")
+    model: Optional[str] = Field(default="gemini-2.5-flash-preview-tts", description="TTS Audio Model")
 
 # ── 2. Response DTOs ──────────────────────────────────────────────────────────
 

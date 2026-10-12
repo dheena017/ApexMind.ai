@@ -1,6 +1,14 @@
-import React from 'react';
-import { Sparkles, Wand2, ShieldCheck, FileText, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, Wand2, ShieldCheck, FileText, Plus, ChevronDown, Cpu } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
+
+export const AI_MODELS = [
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+  { id: 'claude-3-7-sonnet', name: 'Claude 3.7 Sonnet' },
+  { id: 'gpt-4o', name: 'GPT-4o Studio' },
+];
 
 interface AIAgentCreatorPaneProps {
   agentPrompt: string;
@@ -12,6 +20,8 @@ interface AIAgentCreatorPaneProps {
   onRunAgent: () => void;
   onSwitchToEditor?: () => void;
   onStartNewVideo?: () => void;
+  selectedModel?: string;
+  onModelChange?: (model: string) => void;
 }
 
 const CATEGORIES = [
@@ -38,7 +48,11 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   onRunAgent,
   onSwitchToEditor,
   onStartNewVideo,
+  selectedModel: propModel,
+  onModelChange,
 }) => {
+  const currentModel = propModel || 'gemini-2.5-flash';
+
   return (
     <div className="flex flex-col h-full font-sans-studio text-[#E5E5E5] space-y-3">
       {/* ── Top Header Bar ────────────────────────────────────────────── */}
@@ -84,7 +98,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       {/* ── AI Agent 1-Click Creator Main Container (Website Theme) ── */}
       <div className="flex-1 flex flex-col justify-between p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] shadow-xl space-y-4 animate-fade-in overflow-y-auto custom-scrollbar">
         <div className="space-y-3.5">
-          {/* Header Title & Gemini Badge */}
+          {/* Header Title & Interactive AI Model Dropdown */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white shadow-md shadow-[#3B82F6]/30">
@@ -95,9 +109,28 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 <p className="text-[10px] text-[#9CA3AF]">Zero Hallucination • Unique Quote Memory</p>
               </div>
             </div>
-            <span className="text-[9px] font-mono-studio px-2 py-0.5 rounded-full bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30 font-bold">
-              GEMINI 2.5
-            </span>
+
+            {/* AI Model Selector Dropdown */}
+            <div className="relative flex items-center">
+              <div className="flex items-center gap-1.5 pl-2.5 pr-2 py-1 rounded-lg bg-[#181818] border border-[#2F2F2F] hover:border-[#3B82F6]/50 transition-colors shadow-xs">
+                <Cpu className="w-3 h-3 text-[#60A5FA]" />
+                <select
+                  value={currentModel}
+                  onChange={(e) => {
+                    onModelChange?.(e.target.value);
+                  }}
+                  className="bg-transparent text-[#60A5FA] text-[10px] font-mono-studio font-bold outline-none cursor-pointer pr-4 appearance-none"
+                  title="Select AI Model"
+                >
+                  {AI_MODELS.map((m) => (
+                    <option key={m.id} value={m.id} className="bg-[#141414] text-white">
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3 h-3 text-[#9CA3AF] pointer-events-none -ml-3" />
+              </div>
+            </div>
           </div>
 
           {/* Topic / Motivation Prompt Input */}

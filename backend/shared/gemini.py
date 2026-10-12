@@ -21,12 +21,32 @@ try:
 except Exception as e:
     logger.error(f"Failed to load google.genai: {e}")
 
+DEFAULT_SCRIPT_MODEL = "gemini-2.5-flash"
+
+# Model Registry: Maps user-selected model IDs directly to official Gemini API models
+SUPPORTED_SCRIPT_MODELS: Dict[str, str] = {
+    "gemini-2.5-flash": "gemini-2.5-flash",
+    "gemini-2.5-pro": "gemini-2.5-pro",
+    "gemini-2.0-flash": "gemini-2.0-flash",
+    "gemini-2.0-flash-lite": "gemini-2.0-flash-lite",
+    # Legacy / alias keys mapped directly to high-capacity models without if/else branching
+    "claude-3-7-sonnet": "gemini-2.5-pro",
+    "gpt-4o": "gemini-2.5-pro",
+}
+
+def resolve_script_model(model_name: str | None = None) -> str:
+    """Selects and validates the script generation model using a dictionary registry lookup without if/else chains."""
+    if not model_name:
+        return DEFAULT_SCRIPT_MODEL
+    return SUPPORTED_SCRIPT_MODELS.get(model_name.strip().lower(), DEFAULT_SCRIPT_MODEL)
+
 def generate_gemini_script(
     category: str,
     topic: str,
     tone: str,
     length: str,
-    memory_quotes: List[Dict[str, Any]]
+    memory_quotes: List[Dict[str, Any]],
+    model: str = "gemini-2.5-flash"
 ) -> Dict[str, Any]:
     """Generates viral motivational quote scripts via Gemini with memory deduplication."""
     memory_snippets = "\n".join([
@@ -70,14 +90,17 @@ Output MUST be a single raw JSON object with exactly these keys:
         logger.warning("Gemini script requested but GEMINI_API_KEY is not configured.")
         raise ValueError("GEMINI_API_KEY is not configured. Please set GEMINI_API_KEY in your environment to generate dynamic AI scripts.")
 
-    logger.info(f"Initiating Gemini script generation | Theme: '{category}' | Topic: '{topic}' | Tone: '{tone}' | Target Length: '{length}' | Prior Quotes Deduplicated: {len(memory_quotes)}")
+    # Proper model selection via dictionary registry lookup (no if/else chain)
+    target_model = resolve_script_model(model)
+
+    logger.info(f"Initiating AI script generation | Model: '{target_model}' | Theme: '{category}' | Topic: '{topic}' | Prior Quotes Deduplicated: {len(memory_quotes)}")
     start_t = time.perf_counter()
 
     try:
         from google.genai import types
         # As recommended by Google GenAI SDK: use Chat.send_message for AFC and content generation
         chat = gemini_client.chats.create(
-            model="gemini-2.5-flash",
+            model=target_model,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
             )
@@ -90,26 +113,27 @@ Output MUST be a single raw JSON object with exactly these keys:
             raw = raw.split("```")[1].split("```")[0].strip()
         result = json.loads(raw)
         elapsed = time.perf_counter() - start_t
-        logger.info(f"Gemini 2.5 Flash generated script in {elapsed:.2f}s | Title: '{result.get('title')}' | Hook: '{result.get('hook')}'")
+        logger.info(f"AI Model '{target_model}' generated script in {elapsed:.2f}s | Title: '{result.get('title')}' | Hook: '{result.get('hook')}'")
         return result
     except Exception as e:
         elapsed = time.perf_counter() - start_t
         logger.error(f"Gemini API generation error after {elapsed:.2f}s: {e}")
         raise RuntimeError(f"Gemini script generation failed: {e}")
 
-def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir") -> Dict[str, Any]:
+def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir", model: str = "gemini-2.5-flash-preview-tts") -> Dict[str, Any]:
     """Generates audio voiceover via Gemini."""
     if not gemini_client:
         logger.warning(f"Voiceover requested for '{voice_name}' but GEMINI_API_KEY is not configured.")
         raise ValueError("GEMINI_API_KEY is not configured for voiceover generation.")
 
-    logger.info(f"Requesting Gemini TTS voiceover synthesis | Voice Persona: '{voice_name}' | Text Length: {len(text)} chars")
+    tts_model = model or "gemini-2.5-flash-preview-tts"
+    logger.info(f"Requesting Gemini TTS voiceover synthesis | TTS Model: '{tts_model}' | Voice Persona: '{voice_name}' | Text Length: {len(text)} chars")
     start_t = time.perf_counter()
 
     try:
         from google.genai import types
         tts_res = gemini_client.models.generate_content(
-            model="gemini-2.5-flash-preview-tts",
+            model=tts_model,
             contents=f"Read this motivational script with a powerful, stoic, cinematic voice: {text}",
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],

@@ -16,7 +16,7 @@ def get_memory_list(limit: int = 50) -> Dict[str, Any]:
     }
 
 
-def generate_script(category: str, topic: str, tone: str, length: str) -> Dict[str, Any]:
+def generate_script(category: str, topic: str, tone: str, length: str, model: str = "gemini-2.5-flash") -> Dict[str, Any]:
     memory = fetch_quote_memory(limit=20)
     data = generate_gemini_script(
         category=category,
@@ -24,6 +24,7 @@ def generate_script(category: str, topic: str, tone: str, length: str) -> Dict[s
         tone=tone,
         length=length,
         memory_quotes=memory,
+        model=model,
     )
     if data.get("title") and data.get("quote"):
         save_quote(
@@ -43,8 +44,8 @@ def clear_memory() -> Dict[str, Any]:
     deleted = delete_all_quotes()
     return {"success": True, "message": f"Cleared {deleted} quotes from memory."}
 
-def synthesize_voiceover(text: str, voice_name: str) -> Dict[str, Any]:
-    return generate_gemini_voiceover(text=text, voice_name=voice_name)
+def synthesize_voiceover(text: str, voice_name: str, model: str = "gemini-2.5-flash-preview-tts") -> Dict[str, Any]:
+    return generate_gemini_voiceover(text=text, voice_name=voice_name, model=model)
 
 def get_media_library() -> Dict[str, Any]:
     catalog = fetch_media_library()

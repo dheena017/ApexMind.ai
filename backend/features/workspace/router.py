@@ -37,12 +37,13 @@ async def post_generate_script(payload: GenerateScriptRequest):
             topic=payload.topic or "Overcoming laziness, building daily grit",
             tone=payload.tone or "Authoritative & Inspiring",
             length=payload.length or "30 seconds",
+            model=payload.model or "gemini-2.5-flash",
         )
     except Exception as e:
         logger.error(f"Error in script generation: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate script."
+            detail=f"Failed to generate script: {e}"
         )
 
 @router.post(
@@ -58,7 +59,11 @@ async def post_generate_voiceover(payload: GenerateVoiceoverRequest):
             detail="Text prompt is required."
         )
     try:
-        return synthesize_voiceover(text=payload.text, voice_name=payload.voiceName or "Fenrir")
+        return synthesize_voiceover(
+            text=payload.text,
+            voice_name=payload.voiceName or "Fenrir",
+            model=payload.model or "gemini-2.5-flash-preview-tts",
+        )
     except Exception as e:
         logger.error(f"Error in voiceover synthesis: {e}")
         raise HTTPException(

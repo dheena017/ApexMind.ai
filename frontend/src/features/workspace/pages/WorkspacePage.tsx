@@ -11,7 +11,8 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
   // Navigation between separate AI Creator and Script Editor pages
   const [activeLeftPane, setActiveLeftPane] = useState<'prompt' | 'editor'>('prompt');
 
-  // AI Script Generation
+  // AI Model & Script Generation
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
   const [loadingAgent, setLoadingAgent] = useState(false);
@@ -127,6 +128,7 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
       const generated = await workspaceApi.generateScript({
         category,
         userPrompt: agentPrompt.trim() || undefined,
+        model: selectedModel,
       });
 
       setScript(generated);
@@ -273,6 +275,8 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
                 onPromptChange={setAgentPrompt}
                 category={category}
                 onCategoryChange={setCategory}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
                 memoryCount={memoryCount}
                 loadingAgent={loadingAgent}
                 onRunAgent={async () => {

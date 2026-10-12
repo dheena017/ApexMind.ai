@@ -9,9 +9,10 @@ export const workspaceApi = {
     userPrompt?: string;
     tone?: string;
     length?: string;
+    model?: string;
   }): Promise<GeneratedScript> {
     const topicText = params.userPrompt || params.topic || params.category;
-    consoleLogger.info('Gemini', `Generating AI script for topic: "${topicText}"...`);
+    consoleLogger.info('Gemini', `Generating AI script with model: "${params.model || 'gemini-2.5-flash'}" for topic: "${topicText}"...`);
     const start = performance.now();
     const res = await fetch('/api/generate-script', {
       method: 'POST',
@@ -21,6 +22,7 @@ export const workspaceApi = {
         topic: topicText,
         tone: params.tone,
         length: params.length,
+        model: params.model,
       }),
     });
     const duration = performance.now() - start;
@@ -32,18 +34,19 @@ export const workspaceApi = {
 
   // Generate voiceover audio via Gemini TTS
   async generateVoiceover(
-    payloadOrText: string | { text: string; voiceName?: string },
+    payloadOrText: string | { text: string; voiceName?: string; model?: string },
     voiceName: string = 'Fenrir'
   ): Promise<{ audioBase64: string; mimeType: string; audioUrl: string }> {
     const text = typeof payloadOrText === 'string' ? payloadOrText : payloadOrText.text;
     const voice = typeof payloadOrText === 'string' ? voiceName : (payloadOrText.voiceName || 'Fenrir');
+    const model = typeof payloadOrText === 'string' ? undefined : payloadOrText.model;
 
     consoleLogger.info('Gemini', `Synthesizing TTS audio for persona "${voice}"...`);
     const start = performance.now();
     const res = await fetch('/api/generate-voiceover', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voiceName: voice }),
+      body: JSON.stringify({ text, voiceName: voice, model }),
     });
     const duration = performance.now() - start;
     consoleLogger.api('POST', '/api/generate-voiceover', res.status, duration);
