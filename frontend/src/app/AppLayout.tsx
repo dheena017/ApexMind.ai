@@ -172,19 +172,17 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
 
       {/* =========================================================================
           Main Content Container
-          - Workspace Studio: Full-width responsive canvas (w-full px-4 lg:px-8 py-6)
-          - All Other Pages (YouTube, Dashboard, etc.): Centered layout with generous space around (max-w-6xl mx-auto)
+          - Uniform, equal spacing around the container on all sides (top, bottom, left, right)
+          - No excessive empty side space; responsive balanced framing
           ========================================================================= */}
-      <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A]">
+      <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A] p-4 sm:p-5 lg:p-6">
         {activePage === 'workspace' ? (
-          <div className="w-full px-4 lg:px-8 py-6">
+          <div className="w-full">
             {children}
           </div>
         ) : (
-          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="w-full rounded-3xl bg-[#101010]/80 border border-[#2F2F2F] shadow-2xl p-6 sm:p-8 lg:p-10 transition-all">
-              {children}
-            </div>
+          <div className="w-full rounded-2xl sm:rounded-3xl bg-[#101010]/80 border border-[#2F2F2F] shadow-2xl p-5 sm:p-7 lg:p-8 transition-all">
+            {children}
           </div>
         )}
       </main>
