@@ -182,7 +182,9 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
           </div>
         ) : (
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            {children}
+            <div className="w-full rounded-3xl bg-[#101010]/80 border border-[#2F2F2F] shadow-2xl p-6 sm:p-8 lg:p-10 transition-all">
+              {children}
+            </div>
           </div>
         )}
       </main>
