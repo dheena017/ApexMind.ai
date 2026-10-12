@@ -45,6 +45,7 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [publishedSuccess, setPublishedSuccess] = useState(false);
+  const [memoryCount, setMemoryCount] = useState(0);
 
   useEffect(() => {
     async function loadMedia() {
@@ -60,7 +61,15 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
       }
     }
     loadMedia();
+
+    fetch('/api/quote-memory')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.totalQuotesSaved !== undefined) setMemoryCount(data.totalQuotesSaved);
+      })
+      .catch(() => {});
   }, []);
+
 
   // Run Full AI Agent Command (Creates Script, Selects Voice & Effects)
   const handleRunAIAgent = async () => {
@@ -74,7 +83,9 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
       });
       setScript(result);
       if (result.recommendedVoice) setSelectedVoice(result.recommendedVoice);
+      setMemoryCount((prev) => prev + 1);
       consoleLogger.success('Studio', `✨ AI Agent finished scriptwriting: "${result.title}"`, result);
+
     } catch (e) {
       consoleLogger.error('Studio', 'AI Agent script generation failed:', e);
     } finally {
@@ -197,8 +208,9 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Quote Memory Active (0% Repetition)
+              Quote Memory Active ({memoryCount} Quotes Deduplicated)
             </span>
+
             <Badge variant="blue">Gemini 3.8 Flash Powered</Badge>
           </div>
         </div>
@@ -210,7 +222,7 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
               value={agentPrompt}
               onChange={(e) => setAgentPrompt(e.target.value)}
               className="flex-1 bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] rounded-xl px-4 py-3 outline-none focus:border-[#3B82F6]"
-              placeholder="E.g., Create a 30s short on overcoming laziness with Fenrir voice and deep ambient music..."
+              placeholder="Describe the short you want to create"
             />
             <Button
               variant="primary"

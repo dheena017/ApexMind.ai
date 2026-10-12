@@ -70,13 +70,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async (payload?: GoogleAuthPayload): Promise<UserProfile> => {
     setIsLoading(true);
     try {
-      const authData = await authApi.googleLogin(
-        payload || {
-          email: 'creator@apexmind.ai',
-          name: 'ApexMind Creator Pro',
-          picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-        }
-      );
+      if (!payload || !payload.email) {
+        throw new Error('Google account email is required to sign in.');
+      }
+      const authData = await authApi.googleLogin(payload);
       setUser(authData.user);
       localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
       localStorage.setItem('apexmind_token', authData.token);
@@ -85,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
+
 
   const loginWithEmail = async (email: string, password?: string): Promise<UserProfile> => {
     setIsLoading(true);

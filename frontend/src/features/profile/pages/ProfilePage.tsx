@@ -1,14 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, ShieldCheck, Award, Zap, Youtube, CheckCircle2, Star } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
+import { dashboardApi } from '@/src/features/dashboard/api/dashboardApi';
+import { DashboardStats } from '@/src/features/dashboard/types';
 
 export default function ProfilePage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
-  const displayName = user?.name || 'ApexMind Creator Pro';
-  const displayEmail = user?.email || 'creator@apexmind.ai';
+  useEffect(() => {
+    dashboardApi.getDashboardData()
+      .then((data) => {
+        if (data.stats) setStats(data.stats);
+      })
+      .catch(() => {});
+  }, []);
+
+  const displayName = user?.name || 'Creator';
+  const displayEmail = user?.email || '';
   const avatarUrl = user?.avatarUrl;
+
 
   return (
     <div className="flex-1 w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] p-6 lg:p-8 space-y-8 max-w-5xl mx-auto font-sans-studio">
@@ -98,29 +110,42 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
 
       {/* Usage Stats & Quota */}
       <Card>
-        <h3 className="text-lg font-bold text-white pb-3 border-b border-[#2F2F2F] mb-4">Gemini API Usage & Limits</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-[#9CA3AF]">
-              <span>Script Generation (Gemini 3.8 Flash)</span>
-              <span className="font-mono text-[#60A5FA] font-bold">Active & Unlimited</span>
-            </div>
-            <div className="w-full h-2 bg-[#121212] rounded-full overflow-hidden">
-              <div className="h-full bg-[#3B82F6] rounded-full" style={{ width: '25%' }} />
-            </div>
-          </div>
+        <h3 className="text-lg font-bold text-white pb-3 border-b border-[#2F2F2F] mb-4">Gemini API Usage & Activity</h3>
+        {(() => {
+          const quotesCount = stats?.totalQuotesGenerated ?? 0;
+          const shortsCount = stats?.totalShortsGenerated ?? 0;
+          const scriptsPercent = Math.min(100, Math.max(quotesCount > 0 ? 5 : 0, (quotesCount / 50) * 100));
+          const voicePercent = Math.min(100, Math.max(shortsCount > 0 ? 5 : 0, (shortsCount / 20) * 100));
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-[#9CA3AF]">
+                  <span>Script Generation (Gemini 3.8 Flash)</span>
+                  <span className="font-mono text-[#60A5FA] font-bold">
+                    {quotesCount} Generated
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-[#121212] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#3B82F6] rounded-full transition-all duration-500" style={{ width: `${scriptsPercent.toFixed(1)}%` }} />
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-[#9CA3AF]">
-              <span>Voiceover TTS Synthesis (24kHz WAV)</span>
-              <span className="font-mono text-cyan-400 font-bold">Ready</span>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-[#9CA3AF]">
+                  <span>Voiceover TTS Synthesis (24kHz WAV)</span>
+                  <span className="font-mono text-cyan-400 font-bold">
+                    {shortsCount} Synthesized
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-[#121212] rounded-full overflow-hidden">
+                  <div className="h-full bg-cyan-500 rounded-full transition-all duration-500" style={{ width: `${voicePercent.toFixed(1)}%` }} />
+                </div>
+              </div>
             </div>
-            <div className="w-full h-2 bg-[#121212] rounded-full overflow-hidden">
-              <div className="h-full bg-cyan-500 rounded-full" style={{ width: '20%' }} />
-            </div>
-          </div>
-        </div>
+          );
+        })()}
       </Card>
+
     </div>
   );
 }

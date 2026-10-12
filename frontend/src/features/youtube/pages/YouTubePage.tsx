@@ -34,8 +34,9 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
 
   // Connect Channel Modal & Live Lookup
   const [showConnectModal, setShowConnectModal] = useState(false);
-  const [channelInput, setChannelInput] = useState('@hubermanlab');
-  const [niche, setNiche] = useState('Motivational Quotes');
+  const [channelInput, setChannelInput] = useState('');
+  const [niche, setNiche] = useState('');
+
   const [lookupResult, setLookupResult] = useState<YouTubeLookupResult | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -106,7 +107,7 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
         ? {
             channelName: lookupResult.name,
             handle: lookupResult.handle,
-            niche: niche || 'Motivational Quotes',
+            niche: niche || 'General motivation',
             avatarUrl: lookupResult.avatarUrl,
             subscribers: lookupResult.subscribers,
             videosUploaded: lookupResult.videosUploaded,
@@ -114,7 +115,7 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
           }
         : {
             handle: channelInput,
-            niche: niche || 'Motivational Quotes',
+            niche: niche || 'General motivation',
             autoResolve: true,
           };
 
@@ -298,9 +299,10 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
                     size="sm"
                     icon={<Plus className="w-4 h-4" />}
                     onClick={() => {
-                      setChannelInput('@hubermanlab');
+                      setChannelInput('');
                       setShowConnectModal(true);
                     }}
+
                   >
                     Connect with YouTube Handle
                   </Button>
@@ -610,8 +612,7 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
       >
         <form onSubmit={handleConnectChannel} className="space-y-4">
           <p className="text-xs text-[#9CA3AF]">
-            Enter a YouTube handle (e.g., <code className="text-[#60A5FA]">@hubermanlab</code>,{' '}
-            <code className="text-[#60A5FA]">@MrBeast</code>) or channel URL to fetch real live subscriber and video metrics.
+            Enter a YouTube handle or channel URL to fetch real live subscriber and video metrics.
           </p>
 
           <div className="space-y-1.5">
@@ -626,7 +627,7 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
                   setLookupResult(null);
                   setLookupError(null);
                 }}
-                placeholder="E.g., @hubermanlab or https://youtube.com/@hubermanlab"
+                placeholder="Enter a YouTube handle or channel URL"
                 className="flex-1 bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#3B82F6]"
                 required
               />
@@ -689,7 +690,7 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
             label="Content Niche / Studio Focus"
             value={niche}
             onChange={(e) => setNiche(e.target.value)}
-            placeholder="E.g., Motivational Quotes & Discipline"
+            placeholder="Enter your content niche or focus area"
           />
 
           <div className="pt-2 flex justify-end gap-2">
@@ -725,7 +726,7 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
             label="Updated YouTube Handle or URL"
             value={newHandleInput}
             onChange={(e) => setNewHandleInput(e.target.value)}
-            placeholder="E.g., @hubermanlab"
+            placeholder="Enter the corrected YouTube handle or URL"
             required
           />
 

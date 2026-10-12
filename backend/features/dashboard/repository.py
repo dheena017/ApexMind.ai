@@ -16,16 +16,27 @@ def calculate_dashboard_metrics() -> Dict[str, Any]:
     cursor.execute("SELECT COUNT(*) FROM youtube_channels")
     channel_count = cursor.fetchone()[0]
 
+    cursor.execute("SELECT COUNT(*) FROM quotes_memory")
+    quotes_count = cursor.fetchone()[0]
+
     cursor.execute("SELECT id, name, handle, subscribers, avatar_url FROM youtube_channels ORDER BY connected_at DESC LIMIT 1")
     primary_channel_row = cursor.fetchone()
     primary_channel = dict(primary_channel_row) if primary_channel_row else None
 
     conn.close()
 
+    # Dynamic token usage based on quotes and videos created
+    estimated_tokens_used = (quotes_count * 450) + (vid_count * 520)
+    monthly_token_quota = 1_000_000
+
     return {
         "totalShortsGenerated": vid_count,
         "totalViews": total_views,
         "totalLikes": total_likes,
         "activeChannelsCount": channel_count,
+        "totalQuotesGenerated": quotes_count,
+        "tokensUsed": estimated_tokens_used,
+        "tokenQuota": monthly_token_quota,
         "primaryChannel": primary_channel,
     }
+

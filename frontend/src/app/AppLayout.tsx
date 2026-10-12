@@ -14,19 +14,31 @@ import {
 } from 'lucide-react';
 import { Button, Badge } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
+import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 
 interface AppLayoutProps {
-
   children: React.ReactNode;
   activePage: string;
   onNavigate: (page: string) => void;
   unreadCount?: number;
 }
 
-export default function AppLayout({ children, activePage, onNavigate, unreadCount = 2 }: AppLayoutProps) {
+export default function AppLayout({ children, activePage, onNavigate, unreadCount: propUnreadCount }: AppLayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
-  // Sidebar open/close state
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dynamicUnread, setDynamicUnread] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    notificationsApi.getNotifications()
+      .then((items) => {
+        setDynamicUnread(items.filter((item) => !item.read).length);
+      })
+      .catch(() => setDynamicUnread(0));
+  }, [activePage, isAuthenticated]);
+
+  const unreadCount = propUnreadCount !== undefined ? propUnreadCount : dynamicUnread;
+
 
   // Prevent background page from moving or scrolling when sidebar is open
   useEffect(() => {

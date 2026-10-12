@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Sparkles, Youtube, Play, RefreshCw, Plus, Zap, TrendingUp, Users, ArrowUpRight, Volume2 } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/shared/ui/common';
 import { dashboardApi } from '../api/dashboardApi';
-import { YouTubeChannel, YouTubeVideo } from '../types';
+import { YouTubeChannel, YouTubeVideo, DashboardStats } from '../types';
 
 export default function DashboardPage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const [loading, setLoading] = useState(false);
   const [channels, setChannels] = useState<YouTubeChannel[]>([]);
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -15,12 +16,14 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
       const data = await dashboardApi.getDashboardData();
       setChannels(data.channels);
       setVideos(data.videos);
+      if (data.stats) setStats(data.stats);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     loadData();
@@ -144,11 +147,14 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Badge variant="blue">Daily 08:00 AM Active</Badge>
+                    <Badge variant={ch.isAutoUploadEnabled ? 'blue' : 'gray'}>
+                      {ch.isAutoUploadEnabled ? `${ch.scheduleCron || 'Daily Schedule'} Active` : 'Auto-Upload Paused'}
+                    </Badge>
                     <Button size="sm" icon={<Zap className="w-3.5 h-3.5" />} onClick={() => onNavigate('workspace')}>
                       Generate Now
                     </Button>
                   </div>
+
                 </div>
               ))
             )}
@@ -212,17 +218,27 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
 
           <Card>
             <h4 className="text-sm font-bold text-white mb-3">Gemini Quota Status</h4>
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between text-[#9CA3AF]">
-                <span>Monthly Tokens Used</span>
-                <span className="text-[#60A5FA] font-mono-studio font-bold">142,800 / 1,000,000</span>
-              </div>
-              <div className="w-full h-2 bg-[#121212] rounded-full overflow-hidden">
-                <div className="h-full bg-[#3B82F6] rounded-full" style={{ width: '14.2%' }} />
-              </div>
-              <p className="text-[#6B7280] text-[11px]">Server-side `@google/genai` active.</p>
-            </div>
+            {(() => {
+              const tokensUsed = stats?.tokensUsed ?? (videos.length * 520);
+              const tokenQuota = stats?.tokenQuota ?? 1000000;
+              const quotaPercent = Math.min(100, Math.max(tokensUsed > 0 ? 0.8 : 0, (tokensUsed / tokenQuota) * 100));
+              return (
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between text-[#9CA3AF]">
+                    <span>Monthly Tokens Used</span>
+                    <span className="text-[#60A5FA] font-mono-studio font-bold">
+                      {tokensUsed.toLocaleString()} / {tokenQuota.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-[#121212] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#3B82F6] rounded-full transition-all duration-500" style={{ width: `${quotaPercent.toFixed(1)}%` }} />
+                  </div>
+                  <p className="text-[#6B7280] text-[11px]">Server-side `@google/genai` active.</p>
+                </div>
+              );
+            })()}
           </Card>
+
         </div>
       </div>
     </div>

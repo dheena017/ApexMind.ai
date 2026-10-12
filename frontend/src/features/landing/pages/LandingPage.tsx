@@ -4,7 +4,32 @@ import { Button } from '@/src/shared/ui/common';
 import LandingFooter from '../components/LandingFooter';
 
 export default function LandingPage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const [demoTopic, setDemoTopic] = useState('Stoic Discipline for Early Mornings');
+  const [demoTopic, setDemoTopic] = useState('Building unstoppable consistency');
+  const [demoQuote, setDemoQuote] = useState('When motivation fades, discipline takes the wheel. Do what needs to be done, especially when you do not feel like it.');
+  const [generatingDemo, setGeneratingDemo] = useState(false);
+
+  const handleGenerateDemo = async () => {
+    setGeneratingDemo(true);
+    try {
+      const res = await fetch('/api/generate-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: 'Stoic Mindset & Discipline',
+          topic: demoTopic || 'Overcoming fear and taking massive action',
+        }),
+      });
+      const data = await res.json();
+      if (data.data?.quote) {
+        setDemoQuote(data.data.quote);
+      }
+    } catch {
+      // Continue with current preview
+    } finally {
+      setGeneratingDemo(false);
+    }
+  };
+
 
   return (
     <div className="w-full h-screen flex flex-col bg-[#0A0A0A] text-[#E5E5E5] overflow-hidden">
@@ -262,13 +287,24 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Quote Topic</label>
-              <input
-                value={demoTopic}
-                onChange={(e) => setDemoTopic(e.target.value)}
-                className="w-full bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] rounded-xl px-4 py-3 outline-none focus:border-[#3B82F6]"
-                placeholder="E.g., Overcoming Fear & Taking Action"
-              />
+              <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">Enter Topic or Quote Theme</label>
+              <div className="flex gap-2">
+                <input
+                  value={demoTopic}
+                  onChange={(e) => setDemoTopic(e.target.value)}
+                  className="flex-1 bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] rounded-xl px-4 py-3 outline-none focus:border-[#3B82F6]"
+                  placeholder="E.g., Overcoming Fear & Taking Immediate Action"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={generatingDemo}
+                  onClick={handleGenerateDemo}
+                  icon={<Sparkles className={`w-3.5 h-3.5 ${generatingDemo ? 'animate-spin' : ''}`} />}
+                >
+                  {generatingDemo ? 'Drafting…' : 'Generate'}
+                </Button>
+              </div>
             </div>
 
             <div className="p-4 rounded-xl bg-[#121212] border border-[#2F2F2F] space-y-3">
@@ -277,7 +313,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
                 <span className="text-[#60A5FA]">Gemini 3.8 Flash</span>
               </div>
               <p className="text-sm text-[#E5E5E5] font-medium leading-relaxed italic">
-                "{demoTopic ? `Regarding ${demoTopic}: ` : ''}Do not ask for an easy life. Ask for the strength to endure a tough one and overcome every obstacle."
+                "{demoQuote}"
               </p>
             </div>
 
@@ -287,6 +323,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
                 Create Full Video
               </Button>
             </div>
+
           </div>
         </div>
       </section>

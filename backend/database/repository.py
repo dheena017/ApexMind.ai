@@ -466,4 +466,25 @@ def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     }
 
 
+def get_latest_user() -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users ORDER BY last_login_at DESC LIMIT 1")
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {
+        "id": row["id"],
+        "email": row["email"],
+        "name": row["name"],
+        "avatarUrl": row["avatar_url"],
+        "provider": row["provider"],
+        "googleId": row["google_id"],
+        "createdAt": row["created_at"],
+        "lastLoginAt": row["last_login_at"],
+    }
+
+
+
 

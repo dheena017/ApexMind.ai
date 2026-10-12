@@ -71,13 +71,21 @@ async def post_email_login(payload: EmailLoginRequest):
 async def get_me(authorization: Optional[str] = Header(None)):
     try:
         user = get_current_user_profile()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No authenticated creator session found."
+            )
         return user
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching active profile: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve creator profile."
         )
+
 
 @router.post(
     "/logout",

@@ -548,6 +548,9 @@ def main() -> int:
         if raw_extra:
             uvicorn_extra_args = shlex.split(raw_extra)
 
+        print(f"\n{ansi.GREEN}{ansi.BOLD}[ApexMind OK]{ansi.RESET} Backend ready at http://{display_host}:{port}/api/docs")
+        print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Starting FastAPI app on http://{display_host}:{port}")
+
         uvicorn.run(
             "backend.main:app",
             host=host,

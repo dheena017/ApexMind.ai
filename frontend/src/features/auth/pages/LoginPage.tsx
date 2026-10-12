@@ -39,25 +39,42 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
 
+  // Check for remembered creator session
+  const [rememberedUser] = useState<any>(() => {
+    try {
+      const stored = localStorage.getItem('apexmind_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const handleGoogleLogin = async (googleEmail?: string, googleName?: string) => {
+    const emailToUse = (googleEmail || customGoogleEmail || rememberedUser?.email || '').trim();
+    const nameToUse = (googleName || customGoogleName || rememberedUser?.name || '').trim() || (emailToUse ? emailToUse.split('@')[0] : 'Creator');
+
+    if (!emailToUse) {
+      setShowGoogleModal(true);
+      return;
+    }
+
     setGoogleLoading(true);
     setNotice('');
     try {
-      const emailToUse = googleEmail || 'creator@apexmind.ai';
-      const nameToUse = googleName || 'ApexMind Creator Pro';
       await loginWithGoogle({
         email: emailToUse,
         name: nameToUse,
-        picture: `https://api.dicebear.com/7.x/initials/svg?seed=${nameToUse}`,
+        picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nameToUse)}`,
       });
       setShowGoogleModal(false);
       onNavigate('dashboard');
     } catch (err: any) {
-      setNotice(err.message || 'Google sign-in failed. Please try again.');
+      setNotice(err.message || 'Google sign-in failed. Please check account details.');
     } finally {
       setGoogleLoading(false);
     }
   };
+
 
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-[#0A0A0A] px-4 py-6 text-[#E5E5E5] sm:px-6 sm:py-8 font-sans-studio">
@@ -169,43 +186,50 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       </div>
 
       {/* Google Account Modal */}
-      <Modal isOpen={showGoogleModal} onClose={() => setShowGoogleModal(false)} title="Select Google Account">
+      <Modal isOpen={showGoogleModal} onClose={() => setShowGoogleModal(false)} title="Sign In with Google">
         <div className="space-y-4">
           <p className="text-xs text-[#9CA3AF]">
-            Choose an account to sign in to ApexMind Studio:
+            {rememberedUser
+              ? 'Continue with your previous account or enter a new Google account:'
+              : 'Enter your Google Creator credentials to sign in:'}
           </p>
 
-          <button
-            type="button"
-            onClick={() => handleGoogleLogin('creator@apexmind.ai', 'ApexMind Creator Pro')}
-            className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#121212] border border-[#2F2F2F] hover:border-[#3B82F6] transition-all text-left cursor-pointer group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white font-bold text-xs">
-                AM
+          {rememberedUser && (
+            <button
+              type="button"
+              onClick={() => handleGoogleLogin(rememberedUser.email, rememberedUser.name)}
+              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#121212] border border-[#2F2F2F] hover:border-[#3B82F6] transition-all text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white font-bold text-xs">
+                  {rememberedUser.name ? rememberedUser.name.slice(0, 2).toUpperCase() : 'G'}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA]">{rememberedUser.name}</h4>
+                  <p className="text-xs text-[#9CA3AF]">{rememberedUser.email}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA]">ApexMind Creator Pro</h4>
-                <p className="text-xs text-[#9CA3AF]">creator@apexmind.ai</p>
-              </div>
-            </div>
-            <GoogleIcon className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-          </button>
+              <GoogleIcon className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+            </button>
+          )}
 
-          <div className="pt-2 border-t border-[#2F2F2F] space-y-3">
-            <h5 className="text-xs font-semibold text-white uppercase tracking-wider">Custom Google Account</h5>
+          <div className={rememberedUser ? 'pt-3 border-t border-[#2F2F2F] space-y-3' : 'space-y-3'}>
+            <h5 className="text-xs font-semibold text-white uppercase tracking-wider">
+              {rememberedUser ? 'Use Different Google Account' : 'Creator Google Account'}
+            </h5>
             <Input
               label="Google Full Name"
               value={customGoogleName}
               onChange={(e) => setCustomGoogleName(e.target.value)}
-              placeholder="E.g., Alex Johnson"
+              placeholder="Enter your full name"
             />
             <Input
               label="Google Email Address"
               type="email"
               value={customGoogleEmail}
               onChange={(e) => setCustomGoogleEmail(e.target.value)}
-              placeholder="E.g., alex.creator@gmail.com"
+              placeholder="Enter your email address"
+              required
             />
 
             <div className="flex justify-end gap-2 pt-2">
@@ -216,7 +240,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 variant="primary"
                 size="sm"
                 icon={<GoogleIcon className="w-3.5 h-3.5" />}
-                onClick={() => handleGoogleLogin(customGoogleEmail || 'alex.creator@gmail.com', customGoogleName || 'Google Creator')}
+                onClick={() => {
+                  if (!customGoogleEmail.trim()) {
+                    setNotice('Please enter your Google email address.');
+                    return;
+                  }
+                  handleGoogleLogin(customGoogleEmail.trim(), customGoogleName.trim());
+                }}
               >
                 Sign In
               </Button>
@@ -224,6 +254,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           </div>
         </div>
       </Modal>
+
     </main>
   );
 }

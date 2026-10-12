@@ -12,6 +12,7 @@ from backend.database.repository import (
     upsert_user,
     get_user_by_email,
     get_user_by_id,
+    get_latest_user,
 )
 
 logger = logging.getLogger("ApexMind.Auth")
@@ -55,9 +56,9 @@ def authenticate_google_user(
             # If token verification fails (e.g. no internet to cert endpoint or custom mock), fallback to provided email
 
     if not verified_email:
-        verified_email = "creator@apexmind.ai"
+        raise ValueError("Google authentication requires an email address.")
     if not verified_name:
-        verified_name = verified_email.split("@")[0].capitalize() or "ApexMind Creator"
+        verified_name = verified_email.split("@")[0].capitalize() or "Creator"
     if not verified_picture:
         verified_picture = f"https://api.dicebear.com/7.x/initials/svg?seed={verified_name}"
 
@@ -119,26 +120,16 @@ def authenticate_email_user(email: str, password: Optional[str] = None) -> Dict[
     }
 
 
-def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Dict[str, Any]:
+def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Retrieves profile of the active user."""
     if not user_id_or_email:
-        # Default creator profile if no session passed
-        user = get_user_by_email("creator@apexmind.ai")
+        user = get_latest_user()
         if not user:
-            user = upsert_user(
-                email="creator@apexmind.ai",
-                name="ApexMind Creator Pro",
-                avatar_url="https://api.dicebear.com/7.x/initials/svg?seed=ApexMind",
-                provider="google",
-            )
+            return None
     else:
         user = get_user_by_id(user_id_or_email) or get_user_by_email(user_id_or_email)
         if not user:
-            user = upsert_user(
-                email=user_id_or_email if "@" in user_id_or_email else f"{user_id_or_email}@apexmind.ai",
-                name="ApexMind Creator",
-                provider="google",
-            )
+            return None
 
     return {
         "id": user["id"],

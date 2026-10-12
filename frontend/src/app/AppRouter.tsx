@@ -21,8 +21,10 @@ interface AppRouterProps {
 export default function AppRouter({ activePage, onNavigate }: AppRouterProps) {
   const { isAuthenticated } = useAuth();
 
-  // Strict: Unauthenticated users are ONLY allowed to see the LoginPage
-  if (!isAuthenticated) {
+  const isPublicPage = activePage === 'landing' || activePage === 'login' || activePage === '404';
+
+  // Unauthenticated users are redirected to login for protected studio pages
+  if (!isAuthenticated && !isPublicPage) {
     return <LoginPage onNavigate={onNavigate} />;
   }
 

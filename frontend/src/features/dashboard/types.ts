@@ -6,3 +6,15 @@ export interface DashboardMetrics {
   publishedCount: number;
   uniquenessScore: number;
 }
+
+export interface DashboardStats {
+  totalShortsGenerated: number;
+  totalViews: number;
+  totalLikes: number;
+  activeChannelsCount: number;
+  totalQuotesGenerated: number;
+  tokensUsed: number;
+  tokenQuota: number;
+  primaryChannel?: any;
+}
+

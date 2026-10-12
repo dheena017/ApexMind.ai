@@ -376,6 +376,35 @@ def wait_for_frontend(
     raise TimeoutError(f"The Vite frontend did not become ready at {url} within {timeout_seconds} seconds.")
 
 
+def is_backend_ready(host: str, port: int, probe_path: str = "/api/health") -> bool:
+    """Probe if the FastAPI backend is responding on its health endpoint."""
+    probe_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
+    connection = http.client.HTTPConnection(probe_host, port, timeout=1.0)
+    try:
+        connection.request("GET", probe_path)
+        response = connection.getresponse()
+        return 200 <= response.status < 400
+    except (OSError, http.client.HTTPException):
+        return False
+    finally:
+        connection.close()
+
+
+def wait_for_backend(host: str, port: int, timeout_seconds: int = 20) -> float:
+    """Wait until the backend health route is reachable."""
+    probe_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
+    url = f"http://{probe_host}:{port}/api/health"
+    deadline = time.time() + timeout_seconds
+    start_time = time.time()
+
+    while time.time() < deadline:
+        if is_backend_ready(host, port):
+            return time.time() - start_time
+        time.sleep(0.15)
+
+    raise TimeoutError(f"The backend did not become ready at {url} within {timeout_seconds} seconds.")
+
+
 def format_log(mod_name: str, message: str, level: str = "INFO", ansi: Ansi | None = None) -> str:
     """Format console log lines with exact badges, module padding, and timestamps matching backend logger."""
     now = datetime.now().strftime("%H:%M:%S")
@@ -741,12 +770,11 @@ def main() -> int:
             print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} backend.py not found at {backend_py}", file=sys.stderr)
             stop_all(1)
 
+        backend_host = args.backend_host or env.get("BACKEND_HOST") or env.get("HOST") or "127.0.0.1"
+        backend_port = args.backend_port or int(env.get("BACKEND_PORT") or env.get("PORT") or "8000")
+        backend_display_host = "127.0.0.1" if backend_host in ("0.0.0.0", "::", "") else backend_host
         python_exec = resolve_python_executable()
-        backend_cmd = [python_exec, str(backend_py)]
-        if args.backend_host:
-            backend_cmd.extend(["--host", args.backend_host])
-        if args.backend_port:
-            backend_cmd.extend(["--port", str(args.backend_port)])
+        backend_cmd = [python_exec, str(backend_py), "--host", backend_host, "--port", str(backend_port)]
 
         try:
             backend_process = subprocess.Popen(
@@ -758,6 +786,15 @@ def main() -> int:
         except Exception as exc:
             print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Failed to start backend process: {exc}", file=sys.stderr)
             stop_all(1)
+
+        print(format_log("Server", f"Backend launch started on http://{backend_display_host}:{backend_port}/api/docs", ansi=ansi))
+
+        try:
+            wait_for_backend(backend_host, backend_port, timeout_seconds=20)
+            print(format_log("Server", f"Backend ready: http://{backend_display_host}:{backend_port}/api/docs", level="OK", ansi=ansi))
+            print(format_log("App", "Frontend and backend are both ready. Open the app to begin.", level="OK", ansi=ansi))
+        except TimeoutError:
+            print(format_log("Server", "FastAPI backend is still starting or unavailable.", level="WARN", ansi=ansi))
 
     # 7. Supervision loop
     try:
