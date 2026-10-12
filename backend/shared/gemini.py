@@ -120,11 +120,59 @@ Output MUST be a single raw JSON object with exactly these keys:
         logger.error(f"Gemini API generation error after {elapsed:.2f}s: {e}")
         raise RuntimeError(f"Gemini script generation failed: {e}")
 
+EDGE_VOICE_MAP: Dict[str, str] = {
+    "Fenrir": "en-US-ChristopherNeural",   # Deep, stoic, authoritative
+    "Kore": "en-US-JennyNeural",           # Clear, inspiring, authoritative female
+    "Puck": "en-US-GuyNeural",             # Energetic, dynamic motivational male
+    "Zephyr": "en-US-AvaNeural",           # Smooth, calm, mindful female
+    "Charon": "en-US-EricNeural",          # Gritty, intense focus male
+}
+DEFAULT_EDGE_VOICE = "en-US-ChristopherNeural"
+
+def generate_fallback_voiceover(text: str, voice_name: str = "Fenrir") -> Dict[str, Any]:
+    """Synthesizes high-fidelity neural voiceover using Edge Neural TTS when Gemini quota is exhausted."""
+    import io
+    import asyncio
+    import edge_tts
+    
+    edge_voice = EDGE_VOICE_MAP.get(voice_name, DEFAULT_EDGE_VOICE)
+    logger.info(f"Synthesizing high-fidelity neural voiceover fallback | Voice: '{voice_name}' -> '{edge_voice}' | Text Length: {len(text)} chars")
+    start_t = time.perf_counter()
+
+    async def _stream_edge_audio():
+        communicate = edge_tts.Communicate(text, edge_voice)
+        buffer = io.BytesIO()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                buffer.write(chunk["data"])
+        return buffer.getvalue()
+
+    try:
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(lambda: asyncio.run(_stream_edge_audio()))
+            audio_bytes = future.result(timeout=20.0)
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        elapsed = time.perf_counter() - start_t
+        logger.info(f"Neural TTS fallback synthesized audio in {elapsed:.2f}s for voice '{voice_name}' | bytes={len(audio_bytes)}")
+        return {
+            "success": True,
+            "voiceName": voice_name,
+            "mimeType": "audio/mp3",
+            "audioBase64": audio_b64,
+            "audioUrl": f"data:audio/mp3;base64,{audio_b64}",
+            "fallback": True,
+            "provider": "Edge Neural Engine",
+        }
+    except Exception as e:
+        logger.error(f"Fallback voiceover synthesis failed: {e}")
+        raise RuntimeError(f"Voiceover synthesis failed on all engines: {e}")
+
 def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir", model: str = "gemini-2.5-flash-preview-tts") -> Dict[str, Any]:
-    """Generates audio voiceover via Gemini."""
+    """Generates audio voiceover via Gemini with seamless Neural TTS fallback on quota exhaustion (429 RESOURCE_EXHAUSTED)."""
     if not gemini_client:
-        logger.warning(f"Voiceover requested for '{voice_name}' but GEMINI_API_KEY is not configured.")
-        raise ValueError("GEMINI_API_KEY is not configured for voiceover generation.")
+        logger.warning(f"Voiceover requested for '{voice_name}' but GEMINI_API_KEY is not configured. Using Neural TTS engine.")
+        return generate_fallback_voiceover(text, voice_name)
 
     tts_model = model or "gemini-2.5-flash-preview-tts"
     logger.info(f"Requesting Gemini TTS voiceover synthesis | TTS Model: '{tts_model}' | Voice Persona: '{voice_name}' | Text Length: {len(text)} chars")
@@ -204,7 +252,11 @@ def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir", model: str 
         raise RuntimeError("No audio data returned by Gemini TTS.")
     except Exception as e:
         elapsed = time.perf_counter() - start_t
-        logger.error(f"Gemini audio generation error after {elapsed:.2f}s: {e}")
-        raise RuntimeError(f"Voiceover synthesis failed: {e}")
+        error_msg = str(e)
+        logger.warning(
+            f"Gemini TTS unavailable or quota exhausted (429/Error) after {elapsed:.2f}s: {error_msg[:120]}... "
+            f"Seamlessly activating Neural TTS fallback for voice '{voice_name}'."
+        )
+        return generate_fallback_voiceover(text, voice_name)
 
 
