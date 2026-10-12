@@ -49,15 +49,31 @@ class Colors:
     BG_GRAY = "\033[100m\033[97m\033[1m"
 
 
+class UvicornNoiseFilter(logging.Filter):
+    """Filters out internal Uvicorn lifecycle noise to keep console output pristine."""
+    NOISE_PHRASES = (
+        "waiting for application startup",
+        "waiting for application shutdown",
+        "started server process",
+        "finished server process",
+        "shutting down",
+        "application shutdown complete",
+    )
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage().lower()
+        return not any(phrase in msg for phrase in self.NOISE_PHRASES)
+
+
 class ColoredFormatter(logging.Formatter):
     """Custom log formatter rendering colorful badges, module tags, and timestamps."""
 
     LEVEL_BADGES = {
-        logging.DEBUG: f"{Colors.BG_GRAY} DEBUG {Colors.RESET}",
-        logging.INFO: f"{Colors.BG_CYAN}  INFO {Colors.RESET}",
-        logging.WARNING: f"{Colors.BG_YELLOW}  WARN {Colors.RESET}",
-        logging.ERROR: f"{Colors.BG_RED} ERROR {Colors.RESET}",
-        logging.CRITICAL: f"{Colors.BG_RED} FATAL {Colors.RESET}",
+        logging.DEBUG: f"\033[100m\033[97m\033[1m DEBUG \033[0m",
+        logging.INFO: f"\033[44m\033[97m\033[1m INFO \033[0m",
+        logging.WARNING: f"\033[43m\033[30m\033[1m WARN \033[0m",
+        logging.ERROR: f"\033[41m\033[97m\033[1m ERROR \033[0m",
+        logging.CRITICAL: f"\033[41m\033[97m\033[1m FATAL \033[0m",
     }
 
     MODULE_COLORS = {
@@ -68,19 +84,26 @@ class ColoredFormatter(logging.Formatter):
         "Notifications": Colors.BRIGHT_YELLOW,
         "Dashboard": Colors.BRIGHT_CYAN,
         "HTTP": Colors.CYAN,
+        "Server": Colors.BRIGHT_CYAN,
+        "Watcher": Colors.BRIGHT_YELLOW,
         "App": Colors.BRIGHT_WHITE,
     }
 
     def format(self, record: logging.LogRecord) -> str:
-        # 1. Format Timestamp (Dim Gray)
-        now = datetime.fromtimestamp(record.created).strftime("%H:%M:%S.%f")[:-3]
+        # 1. Format Timestamp (HH:MM:SS in Dim Gray)
+        now = datetime.fromtimestamp(record.created).strftime("%H:%M:%S")
         timestamp = f"{Colors.GRAY}[{now}]{Colors.RESET}"
 
-        # 2. Level Badge
+        # 2. Level Badge with High Contrast
         badge = self.LEVEL_BADGES.get(record.levelno, f"[{record.levelname}]")
 
-        # 3. Determine Module Tag & Color
+        # 3. Determine Module Tag & Color (Map uvicorn/watchfiles cleanly)
         name = record.name.replace("ApexMind.", "")
+        if "uvicorn" in name.lower():
+            name = "Server"
+        elif "watchfiles" in name.lower():
+            name = "Watcher"
+
         tag_color = Colors.CYAN
         for mod, col in self.MODULE_COLORS.items():
             if mod.lower() in name.lower():
@@ -103,9 +126,9 @@ class ColoredFormatter(logging.Formatter):
 
 def setup_colored_logging(level=logging.INFO):
     """Configures root, Uvicorn, and ApexMind loggers with the custom colored formatter."""
-
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(ColoredFormatter())
+    handler.addFilter(UvicornNoiseFilter())
 
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
@@ -124,6 +147,7 @@ def setup_colored_logging(level=logging.INFO):
     # Silence third-party noise
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("watchfiles").setLevel(logging.WARNING)
+
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
