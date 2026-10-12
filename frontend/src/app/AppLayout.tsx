@@ -24,10 +24,9 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children, activePage, onNavigate, unreadCount = 2 }: AppLayoutProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   // Sidebar open/close state
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
 
   // Prevent background page from moving or scrolling when sidebar is open
   useEffect(() => {
@@ -52,9 +51,10 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sidebarOpen]);
 
-  if (activePage === 'landing' || activePage === 'login') {
+  if (activePage === 'landing' || activePage === 'login' || !isAuthenticated) {
     return <>{children}</>;
   }
+
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
@@ -157,7 +157,6 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
           </button>
         </div>
       </header>
-
 
       {/* =========================================================================
           Main Content Container - Scrollbar is confined strictly below the header

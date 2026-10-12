@@ -12,21 +12,16 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-const DEFAULT_USER: UserProfile = {
-  id: 'usr_default',
-  email: 'creator@apexmind.ai',
-  name: 'ApexMind Creator Pro',
-  avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=ApexMind',
-  provider: 'google',
-  verified: true,
-};
-
 const AuthContext = createContext<AuthContextType>({
-  user: DEFAULT_USER,
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
   isLoading: false,
-  loginWithGoogle: async () => DEFAULT_USER,
-  loginWithEmail: async () => DEFAULT_USER,
+  loginWithGoogle: async () => {
+    throw new Error('AuthContext not initialized');
+  },
+  loginWithEmail: async () => {
+    throw new Error('AuthContext not initialized');
+  },
   logout: async () => {},
 });
 
@@ -34,26 +29,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(() => {
     try {
       const stored = localStorage.getItem('apexmind_user');
-      return stored ? JSON.parse(stored) : DEFAULT_USER;
+      const token = localStorage.getItem('apexmind_token');
+      if (stored && token) {
+        return JSON.parse(stored);
+      }
+      return null;
     } catch {
-      return DEFAULT_USER;
+      return null;
     }
   });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Sync active profile on mount
+    // Only verify session if token and user already exist in storage
+    const token = localStorage.getItem('apexmind_token');
+    const stored = localStorage.getItem('apexmind_user');
+    if (!token || !stored) {
+      setUser(null);
+      return;
+    }
+
     authApi
       .getMe()
       .then((remoteUser) => {
         setUser((prev) => {
-          const merged = { ...(prev || DEFAULT_USER), ...remoteUser };
+          if (!prev) return null;
+          const merged = { ...prev, ...remoteUser };
           localStorage.setItem('apexmind_user', JSON.stringify(merged));
           return merged;
         });
       })
       .catch(() => {
-        // Fallback to local user
+        // Session invalid or expired - reset
+        setUser(null);
+        localStorage.removeItem('apexmind_user');
+        localStorage.removeItem('apexmind_token');
       });
   }, []);
 

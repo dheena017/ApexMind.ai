@@ -1,10 +1,13 @@
-import {useCallback, useEffect, useState} from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import AppLayout from './app/AppLayout';
 import AppRouter from './app/AppRouter';
-import {APP_ROUTES, parseRoute, routeToPath, type PageRoute} from './app/routes';
-import {consoleLogger} from './shared/utils/logger';
+import { APP_ROUTES, parseRoute, routeToPath, type PageRoute } from './app/routes';
+import { consoleLogger } from './shared/utils/logger';
+import { useAuth } from './features/auth/context/AuthContext';
 
 export default function App() {
+  const { isAuthenticated } = useAuth();
+
   const [activePage, setActivePage] = useState<PageRoute>(() => {
     const initialRoute = typeof window === 'undefined'
       ? 'landing'
@@ -12,6 +15,18 @@ export default function App() {
     consoleLogger.info('Router', `Initial application mount on route: "${initialRoute}"`);
     return initialRoute;
   });
+
+  // Authentication Guard: Only allow access to protected pages if authenticated
+  useEffect(() => {
+    const isPublic = activePage === 'landing' || activePage === 'login';
+    if (!isAuthenticated && !isPublic) {
+      consoleLogger.warn('AuthGuard', `Unauthenticated access to [${activePage}] blocked. Redirecting to [login]`);
+      setActivePage('login');
+      if (window.location.pathname !== '/login') {
+        window.history.pushState({ page: 'login' }, '', '/login');
+      }
+    }
+  }, [isAuthenticated, activePage]);
 
   useEffect(() => {
     const route = APP_ROUTES.find((r) => r.id === activePage);
@@ -32,7 +47,15 @@ export default function App() {
   }, []);
 
   const handleNavigate = useCallback((page: string) => {
-    const targetRoute = APP_ROUTES.find((route) => route.id === page)?.id ?? '404';
+    let targetRoute = APP_ROUTES.find((route) => route.id === page)?.id ?? '404';
+
+    // Route Protection: If not logged in and requesting a protected studio route, redirect to login
+    const isPublic = targetRoute === 'landing' || targetRoute === 'login';
+    if (!isAuthenticated && !isPublic) {
+      consoleLogger.warn('AuthGuard', `Blocked unauthenticated attempt to visit [${targetRoute}]. Redirecting to [login].`);
+      targetRoute = 'login';
+    }
+
     const targetPath = routeToPath(targetRoute);
 
     setActivePage((currentRoute) => {
@@ -43,9 +66,9 @@ export default function App() {
     });
 
     if (window.location.pathname !== targetPath) {
-      window.history.pushState({page: targetRoute}, '', targetPath);
+      window.history.pushState({ page: targetRoute }, '', targetPath);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <AppLayout activePage={activePage} onNavigate={handleNavigate}>

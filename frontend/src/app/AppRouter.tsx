@@ -11,6 +11,7 @@ import ProfilePage from '@/src/features/profile/pages/ProfilePage';
 import SettingsPage from '@/src/features/settings/pages/SettingsPage';
 import NotificationsPage from '@/src/features/notifications/pages/NotificationsPage';
 import NotFoundPage from '@/src/shared/ui/NotFoundPage';
+import { useAuth } from '@/src/features/auth/context/AuthContext';
 
 interface AppRouterProps {
   activePage: string;
@@ -18,6 +19,14 @@ interface AppRouterProps {
 }
 
 export default function AppRouter({ activePage, onNavigate }: AppRouterProps) {
+  const { isAuthenticated } = useAuth();
+
+  // If user is not authenticated and trying to access studio pages, render LoginPage
+  const isPublicPage = activePage === 'landing' || activePage === 'login';
+  if (!isAuthenticated && !isPublicPage) {
+    return <LoginPage onNavigate={onNavigate} />;
+  }
+
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
       {(() => {
