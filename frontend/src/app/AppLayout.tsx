@@ -15,6 +15,8 @@ import {
 import { Button, Badge } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
+import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHeader';
+import { WorkspaceSidebar } from '@/src/features/workspace/components/WorkspaceSidebar';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -85,107 +87,118 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
   return (
     <div className="h-screen w-full bg-[#0A0A0A] text-[#E5E5E5] flex flex-col overflow-hidden font-sans-studio antialiased selection:bg-[#3B82F6]/30 selection:text-[#60A5FA] relative">
       {/* =========================================================================
-          Fixed Top Bar Header - Never has a scrollbar beside it
+          Workspace Page: Dedicated Studio Header & Sidebar
+          Other Pages: Standard Application Header, Main Framing, and Slide Drawer
           ========================================================================= */}
-      <header
-        className={`h-16 shrink-0 z-30 w-full bg-[#121212]/98 border-b border-[#2F2F2F] px-4 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300 ${
-          sidebarOpen ? 'filter blur-[2px] opacity-60 pointer-events-none' : ''
-        }`}
-      >
-        {/* Left: Open/Close Sidebar Toggle + Brand */}
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`p-2 rounded-xl transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center gap-2 border ${
-              sidebarOpen
-                ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
-                : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] border-[#2F2F2F] hover:border-[#4A4A4A]'
-            }`}
-            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-            title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-          >
-            {sidebarOpen ? (
-              <X className="w-5 h-5 text-[#60A5FA]" />
-            ) : (
-              <Menu className="w-5 h-5 text-[#60A5FA]" />
-            )}
-            <span className="text-xs font-semibold hidden sm:inline text-[#E5E5E5]">
-              {sidebarOpen ? 'Close' : 'Menu'}
-            </span>
-          </button>
-
-          {/* Brand Logo */}
-          <button
-            onClick={() => onNavigate('dashboard')}
-            className="text-base lg:text-lg font-extrabold tracking-tight flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer"
-          >
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-[#3B82F6]/25 border border-[#60A5FA]/30">
-              <Sparkles className="w-4 h-4 lg:w-5 lg:h-5" />
-            </div>
-            <span className="text-gradient-brand">ApexMind Studio</span>
-          </button>
-        </div>
-
-
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <Button
-            variant="primary"
-            size="sm"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={() => onNavigate('workspace')}
-          >
-            <span className="hidden sm:inline">Create Short</span>
-            <span className="sm:hidden">Create</span>
-          </Button>
-
-          <button
-            onClick={() => onNavigate('notifications')}
-            className="relative p-2 rounded-xl text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] transition-colors cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center border border-transparent hover:border-[#2F2F2F]"
-            title="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#3B82F6] ring-2 ring-[#121212]" />
-            )}
-          </button>
-
-          <button
-            onClick={() => onNavigate('profile')}
-            className="p-1 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer flex items-center justify-center gap-2"
-            title={user ? `${user.name} (${user.email})` : 'Profile & Badges'}
-          >
-            {user?.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.name}
-                className="w-8 h-8 rounded-lg bg-[#1E1E1E] border border-[#2F2F2F] object-cover"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-[#1E1E1E] border border-[#2F2F2F] flex items-center justify-center text-xs font-bold text-[#60A5FA]">
-                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AM'}
+      {activePage === 'workspace' ? (
+        <>
+          <WorkspaceHeader
+            user={user}
+            unreadCount={unreadCount}
+            onNavigate={onNavigate}
+          />
+          <div className="flex-1 w-full flex min-h-0 overflow-hidden">
+            <WorkspaceSidebar onNavigate={onNavigate} />
+            <main className="flex-1 min-w-0 h-full p-2 sm:p-3 lg:p-4 overflow-hidden flex flex-col min-h-0 bg-[#0A0A0A]">
+              <div className="w-full h-full flex-1 min-h-0">
+                {children}
               </div>
-            )}
-          </button>
-        </div>
-      </header>
+            </main>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Standard Top Bar Header */}
+          <header
+            className={`h-16 shrink-0 z-30 w-full bg-[#121212]/98 border-b border-[#2F2F2F] px-4 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300 ${
+              sidebarOpen ? 'filter blur-[2px] opacity-60 pointer-events-none' : ''
+            }`}
+          >
+            {/* Left: Open/Close Sidebar Toggle + Brand */}
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className={`p-2 rounded-xl transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center gap-2 border ${
+                  sidebarOpen
+                    ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
+                    : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] border-[#2F2F2F] hover:border-[#4A4A4A]'
+                }`}
+                aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+                title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+              >
+                {sidebarOpen ? (
+                  <X className="w-5 h-5 text-[#60A5FA]" />
+                ) : (
+                  <Menu className="w-5 h-5 text-[#60A5FA]" />
+                )}
+                <span className="text-xs font-semibold hidden sm:inline text-[#E5E5E5]">
+                  {sidebarOpen ? 'Close' : 'Menu'}
+                </span>
+              </button>
 
-      {/* =========================================================================
-          Main Content Container
-          - Uniform, equal spacing around the container on all sides (top, bottom, left, right)
-          - No excessive empty side space; responsive balanced framing
-          ========================================================================= */}
-      <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A] p-4 sm:p-5 lg:p-6">
-        {activePage === 'workspace' ? (
-          <div className="w-full">
-            {children}
-          </div>
-        ) : (
-          <div className="w-full rounded-2xl sm:rounded-3xl bg-[#101010]/80 border border-[#2F2F2F] shadow-2xl p-5 sm:p-7 lg:p-8 transition-all">
-            {children}
-          </div>
-        )}
-      </main>
+              {/* Brand Logo */}
+              <button
+                onClick={() => onNavigate('dashboard')}
+                className="text-base lg:text-lg font-extrabold tracking-tight flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-[#3B82F6]/25 border border-[#60A5FA]/30">
+                  <Sparkles className="w-4 h-4 lg:w-5 lg:h-5" />
+                </div>
+                <span className="text-gradient-brand">ApexMind Studio</span>
+              </button>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Plus className="w-4 h-4" />}
+                onClick={() => onNavigate('workspace')}
+              >
+                <span className="hidden sm:inline">Create Short</span>
+                <span className="sm:hidden">Create</span>
+              </Button>
+
+              <button
+                onClick={() => onNavigate('notifications')}
+                className="relative p-2 rounded-xl text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] transition-colors cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center border border-transparent hover:border-[#2F2F2F]"
+                title="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#3B82F6] ring-2 ring-[#121212]" />
+                )}
+              </button>
+
+              <button
+                onClick={() => onNavigate('profile')}
+                className="p-1 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer flex items-center justify-center gap-2"
+                title={user ? `${user.name} (${user.email})` : 'Profile & Badges'}
+              >
+                {user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-lg bg-[#1E1E1E] border border-[#2F2F2F] object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-[#1E1E1E] border border-[#2F2F2F] flex items-center justify-center text-xs font-bold text-[#60A5FA]">
+                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AM'}
+                  </div>
+                )}
+              </button>
+            </div>
+          </header>
+
+          {/* Standard Main Framing */}
+          <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A] p-4 sm:p-5 lg:p-6">
+            <div className="w-full rounded-2xl sm:rounded-3xl bg-[#101010]/80 border border-[#2F2F2F] shadow-2xl p-5 sm:p-7 lg:p-8 transition-all">
+              {children}
+            </div>
+          </main>
+        </>
+      )}
 
       {/* =========================================================================
           Backdrop Blur Overlay - Covers the ENTIRE screen (header + page)
