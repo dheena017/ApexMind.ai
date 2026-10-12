@@ -5,7 +5,7 @@ publishing, and automations.
 """
 
 from typing import Optional
-from google.genai._gaos.types import BaseModel
+from pydantic import BaseModel
 import logging
 from fastapi import APIRouter, HTTPException, status
 from .schemas import (

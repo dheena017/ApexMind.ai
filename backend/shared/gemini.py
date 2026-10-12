@@ -74,13 +74,14 @@ Output MUST be a single raw JSON object with exactly these keys:
 
     try:
         from google.genai import types
-        response = gemini_client.models.generate_content(
+        # As recommended by Google GenAI SDK: use Chat.send_message for AFC and content generation
+        chat = gemini_client.chats.create(
             model="gemini-2.5-flash",
-            contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
             )
         )
+        response = chat.send_message(prompt)
         raw = response.text or "{}"
         if "```json" in raw:
             raw = raw.split("```json")[1].split("```")[0].strip()
@@ -109,7 +110,10 @@ def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir") -> Dict[str
         tts_res = gemini_client.models.generate_content(
             model="gemini-2.0-flash",
             contents=f"Read this motivational script with a stoic, powerful voice: {text}",
-            config=types.GenerateContentConfig(response_modalities=["AUDIO"])
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+            )
         )
         candidates = getattr(tts_res, "candidates", [])
         if candidates and candidates[0].content.parts:
