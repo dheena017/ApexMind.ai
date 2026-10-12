@@ -102,22 +102,28 @@ class ColoredFormatter(logging.Formatter):
 
 
 def setup_colored_logging(level=logging.INFO):
-    """Configures root and ApexMind loggers with the custom colored formatter."""
+    """Configures root, Uvicorn, and ApexMind loggers with the custom colored formatter."""
+
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(ColoredFormatter())
 
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
 
-    # Avoid duplicate handlers
+    # Avoid duplicate handlers on root
     if not any(isinstance(h, logging.StreamHandler) and isinstance(h.formatter, ColoredFormatter) for h in root_logger.handlers):
         root_logger.handlers = [handler]
 
-    # Silence overly verbose third-party loggers
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-    logging.getLogger("uvicorn.error").setLevel(logging.INFO)
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    # Hook Uvicorn loggers into our ColoredFormatter
+    for u_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        u_logger = logging.getLogger(u_name)
+        u_logger.handlers = [handler]
+        u_logger.propagate = False
+        u_logger.setLevel(logging.INFO if "access" not in u_name else logging.WARNING)
 
+    # Silence third-party noise
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("watchfiles").setLevel(logging.WARNING)
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
@@ -178,19 +184,55 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             raise exc
 
 
+# Enable UTF-8 console output on Windows
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+
 def print_startup_banner(host: str, port: int):
-    """Renders a stylized startup banner in the console."""
+    """Renders a stylized startup banner in the console with exact column padding."""
     C = Colors
-    banner = f"""
-{C.BRIGHT_CYAN}╔══════════════════════════════════════════════════════════════════════════════╗{C.RESET}
-{C.BRIGHT_CYAN}║{C.RESET}   {C.BRIGHT_WHITE}{C.BOLD}⚡  APEXMIND STUDIO AI  —  BACKEND OPERATIONAL{C.RESET}                           {C.BRIGHT_CYAN}║{C.RESET}
-{C.BRIGHT_CYAN}╠══════════════════════════════════════════════════════════════════════════════╣{C.RESET}
-{C.BRIGHT_CYAN}║{C.RESET}   {C.GRAY}Framework  :{C.RESET} {C.BRIGHT_GREEN}FastAPI 2.0 (Python 3.11){C.RESET}                                      {C.BRIGHT_CYAN}║{C.RESET}
-{C.BRIGHT_CYAN}║{C.RESET}   {C.GRAY}Database   :{C.RESET} {C.BRIGHT_YELLOW}SQLite (backend/data/apexmind.db){C.RESET}                               {C.BRIGHT_CYAN}║{C.RESET}
-{C.BRIGHT_CYAN}║{C.RESET}   {C.GRAY}AI Engine  :{C.RESET} {C.BRIGHT_MAGENTA}Google Gemini 2.5 Flash + Flash Audio (TTS){C.RESET}                   {C.BRIGHT_CYAN}║{C.RESET}
-{C.BRIGHT_CYAN}║{C.RESET}   {C.GRAY}Server Host:{C.RESET} {C.BRIGHT_WHITE}http://{host}:{port}{C.RESET}                                            {C.BRIGHT_CYAN}║{C.RESET}
-{C.BRIGHT_CYAN}║{C.RESET}   {C.GRAY}OpenAPI UI :{C.RESET} {C.BRIGHT_CYAN}http://{host}:{port}/api/docs{C.RESET}                                       {C.BRIGHT_CYAN}║{C.RESET}
-{C.BRIGHT_CYAN}║{C.RESET}   {C.GRAY}Health     :{C.RESET} {C.BRIGHT_GREEN}http://{host}:{port}/api/health{C.RESET}                                     {C.BRIGHT_CYAN}║{C.RESET}
-{C.BRIGHT_CYAN}╚══════════════════════════════════════════════════════════════════════════════╝{C.RESET}
-"""
-    print(banner)
+    lines = [
+        ("Framework", "FastAPI 2.0 (Python 3.11)", C.BRIGHT_GREEN),
+        ("Database", "SQLite (backend/data/apexmind.db)", C.BRIGHT_YELLOW),
+        ("AI Engine", "Google Gemini 2.5 Flash + TTS Audio", C.BRIGHT_MAGENTA),
+        ("Server Host", f"http://{host}:{port}", C.BRIGHT_WHITE),
+        ("OpenAPI Docs", f"http://{host}:{port}/api/docs", C.BRIGHT_CYAN),
+        ("Health Check", f"http://{host}:{port}/api/health", C.BRIGHT_GREEN),
+    ]
+    width = 76
+
+    # Box-drawing with ASCII fallback if terminal does not support Unicode
+    try:
+        b_tl, b_tr, b_bl, b_br, b_ml, b_mr, b_h, b_v = "╔", "╗", "╚", "╝", "╠", "╣", "═", "║"
+        banner_top = f"{C.BRIGHT_CYAN}{b_tl}{b_h * width}{b_tr}{C.RESET}"
+        banner_mid = f"{C.BRIGHT_CYAN}{b_ml}{b_h * width}{b_mr}{C.RESET}"
+        banner_bot = f"{C.BRIGHT_CYAN}{b_bl}{b_h * width}{b_br}{C.RESET}"
+        v_bar = f"{C.BRIGHT_CYAN}{b_v}{C.RESET}"
+
+        title_text = "APEXMIND STUDIO AI  —  BACKEND OPERATIONAL"
+        title_pad = width - len(title_text) - 3
+        title_line = f"{v_bar}   {C.BRIGHT_WHITE}{C.BOLD}{title_text}{C.RESET}{' ' * max(0, title_pad)}{v_bar}"
+
+        content_lines = []
+        for label, val, color in lines:
+            prefix = f"   {label:<12}: "
+            raw_len = len(prefix) + len(val)
+            pad = width - raw_len
+            line = f"{v_bar}{C.GRAY}{prefix}{C.RESET}{color}{val}{C.RESET}{' ' * max(0, pad)}{v_bar}"
+            content_lines.append(line)
+
+        output = "\n" + "\n".join([banner_top, title_line, banner_mid] + content_lines + [banner_bot]) + "\n"
+        print(output)
+    except (UnicodeEncodeError, Exception):
+        # Fallback to standard clean ASCII border
+        print(f"\n[{C.BRIGHT_WHITE}{C.BOLD}APEXMIND STUDIO AI - BACKEND OPERATIONAL{C.RESET}]")
+        for label, val, color in lines:
+            print(f"  {label:<12}: {color}{val}{C.RESET}")
+        print()
+
+

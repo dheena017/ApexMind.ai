@@ -2,7 +2,7 @@ import os
 import logging
 from .connection import get_connection
 
-logger = logging.getLogger("ApexMind.database")
+logger = logging.getLogger("ApexMind.Database")
 
 SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.sql")
 SEED_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seed.sql")
@@ -17,14 +17,15 @@ def init_db():
         with open(SCHEMA_FILE, "r", encoding="utf-8") as f:
             schema_sql = f.read()
             cursor.executescript(schema_sql)
-            logger.info("Executed schema.sql successfully.")
+            logger.info("Database schema validated (schema.sql)")
 
     # 2. Seed initial data using idempotent INSERT OR IGNORE
     if os.path.exists(SEED_FILE):
         with open(SEED_FILE, "r", encoding="utf-8") as f:
             seed_sql = f.read()
             cursor.executescript(seed_sql)
-            logger.info("Executed seed.sql successfully.")
+            logger.info("Media catalog presets verified (seed.sql)")
+
 
 
     conn.commit()
