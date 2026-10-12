@@ -50,3 +50,53 @@ export function routeToPath(page: string): string {
   const match = APP_ROUTES.find((r) => r.id === page);
   return match ? match.path : `/${page}`;
 }
+
+export const REDIRECT_STORAGE_KEY = 'apexmind_redirect_after_login';
+
+export function getPostLoginRedirect(): PageRoute {
+  if (typeof window === 'undefined') return 'dashboard';
+
+  // 1. Check URL query parameters: ?redirect=... or ?returnTo=...
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const redirectParam = params.get('redirect') || params.get('returnTo');
+    if (redirectParam) {
+      const cleaned = redirectParam.startsWith('/') ? redirectParam : `/${redirectParam}`;
+      const parsed = parseRoute(cleaned);
+      if (parsed !== '404' && parsed !== 'login' && parsed !== 'landing') {
+        return parsed;
+      }
+    }
+  } catch {}
+
+  // 2. Check sessionStorage
+  try {
+    const saved = sessionStorage.getItem(REDIRECT_STORAGE_KEY);
+    if (saved) {
+      const cleaned = saved.startsWith('/') ? saved : `/${saved}`;
+      const parsed = parseRoute(cleaned);
+      if (parsed !== '404' && parsed !== 'login' && parsed !== 'landing') {
+        return parsed;
+      }
+    }
+  } catch {}
+
+  // 3. Fallback default
+  return 'dashboard';
+}
+
+export function savePostLoginRedirect(targetRoute: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (targetRoute && targetRoute !== 'landing' && targetRoute !== 'login' && targetRoute !== '404') {
+      sessionStorage.setItem(REDIRECT_STORAGE_KEY, targetRoute);
+    }
+  } catch {}
+}
+
+export function clearPostLoginRedirect(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(REDIRECT_STORAGE_KEY);
+  } catch {}
+}

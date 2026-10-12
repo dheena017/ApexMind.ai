@@ -115,6 +115,11 @@ export default defineConfig(({mode}) => {
     envDir: projectRoot,
     customLogger,
     plugins: [react(), tailwindcss(), apexLoggerPlugin()],
+    define: {
+      'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(
+        env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || ''
+      ),
+    },
     resolve: {
       alias: {
         '@/src': resolve(frontendRoot, 'src'),

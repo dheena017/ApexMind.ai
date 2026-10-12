@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import AppLayout from './app/AppLayout';
 import AppRouter from './app/AppRouter';
-import { APP_ROUTES, parseRoute, routeToPath, type PageRoute } from './app/routes';
+import {
+  APP_ROUTES,
+  parseRoute,
+  routeToPath,
+  getPostLoginRedirect,
+  savePostLoginRedirect,
+  clearPostLoginRedirect,
+  type PageRoute,
+} from './app/routes';
 import { consoleLogger } from './shared/utils/logger';
 import { useAuth } from './features/auth/context/AuthContext';
 
@@ -20,28 +28,47 @@ export default function App() {
         }
       } catch {}
     }
+
+    // If an unauthenticated user opens directly to an internal studio page, store the intent and load login
+    const isPublic = parsed === 'landing' || parsed === 'login' || parsed === '404';
+    if (!isPublic && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('apexmind_user');
+        const token = localStorage.getItem('apexmind_token');
+        if (!stored || !token) {
+          savePostLoginRedirect(parsed);
+          return 'login';
+        }
+      } catch {}
+    }
+
     return parsed;
   });
 
-  // Auth Guard: Unauthenticated users attempting to access internal studio pages are redirected to login
+  // Auth Guard: Unauthenticated users attempting to access internal studio pages are redirected to login with redirect intent
   useEffect(() => {
     const isPublicPage = activePage === 'landing' || activePage === 'login' || activePage === '404';
     if (!isAuthenticated && !isPublicPage) {
-      consoleLogger.warn('AuthGuard', `Access to [${activePage}] requires login. Redirecting to login.`);
+      consoleLogger.warn('AuthGuard', `Access to [${activePage}] requires login. Storing redirect intent.`);
+      savePostLoginRedirect(activePage);
       setActivePage('login');
+      const loginUrl = `/login?redirect=${activePage}`;
       if (window.location.pathname !== '/login') {
-        window.history.pushState({ page: 'login' }, '', '/login');
+        window.history.pushState({ page: 'login' }, '', loginUrl);
       }
     }
   }, [isAuthenticated, activePage]);
 
-  // When user completes login, redirect to Dashboard by default
+  // When user completes login, redirect to requested target (or Dashboard by default)
   useEffect(() => {
     if (isAuthenticated && activePage === 'login') {
-      consoleLogger.info('Auth', 'Authenticated user on login view -> redirecting to Dashboard');
-      setActivePage('dashboard');
-      if (window.location.pathname !== '/dashboard') {
-        window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
+      const destination = getPostLoginRedirect();
+      clearPostLoginRedirect();
+      consoleLogger.info('Auth', `Authenticated user on login view -> redirecting to target: [${destination}]`);
+      setActivePage(destination);
+      const targetPath = routeToPath(destination);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ page: destination }, '', targetPath);
       }
     }
   }, [isAuthenticated, activePage]);
@@ -58,6 +85,7 @@ export default function App() {
       const parsed = parseRoute(window.location.pathname);
       const isPublicPage = parsed === 'landing' || parsed === 'login' || parsed === '404';
       if (!isAuthenticated && !isPublicPage) {
+        savePostLoginRedirect(parsed);
         setActivePage('login');
         return;
       }
@@ -74,10 +102,21 @@ export default function App() {
       let targetRoute = APP_ROUTES.find((route) => route.id === page)?.id ?? '404';
       const isPublicPage = targetRoute === 'landing' || targetRoute === 'login' || targetRoute === '404';
 
-      // If user tries to open a protected studio page without login, direct to login
+      // If user explicitly navigates to login (e.g. clicks "Sign In"), clear prior deep redirect
+      if (targetRoute === 'login') {
+        clearPostLoginRedirect();
+      }
+
+      // If user tries to open a protected studio page without login, save intent and redirect to login
       if (!isAuthenticated && !isPublicPage) {
-        consoleLogger.warn('AuthGuard', `Must login to access [${targetRoute}]. Redirecting to login.`);
-        targetRoute = 'login';
+        consoleLogger.warn('AuthGuard', `Must login to access [${targetRoute}]. Preserving target for post-login redirect.`);
+        savePostLoginRedirect(targetRoute);
+        setActivePage('login');
+        const loginUrl = `/login?redirect=${targetRoute}`;
+        if (window.location.pathname !== '/login') {
+          window.history.pushState({ page: 'login' }, '', loginUrl);
+        }
+        return;
       }
 
       const targetPath = routeToPath(targetRoute);

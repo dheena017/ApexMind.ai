@@ -9,5 +9,7 @@ class Settings:
     HOST: str = os.environ.get("HOST", "0.0.0.0")
     APP_URL: str = os.environ.get("APP_URL", "http://localhost:3000")
     ENV: str = os.environ.get("NODE_ENV", "development")
+    GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", os.environ.get("VITE_GOOGLE_CLIENT_ID", ""))
+
 
 settings = Settings()

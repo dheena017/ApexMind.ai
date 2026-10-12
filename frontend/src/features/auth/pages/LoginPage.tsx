@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Check,
   ShieldCheck,
   Sparkles,
+  Key,
+  ArrowLeft,
 } from 'lucide-react';
 import { Modal, Input, Button } from '@/src/shared/ui/common';
 import { useAuth } from '../context/AuthContext';
+import { getPostLoginRedirect, clearPostLoginRedirect, APP_ROUTES } from '@/src/app/routes';
 
 // Authentic Google Logo SVG
 function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
@@ -38,6 +41,25 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
+  const [gisRendered, setGisRendered] = useState(false);
+  const googleButtonContainerRef = useRef<HTMLDivElement>(null);
+
+  // Compute intended post-login destination
+  const targetDestination = getPostLoginRedirect();
+  const targetRouteConfig = APP_ROUTES.find((r) => r.id === targetDestination);
+  const targetDisplayName = targetRouteConfig ? targetRouteConfig.title.split(' - ')[0] : 'Dashboard';
+
+  const handleSuccessfulAuth = () => {
+    const destination = getPostLoginRedirect();
+    clearPostLoginRedirect();
+    const destName = destination === 'dashboard' ? 'Dashboard' : (APP_ROUTES.find((r) => r.id === destination)?.title.split(' - ')[0] || destination);
+    setNotice(`Signed in! Redirecting to ${destName}...`);
+    onNavigate(destination);
+  };
+
+  const googleClientId =
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_CLIENT_ID) ||
+    '';
 
   // Check for remembered creator session
   const [rememberedUser] = useState<any>(() => {
@@ -48,6 +70,58 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       return null;
     }
   });
+
+  // Initialize Google Identity Services (GIS)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const setupGoogleGsi = () => {
+      if (window.google?.accounts?.id && googleClientId) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: async (response: { credential: string }) => {
+              if (!response.credential) return;
+              setGoogleLoading(true);
+              setNotice('');
+              try {
+                await loginWithGoogle({ credential: response.credential });
+                handleSuccessfulAuth();
+              } catch (err: any) {
+                setNotice(err.message || 'Google OAuth verification failed.');
+              } finally {
+                setGoogleLoading(false);
+              }
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          if (googleButtonContainerRef.current) {
+            googleButtonContainerRef.current.innerHTML = '';
+            window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
+              theme: 'outline',
+              size: 'large',
+              text: 'continue_with',
+              shape: 'rectangular',
+              logo_alignment: 'left',
+              width: 320,
+            });
+            setGisRendered(true);
+          }
+        } catch (e) {
+          console.warn('Google Identity Services notice:', e);
+        }
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      setupGoogleGsi();
+    } else {
+      const timer = setTimeout(setupGoogleGsi, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [googleClientId]);
 
   const handleGoogleLogin = async (googleEmail?: string, googleName?: string) => {
     const emailToUse = (googleEmail || customGoogleEmail || rememberedUser?.email || '').trim();
@@ -67,13 +141,14 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nameToUse)}`,
       });
       setShowGoogleModal(false);
-      onNavigate('dashboard');
+      handleSuccessfulAuth();
     } catch (err: any) {
       setNotice(err.message || 'Google sign-in failed. Please check account details.');
     } finally {
       setGoogleLoading(false);
     }
   };
+
 
 
   return (
@@ -129,32 +204,63 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           </div>
 
           <div className="mx-auto w-full max-w-sm space-y-6">
-            <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/25 bg-[#3B82F6]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#93C5FD]">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Google Authentication Required
+            <div className="space-y-3">
+              <div>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('landing')}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-white transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to ApexMind</span>
+                </button>
               </div>
-              <h2 className="text-3xl font-extrabold tracking-tight text-white">Sign In</h2>
-              <p className="mt-2 text-sm leading-6 text-[#9CA3AF]">
-                Sign in with your Google Account to unlock the ApexMind Studio workspace.
-              </p>
+
+              <div>
+                {targetDestination !== 'dashboard' ? (
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/30 bg-[#3B82F6]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[#93C5FD]">
+                    <Sparkles className="h-3.5 w-3.5 text-[#60A5FA]" />
+                    <span>
+                      Redirecting to <strong className="text-white font-semibold">{targetDisplayName}</strong> after sign in
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/25 bg-[#3B82F6]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#93C5FD]">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Google Authentication Required
+                  </div>
+                )}
+                <h2 className="text-3xl font-extrabold tracking-tight text-white">Sign In</h2>
+                <p className="mt-2 text-sm leading-6 text-[#9CA3AF]">
+                  Sign in with your Google Account to unlock the ApexMind Studio workspace.
+                </p>
+              </div>
             </div>
 
-            {/* Sole Google Login Action */}
-            <div className="space-y-4 pt-2">
-              <button
-                type="button"
-                onClick={() => handleGoogleLogin()}
-                disabled={googleLoading}
-                className="w-full flex items-center justify-center gap-3.5 px-5 py-3.5 rounded-xl bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl disabled:opacity-60 cursor-pointer active:scale-[0.99] border border-gray-200"
-              >
-                {googleLoading ? (
-                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
-                ) : (
-                  <GoogleIcon className="h-5 w-5" />
-                )}
-                <span>Continue with Google</span>
-              </button>
+            {/* Google OAuth Login Action - Single Unified Button */}
+            <div className="space-y-4 pt-1">
+              {googleClientId && (
+                <div
+                  ref={googleButtonContainerRef}
+                  className={`w-full flex justify-center min-h-[44px] ${!gisRendered ? 'hidden' : ''}`}
+                />
+              )}
+
+              {!gisRendered && (
+                <button
+                  type="button"
+                  onClick={() => handleGoogleLogin()}
+                  disabled={googleLoading}
+                  className="w-full flex items-center justify-center gap-3.5 px-5 py-3.5 rounded-xl bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl disabled:opacity-60 cursor-pointer active:scale-[0.99] border border-gray-200"
+                >
+                  {googleLoading ? (
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+                  ) : (
+                    <GoogleIcon className="h-5 w-5" />
+                  )}
+                  <span>Continue with Google</span>
+                </button>
+              )}
 
               <div className="text-center">
                 <button
@@ -166,6 +272,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 </button>
               </div>
             </div>
+
 
             {notice && (
               <p role="status" className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-5 text-amber-200">
