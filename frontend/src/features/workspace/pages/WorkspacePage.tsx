@@ -279,7 +279,7 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
 
         {/* Center Pane: Video Preview (col-span-4) */}
         <div className="lg:col-span-4 h-full min-h-0 flex flex-col">
-          <div className="flex-1 min-h-0 bg-[#121212] border border-[#2F2F2F] rounded-2xl p-2.5 flex items-center justify-center overflow-hidden shadow-xl">
+          <div className="flex-1 min-h-0 bg-[#0A0A0A] border border-[#2F2F2F] rounded-2xl flex items-center justify-center overflow-hidden shadow-xl">
             <VideoPreviewPane
               script={script}
               activeBackdrop={activeBackdropObj}

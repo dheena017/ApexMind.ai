@@ -104,17 +104,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   })();
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center select-none font-sans-studio p-2">
+    <div className="w-full h-full flex items-center justify-center select-none font-sans-studio">
       {/* ── 9:16 Vertical Video Studio Canvas ────────────────────────── */}
       <div
-        className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#2F2F2F] shadow-2xl transition-all"
+        className="relative flex flex-col justify-between overflow-hidden h-full max-h-full transition-all"
         style={{
-          width: '100%',
-          maxWidth: '300px',
-          height: '100%',
-          maxHeight: '540px',
           aspectRatio: '9/16',
-          boxShadow: `0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.9), 0 0 45px ${theme.accentColor}25`,
+          width: 'auto',
+          maxWidth: '100%',
           background: '#050505',
         }}
       >
