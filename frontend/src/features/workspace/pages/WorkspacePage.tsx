@@ -2,11 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { workspaceApi } from '../api/workspaceApi';
 import { GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
+import { AIAgentCreatorPane } from '../components/AIAgentCreatorPane';
 import { ScriptEditorPane } from '../components/ScriptEditorPane';
 import { VideoPreviewPane } from '../components/VideoPreviewPane';
 import { StudioControlsPane } from '../components/StudioControlsPane';
 
 export default function WorkspacePage({ onNavigate }: { onNavigate: (page: string) => void }) {
+  // Navigation between separate AI Creator and Script Editor pages
+  const [activeLeftPane, setActiveLeftPane] = useState<'prompt' | 'editor'>('prompt');
+
   // AI Script Generation
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
@@ -260,20 +264,52 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
 
       {/* Tri-Pane Director's Studio Layout (Exact 3-Panel Viewport Layout) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 h-full min-h-0 flex-1">
-        {/* Left Pane: Script Editor (col-span-4) */}
+        {/* Left Pane: AI Agent Creator OR Script Editor (col-span-4) */}
         <div className="lg:col-span-4 h-full min-h-0 flex flex-col">
           <div className="flex-1 min-h-0 bg-[#121212] border border-[#2F2F2F] rounded-2xl p-3.5 overflow-y-auto custom-scrollbar shadow-xl">
-            <ScriptEditorPane
-              script={script}
-              onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
-              agentPrompt={agentPrompt}
-              onPromptChange={setAgentPrompt}
-              category={category}
-              onCategoryChange={setCategory}
-              memoryCount={memoryCount}
-              loadingAgent={loadingAgent}
-              onRunAgent={handleRunAIAgent}
-            />
+            {activeLeftPane === 'prompt' ? (
+              <AIAgentCreatorPane
+                agentPrompt={agentPrompt}
+                onPromptChange={setAgentPrompt}
+                category={category}
+                onCategoryChange={setCategory}
+                memoryCount={memoryCount}
+                loadingAgent={loadingAgent}
+                onRunAgent={async () => {
+                  await handleRunAIAgent();
+                  setActiveLeftPane('editor');
+                }}
+                onSwitchToEditor={() => setActiveLeftPane('editor')}
+                onStartNewVideo={() => {
+                  setAgentPrompt('');
+                  setScript((prev) => ({
+                    ...prev,
+                    title: 'NEW MOTIVATION SHORT',
+                    hook: '',
+                    quote: '',
+                    subtitles: [],
+                  }));
+                }}
+              />
+            ) : (
+              <ScriptEditorPane
+                script={script}
+                onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
+                memoryCount={memoryCount}
+                onSwitchToAgent={() => setActiveLeftPane('prompt')}
+                onStartNewVideo={() => {
+                  setAgentPrompt('');
+                  setActiveLeftPane('prompt');
+                  setScript((prev) => ({
+                    ...prev,
+                    title: 'NEW MOTIVATION SHORT',
+                    hook: '',
+                    quote: '',
+                    subtitles: [],
+                  }));
+                }}
+              />
+            )}
           </div>
         </div>
 

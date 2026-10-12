@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Sparkles,
+  Wand2,
   FileText,
   Film,
   Sliders,
@@ -38,7 +39,23 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         {/* Studio Tool Rail */}
         <div className="flex flex-col items-center gap-2 w-full">
-          {/* Tool 1: Scripts (AI Script Editor) */}
+          {/* Tool 1: AI Prompt Creator */}
+          <button
+            onClick={() => onTabChange?.('prompt')}
+            className={`p-2.5 rounded-xl transition-all cursor-pointer relative group flex items-center justify-center ${
+              activeTab === 'prompt'
+                ? 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/40 shadow-sm'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
+            }`}
+            title="AI Agent Creator"
+          >
+            <Wand2 className="w-4 h-4" />
+            <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
+              AI Agent Creator
+            </span>
+          </button>
+
+          {/* Tool 2: Script & Subtitles Editor */}
           <button
             onClick={() => onTabChange?.('scripts')}
             className={`p-2.5 rounded-xl transition-all cursor-pointer relative group flex items-center justify-center ${
@@ -46,12 +63,11 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 ? 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/40 shadow-sm'
                 : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
             }`}
-            title="AI Script Editor"
+            title="Script & Subtitles"
           >
             <FileText className="w-4 h-4" />
-            {/* Tooltip */}
             <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-              AI Scriptwriter
+              Script & Subtitles
             </span>
           </button>
 
