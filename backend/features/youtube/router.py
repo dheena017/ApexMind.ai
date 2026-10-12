@@ -4,6 +4,8 @@ FastAPI route endpoints for YouTube channel management, live lookups, correction
 publishing, and automations.
 """
 
+from typing import Optional
+from google.genai._gaos.types import BaseModel
 import logging
 from fastapi import APIRouter, HTTPException, status
 from .schemas import (
@@ -138,6 +140,33 @@ async def get_channel_shorts_route(channel_id: str, limit: int = 12):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve live shorts."
+        )
+
+class UpdateChannelRequest(BaseModel):
+    isAutoUploadEnabled: Optional[bool] = None
+    scheduleCron: Optional[str] = None
+    niche: Optional[str] = None
+    name: Optional[str] = None
+    handle: Optional[str] = None
+
+@router.patch(
+    "/api/youtube/channels/{channel_id}",
+    summary="Update channel settings",
+    description="Updates auto-upload, schedule, or niche settings for a channel."
+)
+async def patch_channel_route(channel_id: str, payload: UpdateChannelRequest):
+    try:
+        from backend.database.repository import update_channel
+        updates = {k: v for k, v in payload.dict().items() if v is not None}
+        updated = update_channel(channel_id, updates)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        return {"success": True, "channel": updated}
+    except Exception as e:
+        logger.error(f"Error updating channel '{channel_id}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
         )
 
 @router.delete(

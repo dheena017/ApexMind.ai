@@ -127,6 +127,25 @@ export const youtubeApi = {
     return data.shorts || [];
   },
 
+  // Update channel properties (auto-upload toggle, schedule, niche)
+  async updateChannel(channelId: string, updates: Partial<YouTubeChannel>): Promise<YouTubeChannel> {
+    consoleLogger.info('YouTube', `Updating channel ${channelId}...`, updates);
+    const start = performance.now();
+    const res = await fetch(`/api/youtube/channels/${channelId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    const duration = performance.now() - start;
+    consoleLogger.api('PATCH', `/api/youtube/channels/${channelId}`, res.status, duration);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to update channel' }));
+      throw new Error(err.detail || 'Failed to update channel');
+    }
+    const data = await res.json();
+    return data.channel;
+  },
+
   // Disconnect channel
   async deleteChannel(channelId: string): Promise<boolean> {
     consoleLogger.info('YouTube', `Disconnecting channel ${channelId}...`);
