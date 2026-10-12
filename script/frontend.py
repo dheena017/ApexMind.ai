@@ -382,18 +382,54 @@ def format_log(mod_name: str, message: str, level: str = "INFO", ansi: Ansi | No
     a = ansi or Ansi(enabled=True)
 
     timestamp = f"{a.GRAY}[{now}]{a.RESET}"
-    badge = f"\033[44m\033[97m\033[1m  {level:<4} \033[0m"
+
+    lvl = level.upper()
+    if lvl in ("ERROR", "FATAL"):
+        badge = "\033[41m\033[97m\033[1m ERROR \033[0m"
+    elif lvl in ("WARN", "WARNING"):
+        badge = "\033[43m\033[30m\033[1m  WARN \033[0m"
+    elif lvl in ("SUCCESS", "OK"):
+        badge = "\033[42m\033[30m\033[1m   OK  \033[0m"
+    elif lvl in ("ACTION", "EVENT"):
+        badge = "\033[45m\033[97m\033[1m ACTION\033[0m"
+    elif lvl == "DEBUG":
+        badge = "\033[100m\033[97m\033[1m DEBUG \033[0m"
+    else:
+        badge = f"\033[44m\033[97m\033[1m  {lvl:<4} \033[0m"
 
     module_colors = {
-        "Vite": a.MAGENTA,
+        "Database": a.BRIGHT_GREEN,
+        "Gemini": a.MAGENTA,
+        "Workspace": a.BLUE,
+        "Studio": a.BLUE,
+        "YouTube": a.RED,
+        "Notifications": a.YELLOW,
+        "Dashboard": a.CYAN,
+        "HTTP": a.CYAN,
         "Server": a.CYAN,
-        "App": a.WHITE,
-        "Plugins": a.YELLOW,
+        "Auth": a.GREEN,
+        "AuthGuard": a.YELLOW,
+        "Router": a.MAGENTA,
+        "Profile": a.MAGENTA,
+        "Settings": a.GRAY,
+        "App": a.BRIGHT_WHITE,
+        "Vite": a.MAGENTA,
         "HMR": a.GREEN,
+        "Plugins": a.YELLOW,
     }
     col = module_colors.get(mod_name, a.CYAN)
     tag = f"{col}{a.BOLD}[{mod_name:<10}]{a.RESET}"
-    msg_colored = f"{a.WHITE}{message}{a.RESET}"
+
+    if lvl in ("ERROR", "FATAL"):
+        msg_colored = f"{a.RED}{message}{a.RESET}"
+    elif lvl in ("WARN", "WARNING"):
+        msg_colored = f"{a.YELLOW}{message}{a.RESET}"
+    elif lvl in ("SUCCESS", "OK"):
+        msg_colored = f"{a.GREEN}{message}{a.RESET}"
+    elif lvl in ("ACTION", "EVENT"):
+        msg_colored = f"{a.CYAN}{message}{a.RESET}"
+    else:
+        msg_colored = f"{a.WHITE}{message}{a.RESET}"
 
     return f"{timestamp} {badge} {tag} {msg_colored}"
 
@@ -636,6 +672,17 @@ def main() -> int:
             clean = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", line).strip()
 
             if "Console Ninja" in clean:
+                continue
+
+            if "[APEX_LOG]" in clean:
+                payload = clean.split("[APEX_LOG]", 1)[1].strip()
+                parts = payload.split("|", 2)
+                if len(parts) == 3:
+                    lvl, mod, msg = parts[0].strip(), parts[1].strip(), parts[2].strip()
+                    print(format_log(mod, msg, level=lvl, ansi=ansi))
+                elif len(parts) == 2:
+                    mod, msg = parts[0].strip(), parts[1].strip()
+                    print(format_log(mod, msg, ansi=ansi))
                 continue
 
             if "ready in" in clean.lower():

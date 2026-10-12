@@ -9,21 +9,20 @@ export default function App() {
   const { isAuthenticated } = useAuth();
 
   const [activePage, setActivePage] = useState<PageRoute>(() => {
-    const initialRoute = typeof window === 'undefined'
-      ? 'landing'
-      : parseRoute(window.location.pathname);
-    consoleLogger.info('Router', `Initial application mount on route: "${initialRoute}"`);
-    return initialRoute;
+    // If not authenticated, always mount directly to login
+    const parsed = typeof window === 'undefined' ? 'login' : parseRoute(window.location.pathname);
+    return parsed;
   });
 
-  // Authentication Guard: Only allow access to protected pages if authenticated
+  // Strict Authentication Guard: Only allow login when not authenticated - no fallback
   useEffect(() => {
-    const isPublic = activePage === 'landing' || activePage === 'login';
-    if (!isAuthenticated && !isPublic) {
-      consoleLogger.warn('AuthGuard', `Unauthenticated access to [${activePage}] blocked. Redirecting to [login]`);
-      setActivePage('login');
-      if (window.location.pathname !== '/login') {
-        window.history.pushState({ page: 'login' }, '', '/login');
+    if (!isAuthenticated) {
+      if (activePage !== 'login') {
+        consoleLogger.warn('AuthGuard', `Access to [${activePage}] blocked. Requiring login.`);
+        setActivePage('login');
+        if (window.location.pathname !== '/login') {
+          window.history.pushState({ page: 'login' }, '', '/login');
+        }
       }
     }
   }, [isAuthenticated, activePage]);
@@ -38,37 +37,42 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const parsed = parseRoute(window.location.pathname);
+      if (!isAuthenticated) {
+        setActivePage('login');
+        return;
+      }
       consoleLogger.action('Router', `Browser History PopState detected -> navigating to: "${parsed}"`);
       setActivePage(parsed);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  const handleNavigate = useCallback((page: string) => {
-    let targetRoute = APP_ROUTES.find((route) => route.id === page)?.id ?? '404';
-
-    // Route Protection: If not logged in and requesting a protected studio route, redirect to login
-    const isPublic = targetRoute === 'landing' || targetRoute === 'login';
-    if (!isAuthenticated && !isPublic) {
-      consoleLogger.warn('AuthGuard', `Blocked unauthenticated attempt to visit [${targetRoute}]. Redirecting to [login].`);
-      targetRoute = 'login';
-    }
-
-    const targetPath = routeToPath(targetRoute);
-
-    setActivePage((currentRoute) => {
-      if (currentRoute !== targetRoute) {
-        consoleLogger.nav(currentRoute, targetRoute);
-      }
-      return targetRoute;
-    });
-
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState({ page: targetRoute }, '', targetPath);
-    }
   }, [isAuthenticated]);
+
+  const handleNavigate = useCallback(
+    (page: string) => {
+      let targetRoute = APP_ROUTES.find((route) => route.id === page)?.id ?? '404';
+
+      // Strict Auth Guard: If not logged in, only allow login
+      if (!isAuthenticated) {
+        targetRoute = 'login';
+      }
+
+      const targetPath = routeToPath(targetRoute);
+
+      setActivePage((currentRoute) => {
+        if (currentRoute !== targetRoute) {
+          consoleLogger.nav(currentRoute, targetRoute);
+        }
+        return targetRoute;
+      });
+
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ page: targetRoute }, '', targetPath);
+      }
+    },
+    [isAuthenticated]
+  );
 
   return (
     <AppLayout activePage={activePage} onNavigate={handleNavigate}>

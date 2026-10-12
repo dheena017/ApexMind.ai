@@ -1,23 +1,14 @@
 import React, { useState } from 'react';
 import {
-  ArrowLeft,
-  ArrowRight,
   Check,
-  Eye,
-  EyeOff,
-  LockKeyhole,
-  Mail,
   ShieldCheck,
   Sparkles,
-  Youtube,
-  UserCheck,
-  X,
 } from 'lucide-react';
-import { Button, Modal, Input } from '@/src/shared/ui/common';
+import { Modal, Input, Button } from '@/src/shared/ui/common';
 import { useAuth } from '../context/AuthContext';
 
 // Authentic Google Logo SVG
-function GoogleIcon({ className = 'h-4 w-4' }: { className?: string }) {
+function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none">
       <path
@@ -41,33 +32,14 @@ function GoogleIcon({ className = 'h-4 w-4' }: { className?: string }) {
 }
 
 export default function LoginPage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { loginWithGoogle, loginWithEmail } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { loginWithGoogle } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
 
-  const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (loading) return;
-    setNotice('');
-    setLoading(true);
-    try {
-      await loginWithEmail(email, password);
-      onNavigate('dashboard');
-    } catch (err: any) {
-      setNotice(err.message || 'Login failed. Please check credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickGoogleLogin = async (googleEmail?: string, googleName?: string) => {
+  const handleGoogleLogin = async (googleEmail?: string, googleName?: string) => {
     setGoogleLoading(true);
     setNotice('');
     try {
@@ -81,25 +53,9 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       setShowGoogleModal(false);
       onNavigate('dashboard');
     } catch (err: any) {
-      setNotice(err.message || 'Google sign-in failed.');
+      setNotice(err.message || 'Google sign-in failed. Please try again.');
     } finally {
       setGoogleLoading(false);
-    }
-  };
-
-  const handleYouTubeContinue = async () => {
-    setLoading(true);
-    try {
-      await loginWithGoogle({
-        email: 'youtube.creator@apexmind.ai',
-        name: 'YouTube Shorts Creator',
-        picture: 'https://api.dicebear.com/7.x/initials/svg?seed=YouTubeCreator',
-      });
-      onNavigate('youtube');
-    } catch (err: any) {
-      setNotice(err.message || 'YouTube sign-in failed.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -108,20 +64,11 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       <div className="pointer-events-none absolute -left-40 top-1/4 h-96 w-96 rounded-full bg-[#3B82F6]/10 blur-[120px]" />
       <div className="pointer-events-none absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-[#2563EB]/10 blur-[120px]" />
 
-      <div className="relative grid w-full max-w-5xl rounded-[28px] border border-[#2F2F2F] bg-[#1E1E1E] shadow-2xl shadow-black/50 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="relative grid w-full max-w-4xl rounded-[28px] border border-[#2F2F2F] bg-[#1E1E1E] shadow-2xl shadow-black/50 lg:grid-cols-[1fr_1.1fr]">
         <section className="relative hidden flex-col justify-between overflow-hidden rounded-l-[28px] bg-gradient-to-br from-[#172554] via-[#121212] to-[#1E1E1E] p-8 lg:flex xl:p-10">
           <div className="pointer-events-none absolute -right-20 top-24 h-72 w-72 rounded-full bg-[#3B82F6]/15 blur-[90px]" />
           <div className="relative">
-            <button
-              type="button"
-              onClick={() => onNavigate('landing')}
-              className="flex w-fit items-center gap-2 rounded-lg text-sm text-[#9CA3AF] transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/50 cursor-pointer"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to home
-            </button>
-
-            <div className="mt-10 flex w-fit items-center gap-3">
+            <div className="flex w-fit items-center gap-3">
               <div className="rounded-2xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-3 text-white shadow-lg shadow-[#3B82F6]/25">
                 <Sparkles className="h-6 w-6" />
               </div>
@@ -132,16 +79,16 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               Turn your ideas into Shorts.
             </h1>
             <p className="mt-5 max-w-md text-sm leading-7 text-[#C5CBD5]">
-              Sign in with Google to craft automated motivational scripts, voiceovers, and YouTube Shorts workflows.
+              Sign in with your Google account to access your automated AI scripts, voiceover studio, and YouTube publishing.
             </p>
           </div>
 
           <div className="relative mt-12 space-y-4">
             {[
-              'Sign in seamlessly with your Google Account',
-              'Auto-sync & verify real YouTube channel metrics',
-              'Draft and synthesize Gemini 24kHz voiceover scripts',
-              'Automate YouTube Shorts scheduling & catalog',
+              'Sign in securely with Google',
+              'Auto-verify live YouTube channel metrics',
+              'Generate 24kHz Gemini voiceovers & scripts',
+              'Manage YouTube Shorts publishing catalogs',
             ].map((item) => (
               <div key={item} className="flex items-center gap-3 text-sm text-[#E5E5E5]">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 shrink-0">
@@ -150,11 +97,11 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 {item}
               </div>
             ))}
-            <p className="pt-6 text-xs text-[#9CA3AF]">A certified creative workspace for your YouTube workflows.</p>
+            <p className="pt-6 text-xs text-[#9CA3AF]">Protected with Google OAuth standards.</p>
           </div>
         </section>
 
-        <section className="p-6 sm:p-8 lg:p-9">
+        <section className="p-8 sm:p-10 lg:p-12 flex flex-col justify-center">
           <div className="mb-6 flex items-center justify-between lg:hidden">
             <div className="flex items-center gap-2.5">
               <div className="rounded-xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-2 text-white">
@@ -162,161 +109,58 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </div>
               <span className="font-extrabold tracking-tight text-white">ApexMind</span>
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigate('landing')}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#9CA3AF] transition-colors hover:text-white"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Home
-            </button>
           </div>
 
-          <div className="mx-auto w-full max-w-md">
-            <div className="mb-6">
+          <div className="mx-auto w-full max-w-sm space-y-6">
+            <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/25 bg-[#3B82F6]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#93C5FD]">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Google & YouTube Verified Access
+                Google Authentication Required
               </div>
-              <h2 className="text-3xl font-extrabold tracking-tight text-white">Welcome back</h2>
-              <p className="mt-2 text-sm leading-6 text-[#9CA3AF]">Sign in to access your ApexMind YouTube Studio.</p>
+              <h2 className="text-3xl font-extrabold tracking-tight text-white">Sign In</h2>
+              <p className="mt-2 text-sm leading-6 text-[#9CA3AF]">
+                Sign in with your Google Account to unlock the ApexMind Studio workspace.
+              </p>
             </div>
 
-            {/* Google Login Primary Button */}
-            <div className="space-y-3 mb-6">
+            {/* Sole Google Login Action */}
+            <div className="space-y-4 pt-2">
               <button
                 type="button"
-                onClick={() => handleQuickGoogleLogin()}
-                disabled={googleLoading || loading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white text-gray-900 font-semibold text-sm hover:bg-gray-100 transition-all shadow-md hover:shadow-lg disabled:opacity-60 cursor-pointer active:scale-[0.99] border border-gray-200"
+                onClick={() => handleGoogleLogin()}
+                disabled={googleLoading}
+                className="w-full flex items-center justify-center gap-3.5 px-5 py-3.5 rounded-xl bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl disabled:opacity-60 cursor-pointer active:scale-[0.99] border border-gray-200"
               >
                 {googleLoading ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
                 ) : (
-                  <GoogleIcon className="h-4 w-4" />
+                  <GoogleIcon className="h-5 w-5" />
                 )}
                 <span>Continue with Google</span>
               </button>
 
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] text-[#9CA3AF]">Want to specify another Google account?</span>
+              <div className="text-center">
                 <button
                   type="button"
                   onClick={() => setShowGoogleModal(true)}
-                  className="text-[11px] font-medium text-[#60A5FA] hover:underline cursor-pointer"
+                  className="text-xs text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer"
                 >
-                  Choose Account
+                  Sign in with another Google account
                 </button>
               </div>
             </div>
 
-            <div className="my-5 flex items-center gap-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6B7280]">
-              <span className="h-px flex-1 bg-[#2F2F2F]" />
-              or sign in with email
-              <span className="h-px flex-1 bg-[#2F2F2F]" />
-            </div>
-
-            <form onSubmit={handleEmailLogin} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="login-email" className="text-xs font-semibold uppercase tracking-wider text-[#C5CBD5]">
-                  Email address
-                </label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
-                  <input
-                    id="login-email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    className="login-field min-h-11 w-full rounded-xl border border-[#2F2F2F] bg-[#121212] py-2.5 pl-11 pr-4 text-sm text-[#E5E5E5] outline-none transition placeholder:text-[#6B7280] hover:border-[#4A4A4A] focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="login-password" className="text-xs font-semibold uppercase tracking-wider text-[#C5CBD5]">
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setNotice('Password reset link will be sent to your registered email.')}
-                    className="text-xs font-medium text-[#60A5FA] transition-colors hover:text-[#93C5FD] cursor-pointer"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-                <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
-                  <input
-                    id="login-password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Enter your password"
-                    required
-                    className="login-field min-h-11 w-full rounded-xl border border-[#2F2F2F] bg-[#121212] py-2.5 pl-11 pr-12 text-sm text-[#E5E5E5] outline-none transition placeholder:text-[#6B7280] hover:border-[#4A4A4A] focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((visible) => !visible)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-[#6B7280] transition-colors hover:text-[#E5E5E5] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/50 cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className="w-full"
-                disabled={loading || googleLoading}
-                icon={loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <ArrowRight className="h-4 w-4" />}
-              >
-                {loading ? 'Signing in…' : 'Sign in with Email'}
-              </Button>
-            </form>
-
             {notice && (
-              <p role="status" className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-5 text-amber-200">
+              <p role="status" className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-5 text-amber-200">
                 {notice}
               </p>
             )}
 
-            <div className="my-5 flex items-center gap-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6B7280]">
-              <span className="h-px flex-1 bg-[#2F2F2F]" />
-              or continue via YouTube
-              <span className="h-px flex-1 bg-[#2F2F2F]" />
-            </div>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              className="w-full border-[#2F2F2F] bg-[#121212] text-[#E5E5E5] hover:border-[#4A4A4A] hover:bg-[#1E1E1E]"
-              disabled={loading || googleLoading}
-              icon={<Youtube className="h-4 w-4 text-red-500" />}
-              onClick={handleYouTubeContinue}
-            >
-              Continue to YouTube Studio
-            </Button>
-
-            <p className="mt-4 text-center text-[11px] leading-5 text-[#9CA3AF]">
-              Sign in to manage and automate your YouTube Shorts channel.
-            </p>
-
-            <div className="mt-5 rounded-2xl border border-[#2F2F2F] bg-[#121212] p-3">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+            <div className="pt-4 border-t border-[#2F2F2F]">
+              <div className="flex items-start gap-3 rounded-xl bg-[#121212] border border-[#2F2F2F] p-3.5">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                 <p className="text-xs leading-5 text-[#9CA3AF]">
-                  Protected with Google OAuth security standards. We never ask for sensitive credentials or store YouTube passwords.
+                  ApexMind uses Google OAuth authentication. Only verified sign-ins are permitted into the studio.
                 </p>
               </div>
             </div>
@@ -324,34 +168,32 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         </section>
       </div>
 
-      {/* Google Account Picker Modal */}
-      <Modal isOpen={showGoogleModal} onClose={() => setShowGoogleModal(false)} title="Sign in with Google">
+      {/* Google Account Modal */}
+      <Modal isOpen={showGoogleModal} onClose={() => setShowGoogleModal(false)} title="Select Google Account">
         <div className="space-y-4">
           <p className="text-xs text-[#9CA3AF]">
-            Choose an existing Google profile or enter your creator Google account:
+            Choose an account to sign in to ApexMind Studio:
           </p>
 
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => handleQuickGoogleLogin('creator@apexmind.ai', 'ApexMind Creator Pro')}
-              className="w-full flex items-center justify-between p-3 rounded-xl bg-[#121212] border border-[#2F2F2F] hover:border-[#3B82F6] transition-all text-left cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white font-bold text-xs">
-                  AM
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA]">ApexMind Creator Pro</h4>
-                  <p className="text-xs text-[#9CA3AF]">creator@apexmind.ai</p>
-                </div>
+          <button
+            type="button"
+            onClick={() => handleGoogleLogin('creator@apexmind.ai', 'ApexMind Creator Pro')}
+            className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#121212] border border-[#2F2F2F] hover:border-[#3B82F6] transition-all text-left cursor-pointer group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white font-bold text-xs">
+                AM
               </div>
-              <GoogleIcon className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-            </button>
-          </div>
+              <div>
+                <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA]">ApexMind Creator Pro</h4>
+                <p className="text-xs text-[#9CA3AF]">creator@apexmind.ai</p>
+              </div>
+            </div>
+            <GoogleIcon className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+          </button>
 
           <div className="pt-2 border-t border-[#2F2F2F] space-y-3">
-            <h5 className="text-xs font-semibold text-white uppercase tracking-wider">Use custom Google account</h5>
+            <h5 className="text-xs font-semibold text-white uppercase tracking-wider">Custom Google Account</h5>
             <Input
               label="Google Full Name"
               value={customGoogleName}
@@ -374,7 +216,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 variant="primary"
                 size="sm"
                 icon={<GoogleIcon className="w-3.5 h-3.5" />}
-                onClick={() => handleQuickGoogleLogin(customGoogleEmail || 'alex.creator@gmail.com', customGoogleName || 'Google Creator')}
+                onClick={() => handleGoogleLogin(customGoogleEmail || 'alex.creator@gmail.com', customGoogleName || 'Google Creator')}
               >
                 Sign In
               </Button>

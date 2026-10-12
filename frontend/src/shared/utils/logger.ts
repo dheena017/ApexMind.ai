@@ -30,8 +30,39 @@ const TEXT_STYLES: Record<string, string> = {
   dim: 'color: #9CA3AF; font-size: 10px;',
 };
 
+function sendToTerminal(level: string, module: string, message: string) {
+  if (typeof window === 'undefined') return;
+
+  const payload = {
+    level,
+    module,
+    message: typeof message === 'string' ? message : JSON.stringify(message),
+  };
+
+  try {
+    if ((import.meta as any).hot) {
+      (import.meta as any).hot.send('apexmind:client-log', payload);
+      return;
+    }
+  } catch {
+    // fallback to fetch
+  }
+
+  try {
+    fetch('/__apex_client_log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // ignore
+  }
+}
+
 export const consoleLogger = {
   info(module: string, message: string, detail?: unknown) {
+    sendToTerminal('INFO', module, message);
     const badge = BADGE_STYLES[module] || BADGE_STYLES.default;
     const time = new Date().toLocaleTimeString();
     if (detail !== undefined) {
@@ -42,6 +73,7 @@ export const consoleLogger = {
   },
 
   action(module: string, message: string, detail?: unknown) {
+    sendToTerminal('ACTION', module, message);
     const badge = BADGE_STYLES[module] || BADGE_STYLES.default;
     const time = new Date().toLocaleTimeString();
     if (detail !== undefined) {
@@ -52,6 +84,7 @@ export const consoleLogger = {
   },
 
   nav(fromRoute: string, toRoute: string) {
+    sendToTerminal('INFO', 'Router', `Navigated: ${fromRoute} ➔ ${toRoute}`);
     const badge = BADGE_STYLES.Router;
     const time = new Date().toLocaleTimeString();
     console.log(
@@ -67,6 +100,7 @@ export const consoleLogger = {
   },
 
   success(module: string, message: string, detail?: unknown) {
+    sendToTerminal('SUCCESS', module, message);
     const badge = BADGE_STYLES[module] || BADGE_STYLES.Success;
     const time = new Date().toLocaleTimeString();
     if (detail !== undefined) {
@@ -77,6 +111,7 @@ export const consoleLogger = {
   },
 
   warn(module: string, message: string, detail?: unknown) {
+    sendToTerminal('WARN', module, message);
     const time = new Date().toLocaleTimeString();
     if (detail !== undefined) {
       console.warn(`%cWARN: ${module}%c %c[${time}]%c ${message}`, BADGE_STYLES.Warn, '', TEXT_STYLES.dim, TEXT_STYLES.warn, detail);
@@ -86,6 +121,7 @@ export const consoleLogger = {
   },
 
   error(module: string, message: string, detail?: unknown) {
+    sendToTerminal('ERROR', module, message);
     const time = new Date().toLocaleTimeString();
     if (detail !== undefined) {
       console.error(`%cERR: ${module}%c %c[${time}]%c ${message}`, BADGE_STYLES.Error, '', TEXT_STYLES.dim, TEXT_STYLES.error, detail);
@@ -112,6 +148,7 @@ export const consoleLogger = {
   },
 
   printDevBanner() {
+    sendToTerminal('INFO', 'App', 'Client runtime active in browser: React 19 + TailwindCSS v4');
     const titleStyle = 'background: linear-gradient(90deg, #3B82F6 0%, #8B5CF6 100%); color: #FFFFFF; font-weight: 900; font-size: 14px; padding: 6px 12px; border-radius: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.4);';
     const subStyle = 'color: #60A5FA; font-weight: 600; font-size: 11px; margin-top: 4px;';
     console.log('%c⚡ ApexMind AI Studio — Client Initialized%c\nFastAPI Backend: http://localhost:8000 | Gemini TTS & Shorts Automation Active', titleStyle, subStyle);

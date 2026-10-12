@@ -29,12 +29,35 @@ export default defineConfig(({mode}) => {
     originalError(msg, options);
   };
 
+  const startTimeMap = new WeakMap<any, number>();
+
   const apiProxy = {
     '/api': {
       target: backendUrl,
       changeOrigin: true,
       configure: (proxy: any) => {
-        proxy.on('error', (_err: any, _req: any, res: any) => {
+        proxy.on('proxyReq', (_proxyReq: any, req: any) => {
+          startTimeMap.set(req, Date.now());
+          const method = (req.method || 'GET').toUpperCase();
+          const url = req.url || '';
+          console.log(`[APEX_LOG] INFO|HTTP|--> ${method.padEnd(6)} ${url} (from 127.0.0.1)`);
+        });
+
+        proxy.on('proxyRes', (proxyRes: any, req: any) => {
+          const startTime = startTimeMap.get(req) || Date.now();
+          const duration = Date.now() - startTime;
+          const status = proxyRes.statusCode || 200;
+          const method = (req.method || 'GET').toUpperCase();
+          const url = req.url || '';
+          const statusText = status < 300 ? `${status} OK` : status < 400 ? `${status} REDIR` : status < 500 ? `${status} CLIENT ERR` : `${status} SERVER ERR`;
+          const level = status < 400 ? 'INFO' : status < 500 ? 'WARN' : 'ERROR';
+          console.log(`[APEX_LOG] ${level}|HTTP|<-- ${statusText} ${method.padEnd(6)} ${url} | Duration: ${duration.toFixed(1)}ms`);
+        });
+
+        proxy.on('error', (_err: any, req: any, res: any) => {
+          const method = (req?.method || 'GET').toUpperCase();
+          const url = req?.url || '';
+          console.log(`[APEX_LOG] ERROR|HTTP|<!- PROXY ERROR ${method.padEnd(6)} ${url} | Backend unreachable at ${backendUrl}`);
           if (res && 'writeHead' in res && !res.headersSent) {
             res.writeHead(503, {'Content-Type': 'application/json'});
             res.end(
@@ -50,11 +73,48 @@ export default defineConfig(({mode}) => {
     },
   };
 
+  const apexLoggerPlugin = () => ({
+    name: 'apexmind-terminal-logger',
+    configureServer(server: any) {
+      const handleLog = (data: any) => {
+        if (!data || !data.module) return;
+        const level = data.level || 'INFO';
+        const mod = data.module;
+        const msg = data.message || '';
+        console.log(`[APEX_LOG] ${level}|${mod}|${msg}`);
+      };
+
+      server.ws?.on('apexmind:client-log', handleLog);
+      server.hot?.on('apexmind:client-log', handleLog);
+
+      server.middlewares.use((req: any, res: any, next: any) => {
+        if (req.url === '/__apex_client_log' && req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk: any) => {
+            body += chunk;
+          });
+          req.on('end', () => {
+            try {
+              const data = JSON.parse(body);
+              handleLog(data);
+            } catch {
+              // ignore parse errors
+            }
+            res.statusCode = 204;
+            res.end();
+          });
+          return;
+        }
+        next();
+      });
+    },
+  });
+
   return {
     root: frontendRoot,
     envDir: projectRoot,
     customLogger,
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), apexLoggerPlugin()],
     resolve: {
       alias: {
         '@/src': resolve(frontendRoot, 'src'),
