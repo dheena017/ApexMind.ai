@@ -108,7 +108,7 @@ def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir") -> Dict[str
     try:
         from google.genai import types
         tts_res = gemini_client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3.8-flash-lite-tts",
             contents=f"Read this motivational script with a stoic, powerful voice: {text}",
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
