@@ -28,10 +28,10 @@ async def lifespan(app: FastAPI):
     print_startup_banner(settings.HOST, settings.PORT)
     # Initialize SQLite tables on startup
     init_db()
-    logger.info("SQLite Database verified and connected at backend/data/apexmind.db")
-    logger.info("All 4 Core Features mounted: [Workspace] [YouTube] [Notifications] [Dashboard]")
+    logger.info("SQLite DB connected: backend/data/apexmind.db")
+    logger.info("Features active: Workspace • YouTube • Notifications • Dashboard")
     yield
-    logger.info("ApexMind Studio shutting down gracefully.")
+    logger.info("ApexMind Studio stopped gracefully.")
 
 def create_app() -> FastAPI:
     """FastAPI Application Factory."""

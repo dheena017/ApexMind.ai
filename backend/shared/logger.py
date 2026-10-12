@@ -58,6 +58,7 @@ class UvicornNoiseFilter(logging.Filter):
         "finished server process",
         "shutting down",
         "application shutdown complete",
+        "application startup complete",
     )
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -69,11 +70,11 @@ class ColoredFormatter(logging.Formatter):
     """Custom log formatter rendering colorful badges, module tags, and timestamps."""
 
     LEVEL_BADGES = {
-        logging.DEBUG: f"\033[100m\033[97m\033[1m DEBUG \033[0m",
-        logging.INFO: f"\033[44m\033[97m\033[1m INFO \033[0m",
-        logging.WARNING: f"\033[43m\033[30m\033[1m WARN \033[0m",
-        logging.ERROR: f"\033[41m\033[97m\033[1m ERROR \033[0m",
-        logging.CRITICAL: f"\033[41m\033[97m\033[1m FATAL \033[0m",
+        logging.DEBUG: "\033[100m\033[97m\033[1m DEBUG \033[0m",
+        logging.INFO: "\033[44m\033[97m\033[1m  INFO \033[0m",
+        logging.WARNING: "\033[43m\033[30m\033[1m  WARN \033[0m",
+        logging.ERROR: "\033[41m\033[97m\033[1m ERROR \033[0m",
+        logging.CRITICAL: "\033[41m\033[97m\033[1m FATAL \033[0m",
     }
 
     MODULE_COLORS = {
@@ -98,22 +99,27 @@ class ColoredFormatter(logging.Formatter):
         badge = self.LEVEL_BADGES.get(record.levelno, f"[{record.levelname}]")
 
         # 3. Determine Module Tag & Color (Map uvicorn/watchfiles cleanly)
-        name = record.name.replace("ApexMind.", "")
-        if "uvicorn" in name.lower():
-            name = "Server"
-        elif "watchfiles" in name.lower():
-            name = "Watcher"
+        raw_name = record.name.replace("ApexMind.", "")
+        if "uvicorn" in raw_name.lower():
+            mod_name = "Server"
+        elif "watchfiles" in raw_name.lower():
+            mod_name = "Watcher"
+        else:
+            mod_name = raw_name
 
         tag_color = Colors.CYAN
         for mod, col in self.MODULE_COLORS.items():
-            if mod.lower() in name.lower():
+            if mod.lower() in mod_name.lower():
                 tag_color = col
                 break
 
-        tag = f"{tag_color}{Colors.BOLD}[{name}]{Colors.RESET}"
+        tag = f"{tag_color}{Colors.BOLD}[{mod_name}]{Colors.RESET}"
 
-        # 4. Message Coloring
+        # 4. Message Coloring and cleaning
         msg = record.getMessage()
+        if "watchfiles detected changes" in msg.lower():
+            msg = "Reloading server (file change detected)..."
+
         if record.levelno >= logging.ERROR:
             msg_colored = f"{Colors.BRIGHT_RED}{msg}{Colors.RESET}"
         elif record.levelno == logging.WARNING:
@@ -122,6 +128,39 @@ class ColoredFormatter(logging.Formatter):
             msg_colored = f"{Colors.WHITE}{msg}{Colors.RESET}"
 
         return f"{timestamp} {badge} {tag} {msg_colored}"
+
+
+def get_uvicorn_log_config() -> dict:
+    """Provides a dictConfig dictionary for Uvicorn using ApexMind's custom colored formatter."""
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "apex_colored": {
+                "()": "backend.shared.logger.ColoredFormatter",
+            },
+        },
+        "filters": {
+            "uvicorn_noise": {
+                "()": "backend.shared.logger.UvicornNoiseFilter",
+            },
+        },
+        "handlers": {
+            "apex_stream": {
+                "class": "logging.StreamHandler",
+                "formatter": "apex_colored",
+                "filters": ["uvicorn_noise"],
+                "stream": "ext://sys.stdout",
+            },
+        },
+        "loggers": {
+            "": {"handlers": ["apex_stream"], "level": "INFO"},
+            "uvicorn": {"handlers": ["apex_stream"], "level": "INFO", "propagate": False},
+            "uvicorn.error": {"handlers": ["apex_stream"], "level": "INFO", "propagate": False},
+            "uvicorn.access": {"handlers": ["apex_stream"], "level": "WARNING", "propagate": False},
+            "watchfiles": {"handlers": ["apex_stream"], "level": "WARNING", "propagate": False},
+        },
+    }
 
 
 def setup_colored_logging(level=logging.INFO):
@@ -137,7 +176,7 @@ def setup_colored_logging(level=logging.INFO):
     if not any(isinstance(h, logging.StreamHandler) and isinstance(h.formatter, ColoredFormatter) for h in root_logger.handlers):
         root_logger.handlers = [handler]
 
-    # Hook Uvicorn loggers into our ColoredFormatter
+    # Hook Uvicorn and child loggers
     for u_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         u_logger = logging.getLogger(u_name)
         u_logger.handlers = [handler]

@@ -77,19 +77,15 @@ def get_frontend_port(env: dict[str, str], cli_port: int | None) -> int:
 
 
 def is_server_ready(host: str, port: int) -> bool:
+    connection = http.client.HTTPConnection(host, port, timeout=1)
     try:
-        connection = http.client.HTTPConnection(host, port, timeout=1)
         connection.request("GET", "/")
         response = connection.getresponse()
-        response.read()
-        return True
-    except Exception:
+        return 200 <= response.status < 400
+    except (OSError, http.client.HTTPException):
         return False
     finally:
-        try:
-            connection.close()
-        except Exception:
-            pass
+        connection.close()
 
 
 def wait_for_frontend(host: str, port: int, timeout_seconds: int = 30) -> None:
@@ -142,16 +138,47 @@ frontend_process: subprocess.Popen[str] | None = None
 backend_process: subprocess.Popen[str] | None = None
 
 
-def shutdown(signum=None, frame=None):
-    if backend_process is not None and backend_process.poll() is None:
-        backend_process.terminate()
-    if frontend_process is not None and frontend_process.poll() is None:
-        frontend_process.terminate()
-    raise SystemExit(0 if signum is None else 1)
+def terminate_process_tree(proc: subprocess.Popen | None) -> None:
+    """Kills a process and all its descendants cleanly across platforms."""
+    if proc is None:
+        return
+    try:
+        if proc.poll() is None:
+            if sys.platform == "win32":
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                )
+            else:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+    except Exception:
+        pass
+
+
+def stop_all(exit_code: int = 0) -> None:
+    """Stops both Vite and FastAPI cleanly and prints exit notice."""
+    global backend_process, frontend_process
+    print("\n\033[93m[ApexMind]\033[0m Stopping services (Vite & FastAPI)...")
+    terminate_process_tree(backend_process)
+    terminate_process_tree(frontend_process)
+    print("\033[92m[ApexMind] Studio stopped cleanly. Goodbye!\033[0m\n")
+    sys.exit(exit_code)
+
+
+def handle_signal(signum=None, frame=None):
+    stop_all(0)
 
 
 for sig in (signal.SIGINT, signal.SIGTERM):
-    signal.signal(sig, shutdown)
+    signal.signal(sig, handle_signal)
+if hasattr(signal, "SIGBREAK"):
+    signal.signal(signal.SIGBREAK, handle_signal)
 
 frontend_process = run_frontend(host, port, env)
 
@@ -167,13 +194,21 @@ if args.with_backend:
         )
     except TimeoutError as exc:
         print(str(exc), file=sys.stderr)
-        frontend_process.terminate()
+        terminate_process_tree(frontend_process)
         raise SystemExit(1)
 
 try:
-    frontend_status = frontend_process.wait()
-    if backend_process is not None and backend_process.poll() is None:
-        backend_process.terminate()
-    raise SystemExit(frontend_status)
+    while True:
+        f_status = frontend_process.poll()
+        if f_status is not None:
+            stop_all(f_status)
+            break
+        if backend_process is not None:
+            b_status = backend_process.poll()
+            if b_status is not None and b_status != 0:
+                print(f"\033[91m[ApexMind] Backend terminated unexpectedly (code {b_status})\033[0m")
+                stop_all(b_status)
+                break
+        time.sleep(0.3)
 except KeyboardInterrupt:
-    shutdown()
+    stop_all(0)
