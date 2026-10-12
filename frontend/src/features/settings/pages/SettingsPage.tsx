@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
-import { Settings, Key, ShieldCheck, Youtube, Sliders, Bell, CheckCircle2 } from 'lucide-react';
-import { Button, Card, Input, Badge } from '@/src/shared/ui/common';
+import { Settings, Key, ShieldCheck, Youtube, Sliders, Bell, CheckCircle2, Mic, Music } from 'lucide-react';
+import { Button, Card, Input, Badge, CustomSelect } from '@/src/shared/ui/common';
+
+const VOICE_OPTIONS = [
+  { value: 'Fenrir', label: 'Fenrir (Male · Deep & Powerful)' },
+  { value: 'Kore', label: 'Kore (Female · Inspiring & Authoritative)' },
+  { value: 'Zephyr', label: 'Zephyr (Female · Calm Wisdom)' },
+  { value: 'Puck', label: 'Puck (Male · High-Octane Motivational)' },
+];
+
+const MUSIC_OPTIONS = [
+  { value: 'Ambient Motivation', label: 'Ambient Motivation (Cinematic Ambient)' },
+  { value: 'Cinematic Triumph', label: 'Cinematic Triumph (Orchestral Hybrid)' },
+  { value: 'Epic Growth', label: 'Epic Growth (Deep Synthwave)' },
+  { value: 'Lo-Fi Chill Discipline', label: 'Lo-Fi Chill Discipline (Lo-Fi Beats)' },
+];
 
 export default function SettingsPage() {
   const [autoPublish, setAutoPublish] = useState(true);
@@ -55,33 +69,21 @@ export default function SettingsPage() {
           <h3 className="font-bold text-white text-base pb-3 border-b border-[#2F2F2F] mb-4">Default Automation Preferences</h3>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide mb-1.5">Default Gemini Voiceover</label>
-              <select
-                value={defaultVoice}
-                onChange={(e) => setDefaultVoice(e.target.value)}
-                className="w-full bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] rounded-xl p-3 outline-none focus:border-[#3B82F6]"
-              >
-                <option value="Fenrir">Fenrir (Male · Deep & Powerful)</option>
-                <option value="Kore">Kore (Female · Inspiring & Authoritative)</option>
-                <option value="Zephyr">Zephyr (Female · Calm Wisdom)</option>
-                <option value="Puck">Puck (Male · High-Octane Motivational)</option>
-              </select>
-            </div>
+            <CustomSelect
+              label="Default Gemini Voiceover"
+              icon={<Mic className="w-4 h-4 text-[#60A5FA]" />}
+              value={defaultVoice}
+              onChange={setDefaultVoice}
+              options={VOICE_OPTIONS}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide mb-1.5">Default Non-Copyright Music Track</label>
-              <select
-                value={defaultMusic}
-                onChange={(e) => setDefaultMusic(e.target.value)}
-                className="w-full bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] rounded-xl p-3 outline-none focus:border-[#3B82F6]"
-              >
-                <option value="Ambient Motivation">Ambient Motivation (Cinematic Ambient)</option>
-                <option value="Cinematic Triumph">Cinematic Triumph (Orchestral Hybrid)</option>
-                <option value="Epic Growth">Epic Growth (Deep Synthwave)</option>
-                <option value="Lo-Fi Chill Discipline">Lo-Fi Chill Discipline (Lo-Fi Beats)</option>
-              </select>
-            </div>
+            <CustomSelect
+              label="Default Non-Copyright Music Track"
+              icon={<Music className="w-4 h-4 text-[#60A5FA]" />}
+              value={defaultMusic}
+              onChange={setDefaultMusic}
+              options={MUSIC_OPTIONS}
+            />
 
             <div className="flex items-center justify-between pt-2">
               <div>

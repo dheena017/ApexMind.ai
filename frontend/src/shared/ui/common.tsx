@@ -162,3 +162,8 @@ export const Tabs: React.FC<{
     </div>
   );
 };
+
+// Re-export CustomSelect for unified UI kit consumption
+export { CustomSelect } from './CustomSelect';
+export type { CustomSelectProps, SelectOption, RawOption } from './CustomSelect';
+

@@ -63,6 +63,34 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
+.select-studio {
+  background-color: #121212;
+  border: 1px solid #2F2F2F;
+  color: #E5E5E5;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.select-studio:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+select {
+  background-color: #121212;
+  color: #E5E5E5;
+  border-color: #2F2F2F;
+}
+
+select option {
+  background-color: #141414;
+  color: #E5E5E5;
+}
+
+
 /* Chrome Autofill Dark Background Override */
 .login-field:-webkit-autofill,
 .login-field:-webkit-autofill:hover,

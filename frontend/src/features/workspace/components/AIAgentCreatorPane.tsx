@@ -1,6 +1,6 @@
 import React from 'react';
-import { Wand2, ShieldCheck, FileText, Plus, ChevronDown, Cpu } from 'lucide-react';
-import { Button } from '@/src/shared/ui/common';
+import { Wand2, ShieldCheck, FileText, Plus, Cpu } from 'lucide-react';
+import { Button, CustomSelect } from '@/src/shared/ui/common';
 
 export const AI_MODELS = [
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Ultra Fast)' },
@@ -96,26 +96,15 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             </div>
 
             {/* AI Model Selector Dropdown */}
-            <div className="relative flex items-center">
-              <div className="flex items-center gap-1.5 pl-2.5 pr-2 py-1 rounded-lg bg-[#181818] border border-[#2F2F2F] hover:border-[#3B82F6]/50 transition-colors shadow-xs">
-                <Cpu className="w-3 h-3 text-[#60A5FA]" />
-                <select
-                  value={currentModel}
-                  onChange={(e) => {
-                    onModelChange?.(e.target.value);
-                  }}
-                  className="bg-transparent text-[#60A5FA] text-[10px] font-mono-studio font-bold outline-none cursor-pointer pr-4 appearance-none"
-                  title="Select AI Model"
-                >
-                  {AI_MODELS.map((m) => (
-                    <option key={m.id} value={m.id} className="bg-[#141414] text-white">
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-3 h-3 text-[#9CA3AF] pointer-events-none -ml-3" />
-              </div>
-            </div>
+            <CustomSelect
+              variant="compact"
+              align="right"
+              options={AI_MODELS}
+              value={currentModel}
+              onChange={(modelId) => onModelChange?.(modelId)}
+              icon={<Cpu className="w-3 h-3 text-[#60A5FA]" />}
+              title="Select AI Model"
+            />
           </div>
 
           {/* Topic / Motivation Prompt Input */}
