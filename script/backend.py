@@ -12,6 +12,7 @@ import http.client
 import importlib.util
 import os
 import shlex
+import signal
 import socket
 import subprocess
 import sys
@@ -27,6 +28,139 @@ if str(PROJECT_ROOT) not in sys.path:
 
 DOTENV_PATH = PROJECT_ROOT / ".env"
 MIN_PYTHON_VERSION = (3, 10)
+
+# Enable UTF-8 console output on Windows
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+_WINDOWS_JOB_HANDLE = None
+
+
+def enable_windows_kill_on_close() -> None:
+    """Ensure all spawned subprocesses and reload workers are destroyed by the Windows kernel if parent exits."""
+    global _WINDOWS_JOB_HANDLE
+    if sys.platform != "win32":
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    try:
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        job = kernel32.CreateJobObjectW(None, None)
+        if not job:
+            return
+
+        class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("PerProcessUserTimeLimit", wintypes.LARGE_INTEGER),
+                ("PerJobUserTimeLimit", wintypes.LARGE_INTEGER),
+                ("LimitFlags", wintypes.DWORD),
+                ("MinimumWorkingSetSize", ctypes.c_size_t),
+                ("MaximumWorkingSetSize", ctypes.c_size_t),
+                ("ActiveProcessLimit", wintypes.DWORD),
+                ("Affinity", ctypes.c_size_t),
+                ("PriorityClass", wintypes.DWORD),
+                ("SchedulingClass", wintypes.DWORD),
+            ]
+
+        class IO_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ("ReadOperationCount", ctypes.c_ulonglong),
+                ("WriteOperationCount", ctypes.c_ulonglong),
+                ("OtherOperationCount", ctypes.c_ulonglong),
+                ("ReadTransferCount", ctypes.c_ulonglong),
+                ("WriteTransferCount", ctypes.c_ulonglong),
+                ("OtherTransferCount", ctypes.c_ulonglong),
+            ]
+
+        class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+                ("IoInfo", IO_COUNTERS),
+                ("ProcessMemoryLimit", ctypes.c_size_t),
+                ("JobMemoryLimit", ctypes.c_size_t),
+                ("PeakProcessMemoryLimit", ctypes.c_size_t),
+                ("PeakJobMemoryLimit", ctypes.c_size_t),
+            ]
+
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000
+        JobObjectExtendedLimitInformation = 9
+
+        info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+
+        kernel32.SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            ctypes.byref(info),
+            ctypes.sizeof(info),
+        )
+
+        current_process = kernel32.GetCurrentProcess()
+        kernel32.AssignProcessToJobObject(job, current_process)
+        _WINDOWS_JOB_HANDLE = job
+    except Exception:
+        pass
+
+
+def kill_child_processes(parent_pid: int | None = None) -> None:
+    """Force-terminates all child and grandchild processes of the given process ID."""
+    if sys.platform != "win32":
+        return
+    pid = parent_pid or os.getpid()
+    try:
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(pid)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except Exception:
+        pass
+
+
+def find_process_on_port(port: int) -> int | None:
+    """Find the PID of the process listening on the given port."""
+    if sys.platform == "win32":
+        try:
+            res = subprocess.run(
+                ["netstat", "-ano"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            for line in res.stdout.splitlines():
+                parts = line.strip().split()
+                if len(parts) >= 5 and f":{port}" in parts[1] and parts[3].upper() == "LISTENING":
+                    try:
+                        return int(parts[4])
+                    except ValueError:
+                        continue
+        except Exception:
+            pass
+    return None
+
+
+def kill_process_by_pid(pid: int) -> bool:
+    """Forcefully terminate a process tree by PID."""
+    if sys.platform == "win32":
+        res = subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(pid)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        return res.returncode == 0
+    else:
+        try:
+            os.kill(pid, signal.SIGKILL)
+            return True
+        except Exception:
+            return False
 
 
 class Ansi:
@@ -284,6 +418,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-reload", dest="reload", action="store_false", help="Disable auto-reload")
     parser.add_argument("--log-level", choices=["debug", "info", "warning", "error", "critical", "trace"], help="Uvicorn log level")
     parser.add_argument("--workers", "-w", type=int, default=1, help="Number of worker processes (production)")
+    parser.add_argument("--kill-port", "-k", action="store_true", help="Force-terminate any process currently occupying the port")
+    parser.add_argument("--force", "-f", action="store_true", help="Alias for --kill-port")
     parser.add_argument("--auto-port", "-a", action="store_true", help="Automatically pick the next available port if chosen port is occupied")
     parser.add_argument("--open", "-o", action="store_true", help="Open Swagger API documentation in browser when ready")
     parser.add_argument("--check-only", "-c", action="store_true", help="Perform pre-flight health checks and exit")
@@ -294,6 +430,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    enable_windows_kill_on_close()
+
     args = parse_args()
 
     use_color = not args.no_color and sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
@@ -301,6 +439,17 @@ def main() -> int:
 
     env = {**load_dotenv(args.env_file), **os.environ}
     python_executable = resolve_python_executable()
+
+    # Register OS signals for graceful termination
+    def handle_shutdown(signum=None, frame=None):
+        kill_child_processes()
+        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Backend stopped cleanly. Goodbye!\n")
+        sys.exit(0)
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, handle_shutdown)
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, handle_shutdown)
 
     # 1. Pre-flight system checks
     check_python_version(ansi)
@@ -323,23 +472,37 @@ def main() -> int:
         print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Port must be between 1 and 65535, got: {port}", file=sys.stderr)
         return 1
 
-    # 3. Port conflict check
+    # Propagate resolved host and port into environment for FastAPI / Pydantic settings
+    os.environ["PORT"] = str(port)
+    os.environ["HOST"] = host
+    env["PORT"] = str(port)
+    env["HOST"] = host
+
+    # 3. Port conflict check and resolution
     if is_port_in_use(host, port):
-        if args.auto_port:
+        occupied_pid = find_process_on_port(port)
+        if args.kill_port or args.force:
+            if occupied_pid:
+                print(f"{ansi.YELLOW}[ApexMind Notice]{ansi.RESET} Port {port} is occupied by PID {occupied_pid}. Terminating process tree...")
+                kill_process_by_pid(occupied_pid)
+                time.sleep(0.6)
+            if not is_port_in_use(host, port):
+                print(f"{ansi.GREEN}[ApexMind]{ansi.RESET} Port {port} freed successfully!")
+            else:
+                print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Could not free port {port}. Please specify another port.", file=sys.stderr)
+                return 1
+        elif args.auto_port:
             next_port = find_next_available_port(host, port + 1)
             print(f"{ansi.YELLOW}[ApexMind Notice]{ansi.RESET} Port {port} is occupied. Auto-switching to available port {ansi.GREEN}{next_port}{ansi.RESET}")
             port = next_port
         else:
+            pid_info = f" by process PID {ansi.WHITE}{occupied_pid}{ansi.RESET}" if occupied_pid else ""
             print(
-                f"\n{ansi.RED}{ansi.BOLD}[ApexMind Error]{ansi.RESET} Port {ansi.WHITE}{port}{ansi.RESET} is already in use by another process!\n"
+                f"\n{ansi.RED}{ansi.BOLD}[ApexMind Error]{ansi.RESET} Port {ansi.WHITE}{port}{ansi.RESET} is already in use{pid_info}!\n"
                 f"{ansi.BOLD}Resolution:{ansi.RESET}\n"
-                f" - Auto-assign free port: {ansi.CYAN}python script/backend.py --auto-port{ansi.RESET}\n"
-                f" - Change the port:       {ansi.CYAN}python script/backend.py --port {port + 1}{ansi.RESET}\n"
-                + (
-                    f" - Terminate existing:   {ansi.CYAN}netstat -ano | findstr :{port}{ansi.RESET} (Windows)\n"
-                    if os.name == "nt"
-                    else f" - Terminate existing:   {ansi.CYAN}lsof -i :{port}{ansi.RESET} (Unix)\n"
-                ),
+                f" - Auto-terminate & restart: {ansi.CYAN}python script/backend.py --kill-port{ansi.RESET}\n"
+                f" - Auto-assign free port:    {ansi.CYAN}python script/backend.py --auto-port{ansi.RESET}\n"
+                f" - Specify another port:     {ansi.CYAN}python script/backend.py --port {port + 1}{ansi.RESET}\n",
                 file=sys.stderr,
             )
             return 1
@@ -370,15 +533,6 @@ def main() -> int:
 
     display_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
 
-    print("=" * 64)
-    print(f" {ansi.BOLD}ApexMind Studio AI — Backend Server{ansi.RESET}")
-    print(f" Runtime:   {ansi.CYAN}{python_executable}{ansi.RESET}")
-    print(f" Address:   {ansi.WHITE}http://{display_host}:{port}{ansi.RESET}")
-    print(f" API Docs:  {ansi.CYAN}http://{display_host}:{port}/api/docs{ansi.RESET}")
-    print(f" Mode:      {ansi.GREEN if reload_enabled else ansi.YELLOW}{'Development (auto-reload)' if reload_enabled else 'Production'}{ansi.RESET}")
-    print(f" Log Level: {log_level}")
-    print("=" * 64)
-
     # 7. Launch browser auto-open hook if requested
     if args.open:
         print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Browser auto-open scheduled for http://{display_host}:{port}/api/docs")
@@ -405,8 +559,7 @@ def main() -> int:
             workers=args.workers if not reload_enabled else 1,
         )
         return 0
-    except KeyboardInterrupt:
-        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Backend stopped cleanly. Goodbye!\n")
+    except (KeyboardInterrupt, SystemExit):
         return 0
     except OSError as exc:
         print(f"\n{ansi.RED}{ansi.BOLD}[ApexMind OS Error]{ansi.RESET} Failed to bind server: {exc}", file=sys.stderr)
@@ -414,6 +567,10 @@ def main() -> int:
     except Exception as exc:
         print(f"\n{ansi.RED}{ansi.BOLD}[ApexMind Fatal Error]{ansi.RESET} {exc}", file=sys.stderr)
         return 1
+    finally:
+        kill_child_processes()
+        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Backend stopped cleanly. Goodbye!\n")
+
 
 
 if __name__ == "__main__":

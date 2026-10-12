@@ -1,10 +1,17 @@
 import React from 'react';
 import { User, ShieldCheck, Award, Zap, Youtube, CheckCircle2, Star } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/shared/ui/common';
+import { useAuth } from '@/src/features/auth/context/AuthContext';
 
 export default function ProfilePage({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const { user } = useAuth();
+
+  const displayName = user?.name || 'ApexMind Creator Pro';
+  const displayEmail = user?.email || 'creator@apexmind.ai';
+  const avatarUrl = user?.avatarUrl;
+
   return (
-    <div className="flex-1 w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] p-6 lg:p-8 space-y-8 max-w-5xl mx-auto">
+    <div className="flex-1 w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] p-6 lg:p-8 space-y-8 max-w-5xl mx-auto font-sans-studio">
       {/* Header */}
       <div className="flex items-center justify-between pb-6 border-b border-[#2F2F2F]">
         <div>
@@ -20,18 +27,29 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
       <Card className="bg-gradient-to-r from-[#1E1E1E] via-[#2A2A2A] to-[#1E1E1E] border-[#2F2F2F]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center justify-center text-[#60A5FA] shadow-xl">
-              <User className="w-8 h-8" />
-            </div>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="w-16 h-16 rounded-2xl bg-[#121212] border border-[#2F2F2F] object-cover shadow-xl"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center justify-center text-[#60A5FA] shadow-xl">
+                <User className="w-8 h-8" />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-white">ApexMind Creator Pro</h2>
-                <Badge variant="blue">Verified Channel Admin</Badge>
+                <h2 className="text-xl font-bold text-white">{displayName}</h2>
+                <Badge variant="blue">✓ Google Verified</Badge>
               </div>
-              <p className="text-xs text-[#9CA3AF] mt-1">creator@apexmind.ai</p>
-              <p className="text-xs text-[#60A5FA] font-mono mt-0.5">Creator Studio Account · Active</p>
+              <p className="text-xs text-[#9CA3AF] mt-1">{displayEmail}</p>
+              <p className="text-xs text-[#60A5FA] font-mono mt-0.5">
+                Google Identity Account · Connected
+              </p>
             </div>
           </div>
+
 
           <Button variant="primary" size="sm" icon={<Zap className="w-4 h-4" />} onClick={() => onNavigate('workspace')}>
             Open Creation Studio

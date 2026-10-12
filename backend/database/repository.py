@@ -72,37 +72,112 @@ def get_channels() -> List[Dict[str, Any]]:
         for r in rows
     ]
 
-def add_channel(name: str, handle: str, niche: str) -> Dict[str, Any]:
+def get_channel_by_id(channel_id: str) -> Optional[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
-    ch_id = f"ch_{int(datetime.utcnow().timestamp() * 1000)}"
+    cursor.execute("SELECT * FROM youtube_channels WHERE id = ?", (channel_id,))
+    r = cursor.fetchone()
+    conn.close()
+    if not r:
+        return None
+    return {
+        "id": r["id"],
+        "name": r["name"],
+        "handle": r["handle"],
+        "subscribers": r["subscribers"],
+        "videosUploaded": r["videos_uploaded"],
+        "avatarUrl": r["avatar_url"],
+        "isAutoUploadEnabled": bool(r["is_auto_upload_enabled"]),
+        "scheduleCron": r["schedule_cron"],
+        "connectedAt": r["connected_at"],
+        "niche": r["niche"],
+    }
+
+def add_channel(
+    name: str,
+    handle: str,
+    niche: str = "Motivational Quotes",
+    avatar_url: Optional[str] = None,
+    subscribers: int = 0,
+    videos_uploaded: int = 0,
+    custom_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    ch_id = custom_id or f"ch_{int(datetime.utcnow().timestamp() * 1000)}"
     clean_handle = handle.strip() if handle else f"@{name.lower().replace(' ', '')}"
     if not clean_handle.startswith("@"):
         clean_handle = f"@{clean_handle}"
-    avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={name}"
+    avatar = avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={name}"
     timestamp = datetime.utcnow().isoformat()
 
     cursor.execute("""
     INSERT INTO youtube_channels (id, name, handle, subscribers, videos_uploaded, avatar_url, is_auto_upload_enabled, schedule_cron, connected_at, niche)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (ch_id, name, clean_handle, 0, 0, avatar, 1, "Daily at 08:00 AM EST", timestamp, niche or "Motivational Quotes"))
+    """, (ch_id, name, clean_handle, subscribers, videos_uploaded, avatar, 1, "Daily at 08:00 AM EST", timestamp, niche or "Motivational Quotes"))
     conn.commit()
     conn.close()
 
-    logger.info(f"Registered YouTube channel: '{name}' ({clean_handle}) [Niche: {niche}] (ID: {ch_id})")
+    logger.info(f"Registered YouTube channel: '{name}' ({clean_handle}) [Subs: {subscribers}, Videos: {videos_uploaded}] (ID: {ch_id})")
 
     return {
         "id": ch_id,
         "name": name,
         "handle": clean_handle,
-        "subscribers": 0,
-        "videosUploaded": 0,
+        "subscribers": subscribers,
+        "videosUploaded": videos_uploaded,
         "avatarUrl": avatar,
         "isAutoUploadEnabled": True,
         "scheduleCron": "Daily at 08:00 AM EST",
         "connectedAt": timestamp,
         "niche": niche or "Motivational Quotes"
     }
+
+def update_channel(channel_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    field_map = {
+        "name": "name",
+        "handle": "handle",
+        "subscribers": "subscribers",
+        "videosUploaded": "videos_uploaded",
+        "avatarUrl": "avatar_url",
+        "niche": "niche",
+        "isAutoUploadEnabled": "is_auto_upload_enabled",
+        "scheduleCron": "schedule_cron",
+    }
+
+    set_clauses = []
+    values = []
+    for k, v in updates.items():
+        if k in field_map:
+            set_clauses.append(f"{field_map[k]} = ?")
+            values.append(v)
+
+    if not set_clauses:
+        conn.close()
+        return get_channel_by_id(channel_id)
+
+    values.append(channel_id)
+    query = f"UPDATE youtube_channels SET {', '.join(set_clauses)} WHERE id = ?"
+    cursor.execute(query, tuple(values))
+    conn.commit()
+    conn.close()
+
+    logger.info(f"Updated YouTube channel (ID: {channel_id}) with fields: {list(updates.keys())}")
+    return get_channel_by_id(channel_id)
+
+def delete_channel(channel_id: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM youtube_channels WHERE id = ?", (channel_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    logger.info(f"Deleted YouTube channel (ID: {channel_id}): {deleted}")
+    return deleted
+
 
 def get_videos() -> List[Dict[str, Any]]:
     conn = get_connection()
@@ -304,5 +379,91 @@ def get_media_library() -> Dict[str, Any]:
         "visualBackdrops": backdrops,
         "voiceProfiles": voices,
     }
+
+
+def upsert_user(
+    email: str,
+    name: str,
+    avatar_url: Optional[str] = None,
+    google_id: Optional[str] = None,
+    provider: str = "google",
+) -> Dict[str, Any]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    existing = cursor.fetchone()
+
+    timestamp = datetime.utcnow().isoformat()
+    avatar = avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={name}"
+
+    if existing:
+        user_id = existing["id"]
+        cursor.execute("""
+        UPDATE users
+        SET name = ?, avatar_url = COALESCE(?, avatar_url), google_id = COALESCE(?, google_id),
+            last_login_at = ?, provider = ?
+        WHERE id = ?
+        """, (name, avatar, google_id, timestamp, provider, user_id))
+    else:
+        user_id = f"usr_{int(datetime.utcnow().timestamp() * 1000)}"
+        cursor.execute("""
+        INSERT INTO users (id, email, name, avatar_url, provider, google_id, created_at, last_login_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, email, name, avatar, provider, google_id, timestamp, timestamp))
+
+    conn.commit()
+    conn.close()
+
+    logger.info(f"Upserted user profile: '{name}' ({email}) [Provider: {provider}, ID: {user_id}]")
+    return {
+        "id": user_id,
+        "email": email,
+        "name": name,
+        "avatarUrl": avatar,
+        "provider": provider,
+        "googleId": google_id,
+        "lastLoginAt": timestamp,
+    }
+
+
+def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {
+        "id": row["id"],
+        "email": row["email"],
+        "name": row["name"],
+        "avatarUrl": row["avatar_url"],
+        "provider": row["provider"],
+        "googleId": row["google_id"],
+        "createdAt": row["created_at"],
+        "lastLoginAt": row["last_login_at"],
+    }
+
+
+def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {
+        "id": row["id"],
+        "email": row["email"],
+        "name": row["name"],
+        "avatarUrl": row["avatar_url"],
+        "provider": row["provider"],
+        "googleId": row["google_id"],
+        "createdAt": row["created_at"],
+        "lastLoginAt": row["last_login_at"],
+    }
+
 
 

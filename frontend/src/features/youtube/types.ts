@@ -9,6 +9,31 @@ export interface YouTubeChannel {
   scheduleCron: string;
   connectedAt: string;
   niche: string;
+  verified?: boolean;
+  channelUrl?: string;
+  description?: string;
+}
+
+export interface YouTubeLookupResult {
+  channelId: string;
+  name: string;
+  handle: string;
+  avatarUrl: string;
+  subscribers: number;
+  videosUploaded: number;
+  description: string;
+  verified: boolean;
+  channelUrl: string;
+  source: string;
+}
+
+export interface YouTubeLiveShort {
+  id: string;
+  title: string;
+  views: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  published: string;
 }
 
 export interface YouTubeVideo {

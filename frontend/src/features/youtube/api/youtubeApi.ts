@@ -1,4 +1,10 @@
-import { YouTubeChannel, YouTubeVideo, AutomationJob } from '../types';
+import {
+  YouTubeChannel,
+  YouTubeVideo,
+  AutomationJob,
+  YouTubeLookupResult,
+  YouTubeLiveShort,
+} from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
 export const youtubeApi = {
@@ -13,23 +19,121 @@ export const youtubeApi = {
     consoleLogger.api('GET', '/api/youtube/channels', res.status, duration);
     const data = await res.json();
     consoleLogger.info('YouTube', `Loaded ${data.channels?.length || 0} channels, ${data.videos?.length || 0} published videos`);
-    return { channels: data.channels, videos: data.videos };
+    return { channels: data.channels || [], videos: data.videos || [] };
   },
 
-  // Connect new YouTube channel
-  async connectYouTubeChannel(channelName: string, handle: string, niche: string): Promise<YouTubeChannel> {
-    consoleLogger.info('YouTube', `Connecting channel "${channelName}" (${handle})...`);
+  // Lookup / verify live YouTube channel metadata
+  async lookupChannel(query: string): Promise<YouTubeLookupResult> {
+    consoleLogger.info('YouTube', `Looking up YouTube channel info for "${query}"...`);
+    const start = performance.now();
+    const res = await fetch('/api/youtube/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    const duration = performance.now() - start;
+    consoleLogger.api('POST', '/api/youtube/lookup', res.status, duration);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Channel not found' }));
+      throw new Error(err.detail || 'Failed to resolve YouTube channel');
+    }
+
+    const data = await res.json();
+    consoleLogger.success('YouTube', `Live channel verified: "${data.channel.name}" (${data.channel.handle})`, data.channel);
+    return data.channel;
+  },
+
+  // Connect new YouTube channel (with real YouTube metadata or manual)
+  async connectYouTubeChannel(payload: {
+    channelName?: string;
+    handle: string;
+    niche?: string;
+    avatarUrl?: string;
+    subscribers?: number;
+    videosUploaded?: number;
+    autoResolve?: boolean;
+  }): Promise<YouTubeChannel> {
+    consoleLogger.info('YouTube', `Connecting channel "${payload.channelName || payload.handle}"...`);
     const start = performance.now();
     const res = await fetch('/api/youtube/connect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channelName, handle, niche }),
+      body: JSON.stringify(payload),
     });
     const duration = performance.now() - start;
     consoleLogger.api('POST', '/api/youtube/connect', res.status, duration);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to connect channel' }));
+      throw new Error(err.detail || 'Failed to connect channel');
+    }
+
     const data = await res.json();
     consoleLogger.success('YouTube', `Channel "${data.channel?.name}" connected successfully!`, data.channel);
     return data.channel;
+  },
+
+  // Sync / refresh real-time channel statistics from live YouTube
+  async syncChannel(channelId: string): Promise<{ channel: YouTubeChannel; message: string }> {
+    consoleLogger.info('YouTube', `Syncing channel ${channelId} with live YouTube...`);
+    const start = performance.now();
+    const res = await fetch(`/api/youtube/channels/${channelId}/sync`, {
+      method: 'POST',
+    });
+    const duration = performance.now() - start;
+    consoleLogger.api('POST', `/api/youtube/channels/${channelId}/sync`, res.status, duration);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Sync failed' }));
+      throw new Error(err.detail || 'Failed to sync YouTube metrics');
+    }
+
+    const data = await res.json();
+    consoleLogger.success('YouTube', data.message, data.channel);
+    return data;
+  },
+
+  // Correct channel handle or identifier
+  async correctChannel(channelId: string, query: string): Promise<{ channel: YouTubeChannel; message: string }> {
+    consoleLogger.info('YouTube', `Correcting channel ${channelId} to "${query}"...`);
+    const start = performance.now();
+    const res = await fetch('/api/youtube/correct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelId, query }),
+    });
+    const duration = performance.now() - start;
+    consoleLogger.api('POST', '/api/youtube/correct', res.status, duration);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Correction failed' }));
+      throw new Error(err.detail || 'Failed to correct YouTube channel');
+    }
+
+    const data = await res.json();
+    consoleLogger.success('YouTube', data.message, data.channel);
+    return data;
+  },
+
+  // Get live shorts published on this YouTube channel
+  async getLiveShorts(channelId: string, limit = 12): Promise<YouTubeLiveShort[]> {
+    const start = performance.now();
+    const res = await fetch(`/api/youtube/channels/${channelId}/shorts?limit=${limit}`);
+    const duration = performance.now() - start;
+    consoleLogger.api('GET', `/api/youtube/channels/${channelId}/shorts`, res.status, duration);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.shorts || [];
+  },
+
+  // Disconnect channel
+  async deleteChannel(channelId: string): Promise<boolean> {
+    consoleLogger.info('YouTube', `Disconnecting channel ${channelId}...`);
+    const res = await fetch(`/api/youtube/channels/${channelId}`, {
+      method: 'DELETE',
+    });
+    return res.ok;
   },
 
   // Publish video to YouTube Shorts
@@ -39,6 +143,7 @@ export const youtubeApi = {
     voice: string;
     visualTheme: string;
     category: string;
+    channelId?: string;
   }): Promise<YouTubeVideo> {
     consoleLogger.info('YouTube', `Publishing Short: "${payload.title}"...`, payload);
     const start = performance.now();
@@ -80,4 +185,3 @@ export const youtubeApi = {
     return data.automations;
   },
 };
-

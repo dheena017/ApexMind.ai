@@ -49,12 +49,12 @@ export const workspaceApi = {
     visualBackdrops: VisualBackdrop[];
     voiceProfiles: VoiceProfile[];
   }> {
-    const start = performance.now();
-    const res = await fetch('/api/media-library');
-    const duration = performance.now() - start;
-    consoleLogger.api('GET', '/api/media-library', res.status, duration);
-    const data = await res.json();
-    consoleLogger.info('Studio', `Media library loaded (${data.data?.musicTracks?.length || 0} tracks, ${data.data?.visualBackdrops?.length || 0} backdrops)`);
+      const start = performance.now();
+      const res = await fetch('/api/media-library');
+      const duration = performance.now() - start;
+      consoleLogger.api('GET', '/api/media-library', res.status, duration);
+      const data = await res.json();
+      consoleLogger.info('Studio', `Media library loaded (${data.data?.musicTracks?.length || 0} tracks, ${data.data?.visualBackdrops?.length || 0} backdrops)`);
     return data.data;
   },
 

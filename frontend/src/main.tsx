@@ -59,6 +59,8 @@ if (!rootElement) {
 
 consoleLogger.printDevBanner();
 
+import { AuthProvider } from './features/auth/context/AuthContext';
+
 createRoot(rootElement, {
 
   onRecoverableError(error, errorInfo) {
@@ -66,6 +68,9 @@ createRoot(rootElement, {
   },
 }).render(
   <AppErrorBoundary>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </AppErrorBoundary>,
 );
+

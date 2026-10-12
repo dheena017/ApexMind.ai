@@ -114,3 +114,18 @@ CREATE TABLE IF NOT EXISTS voice_profiles (
     style TEXT NOT NULL,
     speed TEXT DEFAULT '1.0x'
 );
+
+-- 9. Users Table (Google Authentication & Creator Profiles)
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    avatar_url TEXT,
+    provider TEXT DEFAULT 'google',
+    google_id TEXT,
+    created_at TEXT NOT NULL,
+    last_login_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+

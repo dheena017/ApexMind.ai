@@ -59,6 +59,9 @@ class UvicornNoiseFilter(logging.Filter):
         "shutting down",
         "application shutdown complete",
         "application startup complete",
+        "will watch for changes in these directories",
+        "started reloader process",
+        "uvicorn running on",
     )
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -113,7 +116,7 @@ class ColoredFormatter(logging.Formatter):
                 tag_color = col
                 break
 
-        tag = f"{tag_color}{Colors.BOLD}[{mod_name}]{Colors.RESET}"
+        tag = f"{tag_color}{Colors.BOLD}[{mod_name:<10}]{Colors.RESET}"
 
         # 4. Message Coloring and cleaning
         msg = record.getMessage()
@@ -259,13 +262,14 @@ if sys.platform == "win32":
 def print_startup_banner(host: str, port: int):
     """Renders a stylized startup banner in the console with exact column padding."""
     C = Colors
+    display_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
     lines = [
         ("Framework", "FastAPI 2.0 (Python 3.11)", C.BRIGHT_GREEN),
         ("Database", "SQLite (backend/data/apexmind.db)", C.BRIGHT_YELLOW),
         ("AI Engine", "Google Gemini 2.5 Flash + TTS Audio", C.BRIGHT_MAGENTA),
-        ("Server Host", f"http://{host}:{port}", C.BRIGHT_WHITE),
-        ("OpenAPI Docs", f"http://{host}:{port}/api/docs", C.BRIGHT_CYAN),
-        ("Health Check", f"http://{host}:{port}/api/health", C.BRIGHT_GREEN),
+        ("Server URL", f"http://{display_host}:{port}", C.BRIGHT_WHITE),
+        ("OpenAPI Docs", f"http://{display_host}:{port}/api/docs", C.BRIGHT_CYAN),
+        ("Health Check", f"http://{display_host}:{port}/api/health", C.BRIGHT_GREEN),
     ]
     width = 76
 

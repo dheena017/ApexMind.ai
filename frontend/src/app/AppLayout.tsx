@@ -13,8 +13,10 @@ import {
   LogOut
 } from 'lucide-react';
 import { Button, Badge } from '@/src/shared/ui/common';
+import { useAuth } from '@/src/features/auth/context/AuthContext';
 
 interface AppLayoutProps {
+
   children: React.ReactNode;
   activePage: string;
   onNavigate: (page: string) => void;
@@ -22,8 +24,10 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children, activePage, onNavigate, unreadCount = 2 }: AppLayoutProps) {
+  const { user, logout } = useAuth();
   // Sidebar open/close state
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
 
   // Prevent background page from moving or scrolling when sidebar is open
   useEffect(() => {
@@ -136,15 +140,24 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
 
           <button
             onClick={() => onNavigate('profile')}
-            className="p-1 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer flex items-center justify-center"
-            title="Profile & Badges"
+            className="p-1 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer flex items-center justify-center gap-2"
+            title={user ? `${user.name} (${user.email})` : 'Profile & Badges'}
           >
-            <div className="w-8 h-8 rounded-lg bg-[#1E1E1E] border border-[#2F2F2F] flex items-center justify-center text-xs font-bold text-[#60A5FA]">
-              AM
-            </div>
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.name}
+                className="w-8 h-8 rounded-lg bg-[#1E1E1E] border border-[#2F2F2F] object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-[#1E1E1E] border border-[#2F2F2F] flex items-center justify-center text-xs font-bold text-[#60A5FA]">
+                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AM'}
+              </div>
+            )}
           </button>
         </div>
       </header>
+
 
       {/* =========================================================================
           Main Content Container - Scrollbar is confined strictly below the header
@@ -232,6 +245,26 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
             Create Short
           </Button>
 
+          {/* Creator Profile Card */}
+          {user && (
+            <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#2F2F2F] flex items-center gap-3">
+              <img
+                src={user.avatarUrl}
+                alt={user.name}
+                className="w-9 h-9 rounded-xl bg-[#121212] border border-[#2F2F2F] object-cover shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-white truncate">{user.name}</span>
+                  <span className="text-[10px] bg-blue-500/20 text-[#60A5FA] px-1 py-0.2 rounded font-bold">
+                    ✓ Google
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#9CA3AF] truncate">{user.email}</p>
+              </div>
+            </div>
+          )}
+
           {/* Gemini Engine Active Card */}
           <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#2F2F2F] space-y-1">
             <div className="flex items-center justify-between">
@@ -246,12 +279,16 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
 
           {/* Sign Out Button */}
           <button
-            onClick={() => handleNavClick('login')}
+            onClick={async () => {
+              await logout();
+              handleNavClick('login');
+            }}
             className="w-full flex items-center justify-center gap-2 p-2.5 text-xs text-[#9CA3AF] hover:text-red-400 rounded-xl hover:bg-red-500/10 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
           </button>
+
         </div>
       </aside>
     </div>

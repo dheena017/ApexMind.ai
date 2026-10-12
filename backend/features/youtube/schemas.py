@@ -9,9 +9,20 @@ from pydantic import BaseModel, Field
 # ── 1. Request Models ─────────────────────────────────────────────────────────
 
 class ConnectChannelRequest(BaseModel):
-    channelName: str = Field(..., min_length=1, max_length=100, description="Name of the YouTube channel")
-    handle: Optional[str] = Field(default="", description="YouTube @handle")
+    channelName: Optional[str] = Field(default=None, description="Name of the YouTube channel")
+    handle: Optional[str] = Field(default="", description="YouTube @handle or URL")
     niche: Optional[str] = Field(default="Motivational Quotes", description="Channel niche / focus")
+    avatarUrl: Optional[str] = Field(default=None, description="Channel Avatar URL")
+    subscribers: Optional[int] = Field(default=0, description="Subscriber count")
+    videosUploaded: Optional[int] = Field(default=0, description="Videos count")
+    autoResolve: Optional[bool] = Field(default=True, description="Whether to auto-fetch live stats from YouTube")
+
+class LookupChannelRequest(BaseModel):
+    query: str = Field(..., min_length=1, description="YouTube @handle, full URL, or Channel ID")
+
+class CorrectChannelRequest(BaseModel):
+    channelId: str = Field(..., description="ID of the channel to correct in database")
+    query: Optional[str] = Field(default=None, description="New YouTube @handle or URL to correct with")
 
 class PublishVideoRequest(BaseModel):
     title: str = Field(..., min_length=1, description="Video title")
@@ -23,6 +34,7 @@ class PublishVideoRequest(BaseModel):
 
 class ToggleAutomationRequest(BaseModel):
     id: str = Field(..., description="ID of the automation job to toggle")
+
 
 # ── 2. Response DTOs ──────────────────────────────────────────────────────────
 
@@ -77,3 +89,17 @@ class PublishVideoResponse(BaseModel):
 class AutomationsListResponse(BaseModel):
     success: bool
     automations: List[AutomationJobResponse]
+
+class LookupChannelResponse(BaseModel):
+    success: bool
+    channel: dict
+
+class SyncChannelResponse(BaseModel):
+    success: bool
+    channel: ChannelResponse
+    message: str
+
+class ShortsListResponse(BaseModel):
+    success: bool
+    shorts: List[dict]
+

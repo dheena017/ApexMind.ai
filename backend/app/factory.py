@@ -16,6 +16,7 @@ from backend.features import (
     youtube_router,
     notifications_router,
     dashboard_router,
+    auth_router,
 )
 
 # Initialize colorful log formatting
@@ -29,7 +30,7 @@ async def lifespan(app: FastAPI):
     # Initialize SQLite tables on startup
     init_db()
     logger.info("SQLite DB connected: backend/data/apexmind.db")
-    logger.info("Features active: Workspace • YouTube • Notifications • Dashboard")
+    logger.info("Features active: Workspace • YouTube • Notifications • Dashboard • Auth")
     yield
     logger.info("ApexMind Studio stopped gracefully.")
 
@@ -58,10 +59,12 @@ def create_app() -> FastAPI:
 
 
     # Register Feature Routers matching frontend modules exactly
+    app.include_router(auth_router)
     app.include_router(workspace_router)
     app.include_router(youtube_router)
     app.include_router(notifications_router)
     app.include_router(dashboard_router)
+
 
     @app.get("/api/health", tags=["Health"])
     def health_check():

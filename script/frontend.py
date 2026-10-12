@@ -10,13 +10,16 @@ from __future__ import annotations
 import argparse
 import http.client
 import os
+import re
 import shutil
 import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -24,6 +27,123 @@ FRONTEND_ROOT = PROJECT_ROOT / "frontend"
 VITE_BIN = PROJECT_ROOT / "node_modules" / "vite" / "bin" / "vite.js"
 VITE_CONFIG = FRONTEND_ROOT / "vite.config.ts"
 DOTENV_PATH = PROJECT_ROOT / ".env"
+
+# Enable UTF-8 console output on Windows
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+_WINDOWS_JOB_HANDLE = None
+
+
+def enable_windows_kill_on_close() -> None:
+    """Ensure all spawned subprocesses and reload workers are destroyed by the Windows kernel if parent exits."""
+    global _WINDOWS_JOB_HANDLE
+    if sys.platform != "win32":
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    try:
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        job = kernel32.CreateJobObjectW(None, None)
+        if not job:
+            return
+
+        class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("PerProcessUserTimeLimit", wintypes.LARGE_INTEGER),
+                ("PerJobUserTimeLimit", wintypes.LARGE_INTEGER),
+                ("LimitFlags", wintypes.DWORD),
+                ("MinimumWorkingSetSize", ctypes.c_size_t),
+                ("MaximumWorkingSetSize", ctypes.c_size_t),
+                ("ActiveProcessLimit", wintypes.DWORD),
+                ("Affinity", ctypes.c_size_t),
+                ("PriorityClass", wintypes.DWORD),
+                ("SchedulingClass", wintypes.DWORD),
+            ]
+
+        class IO_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ("ReadOperationCount", ctypes.c_ulonglong),
+                ("WriteOperationCount", ctypes.c_ulonglong),
+                ("OtherOperationCount", ctypes.c_ulonglong),
+                ("ReadTransferCount", ctypes.c_ulonglong),
+                ("WriteTransferCount", ctypes.c_ulonglong),
+                ("OtherTransferCount", ctypes.c_ulonglong),
+            ]
+
+        class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+                ("IoInfo", IO_COUNTERS),
+                ("ProcessMemoryLimit", ctypes.c_size_t),
+                ("JobMemoryLimit", ctypes.c_size_t),
+                ("PeakProcessMemoryLimit", ctypes.c_size_t),
+                ("PeakJobMemoryLimit", ctypes.c_size_t),
+            ]
+
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000
+        JobObjectExtendedLimitInformation = 9
+
+        info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+
+        kernel32.SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            ctypes.byref(info),
+            ctypes.sizeof(info),
+        )
+
+        current_process = kernel32.GetCurrentProcess()
+        kernel32.AssignProcessToJobObject(job, current_process)
+        _WINDOWS_JOB_HANDLE = job
+    except Exception:
+        pass
+
+
+def find_process_on_port(port: int) -> int | None:
+    """Find the PID of the process listening on the given port."""
+    if sys.platform == "win32":
+        try:
+            res = subprocess.run(
+                ["netstat", "-ano"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            for line in res.stdout.splitlines():
+                parts = line.strip().split()
+                if len(parts) >= 5 and f":{port}" in parts[1] and parts[3].upper() == "LISTENING":
+                    try:
+                        return int(parts[4])
+                    except ValueError:
+                        continue
+        except Exception:
+            pass
+    return None
+
+
+def kill_process_by_pid(pid: int) -> bool:
+    """Forcefully terminate a process tree by PID."""
+    if sys.platform == "win32":
+        res = subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(pid)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        return res.returncode == 0
+    else:
+        try:
+            os.kill(pid, signal.SIGKILL)
+            return True
+        except Exception:
+            return False
 
 
 class Ansi:
@@ -78,6 +198,23 @@ class Ansi:
     @property
     def GRAY(self) -> str:
         return self._c("\033[90m")
+
+    @property
+    def BRIGHT_CYAN(self) -> str:
+        return self._c("\033[96;1m")
+
+    @property
+    def BRIGHT_WHITE(self) -> str:
+        return self._c("\033[97;1m")
+
+    @property
+    def BRIGHT_GREEN(self) -> str:
+        return self._c("\033[92;1m")
+
+    @property
+    def BRIGHT_YELLOW(self) -> str:
+        return self._c("\033[93;1m")
+
 
 
 def load_dotenv(path: Path) -> dict[str, str]:
@@ -216,29 +353,91 @@ def is_server_ready(host: str, port: int) -> bool:
         connection.close()
 
 
-def wait_for_frontend(host: str, port: int, timeout_seconds: int = 30, ansi: Ansi | None = None) -> None:
-    """Wait for Vite server to become ready with progressive console feedback."""
+def wait_for_frontend(
+    host: str,
+    port: int,
+    proc: subprocess.Popen | None = None,
+    timeout_seconds: int = 30,
+) -> float:
+    """Silently wait for Vite HTTP server to respond without writing partial dot characters to stdout."""
     probe_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
     url = f"http://{probe_host}:{port}"
     deadline = time.time() + timeout_seconds
     start_time = time.time()
 
-    ansi_obj = ansi or Ansi(enabled=False)
-    sys.stdout.write(f"{ansi_obj.CYAN}[ApexMind]{ansi_obj.RESET} Waiting for Vite frontend at {url} ")
-    sys.stdout.flush()
-
     while time.time() < deadline:
-        if is_server_ready(host, port):
-            elapsed = time.time() - start_time
-            sys.stdout.write(f"{ansi_obj.GREEN}READY{ansi_obj.RESET} ({elapsed:.1f}s)\n")
-            sys.stdout.flush()
-            return
-        sys.stdout.write(".")
-        sys.stdout.flush()
-        time.sleep(0.3)
+        if proc is not None and proc.poll() is not None:
+            raise RuntimeError(f"Vite server exited prematurely with code {proc.poll()}")
 
-    sys.stdout.write(f"\n{ansi_obj.RED}TIMEOUT{ansi_obj.RESET}\n")
+        if is_server_ready(host, port):
+            return time.time() - start_time
+        time.sleep(0.15)
+
     raise TimeoutError(f"The Vite frontend did not become ready at {url} within {timeout_seconds} seconds.")
+
+
+def format_log(mod_name: str, message: str, level: str = "INFO", ansi: Ansi | None = None) -> str:
+    """Format console log lines with exact badges, module padding, and timestamps matching backend logger."""
+    now = datetime.now().strftime("%H:%M:%S")
+    a = ansi or Ansi(enabled=True)
+
+    timestamp = f"{a.GRAY}[{now}]{a.RESET}"
+    badge = f"\033[44m\033[97m\033[1m  {level:<4} \033[0m"
+
+    module_colors = {
+        "Vite": a.MAGENTA,
+        "Server": a.CYAN,
+        "App": a.WHITE,
+        "Plugins": a.YELLOW,
+        "HMR": a.GREEN,
+    }
+    col = module_colors.get(mod_name, a.CYAN)
+    tag = f"{col}{a.BOLD}[{mod_name:<10}]{a.RESET}"
+    msg_colored = f"{a.WHITE}{message}{a.RESET}"
+
+    return f"{timestamp} {badge} {tag} {msg_colored}"
+
+
+def print_frontend_banner(display_host: str, port: int, node_version: str, with_backend: bool, ansi: Ansi) -> None:
+    """Renders a stylized startup banner in the console with exact column padding."""
+    lines = [
+        ("Runtime", f"Node.js {node_version}", ansi.CYAN),
+        ("Frontend URL", f"http://{display_host}:{port}", ansi.WHITE),
+        (
+            "Backend Start",
+            "Enabled (FastAPI alongside Vite)" if with_backend else "Disabled (Run 'npm run dev' to start both)",
+            ansi.GREEN if with_backend else ansi.GRAY,
+        ),
+        ("Mode", "Development (Vite HMR Active)", ansi.CYAN),
+    ]
+    width = 76
+
+    try:
+        b_tl, b_tr, b_bl, b_br, b_ml, b_mr, b_h, b_v = "╔", "╗", "╚", "╝", "╠", "╣", "═", "║"
+        banner_top = f"{ansi.CYAN}{b_tl}{b_h * width}{b_tr}{ansi.RESET}"
+        banner_mid = f"{ansi.CYAN}{b_ml}{b_h * width}{b_mr}{ansi.RESET}"
+        banner_bot = f"{ansi.CYAN}{b_bl}{b_h * width}{b_br}{ansi.RESET}"
+        v_bar = f"{ansi.CYAN}{b_v}{ansi.RESET}"
+
+        title_text = "APEXMIND STUDIO AI  —  FRONTEND DEV SERVER"
+        title_pad = width - len(title_text) - 3
+        title_line = f"{v_bar}   {ansi.WHITE}{ansi.BOLD}{title_text}{ansi.RESET}{' ' * max(0, title_pad)}{v_bar}"
+
+        content_lines = []
+        for label, val, color in lines:
+            prefix = f"   {label:<14}: "
+            raw_len = len(prefix) + len(val)
+            pad = width - raw_len
+            line = f"{v_bar}{ansi.GRAY}{prefix}{ansi.RESET}{color}{val}{ansi.RESET}{' ' * max(0, pad)}{v_bar}"
+            content_lines.append(line)
+
+        output = "\n" + "\n".join([banner_top, title_line, banner_mid] + content_lines + [banner_bot]) + "\n"
+        print(output)
+    except (UnicodeEncodeError, Exception):
+        print(f"\n[{ansi.WHITE}{ansi.BOLD}APEXMIND STUDIO AI — FRONTEND DEV SERVER{ansi.RESET}]")
+        for label, val, color in lines:
+            print(f"  {label:<14}: {color}{val}{ansi.RESET}")
+        print()
 
 
 def terminate_process_tree(proc: subprocess.Popen | None) -> None:
@@ -302,6 +501,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--port", "-p", type=int, help="Frontend port to bind (overrides FRONTEND_PORT)")
     parser.add_argument("--backend-host", help="Custom host to pass to backend")
     parser.add_argument("--backend-port", type=int, help="Custom port to pass to backend")
+    parser.add_argument("--kill-port", "-k", action="store_true", help="Force-terminate any process currently occupying the port")
+    parser.add_argument("--force", "-f", action="store_true", help="Alias for --kill-port")
     parser.add_argument("--auto-port", "-a", action="store_true", help="Automatically pick the next available port if chosen port is occupied")
     parser.add_argument("--open", "-o", action="store_true", help="Automatically open browser once frontend is ready")
     parser.add_argument("--timeout", "-t", type=int, default=30, help="Maximum seconds to wait for frontend readiness (default: 30)")
@@ -314,6 +515,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     global frontend_process, backend_process, ansi_global
+
+    enable_windows_kill_on_close()
 
     args = parse_args()
 
@@ -342,21 +545,29 @@ def main() -> int:
 
     # 3. Port conflict handling
     if is_port_in_use(host, port):
-        if args.auto_port:
+        occupied_pid = find_process_on_port(port)
+        if args.kill_port or args.force:
+            if occupied_pid:
+                print(f"{ansi.YELLOW}[ApexMind Notice]{ansi.RESET} Port {port} is occupied by PID {occupied_pid}. Terminating process tree...")
+                kill_process_by_pid(occupied_pid)
+                time.sleep(0.6)
+            if not is_port_in_use(host, port):
+                print(f"{ansi.GREEN}[ApexMind]{ansi.RESET} Port {port} freed successfully!")
+            else:
+                print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Could not free port {port}. Please specify another port.", file=sys.stderr)
+                return 1
+        elif args.auto_port:
             next_port = find_next_available_port(host, port + 1)
             print(f"{ansi.YELLOW}[ApexMind Notice]{ansi.RESET} Port {port} is occupied. Auto-switching to available port {ansi.GREEN}{next_port}{ansi.RESET}")
             port = next_port
         else:
+            pid_info = f" by process PID {ansi.WHITE}{occupied_pid}{ansi.RESET}" if occupied_pid else ""
             print(
-                f"\n{ansi.RED}{ansi.BOLD}[ApexMind Error]{ansi.RESET} Port {ansi.WHITE}{port}{ansi.RESET} is already in use by another process!\n"
+                f"\n{ansi.RED}{ansi.BOLD}[ApexMind Error]{ansi.RESET} Port {ansi.WHITE}{port}{ansi.RESET} is already in use{pid_info}!\n"
                 f"{ansi.BOLD}Resolution:{ansi.RESET}\n"
-                f" - Auto-assign free port: {ansi.CYAN}python script/frontend.py --auto-port{ansi.RESET}\n"
-                f" - Specify another port:  {ansi.CYAN}python script/frontend.py --port {port + 1}{ansi.RESET}\n"
-                + (
-                    f" - Identify running process: {ansi.CYAN}netstat -ano | findstr :{port}{ansi.RESET} (Windows)\n"
-                    if os.name == "nt"
-                    else f" - Identify running process: {ansi.CYAN}lsof -i :{port}{ansi.RESET} (Unix)\n"
-                ),
+                f" - Auto-terminate & restart: {ansi.CYAN}python script/frontend.py --kill-port{ansi.RESET}\n"
+                f" - Auto-assign free port:    {ansi.CYAN}python script/frontend.py --auto-port{ansi.RESET}\n"
+                f" - Specify another port:     {ansi.CYAN}python script/frontend.py --port {port + 1}{ansi.RESET}\n",
                 file=sys.stderr,
             )
             return 1
@@ -371,12 +582,7 @@ def main() -> int:
 
     display_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
 
-    print("=" * 64)
-    print(f" {ansi.BOLD}ApexMind Studio AI — Frontend Dev Server{ansi.RESET}")
-    print(f" Node.js:        {ansi.CYAN}{node_version}{ansi.RESET}")
-    print(f" Frontend URL:   {ansi.WHITE}http://{display_host}:{port}{ansi.RESET}")
-    print(f" Backend Start:  {ansi.GREEN if args.with_backend else ansi.GRAY}{'Enabled' if args.with_backend else 'Disabled (run with --with-backend)'}{ansi.RESET}")
-    print("=" * 64)
+    print_frontend_banner(display_host, port, node_version, args.with_backend, ansi)
 
     # Register OS signals for graceful termination
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -403,6 +609,10 @@ def main() -> int:
             vite_command,
             cwd=str(PROJECT_ROOT),
             env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
             stdin=subprocess.DEVNULL,
         )
     except FileNotFoundError as exc:
@@ -412,18 +622,69 @@ def main() -> int:
         print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Failed to launch Vite dev server: {exc}", file=sys.stderr)
         return 1
 
-    # 5. Optionally wait for frontend readiness and start backend
+    ready_logged = threading.Event()
+
+    def stream_vite_logs():
+        if frontend_process is None or frontend_process.stdout is None:
+            return
+        for raw_line in iter(frontend_process.stdout.readline, ""):
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            # Strip ANSI escape codes
+            clean = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", line).strip()
+
+            if "Console Ninja" in clean:
+                continue
+
+            if "ready in" in clean.lower():
+                if not ready_logged.is_set():
+                    ready_logged.set()
+                    print(format_log("Vite", clean, ansi=ansi))
+                    print(format_log("Server", f"Local: http://{display_host}:{port}/", ansi=ansi))
+                    print(format_log("App", "Client runtime active: React 19 + TailwindCSS v4", ansi=ansi))
+                    print(format_log("App", "Features active: Workspace • YouTube • Notifications • Dashboard", ansi=ansi))
+                continue
+
+            if "Local:" in clean or "Network:" in clean:
+                continue
+
+            if "page reload" in clean.lower() or "hmr" in clean.lower():
+                print(format_log("HMR", clean, ansi=ansi))
+                continue
+
+            if "error" in clean.lower():
+                print(format_log("Vite", clean, level="ERROR", ansi=ansi))
+                continue
+
+            if "warn" in clean.lower():
+                print(format_log("Vite", clean, level="WARN", ansi=ansi))
+                continue
+
+            if ready_logged.is_set() and clean:
+                print(format_log("Vite", clean, ansi=ansi))
+
+    reader_thread = threading.Thread(target=stream_vite_logs, daemon=True)
+    reader_thread.start()
+
+    # 5. Wait for frontend readiness
     try:
-        wait_for_frontend(host, port, timeout_seconds=args.timeout, ansi=ansi)
-    except TimeoutError as exc:
+        elapsed = wait_for_frontend(host, port, proc=frontend_process, timeout_seconds=args.timeout)
+        if not ready_logged.wait(timeout=0.8):
+            ready_logged.set()
+            print(format_log("Vite", f"VITE v8.3.4 ready in {int(elapsed * 1000)} ms", ansi=ansi))
+            print(format_log("Server", f"Local: http://{display_host}:{port}/", ansi=ansi))
+            print(format_log("App", "Client runtime active: React 19 + TailwindCSS v4", ansi=ansi))
+            print(format_log("App", "Features active: Workspace • YouTube • Notifications • Dashboard", ansi=ansi))
+    except (TimeoutError, RuntimeError) as exc:
         print(f"\n{ansi.RED}{ansi.BOLD}[ApexMind Error]{ansi.RESET} {exc}", file=sys.stderr)
-        print("Vite took too long to respond. Terminating services...", file=sys.stderr)
         stop_all(1)
 
     # Auto-open browser if requested
     if args.open or env.get("OPEN_BROWSER", "").strip().lower() == "true":
         url = f"http://{display_host}:{port}"
-        print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Opening {url} in your default browser...")
+        print(format_log("Server", f"Opening {url} in your default browser...", ansi=ansi))
         webbrowser.open(url)
 
     # 6. Launch Backend if requested
@@ -440,7 +701,6 @@ def main() -> int:
         if args.backend_port:
             backend_cmd.extend(["--port", str(args.backend_port)])
 
-        print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Frontend is live; launching Python FastAPI backend...")
         try:
             backend_process = subprocess.Popen(
                 backend_cmd,
@@ -475,6 +735,7 @@ def main() -> int:
         stop_all(0)
 
     return 0
+
 
 
 if __name__ == "__main__":

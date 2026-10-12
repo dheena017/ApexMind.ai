@@ -7,6 +7,9 @@ from typing import List, Dict, Any, Optional
 from backend.database.repository import (
     get_channels,
     add_channel,
+    get_channel_by_id,
+    update_channel,
+    delete_channel,
     get_videos,
     publish_video,
     get_automations,
@@ -16,8 +19,33 @@ from backend.database.repository import (
 def fetch_channels() -> List[Dict[str, Any]]:
     return get_channels()
 
-def create_channel(name: str, handle: str, niche: str) -> Dict[str, Any]:
-    return add_channel(name=name, handle=handle, niche=niche)
+def fetch_channel_by_id(channel_id: str) -> Optional[Dict[str, Any]]:
+    return get_channel_by_id(channel_id)
+
+def create_channel(
+    name: str,
+    handle: str,
+    niche: str,
+    avatar_url: Optional[str] = None,
+    subscribers: int = 0,
+    videos_uploaded: int = 0,
+    custom_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    return add_channel(
+        name=name,
+        handle=handle,
+        niche=niche,
+        avatar_url=avatar_url,
+        subscribers=subscribers,
+        videos_uploaded=videos_uploaded,
+        custom_id=custom_id,
+    )
+
+def update_channel_data(channel_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    return update_channel(channel_id, updates)
+
+def remove_channel(channel_id: str) -> bool:
+    return delete_channel(channel_id)
 
 def fetch_videos() -> List[Dict[str, Any]]:
     return get_videos()
@@ -36,3 +64,4 @@ def fetch_automations() -> List[Dict[str, Any]]:
 
 def toggle_automation_job(job_id: str) -> List[Dict[str, Any]]:
     return toggle_automation(job_id)
+
