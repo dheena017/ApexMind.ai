@@ -1,0 +1,168 @@
+/* ==========================================================================
+   ApexMind Studio - Shared Component Styles & Animations
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Buttons
+   -------------------------------------------------------------------------- */
+
+/* Primary Gradient Action Button */
+.btn-primary {
+  background: linear-gradient(to right, #3B82F6, #2563EB);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.25);
+  color: #FFFFFF;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(to right, #2563EB, #1D4ED8);
+  box-shadow: 0 0 36px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+/* Secondary Dark Surface Button */
+.btn-secondary {
+  background: #121212;
+  border: 1px solid #2F2F2F;
+  color: #E5E5E5;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #1E1E1E;
+  border-color: #4A4A4A;
+}
+
+/* --------------------------------------------------------------------------
+   2. Form Inputs & Text Fields
+   -------------------------------------------------------------------------- */
+
+.input-studio {
+  background-color: #121212;
+  border: 1px solid #2F2F2F;
+  color: #E5E5E5;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-studio::placeholder {
+  color: #6B7280;
+}
+
+.input-studio:focus,
+.input-studio:focus-within {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Chrome Autofill Dark Background Override */
+.login-field:-webkit-autofill,
+.login-field:-webkit-autofill:hover,
+.login-field:-webkit-autofill:focus,
+.login-field:autofill {
+  -webkit-text-fill-color: #FFFFFF;
+  box-shadow: 0 0 0 1000px #121212 inset;
+  transition: background-color 9999s ease-out;
+}
+
+/* --------------------------------------------------------------------------
+   3. Toggle Switches
+   -------------------------------------------------------------------------- */
+
+.toggle-track-active {
+  background-color: #3B82F6;
+}
+
+.toggle-track-inactive {
+  background-color: #262626;
+  border: 1px solid #3A3A3A;
+}
+
+.toggle-thumb {
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 200ms ease-in-out;
+}
+
+/* --------------------------------------------------------------------------
+   4. Status Badges & Pills
+   -------------------------------------------------------------------------- */
+
+.badge-blue {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #60A5FA;
+}
+
+.badge-green {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #34D399;
+}
+
+.badge-amber {
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #FCD34D;
+}
+
+.badge-crimson {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #FCA5A5;
+}
+
+/* --------------------------------------------------------------------------
+   5. Keyframe Animations & Animation Classes
+   -------------------------------------------------------------------------- */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(59, 130, 246, 0.45);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}

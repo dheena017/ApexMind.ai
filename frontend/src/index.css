@@ -1,0 +1,25 @@
+/* ==========================================================================
+   ApexMind Studio - Main Application Styles
+   Single consolidated CSS entrypoint for design tokens, scrollbars,
+   custom studio components, and Tailwind CSS v4
+   ========================================================================== */
+
+@import "tailwindcss";
+@import "./shared/styles/theme.css";
+@import "./shared/styles/scrollbar.css";
+@import "./shared/styles/components.css";
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}

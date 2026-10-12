@@ -1,0 +1,59 @@
+{
+  "name": "ApexMind - AI Motivational YouTube Studio",
+  "description": "Automated motivational quote video generation, AI scriptwriting, voiceover synthesis with Gemini, copyright-free media, and seamless YouTube publishing.",
+  "features": [
+    "Generate motivational scripts with Gemini",
+    "Create voiceovers with Gemini text-to-speech",
+    "Browse a media library and manage quote memory",
+    "Manage YouTube channels, videos, and publishing workflows",
+    "View notifications and studio activity"
+  ],
+  "techStack": {
+    "frontend": ["React", "TypeScript", "Vite", "Tailwind CSS"],
+    "backend": ["Python", "FastAPI", "Uvicorn"],
+    "database": ["SQLite"],
+    "ai": ["Google Gemini"]
+  },
+  "commands": {
+    "development": "npm run dev",
+    "frontend": "npm run frontend",
+    "backend": "npm run backend",
+    "build": "npm run build",
+    "typecheck": "npm run lint",
+    "preview": "npm run preview"
+  },
+  "localServices": {
+    "frontend": "http://localhost:5173",
+    "backend": "http://localhost:8000",
+    "apiDocs": "http://localhost:8000/api/docs",
+    "healthCheck": "http://localhost:8000/api/health"
+  },
+  "apiEndpoints": [
+    "GET /api/health",
+    "GET /api/dashboard/stats",
+    "POST /api/generate-script",
+    "POST /api/generate-voiceover",
+    "GET /api/quote-memory",
+    "DELETE /api/quote-memory",
+    "GET /api/media-library",
+    "GET /api/youtube/channels",
+    "POST /api/youtube/connect",
+    "POST /api/youtube/publish",
+    "GET /api/automations",
+    "POST /api/automations/toggle",
+    "GET /api/notifications",
+    "POST /api/notifications/mark-read",
+    "DELETE /api/notifications"
+  ],
+  "configuration": [
+    "GEMINI_API_KEY",
+    "APP_URL",
+    "HOST",
+    "PORT",
+    "FRONTEND_PORT",
+    "BACKEND_URL",
+    "PYTHON"
+  ],
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

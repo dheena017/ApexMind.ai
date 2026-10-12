@@ -1,0 +1,75 @@
+/* ==========================================================================
+   ApexMind Studio - Design Tokens & Theme Foundation
+   ========================================================================== */
+
+:root {
+  /* Dark color scheme declaration */
+  color-scheme: dark;
+
+  /* Color Palette Hierarchy */
+  --color-bg-base: #0A0A0A;
+  --color-bg-subtle: #121212;
+  --color-bg-surface: #1E1E1E;
+  --color-bg-elevated: #2A2A2A;
+
+  /* Borders */
+  --color-border-subtle: #2F2F2F;
+  --color-border-active: #4A4A4A;
+
+  /* Brand Accents & Glow */
+  --color-accent-primary: #3B82F6;
+  --color-accent-hover: #2563EB;
+  --color-brand-glow: #60A5FA;
+
+  /* Status States */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+
+  /* Typography Text Tokens */
+  --color-text-primary: #E5E5E5;
+  --color-text-secondary: #9CA3AF;
+  --color-text-muted: #6B7280;
+  --color-pure-white: #FFFFFF;
+}
+
+/* Base Body & Canvas Defaults */
+html,
+body {
+  color-scheme: dark;
+  background-color: var(--color-bg-base) !important;
+  color: var(--color-text-primary) !important;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Utilities */
+.font-sans-studio {
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+.font-mono-studio {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Brand Text Gradients */
+.text-gradient-brand {
+  background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-silver {
+  background: linear-gradient(180deg, #FFFFFF 0%, #9CA3AF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Interactive Cursor */
+.cursor-studio-interactive {
+  cursor: pointer;
+}

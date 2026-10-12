@@ -1,0 +1,77 @@
+/* ==========================================================================
+   ApexMind Studio - Custom Modern Dark Theme Scrollbars
+   Designed for Chrome, Edge, Safari, Brave, and Firefox on Windows/macOS/Linux
+   ========================================================================== */
+
+/* 1. Force dark mode color-scheme on root */
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  color-scheme: dark;
+}
+
+/* 2. WebKit / Blink Engine (Chrome, Edge, Safari, Brave, Opera)
+   NOTE: Do NOT add 'scrollbar-color' here for WebKit, because Chromium on Windows
+   reverts to the native Windows OS scrollbar with arrow buttons when scrollbar-color is defined! */
+@supports selector(::-webkit-scrollbar) {
+  /* Scrollbar Track & Size */
+  ::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* Scrollbar Track Background */
+  ::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background: #0A0A0A;
+  }
+
+  /* Scrollbar Thumb Pill */
+  ::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background-color: #262626;
+    border-radius: 9999px;
+    border: 1px solid #0A0A0A;
+    transition: background-color 0.2s ease;
+  }
+
+  /* Scrollbar Thumb Hover State */
+  ::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #3B82F6;
+  }
+
+  /* Scrollbar Thumb Active / Drag State */
+  ::-webkit-scrollbar-thumb:active,
+  *::-webkit-scrollbar-thumb:active {
+    background-color: #2563EB;
+  }
+
+  /* Scrollbar Corner (when both X and Y scrollbars meet) */
+  ::-webkit-scrollbar-corner,
+  *::-webkit-scrollbar-corner {
+    background: #0A0A0A;
+  }
+
+  /* CRITICAL: Remove Windows Native Scrollbar Arrow Buttons (▲ and ▼) */
+  ::-webkit-scrollbar-button,
+  *::-webkit-scrollbar-button,
+  ::-webkit-scrollbar-button:single-button,
+  *::-webkit-scrollbar-button:single-button {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+    background: transparent !important;
+  }
+}
+
+/* 3. Firefox & Non-WebKit standard fallback */
+@supports not selector(::-webkit-scrollbar) {
+  html, body, * {
+    scrollbar-width: thin;
+    scrollbar-color: #262626 #0A0A0A;
+  }
+}
