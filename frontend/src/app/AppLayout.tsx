@@ -171,10 +171,13 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
       </header>
 
       {/* =========================================================================
-          Main Content Container - Scrollbar is confined strictly below the header
+          Main Content Container - Centered responsive container with generous breathing room
+          Leaves elegant space around content and prevents extreme wide stretching
           ========================================================================= */}
-      <main className="flex-1 w-full overflow-y-auto overflow-x-hidden">
-        {children}
+      <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A]">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {children}
+        </div>
       </main>
 
       {/* =========================================================================

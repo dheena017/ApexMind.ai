@@ -23,7 +23,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
 
 
   return (
-    <div className="flex-1 w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] p-6 lg:p-8 space-y-8 max-w-5xl mx-auto font-sans-studio">
+    <div className="w-full space-y-8 max-w-5xl mx-auto font-sans-studio">
       {/* Header */}
       <div className="flex items-center justify-between pb-6 border-b border-[#2F2F2F]">
         <div>

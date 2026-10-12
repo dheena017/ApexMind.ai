@@ -15,7 +15,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex-1 w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] p-6 lg:p-8 space-y-8 max-w-4xl mx-auto">
+    <div className="w-full space-y-8 max-w-4xl mx-auto">
       {/* Page Header */}
       <div className="pb-6 border-b border-[#2F2F2F]">
         <h1 className="text-2xl font-extrabold tracking-tight text-white">Studio Settings</h1>

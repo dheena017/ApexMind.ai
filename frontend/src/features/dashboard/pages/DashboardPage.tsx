@@ -32,7 +32,7 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
   const totalViews = videos.reduce((acc, v) => acc + v.views, 0);
 
   return (
-    <div className="flex-1 w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] p-6 lg:p-8 space-y-8">
+    <div className="w-full space-y-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2F2F2F]">
         <div className="flex items-center gap-3.5">
