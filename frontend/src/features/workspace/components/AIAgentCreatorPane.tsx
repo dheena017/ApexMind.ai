@@ -81,8 +81,8 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         </div>
       </div>
 
-      {/* ── AI Agent 1-Click Creator Main Container ──────────────────── */}
-      <div className="flex-1 flex flex-col justify-between p-4 rounded-2xl bg-gradient-to-b from-[#182234] via-[#121824] to-[#0D1117] border border-[#3B82F6]/50 shadow-xl shadow-[#3B82F6]/10 space-y-4 animate-fade-in overflow-y-auto custom-scrollbar">
+      {/* ── AI Agent 1-Click Creator Main Container (Website Theme) ── */}
+      <div className="flex-1 flex flex-col justify-between p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] shadow-xl space-y-4 animate-fade-in overflow-y-auto custom-scrollbar">
         <div className="space-y-3.5">
           {/* Header Title & Gemini Badge */}
           <div className="flex items-center justify-between">
@@ -95,7 +95,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 <p className="text-[10px] text-[#9CA3AF]">Zero Hallucination • Unique Quote Memory</p>
               </div>
             </div>
-            <span className="text-[9px] font-mono-studio px-2 py-0.5 rounded-full bg-[#3B82F6]/20 text-[#60A5FA] border border-[#3B82F6]/30 font-bold">
+            <span className="text-[9px] font-mono-studio px-2 py-0.5 rounded-full bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30 font-bold">
               GEMINI 2.5
             </span>
           </div>
@@ -125,7 +125,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                   key={topic}
                   type="button"
                   onClick={() => onPromptChange(topic)}
-                  className="text-[9.5px] px-2.5 py-1 rounded-lg bg-[#161B22] border border-[#30363D] text-[#8B949E] hover:text-[#58A6FF] hover:border-[#58A6FF]/50 transition-colors cursor-pointer"
+                  className="text-[9.5px] px-2.5 py-1 rounded-lg bg-[#181818] border border-[#2A2A2A] text-[#9CA3AF] hover:text-[#60A5FA] hover:border-[#3B82F6]/50 transition-colors cursor-pointer"
                 >
                   ⚡ {topic}
                 </button>
@@ -147,7 +147,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                   className={`text-[10px] px-3 py-1 rounded-lg border transition-all cursor-pointer font-medium ${
                     category === cat
                       ? 'bg-[#3B82F6] border-[#3B82F6] text-white shadow-sm shadow-[#3B82F6]/50'
-                      : 'bg-[#121212] border-[#2A2A2A] text-[#9CA3AF] hover:text-white hover:border-[#3F3F3F]'
+                      : 'bg-[#181818] border-[#2A2A2A] text-[#9CA3AF] hover:text-white hover:border-[#3B82F6]/40'
                   }`}
                 >
                   {cat}
