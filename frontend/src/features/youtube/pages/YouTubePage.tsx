@@ -42,7 +42,6 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
 
   // Channel details interactive states
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [selectedFilterChannel, setSelectedFilterChannel] = useState<string>('all');
   const [togglingAutoUploadId, setTogglingAutoUploadId] = useState<string | null>(null);
 
   // Connect Channel Modal & Live Lookup
@@ -154,7 +153,7 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
           };
 
       const newChan = await youtubeApi.connectYouTubeChannel(payload);
-      setChannels((prev) => [newChan, ...prev.filter((c) => c.id !== newChan.id)]);
+      setChannels([newChan]);
       setShowConnectModal(false);
       setLookupResult(null);
       setChannelInput('');
@@ -272,20 +271,22 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
             icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
             onClick={loadData}
           >
-            Sync All
+            Sync Live
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={() => {
-              setLookupResult(null);
-              setLookupError(null);
-              setShowConnectModal(true);
-            }}
-          >
-            Connect YouTube Channel
-          </Button>
+          {channels.length === 0 && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={() => {
+                setLookupResult(null);
+                setLookupError(null);
+                setShowConnectModal(true);
+              }}
+            >
+              Connect YouTube Channel
+            </Button>
+          )}
         </div>
       </div>
 
@@ -305,72 +306,86 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       )}
 
-      {/* Channel Portfolio Overview Metric Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
-            <Youtube className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Connected Channels</p>
-            <p className="text-xl font-extrabold text-white mt-0.5">{channels.length}</p>
-            <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Live Verified
-            </p>
-          </div>
-        </div>
+      {/* Single Channel Overview Metric Strip */}
+      {(() => {
+        const activeChannel = channels[0];
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
+              <div className="p-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
+                <Youtube className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Connected Channel</p>
+                <p className="text-xl font-extrabold text-white mt-0.5 truncate">
+                  {activeChannel ? activeChannel.name : 'Not Connected'}
+                </p>
+                <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 mt-0.5 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  {activeChannel ? `${activeChannel.handle} · Live` : 'No channel active'}
+                </p>
+              </div>
+            </div>
 
-        <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/20 shrink-0">
-            <Users className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Audience Reach</p>
-            <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-              {channels.reduce((sum, c) => sum + (c.subscribers || 0), 0).toLocaleString()}
-            </p>
-            <p className="text-[11px] text-[#93C5FD] font-medium mt-0.5">Total Subscribers</p>
-          </div>
-        </div>
+            <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
+              <div className="p-3 rounded-xl bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/20 shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Audience Reach</p>
+                <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
+                  {(activeChannel?.subscribers || 0).toLocaleString()}
+                </p>
+                <p className="text-[11px] text-[#93C5FD] font-medium mt-0.5">Live Subscribers</p>
+              </div>
+            </div>
 
-        <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
-            <Video className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">YouTube Uploads</p>
-            <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-              {channels.reduce((sum, c) => sum + (c.videosUploaded || 0), 0).toLocaleString()}
-            </p>
-            <p className="text-[11px] text-[#C084FC] font-medium mt-0.5">Channel Videos</p>
-          </div>
-        </div>
+            <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
+              <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
+                <Video className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">YouTube Uploads</p>
+                <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
+                  {(activeChannel?.videosUploaded || 0).toLocaleString()}
+                </p>
+                <p className="text-[11px] text-[#C084FC] font-medium mt-0.5">Channel Videos</p>
+              </div>
+            </div>
 
-        <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-            <Zap className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
+              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Shorts Automation</p>
+                <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
+                  {activeChannel ? (activeChannel.isAutoUploadEnabled ? 'Active' : 'Paused') : 'Inactive'}
+                </p>
+                <p className="text-[11px] text-emerald-400 font-medium mt-0.5 truncate">
+                  {activeChannel?.scheduleCron || 'Daily Schedule'}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Automation Status</p>
-            <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-              {channels.filter((c) => c.isAutoUploadEnabled).length} / {channels.length} Active
-            </p>
-            <p className="text-[11px] text-emerald-400 font-medium mt-0.5">Scheduled Publishing</p>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
-      {/* Connected Channels Grid with All Channel Data Displayed */}
+      {/* Connected Channel (Single Channel Mode) */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-[#9CA3AF] uppercase tracking-wider">
-            Connected YouTube Channels ({channels.length})
-          </h3>
+          <div>
+            <h3 className="text-sm font-bold text-[#9CA3AF] uppercase tracking-wider">
+              Connected YouTube Channel
+            </h3>
+            <p className="text-xs text-[#6B7280]">
+              Dedicated single-channel automation and publishing dashboard
+            </p>
+          </div>
           <span className="text-xs text-[#6B7280]">Live Verified via YouTube Data API v3</span>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {channels.length === 0 ? (
             <div className="col-span-full">
               <Card className="text-center py-12 space-y-4">
@@ -456,10 +471,11 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
                       </a>
                       <button
                         onClick={() => handleDeleteChannel(ch.id, ch.name)}
-                        className="p-1 rounded-lg bg-[#121212] border border-[#2F2F2F] text-[#9CA3AF] hover:text-red-400 hover:border-red-500/30 transition-all cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-[#121212] border border-[#2F2F2F] text-[#9CA3AF] hover:text-red-400 hover:border-red-500/30 transition-all cursor-pointer text-xs flex items-center gap-1.5"
                         title="Disconnect channel"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
+                        <span>Disconnect</span>
                       </button>
                     </div>
                   </div>
@@ -769,116 +785,81 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       </Card>
 
-      {/* Published Video Catalog with Channel Filtering */}
+      {/* Published Video Catalog */}
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#2F2F2F] mb-4">
           <div>
             <h3 className="text-lg font-bold text-white">YouTube Shorts Catalog</h3>
-            <p className="text-xs text-[#9CA3AF]">Completed video productions and uploaded YouTube Shorts</p>
+            <p className="text-xs text-[#9CA3AF]">
+              {channels[0]
+                ? `Published motivational Shorts and queued productions for ${channels[0].name}`
+                : 'Completed video productions and uploaded YouTube Shorts'}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <button
-              onClick={() => setSelectedFilterChannel('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                selectedFilterChannel === 'all'
-                  ? 'bg-[#3B82F6] text-white shadow-md shadow-[#3B82F6]/20'
-                  : 'bg-[#121212] border border-[#2F2F2F] text-[#9CA3AF] hover:text-white'
-              }`}
-            >
-              All Channels ({videos.length})
-            </button>
-            {channels.map((ch) => {
-              const count = videos.filter((v) => v.channelId === ch.id).length;
-              return (
-                <button
-                  key={ch.id}
-                  onClick={() => setSelectedFilterChannel(ch.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                    selectedFilterChannel === ch.id
-                      ? 'bg-[#3B82F6] text-white shadow-md shadow-[#3B82F6]/20'
-                      : 'bg-[#121212] border border-[#2F2F2F] text-[#9CA3AF] hover:text-white'
-                  }`}
-                >
-                  <img src={ch.avatarUrl} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-                  <span>{ch.name}</span>
-                  <span className="opacity-70 font-mono-studio">({count})</span>
-                </button>
-              );
-            })}
-          </div>
+          <Badge variant="blue">{videos.length} Shorts Published</Badge>
         </div>
 
-        {(() => {
-          const displayVideos = selectedFilterChannel === 'all'
-            ? videos
-            : videos.filter((v) => v.channelId === selectedFilterChannel);
-
-          return (
-            <div className="divide-y divide-[#2F2F2F]">
-              {displayVideos.length === 0 ? (
-                <div className="py-10 text-center text-[#9CA3AF] space-y-2">
-                  <Film className="w-8 h-8 text-[#6B7280] mx-auto opacity-50" />
-                  <p className="text-xs">
-                    {selectedFilterChannel === 'all'
-                      ? 'No rendered shorts published to catalog yet. Use AI Studio to create one!'
-                      : 'No shorts published for this channel yet.'}
-                  </p>
-                  <Button size="sm" variant="primary" onClick={() => onNavigate('workspace')}>
-                    Launch Studio
-                  </Button>
-                </div>
-              ) : (
-                displayVideos.map((vid) => {
-                  const targetChannel = channels.find((c) => c.id === vid.channelId);
-                  return (
-                    <div
-                      key={vid.id}
-                      className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-[#121212]/40 transition-colors px-2 rounded-xl"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-14 rounded-lg bg-gradient-to-br from-[#3B82F6]/30 to-[#121212] border border-[#3B82F6]/30 flex items-center justify-center text-[#60A5FA] font-bold text-xs shrink-0 shadow">
-                          <Play className="w-4 h-4 text-white fill-white" />
-                        </div>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-white text-sm">{vid.title}</h4>
-                            {targetChannel && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#252525] text-[#93C5FD] border border-[#333] font-medium flex items-center gap-1">
-                                <Youtube className="w-2.5 h-2.5 text-red-400" />
-                                {targetChannel.name}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-[#9CA3AF] italic">"{vid.quote}"</p>
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#6B7280]">
-                            <span>{new Date(vid.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                            <span>·</span>
-                            <span>Voice: {vid.voice || 'Fenrir'}</span>
-                            <span>·</span>
-                            <span>Category: {vid.category}</span>
-                            <span>·</span>
-                            <span>Duration: {vid.duration}</span>
-                          </div>
-                        </div>
+        <div className="divide-y divide-[#2F2F2F]">
+          {videos.length === 0 ? (
+            <div className="py-10 text-center text-[#9CA3AF] space-y-2">
+              <Film className="w-8 h-8 text-[#6B7280] mx-auto opacity-50" />
+              <p className="text-xs">
+                No rendered shorts published to catalog yet. Use AI Studio to create one!
+              </p>
+              <Button size="sm" variant="primary" onClick={() => onNavigate('workspace')}>
+                Launch Studio
+              </Button>
+            </div>
+          ) : (
+            videos.map((vid) => {
+              const targetChannel = channels[0];
+              return (
+                <div
+                  key={vid.id}
+                  className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-[#121212]/40 transition-colors px-2 rounded-xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-14 rounded-lg bg-gradient-to-br from-[#3B82F6]/30 to-[#121212] border border-[#3B82F6]/30 flex items-center justify-center text-[#60A5FA] font-bold text-xs shrink-0 shadow">
+                      <Play className="w-4 h-4 text-white fill-white" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-white text-sm">{vid.title}</h4>
+                        {targetChannel && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#252525] text-[#93C5FD] border border-[#333] font-medium flex items-center gap-1">
+                            <Youtube className="w-2.5 h-2.5 text-red-400" />
+                            {targetChannel.name}
+                          </span>
+                        )}
                       </div>
-
-                      <div className="flex items-center gap-4 shrink-0">
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-white tabular-nums font-mono-studio">
-                            {vid.views.toLocaleString()} views
-                          </div>
-                          <div className="text-xs text-emerald-400 font-medium">{vid.likes.toLocaleString()} likes</div>
-                        </div>
-                        <Badge variant="green">Published</Badge>
+                      <p className="text-xs text-[#9CA3AF] italic">"{vid.quote}"</p>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#6B7280]">
+                        <span>{new Date(vid.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                        <span>·</span>
+                        <span>Voice: {vid.voice || 'Fenrir'}</span>
+                        <span>·</span>
+                        <span>Category: {vid.category}</span>
+                        <span>·</span>
+                        <span>Duration: {vid.duration}</span>
                       </div>
                     </div>
-                  );
-                })
-              )}
-            </div>
-          );
-        })()}
+                  </div>
+
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-white tabular-nums font-mono-studio">
+                        {vid.views.toLocaleString()} views
+                      </div>
+                      <div className="text-xs text-emerald-400 font-medium">{vid.likes.toLocaleString()} likes</div>
+                    </div>
+                    <Badge variant="green">Published</Badge>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </Card>
 
       {/* Connect YouTube Channel Modal with Real Live Verification */}

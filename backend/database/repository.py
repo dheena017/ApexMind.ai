@@ -111,6 +111,9 @@ def add_channel(
     avatar = avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={name}"
     timestamp = datetime.utcnow().isoformat()
 
+    # Enforce strictly ONE channel in the system at any given time
+    cursor.execute("DELETE FROM youtube_channels")
+
     cursor.execute("""
     INSERT INTO youtube_channels (id, name, handle, subscribers, videos_uploaded, avatar_url, is_auto_upload_enabled, schedule_cron, connected_at, niche)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
