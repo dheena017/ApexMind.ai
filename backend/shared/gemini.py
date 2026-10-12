@@ -1,6 +1,7 @@
 import logging
 import json
 import time
+import base64
 from typing import Dict, Any, List
 from .config import settings
 
@@ -108,11 +109,17 @@ def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir") -> Dict[str
     try:
         from google.genai import types
         tts_res = gemini_client.models.generate_content(
-            model="gemini-3.8-flash-lite-tts",
-            contents=f"Read this motivational script with a stoic, powerful voice: {text}",
+            model="gemini-2.5-flash-preview-tts",
+            contents=f"Read this motivational script with a powerful, stoic, cinematic voice: {text}",
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                            voice_name=voice_name,
+                        )
+                    )
+                ),
             )
         )
         candidates = getattr(tts_res, "candidates", [])
@@ -121,12 +128,54 @@ def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir") -> Dict[str
                 inline = getattr(part, "inline_data", None)
                 if inline and getattr(inline, "data", None):
                     elapsed = time.perf_counter() - start_t
-                    logger.info(f"Gemini TTS synthesized 24kHz audio in {elapsed:.2f}s for voice '{voice_name}'")
+                    raw_audio = inline.data
+                    mime = getattr(inline, "mime_type", "audio/wav") or "audio/wav"
+                    
+                    # Convert raw L16 PCM to standard 24kHz 16-bit mono WAV so browsers can play it directly
+                    if "pcm" in mime.lower() or "l16" in mime.lower():
+                        import struct
+                        sample_rate = 24000
+                        if "rate=" in mime:
+                            try:
+                                sample_rate = int(mime.split("rate=")[1].split(";")[0])
+                            except Exception:
+                                sample_rate = 24000
+                        
+                        byte_rate = sample_rate * 2
+                        data_size = len(raw_audio) if isinstance(raw_audio, bytes) else len(base64.b64decode(raw_audio))
+                        pcm_bytes = raw_audio if isinstance(raw_audio, bytes) else base64.b64decode(raw_audio)
+                        wav_header = struct.pack(
+                            '<4sI4s4sIHHIIHH4sI',
+                            b'RIFF',
+                            36 + data_size,
+                            b'WAVE',
+                            b'fmt ',
+                            16,
+                            1,
+                            1,
+                            sample_rate,
+                            byte_rate,
+                            2,
+                            16,
+                            b'data',
+                            data_size
+                        )
+                        raw_audio = wav_header + pcm_bytes
+                        mime = "audio/wav"
+
+                    # Encode bytes to base64 string for JSON transport
+                    if isinstance(raw_audio, bytes):
+                        audio_b64 = base64.b64encode(raw_audio).decode("utf-8")
+                    else:
+                        audio_b64 = raw_audio  # already a string
+                    
+                    logger.info(f"Gemini TTS synthesized audio in {elapsed:.2f}s for voice '{voice_name}' | mime={mime} | b64_len={len(audio_b64)}")
                     return {
                         "success": True,
                         "voiceName": voice_name,
-                        "mimeType": "audio/wav",
-                        "audioBase64": inline.data
+                        "mimeType": mime,
+                        "audioBase64": audio_b64,
+                        "audioUrl": f"data:{mime};base64,{audio_b64}",
                     }
         raise RuntimeError("No audio data returned by Gemini TTS.")
     except Exception as e:

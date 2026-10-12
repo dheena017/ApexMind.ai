@@ -34,6 +34,13 @@ const CATEGORIES = [
   'Financial Freedom',
 ];
 
+const QUICK_TOPICS = [
+  '5 AM Silent Discipline',
+  'Overcoming Fear of Failure',
+  'Relentless Compounding',
+  'Stoic Mental Toughness',
+];
+
 export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   script,
   onUpdateScript,
@@ -45,11 +52,24 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   loadingAgent,
   onRunAgent,
 }) => {
-  const [showPromptBox, setShowPromptBox] = useState(false);
+  // Shown by default at the start so user can enter input and 1-click create immediately
+  const [showPromptBox, setShowPromptBox] = useState(true);
+
+  const handleStartNewVideo = () => {
+    setShowPromptBox(true);
+    onUpdateScript({
+      title: 'New Motivation Short',
+      hook: '',
+      quote: '',
+      cta: 'Subscribe for daily stoic wisdom.',
+      subtitles: [],
+      hashtags: ['#Shorts', '#Motivation', '#Discipline'],
+    });
+  };
 
   return (
-    <div className="space-y-3.5 flex flex-col h-full font-sans-studio text-[#E5E5E5]">
-      {/* Scripts Header with Prompt Toggle & Memory */}
+    <div className="space-y-3 flex flex-col h-full font-sans-studio text-[#E5E5E5]">
+      {/* Scripts Header with Prompt Toggle, Memory & New Video */}
       <div className="flex items-center justify-between pb-2 border-b border-[#2F2F2F]">
         <div className="flex items-center gap-2">
           <div className="p-1 rounded-lg bg-[#3B82F6]/10 text-[#60A5FA]">
@@ -64,65 +84,112 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => setShowPromptBox(!showPromptBox)}
-            className="text-[11px] px-2.5 py-1 rounded-lg bg-[#1E1E1E] border border-[#2F2F2F] text-[#60A5FA] hover:bg-[#282828] hover:border-[#3B82F6]/50 transition-colors flex items-center gap-1 font-medium cursor-pointer"
+            onClick={handleStartNewVideo}
+            className="text-[10px] px-2 py-1 rounded-lg bg-[#181818] border border-[#2F2F2F] text-white hover:border-[#3B82F6]/60 hover:text-[#60A5FA] transition-colors font-semibold cursor-pointer"
+            title="Start new empty video script"
           >
-            <Wand2 className="w-3 h-3" />
-            <span>AI Prompt</span>
-            {showPromptBox ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            + New Video
           </button>
           <button
             type="button"
-            className="p-1 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer"
-            title="Options"
+            onClick={() => setShowPromptBox(!showPromptBox)}
+            className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 font-semibold cursor-pointer ${
+              showPromptBox
+                ? 'bg-[#3B82F6]/20 border-[#3B82F6] text-[#60A5FA]'
+                : 'bg-[#1E1E1E] border-[#2F2F2F] text-[#9CA3AF] hover:text-white hover:border-[#3B82F6]/50'
+            }`}
           >
-            <MoreHorizontal className="w-4 h-4" />
+            <Wand2 className="w-3 h-3" />
+            <span>AI Agent</span>
+            {showPromptBox ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
         </div>
       </div>
 
-      {/* Expandable AI Prompt Command Box */}
+      {/* Prominent AI Agent 1-Click Video Creator Panel */}
       {showPromptBox && (
-        <div className="p-3 rounded-xl bg-[#181818] border border-[#3B82F6]/40 shadow-lg space-y-2.5 animate-fade-in">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="font-semibold text-[#60A5FA] uppercase tracking-wider">Gemini 2.5 Scriptwriter</span>
-            <span className="text-[10px] text-[#9CA3AF]">Zero Hallucination Mode</span>
+        <div className="p-3.5 rounded-2xl bg-gradient-to-b from-[#182234] via-[#121824] to-[#0D1117] border border-[#3B82F6]/50 shadow-xl shadow-[#3B82F6]/10 space-y-3 transition-all animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white shadow-md shadow-[#3B82F6]/30">
+                <Sparkles className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="text-xs font-extrabold text-white tracking-wide uppercase">AI Agent 1-Click Creator</span>
+                <p className="text-[10px] text-[#9CA3AF]">Zero Hallucination • Unique Memory Guarantee</p>
+              </div>
+            </div>
+            <span className="text-[9px] font-mono-studio px-2 py-0.5 rounded-full bg-[#3B82F6]/20 text-[#60A5FA] border border-[#3B82F6]/30 font-bold">
+              GEMINI 2.5
+            </span>
           </div>
 
-          <textarea
-            value={agentPrompt}
-            onChange={(e) => onPromptChange(e.target.value)}
-            rows={2}
-            className="w-full bg-[#0A0A0A] border border-[#2F2F2F] text-xs text-white rounded-lg p-2.5 outline-none focus:border-[#3B82F6] transition-colors resize-none placeholder:text-[#6B7280]"
-            placeholder="e.g. Monologue about silent discipline, early mornings, and relentless consistency..."
-          />
-
-          <div className="flex flex-wrap gap-1">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => onCategoryChange(cat)}
-                className={`text-[9px] px-2 py-0.5 rounded border transition-all cursor-pointer font-medium ${
-                  category === cat
-                    ? 'bg-[#3B82F6]/20 border-[#3B82F6] text-[#60A5FA]'
-                    : 'bg-[#121212] border-[#2A2A2A] text-[#9CA3AF] hover:text-white'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          {/* Topic & Idea Input Box */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider block">
+              Enter Video Topic or Idea
+            </label>
+            <textarea
+              value={agentPrompt}
+              onChange={(e) => onPromptChange(e.target.value)}
+              rows={2}
+              className="w-full bg-[#0A0A0A] border border-[#2F2F2F] text-xs text-white rounded-xl p-2.5 outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 transition-all resize-none placeholder:text-[#525252]"
+              placeholder="e.g. Monologue about silent discipline, early mornings, and relentless consistency..."
+            />
           </div>
 
+          {/* Quick Idea Inspiration Pills */}
+          <div className="space-y-1">
+            <span className="text-[9px] font-bold text-[#6B7280] uppercase tracking-wider block">
+              Quick Topic Ideas:
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {QUICK_TOPICS.map((topic) => (
+                <button
+                  key={topic}
+                  type="button"
+                  onClick={() => onPromptChange(topic)}
+                  className="text-[9px] px-2 py-0.5 rounded-md bg-[#161B22] border border-[#30363D] text-[#8B949E] hover:text-[#58A6FF] hover:border-[#58A6FF]/50 transition-colors cursor-pointer"
+                >
+                  ⚡ {topic}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Niche Categories */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider block">
+              Category
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => onCategoryChange(cat)}
+                  className={`text-[9.5px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer font-medium ${
+                    category === cat
+                      ? 'bg-[#3B82F6] border-[#3B82F6] text-white shadow-sm shadow-[#3B82F6]/50'
+                      : 'bg-[#121212] border-[#2A2A2A] text-[#9CA3AF] hover:text-white hover:border-[#3F3F3F]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* The Big 1-Click Action Button */}
           <Button
             variant="primary"
             size="sm"
-            className="w-full justify-center py-1.5 text-xs"
+            className="w-full justify-center py-2.5 text-xs font-bold shadow-lg shadow-[#3B82F6]/30 cursor-pointer"
             disabled={loadingAgent}
-            icon={<Wand2 className={`w-3 h-3 ${loadingAgent ? 'animate-spin' : ''}`} />}
+            icon={<Wand2 className={`w-3.5 h-3.5 ${loadingAgent ? 'animate-spin' : ''}`} />}
             onClick={onRunAgent}
           >
-            {loadingAgent ? 'Synthesizing Monologue...' : 'Generate Monologue & Subtitles'}
+            {loadingAgent ? 'AI Agent Creating Monologue, Voiceover & Subtitles...' : '⚡ 1-Click Create with AI Agent'}
           </Button>
         </div>
       )}

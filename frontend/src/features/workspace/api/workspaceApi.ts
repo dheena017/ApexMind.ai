@@ -48,11 +48,12 @@ export const workspaceApi = {
     const duration = performance.now() - start;
     consoleLogger.api('POST', '/api/generate-voiceover', res.status, duration);
     const data = await res.json();
-    if (!res.ok || data.error) {
-      consoleLogger.error('Gemini', `Voiceover synthesis failed: ${data.error || 'Server error'}`);
-      throw new Error(data.error || 'Failed to generate voiceover');
+    if (!res.ok || data.error || data.detail) {
+      const errMsg = data.detail || data.error || 'Failed to generate voiceover';
+      consoleLogger.error('Gemini', `Voiceover synthesis failed: ${errMsg}`);
+      throw new Error(errMsg);
     }
-    const audioUrl = `data:${data.mimeType || 'audio/wav'};base64,${data.audioBase64}`;
+    const audioUrl = data.audioUrl || `data:${data.mimeType || 'audio/wav'};base64,${data.audioBase64}`;
     consoleLogger.success('Studio', `Voiceover synthesized successfully (${data.mimeType || 'audio/wav'})`);
     return {
       audioBase64: data.audioBase64,

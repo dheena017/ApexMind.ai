@@ -47,6 +47,7 @@ class VoiceoverResponse(BaseModel):
     voiceName: str
     mimeType: str
     audioBase64: Optional[str] = None
+    audioUrl: Optional[str] = None
     message: Optional[str] = None
 
 class QuoteMemoryItem(BaseModel):

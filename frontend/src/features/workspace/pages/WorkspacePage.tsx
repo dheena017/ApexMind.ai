@@ -260,11 +260,8 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
 
       {/* Tri-Pane Director's Studio Layout (Exact 3-Panel Viewport Layout) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 h-full min-h-0 flex-1">
-        {/* Left Pane: AI SCRIPT EDITOR (col-span-4) */}
+        {/* Left Pane: Script Editor (col-span-4) */}
         <div className="lg:col-span-4 h-full min-h-0 flex flex-col">
-          <div className="text-xs font-bold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
-            AI SCRIPT EDITOR
-          </div>
           <div className="flex-1 min-h-0 bg-[#121212] border border-[#2F2F2F] rounded-2xl p-3.5 overflow-y-auto custom-scrollbar shadow-xl">
             <ScriptEditorPane
               script={script}
@@ -280,11 +277,8 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
           </div>
         </div>
 
-        {/* Center Pane: VIDEO PREVIEW (col-span-4) */}
+        {/* Center Pane: Video Preview (col-span-4) */}
         <div className="lg:col-span-4 h-full min-h-0 flex flex-col">
-          <div className="text-xs font-bold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
-            VIDEO PREVIEW
-          </div>
           <div className="flex-1 min-h-0 bg-[#121212] border border-[#2F2F2F] rounded-2xl p-2.5 flex items-center justify-center overflow-hidden shadow-xl">
             <VideoPreviewPane
               script={script}
@@ -302,11 +296,8 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
           </div>
         </div>
 
-        {/* Right Pane: STUDIO CONTROLS (col-span-4) */}
+        {/* Right Pane: Studio Controls (col-span-4) */}
         <div className="lg:col-span-4 h-full min-h-0 flex flex-col">
-          <div className="text-xs font-bold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
-            STUDIO CONTROLS
-          </div>
           <div className="flex-1 min-h-0 bg-[#121212] border border-[#2F2F2F] rounded-2xl p-3.5 overflow-y-auto custom-scrollbar shadow-xl">
             <StudioControlsPane
               voices={voices}

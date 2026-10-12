@@ -63,7 +63,7 @@ async def post_generate_voiceover(payload: GenerateVoiceoverRequest):
         logger.error(f"Error in voiceover synthesis: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate voiceover."
+            detail=f"Failed to generate voiceover: {e}"
         )
 
 @router.get(

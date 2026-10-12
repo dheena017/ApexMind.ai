@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Play,
   Pause,
   SkipBack,
   SkipForward,
   Volume2,
-  Wifi,
-  BatteryMedium,
+  VolumeX,
+  Sparkles,
+  Music2,
+  Mic,
 } from 'lucide-react';
 import { GeneratedScript, VisualBackdrop, MusicTrack } from '../types';
 
@@ -25,172 +27,315 @@ interface VideoPreviewPaneProps {
   channelName?: string;
 }
 
+// Backdrop-specific visual theme configs
+const BACKDROP_THEMES: Record<string, {
+  gradient: string;
+  accentColor: string;
+  overlayGlow: string;
+  titleShadow: string;
+}> = {
+  v1: {
+    gradient: 'linear-gradient(180deg, #0a0f2c 0%, #111a45 30%, #1a0a3a 65%, #08070f 100%)',
+    accentColor: '#3B82F6',
+    overlayGlow: 'radial-gradient(ellipse 85% 60% at 50% 35%, rgba(59,130,246,0.28) 0%, transparent 70%)',
+    titleShadow: '0 0 35px rgba(59,130,246,0.9), 0 2px 20px rgba(0,0,0,0.8)',
+  },
+  v2: {
+    gradient: 'linear-gradient(180deg, #050d1a 0%, #0a1a35 30%, #120825 65%, #050508 100%)',
+    accentColor: '#06B6D4',
+    overlayGlow: 'radial-gradient(ellipse 85% 60% at 50% 35%, rgba(6,182,212,0.28) 0%, transparent 70%)',
+    titleShadow: '0 0 35px rgba(6,182,212,0.9), 0 2px 20px rgba(0,0,0,0.8)',
+  },
+  v3: {
+    gradient: 'linear-gradient(180deg, #160a02 0%, #291402 30%, #1c0a02 65%, #0a0500 100%)',
+    accentColor: '#F59E0B',
+    overlayGlow: 'radial-gradient(ellipse 85% 60% at 50% 35%, rgba(245,158,11,0.25) 0%, transparent 70%)',
+    titleShadow: '0 0 35px rgba(245,158,11,0.9), 0 2px 20px rgba(0,0,0,0.8)',
+  },
+  v4: {
+    gradient: 'linear-gradient(180deg, #010d18 0%, #021c2e 30%, #011420 65%, #010608 100%)',
+    accentColor: '#2DD4BF',
+    overlayGlow: 'radial-gradient(ellipse 85% 60% at 50% 35%, rgba(45,212,191,0.25) 0%, transparent 70%)',
+    titleShadow: '0 0 35px rgba(45,212,191,0.9), 0 2px 20px rgba(0,0,0,0.8)',
+  },
+};
+
+const WAVEFORM_BARS = [16, 26, 42, 58, 76, 92, 68, 48, 84, 98, 70, 52, 38, 62, 82, 88, 56, 40, 72, 90, 66, 36, 78, 94, 60, 46, 28, 68, 86, 50];
+
 export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   script,
   activeBackdrop,
+  activeMusic,
+  selectedVoice,
   isPlaying,
   onTogglePlay,
+  audioUrl,
+  loadingAudio,
   currentTime,
   duration,
   onSeek,
+  channelName = 'ApexMind',
 }) => {
+  const [isMuted, setIsMuted] = useState(false);
+
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 25;
+  const totalDuration = duration > 0 ? duration : 15;
+  const progressPercent = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
+  const theme = BACKDROP_THEMES[activeBackdrop.id] || BACKDROP_THEMES.v1;
 
-  // Active kinetic typography line based on time
+  // Active subtitle text matching current playback position
   const activeSubtitle = (() => {
     if (!script.subtitles || script.subtitles.length === 0) {
-      return script.hook || script.quote || 'THE POWER OF HABITS!';
+      return script.hook || script.quote || 'TOP 5 HABIT HACKS!';
     }
     const current = script.subtitles.find(
-      (s) => currentTime >= s.start && currentTime <= s.start + s.duration
+      (s) => currentTime >= s.start && currentTime <= s.start + (s.duration || 3)
     );
     if (current) return current.text;
-    if (currentTime > 0 && script.subtitles[script.subtitles.length - 1]) {
+    if (currentTime > 0 && script.subtitles.length > 0) {
       return script.cta || script.subtitles[script.subtitles.length - 1].text;
     }
-    return script.hook || script.subtitles[0].text;
+    return script.hook || script.subtitles[0]?.text || 'TOP 5 HABIT HACKS!';
   })();
 
   return (
-    <div className="w-full h-full flex items-center justify-center select-none font-sans-studio">
-      {/* Smartphone Simulator */}
-      <div className="relative h-full max-h-[510px] aspect-[9/16] bg-black rounded-[38px] border-[5px] border-[#2A2A2A] shadow-2xl shadow-black/80 flex flex-col justify-between overflow-hidden ring-1 ring-white/10">
-        {/* Dynamic Island / Status Bar */}
-        <div className="relative z-30 pt-2.5 px-5 flex items-center justify-between text-white/90 text-[10px] font-mono-studio pointer-events-none">
-          <span className="font-bold">9:16</span>
-          {/* Dynamic Island Pill */}
-          <div className="w-20 h-4 bg-black rounded-full border border-white/15 flex items-center justify-center gap-1 shadow-inner">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />
-            <span className="text-[7.5px] font-bold text-white/70">Apex HD</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-white/80">
-            <Wifi className="w-3 h-3" />
-            <BatteryMedium className="w-3.5 h-3.5" />
-          </div>
-        </div>
-
-        {/* Video Motion Stage Backdrop */}
+    <div className="w-full h-full flex flex-col items-center justify-center select-none font-sans-studio p-2">
+      {/* ── 9:16 Vertical Video Studio Canvas ────────────────────────── */}
+      <div
+        className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#2F2F2F] shadow-2xl transition-all"
+        style={{
+          width: '100%',
+          maxWidth: '300px',
+          height: '100%',
+          maxHeight: '540px',
+          aspectRatio: '9/16',
+          boxShadow: `0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.9), 0 0 45px ${theme.accentColor}25`,
+          background: '#050505',
+        }}
+      >
+        {/* Layer 1: Cinematic Gradient Background */}
         <div
-          className={`absolute inset-0 z-10 bg-gradient-to-b ${activeBackdrop.previewColor} transition-all duration-700 flex flex-col justify-between p-4 pt-10 pb-20 overflow-hidden`}
-        >
-          {/* Atmosphere Lighting */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/70 pointer-events-none" />
+          className="absolute inset-0 z-0 transition-all duration-700"
+          style={{ background: theme.gradient }}
+        />
 
-          {/* Top Kinetic Title Overlay */}
-          <div className="relative z-20 text-center pt-4 px-2">
-            <h1
-              className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white leading-tight drop-shadow-[0_4px_16px_rgba(59,130,246,0.85)] font-sans-studio"
-              style={{
-                textShadow: '0 0 24px rgba(59, 130, 246, 0.9), 0 2px 4px rgba(0,0,0,0.95)',
-              }}
-            >
-              {script.title || 'MASTER YOUR DAY'}
-            </h1>
-          </div>
+        {/* Layer 2: Ambient Glow */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{ background: theme.overlayGlow }}
+        />
 
-          {/* Center Stage Subtitle & Inspiration */}
-          <div className="relative z-20 my-auto text-center px-2 space-y-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#60A5FA] font-mono-studio drop-shadow">
-              INSPIRATIONS
-            </span>
-            <div className="min-h-[60px] flex items-center justify-center">
-              <p
-                className="text-sm sm:text-base font-extrabold uppercase tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] leading-snug animate-fade-in"
-                style={{
-                  textShadow: '0 0 16px rgba(255, 255, 255, 0.7), 0 2px 4px rgba(0,0,0,0.9)',
-                }}
-              >
-                {activeSubtitle}
-              </p>
+        {/* Layer 3: Atmospheric Grain Texture */}
+        <div
+          className="absolute inset-0 z-0 opacity-[0.035] pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'repeat',
+            backgroundSize: '100px 100px',
+          }}
+        />
+
+        {/* Layer 4: Top & Bottom Vignettes */}
+        <div className="absolute top-0 inset-x-0 h-28 z-0 bg-linear-to-b from-black/80 via-black/40 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-44 z-0 bg-linear-to-t from-black via-black/85 to-transparent pointer-events-none" />
+
+        {/* ── TOP SECTION: Header Info & Title ──────────────────────── */}
+        <div className="relative z-10 p-4 space-y-2">
+          {/* Studio Resolution Badge & Category */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: theme.accentColor }} />
+              <span className="text-[9px] font-mono-studio font-bold text-white/80">9:16 VERTICAL HD</span>
+            </div>
+
+            <div className="flex items-center gap-1 text-[9px] font-semibold text-white/70 bg-black/50 px-2 py-0.5 rounded-full border border-white/10">
+              <Sparkles className="w-2.5 h-2.5" style={{ color: theme.accentColor }} />
+              <span className="truncate max-w-[100px]">{script.speechStyle || 'Motivation'}</span>
             </div>
           </div>
+
+          {/* Video Title */}
+          <h1
+            className="font-black uppercase tracking-tight text-white text-center leading-tight drop-shadow-md pt-1"
+            style={{
+              fontSize: 'clamp(14px, 4.2vw, 19px)',
+              textShadow: theme.titleShadow,
+            }}
+          >
+            {script.title || 'MASTER YOUR DAY'}
+          </h1>
         </div>
 
-        {/* Bottom Audio Visualizer & Transport Deck (Inside Phone) */}
-        <div className="relative z-30 bg-gradient-to-t from-black via-black/90 to-transparent pt-4 pb-2 px-4 space-y-2">
-          {/* Waveform Equalizer Bars */}
-          <div className="flex items-end justify-center gap-[3px] h-7 px-2">
-            {[30, 45, 70, 90, 60, 40, 85, 100, 75, 50, 65, 80, 95, 60, 40, 70, 85, 50].map(
-              (height, i) => (
-                <div
-                  key={i}
-                  className="w-[2.5px] rounded-full bg-[#3B82F6] transition-all duration-200"
-                  style={{
-                    height: isPlaying ? `${Math.max(15, Math.round(height * Math.random()))}%` : `${height * 0.4}%`,
-                    opacity: isPlaying ? 0.95 : 0.4,
-                  }}
-                />
-              )
-            )}
+        {/* ── CENTER SECTION: Kinetic Typography & Subtitles Stage ──── */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 text-center">
+          <span
+            className="text-[9px] font-extrabold uppercase tracking-[0.25em] mb-2 font-mono-studio"
+            style={{ color: theme.accentColor, textShadow: `0 0 10px ${theme.accentColor}` }}
+          >
+            • LIVE SUBTITLES •
+          </span>
+          <p
+            className="font-black uppercase text-white leading-tight transition-all duration-150"
+            style={{
+              fontSize: 'clamp(12px, 3.8vw, 17px)',
+              textShadow: '0 2px 14px rgba(0,0,0,0.95), 0 0 25px rgba(255,255,255,0.4)',
+              maxWidth: '92%',
+            }}
+          >
+            {activeSubtitle}
+          </p>
+
+          {/* Audio generation loading indicator */}
+          {loadingAudio && (
+            <div className="mt-3 px-3 py-1 rounded-full bg-black/75 border border-[#3B82F6]/50 flex items-center gap-2 text-[10px] text-[#60A5FA] animate-pulse">
+              <Mic className="w-3 h-3 animate-spin" />
+              <span>Synthesizing Voiceover...</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── BOTTOM SECTION: Metadata & Transport Controls ──────────── */}
+        <div className="relative z-20 p-3 pt-0 space-y-2">
+          {/* Channel Name, Voice, Music & Hashtags */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[9px] text-white/80">
+              <span className="font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: theme.accentColor }} />
+                {channelName}
+              </span>
+              <div className="flex items-center gap-2 text-white/70">
+                <span className="flex items-center gap-1 font-mono-studio">
+                  <Mic className="w-2.5 h-2.5 text-[#60A5FA]" />
+                  {selectedVoice}
+                </span>
+                {activeMusic && (
+                  <span className="flex items-center gap-1 truncate max-w-[90px] font-mono-studio">
+                    <Music2 className="w-2.5 h-2.5 text-[#34D399]" />
+                    {activeMusic.title}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Hashtags */}
+            <div className="flex flex-wrap gap-1">
+              {(script.hashtags || ['#Shorts', '#Motivation']).slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[8px] font-semibold"
+                  style={{ color: theme.accentColor }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
 
-          {/* Scrubber Progress Line */}
+          {/* Dynamic Audio Waveform */}
+          <div className="flex items-end justify-center gap-[2px] h-5 px-1">
+            {WAVEFORM_BARS.map((h, i) => (
+              <div
+                key={i}
+                className="rounded-full transition-all duration-150"
+                style={{
+                  width: '2px',
+                  background: theme.accentColor,
+                  height: isPlaying
+                    ? `${Math.max(15, Math.round(h * (0.4 + Math.random() * 0.6)))}%`
+                    : `${Math.max(10, h * 0.25)}%`,
+                  opacity: isPlaying ? 0.95 : 0.35,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Scrubber Progress Bar */}
           <div className="space-y-1">
             <div
-              className="relative w-full h-1 bg-white/20 rounded-full cursor-pointer overflow-visible"
+              className="relative w-full h-[4px] bg-white/20 hover:h-[6px] rounded-full cursor-pointer transition-all"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
-                const pos = (e.clientX - rect.left) / rect.width;
-                onSeek(pos * (duration || 15));
+                const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                onSeek(pos * totalDuration);
               }}
             >
               <div
-                className="h-full bg-[#3B82F6] rounded-full relative"
-                style={{ width: `${progressPercent}%` }}
+                className="h-full rounded-full relative transition-all"
+                style={{ width: `${progressPercent}%`, background: theme.accentColor }}
               >
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2.5 h-2.5 rounded-full bg-[#60A5FA] shadow-[0_0_8px_#3B82F6]" />
+                <div
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md"
+                  style={{ boxShadow: `0 0 6px ${theme.accentColor}` }}
+                />
               </div>
             </div>
-            <div className="flex items-center justify-between text-[9px] font-mono-studio text-white/70">
+
+            {/* Time Indicators */}
+            <div className="flex items-center justify-between text-[8px] font-mono-studio text-white/60 px-0.5">
               <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration || 15)}</span>
+              <span>{formatTime(totalDuration)}</span>
             </div>
           </div>
 
           {/* Transport Controls Row */}
-          <div className="flex items-center justify-center gap-5 pt-0.5 text-white">
+          <div className="flex items-center justify-center gap-6 pt-1 text-white">
             <button
+              type="button"
               onClick={() => onSeek(0)}
-              className="text-white/70 hover:text-white transition-colors cursor-pointer"
+              className="opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
               title="Restart"
             >
               <SkipBack className="w-3.5 h-3.5" />
             </button>
 
+            {/* Main Play / Pause Button */}
             <button
+              type="button"
               onClick={onTogglePlay}
-              className="w-8 h-8 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-lg shadow-[#3B82F6]/30 cursor-pointer"
+              className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: `linear-gradient(135deg, ${theme.accentColor}, #1d4ed8)`,
+                boxShadow: `0 0 20px ${theme.accentColor}60, 0 4px 12px rgba(0,0,0,0.6)`,
+              }}
               title={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <Pause className="w-3.5 h-3.5 fill-white" /> : <Play className="w-3.5 h-3.5 fill-white ml-0.5" />}
+              {isPlaying ? (
+                <Pause className="w-4 h-4 fill-white text-white" />
+              ) : (
+                <Play className="w-4 h-4 fill-white text-white ml-0.5" />
+              )}
             </button>
 
             <button
-              onClick={() => onSeek(duration || 15)}
-              className="text-white/70 hover:text-white transition-colors cursor-pointer"
-              title="Fast Forward"
+              type="button"
+              onClick={() => onSeek(totalDuration)}
+              className="opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
+              title="Skip to End"
             >
               <SkipForward className="w-3.5 h-3.5" />
             </button>
 
             <button
-              className="text-white/70 hover:text-white transition-colors cursor-pointer"
-              title="Volume"
+              type="button"
+              onClick={() => setIsMuted(!isMuted)}
+              className="opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
+              title={isMuted ? 'Unmute' : 'Mute'}
             >
-              <Volume2 className="w-3.5 h-3.5" />
+              {isMuted ? (
+                <VolumeX className="w-3.5 h-3.5 text-red-400" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5" />
+              )}
             </button>
           </div>
-
-          {/* iPhone Home Bar */}
-          <div className="w-20 h-1 bg-white/40 rounded-full mx-auto mt-1" />
         </div>
       </div>
     </div>
   );
 };
+
