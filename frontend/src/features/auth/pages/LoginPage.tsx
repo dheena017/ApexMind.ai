@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Check,
   ShieldCheck,
@@ -42,8 +42,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
-  const [gisRendered, setGisRendered] = useState(false);
-  const googleButtonContainerRef = useRef<HTMLDivElement>(null);
 
   // Compute intended post-login destination
   const targetDestination = getPostLoginRedirect();
@@ -61,7 +59,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           atob(base64)
             .split('')
             .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
+          .join('')
         );
         return JSON.parse(jsonPayload);
       }
@@ -94,7 +92,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     }
   });
 
-  // Initialize Google Identity Services (GIS)
+  // Initialize Google Identity Services (GIS) for One-Tap in background
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -126,19 +124,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
             auto_select: false,
             cancel_on_tap_outside: true,
           });
-
-          if (googleButtonContainerRef.current) {
-            googleButtonContainerRef.current.innerHTML = '';
-            window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
-              theme: 'outline',
-              size: 'large',
-              text: 'continue_with',
-              shape: 'rectangular',
-              logo_alignment: 'left',
-              width: 320,
-            });
-            setGisRendered(true);
-          }
         } catch (e) {
           console.warn('Google Identity Services notice:', e);
         }
@@ -225,8 +210,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 console.warn('YouTube channel fetch note:', ytErr);
               }
 
-              const finalEmail = profileEmail || rememberedUser?.email || customGoogleEmail || 'durgumkumar2011@gmail.com';
-              const finalName = profileName || (finalEmail ? finalEmail.split('@')[0] : 'Creator');
+              const finalEmail = (profileEmail || rememberedUser?.email || customGoogleEmail || '').trim();
+              if (!finalEmail) {
+                setNotice('No email received from Google. Please sign in below.');
+                setShowGoogleModal(true);
+                return;
+              }
+              const finalName = profileName || finalEmail.split('@')[0];
 
               await loginWithGoogle({
                 email: finalEmail,
@@ -257,8 +247,12 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   };
 
   const handleGoogleLogin = async (googleEmail?: string, googleName?: string) => {
-    const emailToUse = (googleEmail || customGoogleEmail || rememberedUser?.email || 'durgumkumar2011@gmail.com').trim();
-    const nameToUse = (googleName || customGoogleName || rememberedUser?.name || '').trim() || (emailToUse ? emailToUse.split('@')[0] : 'Creator');
+    const emailToUse = (googleEmail || customGoogleEmail || rememberedUser?.email || '').trim();
+    if (!emailToUse) {
+      setShowGoogleModal(true);
+      return;
+    }
+    const nameToUse = (googleName || customGoogleName || rememberedUser?.name || '').trim() || emailToUse.split('@')[0];
 
     setGoogleLoading(true);
     setNotice('');
@@ -363,8 +357,32 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </div>
             </div>
 
-            {/* Google OAuth & YouTube Authorization Action */}
+            {/* Google OAuth & YouTube Authorization Action - Single Elegant Button */}
             <div className="space-y-3.5 pt-1">
+              {rememberedUser?.email && (
+                <div className="rounded-2xl bg-[#121212] border border-[#2F2F2F] p-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={rememberedUser.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rememberedUser.name || 'Creator')}`}
+                      alt=""
+                      className="w-9 h-9 rounded-full border border-white/10 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{rememberedUser.name || 'Creator'}</p>
+                      <p className="text-[11px] text-[#9CA3AF] truncate">{rememberedUser.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleGoogleLogin(rememberedUser.email, rememberedUser.name)}
+                    disabled={googleLoading}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-[#3B82F6]/10 hover:bg-[#3B82F6]/20 text-[#60A5FA] text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Continue →
+                  </button>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={handleGoogleWithYouTubeAuth}
@@ -382,28 +400,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 <span>Sign In & Authorize YouTube</span>
               </button>
 
-              {googleClientId && (
-                <div
-                  ref={googleButtonContainerRef}
-                  className={`w-full flex justify-center min-h-[44px] ${!gisRendered ? 'hidden' : ''}`}
-                />
-              )}
-
-              <div className="flex items-center justify-between text-xs pt-1 px-1">
-                <button
-                  type="button"
-                  onClick={() => handleGoogleLogin('durgumkumar2011@gmail.com', 'Dheena Kumar')}
-                  disabled={googleLoading}
-                  className="text-[#9CA3AF] hover:text-white transition-colors cursor-pointer"
-                >
-                  Quick Sign-In (durgumkumar2011@gmail.com)
-                </button>
+              <div className="text-center pt-1">
                 <button
                   type="button"
                   onClick={() => setShowGoogleModal(true)}
-                  className="text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer"
+                  className="text-xs text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer"
                 >
-                  Other Account
+                  Sign in with another Google account
                 </button>
               </div>
             </div>
