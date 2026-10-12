@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Wand2, ShieldCheck, FileText, Plus, ChevronDown, Cpu } from 'lucide-react';
+import React from 'react';
+import { Wand2, ShieldCheck, FileText, Plus, ChevronDown, Cpu } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 
 export const AI_MODELS = [
@@ -31,13 +31,6 @@ const CATEGORIES = [
   'Financial Freedom',
 ];
 
-const QUICK_TOPICS = [
-  '5 AM Silent Discipline',
-  'Overcoming Fear of Failure',
-  'Relentless Compounding',
-  'Stoic Mental Toughness',
-];
-
 export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   agentPrompt,
   onPromptChange,
@@ -58,9 +51,6 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       {/* ── Top Header Bar ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between pb-2 border-b border-[#2F2F2F] shrink-0">
         <div className="flex items-center gap-2">
-          <div className="p-1 rounded-lg bg-[#3B82F6]/10 text-[#60A5FA]">
-            <Sparkles className="w-4 h-4" />
-          </div>
           <h2 className="text-sm font-bold text-white tracking-tight">AI Agent Creator</h2>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1">
             <ShieldCheck className="w-3 h-3" />
@@ -100,14 +90,9 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         <div className="space-y-3.5">
           {/* Header Title & Interactive AI Model Dropdown */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white shadow-md shadow-[#3B82F6]/30">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-xs font-black text-white tracking-wide uppercase">AI Agent Video Creator</h3>
-                <p className="text-[10px] text-[#9CA3AF]">Zero Hallucination • Unique Quote Memory</p>
-              </div>
+            <div>
+              <h3 className="text-xs font-black text-white tracking-wide uppercase">AI Agent Video Creator</h3>
+              <p className="text-[10px] text-[#9CA3AF]">Zero Hallucination • Unique Quote Memory</p>
             </div>
 
             {/* AI Model Selector Dropdown */}
@@ -141,29 +126,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             <textarea
               value={agentPrompt}
               onChange={(e) => onPromptChange(e.target.value)}
-              rows={3}
+              rows={4}
               className="w-full bg-[#0A0A0A] border border-[#2F2F2F] text-xs text-white rounded-xl p-3 outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 transition-all resize-none placeholder:text-[#525252] leading-relaxed"
               placeholder="e.g. Monologue about silent discipline, early mornings, and relentless consistency..."
             />
-          </div>
-
-          {/* Quick Inspiration Presets */}
-          <div className="space-y-1.5">
-            <span className="text-[9px] font-bold text-[#6B7280] uppercase tracking-wider block">
-              Quick Inspiration Presets:
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {QUICK_TOPICS.map((topic) => (
-                <button
-                  key={topic}
-                  type="button"
-                  onClick={() => onPromptChange(topic)}
-                  className="text-[9.5px] px-2.5 py-1 rounded-lg bg-[#181818] border border-[#2A2A2A] text-[#9CA3AF] hover:text-[#60A5FA] hover:border-[#3B82F6]/50 transition-colors cursor-pointer"
-                >
-                  ⚡ {topic}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Niche Categories */}

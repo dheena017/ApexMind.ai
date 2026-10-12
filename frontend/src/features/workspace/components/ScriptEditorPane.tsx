@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Sparkles,
   ShieldCheck,
   MoreHorizontal,
   Volume2,
@@ -34,9 +33,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
       {/* ── Top Header Bar ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between pb-2 border-b border-[#2F2F2F] shrink-0">
         <div className="flex items-center gap-2">
-          <div className="p-1 rounded-lg bg-[#3B82F6]/10 text-[#60A5FA]">
-            <Sparkles className="w-4 h-4" />
-          </div>
           <h2 className="text-sm font-bold text-white tracking-tight">Script & Subtitles</h2>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1">
             <ShieldCheck className="w-3 h-3" />
