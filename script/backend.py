@@ -133,6 +133,16 @@ def is_port_in_use(host: str, port: int) -> bool:
         return sock.connect_ex((check_host, port)) == 0
 
 
+def find_next_available_port(host: str, start_port: int, max_attempts: int = 50) -> int:
+    """Find the next open port starting from start_port."""
+    port = start_port
+    while port < start_port + max_attempts:
+        if not is_port_in_use(host, port):
+            return port
+        port += 1
+    raise RuntimeError(f"Could not find an available port in range {start_port} - {start_port + max_attempts}")
+
+
 def check_python_version(ansi: Ansi) -> None:
     """Validate that the Python runtime meets minimum requirements."""
     if sys.version_info < MIN_PYTHON_VERSION:
@@ -274,6 +284,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-reload", dest="reload", action="store_false", help="Disable auto-reload")
     parser.add_argument("--log-level", choices=["debug", "info", "warning", "error", "critical", "trace"], help="Uvicorn log level")
     parser.add_argument("--workers", "-w", type=int, default=1, help="Number of worker processes (production)")
+    parser.add_argument("--auto-port", "-a", action="store_true", help="Automatically pick the next available port if chosen port is occupied")
     parser.add_argument("--open", "-o", action="store_true", help="Open Swagger API documentation in browser when ready")
     parser.add_argument("--check-only", "-c", action="store_true", help="Perform pre-flight health checks and exit")
     parser.add_argument("--install", "-i", action="store_true", help="Automatically install missing dependencies")
@@ -314,18 +325,24 @@ def main() -> int:
 
     # 3. Port conflict check
     if is_port_in_use(host, port):
-        print(
-            f"\n{ansi.RED}{ansi.BOLD}[ApexMind Error]{ansi.RESET} Port {ansi.WHITE}{port}{ansi.RESET} is already in use by another process!\n"
-            f"{ansi.BOLD}Resolution:{ansi.RESET}\n"
-            f" - Change the port: {ansi.CYAN}python script/backend.py --port {port + 1}{ansi.RESET}\n"
-            + (
-                f" - Or terminate the existing process: {ansi.CYAN}netstat -ano | findstr :{port}{ansi.RESET} (Windows)\n"
-                if os.name == "nt"
-                else f" - Or terminate the existing process: {ansi.CYAN}lsof -i :{port}{ansi.RESET} (Unix)\n"
-            ),
-            file=sys.stderr,
-        )
-        return 1
+        if args.auto_port:
+            next_port = find_next_available_port(host, port + 1)
+            print(f"{ansi.YELLOW}[ApexMind Notice]{ansi.RESET} Port {port} is occupied. Auto-switching to available port {ansi.GREEN}{next_port}{ansi.RESET}")
+            port = next_port
+        else:
+            print(
+                f"\n{ansi.RED}{ansi.BOLD}[ApexMind Error]{ansi.RESET} Port {ansi.WHITE}{port}{ansi.RESET} is already in use by another process!\n"
+                f"{ansi.BOLD}Resolution:{ansi.RESET}\n"
+                f" - Auto-assign free port: {ansi.CYAN}python script/backend.py --auto-port{ansi.RESET}\n"
+                f" - Change the port:       {ansi.CYAN}python script/backend.py --port {port + 1}{ansi.RESET}\n"
+                + (
+                    f" - Terminate existing:   {ansi.CYAN}netstat -ano | findstr :{port}{ansi.RESET} (Windows)\n"
+                    if os.name == "nt"
+                    else f" - Terminate existing:   {ansi.CYAN}lsof -i :{port}{ansi.RESET} (Unix)\n"
+                ),
+                file=sys.stderr,
+            )
+            return 1
 
     # 4. App import validation
     validate_application_import(ansi)
