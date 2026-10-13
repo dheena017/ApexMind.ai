@@ -136,7 +136,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative ${isCompact ? 'inline-block' : 'w-full'} ${className}`}
+      className={`relative ${isOpen ? 'z-30' : ''} ${isCompact ? 'inline-block' : 'w-full'} ${className}`}
     >
       {label && !isCompact && (
         <label

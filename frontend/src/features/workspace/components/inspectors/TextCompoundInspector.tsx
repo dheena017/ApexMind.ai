@@ -5,8 +5,10 @@ import {
   AlignRight,
   Minus,
   Plus,
+  Type,
 } from 'lucide-react';
 import { GeneratedScript } from '../../types';
+import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
 export interface TextCompoundInspectorProps {
   script?: GeneratedScript;
@@ -137,17 +139,18 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
             {/* Font Family Dropdown */}
             <div className="w-full">
-              <select
+              <CustomSelect
                 value={textFont}
-                onChange={(e) => setTextFont(e.target.value)}
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3.5 py-2.5 text-xs text-white outline-none cursor-pointer"
-              >
-                {['Roboto', 'Inter', 'Montserrat', 'Oswald', 'Outfit', 'Bebas Neue', 'Caveat'].map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </select>
+                onChange={setTextFont}
+                options={['Roboto', 'Inter', 'Montserrat', 'Oswald', 'Outfit', 'Bebas Neue', 'Caveat'].map((f) => ({
+                  value: f,
+                  label: f,
+                }))}
+                icon={<Type className="w-3.5 h-3.5 text-[#60A5FA]" />}
+                placeholder="Select font family..."
+                buttonClassName="bg-[#1C1C20] border-[#2A2A30] hover:border-[#3B82F6]/50"
+                menuClassName="bg-[#1C1C20] border-[#2A2A30]"
+              />
             </div>
 
             {/* Font Weight & Size Row */}

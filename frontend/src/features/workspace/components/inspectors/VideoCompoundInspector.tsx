@@ -6,8 +6,10 @@ import {
   RotateCw,
   Minus,
   Plus,
+  Film,
 } from 'lucide-react';
 import { VisualBackdrop } from '../../types';
+import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
 export interface VideoCompoundInspectorProps {
   activeBackdrop: VisualBackdrop;
@@ -341,99 +343,29 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
             {/* Backdrop Switcher Preset */}
             <div className="w-full pt-4">
-              <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1.5 block">
-                Visual Backdrop Preset
-              </label>
-              <select
-                value={activeBackdrop?.id || backdrops[0]?.id}
-                onChange={(e) => onSelectBackdrop(e.target.value)}
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2.5 text-xs text-white outline-none cursor-pointer"
-              >
-                {backdrops.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} ({b.category})
-                  </option>
-                ))}
-              </select>
+              <CustomSelect
+                label="Visual Backdrop Preset"
+                labelClassName="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1.5 block"
+                value={activeBackdrop?.id || backdrops[0]?.id || ''}
+                onChange={(backdropId) => {
+                  onSetCustomImage?.(undefined);
+                  onSetCustomVideo?.(undefined);
+                  onSelectBackdrop(backdropId);
+                }}
+                options={backdrops.map((b) => ({
+                  value: b.id,
+                  label: `${b.name} (${b.category})`,
+                  description: b.category,
+                  badge: b.aspectRatio || '9:16',
+                }))}
+                icon={<Film className="w-3.5 h-3.5 text-[#60A5FA]" />}
+                placeholder="Choose visual backdrop preset..."
+                buttonClassName="bg-[#1C1C20] border-[#2A2A30] hover:border-[#3B82F6]/50"
+                menuClassName="bg-[#1C1C20] border-[#2A2A30]"
+              />
             </div>
 
-            {/* Canvas Background Color */}
-            {onCanvasBackgroundChange && (
-              <div className="w-full pt-2">
-                <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-2 block">
-                  Canvas Background Color
-                </label>
-                {/* Active Color Preview Bar */}
-                <div
-                  className="w-full h-10 rounded-xl border border-[#2A2A30] mb-2.5 relative overflow-hidden flex items-center justify-between px-3"
-                  style={
-                    canvasBackground.startsWith('linear-gradient')
-                      ? { backgroundImage: canvasBackground }
-                      : { backgroundColor: canvasBackground }
-                  }
-                >
-                  <span
-                    className="text-[10px] font-mono-studio font-bold drop-shadow-md"
-                    style={{ color: canvasBackground === '#FFFFFF' ? '#000' : '#fff' }}
-                  >
-                    {canvasBackground.startsWith('linear-gradient') ? 'Gradient' : canvasBackground.toUpperCase()}
-                  </span>
-                  <label
-                    className="w-6 h-6 rounded-lg cursor-pointer flex items-center justify-center bg-black/30 hover:bg-black/50 border border-white/20 transition-colors"
-                    title="Custom color"
-                  >
-                    <input
-                      type="color"
-                      value={canvasBackground.startsWith('#') ? canvasBackground : '#050505'}
-                      onChange={(e) => onCanvasBackgroundChange(e.target.value)}
-                      className="sr-only"
-                    />
-                    <span className="text-white text-[9px]">🎨</span>
-                  </label>
-                </div>
-                {/* Quick Color Swatches */}
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { val: '#050505', name: 'Studio Black' },
-                    { val: '#000000', name: 'Pure Black' },
-                    { val: '#FFFFFF', name: 'White' },
-                    { val: '#EF4444', name: 'Red' },
-                    { val: '#3B82F6', name: 'Blue' },
-                    { val: '#8B5CF6', name: 'Purple' },
-                    { val: '#22C55E', name: 'Green' },
-                    { val: '#F97316', name: 'Orange' },
-                    { val: '#EC4899', name: 'Pink' },
-                    { val: 'linear-gradient(135deg, #F43F5E, #FB7185)', name: 'Rose' },
-                    { val: 'linear-gradient(135deg, #8B5CF6, #EC4899)', name: 'Neon' },
-                    { val: 'linear-gradient(135deg, #06B6D4, #3B82F6)', name: 'Cyan' },
-                    { val: 'linear-gradient(135deg, #EC4899, #F59E0B)', name: 'Sunset' },
-                    { val: 'linear-gradient(135deg, #10B981, #06B6D4)', name: 'Mint' },
-                  ].map((swatch) => {
-                    const isActive = canvasBackground === swatch.val;
-                    return (
-                      <button
-                        key={swatch.val}
-                        type="button"
-                        onClick={() => onCanvasBackgroundChange(swatch.val)}
-                        title={swatch.name}
-                        className={`w-7 h-7 rounded-full border transition-all cursor-pointer hover:scale-110 active:scale-95 ${
-                          isActive
-                            ? 'border-white ring-2 ring-white/40 scale-110'
-                            : swatch.val === '#FFFFFF'
-                            ? 'border-zinc-400'
-                            : 'border-black/30'
-                        }`}
-                        style={
-                          swatch.val.startsWith('linear-gradient')
-                            ? { backgroundImage: swatch.val }
-                            : { backgroundColor: swatch.val }
-                        }
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+
           </div>
         )}
 

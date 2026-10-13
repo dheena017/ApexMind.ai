@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2 } from 'lucide-react';
+import { Volume2, Mic, Music } from 'lucide-react';
 import { VoiceProfile, MusicTrack } from '../../types';
+import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
 export interface AudioCompoundInspectorProps {
   audioType: 'voice' | 'music';
@@ -91,22 +92,27 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   Neural TTS Voice Profile
                 </label>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={selectedVoice}
-                    onChange={(e) => onSelectVoice(e.target.value)}
-                    className="flex-1 bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
-                  >
-                    {voices.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} ({v.gender} • {v.style})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex-1 min-w-0">
+                    <CustomSelect
+                      value={selectedVoice}
+                      onChange={onSelectVoice}
+                      options={voices.map((v) => ({
+                        value: v.id,
+                        label: `${v.name} (${v.gender} • ${v.style})`,
+                        description: `${v.gender} • ${v.style}`,
+                        badge: v.speed || '1.0x',
+                      }))}
+                      icon={<Mic className="w-3.5 h-3.5 text-[#60A5FA]" />}
+                      placeholder="Select voice profile..."
+                      buttonClassName="bg-[#1C1C20] border-[#2A2A30] hover:border-[#3B82F6]/50"
+                      menuClassName="bg-[#1C1C20] border-[#2A2A30]"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => onTestVoice(selectedVoice)}
                     disabled={testingVoiceId === selectedVoice}
-                    className="p-2 rounded-xl bg-[#25252C] hover:bg-[#30303A] text-white border border-[#3E3E48] cursor-pointer"
+                    className="p-2.5 rounded-xl bg-[#25252C] hover:bg-[#30303A] text-white border border-[#3E3E48] cursor-pointer shrink-0"
                     title="Preview voice clip"
                   >
                     <Volume2 className="w-4 h-4 text-[#3B82F6]" />
@@ -115,20 +121,22 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
               </div>
             ) : (
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
-                  Soundtrack Audio Bed
-                </label>
-                <select
+                <CustomSelect
+                  label="Soundtrack Audio Bed"
+                  labelClassName="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1.5 block"
                   value={selectedMusic}
-                  onChange={(e) => onSelectMusic(e.target.value)}
-                  className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
-                >
-                  {musicTracks.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.title} ({m.genre})
-                    </option>
-                  ))}
-                </select>
+                  onChange={onSelectMusic}
+                  options={musicTracks.map((m) => ({
+                    value: m.id,
+                    label: `${m.title} (${m.genre})`,
+                    description: m.genre,
+                    badge: m.duration,
+                  }))}
+                  icon={<Music className="w-3.5 h-3.5 text-[#A855F7]" />}
+                  placeholder="Select soundtrack..."
+                  buttonClassName="bg-[#1C1C20] border-[#2A2A30] hover:border-[#3B82F6]/50"
+                  menuClassName="bg-[#1C1C20] border-[#2A2A30]"
+                />
               </div>
             )}
 

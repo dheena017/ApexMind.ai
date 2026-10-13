@@ -120,6 +120,14 @@ export default function WorkspacePage({
         setBackdrops(media.visualBackdrops || []);
         setVoices(media.voiceProfiles || []);
 
+        if (media.visualBackdrops && media.visualBackdrops.length > 0) {
+          setSelectedBackdrop((currentBackdrop) =>
+            media.visualBackdrops.some((b) => b.id === currentBackdrop)
+              ? currentBackdrop
+              : media.visualBackdrops[0].id
+          );
+        }
+
         if (media.voiceProfiles && media.voiceProfiles.length > 0) {
           setSelectedVoice((currentVoice) =>
             media.voiceProfiles.some((voice) => voice.id === currentVoice)
@@ -321,15 +329,17 @@ export default function WorkspacePage({
   };
 
   // Selected backdrop & music objects
-  const activeBackdropObj = backdrops.find((b) => b.id === selectedBackdrop) || {
-    id: '',
-    name: '',
-    category: '',
-    aspectRatio: '9:16',
-    previewColor: '',
-    textColor: '#FFFFFF',
-    particleEffect: '',
-  };
+  const activeBackdropObj =
+    backdrops.find((b) => b.id === selectedBackdrop) ||
+    backdrops[0] || {
+      id: '',
+      name: '',
+      category: '',
+      aspectRatio: '9:16',
+      previewColor: '',
+      textColor: '#FFFFFF',
+      particleEffect: '',
+    };
 
   const canPublish = Boolean(script.title && script.quote);
 

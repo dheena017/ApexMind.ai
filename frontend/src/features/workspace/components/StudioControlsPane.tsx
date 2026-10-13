@@ -119,15 +119,17 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     return () => window.removeEventListener('workspace:select-compound', handleCompoundSelect);
   }, [onSelectCompound]);
 
-  const activeBackdropObj = backdrops.find((b) => b.id === selectedBackdrop) || {
-    id: '',
-    name: 'No Backdrop Selected',
-    category: '',
-    aspectRatio: '9:16',
-    previewColor: '',
-    textColor: '#FFFFFF',
-    particleEffect: '',
-  };
+  const activeBackdropObj =
+    backdrops.find((b) => b.id === selectedBackdrop) ||
+    backdrops[0] || {
+      id: '',
+      name: 'No Backdrop Selected',
+      category: '',
+      aspectRatio: '9:16',
+      previewColor: '',
+      textColor: '#FFFFFF',
+      particleEffect: '',
+    };
 
   const compoundMetadata = {
     home: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400', badge: 'Home' },
