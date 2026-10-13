@@ -12,6 +12,8 @@ export type PageRoute =
   | 'profile-usage'
   | 'profile-security'
   | 'settings'
+  | 'terms'
+  | 'privacy'
   | 'login'
   | 'loading'
   | '404';
@@ -37,6 +39,8 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'profile-usage', path: '/profile/usage', title: 'Studio Usage - ApexMind' },
   { id: 'profile-security', path: '/profile/security', title: 'Account Security - ApexMind' },
   { id: 'settings', path: '/settings', title: 'Settings - ApexMind' },
+  { id: 'terms', path: '/terms', title: 'Terms of Service - ApexMind', aliases: ['/terms-of-service', '/tos'] },
+  { id: 'privacy', path: '/privacy', title: 'Privacy Policy - ApexMind', aliases: ['/privacy-policy'] },
   { id: 'login', path: '/login', title: 'Sign In - ApexMind' },
   { id: 'loading', path: '/loading', title: 'Loading - ApexMind' },
   { id: '404', path: '/404', title: '404 Page Not Found - ApexMind' },

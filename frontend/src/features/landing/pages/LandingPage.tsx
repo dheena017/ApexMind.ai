@@ -21,6 +21,13 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
             <a href="#workflow" className="hover:text-white transition-colors whitespace-nowrap shrink-0">AI Workflow</a>
             <a href="#creator-use-cases" className="hover:text-white transition-colors whitespace-nowrap shrink-0">For Creators</a>
             <a href="#faq" className="hover:text-white transition-colors whitespace-nowrap shrink-0">FAQ</a>
+            <button
+              type="button"
+              onClick={() => onNavigate('terms')}
+              className="hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer text-left"
+            >
+              Legal
+            </button>
           </nav>
 
           <div className="flex items-center gap-3 shrink-0">

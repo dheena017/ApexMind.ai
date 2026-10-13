@@ -80,7 +80,14 @@ export default function AppLayout({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sidebarOpen]);
 
-  if (activePage === 'landing' || activePage === 'login' || activePage === 'loading' || !isAuthenticated) {
+  if (
+    activePage === 'landing' ||
+    activePage === 'login' ||
+    activePage === 'loading' ||
+    activePage === 'terms' ||
+    activePage === 'privacy' ||
+    !isAuthenticated
+  ) {
     return <>{children}</>;
   }
 

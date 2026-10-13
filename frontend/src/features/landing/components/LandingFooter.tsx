@@ -182,6 +182,22 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
                 </button>
               </li>
               <li>
+                <button
+                  onClick={() => onNavigate('terms')}
+                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                >
+                  Terms of Service
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onNavigate('privacy')}
+                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                >
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
                 <span className="text-[#6B7280] flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   YouTube Verified
@@ -193,8 +209,22 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
 
         {/* Bottom Bar */}
         <div className="mt-14 pt-8 border-t border-[#2F2F2F] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#6B7280]">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <span>© {new Date().getFullYear()} ApexMind AI Inc. All rights reserved.</span>
+            <span className="hidden sm:inline">•</span>
+            <button
+              onClick={() => onNavigate('terms')}
+              className="hover:text-[#E5E5E5] transition-colors cursor-pointer"
+            >
+              Terms of Service
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => onNavigate('privacy')}
+              className="hover:text-[#E5E5E5] transition-colors cursor-pointer"
+            >
+              Privacy Policy
+            </button>
           </div>
 
           <div className="flex items-center gap-6">

@@ -17,6 +17,8 @@ import ProfileSecurityPage from '@/src/features/profile/pages/ProfileSecurityPag
 import ProfileSectionLayout from '@/src/features/profile/components/ProfileSectionLayout';
 import SettingsPage from '@/src/features/settings/pages/SettingsPage';
 import NotificationsPage from '@/src/features/notifications/pages/NotificationsPage';
+import TermsPage from '@/src/features/legal/pages/TermsPage';
+import PrivacyPage from '@/src/features/legal/pages/PrivacyPage';
 import NotFoundPage from '@/src/shared/ui/NotFoundPage';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
@@ -37,7 +39,12 @@ export default function AppRouter({
   const { isAuthenticated } = useAuth();
 
   const isPublicPage =
-    activePage === 'landing' || activePage === 'login' || activePage === 'loading' || activePage === '404';
+    activePage === 'landing' ||
+    activePage === 'login' ||
+    activePage === 'loading' ||
+    activePage === '404' ||
+    activePage === 'terms' ||
+    activePage === 'privacy';
 
   // Unauthenticated users are redirected to login for protected studio pages
   if (!isAuthenticated && !isPublicPage) {
@@ -85,6 +92,10 @@ export default function AppRouter({
             return <SettingsPage />;
           case 'notifications':
             return <NotificationsPage onNavigate={onNavigate} />;
+          case 'terms':
+            return <TermsPage onNavigate={onNavigate} />;
+          case 'privacy':
+            return <PrivacyPage onNavigate={onNavigate} />;
           case '404':
             return <NotFoundPage onNavigate={onNavigate} />;
           default:

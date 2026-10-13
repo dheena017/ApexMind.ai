@@ -31,7 +31,13 @@ export default function App() {
     }
 
     // If an unauthenticated user opens directly to an internal studio page, store the intent and load login
-    const isPublic = parsed === 'landing' || parsed === 'login' || parsed === 'loading' || parsed === '404';
+    const isPublic =
+      parsed === 'landing' ||
+      parsed === 'login' ||
+      parsed === 'loading' ||
+      parsed === '404' ||
+      parsed === 'terms' ||
+      parsed === 'privacy';
     if (!isPublic && typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('apexmind_user');
@@ -50,7 +56,12 @@ export default function App() {
   // Auth Guard: Unauthenticated users attempting to access internal studio pages are redirected to login with redirect intent
   useEffect(() => {
     const isPublicPage =
-      activePage === 'landing' || activePage === 'login' || activePage === 'loading' || activePage === '404';
+      activePage === 'landing' ||
+      activePage === 'login' ||
+      activePage === 'loading' ||
+      activePage === '404' ||
+      activePage === 'terms' ||
+      activePage === 'privacy';
     if (!isAuthenticated && !isPublicPage) {
       consoleLogger.warn('AuthGuard', `Access to [${activePage}] requires login. Storing redirect intent.`);
       savePostLoginRedirect(activePage);
@@ -87,7 +98,12 @@ export default function App() {
     const handlePopState = () => {
       const parsed = parseRoute(window.location.pathname);
       const isPublicPage =
-        parsed === 'landing' || parsed === 'login' || parsed === 'loading' || parsed === '404';
+        parsed === 'landing' ||
+        parsed === 'login' ||
+        parsed === 'loading' ||
+        parsed === '404' ||
+        parsed === 'terms' ||
+        parsed === 'privacy';
       if (!isAuthenticated && !isPublicPage) {
         savePostLoginRedirect(parsed);
         setActivePage('login');

@@ -407,13 +407,32 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </p>
             )}
 
-            <div className="border-t border-[#2F2F2F] pt-4">
+            <div className="border-t border-[#2F2F2F] pt-4 space-y-3">
               <div className="flex items-start gap-3 rounded-xl border border-[#2F2F2F] bg-[#121212] p-3.5 shadow-inner shadow-black/30">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                 <p className="text-xs leading-5 text-[#9CA3AF]">
                   ApexMind uses Google OAuth authentication. Only verified sign-ins are permitted into the studio.
                 </p>
               </div>
+
+              <p className="text-[11px] text-center text-[#71717A] leading-relaxed">
+                By signing in, you agree to ApexMind&apos;s{' '}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('terms')}
+                  className="text-[#9CA3AF] hover:text-white underline cursor-pointer"
+                >
+                  Terms of Service
+                </button>{' '}
+                and{' '}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('privacy')}
+                  className="text-[#9CA3AF] hover:text-white underline cursor-pointer"
+                >
+                  Privacy Policy
+                </button>.
+              </p>
             </div>
           </div>
         </section>
