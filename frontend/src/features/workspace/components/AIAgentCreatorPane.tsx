@@ -1,5 +1,4 @@
-import React from 'react';
-import { Wand2, ShieldCheck, FileText, Plus, Cpu } from 'lucide-react';
+import { Wand2, ShieldCheck, FileText, Plus, Cpu, Compass } from 'lucide-react';
 import { Button, CustomSelect } from '@/src/shared/ui/common';
 
 export const AI_MODELS = [
@@ -8,6 +7,15 @@ export const AI_MODELS = [
   { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite (Lightweight)' },
   { id: 'gemini-flash-latest', name: 'Gemini Flash Latest' },
   { id: 'gemini-pro-latest', name: 'Gemini Pro Latest' },
+];
+
+export const CATEGORY_OPTIONS = [
+  { value: 'Stoic Mindset & Discipline', label: 'Stoic Mindset & Discipline' },
+  { value: 'Morning Energy & Grit', label: 'Morning Energy & Grit' },
+  { value: 'Fitness & Power', label: 'Fitness & Power' },
+  { value: 'Financial Freedom', label: 'Financial Freedom' },
+  { value: 'Dark Psychology & Focus', label: 'Dark Psychology & Focus' },
+  { value: 'Warrior Mentality & Resilience', label: 'Warrior Mentality & Resilience' },
 ];
 
 interface AIAgentCreatorPaneProps {
@@ -23,13 +31,6 @@ interface AIAgentCreatorPaneProps {
   selectedModel?: string;
   onModelChange?: (model: string) => void;
 }
-
-const CATEGORIES = [
-  'Stoic Mindset & Discipline',
-  'Morning Energy & Grit',
-  'Fitness & Power',
-  'Financial Freedom',
-];
 
 export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   agentPrompt,
@@ -121,27 +122,16 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             />
           </div>
 
-          {/* Niche Categories */}
+          {/* Niche Category Dropdown */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block">
-              Niche Category
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => onCategoryChange(cat)}
-                  className={`text-[10px] px-3 py-1 rounded-lg border transition-all cursor-pointer font-medium ${
-                    category === cat
-                      ? 'bg-[#3B82F6] border-[#3B82F6] text-white shadow-sm shadow-[#3B82F6]/50'
-                      : 'bg-[#181818] border-[#2A2A2A] text-[#9CA3AF] hover:text-white hover:border-[#3B82F6]/40'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+            <CustomSelect
+              label="Niche Category"
+              labelClassName="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block"
+              value={category}
+              onChange={onCategoryChange}
+              options={CATEGORY_OPTIONS}
+              icon={<Compass className="w-3.5 h-3.5 text-[#60A5FA]" />}
+            />
           </div>
         </div>
 

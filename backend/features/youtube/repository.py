@@ -30,6 +30,7 @@ def create_channel(
     subscribers: int = 0,
     videos_uploaded: int = 0,
     custom_id: Optional[str] = None,
+    banner_url: Optional[str] = None,
 ) -> Dict[str, Any]:
     return add_channel(
         name=name,
@@ -39,6 +40,7 @@ def create_channel(
         subscribers=subscribers,
         videos_uploaded=videos_uploaded,
         custom_id=custom_id,
+        banner_url=banner_url,
     )
 
 def update_channel_data(channel_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:

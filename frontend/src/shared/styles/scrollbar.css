@@ -66,6 +66,25 @@ html, body {
     height: 0px !important;
     background: transparent !important;
   }
+
+  .profile-section-scrollbar::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .profile-section-scrollbar::-webkit-scrollbar-track {
+    background: #111111;
+    border-radius: 9999px;
+  }
+
+  .profile-section-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #3A3A3A;
+    border: 2px solid #111111;
+    border-radius: 9999px;
+  }
+
+  .profile-section-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #60A5FA;
+  }
 }
 
 /* 3. Firefox & Non-WebKit standard fallback */
@@ -73,5 +92,9 @@ html, body {
   html, body, * {
     scrollbar-width: thin;
     scrollbar-color: #262626 #0A0A0A;
+  }
+
+  .profile-section-scrollbar {
+    scrollbar-color: #3A3A3A #111111;
   }
 }

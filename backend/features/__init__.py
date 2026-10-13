@@ -8,6 +8,7 @@ from .youtube import router as youtube_router
 from .notifications import router as notifications_router
 from .dashboard import router as dashboard_router
 from .auth import auth_router
+from .settings import router as settings_router
 
 __all__ = [
     "workspace_router",
@@ -15,4 +16,5 @@ __all__ = [
     "notifications_router",
     "dashboard_router",
     "auth_router",
+    "settings_router",
 ]

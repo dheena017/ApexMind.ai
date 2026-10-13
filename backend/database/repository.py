@@ -64,6 +64,7 @@ def get_channels() -> List[Dict[str, Any]]:
             "subscribers": r["subscribers"],
             "videosUploaded": r["videos_uploaded"],
             "avatarUrl": r["avatar_url"],
+            "bannerUrl": r["banner_url"] if "banner_url" in r.keys() else None,
             "isAutoUploadEnabled": bool(r["is_auto_upload_enabled"]),
             "scheduleCron": r["schedule_cron"],
             "connectedAt": r["connected_at"],
@@ -87,6 +88,7 @@ def get_channel_by_id(channel_id: str) -> Optional[Dict[str, Any]]:
         "subscribers": r["subscribers"],
         "videosUploaded": r["videos_uploaded"],
         "avatarUrl": r["avatar_url"],
+        "bannerUrl": r["banner_url"] if "banner_url" in r.keys() else None,
         "isAutoUploadEnabled": bool(r["is_auto_upload_enabled"]),
         "scheduleCron": r["schedule_cron"],
         "connectedAt": r["connected_at"],
@@ -101,6 +103,7 @@ def add_channel(
     subscribers: int = 0,
     videos_uploaded: int = 0,
     custom_id: Optional[str] = None,
+    banner_url: Optional[str] = None,
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -114,10 +117,21 @@ def add_channel(
     # Enforce strictly ONE channel in the system at any given time
     cursor.execute("DELETE FROM youtube_channels")
 
-    cursor.execute("""
-    INSERT INTO youtube_channels (id, name, handle, subscribers, videos_uploaded, avatar_url, is_auto_upload_enabled, schedule_cron, connected_at, niche)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (ch_id, name, clean_handle, subscribers, videos_uploaded, avatar, 1, "Daily at 08:00 AM EST", timestamp, niche or "Motivational Quotes"))
+    # Check if banner_url column exists in table
+    cursor.execute("PRAGMA table_info(youtube_channels)")
+    existing_cols = {col[1] for col in cursor.fetchall()}
+
+    if "banner_url" in existing_cols:
+        cursor.execute("""
+        INSERT INTO youtube_channels (id, name, handle, subscribers, videos_uploaded, avatar_url, banner_url, is_auto_upload_enabled, schedule_cron, connected_at, niche)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (ch_id, name, clean_handle, subscribers, videos_uploaded, avatar, banner_url, 1, "Daily at 08:00 AM EST", timestamp, niche or "Motivational Quotes"))
+    else:
+        cursor.execute("""
+        INSERT INTO youtube_channels (id, name, handle, subscribers, videos_uploaded, avatar_url, is_auto_upload_enabled, schedule_cron, connected_at, niche)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (ch_id, name, clean_handle, subscribers, videos_uploaded, avatar, 1, "Daily at 08:00 AM EST", timestamp, niche or "Motivational Quotes"))
+
     conn.commit()
     conn.close()
 
@@ -130,6 +144,7 @@ def add_channel(
         "subscribers": subscribers,
         "videosUploaded": videos_uploaded,
         "avatarUrl": avatar,
+        "bannerUrl": banner_url,
         "isAutoUploadEnabled": True,
         "scheduleCron": "Daily at 08:00 AM EST",
         "connectedAt": timestamp,
@@ -146,6 +161,7 @@ def update_channel(channel_id: str, updates: Dict[str, Any]) -> Optional[Dict[st
         "subscribers": "subscribers",
         "videosUploaded": "videos_uploaded",
         "avatarUrl": "avatar_url",
+        "bannerUrl": "banner_url",
         "niche": "niche",
         "isAutoUploadEnabled": "is_auto_upload_enabled",
         "scheduleCron": "schedule_cron",
@@ -233,10 +249,11 @@ def publish_video(title: str, quote: str, voice: str, category: str, channel_id:
 
     # Add real notification
     notif_id = f"notif_{int(datetime.utcnow().timestamp() * 1000)}"
+    iso_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
-    INSERT INTO notifications (id, title, message, timestamp, read, type)
-    VALUES (?, ?, ?, ?, ?, ?)
-    """, (notif_id, "Short Published", f"'{title}' was uploaded to YouTube Shorts.", "Just now", 0, "success"))
+    INSERT INTO notifications (id, title, message, timestamp, read, type, category, action_url, priority)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (notif_id, "Short Published", f"'{title}' was uploaded to YouTube Shorts.", iso_now, 0, "success", "youtube", "/youtube", "high"))
 
     conn.commit()
     conn.close()
@@ -258,13 +275,70 @@ def publish_video(title: str, quote: str, voice: str, category: str, channel_id:
         "voice": voice,
     }
 
-def get_notifications() -> List[Dict[str, Any]]:
+def add_notification(
+    title: str,
+    message: str,
+    type: str = "info",
+    category: str = "system",
+    action_url: Optional[str] = None,
+    priority: str = "normal",
+    notif_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    nid = notif_id or f"notif_{int(datetime.utcnow().timestamp() * 1000)}"
+    iso_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM notifications ORDER BY timestamp DESC")
+    cursor.execute("""
+    INSERT INTO notifications (id, title, message, timestamp, read, type, category, action_url, priority)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (nid, title, message, iso_now, 0, type, category, action_url, priority))
+    conn.commit()
+    conn.close()
+    logger.info(f"Created notification [{category}/{type}]: '{title}' ({nid})")
+    return {
+        "id": nid,
+        "title": title,
+        "message": message,
+        "timestamp": iso_now,
+        "read": False,
+        "type": type,
+        "category": category,
+        "action_url": action_url,
+        "priority": priority,
+    }
+
+def get_notifications(
+    category: Optional[str] = None,
+    unread_only: bool = False,
+    limit: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM notifications"
+    clauses = []
+    params: List[Any] = []
+
+    if category and category.lower() != "all":
+        clauses.append("category = ?")
+        params.append(category.lower())
+
+    if unread_only:
+        clauses.append("read = 0")
+
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+
+    query += " ORDER BY timestamp DESC"
+
+    if limit and limit > 0:
+        query += " LIMIT ?"
+        params.append(limit)
+
+    cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
-    logger.info(f"Queried notifications -> Found {len(rows)} notification(s)")
+
     return [
         {
             "id": r["id"],
@@ -273,27 +347,58 @@ def get_notifications() -> List[Dict[str, Any]]:
             "timestamp": r["timestamp"],
             "read": bool(r["read"]),
             "type": r["type"],
+            "category": r["category"] if "category" in r.keys() and r["category"] else "system",
+            "action_url": r["action_url"] if "action_url" in r.keys() else None,
+            "priority": r["priority"] if "priority" in r.keys() and r["priority"] else "normal",
         }
         for r in rows
     ]
 
-def mark_notifications_read() -> None:
+def mark_notification_read(notif_id: str, read_state: bool = True) -> bool:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE notifications SET read = 1")
+    cursor.execute("UPDATE notifications SET read = ? WHERE id = ?", (1 if read_state else 0, notif_id))
     count = cursor.rowcount
     conn.commit()
     conn.close()
-    logger.info(f"Marked all notifications as read ({count} updated)")
+    logger.info(f"Marked notification '{notif_id}' read={read_state} ({count} updated)")
+    return count > 0
 
-def clear_notifications() -> None:
+def delete_notification(notif_id: str) -> bool:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM notifications")
+    cursor.execute("DELETE FROM notifications WHERE id = ?", (notif_id,))
     count = cursor.rowcount
     conn.commit()
     conn.close()
-    logger.info(f"Cleared all notifications from database ({count} deleted)")
+    logger.info(f"Deleted notification '{notif_id}' ({count} deleted)")
+    return count > 0
+
+def mark_notifications_read(category: Optional[str] = None) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    if category and category.lower() != "all":
+        cursor.execute("UPDATE notifications SET read = 1 WHERE category = ?", (category.lower(),))
+    else:
+        cursor.execute("UPDATE notifications SET read = 1")
+    count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    logger.info(f"Marked notifications as read ({count} updated)")
+    return count
+
+def clear_notifications(category: Optional[str] = None) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    if category and category.lower() != "all":
+        cursor.execute("DELETE FROM notifications WHERE category = ?", (category.lower(),))
+    else:
+        cursor.execute("DELETE FROM notifications")
+    count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    logger.info(f"Cleared notifications from database ({count} deleted)")
+    return count
 
 def get_automations() -> List[Dict[str, Any]]:
     conn = get_connection()

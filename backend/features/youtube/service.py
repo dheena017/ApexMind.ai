@@ -53,6 +53,7 @@ def connect_youtube_channel(
     """
     query = (handle or name or "").strip()
     resolved_info = None
+    banner_url = None
 
     if auto_resolve and query:
         try:
@@ -60,6 +61,7 @@ def connect_youtube_channel(
             name = resolved_info.get("name") or name
             handle = resolved_info.get("handle") or handle
             avatar_url = resolved_info.get("avatarUrl") or avatar_url
+            banner_url = resolved_info.get("bannerUrl")
             subscribers = resolved_info.get("subscribers", subscribers or 0)
             videos_uploaded = resolved_info.get("videosUploaded", videos_uploaded or 0)
             logger.info(f"Verified live YouTube channel details for '{name}' ({handle})")
@@ -76,7 +78,20 @@ def connect_youtube_channel(
         avatar_url=avatar_url,
         subscribers=subscribers or 0,
         videos_uploaded=videos_uploaded or 0,
+        banner_url=banner_url,
     )
+    try:
+        from backend.database.repository import add_notification
+        add_notification(
+            title="YouTube Channel Connected",
+            message=f"Connected channel '{final_name}' ({final_handle}) with {subscribers:,} subscribers.",
+            type="success",
+            category="youtube",
+            action_url="/youtube",
+        )
+    except Exception as e:
+        logger.warning(f"Could not dispatch connect channel notification: {e}")
+
     return {
         "success": True,
         "channel": channel,
@@ -89,6 +104,18 @@ def sync_or_correct_channel(channel_id: str, new_query: Optional[str] = None) ->
     Syncs or corrects an existing connected channel with live YouTube stats.
     """
     result = correct_and_sync_channel(channel_id, new_handle_or_query=new_query)
+    try:
+        from backend.database.repository import add_notification
+        add_notification(
+            title="YouTube Channel Synced",
+            message=f"Synced metrics for channel '{result['channel'].get('name', channel_id)}'.",
+            type="info",
+            category="youtube",
+            action_url="/youtube",
+        )
+    except Exception as e:
+        logger.warning(f"Could not dispatch sync channel notification: {e}")
+
     return {
         "success": True,
         "channel": result["channel"],
@@ -144,7 +171,22 @@ def list_automations() -> Dict[str, Any]:
 
 
 def toggle_automation(job_id: str) -> Dict[str, Any]:
+    updated_jobs = toggle_automation_job(job_id)
+    job = next((j for j in updated_jobs if j.get("id") == job_id), None)
+    status_str = "Enabled" if job and job.get("active") else "Paused"
+    try:
+        from backend.database.repository import add_notification
+        add_notification(
+            title="Automation Schedule Updated",
+            message=f"Autonomous Shorts scheduler '{job.get('theme', job_id) if job else job_id}' is now {status_str}.",
+            type="info",
+            category="youtube",
+            action_url="/youtube",
+        )
+    except Exception as e:
+        logger.warning(f"Could not dispatch automation notification: {e}")
+
     return {
         "success": True,
-        "automations": toggle_automation_job(job_id),
+        "automations": updated_jobs,
     }

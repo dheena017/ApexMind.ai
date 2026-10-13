@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS youtube_channels (
     subscribers INTEGER DEFAULT 0,
     videos_uploaded INTEGER DEFAULT 0,
     avatar_url TEXT,
+    banner_url TEXT,
     is_auto_upload_enabled INTEGER DEFAULT 1,
     schedule_cron TEXT DEFAULT 'Daily at 08:00 AM EST',
     connected_at TEXT NOT NULL,
@@ -75,7 +76,10 @@ CREATE TABLE IF NOT EXISTS notifications (
     message TEXT NOT NULL,
     timestamp TEXT NOT NULL,
     read INTEGER DEFAULT 0,
-    type TEXT DEFAULT 'info'
+    type TEXT DEFAULT 'info',
+    category TEXT DEFAULT 'system',
+    action_url TEXT,
+    priority TEXT DEFAULT 'normal'
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_timestamp ON notifications (timestamp DESC);

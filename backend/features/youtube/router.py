@@ -142,6 +142,22 @@ async def get_channel_shorts_route(channel_id: str, limit: int = 12):
             detail="Failed to retrieve live shorts."
         )
 
+@router.get(
+    "/api/youtube/channels/{channel_id}/live-feed",
+    summary="Get full live YouTube feed for channel",
+    description="Live scrapes and returns real YouTube videos, shorts, for-you recommendations, and channel stats."
+)
+async def get_channel_live_feed_route(channel_id: str):
+    try:
+        from .youtube_service import get_channel_live_feed
+        return get_channel_live_feed(channel_id)
+    except Exception as e:
+        logger.error(f"Error fetching live channel feed for '{channel_id}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve live channel feed: {str(e)}"
+        )
+
 class UpdateChannelRequest(BaseModel):
     isAutoUploadEnabled: Optional[bool] = None
     scheduleCron: Optional[str] = None

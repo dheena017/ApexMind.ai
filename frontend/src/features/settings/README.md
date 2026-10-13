@@ -1,3 +1,3 @@
 # Settings feature
 
-Contains application settings screens. The current settings page is in `pages/`; keep future settings-specific UI and behavior within this feature.
+Contains the Gemini API status and usage screen. The API key's configured state comes from the server; Google account credits and quota are not exposed by the Gemini API key, so the page links to Google AI Studio for usage and billing details.

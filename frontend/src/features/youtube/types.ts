@@ -12,6 +12,7 @@ export interface YouTubeChannel {
   verified?: boolean;
   channelUrl?: string;
   description?: string;
+  bannerUrl?: string;
 }
 
 export interface YouTubeLookupResult {
@@ -19,6 +20,7 @@ export interface YouTubeLookupResult {
   name: string;
   handle: string;
   avatarUrl: string;
+  bannerUrl?: string;
   subscribers: number;
   videosUploaded: number;
   description: string;
@@ -45,7 +47,7 @@ export interface YouTubeVideo {
   publishedAt: string;
   status: 'published' | 'queued' | 'rendering';
   duration: string;
-  channelId: string;
+  channelId: string | null;
   videoUrl: string;
   category: string;
   voice: string;
@@ -59,4 +61,33 @@ export interface AutomationJob {
   musicTrack: string;
   active: boolean;
   nextRun: string;
+}
+
+export interface YouTubeLiveVideo {
+  id: string;
+  title: string;
+  duration: string;
+  views: string;
+  published: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  category?: string;
+}
+
+export interface YouTubeForYouItem {
+  id: string;
+  title: string;
+  views: string;
+  published?: string;
+  duration?: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  isShort?: boolean;
+}
+
+export interface YouTubeLiveFeedResponse {
+  channel: YouTubeLookupResult | YouTubeChannel;
+  videos: YouTubeLiveVideo[];
+  shorts: YouTubeLiveShort[];
+  forYou: YouTubeForYouItem[];
 }

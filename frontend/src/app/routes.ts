@@ -5,6 +5,12 @@ export type PageRoute =
   | 'youtube'
   | 'notifications'
   | 'profile'
+  | 'profile-details'
+  | 'profile-preferences'
+  | 'profile-channels'
+  | 'profile-activity'
+  | 'profile-usage'
+  | 'profile-security'
   | 'settings'
   | 'login'
   | 'loading'
@@ -24,6 +30,12 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'youtube', path: '/youtube', title: 'YouTube Manager - ApexMind', aliases: ['/channels'] },
   { id: 'notifications', path: '/notifications', title: 'Notifications - ApexMind', aliases: ['/alerts'] },
   { id: 'profile', path: '/profile', title: 'Profile & Badges - ApexMind', aliases: ['/account'] },
+  { id: 'profile-details', path: '/profile/details', title: 'Creator Details - ApexMind' },
+  { id: 'profile-preferences', path: '/profile/preferences', title: 'Creator Preferences - ApexMind' },
+  { id: 'profile-channels', path: '/profile/channels', title: 'Connected Channels - ApexMind' },
+  { id: 'profile-activity', path: '/profile/activity', title: 'Creator Activity - ApexMind' },
+  { id: 'profile-usage', path: '/profile/usage', title: 'Studio Usage - ApexMind' },
+  { id: 'profile-security', path: '/profile/security', title: 'Account Security - ApexMind' },
   { id: 'settings', path: '/settings', title: 'Settings - ApexMind' },
   { id: 'login', path: '/login', title: 'Sign In - ApexMind' },
   { id: 'loading', path: '/loading', title: 'Loading - ApexMind' },

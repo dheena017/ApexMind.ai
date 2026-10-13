@@ -7,19 +7,31 @@ dependency verification, structured error handling, and clean process lifecycle.
 
 from __future__ import annotations
 
-import argparse
-import http.client
-import importlib.util
-import os
-import shlex
 import signal
-import socket
-import subprocess
 import sys
-import threading
-import time
-import webbrowser
-from pathlib import Path
+
+
+def _handle_import_interrupt(_signum, _frame) -> None:
+    sys.stdout.write("\n[ApexMind] Startup interrupted by Ctrl+C.\n")
+    sys.stdout.flush()
+    raise SystemExit(130)
+
+
+signal.signal(signal.SIGINT, _handle_import_interrupt)
+if hasattr(signal, "SIGBREAK"):
+    signal.signal(signal.SIGBREAK, _handle_import_interrupt)
+
+import argparse  # noqa: E402
+import http.client  # noqa: E402
+import importlib.util  # noqa: E402
+import os  # noqa: E402
+import shlex  # noqa: E402
+import socket  # noqa: E402
+import subprocess  # noqa: E402
+import threading  # noqa: E402
+import time  # noqa: E402
+import webbrowser  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 # Ensure project root is at the head of sys.path so 'backend.*' imports succeed
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -103,22 +115,6 @@ def enable_windows_kill_on_close() -> None:
         current_process = kernel32.GetCurrentProcess()
         kernel32.AssignProcessToJobObject(job, current_process)
         _WINDOWS_JOB_HANDLE = job
-    except Exception:
-        pass
-
-
-def kill_child_processes(parent_pid: int | None = None) -> None:
-    """Force-terminates all child and grandchild processes of the given process ID."""
-    if sys.platform != "win32":
-        return
-    pid = parent_pid or os.getpid()
-    try:
-        subprocess.run(
-            ["taskkill", "/F", "/T", "/PID", str(pid)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
     except Exception:
         pass
 
@@ -431,25 +427,21 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     enable_windows_kill_on_close()
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, signal.default_int_handler)
 
     args = parse_args()
 
-    use_color = not args.no_color and sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
+    use_color = (
+        not args.no_color
+        and os.environ.get("NO_COLOR") is None
+        and (sys.stdout.isatty() or os.environ.get("FORCE_COLOR", "").strip() not in ("", "0"))
+    )
     ansi = Ansi(enabled=use_color)
 
     env = {**load_dotenv(args.env_file), **os.environ}
     python_executable = resolve_python_executable()
-
-    # Register OS signals for graceful termination
-    def handle_shutdown(signum=None, frame=None):
-        kill_child_processes()
-        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Backend stopped cleanly. Goodbye!\n")
-        sys.exit(0)
-
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        signal.signal(sig, handle_shutdown)
-    if hasattr(signal, "SIGBREAK"):
-        signal.signal(signal.SIGBREAK, handle_shutdown)
 
     # 1. Pre-flight system checks
     check_python_version(ansi)
@@ -524,7 +516,8 @@ def main() -> int:
     if args.reload is not None:
         reload_enabled = args.reload
     else:
-        backend_reload = env.get("BACKEND_RELOAD", "true").strip().lower()
+        default_reload = "false" if os.name == "nt" else "true"
+        backend_reload = env.get("BACKEND_RELOAD", default_reload).strip().lower()
         reload_enabled = backend_reload != "false" and env.get("NODE_ENV", "development").strip().lower() != "production"
 
     log_level = args.log_level or (env.get("LOG_LEVEL") or env.get("LL") or "info").strip().lower()
@@ -557,12 +550,15 @@ def main() -> int:
             port=port,
             reload=reload_enabled,
             reload_dirs=[str(PROJECT_ROOT / "backend")] if reload_enabled else None,
-            log_config=get_uvicorn_log_config(),
+            log_config=get_uvicorn_log_config(use_color=use_color),
             log_level=log_level,
             workers=args.workers if not reload_enabled else 1,
         )
         return 0
-    except (KeyboardInterrupt, SystemExit):
+    except KeyboardInterrupt:
+        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Ctrl+C received.", flush=True)
+        return 0
+    except SystemExit:
         return 0
     except OSError as exc:
         print(f"\n{ansi.RED}{ansi.BOLD}[ApexMind OS Error]{ansi.RESET} Failed to bind server: {exc}", file=sys.stderr)
@@ -571,8 +567,7 @@ def main() -> int:
         print(f"\n{ansi.RED}{ansi.BOLD}[ApexMind Fatal Error]{ansi.RESET} {exc}", file=sys.stderr)
         return 1
     finally:
-        kill_child_processes()
-        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Backend stopped cleanly. Goodbye!\n")
+        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Backend stopped cleanly. Goodbye!\n", flush=True)
 
 
 
@@ -580,5 +575,5 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("\n[ApexMind] Interrupted. Exiting.")
+        print("\n[ApexMind] Ctrl+C received. Exiting.")
         sys.exit(0)

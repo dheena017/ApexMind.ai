@@ -7,20 +7,32 @@ resolution, dual-process supervision (Vite + FastAPI), and clean process lifecyc
 
 from __future__ import annotations
 
-import argparse
-import http.client
-import os
-import re
-import shutil
 import signal
-import socket
-import subprocess
 import sys
-import threading
-import time
-import webbrowser
-from datetime import datetime
-from pathlib import Path
+
+
+def _handle_import_interrupt(_signum, _frame) -> None:
+    sys.stdout.write("\n[ApexMind] Startup interrupted by Ctrl+C.\n")
+    sys.stdout.flush()
+    raise SystemExit(130)
+
+
+signal.signal(signal.SIGINT, _handle_import_interrupt)
+if hasattr(signal, "SIGBREAK"):
+    signal.signal(signal.SIGBREAK, _handle_import_interrupt)
+
+import argparse  # noqa: E402
+import http.client  # noqa: E402
+import os  # noqa: E402
+import re  # noqa: E402
+import shutil  # noqa: E402
+import socket  # noqa: E402
+import subprocess  # noqa: E402
+import threading  # noqa: E402
+import time  # noqa: E402
+import webbrowser  # noqa: E402
+from datetime import datetime  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FRONTEND_ROOT = PROJECT_ROOT / "frontend"
@@ -215,6 +227,22 @@ class Ansi:
     def BRIGHT_YELLOW(self) -> str:
         return self._c("\033[93;1m")
 
+    @property
+    def BRIGHT_MAGENTA(self) -> str:
+        return self._c("\033[95;1m")
+
+    @property
+    def BRIGHT_BLUE(self) -> str:
+        return self._c("\033[94;1m")
+
+    @property
+    def BRIGHT_RED(self) -> str:
+        return self._c("\033[91;1m")
+
+    @property
+    def UNDERLINE(self) -> str:
+        return self._c("\033[4m")
+
 
 
 def load_dotenv(path: Path) -> dict[str, str]:
@@ -405,6 +433,108 @@ def wait_for_backend(host: str, port: int, timeout_seconds: int = 20) -> float:
     raise TimeoutError(f"The backend did not become ready at {url} within {timeout_seconds} seconds.")
 
 
+def sanitize_utf8_terminal(text: str) -> str:
+    """Repair common Windows console UTF-8 mojibake decoding artifacts."""
+    return (
+        text.replace("â€\"", "—")
+        .replace("â€”", "—")
+        .replace("â€“", "–")
+        .replace("â€¢", "•")
+        .replace("â€¦", "…")
+    )
+
+
+def colorize_info_message(msg: str, a: Ansi) -> str:
+    """Apply intelligent syntax highlighting to standard INFO log messages."""
+    text = sanitize_utf8_terminal(msg)
+
+    # 1. Features active line
+    if "Features active:" in text:
+        parts = text.split("Features active:", 1)
+        feat_str = parts[1]
+        formatted_features = (
+            feat_str.replace("Workspace", f"{a.BRIGHT_BLUE}Workspace{a.RESET}")
+            .replace("YouTube", f"{a.BRIGHT_RED}YouTube{a.RESET}")
+            .replace("Notifications", f"{a.BRIGHT_YELLOW}Notifications{a.RESET}")
+            .replace("Dashboard", f"{a.BRIGHT_CYAN}Dashboard{a.RESET}")
+            .replace("Auth", f"{a.BRIGHT_GREEN}Auth{a.RESET}")
+            .replace("•", f"{a.GRAY}•{a.RESET}")
+        )
+        return f"{a.WHITE}Features active:{a.RESET}{formatted_features}"
+
+    # 2. Client runtime line
+    if "Client runtime active" in text:
+        clean = (
+            text.replace("React 19", f"{a.BRIGHT_CYAN}React 19{a.RESET}")
+            .replace("TailwindCSS v4", f"{a.BRIGHT_GREEN}TailwindCSS v4{a.RESET}")
+            .replace("+", f"{a.GRAY}+{a.RESET}")
+        )
+        return f"{a.WHITE}{clean}{a.RESET}"
+
+    # 3. Server URL line
+    if "Local:" in text and "http" in text:
+        return re.sub(
+            r"(Local:\s*)(https?://[^\s]+)",
+            rf"{a.WHITE}\1{a.RESET}{a.BRIGHT_CYAN}{a.UNDERLINE}\2{a.RESET}",
+            text,
+        )
+
+    # 4. Vite ready line
+    if "ready in" in text.lower():
+        clean = re.sub(
+            r"(VITE\s+v[\d\.]+)",
+            rf"{a.BRIGHT_CYAN}\1{a.RESET}",
+            text,
+            flags=re.IGNORECASE,
+        )
+        clean = re.sub(
+            r"(\d+\s*ms)",
+            rf"{a.BRIGHT_GREEN}\1{a.RESET}",
+            clean,
+            flags=re.IGNORECASE,
+        )
+        return f"{a.WHITE}{clean}{a.RESET}"
+
+    # 5. Router page view update
+    if "Active view updated to" in text:
+        clean = re.sub(
+            r"\[([^\]]+)\]",
+            rf"[{a.BRIGHT_YELLOW}\1{a.RESET}]",
+            text,
+        )
+        clean = clean.replace("—", f"{a.GRAY}—{a.RESET}").replace("title:", f"{a.GRAY}title:{a.RESET}")
+        clean = re.sub(
+            r'\"([^\"]+)\"',
+            rf'"{a.BRIGHT_WHITE}\1{a.RESET}"',
+            clean,
+        )
+        return f"{a.WHITE}{clean}{a.RESET}"
+
+    # 6. HTTP request/response line
+    if "-->" in text or "<--" in text:
+        clean = re.sub(
+            r"\b(GET|POST|PUT|DELETE|PATCH)\b",
+            rf"{a.BRIGHT_CYAN}\1{a.RESET}",
+            text,
+        )
+        clean = re.sub(
+            r"\b(20\d\s+OK)\b",
+            rf"{a.BRIGHT_GREEN}\1{a.RESET}",
+            clean,
+        )
+        clean = re.sub(
+            r"(\d+\.?\d*\s*ms)",
+            rf"{a.BRIGHT_GREEN}\1{a.RESET}",
+            clean,
+        )
+        return f"{a.WHITE}{clean}{a.RESET}"
+
+    # General fallback: highlight bracketed tags, URLs, and timing
+    clean = re.sub(r"(https?://[^\s]+)", rf"{a.BRIGHT_CYAN}\1{a.RESET}", text)
+    clean = re.sub(r"\[([a-zA-Z0-9_\-]+)\]", rf"[{a.BRIGHT_YELLOW}\1{a.RESET}]", clean)
+    return f"{a.WHITE}{clean}{a.RESET}"
+
+
 def format_log(mod_name: str, message: str, level: str = "INFO", ansi: Ansi | None = None) -> str:
     """Format console log lines with exact badges, module padding, and timestamps matching backend logger."""
     now = datetime.now().strftime("%H:%M:%S")
@@ -413,80 +543,86 @@ def format_log(mod_name: str, message: str, level: str = "INFO", ansi: Ansi | No
     timestamp = f"{a.GRAY}[{now}]{a.RESET}"
 
     lvl = level.upper()
+
+    def make_badge(style: str, label: str) -> str:
+        return f"{a._c(style)}{label}{a.RESET}"
+
     if lvl in ("ERROR", "FATAL"):
-        badge = "\033[41m\033[97m\033[1m ERROR \033[0m"
+        badge = make_badge("\033[41m\033[97m\033[1m", " ERROR ")
     elif lvl in ("WARN", "WARNING"):
-        badge = "\033[43m\033[30m\033[1m  WARN \033[0m"
+        badge = make_badge("\033[43m\033[30m\033[1m", "  WARN ")
     elif lvl in ("SUCCESS", "OK"):
-        badge = "\033[42m\033[30m\033[1m   OK  \033[0m"
+        badge = make_badge("\033[42m\033[30m\033[1m", "   OK  ")
     elif lvl in ("ACTION", "EVENT"):
-        badge = "\033[45m\033[97m\033[1m ACTION\033[0m"
+        badge = make_badge("\033[45m\033[97m\033[1m", " ACTION")
     elif lvl == "DEBUG":
-        badge = "\033[100m\033[97m\033[1m DEBUG \033[0m"
+        badge = make_badge("\033[100m\033[97m\033[1m", " DEBUG ")
     else:
-        badge = f"\033[44m\033[97m\033[1m  {lvl:<4} \033[0m"
+        badge = make_badge("\033[44m\033[97m\033[1m", f"  {lvl:<4} ")
 
     module_colors = {
         "Database": a.BRIGHT_GREEN,
-        "Gemini": a.MAGENTA,
-        "Workspace": a.BLUE,
-        "Studio": a.BLUE,
-        "YouTube": a.RED,
-        "Notifications": a.YELLOW,
-        "Dashboard": a.CYAN,
+        "Gemini": a.BRIGHT_MAGENTA,
+        "Workspace": a.BRIGHT_BLUE,
+        "Studio": a.BRIGHT_BLUE,
+        "YouTube": a.BRIGHT_RED,
+        "Notifications": a.BRIGHT_YELLOW,
+        "Dashboard": a.BRIGHT_CYAN,
         "HTTP": a.CYAN,
-        "Server": a.CYAN,
-        "Auth": a.GREEN,
-        "AuthGuard": a.YELLOW,
-        "Router": a.MAGENTA,
-        "Profile": a.MAGENTA,
+        "Server": a.BRIGHT_GREEN,
+        "Auth": a.BRIGHT_GREEN,
+        "AuthGuard": a.BRIGHT_YELLOW,
+        "Router": a.BRIGHT_MAGENTA,
+        "Profile": a.BRIGHT_MAGENTA,
         "Settings": a.GRAY,
-        "App": a.BRIGHT_WHITE,
-        "Vite": a.MAGENTA,
-        "HMR": a.GREEN,
-        "Plugins": a.YELLOW,
+        "App": a.BRIGHT_CYAN,
+        "Vite": a.BRIGHT_MAGENTA,
+        "HMR": a.BRIGHT_GREEN,
+        "Plugins": a.BRIGHT_YELLOW,
     }
     col = module_colors.get(mod_name, a.CYAN)
     tag = f"{col}{a.BOLD}[{mod_name:<10}]{a.RESET}"
 
     if lvl in ("ERROR", "FATAL"):
-        msg_colored = f"{a.RED}{message}{a.RESET}"
+        msg_colored = f"{a.RED}{sanitize_utf8_terminal(message)}{a.RESET}"
     elif lvl in ("WARN", "WARNING"):
-        msg_colored = f"{a.YELLOW}{message}{a.RESET}"
+        msg_colored = f"{a.YELLOW}{sanitize_utf8_terminal(message)}{a.RESET}"
     elif lvl in ("SUCCESS", "OK"):
-        msg_colored = f"{a.GREEN}{message}{a.RESET}"
+        msg_colored = f"{a.GREEN}{sanitize_utf8_terminal(message)}{a.RESET}"
     elif lvl in ("ACTION", "EVENT"):
-        msg_colored = f"{a.CYAN}{message}{a.RESET}"
+        msg_colored = f"{a.CYAN}{sanitize_utf8_terminal(message)}{a.RESET}"
     else:
-        msg_colored = f"{a.WHITE}{message}{a.RESET}"
+        msg_colored = colorize_info_message(message, a)
 
     return f"{timestamp} {badge} {tag} {msg_colored}"
 
 
 def print_frontend_banner(display_host: str, port: int, node_version: str, with_backend: bool, ansi: Ansi) -> None:
-    """Renders a stylized startup banner in the console with exact column padding."""
+    """Renders a stylized startup banner in the console with exact column padding matching backend."""
     lines = [
-        ("Runtime", f"Node.js {node_version}", ansi.CYAN),
-        ("Frontend URL", f"http://{display_host}:{port}", ansi.WHITE),
+        ("Framework", "React 19 + Vite 8 + TailwindCSS v4", ansi.BRIGHT_GREEN),
+        ("Runtime", f"Node.js {node_version}", ansi.BRIGHT_CYAN),
+        ("Frontend URL", f"http://{display_host}:{port}", ansi.BRIGHT_WHITE),
+        ("Mode", "Development (Vite HMR Active)", ansi.BRIGHT_MAGENTA),
         (
             "Backend Start",
-            "Enabled (FastAPI alongside Vite)" if with_backend else "Disabled (Run 'npm run dev' to start both)",
-            ansi.GREEN if with_backend else ansi.GRAY,
+            "Enabled (FastAPI alongside Vite)" if with_backend else "Disabled (Run 'npm run dev' to boot both)",
+            ansi.BRIGHT_GREEN if with_backend else ansi.BRIGHT_YELLOW,
         ),
-        ("Mode", "Development (Vite HMR Active)", ansi.CYAN),
+        ("Health Check", f"http://{display_host}:{port}", ansi.BRIGHT_GREEN),
     ]
     width = 76
 
     try:
         b_tl, b_tr, b_bl, b_br, b_ml, b_mr, b_h, b_v = "╔", "╗", "╚", "╝", "╠", "╣", "═", "║"
-        banner_top = f"{ansi.CYAN}{b_tl}{b_h * width}{b_tr}{ansi.RESET}"
-        banner_mid = f"{ansi.CYAN}{b_ml}{b_h * width}{b_mr}{ansi.RESET}"
-        banner_bot = f"{ansi.CYAN}{b_bl}{b_h * width}{b_br}{ansi.RESET}"
-        v_bar = f"{ansi.CYAN}{b_v}{ansi.RESET}"
+        banner_top = f"{ansi.BRIGHT_CYAN}{b_tl}{b_h * width}{b_tr}{ansi.RESET}"
+        banner_mid = f"{ansi.BRIGHT_CYAN}{b_ml}{b_h * width}{b_mr}{ansi.RESET}"
+        banner_bot = f"{ansi.BRIGHT_CYAN}{b_bl}{b_h * width}{b_br}{ansi.RESET}"
+        v_bar = f"{ansi.BRIGHT_CYAN}{b_v}{ansi.RESET}"
 
         title_text = "APEXMIND STUDIO AI  —  FRONTEND DEV SERVER"
         title_pad = width - len(title_text) - 3
-        title_line = f"{v_bar}   {ansi.WHITE}{ansi.BOLD}{title_text}{ansi.RESET}{' ' * max(0, title_pad)}{v_bar}"
+        title_line = f"{v_bar}   {ansi.BRIGHT_WHITE}{ansi.BOLD}{title_text}{ansi.RESET}{' ' * max(0, title_pad)}{v_bar}"
 
         content_lines = []
         for label, val, color in lines:
@@ -499,7 +635,7 @@ def print_frontend_banner(display_host: str, port: int, node_version: str, with_
         output = "\n" + "\n".join([banner_top, title_line, banner_mid] + content_lines + [banner_bot]) + "\n"
         print(output)
     except (UnicodeEncodeError, Exception):
-        print(f"\n[{ansi.WHITE}{ansi.BOLD}APEXMIND STUDIO AI — FRONTEND DEV SERVER{ansi.RESET}]")
+        print(f"\n[{ansi.BRIGHT_WHITE}{ansi.BOLD}APEXMIND STUDIO AI — FRONTEND DEV SERVER{ansi.RESET}]")
         for label, val, color in lines:
             print(f"  {label:<14}: {color}{val}{ansi.RESET}")
         print()
@@ -509,41 +645,76 @@ def terminate_process_tree(proc: subprocess.Popen | None) -> None:
     """Kills a process and all its descendants cleanly across platforms."""
     if proc is None:
         return
+    if proc.poll() is not None:
+        return
+
+    if sys.platform == "win32":
+        try:
+            proc.send_signal(signal.CTRL_BREAK_EVENT)
+            proc.wait(timeout=5)
+            return
+        except (OSError, subprocess.TimeoutExpired, ValueError):
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired as exc:
+                raise RuntimeError(f"Could not stop child process {proc.pid}.") from exc
+        return
+
+    proc.terminate()
     try:
-        if proc.poll() is None:
-            if sys.platform == "win32":
-                subprocess.run(
-                    ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    check=False,
-                )
-            else:
-                proc.terminate()
-                try:
-                    proc.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-    except Exception:
-        pass
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=5)
 
 
 frontend_process: subprocess.Popen | None = None
 backend_process: subprocess.Popen | None = None
+vite_log_thread: threading.Thread | None = None
 ansi_global: Ansi = Ansi(enabled=True)
+stopping = False
 
 
 def stop_all(exit_code: int = 0) -> None:
     """Stops both Vite and FastAPI processes cleanly and prints exit notice."""
-    global backend_process, frontend_process
-    print(f"\n{ansi_global.YELLOW}[ApexMind]{ansi_global.RESET} Stopping services (Vite & FastAPI)...")
-    terminate_process_tree(backend_process)
-    terminate_process_tree(frontend_process)
-    print(f"{ansi_global.GREEN}[ApexMind] Studio stopped cleanly. Goodbye!{ansi_global.RESET}\n")
+    global backend_process, frontend_process, stopping
+    if stopping:
+        return
+    stopping = True
+
+    services = "Vite & FastAPI" if backend_process is not None else "Vite"
+    print(f"\n{ansi_global.YELLOW}[ApexMind]{ansi_global.RESET} Stopping services ({services})...", flush=True)
+    failures = []
+    for name, proc in (("FastAPI", backend_process), ("Vite", frontend_process)):
+        try:
+            terminate_process_tree(proc)
+        except (OSError, RuntimeError) as exc:
+            failures.append(f"{name}: {exc}")
+
+    if vite_log_thread is not None and vite_log_thread is not threading.current_thread():
+        vite_log_thread.join()
+
+    if failures:
+        for failure in failures:
+            print(f"{ansi_global.RED}[ApexMind Error]{ansi_global.RESET} Failed to stop {failure}", file=sys.stderr, flush=True)
+        print(f"{ansi_global.YELLOW}[ApexMind]{ansi_global.RESET} Studio stopped with errors.\n", flush=True)
+        exit_code = exit_code or 1
+    else:
+        print(f"{ansi_global.GREEN}[ApexMind] Studio stopped cleanly. Goodbye!{ansi_global.RESET}\n", flush=True)
     sys.exit(exit_code)
 
 
 def handle_signal(signum=None, frame=None):
+    if signum in (signal.SIGINT, getattr(signal, "SIGBREAK", None)):
+        print(f"\n{ansi_global.YELLOW}[ApexMind]{ansi_global.RESET} Ctrl+C received.", flush=True)
+    else:
+        print(f"\n{ansi_global.YELLOW}[ApexMind]{ansi_global.RESET} Shutdown signal received.", flush=True)
     stop_all(0)
 
 
@@ -579,15 +750,23 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
-    global frontend_process, backend_process, ansi_global
+    global frontend_process, backend_process, vite_log_thread, ansi_global
 
     enable_windows_kill_on_close()
 
     args = parse_args()
 
-    use_color = not args.no_color and sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
+    use_color = (
+        not args.no_color
+        and os.environ.get("NO_COLOR") is None
+        and (sys.stdout.isatty() or os.environ.get("FORCE_COLOR", "").strip() not in ("", "0"))
+    )
     ansi = Ansi(enabled=use_color)
     ansi_global = ansi
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, handle_signal)
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, handle_signal)
 
     env = {**load_dotenv(args.env_file), **os.environ}
 
@@ -647,13 +826,10 @@ def main() -> int:
 
     display_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
 
-    print_frontend_banner(display_host, port, node_version, args.with_backend, ansi)
+    print(f"\n{ansi.GREEN}{ansi.BOLD}[ApexMind OK]{ansi.RESET} Frontend ready at {ansi.BRIGHT_CYAN}http://{display_host}:{port}{ansi.RESET}")
+    print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Starting Vite dev server on {ansi.BRIGHT_WHITE}http://{display_host}:{port}{ansi.RESET}")
 
-    # Register OS signals for graceful termination
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        signal.signal(sig, handle_signal)
-    if hasattr(signal, "SIGBREAK"):
-        signal.signal(signal.SIGBREAK, handle_signal)
+    print_frontend_banner(display_host, port, node_version, args.with_backend, ansi)
 
     # 4. Launch Vite server process
     vite_command = [
@@ -674,9 +850,12 @@ def main() -> int:
             vite_command,
             cwd=str(PROJECT_ROOT),
             env=env,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
             stdin=subprocess.DEVNULL,
         )
@@ -741,8 +920,8 @@ def main() -> int:
             if ready_logged.is_set() and clean:
                 print(format_log("Vite", clean, ansi=ansi))
 
-    reader_thread = threading.Thread(target=stream_vite_logs, daemon=True)
-    reader_thread.start()
+    vite_log_thread = threading.Thread(target=stream_vite_logs, daemon=True)
+    vite_log_thread.start()
 
     # 5. Wait for frontend readiness
     try:
@@ -774,14 +953,26 @@ def main() -> int:
         backend_port = args.backend_port or int(env.get("BACKEND_PORT") or env.get("PORT") or "8000")
         backend_display_host = "127.0.0.1" if backend_host in ("0.0.0.0", "::", "") else backend_host
         python_exec = resolve_python_executable()
-        backend_cmd = [python_exec, str(backend_py), "--host", backend_host, "--port", str(backend_port)]
+        backend_env = env.copy()
+        if args.no_color:
+            backend_env["NO_COLOR"] = "1"
+        backend_cmd = [
+            python_exec,
+            str(backend_py),
+            "--host",
+            backend_host,
+            "--port",
+            str(backend_port),
+            "--no-reload",
+        ]
 
         try:
             backend_process = subprocess.Popen(
                 backend_cmd,
                 cwd=str(PROJECT_ROOT),
-                env=env,
+                env=backend_env,
                 stdin=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
             )
         except Exception as exc:
             print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Failed to start backend process: {exc}", file=sys.stderr)

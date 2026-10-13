@@ -4,6 +4,7 @@ import {
   AutomationJob,
   YouTubeLookupResult,
   YouTubeLiveShort,
+  YouTubeLiveFeedResponse,
 } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -125,6 +126,18 @@ export const youtubeApi = {
     if (!res.ok) return [];
     const data = await res.json();
     return data.shorts || [];
+  },
+
+  // Get live comprehensive channel feed: real channel info, real videos, real shorts, and for-you recommendations
+  async getLiveFeed(channelId: string): Promise<YouTubeLiveFeedResponse> {
+    const start = performance.now();
+    const res = await fetch(`/api/youtube/channels/${channelId}/live-feed`);
+    const duration = performance.now() - start;
+    consoleLogger.api('GET', `/api/youtube/channels/${channelId}/live-feed`, res.status, duration);
+    if (!res.ok) {
+      throw new Error('Failed to fetch live YouTube feed');
+    }
+    return await res.json();
   },
 
   // Update channel properties (auto-upload toggle, schedule, niche)

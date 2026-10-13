@@ -13,6 +13,7 @@ class ConnectChannelRequest(BaseModel):
     handle: Optional[str] = Field(default="", description="YouTube @handle or URL")
     niche: Optional[str] = Field(default="Motivational Quotes", description="Channel niche / focus")
     avatarUrl: Optional[str] = Field(default=None, description="Channel Avatar URL")
+    bannerUrl: Optional[str] = Field(default=None, description="Channel Banner URL")
     subscribers: Optional[int] = Field(default=0, description="Subscriber count")
     videosUploaded: Optional[int] = Field(default=0, description="Videos count")
     autoResolve: Optional[bool] = Field(default=True, description="Whether to auto-fetch live stats from YouTube")
@@ -45,6 +46,7 @@ class ChannelResponse(BaseModel):
     subscribers: int
     videosUploaded: int
     avatarUrl: Optional[str] = None
+    bannerUrl: Optional[str] = None
     isAutoUploadEnabled: bool
     scheduleCron: str
     connectedAt: str
@@ -59,7 +61,7 @@ class VideoResponse(BaseModel):
     publishedAt: str
     status: str
     duration: str
-    channelId: str
+    channelId: Optional[str] = None
     videoUrl: str
     category: str
     voice: str

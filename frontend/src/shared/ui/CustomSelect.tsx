@@ -63,6 +63,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   value,
   onChange,
   label,
+  labelClassName,
   placeholder = 'Select option...',
   icon,
   variant = 'form',
@@ -125,11 +126,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   // Variant & size classes
   const triggerBase = isCompact
-    ? `inline-flex items-center gap-1.5 pl-2.5 pr-2 py-1 rounded-lg bg-[#181818] border border-[#2F2F2F] text-[10px] font-mono-studio font-bold text-[#60A5FA] hover:border-[#3B82F6]/60 hover:bg-[#1E1E1E] transition-all cursor-pointer shadow-xs select-none ${
-        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/40' : ''
+    ? `inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121212] border border-[#2F2F2F] text-xs font-semibold text-[#E5E5E5] hover:border-[#3B82F6]/50 hover:text-white hover:bg-[#1E1E1E] transition-all cursor-pointer shadow-xs select-none ${
+        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/30 text-white bg-[#1E1E1E]' : ''
       }`
-    : `w-full flex items-center justify-between gap-2 rounded-xl bg-[#121212] border border-[#2F2F2F] px-3.5 py-2.5 text-sm text-[#E5E5E5] hover:border-[#4A4A4A] focus:outline-none transition-all cursor-pointer select-none ${
-        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/30' : ''
+    : `w-full flex items-center justify-between gap-2 rounded-xl bg-[#121212] border border-[#2F2F2F] px-3.5 py-2.5 text-xs text-[#E5E5E5] hover:border-[#4A4A4A] focus:outline-none transition-all cursor-pointer select-none ${
+        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/30 text-white' : ''
       }`;
 
   return (
@@ -166,7 +167,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
         <ChevronDown
           className={`shrink-0 transition-transform duration-200 ${
-            isCompact ? 'w-3 h-3 text-[#9CA3AF]' : 'w-4 h-4 text-[#9CA3AF]'
+            isCompact ? 'w-3.5 h-3.5 text-[#9CA3AF]' : 'w-4 h-4 text-[#9CA3AF]'
           } ${isOpen ? 'rotate-180 text-[#60A5FA]' : ''}`}
         />
       </button>
@@ -176,11 +177,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         <div
           role="listbox"
           tabIndex={-1}
-          className={`absolute z-50 mt-1.5 py-1.5 rounded-xl bg-[#141414]/98 backdrop-blur-xl border border-[#2F2F2F] shadow-2xl shadow-black/80 ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-150 custom-scrollbar max-h-64 overflow-y-auto ${
+          className={`absolute z-50 mt-1.5 p-1.5 rounded-xl bg-[#121212] border border-[#2F2F2F] shadow-2xl shadow-black/80 custom-scrollbar max-h-64 overflow-y-auto ${
             isCompact
               ? align === 'right'
-                ? 'right-0 min-w-[220px] max-w-[320px]'
-                : 'left-0 min-w-[220px] max-w-[320px]'
+                ? 'right-0 min-w-[240px] max-w-[320px]'
+                : 'left-0 min-w-[240px] max-w-[320px]'
               : 'left-0 right-0 w-full'
           } ${menuClassName}`}
         >
@@ -195,14 +196,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => handleSelect(opt.value, opt.disabled)}
-                  className={`flex items-center justify-between gap-2.5 cursor-pointer transition-colors ${
-                    isCompact ? 'px-3 py-1.5 text-[11px]' : 'px-3.5 py-2.5 text-xs sm:text-sm'
-                  } ${
+                  className={`flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-colors text-xs ${
                     opt.disabled
                       ? 'opacity-40 cursor-not-allowed text-[#6B7280]'
                       : isSelected
-                      ? 'bg-[#3B82F6]/15 text-[#60A5FA] font-semibold'
-                      : 'text-[#E5E5E5] hover:bg-[#1E1E1E] hover:text-white'
+                      ? 'bg-[#3B82F6]/15 text-[#60A5FA] font-semibold border border-[#3B82F6]/30'
+                      : 'text-[#9CA3AF] hover:bg-[#1E1E1E] hover:text-[#E5E5E5]'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0 truncate">
@@ -210,19 +209,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     <div className="truncate">
                       <div className="truncate font-medium">{opt.label}</div>
                       {opt.description && (
-                        <div className="text-[10px] text-[#9CA3AF] truncate mt-0.5">{opt.description}</div>
+                        <div className="text-[10px] text-[#6B7280] truncate mt-0.5">{opt.description}</div>
                       )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     {opt.badge && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#3B82F6]/20 border border-[#3B82F6]/30 text-[#60A5FA] font-mono-studio">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#60A5FA] font-semibold">
                         {opt.badge}
                       </span>
                     )}
                     {isSelected && (
-                      <Check className={`${isCompact ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-[#60A5FA] stroke-[2.5]`} />
+                      <Check className="w-3.5 h-3.5 text-[#60A5FA] stroke-[2.5]" />
                     )}
                   </div>
                 </div>

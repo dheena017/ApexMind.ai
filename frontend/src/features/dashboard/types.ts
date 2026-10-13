@@ -13,8 +13,5 @@ export interface DashboardStats {
   totalLikes: number;
   activeChannelsCount: number;
   totalQuotesGenerated: number;
-  tokensUsed: number;
-  tokenQuota: number;
   primaryChannel?: any;
 }
-

@@ -5,6 +5,8 @@ HTTP request/response tracking, and stylized developer diagnostics.
 """
 
 import logging
+import os
+import re
 import sys
 import time
 from datetime import datetime
@@ -72,6 +74,12 @@ class UvicornNoiseFilter(logging.Filter):
 class ColoredFormatter(logging.Formatter):
     """Custom log formatter rendering colorful badges, module tags, and timestamps."""
 
+    def __init__(self, use_color: bool | None = None):
+        super().__init__()
+        if use_color is None:
+            use_color = sys.stdout.isatty() or os.environ.get("FORCE_COLOR", "").strip() not in ("", "0")
+        self.use_color = use_color and os.environ.get("NO_COLOR") is None
+
     LEVEL_BADGES = {
         logging.DEBUG: "\033[100m\033[97m\033[1m DEBUG \033[0m",
         logging.INFO: "\033[44m\033[97m\033[1m  INFO \033[0m",
@@ -90,7 +98,8 @@ class ColoredFormatter(logging.Formatter):
         "HTTP": Colors.CYAN,
         "Server": Colors.BRIGHT_CYAN,
         "Watcher": Colors.BRIGHT_YELLOW,
-        "App": Colors.BRIGHT_WHITE,
+        "App": Colors.BRIGHT_CYAN,
+        "Auth": Colors.BRIGHT_GREEN,
     }
 
     def format(self, record: logging.LogRecord) -> str:
@@ -127,13 +136,34 @@ class ColoredFormatter(logging.Formatter):
             msg_colored = f"{Colors.BRIGHT_RED}{msg}{Colors.RESET}"
         elif record.levelno == logging.WARNING:
             msg_colored = f"{Colors.BRIGHT_YELLOW}{msg}{Colors.RESET}"
+        elif "Features active:" in msg:
+            parts = msg.split("Features active:", 1)
+            feat_str = parts[1]
+            formatted_features = (
+                feat_str.replace("Workspace", f"{Colors.BRIGHT_BLUE}Workspace{Colors.RESET}")
+                .replace("YouTube", f"{Colors.BRIGHT_RED}YouTube{Colors.RESET}")
+                .replace("Notifications", f"{Colors.BRIGHT_YELLOW}Notifications{Colors.RESET}")
+                .replace("Dashboard", f"{Colors.BRIGHT_CYAN}Dashboard{Colors.RESET}")
+                .replace("Auth", f"{Colors.BRIGHT_GREEN}Auth{Colors.RESET}")
+                .replace("•", f"{Colors.GRAY}•{Colors.RESET}")
+            )
+            msg_colored = f"{Colors.WHITE}Features active:{Colors.RESET}{formatted_features}"
+        elif "Schema verified" in msg or "Presets verified" in msg:
+            clean = re.sub(r"\(([^)]+)\)", rf"({Colors.BRIGHT_CYAN}\1{Colors.RESET})", msg)
+            msg_colored = f"{Colors.WHITE}{clean}{Colors.RESET}"
+        elif "SQLite DB connected:" in msg:
+            clean = re.sub(r"(connected:\s*)(.+)", rf"\1{Colors.BRIGHT_CYAN}\2{Colors.RESET}", msg)
+            msg_colored = f"{Colors.WHITE}{clean}{Colors.RESET}"
         else:
             msg_colored = f"{Colors.WHITE}{msg}{Colors.RESET}"
 
-        return f"{timestamp} {badge} {tag} {msg_colored}"
+        formatted = f"{timestamp} {badge} {tag} {msg_colored}"
+        if not self.use_color:
+            return re.sub(r"\033\[[0-?]*[ -/]*[@-~]", "", formatted)
+        return formatted
 
 
-def get_uvicorn_log_config() -> dict:
+def get_uvicorn_log_config(use_color: bool | None = None) -> dict:
     """Provides a dictConfig dictionary for Uvicorn using ApexMind's custom colored formatter."""
     return {
         "version": 1,
@@ -141,6 +171,7 @@ def get_uvicorn_log_config() -> dict:
         "formatters": {
             "apex_colored": {
                 "()": "backend.shared.logger.ColoredFormatter",
+                "use_color": use_color,
             },
         },
         "filters": {
@@ -201,6 +232,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         method = request.method
         path = request.url.path
+        path_color = Colors.BRIGHT_CYAN
 
         # Method Color
         method_colors = {
@@ -213,7 +245,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         m_color = method_colors.get(method, Colors.WHITE)
 
         client_host = request.client.host if request.client else "unknown"
-        logger.info(f"{Colors.GRAY}-->{Colors.RESET} {m_color}{Colors.BOLD}{method:<6}{Colors.RESET} {Colors.WHITE}{path}{Colors.RESET} {Colors.GRAY}(from {client_host}){Colors.RESET}")
+        logger.info(
+            f"{Colors.GRAY}-->{Colors.RESET} "
+            f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
+            f"{path_color}{path}{Colors.RESET} "
+            f"{Colors.GRAY}(from {client_host}){Colors.RESET}"
+        )
 
         try:
             response: Response = await call_next(request)
@@ -239,13 +276,20 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 duration_str = f"{Colors.RED}{duration_ms:.1f}ms{Colors.RESET}"
 
             logger.info(
-                f"{Colors.GRAY}<--{Colors.RESET} {code_str} {m_color}{method:<6}{Colors.RESET} {Colors.WHITE}{path}{Colors.RESET} | Duration: {duration_str}"
+                f"{Colors.GRAY}<--{Colors.RESET} {code_str} "
+                f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
+                f"{path_color}{path}{Colors.RESET} "
+                f"{Colors.GRAY}| Duration: {Colors.RESET}{duration_str}"
             )
             return response
         except Exception as exc:
             duration_ms = (time.perf_counter() - start_time) * 1000
             logger.error(
-                f"{Colors.BRIGHT_RED}<!- EXCEPTION{Colors.RESET} {m_color}{method:<6}{Colors.RESET} {path} | Failed after {duration_ms:.1f}ms | Error: {exc}"
+                f"{Colors.BRIGHT_RED}<!- EXCEPTION{Colors.RESET} "
+                f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
+                f"{path_color}{path}{Colors.RESET} "
+                f"{Colors.GRAY}| Failed after {Colors.RESET}{Colors.BRIGHT_RED}{duration_ms:.1f}ms"
+                f"{Colors.GRAY} | Error: {Colors.RESET}{Colors.BRIGHT_RED}{exc}{Colors.RESET}"
             )
             raise exc
 
@@ -301,5 +345,3 @@ def print_startup_banner(host: str, port: int):
         for label, val, color in lines:
             print(f"  {label:<12}: {color}{val}{C.RESET}")
         print()
-
-

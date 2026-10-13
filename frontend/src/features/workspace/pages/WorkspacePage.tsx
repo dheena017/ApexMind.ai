@@ -6,8 +6,11 @@ import { AIAgentCreatorPane } from '../components/AIAgentCreatorPane';
 import { ScriptEditorPane } from '../components/ScriptEditorPane';
 import { VideoPreviewPane } from '../components/VideoPreviewPane';
 import { StudioControlsPane } from '../components/StudioControlsPane';
+import { useAuth } from '@/src/features/auth/context/AuthContext';
+import { DEFAULT_CREATOR_PROFILE, getCreatorProfile } from '@/src/features/profile/api/profileApi';
 
 export default function WorkspacePage({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const { user } = useAuth();
   // Navigation between separate AI Creator and Script Editor pages
   const [activeLeftPane, setActiveLeftPane] = useState<'prompt' | 'editor'>('prompt');
 
@@ -46,6 +49,8 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
   const [selectedVoice, setSelectedVoice] = useState('Fenrir');
   const [selectedMusic, setSelectedMusic] = useState('m1');
   const [selectedBackdrop, setSelectedBackdrop] = useState('v1');
+  const [preferredTone, setPreferredTone] = useState(DEFAULT_CREATOR_PROFILE.tone);
+  const [targetAudience, setTargetAudience] = useState(DEFAULT_CREATOR_PROFILE.audience);
 
   // Audio Playback Engine
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -58,6 +63,18 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
   useEffect(() => {
     async function loadData() {
       try {
+        if (user?.id) {
+          try {
+            const creatorProfile = getCreatorProfile(user.id);
+            setCategory(creatorProfile.niche);
+            setPreferredTone(creatorProfile.tone);
+            setTargetAudience(creatorProfile.audience);
+            setSelectedVoice(creatorProfile.defaultVoice);
+          } catch (profileError) {
+            consoleLogger.error('Studio', 'Failed to load creator preferences:', profileError);
+          }
+        }
+
         consoleLogger.info('Studio', 'Loading live media library, channels, and quote memory...');
         const [channels, media, mem] = await Promise.all([
           workspaceApi.getConnectedChannels(),
@@ -77,7 +94,11 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
           setSelectedBackdrop(media.visualBackdrops[0].id);
         }
         if (media.voiceProfiles && media.voiceProfiles.length > 0) {
-          setSelectedVoice(media.voiceProfiles[0].id);
+          setSelectedVoice((currentVoice) =>
+            media.voiceProfiles.some((voice) => voice.id === currentVoice)
+              ? currentVoice
+              : media.voiceProfiles[0].id
+          );
         }
         if (media.musicTracks && media.musicTracks.length > 0) {
           setSelectedMusic(media.musicTracks[0].id);
@@ -111,7 +132,7 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
       }
     }
     loadData();
-  }, []);
+  }, [user?.id]);
 
   // Update audio element events
   useEffect(() => {
@@ -149,16 +170,18 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
     setLoadingAgent(true);
     consoleLogger.info('Studio', `Generating script for category: ${category}`);
     try {
+      const promptParts = [
+        agentPrompt.trim(),
+        targetAudience.trim() ? `Target audience: ${targetAudience.trim()}` : '',
+      ].filter(Boolean);
       const generated = await workspaceApi.generateScript({
         category,
-        userPrompt: agentPrompt.trim() || undefined,
+        userPrompt: promptParts.join('\n') || undefined,
+        tone: preferredTone,
         model: selectedModel,
       });
 
-      setScript(generated);
-      if (generated.recommendedVoice) {
-        setSelectedVoice(generated.recommendedVoice);
-      }
+      setScript({ ...generated, recommendedVoice: selectedVoice || generated.recommendedVoice });
       if (generated.visualTheme) {
         setSelectedBackdrop(generated.visualTheme);
       }
@@ -167,7 +190,7 @@ export default function WorkspacePage({ onNavigate }: { onNavigate: (page: strin
       setMemoryCount(mem.totalQuotesInMemory || 0);
 
       // Automatically synthesize 24kHz voiceover with updated script
-      handleSynthesizeVoice(generated, generated.recommendedVoice || selectedVoice);
+      handleSynthesizeVoice(generated, selectedVoice || generated.recommendedVoice || 'Fenrir');
     } catch (err) {
       consoleLogger.error('Studio', 'Error generating script:', err);
     } finally {

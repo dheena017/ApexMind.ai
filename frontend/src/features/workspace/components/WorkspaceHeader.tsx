@@ -2,10 +2,10 @@ import React from 'react';
 import {
   Sparkles,
   ArrowLeft,
-  Bell,
   Youtube,
 } from 'lucide-react';
 import { UserProfile } from '@/src/features/auth/types';
+import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
 
 interface WorkspaceHeaderProps {
   user: UserProfile | null;
@@ -71,16 +71,10 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           <span className="hidden sm:inline">Channel</span>
         </button>
 
-        <button
-          onClick={() => onNavigate('notifications')}
-          className="relative p-2 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer border border-transparent hover:border-[#2F2F2F]"
-          title="Notifications"
-        >
-          <Bell className="w-4 h-4" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#3B82F6] ring-2 ring-[#121212]" />
-          )}
-        </button>
+        <NotificationDropdown
+          unreadCount={unreadCount}
+          onNavigate={onNavigate}
+        />
 
         <button
           onClick={() => onNavigate('profile')}

@@ -329,7 +329,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 <button
                   type="button"
                   onClick={() => onNavigate('landing')}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-white transition-colors cursor-pointer"
+                  className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#2F2F2F] bg-[#121212]/70 px-3 text-xs font-medium text-[#9CA3AF] shadow-sm transition-colors hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back to ApexMind</span>
@@ -404,7 +404,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 <button
                   type="button"
                   onClick={() => setShowGoogleModal(true)}
-                  className="text-xs text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer"
+                  className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#2F2F2F] bg-[#121212]/70 px-4 text-xs font-semibold text-[#9CA3AF] shadow-sm transition-colors hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-[#93C5FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer"
                 >
                   Sign in with another Google account
                 </button>

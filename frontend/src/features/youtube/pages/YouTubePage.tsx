@@ -2,28 +2,22 @@ import React, { useEffect, useState } from 'react';
 import {
   Youtube,
   Plus,
-  Zap,
   RefreshCw,
-  Clock,
-  Play,
-  ExternalLink,
   CheckCircle2,
   AlertCircle,
-  Search,
-  Sliders,
-  Trash2,
-  Film,
-  Sparkles,
-  Users,
-  Video,
-  Copy,
-  Check,
-  Calendar,
-  Layers,
-  Radio,
-  ArrowUpRight,
+  ExternalLink,
 } from 'lucide-react';
-import { Button, Card, Badge, Modal, Input } from '@/src/shared/ui/common';
+import { Button, Modal, Input } from '@/src/shared/ui/common';
+import { YouTubeChannelBannerHeader } from '../components/YouTubeChannelBannerHeader';
+import { YouTubeHeader, YouTubeTab } from '../components/YouTubeHeader';
+import { YouTubeHomePage } from './YouTubeHomePage';
+import { YouTubeVideosPage } from './YouTubeVideosPage';
+import { YouTubeShortsPage } from './YouTubeShortsPage';
+import { YouTubePlaylistsPage } from './YouTubePlaylistsPage';
+import { YouTubePostsPage } from './YouTubePostsPage';
+import { YouTubeSchedulesPage } from './YouTubeSchedulesPage';
+import { YouTubeAnalyticsPage } from './YouTubeAnalyticsPage';
+import { YouTubeSettingsPage } from './YouTubeSettingsPage';
 import { youtubeApi } from '../api/youtubeApi';
 import {
   YouTubeChannel,
@@ -31,6 +25,8 @@ import {
   AutomationJob,
   YouTubeLookupResult,
   YouTubeLiveShort,
+  YouTubeLiveVideo,
+  YouTubeForYouItem,
 } from '../types';
 
 export default function YouTubePage({ onNavigate }: { onNavigate: (page: string) => void }) {
@@ -39,6 +35,8 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const [automations, setAutomations] = useState<AutomationJob[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<YouTubeTab>('overview');
+  const [shortsSearch, setShortsSearch] = useState('');
 
   // Channel details interactive states
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -48,36 +46,60 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [channelInput, setChannelInput] = useState('');
   const [niche, setNiche] = useState('');
-
-  const [lookupResult, setLookupResult] = useState<YouTubeLookupResult | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupResult, setLookupResult] = useState<YouTubeLookupResult | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
 
-  // Correct Handle Modal
+  // Syncing status
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  // Live Shorts explorer modal
+  const [selectedChannelForShorts, setSelectedChannelForShorts] = useState<YouTubeChannel | null>(null);
+  const [liveShorts, setLiveShorts] = useState<YouTubeLiveShort[]>([]);
+  const [liveShortsLoading, setLiveShortsLoading] = useState(false);
+
+  // Correct Handle modal
   const [showCorrectModal, setShowCorrectModal] = useState(false);
   const [channelToCorrect, setChannelToCorrect] = useState<YouTubeChannel | null>(null);
   const [newHandleInput, setNewHandleInput] = useState('');
   const [correctLoading, setCorrectLoading] = useState(false);
 
-  // Sync state per channel
-  const [syncingId, setSyncingId] = useState<string | null>(null);
+  // Live YouTube dynamic feed data (fetched purely from YouTube API)
+  const [liveVideos, setLiveVideos] = useState<YouTubeLiveVideo[]>([]);
+  const [liveShortsFeed, setLiveShortsFeed] = useState<YouTubeLiveShort[]>([]);
+  const [liveForYou, setLiveForYou] = useState<YouTubeForYouItem[]>([]);
 
-  // Live Shorts Explorer
-  const [selectedChannelForShorts, setSelectedChannelForShorts] = useState<YouTubeChannel | null>(null);
-  const [liveShorts, setLiveShorts] = useState<YouTubeLiveShort[]>([]);
-  const [liveShortsLoading, setLiveShortsLoading] = useState(false);
-
+  // Initial Data Load
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await youtubeApi.getYouTubeData();
-      const autoData = await youtubeApi.getAutomations();
-      setChannels(data.channels);
-      setVideos(data.videos);
-      setAutomations(autoData);
+      const [{ channels: chData, videos: vData }, aData] = await Promise.all([
+        youtubeApi.getYouTubeData(),
+        youtubeApi.getAutomations(),
+      ]);
+      setChannels(chData);
+      setVideos(vData);
+      setAutomations(aData);
+
+      if (chData.length > 0) {
+        try {
+          const feed = await youtubeApi.getLiveFeed(chData[0].id);
+          if (feed.videos && feed.videos.length > 0) {
+            setLiveVideos(feed.videos);
+          }
+          if (feed.shorts && feed.shorts.length > 0) {
+            setLiveShortsFeed(feed.shorts);
+          }
+          if (feed.forYou && feed.forYou.length > 0) {
+            setLiveForYou(feed.forYou);
+          }
+        } catch (feedErr) {
+          console.warn('Could not load live feed from YouTube API', feedErr);
+        }
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to load YouTube data', e);
     } finally {
       setLoading(false);
     }
@@ -157,6 +179,14 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
       setShowConnectModal(false);
       setLookupResult(null);
       setChannelInput('');
+      try {
+        const feed = await youtubeApi.getLiveFeed(newChan.id);
+        if (feed.videos) setLiveVideos(feed.videos);
+        if (feed.shorts) setLiveShortsFeed(feed.shorts);
+        if (feed.forYou) setLiveForYou(feed.forYou);
+      } catch (feedErr) {
+        console.warn('Could not load live feed for connected channel', feedErr);
+      }
       notify(`Connected & verified YouTube channel: ${newChan.name} (${newChan.handle})`);
     } catch (e: any) {
       setLookupError(e.message || 'Failed to connect YouTube channel');
@@ -171,6 +201,14 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
     try {
       const res = await youtubeApi.syncChannel(id);
       setChannels((prev) => prev.map((c) => (c.id === id ? res.channel : c)));
+      try {
+        const feed = await youtubeApi.getLiveFeed(id);
+        if (feed.videos) setLiveVideos(feed.videos);
+        if (feed.shorts) setLiveShortsFeed(feed.shorts);
+        if (feed.forYou) setLiveForYou(feed.forYou);
+      } catch (feedErr) {
+        console.warn('Could not refresh live feed', feedErr);
+      }
       notify(res.message);
     } catch (err: any) {
       notify(`Sync failed: ${err.message}`);
@@ -194,6 +232,14 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
     try {
       const res = await youtubeApi.correctChannel(channelToCorrect.id, newHandleInput);
       setChannels((prev) => prev.map((c) => (c.id === channelToCorrect.id ? res.channel : c)));
+      try {
+        const feed = await youtubeApi.getLiveFeed(channelToCorrect.id);
+        if (feed.videos) setLiveVideos(feed.videos);
+        if (feed.shorts) setLiveShortsFeed(feed.shorts);
+        if (feed.forYou) setLiveForYou(feed.forYou);
+      } catch (feedErr) {
+        console.warn('Could not refresh live feed for corrected channel', feedErr);
+      }
       setShowCorrectModal(false);
       notify(res.message);
     } catch (err: any) {
@@ -203,32 +249,31 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
     }
   };
 
-  // Remove channel
+  // Delete channel
   const handleDeleteChannel = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to disconnect ${name}?`)) return;
+    if (!confirm(`Are you sure you want to disconnect channel "${name}"?`)) return;
     try {
       await youtubeApi.deleteChannel(id);
       setChannels((prev) => prev.filter((c) => c.id !== id));
       if (selectedChannelForShorts?.id === id) {
         setSelectedChannelForShorts(null);
-        setLiveShorts([]);
       }
-      notify(`Disconnected YouTube channel: ${name}`);
+      notify(`Disconnected channel: ${name}`);
     } catch (err: any) {
       notify(`Failed to disconnect: ${err.message}`);
     }
   };
 
-  // Load Live Shorts for Channel
+  // Load Live Shorts Feed
   const handleLoadLiveShorts = async (ch: YouTubeChannel) => {
     setSelectedChannelForShorts(ch);
     setLiveShortsLoading(true);
     try {
-      const shorts = await youtubeApi.getLiveShorts(ch.id, 12);
+      const shorts = await youtubeApi.getLiveShorts(ch.id);
       setLiveShorts(shorts);
-      notify(`Fetched ${shorts.length} live Shorts from ${ch.name}`);
     } catch (err: any) {
       notify(`Could not load live shorts: ${err.message}`);
+      setLiveShorts([]);
     } finally {
       setLiveShortsLoading(false);
     }
@@ -244,51 +289,40 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
   };
 
   return (
-    <div className="w-full space-y-8 font-sans-studio">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2F2F2F]">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 shadow-lg shadow-red-500/10">
-            <Youtube className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold tracking-tight text-white">
-                YouTube Automation & Channel Manager
-              </h1>
-              <Badge variant="blue">Live Service Active</Badge>
-            </div>
-            <p className="text-xs text-[#9CA3AF] mt-0.5">
-              Connect and verify YouTube channels with real-time live subscriber metrics, catalogs, and Shorts workflows
-            </p>
-          </div>
-        </div>
+    <div className="w-full space-y-4 font-sans-studio">
+      {/* ── YouTube Channel Banner & Profile Identity Header ── */}
+      <YouTubeChannelBannerHeader
+        channel={channels[0]}
+        onCustomiseChannel={() => {
+          if (channels[0]) {
+            openCorrectModal(channels[0]);
+          } else {
+            setShowConnectModal(true);
+          }
+        }}
+        onManageVideos={() => {
+          setActiveTab('videos');
+        }}
+        onSyncLive={loadData}
+        syncing={loading}
+      />
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
-            onClick={loadData}
-          >
-            Sync Live
-          </Button>
-          {channels.length === 0 && (
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<Plus className="w-4 h-4" />}
-              onClick={() => {
-                setLookupResult(null);
-                setLookupError(null);
-                setShowConnectModal(true);
-              }}
-            >
-              Connect YouTube Channel
-            </Button>
-          )}
-        </div>
-      </div>
+      {/* ── YouTube Sub-Pages Navigation Tabs (Home, Videos, Shorts, Playlists, Posts...) ── */}
+      <YouTubeHeader
+        loading={loading}
+        onSyncLive={loadData}
+        channelsCount={channels.length}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        activeChannelHandle={channels[0]?.handle}
+        shortsCount={videos.length}
+        schedulesCount={automations.length}
+        onConnectChannel={() => {
+          setLookupResult(null);
+          setLookupError(null);
+          setShowConnectModal(true);
+        }}
+      />
 
       {/* Floating Status Notification */}
       {statusMessage && (
@@ -306,561 +340,105 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       )}
 
-      {/* Single Channel Overview Metric Strip */}
-      {(() => {
-        const activeChannel = channels[0];
-        return (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
-              <div className="p-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
-                <Youtube className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Connected Channel</p>
-                <p className="text-xl font-extrabold text-white mt-0.5 truncate">
-                  {activeChannel ? activeChannel.name : 'Not Connected'}
-                </p>
-                <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 mt-0.5 truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  {activeChannel ? `${activeChannel.handle} · Live` : 'No channel active'}
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
-              <div className="p-3 rounded-xl bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/20 shrink-0">
-                <Users className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Audience Reach</p>
-                <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-                  {(activeChannel?.subscribers || 0).toLocaleString()}
-                </p>
-                <p className="text-[11px] text-[#93C5FD] font-medium mt-0.5">Live Subscribers</p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
-              <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
-                <Video className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">YouTube Uploads</p>
-                <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-                  {(activeChannel?.videosUploaded || 0).toLocaleString()}
-                </p>
-                <p className="text-[11px] text-[#C084FC] font-medium mt-0.5">Channel Videos</p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#121212] border border-[#2F2F2F] flex items-center gap-4 shadow-sm">
-              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                <Zap className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Shorts Automation</p>
-                <p className="text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-                  {activeChannel ? (activeChannel.isAutoUploadEnabled ? 'Active' : 'Paused') : 'Inactive'}
-                </p>
-                <p className="text-[11px] text-emerald-400 font-medium mt-0.5 truncate">
-                  {activeChannel?.scheduleCron || 'Daily Schedule'}
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Connected Channel (Single Channel Mode) */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-[#9CA3AF] uppercase tracking-wider">
-              Connected YouTube Channel
-            </h3>
-            <p className="text-xs text-[#6B7280]">
-              Dedicated single-channel automation and publishing dashboard
-            </p>
-          </div>
-          <span className="text-xs text-[#6B7280]">Live Verified via YouTube Data API v3</span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6">
-          {channels.length === 0 ? (
-            <div className="col-span-full">
-              <Card className="text-center py-12 space-y-4">
-                <div className="p-4 rounded-full bg-red-500/10 border border-red-500/20 w-fit mx-auto">
-                  <Youtube className="w-10 h-10 text-red-500" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-base font-bold text-white">No YouTube Channels Connected</h4>
-                  <p className="text-xs text-[#9CA3AF] max-w-md mx-auto">
-                    Connect your YouTube channel using your @handle or URL to automatically fetch and verify live channel stats, subscribers, and enable automated Shorts publishing.
-                  </p>
-                </div>
-                <div className="flex justify-center gap-3 pt-2">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    icon={<Plus className="w-4 h-4" />}
-                    onClick={() => {
-                      setChannelInput('');
-                      setShowConnectModal(true);
-                    }}
-                  >
-                    Connect with YouTube Handle
-                  </Button>
-                </div>
-              </Card>
-            </div>
-          ) : (
-            channels.map((ch) => {
-              const isSyncing = syncingId === ch.id;
-              const isToggling = togglingAutoUploadId === ch.id;
-              const ytUrl = ch.handle.startsWith('@')
-                ? `https://www.youtube.com/${ch.handle}`
-                : `https://www.youtube.com/@${ch.handle}`;
-              const studioUrl = 'https://studio.youtube.com';
-              const channelVideos = videos.filter((v) => v.channelId === ch.id);
-
-              return (
-                <Card key={ch.id} className="relative overflow-hidden group hover:border-[#3B82F6]/50 transition-all p-6 space-y-5 bg-[#171717] border-[#2F2F2F] shadow-xl">
-                  {/* Top Bar with Niche, Auto-Upload Toggle & Direct Action Links */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#2F2F2F]">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#60A5FA] text-xs font-semibold">
-                        {ch.niche || 'Motivational Quotes'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleAutoUpload(ch)}
-                        disabled={isToggling}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                          ch.isAutoUploadEnabled
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
-                            : 'bg-gray-800 border-gray-700 text-[#9CA3AF] hover:text-white'
-                        }`}
-                        title="Click to toggle automated Shorts publishing"
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${ch.isAutoUploadEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
-                        <span>{ch.isAutoUploadEnabled ? 'Auto-Upload Active' : 'Auto-Upload Paused'}</span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={ytUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2 py-1 rounded-lg bg-[#121212] border border-[#2F2F2F] text-[#9CA3AF] hover:text-white hover:border-[#60A5FA] transition-all text-xs flex items-center gap-1"
-                        title="View Channel on YouTube"
-                      >
-                        <Youtube className="w-3.5 h-3.5 text-red-500" />
-                        <span className="hidden sm:inline">Channel</span>
-                        <ArrowUpRight className="w-3 h-3" />
-                      </a>
-                      <a
-                        href={studioUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2 py-1 rounded-lg bg-[#121212] border border-[#2F2F2F] text-[#9CA3AF] hover:text-white hover:border-[#60A5FA] transition-all text-xs flex items-center gap-1"
-                        title="Open YouTube Studio"
-                      >
-                        <span className="hidden sm:inline">Studio</span>
-                        <ArrowUpRight className="w-3 h-3" />
-                      </a>
-                      <button
-                        onClick={() => handleDeleteChannel(ch.id, ch.name)}
-                        className="px-2.5 py-1 rounded-lg bg-[#121212] border border-[#2F2F2F] text-[#9CA3AF] hover:text-red-400 hover:border-red-500/30 transition-all cursor-pointer text-xs flex items-center gap-1.5"
-                        title="Disconnect channel"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Disconnect</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Channel Identity Header */}
-                  <div className="flex items-start gap-4">
-                    <div className="relative shrink-0">
-                      <img
-                        src={ch.avatarUrl}
-                        alt={ch.name}
-                        className="w-16 h-16 rounded-2xl bg-[#121212] border-2 border-[#2F2F2F] p-0.5 object-cover shadow-lg"
-                      />
-                      <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#171717] flex items-center justify-center text-[9px] text-white font-bold" title="Channel Active">
-                        ✓
-                      </span>
-                    </div>
-
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-extrabold text-white text-lg tracking-tight truncate hover:text-[#60A5FA] transition-colors">
-                          {ch.name}
-                        </h4>
-                        <span
-                          title="Verified on YouTube"
-                          className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#3B82F6]/20 text-[#60A5FA] text-xs font-bold shrink-0"
-                        >
-                          ✓
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-[#9CA3AF]">
-                        <a
-                          href={ytUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-white text-[#60A5FA] font-medium font-mono-studio inline-flex items-center gap-1"
-                        >
-                          {ch.handle}
-                          <ExternalLink className="w-3 h-3 opacity-60" />
-                        </a>
-                        <span>·</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyId(ch.id)}
-                          className="inline-flex items-center gap-1 font-mono-studio text-[11px] text-[#9CA3AF] hover:text-white bg-[#121212] px-2 py-0.5 rounded border border-[#2F2F2F] cursor-pointer"
-                          title="Click to copy Database ID"
-                        >
-                          <span>ID: {ch.id}</span>
-                          {copiedId === ch.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-[#6B7280]" />}
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-[11px] text-[#6B7280] pt-0.5 font-mono-studio">
-                        <Calendar className="w-3 h-3" />
-                        <span>Connected: {new Date(ch.connectedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Comprehensive 4-Metric Grid per Channel */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    <div className="p-3 rounded-xl bg-[#121212] border border-[#2F2F2F]">
-                      <div className="flex items-center justify-between text-xs text-[#9CA3AF] mb-1">
-                        <span className="text-[11px] uppercase font-semibold">Subscribers</span>
-                        <Users className="w-3.5 h-3.5 text-[#60A5FA]" />
-                      </div>
-                      <p className="text-base font-extrabold text-white tabular-nums font-mono-studio">
-                        {ch.subscribers.toLocaleString()}
-                      </p>
-                      <span className="text-[10px] text-emerald-400 font-medium">Live YouTube</span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-[#121212] border border-[#2F2F2F]">
-                      <div className="flex items-center justify-between text-xs text-[#9CA3AF] mb-1">
-                        <span className="text-[11px] uppercase font-semibold">Total Videos</span>
-                        <Video className="w-3.5 h-3.5 text-purple-400" />
-                      </div>
-                      <p className="text-base font-extrabold text-white tabular-nums font-mono-studio">
-                        {ch.videosUploaded.toLocaleString()}
-                      </p>
-                      <span className="text-[10px] text-purple-300 font-medium">Channel Total</span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-[#121212] border border-[#2F2F2F]">
-                      <div className="flex items-center justify-between text-xs text-[#9CA3AF] mb-1">
-                        <span className="text-[11px] uppercase font-semibold">Shorts Catalog</span>
-                        <Film className="w-3.5 h-3.5 text-amber-400" />
-                      </div>
-                      <p className="text-base font-extrabold text-white tabular-nums font-mono-studio">
-                        {channelVideos.length}
-                      </p>
-                      <span className="text-[10px] text-amber-300 font-medium">ApexMind Shorts</span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-[#121212] border border-[#2F2F2F]">
-                      <div className="flex items-center justify-between text-xs text-[#9CA3AF] mb-1">
-                        <span className="text-[11px] uppercase font-semibold">Schedule</span>
-                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                      </div>
-                      <p className="text-xs font-bold text-white truncate" title={ch.scheduleCron}>
-                        {ch.scheduleCron.includes('at') ? ch.scheduleCron.split('at')[1].trim() : ch.scheduleCron}
-                      </p>
-                      <span className="text-[10px] text-emerald-300 font-medium">Automated Cron</span>
-                    </div>
-                  </div>
-
-                  {/* Channel Production Specifications Strip */}
-                  <div className="p-3 rounded-xl bg-[#121212]/80 border border-[#2F2F2F] text-xs flex flex-wrap items-center justify-between gap-3 text-[#9CA3AF]">
-                    <div className="flex items-center gap-1.5 font-medium text-white">
-                      <Clock className="w-3.5 h-3.5 text-[#60A5FA]" />
-                      <span>{ch.scheduleCron}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-[11px]">
-                      <span>Voice: <strong className="text-white">Fenrir (24kHz)</strong></span>
-                      <span>·</span>
-                      <span>Format: <strong className="text-white">1080x1920 (9:16)</strong></span>
-                      <span>·</span>
-                      <span className="text-emerald-400 font-semibold">API Verified</span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons Toolbar */}
-                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={<RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />}
-                        disabled={isSyncing}
-                        onClick={() => handleSyncChannel(ch.id)}
-                        title="Query YouTube Data API to verify real live metrics"
-                      >
-                        {isSyncing ? 'Syncing…' : 'Sync Live'}
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={<Film className="w-3.5 h-3.5" />}
-                        onClick={() => handleLoadLiveShorts(ch)}
-                        title="Load recent live shorts feed"
-                      >
-                        Live Feed
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={<Sliders className="w-3.5 h-3.5" />}
-                        onClick={() => openCorrectModal(ch)}
-                        title="Change handle or query"
-                      >
-                        Edit Handle
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        icon={<Sparkles className="w-3.5 h-3.5" />}
-                        onClick={() => onNavigate('workspace')}
-                      >
-                        Create Short
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      {/* Live YouTube Shorts Explorer (If Channel Selected) */}
-      {selectedChannelForShorts && (
-        <Card className="border-[#3B82F6]/30 bg-gradient-to-b from-[#1E1E1E] to-[#121212]">
-          <div className="flex items-center justify-between pb-4 border-b border-[#2F2F2F] mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
-                <Youtube className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">
-                  Live YouTube Shorts: {selectedChannelForShorts.name} ({selectedChannelForShorts.handle})
-                </h3>
-                <p className="text-xs text-[#9CA3AF]">
-                  Recent short-form content retrieved directly from live YouTube channel feed
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<RefreshCw className={`w-3.5 h-3.5 ${liveShortsLoading ? 'animate-spin' : ''}`} />}
-                onClick={() => handleLoadLiveShorts(selectedChannelForShorts)}
-              >
-                Refresh
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setSelectedChannelForShorts(null);
-                  setLiveShorts([]);
-                }}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-
-          {liveShortsLoading ? (
-            <div className="py-12 text-center text-[#9CA3AF] space-y-2">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto text-[#3B82F6]" />
-              <p className="text-xs">Fetching live YouTube Shorts feed for {selectedChannelForShorts.handle}…</p>
-            </div>
-          ) : liveShorts.length === 0 ? (
-            <div className="py-8 text-center text-[#9CA3AF]">
-              <p className="text-xs">No live Shorts found on this channel yet.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
-              {liveShorts.map((sh) => (
-                <a
-                  key={sh.id}
-                  href={sh.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative rounded-xl overflow-hidden border border-[#2F2F2F] bg-[#0A0A0A] hover:border-[#3B82F6] transition-all flex flex-col"
-                >
-                  <div className="aspect-[9/16] bg-[#171717] relative overflow-hidden">
-                    {sh.thumbnailUrl ? (
-                      <img
-                        src={sh.thumbnailUrl}
-                        alt={sh.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-700">
-                        <Play className="w-6 h-6" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] font-bold text-white drop-shadow">
-                      <span className="font-mono-studio">{sh.views}</span>
-                      <Play className="w-3.5 h-3.5 fill-white" />
-                    </div>
-                  </div>
-                  <div className="p-2.5 flex-1 flex flex-col justify-between">
-                    <h5 className="text-xs font-semibold text-white line-clamp-2 group-hover:text-[#60A5FA]">
-                      {sh.title}
-                    </h5>
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
-        </Card>
+      {/* ── Sub-Page 1: HOME (Channel Overview, Studio Actions & Automation Pipeline) ── */}
+      {activeTab === 'overview' && (
+        <YouTubeHomePage
+          channels={channels}
+          videos={videos}
+          automations={automations}
+          liveVideos={liveVideos}
+          liveShorts={liveShortsFeed}
+          liveForYou={liveForYou}
+          syncingId={syncingId}
+          togglingAutoUploadId={togglingAutoUploadId}
+          copiedId={copiedId}
+          onCopyId={handleCopyId}
+          onSyncChannel={handleSyncChannel}
+          onToggleAutoUpload={handleToggleAutoUpload}
+          onLoadLiveShorts={handleLoadLiveShorts}
+          onOpenCorrectModal={openCorrectModal}
+          onDeleteChannel={handleDeleteChannel}
+          onOpenConnectModal={() => {
+            setChannelInput('');
+            setShowConnectModal(true);
+          }}
+          onNavigate={onNavigate}
+          onTabChange={setActiveTab}
+        />
       )}
 
-      {/* Scheduled Automation Rules */}
-      <Card>
-        <div className="flex items-center justify-between pb-4 border-b border-[#2F2F2F] mb-4">
-          <div>
-            <h3 className="text-lg font-bold text-white">Automated Daily Upload Schedule</h3>
-            <p className="text-xs text-[#9CA3AF] mt-0.5">Recurring pipelines that auto-generate scripts & publish shorts</p>
-          </div>
-          <Badge variant="blue">{automations.filter((a) => a.active).length} Active Pipelines</Badge>
-        </div>
+      {/* ── Sub-Page 2: VIDEOS (Long-form / Standard Channel Catalog) ── */}
+      {activeTab === 'videos' && (
+        <YouTubeVideosPage
+          channels={channels}
+          videos={videos}
+          liveVideos={liveVideos}
+          onNavigate={onNavigate}
+        />
+      )}
 
-        <div className="space-y-3">
-          {automations.map((auto) => (
-            <div
-              key={auto.id}
-              className="p-4 rounded-xl bg-[#121212] border border-[#2F2F2F] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-[#3B82F6]" />
-                  <h4 className="font-bold text-white text-sm">{auto.theme}</h4>
-                </div>
-                <p className="text-xs text-[#9CA3AF]">
-                  Schedule: {auto.schedule} · Voice: {auto.voice} · Track: {auto.musicTrack}
-                </p>
-              </div>
+      {/* ── Sub-Page 3: YOUTUBE SHORTS FEED ── */}
+      {activeTab === 'shorts' && (
+        <YouTubeShortsPage
+          videos={videos}
+          channels={channels}
+          shortsSearch={shortsSearch}
+          onShortsSearchChange={setShortsSearch}
+          selectedChannelForShorts={selectedChannelForShorts}
+          liveShorts={liveShorts}
+          liveShortsLoading={liveShortsLoading}
+          onLoadLiveShorts={handleLoadLiveShorts}
+          onCloseLiveShorts={() => {
+            setSelectedChannelForShorts(null);
+            setLiveShorts([]);
+          }}
+          onNavigate={onNavigate}
+        />
+      )}
 
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-[#6B7280] font-mono-studio">
-                  Next: {new Date(auto.nextRun).toLocaleDateString()}
-                </span>
-                <button
-                  onClick={() => handleToggleAuto(auto.id)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                    auto.active
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                      : 'bg-gray-800 border-gray-700 text-[#9CA3AF]'
-                  }`}
-                >
-                  {auto.active ? 'Active' : 'Paused'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {/* ── Sub-Page 4: PLAYLISTS & SERIES ── */}
+      {activeTab === 'playlists' && (
+        <YouTubePlaylistsPage
+          channels={channels}
+          onNavigate={onNavigate}
+        />
+      )}
 
-      {/* Published Video Catalog */}
-      <Card>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#2F2F2F] mb-4">
-          <div>
-            <h3 className="text-lg font-bold text-white">YouTube Shorts Catalog</h3>
-            <p className="text-xs text-[#9CA3AF]">
-              {channels[0]
-                ? `Published motivational Shorts and queued productions for ${channels[0].name}`
-                : 'Completed video productions and uploaded YouTube Shorts'}
-            </p>
-          </div>
+      {/* ── Sub-Page 5: COMMUNITY POSTS & ANNOUNCEMENTS ── */}
+      {activeTab === 'posts' && (
+        <YouTubePostsPage
+          channels={channels}
+        />
+      )}
 
-          <Badge variant="blue">{videos.length} Shorts Published</Badge>
-        </div>
+      {/* ── Sub-Page 3: DAILY AUTOMATION SCHEDULES ── */}
+      {activeTab === 'schedules' && (
+        <YouTubeSchedulesPage
+          automations={automations}
+          onToggleAuto={handleToggleAuto}
+          onNavigate={onNavigate}
+        />
+      )}
 
-        <div className="divide-y divide-[#2F2F2F]">
-          {videos.length === 0 ? (
-            <div className="py-10 text-center text-[#9CA3AF] space-y-2">
-              <Film className="w-8 h-8 text-[#6B7280] mx-auto opacity-50" />
-              <p className="text-xs">
-                No rendered shorts published to catalog yet. Use AI Studio to create one!
-              </p>
-              <Button size="sm" variant="primary" onClick={() => onNavigate('workspace')}>
-                Launch Studio
-              </Button>
-            </div>
-          ) : (
-            videos.map((vid) => {
-              const targetChannel = channels[0];
-              return (
-                <div
-                  key={vid.id}
-                  className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-[#121212]/40 transition-colors px-2 rounded-xl"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-14 rounded-lg bg-gradient-to-br from-[#3B82F6]/30 to-[#121212] border border-[#3B82F6]/30 flex items-center justify-center text-[#60A5FA] font-bold text-xs shrink-0 shadow">
-                      <Play className="w-4 h-4 text-white fill-white" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-white text-sm">{vid.title}</h4>
-                        {targetChannel && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#252525] text-[#93C5FD] border border-[#333] font-medium flex items-center gap-1">
-                            <Youtube className="w-2.5 h-2.5 text-red-400" />
-                            {targetChannel.name}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-[#9CA3AF] italic">"{vid.quote}"</p>
-                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#6B7280]">
-                        <span>{new Date(vid.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                        <span>·</span>
-                        <span>Voice: {vid.voice || 'Fenrir'}</span>
-                        <span>·</span>
-                        <span>Category: {vid.category}</span>
-                        <span>·</span>
-                        <span>Duration: {vid.duration}</span>
-                      </div>
-                    </div>
-                  </div>
+      {/* ── Sub-Page 4: ANALYTICS & GROWTH ── */}
+      {activeTab === 'analytics' && (
+        <YouTubeAnalyticsPage
+          videos={videos}
+          channels={channels}
+        />
+      )}
 
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-white tabular-nums font-mono-studio">
-                        {vid.views.toLocaleString()} views
-                      </div>
-                      <div className="text-xs text-emerald-400 font-medium">{vid.likes.toLocaleString()} likes</div>
-                    </div>
-                    <Badge variant="green">Published</Badge>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </Card>
+      {/* ── Sub-Page 5: CHANNEL SETTINGS ── */}
+      {activeTab === 'settings' && (
+        <YouTubeSettingsPage
+          channels={channels}
+          copiedId={copiedId}
+          onCopyId={handleCopyId}
+          onOpenCorrectModal={openCorrectModal}
+          onDeleteChannel={handleDeleteChannel}
+          onOpenConnectModal={() => setShowConnectModal(true)}
+        />
+      )}
 
       {/* Connect YouTube Channel Modal with Real Live Verification */}
       <Modal
@@ -885,84 +463,80 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
                   setLookupResult(null);
                   setLookupError(null);
                 }}
-                placeholder="Enter a YouTube handle or channel URL"
-                className="flex-1 bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#3B82F6]"
+                placeholder="e.g. @EmojiEyeSpy or @HubermanLab"
                 required
+                className="flex-1 bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] placeholder-[#6B7280] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#3B82F6]"
               />
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                icon={<Search className={`w-3.5 h-3.5 ${lookupLoading ? 'animate-spin' : ''}`} />}
-                disabled={lookupLoading || !channelInput.trim()}
                 onClick={() => handleLookupChannel()}
+                disabled={lookupLoading || !channelInput.trim()}
+                icon={<RefreshCw className={`w-3.5 h-3.5 ${lookupLoading ? 'animate-spin' : ''}`} />}
               >
                 {lookupLoading ? 'Checking…' : 'Verify'}
               </Button>
             </div>
           </div>
 
-          {/* Lookup Error */}
           {lookupError && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{lookupError}</span>
             </div>
           )}
 
-          {/* Live Preview Card */}
           {lookupResult && (
-            <div className="p-4 rounded-xl bg-gradient-to-r from-[#121212] via-[#1E1E1E] to-[#121212] border border-[#3B82F6]/40 space-y-3 animate-fade-in">
-              <div className="flex items-center gap-3.5">
-                <img
-                  src={lookupResult.avatarUrl}
-                  alt={lookupResult.name}
-                  className="w-14 h-14 rounded-2xl bg-[#0A0A0A] border border-[#2F2F2F] object-cover"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-extrabold text-white text-base truncate">{lookupResult.name}</h4>
-                    {lookupResult.verified && (
-                      <span className="text-xs bg-[#3B82F6]/20 text-[#60A5FA] px-1.5 py-0.5 rounded font-bold">
-                        ✓ Verified
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-[#60A5FA] font-mono-studio">{lookupResult.handle}</p>
-                  <div className="flex items-center gap-3 text-xs text-[#9CA3AF] mt-1 font-mono-studio">
-                    <span className="font-bold text-white">{lookupResult.subscribers.toLocaleString()} subscribers</span>
-                    <span>·</span>
-                    <span>{lookupResult.videosUploaded.toLocaleString()} videos</span>
-                  </div>
+            <div className="p-3.5 rounded-xl bg-[#121212] border border-[#3B82F6]/40 flex items-center gap-3">
+              <img
+                src={lookupResult.avatarUrl}
+                alt={lookupResult.name}
+                className="w-12 h-12 rounded-xl border border-[#2F2F2F] object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <h4 className="font-bold text-white text-sm truncate">{lookupResult.name}</h4>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    Live
+                  </span>
+                </div>
+                <p className="text-xs text-[#9CA3AF] font-mono-studio">{lookupResult.handle}</p>
+                <div className="flex items-center gap-3 text-[11px] text-[#60A5FA] font-medium pt-0.5">
+                  <span>{lookupResult.subscribers.toLocaleString()} subscribers</span>
+                  <span>·</span>
+                  <span>{lookupResult.videosUploaded.toLocaleString()} videos</span>
                 </div>
               </div>
-              {lookupResult.description && (
-                <p className="text-[11px] text-[#9CA3AF] line-clamp-2 italic border-t border-[#2F2F2F] pt-2">
-                  "{lookupResult.description}"
-                </p>
-              )}
             </div>
           )}
 
           <Input
-            label="Content Niche / Studio Focus"
+            label="Niche Focus"
             value={niche}
             onChange={(e) => setNiche(e.target.value)}
-            placeholder="Enter your content niche or focus area"
+            placeholder="e.g. Motivational Quotes, Stoic Mindset"
           />
 
-          <div className="pt-2 flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setShowConnectModal(false)}>
+          <div className="flex justify-end gap-2.5 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowConnectModal(false);
+                setLookupResult(null);
+                setLookupError(null);
+              }}
+            >
               Cancel
             </Button>
             <Button
-              variant="primary"
-              size="sm"
               type="submit"
-              disabled={connectLoading}
-              icon={connectLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              variant="primary"
+              disabled={connectLoading || (!lookupResult && !channelInput.trim())}
+              icon={<Plus className="w-4 h-4" />}
             >
-              {connectLoading ? 'Connecting…' : 'Connect Channel'}
+              {connectLoading ? 'Connecting…' : 'Save & Connect Channel'}
             </Button>
           </div>
         </form>
@@ -972,34 +546,27 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
       <Modal
         isOpen={showCorrectModal}
         onClose={() => setShowCorrectModal(false)}
-        title="Correct YouTube Channel Link"
+        title="Change Channel Handle"
       >
         <form onSubmit={handleCorrectChannel} className="space-y-4">
           <p className="text-xs text-[#9CA3AF]">
-            Update or fix the YouTube handle for <strong className="text-white">{channelToCorrect?.name}</strong>.
-            ApexMind will verify with live YouTube and refresh all metrics.
+            Update your handle if the current handle differs from your public YouTube channel.
           </p>
 
           <Input
-            label="Updated YouTube Handle or URL"
+            label="New YouTube Handle"
             value={newHandleInput}
             onChange={(e) => setNewHandleInput(e.target.value)}
-            placeholder="Enter the corrected YouTube handle or URL"
+            placeholder="e.g. @EmojiEyeSpy"
             required
           />
-
-          <div className="pt-2 flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setShowCorrectModal(false)}>
+            label="Updated YouTube Handle or URL"
+          <div className="flex justify-end gap-2.5 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowCorrectModal(false)}>
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              type="submit"
-              disabled={correctLoading}
-              icon={correctLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : undefined}
-            >
-              {correctLoading ? 'Correcting…' : 'Save & Correct'}
+            <Button type="submit" variant="primary" disabled={correctLoading || !newHandleInput.trim()}>
+              {correctLoading ? 'Saving…' : 'Update Handle'}
             </Button>
           </div>
         </form>

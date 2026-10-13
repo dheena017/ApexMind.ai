@@ -8,6 +8,13 @@ import DashboardPage from '@/src/features/dashboard/pages/DashboardPage';
 import WorkspacePage from '@/src/features/workspace/pages/WorkspacePage';
 import YouTubePage from '@/src/features/youtube/pages/YouTubePage';
 import ProfilePage from '@/src/features/profile/pages/ProfilePage';
+import ProfileDetailsPage from '@/src/features/profile/pages/ProfileDetailsPage';
+import ProfilePreferencesPage from '@/src/features/profile/pages/ProfilePreferencesPage';
+import ProfileChannelsPage from '@/src/features/profile/pages/ProfileChannelsPage';
+import ProfileActivityPage from '@/src/features/profile/pages/ProfileActivityPage';
+import ProfileUsagePage from '@/src/features/profile/pages/ProfileUsagePage';
+import ProfileSecurityPage from '@/src/features/profile/pages/ProfileSecurityPage';
+import ProfileSectionLayout from '@/src/features/profile/components/ProfileSectionLayout';
 import SettingsPage from '@/src/features/settings/pages/SettingsPage';
 import NotificationsPage from '@/src/features/notifications/pages/NotificationsPage';
 import NotFoundPage from '@/src/shared/ui/NotFoundPage';
@@ -29,7 +36,7 @@ export default function AppRouter({ activePage, onNavigate }: AppRouterProps) {
     return <LoginPage onNavigate={onNavigate} />;
   }
 
-  return (
+  const page = (
     <Suspense fallback={<RouteLoadingFallback />}>
       {(() => {
         switch (activePage) {
@@ -47,10 +54,22 @@ export default function AppRouter({ activePage, onNavigate }: AppRouterProps) {
             return <YouTubePage onNavigate={onNavigate} />;
           case 'profile':
             return <ProfilePage onNavigate={onNavigate} />;
+          case 'profile-details':
+            return <ProfileDetailsPage />;
+          case 'profile-preferences':
+            return <ProfilePreferencesPage />;
+          case 'profile-channels':
+            return <ProfileChannelsPage onNavigate={onNavigate} />;
+          case 'profile-activity':
+            return <ProfileActivityPage />;
+          case 'profile-usage':
+            return <ProfileUsagePage />;
+          case 'profile-security':
+            return <ProfileSecurityPage />;
           case 'settings':
             return <SettingsPage />;
           case 'notifications':
-            return <NotificationsPage />;
+            return <NotificationsPage onNavigate={onNavigate} />;
           case '404':
             return <NotFoundPage onNavigate={onNavigate} />;
           default:
@@ -59,4 +78,7 @@ export default function AppRouter({ activePage, onNavigate }: AppRouterProps) {
       })()}
     </Suspense>
   );
+  return activePage.startsWith('profile') ? (
+    <ProfileSectionLayout activePage={activePage} onNavigate={onNavigate}>{page}</ProfileSectionLayout>
+  ) : page;
 }

@@ -17,6 +17,7 @@ from backend.features import (
     notifications_router,
     dashboard_router,
     auth_router,
+    settings_router,
 )
 
 # Initialize colorful log formatting
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
     app.include_router(youtube_router)
     app.include_router(notifications_router)
     app.include_router(dashboard_router)
+    app.include_router(settings_router)
 
 
     @app.get("/api/health", tags=["Health"])
