@@ -6,6 +6,7 @@ import {
   Eye,
   Heart,
   LayoutDashboard,
+  LogOut,
   ShieldCheck,
   Sparkles,
   Star,
@@ -13,6 +14,7 @@ import {
   Youtube,
 } from 'lucide-react';
 import { Badge, Button } from '@/src/shared/ui/common';
+import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useCreatorProfileSettings } from '../hooks/useCreatorProfileSettings';
 import { useCreatorStudioData } from '../hooks/useCreatorStudioData';
 import { RecentStudioActivity } from '../components/RecentStudioActivity';
@@ -20,6 +22,12 @@ import { RecentStudioActivity } from '../components/RecentStudioActivity';
 export default function ProfilePage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { profile, user } = useCreatorProfileSettings();
   const { channels, videos, stats, scripts, loading, error } = useCreatorStudioData();
+  const { logout } = useAuth();
+
+  const handleSignOut = async () => {
+    await logout();
+    onNavigate('landing');
+  };
 
   const displayName = profile.displayName.trim() || user?.name || 'Dheena Dayalan';
 
@@ -75,6 +83,15 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
             <p className="mt-0.5 text-xs text-[#9CA3AF]">High-level performance metrics, milestone progress, and creator setup tools.</p>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition-all duration-200 hover:border-red-500/50 hover:bg-red-500/20 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 cursor-pointer"
+          title="Sign out of ApexMind Studio"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </button>
       </div>
 
       {/* ── 1. The 4 Creator Stat Cards (Matching User Image) ── */}
@@ -317,6 +334,14 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
             <p className="text-xs leading-relaxed text-[#9CA3AF]">Protected creator account with authenticated session security.</p>
           </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition-all duration-200 hover:border-red-500/50 hover:bg-red-500/20 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 cursor-pointer"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out of ApexMind Studio
+          </button>
         </div>
       </div>
 

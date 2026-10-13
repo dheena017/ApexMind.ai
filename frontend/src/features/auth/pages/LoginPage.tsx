@@ -42,6 +42,18 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
+  const [agreementChecked, setAgreementChecked] = useState(false);
+  const [showAgreementError, setShowAgreementError] = useState(false);
+
+  const requireAgreement = () => {
+    if (!agreementChecked) {
+      setShowAgreementError(true);
+      setNotice('Please agree to the Terms of Service and Privacy Policy before signing in.');
+      return false;
+    }
+    setShowAgreementError(false);
+    return true;
+  };
 
   // Compute intended post-login destination
   const targetDestination = getPostLoginRedirect();
@@ -140,6 +152,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
   // Request Google OAuth 2.0 with explicit YouTube Scopes and confirmation consent screen
   const handleGoogleWithYouTubeAuth = () => {
+    if (!requireAgreement()) return;
     if (typeof window === 'undefined') return;
 
     if (window.google?.accounts?.oauth2 && googleClientId) {
@@ -247,6 +260,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   };
 
   const handleGoogleLogin = async (googleEmail?: string, googleName?: string) => {
+    if (!requireAgreement()) return;
     const emailToUse = (googleEmail || customGoogleEmail || rememberedUser?.email || '').trim();
     if (!emailToUse) {
       setShowGoogleModal(true);
@@ -345,7 +359,69 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </div>
             </div>
 
-            <div className="space-y-3.5 pt-1">
+            {/* ── Agreement Checkbox ── */}
+            <label
+              htmlFor="agree-terms"
+              className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3.5 transition-all duration-200 ${
+                showAgreementError
+                  ? 'border-red-500/50 bg-red-500/5'
+                  : agreementChecked
+                  ? 'border-emerald-500/30 bg-emerald-500/5'
+                  : 'border-[#2F2F2F] bg-[#121212] hover:border-[#3B82F6]/40'
+              }`}
+            >
+              <div className="relative mt-0.5 shrink-0">
+                <input
+                  id="agree-terms"
+                  type="checkbox"
+                  checked={agreementChecked}
+                  onChange={(e) => {
+                    setAgreementChecked(e.target.checked);
+                    if (e.target.checked) {
+                      setShowAgreementError(false);
+                      setNotice('');
+                    }
+                  }}
+                  className="peer sr-only"
+                />
+                <div
+                  className={`flex h-4.5 w-4.5 items-center justify-center rounded border-2 transition-all duration-200 ${
+                    agreementChecked
+                      ? 'border-emerald-500 bg-emerald-500'
+                      : showAgreementError
+                      ? 'border-red-500 bg-transparent'
+                      : 'border-[#4B5563] bg-transparent'
+                  }`}
+                  style={{ width: '1.1rem', height: '1.1rem' }}
+                >
+                  {agreementChecked && (
+                    <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                  )}
+                </div>
+              </div>
+              <span className="text-xs leading-5 text-[#9CA3AF]">
+                I have read and agree to the ApexMind{' '}
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); onNavigate('terms'); }}
+                  className="font-semibold text-[#60A5FA] hover:text-white underline"
+                >
+                  Terms of Service
+                </button>{' '}and{' '}
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }}
+                  className="font-semibold text-[#60A5FA] hover:text-white underline"
+                >
+                  Privacy Policy
+                </button>.
+                {showAgreementError && (
+                  <span className="mt-1 block font-semibold text-red-400">You must agree before signing in.</span>
+                )}
+              </span>
+            </label>
+
+            <div className="space-y-3.5">
               {rememberedUser?.email && (
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#2F2F2F] bg-[#121212] p-3.5 shadow-lg shadow-black/10 transition-all duration-200 hover:border-[#3B82F6]/50">
                   <div className="flex min-w-0 items-center gap-3">
@@ -362,8 +438,9 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   <button
                     type="button"
                     onClick={() => handleGoogleLogin(rememberedUser.email, rememberedUser.name)}
-                    disabled={googleLoading}
-                    className="shrink-0 rounded-lg bg-[#3B82F6]/10 px-3 py-1.5 text-xs font-semibold text-[#60A5FA] transition-colors hover:bg-[#3B82F6]/20 cursor-pointer"
+                    disabled={googleLoading || !agreementChecked}
+                    title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
+                    className="shrink-0 rounded-lg bg-[#3B82F6]/10 px-3 py-1.5 text-xs font-semibold text-[#60A5FA] transition-colors hover:bg-[#3B82F6]/20 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Continue →
                   </button>
@@ -373,8 +450,9 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               <button
                 type="button"
                 onClick={handleGoogleWithYouTubeAuth}
-                disabled={googleLoading}
-                className="group relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-bold text-gray-900 shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-lg disabled:opacity-60 cursor-pointer active:scale-[0.99]"
+                disabled={googleLoading || !agreementChecked}
+                title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
+                className="group relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-bold text-gray-900 shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.99]"
               >
                 <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#60A5FA]/70 to-transparent" />
                 <span className="flex items-center justify-center gap-3">
@@ -393,8 +471,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               <div className="pt-1 text-center">
                 <button
                   type="button"
-                  onClick={() => setShowGoogleModal(true)}
-                  className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#2F2F2F] bg-[#121212]/70 px-4 text-xs font-semibold text-[#9CA3AF] shadow-sm transition-all duration-200 hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-[#93C5FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer"
+                  onClick={() => {
+                    if (!requireAgreement()) return;
+                    setShowGoogleModal(true);
+                  }}
+                  disabled={!agreementChecked}
+                  title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
+                  className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#2F2F2F] bg-[#121212]/70 px-4 text-xs font-semibold text-[#9CA3AF] shadow-sm transition-all duration-200 hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-[#93C5FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Sign in with another Google account
                 </button>
@@ -407,32 +490,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </p>
             )}
 
-            <div className="border-t border-[#2F2F2F] pt-4 space-y-3">
+            <div className="border-t border-[#2F2F2F] pt-4">
               <div className="flex items-start gap-3 rounded-xl border border-[#2F2F2F] bg-[#121212] p-3.5 shadow-inner shadow-black/30">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                 <p className="text-xs leading-5 text-[#9CA3AF]">
                   ApexMind uses Google OAuth authentication. Only verified sign-ins are permitted into the studio.
                 </p>
               </div>
-
-              <p className="text-[11px] text-center text-[#71717A] leading-relaxed">
-                By signing in, you agree to ApexMind&apos;s{' '}
-                <button
-                  type="button"
-                  onClick={() => onNavigate('terms')}
-                  className="text-[#9CA3AF] hover:text-white underline cursor-pointer"
-                >
-                  Terms of Service
-                </button>{' '}
-                and{' '}
-                <button
-                  type="button"
-                  onClick={() => onNavigate('privacy')}
-                  className="text-[#9CA3AF] hover:text-white underline cursor-pointer"
-                >
-                  Privacy Policy
-                </button>.
-              </p>
             </div>
           </div>
         </section>
