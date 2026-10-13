@@ -11,8 +11,10 @@ import {
   Share2,
   Check,
   ExternalLink,
+  LogOut,
 } from 'lucide-react';
 import { Badge, Button } from '@/src/shared/ui/common';
+import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useCreatorProfileSettings } from '../hooks/useCreatorProfileSettings';
 
 const sections = [
@@ -33,12 +35,18 @@ interface ProfileSectionLayoutProps {
 
 export default function ProfileSectionLayout({ activePage, onNavigate, children }: ProfileSectionLayoutProps) {
   const { profile, user } = useCreatorProfileSettings();
+  const { logout } = useAuth();
   const [copiedLink, setCopiedLink] = useState(false);
 
   const handleShareProfile = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleSignOut = async () => {
+    await logout();
+    onNavigate('login');
   };
 
   const displayName = profile.displayName.trim() || user?.name || 'Dheena Dayalan';
@@ -106,6 +114,17 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
                 <UserRound className="h-4 w-4" />
                 Edit profile
               </Button>
+
+              {/* Sign Out */}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 hover:border-red-500/50 text-xs font-semibold text-red-400 hover:text-red-300 transition-all cursor-pointer"
+                title="Sign out of ApexMind Studio"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sign Out</span>
+              </button>
             </div>
           </div>
         </header>
