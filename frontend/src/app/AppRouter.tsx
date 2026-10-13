@@ -19,13 +19,21 @@ import SettingsPage from '@/src/features/settings/pages/SettingsPage';
 import NotificationsPage from '@/src/features/notifications/pages/NotificationsPage';
 import NotFoundPage from '@/src/shared/ui/NotFoundPage';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
+import { WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
 
 interface AppRouterProps {
   activePage: string;
   onNavigate: (page: string) => void;
+  activeWorkspacePane: WorkspaceTabType;
+  onWorkspacePaneChange: (pane: WorkspaceTabType) => void;
 }
 
-export default function AppRouter({ activePage, onNavigate }: AppRouterProps) {
+export default function AppRouter({
+  activePage,
+  onNavigate,
+  activeWorkspacePane,
+  onWorkspacePaneChange,
+}: AppRouterProps) {
   const { isAuthenticated } = useAuth();
 
   const isPublicPage =
@@ -49,7 +57,13 @@ export default function AppRouter({ activePage, onNavigate }: AppRouterProps) {
           case 'dashboard':
             return <DashboardPage onNavigate={onNavigate} />;
           case 'workspace':
-            return <WorkspacePage onNavigate={onNavigate} />;
+            return (
+              <WorkspacePage
+                onNavigate={onNavigate}
+                activePane={activeWorkspacePane}
+                onPaneChange={onWorkspacePaneChange}
+              />
+            );
           case 'youtube':
             return <YouTubePage onNavigate={onNavigate} />;
           case 'profile':
@@ -63,7 +77,8 @@ export default function AppRouter({ activePage, onNavigate }: AppRouterProps) {
           case 'profile-activity':
             return <ProfileActivityPage />;
           case 'profile-usage':
-            return <ProfileUsagePage />;
+          case 'profile-studio-activity':
+            return <ProfileUsagePage onNavigate={onNavigate} />;
           case 'profile-security':
             return <ProfileSecurityPage />;
           case 'settings':

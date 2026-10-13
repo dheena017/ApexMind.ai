@@ -10,7 +10,7 @@
 .btn-primary {
   background: linear-gradient(to right, #3B82F6, #2563EB);
   border: 1px solid rgba(96, 165, 250, 0.3);
-  box-shadow: 0 0 24px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   color: #FFFFFF;
   font-weight: 600;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -18,7 +18,7 @@
 
 .btn-primary:hover:not(:disabled) {
   background: linear-gradient(to right, #2563EB, #1D4ED8);
-  box-shadow: 0 0 36px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -60,7 +60,7 @@
 .input-studio:focus,
 .input-studio:focus-within {
   border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  box-shadow: none;
 }
 
 .select-studio {
@@ -76,7 +76,7 @@
 
 .select-studio:focus {
   border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  box-shadow: none;
 }
 
 select {
@@ -176,10 +176,10 @@ select option {
 
 @keyframes pulseGlow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+    box-shadow: none;
   }
   50% {
-    box-shadow: 0 0 35px rgba(59, 130, 246, 0.45);
+    box-shadow: none;
   }
 }
 
@@ -192,5 +192,149 @@ select option {
 }
 
 .animate-pulse-glow {
-  animation: pulseGlow 2s infinite ease-in-out;
+  animation: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. Canvas Element Moveable & Transform Bounding Box (Clideo/Canva Style)
+   -------------------------------------------------------------------------- */
+
+.moveable-control-box {
+  --moveable-color: #3B82F6 !important;
+}
+
+.moveable-control-box .moveable-line {
+  background: #3B82F6 !important;
+}
+
+/* 4 Corner Round Handles */
+.moveable-control-box .moveable-control.moveable-nw,
+.moveable-control-box .moveable-control.moveable-ne,
+.moveable-control-box .moveable-control.moveable-sw,
+.moveable-control-box .moveable-control.moveable-se {
+  background: #FFFFFF !important;
+  border: 2px solid #3B82F6 !important;
+  border-radius: 9999px !important;
+  width: 13px !important;
+  height: 13px !important;
+  margin-top: -6.5px !important;
+  margin-left: -6.5px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  box-sizing: border-box !important;
+}
+
+/* 4 Edge Pill Handles */
+.moveable-control-box .moveable-control.moveable-n,
+.moveable-control-box .moveable-control.moveable-s {
+  background: #FFFFFF !important;
+  border: 1.5px solid #3B82F6 !important;
+  border-radius: 9999px !important;
+  width: 18px !important;
+  height: 6px !important;
+  margin-top: -3px !important;
+  margin-left: -9px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  box-sizing: border-box !important;
+}
+
+.moveable-control-box .moveable-control.moveable-w,
+.moveable-control-box .moveable-control.moveable-e {
+  background: #FFFFFF !important;
+  border: 1.5px solid #3B82F6 !important;
+  border-radius: 9999px !important;
+  width: 6px !important;
+  height: 18px !important;
+  margin-top: -9px !important;
+  margin-left: -3px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  box-sizing: border-box !important;
+}
+
+/* Rotation Control */
+.moveable-control-box .moveable-rotation .moveable-line {
+  background: #3B82F6 !important;
+  width: 1.5px !important;
+}
+
+.moveable-control-box .moveable-rotation .moveable-control {
+  background: #FFFFFF !important;
+  border: 1.5px solid #3B82F6 !important;
+  border-radius: 9999px !important;
+  width: 22px !important;
+  height: 22px !important;
+  margin-left: -11px !important;
+  margin-top: -11px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+  cursor: grab !important;
+  box-sizing: border-box !important;
+}
+
+.moveable-control-box .moveable-rotation .moveable-control::after {
+  content: "↻" !important;
+  color: #1D4ED8 !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. Pro Studio Multi-Track Timeline & Moveable Compounds Styling
+   -------------------------------------------------------------------------- */
+
+.timeline-clip-selected-amber {
+  box-shadow: 0 0 0 2px #F59E0B !important;
+}
+
+.timeline-clip-selected-blue {
+  box-shadow: 0 0 0 2px #60A5FA !important;
+}
+
+.timeline-clip-selected-emerald {
+  box-shadow: 0 0 0 2px #34D399 !important;
+}
+
+.timeline-clip-selected-purple {
+  box-shadow: 0 0 0 2px #C084FC !important;
+}
+
+/* Magnetic Snapping Guideline (Vertical crisp guide line) */
+.timeline-snap-guide-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #38BDF8;
+  box-shadow: none;
+  z-index: 45;
+  pointer-events: none;
+}
+
+/* Trim Pill Handles */
+.timeline-trim-handle-left,
+.timeline-trim-handle-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  cursor: ew-resize;
+  transition: all 0.15s ease-in-out;
+}
+
+.timeline-trim-handle-left {
+  left: 0;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.timeline-trim-handle-right {
+  right: 0;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
 }

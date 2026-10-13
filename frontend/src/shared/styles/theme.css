@@ -16,10 +16,9 @@
   --color-border-subtle: #2F2F2F;
   --color-border-active: #4A4A4A;
 
-  /* Brand Accents & Glow */
+  /* Brand Accents */
   --color-accent-primary: #3B82F6;
   --color-accent-hover: #2563EB;
-  --color-brand-glow: #60A5FA;
 
   /* Status States */
   --color-success: #10B981;

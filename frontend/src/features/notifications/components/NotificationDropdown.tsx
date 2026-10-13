@@ -158,7 +158,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className={`relative p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
           isOpen
-            ? 'bg-[#1E1E1E] text-white border border-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
+            ? 'bg-[#1E1E1E] text-white border border-[#3B82F6]/50'
             : 'text-[#9CA3AF] border border-[#3A3A3A] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] hover:border-[#4B5563]'
         } ${buttonClassName}`}
         aria-label="Toggle notifications dropdown"
@@ -166,7 +166,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       >
         <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-[#3B82F6] text-[10px] font-bold text-white shadow-sm shadow-[#3B82F6]/50 ring-2 ring-[#121212] animate-pulse">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-[#3B82F6] text-[10px] font-bold text-white ring-2 ring-[#121212]">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

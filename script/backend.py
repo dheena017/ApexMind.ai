@@ -12,7 +12,7 @@ import sys
 
 
 def _handle_import_interrupt(_signum, _frame) -> None:
-    sys.stdout.write("\n[ApexMind] Startup interrupted by Ctrl+C.\n")
+    sys.stdout.write("\n[ApexMind] Ctrl+C received. Stopping backend server...\n")
     sys.stdout.flush()
     raise SystemExit(130)
 
@@ -115,6 +115,49 @@ def enable_windows_kill_on_close() -> None:
         current_process = kernel32.GetCurrentProcess()
         kernel32.AssignProcessToJobObject(job, current_process)
         _WINDOWS_JOB_HANDLE = job
+    except Exception:
+        pass
+
+
+_WINDOWS_CTRL_HANDLER_REF = None
+_stop_message_printed = False
+
+
+def print_stop_message(reason: str = "Ctrl+C received", ansi: Ansi | None = None) -> None:
+    """Print immediate stopping feedback when interrupt or stop signal is received."""
+    global _stop_message_printed
+    if _stop_message_printed:
+        return
+    _stop_message_printed = True
+    if ansi and getattr(ansi, "enabled", False):
+        sys.stdout.write(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} {reason}. Stopping backend server...\n")
+    else:
+        sys.stdout.write(f"\n[ApexMind] {reason}. Stopping backend server...\n")
+    sys.stdout.flush()
+
+
+def register_windows_ctrl_handler(callback) -> None:
+    """Register Windows ConsoleCtrlHandler for instantaneous interrupt notification."""
+    global _WINDOWS_CTRL_HANDLER_REF
+    if sys.platform != "win32":
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    try:
+        HandlerRoutine = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
+
+        def _console_ctrl_handler(ctrl_type: int) -> bool:
+            # 0: CTRL_C_EVENT, 1: CTRL_BREAK_EVENT, 2: CTRL_CLOSE_EVENT
+            if ctrl_type in (0, 1, 2):
+                try:
+                    callback()
+                except Exception:
+                    pass
+            return False
+
+        _WINDOWS_CTRL_HANDLER_REF = HandlerRoutine(_console_ctrl_handler)
+        ctypes.windll.kernel32.SetConsoleCtrlHandler(_WINDOWS_CTRL_HANDLER_REF, True)
     except Exception:
         pass
 
@@ -427,9 +470,6 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     enable_windows_kill_on_close()
-    signal.signal(signal.SIGINT, signal.default_int_handler)
-    if hasattr(signal, "SIGBREAK"):
-        signal.signal(signal.SIGBREAK, signal.default_int_handler)
 
     args = parse_args()
 
@@ -439,6 +479,16 @@ def main() -> int:
         and (sys.stdout.isatty() or os.environ.get("FORCE_COLOR", "").strip() not in ("", "0"))
     )
     ansi = Ansi(enabled=use_color)
+
+    def sig_handler(signum, frame):
+        print_stop_message("Ctrl+C received", ansi=ansi)
+        signal.default_int_handler(signum, frame)
+
+    signal.signal(signal.SIGINT, sig_handler)
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, sig_handler)
+
+    register_windows_ctrl_handler(lambda: print_stop_message("Ctrl+C received", ansi=ansi))
 
     env = {**load_dotenv(args.env_file), **os.environ}
     python_executable = resolve_python_executable()
@@ -544,6 +594,27 @@ def main() -> int:
         print(f"\n{ansi.GREEN}{ansi.BOLD}[ApexMind OK]{ansi.RESET} Backend ready at http://{display_host}:{port}/api/docs")
         print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Starting FastAPI app on http://{display_host}:{port}")
 
+        # Hook Uvicorn exit handlers so stop message prints immediately on Ctrl+C
+        orig_handle_exit = uvicorn.server.Server.handle_exit
+
+        def hooked_handle_exit(self_server, sig, frame):
+            print_stop_message("Ctrl+C received", ansi=ansi)
+            return orig_handle_exit(self_server, sig, frame)
+
+        uvicorn.server.Server.handle_exit = hooked_handle_exit
+
+        try:
+            from uvicorn.supervisors.basereload import BaseReload
+            orig_reload_signal = BaseReload.signal_handler
+
+            def hooked_reload_signal(self_reload, sig, frame):
+                print_stop_message("Ctrl+C received", ansi=ansi)
+                return orig_reload_signal(self_reload, sig, frame)
+
+            BaseReload.signal_handler = hooked_reload_signal
+        except (ImportError, AttributeError):
+            pass
+
         uvicorn.run(
             "backend.main:app",
             host=host,
@@ -556,7 +627,7 @@ def main() -> int:
         )
         return 0
     except KeyboardInterrupt:
-        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Ctrl+C received.", flush=True)
+        print_stop_message("Ctrl+C received", ansi=ansi)
         return 0
     except SystemExit:
         return 0
@@ -567,7 +638,7 @@ def main() -> int:
         print(f"\n{ansi.RED}{ansi.BOLD}[ApexMind Fatal Error]{ansi.RESET} {exc}", file=sys.stderr)
         return 1
     finally:
-        print(f"\n{ansi.YELLOW}[ApexMind]{ansi.RESET} Backend stopped cleanly. Goodbye!\n", flush=True)
+        print(f"{ansi.GREEN}[ApexMind]{ansi.RESET} Backend stopped cleanly. Goodbye!\n", flush=True)
 
 
 
@@ -575,5 +646,6 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("\n[ApexMind] Ctrl+C received. Exiting.")
+        print_stop_message("Ctrl+C received")
+        print("[ApexMind] Backend stopped cleanly. Goodbye!\n", flush=True)
         sys.exit(0)

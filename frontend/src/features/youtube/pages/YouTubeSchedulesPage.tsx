@@ -2,23 +2,33 @@ import React from 'react';
 import { Zap, Clock, Calendar, CheckCircle2 } from 'lucide-react';
 import { Card, Badge, Button } from '@/src/shared/ui/common';
 import { AutomationJob } from '../types';
+import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
 
 export interface YouTubeSchedulesPageProps {
   automations: AutomationJob[];
+  loading?: boolean;
   onToggleAuto: (id: string) => void;
   onNavigate?: (page: string) => void;
 }
 
 export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
   automations,
+  loading = false,
   onToggleAuto,
 }) => {
   const activeCount = automations.filter((a) => a.active).length;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans-studio text-[#E5E5E5]">
-      {/* Scheduled Automation Rules */}
-      <Card className="bg-[#141414] border-[#2F2F2F] p-6 rounded-2xl shadow-xl">
+      {loading ? (
+        <YouTubeLoadingState
+          title="Fetching YouTube automation & schedule status…"
+          description="Synchronizing cron schedules and automated publishing queue"
+        />
+      ) : (
+        <>
+          {/* Scheduled Automation Rules */}
+          <Card className="bg-[#141414] border-[#2F2F2F] p-6 rounded-2xl shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#262626] mb-5">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -89,6 +99,8 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
           </div>
         </div>
       </Card>
+        </>
+      )}
     </div>
   );
 };

@@ -36,6 +36,8 @@ export interface VisualBackdrop {
   previewColor: string;
   textColor: string;
   particleEffect: string;
+  imageUrl?: string;
+  videoUrl?: string;
 }
 
 export interface VoiceProfile {
@@ -44,4 +46,15 @@ export interface VoiceProfile {
   gender: 'Male' | 'Female';
   style: string;
   speed: string;
+}
+
+export interface BackdropFilterSettings {
+  brightness: number;
+  contrast: number;
+  saturate: number;
+  vignette: number;
+  customImageUrl?: string;
+  customVideoUrl?: string;
+  grain: boolean;
+  activeOverlay?: 'none' | 'equalizer' | 'particles' | 'badge';
 }

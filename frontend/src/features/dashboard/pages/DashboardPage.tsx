@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, Youtube, Play, RefreshCw, Plus, Zap, TrendingUp, Users, ArrowUpRight, Volume2 } from 'lucide-react';
+import { Sparkles, Youtube, RefreshCw, Plus, Zap, Users, ArrowUpRight, Volume2 } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/shared/ui/common';
 import { dashboardApi } from '../api/dashboardApi';
 import { YouTubeChannel, YouTubeVideo } from '../types';
+import { RecentStudioActivity } from '@/src/features/profile/components/RecentStudioActivity';
 
 export default function DashboardPage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,7 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2F2F2F]">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-linear-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-lg shadow-[#3B82F6]/25">
+          <div className="p-3 rounded-2xl bg-linear-to-tr from-[#3B82F6] to-[#2563EB] text-white">
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
@@ -157,45 +158,15 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
             )}
           </Card>
 
-          {/* Recent Video Generations */}
-          <Card>
-            <div className="flex items-center justify-between pb-4 border-b border-[#2F2F2F]">
-              <h3 className="text-lg font-bold text-white">Recent Published Shorts</h3>
-              <span className="text-xs text-[#9CA3AF]">{videos.length} Shorts Listed</span>
-            </div>
-
-            <div className="divide-y divide-[#2F2F2F]">
-              {videos.length === 0 ? (
-                <div className="py-8 text-center text-[#9CA3AF] text-xs">
-                  No videos published yet. Generate your first short in the studio.
-                </div>
-              ) : (
-                videos.map((vid) => (
-                  <div key={vid.id} className="py-4 flex items-center justify-between gap-4 hover:bg-[#2A2A2A]/40 px-2 rounded-xl transition-colors">
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-14 rounded-lg bg-linear-to-br from-[#3B82F6]/30 to-[#121212] border border-[#3B82F6]/30 flex items-center justify-center text-[#60A5FA] font-bold text-xs shrink-0 shadow">
-                        <Play className="w-4 h-4 text-white fill-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-white text-sm line-clamp-1">{vid.title}</h4>
-                        <p className="text-xs text-[#9CA3AF] mt-0.5 line-clamp-1 italic">"{vid.quote}"</p>
-                        <div className="flex items-center gap-2 text-xs text-[#6B7280] mt-1">
-                          <span>Voice: {vid.voice}</span>
-                          <span>·</span>
-                          <span>{vid.category}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0 space-y-1">
-                      <div className="text-sm font-bold text-white tabular-nums font-mono-studio">{vid.views.toLocaleString()} views</div>
-                      <Badge variant="green">Published</Badge>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
+          {/* Recent Studio Activity Component */}
+          <RecentStudioActivity
+            limit={6}
+            showFilters={true}
+            showSearch={true}
+            title="Recent Studio Activity"
+            subtitle="Latest AI generated scripts and published YouTube Shorts."
+            onNavigate={onNavigate}
+          />
         </div>
 
         {/* Sidebar Controls */}

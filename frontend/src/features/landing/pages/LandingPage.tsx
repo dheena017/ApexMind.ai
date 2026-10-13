@@ -10,7 +10,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
       <header className="h-16 shrink-0 z-40 w-full bg-[#0A0A0A]/95 backdrop-blur-md border-b border-[#2F2F2F]/80 transition-colors">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-8 px-6 h-full">
           <a href="#hero" className="text-xl font-bold tracking-tight flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-[#3B82F6]/25 border border-[#60A5FA]/30">
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-black/40 border border-[#60A5FA]/30">
               <Sparkles className="w-5 h-5" />
             </div>
             <span className="font-extrabold tracking-tight text-gradient-brand">ApexMind</span>
@@ -39,8 +39,6 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
 
       {/* Hero Section */}
       <section id="hero" className="relative max-w-7xl mx-auto px-6 py-20 lg:py-28 overflow-hidden">
-        {/* Electric Blue Background Glow */}
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-[#3B82F6]/15 blur-[120px] rounded-full pointer-events-none" />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-7 space-y-6">
@@ -357,7 +355,6 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
       {/* Review-first publishing */}
       <section className="max-w-7xl mx-auto px-6 pb-20">
         <div className="relative overflow-hidden rounded-3xl border border-[#3B82F6]/25 bg-linear-to-br from-[#102044] via-[#111827] to-[#121212] p-8 lg:p-12">
-          <div className="absolute -right-16 -top-24 w-72 h-72 rounded-full bg-[#3B82F6]/15 blur-[90px] pointer-events-none" />
           <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-7 space-y-4">
               <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#93C5FD]">

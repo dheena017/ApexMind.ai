@@ -103,10 +103,6 @@ export default function LoadingPage({ onNavigate }: LoadingPageProps) {
 
   return (
     <main className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#0A0A0A] px-4 py-8 text-[#E5E5E5] font-sans-studio selection:bg-[#3B82F6]/30 selection:text-[#60A5FA]">
-      {/* Ambient background glows */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-[#3B82F6]/15 blur-[140px]" />
-      <div className="pointer-events-none absolute -bottom-32 right-1/4 h-80 w-80 rounded-full bg-[#2563EB]/10 blur-[120px]" />
-
       <div className="relative w-full max-w-lg rounded-[28px] border border-[#2F2F2F] bg-[#1E1E1E]/95 p-8 sm:p-10 shadow-2xl shadow-black/60 backdrop-blur-xl space-y-7 text-center">
         {/* Animated Brand Badge & Spinning Rings */}
         <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
@@ -115,7 +111,7 @@ export default function LoadingPage({ onNavigate }: LoadingPageProps) {
           <div className="absolute -inset-1 rounded-3xl border border-[#60A5FA]/20 animate-pulse" />
 
           {/* Central Logo Box */}
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-[#60A5FA]/40 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-xl shadow-[#3B82F6]/30">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-[#60A5FA]/40 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-xl shadow-black/50">
             {config.icon}
           </div>
         </div>
@@ -148,7 +144,7 @@ export default function LoadingPage({ onNavigate }: LoadingPageProps) {
 
           <div className="relative h-2.5 w-full overflow-hidden rounded-full border border-[#2F2F2F] bg-[#121212] p-0.5">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#3B82F6] via-[#60A5FA] to-cyan-400 transition-all duration-150 ease-out shadow-sm shadow-[#3B82F6]/50"
+              className="h-full rounded-full bg-gradient-to-r from-[#3B82F6] via-[#60A5FA] to-cyan-400 transition-all duration-150 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>

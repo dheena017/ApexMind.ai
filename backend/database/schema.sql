@@ -97,3 +97,20 @@ CREATE TABLE IF NOT EXISTS automation_jobs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_automation_jobs_active ON automation_jobs (active);
+
+-- 7. Community Posts Table (Real YouTube Community Feed & Creator Updates)
+CREATE TABLE IF NOT EXISTS community_posts (
+    id TEXT PRIMARY KEY,
+    channel_id TEXT,
+    author TEXT NOT NULL,
+    handle TEXT NOT NULL,
+    avatar_url TEXT,
+    content TEXT NOT NULL,
+    likes INTEGER DEFAULT 0,
+    comments INTEGER DEFAULT 0,
+    published_at TEXT NOT NULL,
+    FOREIGN KEY (channel_id) REFERENCES youtube_channels (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_posts_published_at ON community_posts (published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_community_posts_channel_id ON community_posts (channel_id);

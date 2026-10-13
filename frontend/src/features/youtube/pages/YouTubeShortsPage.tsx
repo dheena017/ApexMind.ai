@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/shared/ui/common';
 import { YouTubeChannel, YouTubeVideo, YouTubeLiveShort } from '../types';
+import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
 
 export interface YouTubeShortsPageProps {
   videos?: YouTubeVideo[];
@@ -130,11 +131,10 @@ export const YouTubeShortsPage: React.FC<YouTubeShortsPageProps> = ({
         </div>
 
         {liveShortsLoading ? (
-          <div className="py-20 text-center text-[#9CA3AF] space-y-3 rounded-2xl bg-[#141414] border border-[#2F2F2F]">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#3B82F6]" />
-            <p className="text-sm font-semibold text-white">Fetching live YouTube Shorts feed…</p>
-            <p className="text-xs text-[#9CA3AF]">Connecting to YouTube servers for live video metrics</p>
-          </div>
+          <YouTubeLoadingState
+            title="Fetching live YouTube Shorts feed…"
+            description="Connecting to YouTube servers for live video metrics"
+          />
         ) : filteredShorts.length === 0 ? (
           <div className="py-16 text-center text-[#9CA3AF] space-y-3 rounded-2xl bg-[#141414] border border-[#2F2F2F]">
             <Film className="w-10 h-10 text-[#6B7280] mx-auto opacity-50" />

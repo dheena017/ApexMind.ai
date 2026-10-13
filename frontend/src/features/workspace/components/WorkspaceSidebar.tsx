@@ -1,152 +1,90 @@
 import React from 'react';
 import {
-  Sparkles,
-  Wand2,
   FileText,
+  FolderOpen,
+  LayoutTemplate,
+  Type,
+  Shapes,
+  Music,
+  Image as ImageIcon,
   Film,
-  Sliders,
-  Youtube,
-  HelpCircle,
-  Settings,
-  LayoutDashboard,
 } from 'lucide-react';
 
+export type WorkspaceTabType =
+  | 'script'
+  | 'prompt'
+  | 'editor'
+  | 'canvas'
+  | 'media'
+  | 'text'
+  | 'elements'
+  | 'audio'
+  | 'image'
+  | 'video';
+
 interface WorkspaceSidebarProps {
-  onNavigate: (page: string) => void;
-  activeTab?: string;
-  onTabChange?: (tab: string) => void;
+  activeTab: WorkspaceTabType;
+  onTabChange: (tab: WorkspaceTabType) => void;
 }
 
+const SIDEBAR_ITEMS: Array<{
+  id: WorkspaceTabType;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  isScriptGroup?: boolean;
+}> = [
+  { id: 'script', label: 'Script & AI', icon: FileText, isScriptGroup: true },
+  { id: 'canvas', label: 'Canvas', icon: LayoutTemplate },
+  { id: 'media', label: 'Media Library', icon: FolderOpen },
+  { id: 'text', label: 'Text & Titles', icon: Type },
+  { id: 'elements', label: 'Elements', icon: Shapes },
+  { id: 'audio', label: 'Audio & SFX', icon: Music },
+  { id: 'image', label: 'Stock Images', icon: ImageIcon },
+  { id: 'video', label: 'Stock Videos', icon: Film },
+];
+
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
-  onNavigate,
-  activeTab = 'studio',
+  activeTab,
   onTabChange,
 }) => {
   return (
-    <aside className="w-14 shrink-0 h-full bg-[#121212] border-r border-[#2F2F2F] flex flex-col items-center justify-between py-3.5 z-20 select-none font-sans-studio">
-      {/* Top: Studio Brand & Studio Tools */}
-      <div className="flex flex-col items-center gap-4 w-full">
-        {/* Brand Studio Icon */}
-        <button
-          onClick={() => onNavigate('dashboard')}
-          className="p-2.5 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-[#3B82F6]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-          title="Return to ApexMind Dashboard"
-        >
-          <Sparkles className="w-4 h-4" />
-        </button>
+    <aside className="hidden sm:flex relative w-16 shrink-0 h-full bg-[#121212] border-r border-[#2F2F2F] shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)] flex-col items-center justify-between py-3 z-20 select-none font-sans-studio">
+      <div className="flex w-full flex-col items-center gap-1.5">
+        {SIDEBAR_ITEMS.map((item) => {
+          const IconComp = item.icon;
+          const isActive = item.isScriptGroup
+            ? activeTab === 'script' || activeTab === 'prompt' || activeTab === 'editor'
+            : activeTab === item.id;
 
-        <div className="w-8 h-px bg-[#2F2F2F]" />
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onTabChange(item.id)}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
+              title={item.label}
+              className={`group relative flex flex-col h-11 w-11 items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                isActive
+                  ? 'border-[#3B82F6]/60 bg-[#3B82F6]/15 text-[#60A5FA]'
+                  : 'border-transparent text-[#737373] hover:border-[#2F2F2F] hover:bg-[#1A1A1A] hover:text-[#E5E5E5]'
+              }`}
+            >
+              <IconComp className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
+              <span className="text-[8px] font-semibold mt-0.5 tracking-tight truncate max-w-[40px] leading-none">
+                {item.id === 'script' ? 'Script' : item.label.split(' ')[0]}
+              </span>
 
-        {/* Studio Tool Rail */}
-        <div className="flex flex-col items-center gap-2 w-full">
-          {/* Tool 1: AI Prompt Creator */}
-          <button
-            onClick={() => onTabChange?.('prompt')}
-            className={`p-2.5 rounded-xl transition-all cursor-pointer relative group flex items-center justify-center ${
-              activeTab === 'prompt'
-                ? 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/40 shadow-sm'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
-            }`}
-            title="AI Agent Creator"
-          >
-            <Wand2 className="w-4 h-4" />
-            <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-              AI Agent Creator
-            </span>
-          </button>
-
-          {/* Tool 2: Script & Subtitles Editor */}
-          <button
-            onClick={() => onTabChange?.('scripts')}
-            className={`p-2.5 rounded-xl transition-all cursor-pointer relative group flex items-center justify-center ${
-              activeTab === 'studio' || activeTab === 'scripts'
-                ? 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/40 shadow-sm'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
-            }`}
-            title="Script & Subtitles"
-          >
-            <FileText className="w-4 h-4" />
-            <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-              Script & Subtitles
-            </span>
-          </button>
-
-          {/* Tool 2: Video Preview Reel */}
-          <button
-            onClick={() => onTabChange?.('preview')}
-            className="p-2.5 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-all cursor-pointer relative group flex items-center justify-center"
-            title="9:16 Shorts Simulator"
-          >
-            <Film className="w-4 h-4" />
-            <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-              Shorts Simulator
-            </span>
-          </button>
-
-          {/* Tool 3: Studio Controls */}
-          <button
-            onClick={() => onTabChange?.('controls')}
-            className="p-2.5 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-all cursor-pointer relative group flex items-center justify-center"
-            title="Voices & Motion Controls"
-          >
-            <Sliders className="w-4 h-4" />
-            <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-              Voices & Themes
-            </span>
-          </button>
-
-          {/* Tool 4: YouTube Manager */}
-          <button
-            onClick={() => onNavigate('youtube')}
-            className="p-2.5 rounded-xl text-[#9CA3AF] hover:text-red-400 hover:bg-[#1E1E1E] transition-all cursor-pointer relative group flex items-center justify-center"
-            title="YouTube Channel"
-          >
-            <Youtube className="w-4 h-4" />
-            <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-              YouTube Channel
-            </span>
-          </button>
-        </div>
+              {/* Flyout Tooltip */}
+              <span className="pointer-events-none absolute left-14 top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[#2F2F2F] bg-[#1E1E1E] px-2.5 py-1 text-[11px] font-medium text-white opacity-0 shadow-[0_10px_25px_rgba(0,0,0,0.4)] transition-opacity group-hover:opacity-100">
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Bottom: Help, Settings & Dashboard Exit */}
-      <div className="flex flex-col items-center gap-2 w-full">
-        {/* Help */}
-        <button
-          onClick={() => alert('ApexMind Studio Director Guide:\n• Left Pane: AI Script Generation & Hook Timings\n• Center Pane: Vertical 9:16 Phone Simulator & Scrubber\n• Right Pane: 24kHz Gemini Voiceover & YouTube Publishing')}
-          className="p-2 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1E1E1E] transition-all cursor-pointer relative group flex items-center justify-center"
-          title="Studio Guide"
-        >
-          <HelpCircle className="w-4 h-4" />
-          <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-            Studio Guide
-          </span>
-        </button>
-
-        {/* Settings */}
-        <button
-          onClick={() => onNavigate('settings')}
-          className="p-2 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1E1E1E] transition-all cursor-pointer relative group flex items-center justify-center"
-          title="Settings"
-        >
-          <Settings className="w-4 h-4" />
-          <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-            Settings
-          </span>
-        </button>
-
-        {/* Return to Dashboard */}
-        <button
-          onClick={() => onNavigate('dashboard')}
-          className="p-2 rounded-lg text-[#6B7280] hover:text-[#60A5FA] hover:bg-[#1E1E1E] transition-all cursor-pointer relative group flex items-center justify-center"
-          title="Dashboard"
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          <span className="absolute left-16 px-2 py-1 bg-[#1E1E1E] border border-[#2F2F2F] text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
-            Exit to Dashboard
-          </span>
-        </button>
-      </div>
+      <div className="w-full h-4" aria-hidden="true" />
     </aside>
   );
 };

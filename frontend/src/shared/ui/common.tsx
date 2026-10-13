@@ -19,7 +19,7 @@ export const Button: React.FC<ButtonProps> = ({
   const base = 'inline-flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0 rounded-xl';
 
   const variants = {
-    primary: 'bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white shadow-lg shadow-[#3B82F6]/25 border border-[#60A5FA]/30 active:scale-[0.99]',
+    primary: 'bg-[#3B82F6] hover:bg-[#2563EB] text-white border border-[#3B82F6] active:scale-[0.99]',
     secondary: 'bg-[#121212] hover:bg-[#1E1E1E] text-[#E5E5E5] border border-[#2F2F2F]',
     outline: 'border border-[#2F2F2F] hover:border-[#3B82F6]/50 hover:bg-[#3B82F6]/10 text-[#9CA3AF] hover:text-[#E5E5E5]',
     ghost: 'hover:bg-[#1E1E1E] text-[#9CA3AF] hover:text-[#E5E5E5]',
@@ -55,7 +55,7 @@ export const Card: React.FC<{
     <div
       onClick={onClick}
       className={`bg-[#1E1E1E] border border-[#2F2F2F] rounded-2xl p-5 ${
-        hoverable ? 'hover:border-[#4A4A4A] hover:shadow-xl hover:shadow-[#3B82F6]/5 transition-all cursor-pointer' : ''
+        hoverable ? 'hover:border-[#4A4A4A] transition-all cursor-pointer' : ''
       } ${className}`}
     >
       {children}

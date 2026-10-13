@@ -196,7 +196,7 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2F2F2F]">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#60A5FA] shadow-md shadow-[#3B82F6]/10">
+          <div className="p-3 rounded-2xl bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#60A5FA]">
             <Bell className="w-6 h-6" />
           </div>
           <div>
@@ -312,7 +312,7 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
                 onClick={() => setActiveTab(tab.id as NotificationCategory)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer border ${
                   isActive
-                    ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
+                    ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50'
                     : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#181818] border-transparent'
                 }`}
               >
@@ -401,7 +401,7 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
               key={n.id}
               className={`relative overflow-hidden transition-all duration-200 hover:border-[#3B82F6]/40 ${
                 !n.read
-                  ? 'border-[#3B82F6]/40 bg-[#161616] shadow-md shadow-[#3B82F6]/5'
+                  ? 'border-[#3B82F6]/40 bg-[#161616]'
                   : 'border-[#262626] bg-[#121212]/90 opacity-90'
               }`}
             >

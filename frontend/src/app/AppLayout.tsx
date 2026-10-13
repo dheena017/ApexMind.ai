@@ -15,17 +15,26 @@ import { Badge } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHeader';
-import { WorkspaceSidebar } from '@/src/features/workspace/components/WorkspaceSidebar';
+import { WorkspaceSidebar, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
 
 interface AppLayoutProps {
   children: React.ReactNode;
   activePage: string;
   onNavigate: (page: string) => void;
+  activeWorkspacePane: WorkspaceTabType;
+  onWorkspacePaneChange: (pane: WorkspaceTabType) => void;
   unreadCount?: number;
 }
 
-export default function AppLayout({ children, activePage, onNavigate, unreadCount: propUnreadCount }: AppLayoutProps) {
+export default function AppLayout({
+  children,
+  activePage,
+  onNavigate,
+  activeWorkspacePane,
+  onWorkspacePaneChange,
+  unreadCount: propUnreadCount,
+}: AppLayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dynamicUnread, setDynamicUnread] = useState(0);
@@ -103,8 +112,11 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
             onNavigate={onNavigate}
           />
           <div className="flex-1 w-full flex min-h-0 overflow-hidden">
-            <WorkspaceSidebar onNavigate={onNavigate} />
-            <main className="flex-1 min-w-0 h-full p-2 sm:p-3 lg:p-4 overflow-hidden flex flex-col min-h-0 bg-[#0A0A0A]">
+            <WorkspaceSidebar
+              activeTab={activeWorkspacePane}
+              onTabChange={(tab) => onWorkspacePaneChange(tab)}
+            />
+            <main className="flex-1 min-w-0 h-full p-1 sm:p-1.5 overflow-y-auto lg:overflow-hidden flex flex-col min-h-0 bg-[#0A0A0A]">
               <div className="w-full h-full flex-1 min-h-0">
                 {children}
               </div>
@@ -125,7 +137,7 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className={`h-10 px-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 border ${
                   sidebarOpen
-                    ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
+                    ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50'
                     : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] border-[#2F2F2F] hover:border-[#4A4A4A]'
                 }`}
                 aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
@@ -147,7 +159,7 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
                 className="text-base lg:text-lg font-extrabold tracking-tight flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer"
                 aria-label="ApexMind Studio home"
               >
-                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-[#3B82F6]/25 border border-[#60A5FA]/30">
+                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white border border-[#60A5FA]/30">
                   <Sparkles className="w-4 h-4 lg:w-5 lg:h-5" />
                 </div>
                 <span className="text-gradient-brand">ApexMind Studio</span>
@@ -218,7 +230,7 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
         {/* Top Header of Sidebar - Aligns perfectly with the 64px top bar line */}
         <div className="h-16 shrink-0 flex items-center justify-between px-5 sm:px-6 border-b border-[#2F2F2F]">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-[#3B82F6]/25 border border-[#60A5FA]/30">
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white border border-[#60A5FA]/30">
               <Sparkles className="w-4 h-4" />
             </div>
             <div className="flex flex-col">
@@ -249,7 +261,7 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
                   aria-label={item.badge ? `${item.label}, ${item.badge} unread` : item.label}
                   className={`group relative w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-xl min-h-[48px] cursor-pointer transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 motion-reduce:transition-none ${
                     isActive
-                      ? 'bg-gradient-to-r from-[#3B82F6]/15 to-[#2563EB]/10 text-[#60A5FA] border-[#3B82F6]/30 shadow-sm shadow-[#3B82F6]/10'
+                      ? 'bg-[#3B82F6]/15 text-[#60A5FA] border-[#3B82F6]/30'
                       : 'text-[#9CA3AF] hover:text-white hover:bg-[#1A1A1A] border-transparent hover:border-[#303030]'
                   }`}
                 >
@@ -257,7 +269,7 @@ export default function AppLayout({ children, activePage, onNavigate, unreadCoun
                     <span
                       className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all ${
                         isActive
-                          ? 'bg-[#1D2E4D] border-[#3B82F6]/35 text-[#60A5FA] shadow-inner shadow-[#3B82F6]/10'
+                          ? 'bg-[#1D2E4D] border-[#3B82F6]/35 text-[#60A5FA]'
                           : 'bg-[#171717] border-[#2F2F2F] text-[#9CA3AF] group-hover:text-white group-hover:border-[#3A3A3A]'
                       }`}
                     >

@@ -91,3 +91,49 @@ export interface YouTubeLiveFeedResponse {
   shorts: YouTubeLiveShort[];
   forYou: YouTubeForYouItem[];
 }
+
+export interface YouTubeCommunityPost {
+  id: string;
+  channelId?: string;
+  author: string;
+  handle: string;
+  avatarUrl?: string;
+  content: string;
+  likes: number;
+  comments: number;
+  publishedAt: string;
+}
+
+export interface YouTubePlaylist {
+  id: string;
+  title: string;
+  description?: string;
+  videoCount: number;
+  videoCountText?: string;
+  thumbnailUrl: string;
+  playlistUrl?: string;
+  lastUpdated?: string;
+}
+
+export interface YouTubeAnalyticsData {
+  channelId: string;
+  channelName: string;
+  subscribers: number;
+  videosUploaded: number;
+  totalViews: number;
+  avgViewsPerVideo: number;
+  retentionRate: number;
+  engagementRate: number;
+  monthlyProjection: string;
+  niches: Array<{
+    name: string;
+    percentage: number;
+    views: string;
+    color: string;
+  }>;
+  bestPostingWindows: Array<{
+    time: string;
+    status: string;
+    recommendation: string;
+  }>;
+}

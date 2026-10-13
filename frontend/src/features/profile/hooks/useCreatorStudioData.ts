@@ -24,7 +24,7 @@ export function useCreatorStudioData() {
   useEffect(() => {
     let active = true;
 
-    async function load() {
+    const load = async () => {
       setLoading(true);
       setError(null);
       const [dashboardResult, memoryResult] = await Promise.allSettled([
@@ -50,7 +50,7 @@ export function useCreatorStudioData() {
 
       setError(errors.length ? `${errors.join(' ')} Try refreshing the page.` : null);
       setLoading(false);
-    }
+    };
 
     void load();
     return () => {
@@ -58,5 +58,32 @@ export function useCreatorStudioData() {
     };
   }, []);
 
-  return { channels, videos, stats, scripts, loading, error, setChannels };
+  const refresh = async () => {
+    setLoading(true);
+    setError(null);
+    const [dashboardResult, memoryResult] = await Promise.allSettled([
+      dashboardApi.getDashboardData(),
+      workspaceApi.getQuoteMemory(),
+    ]);
+
+    const errors: string[] = [];
+    if (dashboardResult.status === 'fulfilled') {
+      setChannels(dashboardResult.value.channels || []);
+      setVideos(dashboardResult.value.videos || []);
+      setStats(dashboardResult.value.stats || null);
+    } else {
+      errors.push('Could not load channel, usage, and published video data.');
+    }
+
+    if (memoryResult.status === 'fulfilled') {
+      setScripts(memoryResult.value.memoryStore || []);
+    } else {
+      errors.push('Could not load recently generated scripts.');
+    }
+
+    setError(errors.length ? `${errors.join(' ')} Try refreshing the page.` : null);
+    setLoading(false);
+  };
+
+  return { channels, videos, stats, scripts, loading, error, setChannels, refresh };
 }

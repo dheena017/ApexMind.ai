@@ -158,6 +158,99 @@ async def get_channel_live_feed_route(channel_id: str):
             detail=f"Failed to retrieve live channel feed: {str(e)}"
         )
 
+@router.get(
+    "/api/youtube/channels/{channel_id}/playlists",
+    summary="Get live YouTube playlists",
+    description="Live scrapes and returns real published playlists for the channel from YouTube."
+)
+async def get_channel_playlists_route(channel_id: str):
+    try:
+        from .youtube_service import fetch_channel_playlists, get_channel_by_id
+        ch = get_channel_by_id(channel_id)
+        handle = ch.get("handle") or ch.get("name") if ch else channel_id
+        playlists = fetch_channel_playlists(handle)
+        return {"success": True, "playlists": playlists}
+    except Exception as e:
+        logger.error(f"Error fetching channel playlists for '{channel_id}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve channel playlists: {str(e)}"
+        )
+
+@router.get(
+    "/api/youtube/channels/{channel_id}/analytics",
+    summary="Get live YouTube channel analytics",
+    description="Returns real-time analytics, viewer retention, and growth metrics for the channel."
+)
+async def get_channel_analytics_route(channel_id: str):
+    try:
+        from .youtube_service import get_channel_analytics
+        return {"success": True, "analytics": get_channel_analytics(channel_id)}
+    except Exception as e:
+        logger.error(f"Error fetching channel analytics for '{channel_id}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve channel analytics: {str(e)}"
+        )
+
+class CreateCommunityPostPayload(BaseModel):
+    content: str
+    channelId: Optional[str] = None
+    author: Optional[str] = None
+    handle: Optional[str] = None
+    avatarUrl: Optional[str] = None
+
+@router.get(
+    "/api/youtube/channels/{channel_id}/posts",
+    summary="Get channel community posts",
+    description="Returns published community posts from database and live YouTube community feed."
+)
+async def get_channel_community_posts_route(channel_id: str):
+    try:
+        from backend.database.repository import get_community_posts
+        from .youtube_service import fetch_channel_community_posts, get_channel_by_id
+        db_posts = get_community_posts(channel_id)
+        ch = get_channel_by_id(channel_id)
+        handle = ch.get("handle") or ch.get("name") if ch else channel_id
+        live_posts = fetch_channel_community_posts(handle)
+        # Merge, deduplicating by ID
+        seen_ids = {p["id"] for p in db_posts}
+        merged = db_posts + [p for p in live_posts if p["id"] not in seen_ids]
+        return {"success": True, "posts": merged}
+    except Exception as e:
+        logger.error(f"Error fetching channel community posts for '{channel_id}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve community posts: {str(e)}"
+        )
+
+@router.post(
+    "/api/youtube/channels/{channel_id}/posts",
+    summary="Publish channel community post",
+    description="Stores and publishes a new community post for the channel."
+)
+async def create_channel_community_post_route(channel_id: str, payload: CreateCommunityPostPayload):
+    try:
+        from backend.database.repository import add_community_post, get_channel_by_id
+        ch = get_channel_by_id(channel_id)
+        author = payload.author or (ch.get("name") if ch else "Channel Creator")
+        handle = payload.handle or (ch.get("handle") if ch else "@channel")
+        avatar = payload.avatarUrl or (ch.get("avatar_url") if ch else None)
+        new_post = add_community_post(
+            content=payload.content,
+            channel_id=channel_id,
+            author=author,
+            handle=handle,
+            avatar_url=avatar,
+        )
+        return {"success": True, "post": new_post}
+    except Exception as e:
+        logger.error(f"Error publishing community post for '{channel_id}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
 class UpdateChannelRequest(BaseModel):
     isAutoUploadEnabled: Optional[bool] = None
     scheduleCron: Optional[str] = None

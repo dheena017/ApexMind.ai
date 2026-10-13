@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Youtube,
   Zap,
   Play,
-  ExternalLink,
   Film,
   Users,
   Video,
   ChevronRight,
-  ChevronLeft,
-  Sparkles,
+  Loader2,
 } from 'lucide-react';
-import { Button, Card, Badge } from '@/src/shared/ui/common';
 import {
   YouTubeChannel,
   YouTubeVideo,
@@ -21,6 +18,7 @@ import {
   YouTubeForYouItem,
 } from '../types';
 import { YouTubeTab } from '../components/YouTubeHeader';
+import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
 
 export interface YouTubeHomePageProps {
   channels: YouTubeChannel[];
@@ -29,6 +27,7 @@ export interface YouTubeHomePageProps {
   liveVideos?: YouTubeLiveVideo[];
   liveShorts?: YouTubeLiveShort[];
   liveForYou?: YouTubeForYouItem[];
+  feedLoading?: boolean;
   syncingId: string | null;
   togglingAutoUploadId: string | null;
   copiedId: string | null;
@@ -48,13 +47,44 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
   liveVideos = [],
   liveShorts = [],
   liveForYou = [],
+  feedLoading = false,
+  onOpenConnectModal,
   onNavigate,
   onTabChange,
 }) => {
   const activeChannel = channels[0];
 
+  if (!activeChannel) {
+    return (
+      <div className="py-16 px-4 text-center rounded-2xl bg-[#141414] border border-[#262626] text-[#9CA3AF] space-y-3">
+        <Youtube className="w-10 h-10 text-[#6B7280] mx-auto opacity-50" />
+        <h3 className="text-sm font-bold text-white">
+          {feedLoading ? 'Loading YouTube channel…' : 'No YouTube channel connected'}
+        </h3>
+        {feedLoading ? (
+          <YouTubeLoadingState
+            title="Loading YouTube channel…"
+            description="Checking for connected channels and published content"
+          />
+        ) : (
+          <>
+            <p className="text-xs text-[#9CA3AF]">
+              Connect a channel to see its videos, Shorts, and live metrics here.
+            </p>
+            <button
+              type="button"
+              onClick={onOpenConnectModal}
+              className="px-4 py-2 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-sm font-semibold text-white transition-colors"
+            >
+              Connect YouTube channel
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
   // Dynamic real data feeds directly from YouTube
-  const forYouFeed: YouTubeForYouItem[] = liveForYou;
   const shortsFeed: YouTubeLiveShort[] = liveShorts;
   const videosFeed: YouTubeLiveVideo[] = liveVideos;
 
@@ -128,83 +158,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         </div>
       </div>
 
-      {/* ── 2. "For you" Shelf (Matching Real YouTube Screen) ── */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">For you</h3>
-          <span className="text-xs text-[#9CA3AF]">Algorithmic Recommendations</span>
-        </div>
-
-        {/* Horizontal Scroll Reel matching YouTube */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 overflow-x-auto pb-2 custom-scrollbar">
-          {forYouFeed.map((item) => (
-            <a
-              key={item.id}
-              href={item.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex flex-col rounded-2xl overflow-hidden bg-[#141414] border border-[#2F2F2F] hover:border-[#3B82F6] transition-all hover:shadow-xl hover:shadow-black/60 shrink-0"
-            >
-              {/* Thumbnail Container (respects 9:16 if short, or 16:9 if video) */}
-              <div
-                className={`w-full relative overflow-hidden bg-[#0A0A0A] ${
-                  item.isShort ? 'aspect-[9/16]' : 'aspect-video'
-                }`}
-              >
-                <img
-                  src={item.thumbnailUrl}
-                  alt={item.title}
-                  onError={(e) => {
-                    e.currentTarget.src = item.isShort
-                      ? `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`
-                      : `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`;
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-
-                {item.isShort && (
-                  <div className="absolute top-2 left-2">
-                    <span className="px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1 border border-white/10">
-                      <Film className="w-2.5 h-2.5 text-red-500" />
-                      Short
-                    </span>
-                  </div>
-                )}
-
-                {item.duration && (
-                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/85 font-mono-studio text-[10px] font-bold text-white border border-white/10">
-                    {item.duration}
-                  </div>
-                )}
-
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-115 group-hover:bg-red-600 transition-all">
-                    <Play className="w-4 h-4 fill-white translate-x-0.5" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Title & Metadata */}
-              <div className="p-3 flex-1 flex flex-col justify-between space-y-1 bg-[#141414]">
-                <h4 className="text-xs font-semibold text-white line-clamp-2 leading-snug group-hover:text-[#60A5FA] transition-colors">
-                  {item.title}
-                </h4>
-                <div className="flex items-center gap-1.5 text-[11px] text-[#9CA3AF] font-mono-studio pt-1">
-                  <span>{item.views}</span>
-                  {item.published && (
-                    <>
-                      <span>·</span>
-                      <span>{item.published}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-
-      {/* ── 3. "Shorts" Shelf (Matching Real YouTube Screen) ── */}
+      {/* ── 2. "Shorts" Shelf (Matching Real YouTube Screen) ── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
@@ -213,6 +167,12 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
             </div>
             <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
               <span>Shorts</span>
+              {feedLoading && shortsFeed.length === 0 && (
+                <span className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/25 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium animate-pulse">
+                  <Loader2 className="w-3 h-3 animate-spin text-red-400" />
+                  Loading...
+                </span>
+              )}
             </h3>
           </div>
 
@@ -226,61 +186,85 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
           </button>
         </div>
 
-        {/* Real Vertical Shorts Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4">
-          {shortsFeed.map((sh) => (
-            <a
-              key={sh.id}
-              href={sh.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative rounded-2xl overflow-hidden border border-[#2F2F2F] bg-[#141414] hover:border-[#3B82F6] transition-all flex flex-col hover:shadow-xl hover:shadow-black/60"
-            >
-              <div className="aspect-[9/16] bg-[#0A0A0A] relative overflow-hidden">
-                <img
-                  src={sh.thumbnailUrl}
-                  alt={sh.title}
-                  onError={(e) => {
-                    e.currentTarget.src = `https://i.ytimg.com/vi/${sh.id}/hqdefault.jpg`;
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+        {/* Loading State matching YouTube style */}
+        {feedLoading ? (
+          <YouTubeLoadingState
+            title="Fetching live YouTube Shorts feed…"
+            description="Connecting to YouTube servers for live video metrics"
+          />
+        ) : shortsFeed.length === 0 ? (
+          <div className="py-10 px-4 text-center rounded-2xl bg-[#141414] border border-[#262626] text-[#9CA3AF] space-y-2">
+            <Film className="w-8 h-8 text-[#6B7280] mx-auto opacity-50" />
+            <p className="text-sm font-semibold text-white">No Shorts available yet</p>
+            <p className="text-xs text-[#9CA3AF]">
+              Vertical Shorts from {activeChannel ? activeChannel.name : 'your channel'} will appear here once live on YouTube.
+            </p>
+          </div>
+        ) : (
+          /* Real Vertical Shorts Grid */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4">
+            {shortsFeed.map((sh) => (
+              <a
+                key={sh.id}
+                href={sh.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative rounded-2xl overflow-hidden border border-[#2F2F2F] bg-[#141414] hover:border-[#3B82F6] transition-all flex flex-col hover:shadow-xl hover:shadow-black/60"
+              >
+                <div className="aspect-[9/16] bg-[#0A0A0A] relative overflow-hidden">
+                  <img
+                    src={sh.thumbnailUrl}
+                    alt={sh.title}
+                    onError={(e) => {
+                      e.currentTarget.src = `https://i.ytimg.com/vi/${sh.id}/hqdefault.jpg`;
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
 
-                <div className="absolute top-2 left-2">
-                  <span className="px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1 border border-white/10">
-                    <Film className="w-2.5 h-2.5 text-red-500" />
-                    Short
-                  </span>
-                </div>
+                  <div className="absolute top-2 left-2">
+                    <span className="px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1 border border-white/10">
+                      <Film className="w-2.5 h-2.5 text-red-500" />
+                      Short
+                    </span>
+                  </div>
 
-                <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
-
-                <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-xs font-bold text-white drop-shadow">
-                  <span className="font-mono-studio text-[11px]">{sh.views}</span>
-                  <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center group-hover:bg-[#3B82F6] transition-colors">
-                    <Play className="w-3 h-3 fill-white text-white translate-x-0.5" />
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-115 group-hover:bg-red-600 transition-all">
+                      <Play className="w-4 h-4 fill-white translate-x-0.5" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-3 flex-1 flex flex-col justify-between space-y-1 bg-[#141414]">
-                <h4 className="text-xs font-semibold text-white line-clamp-2 group-hover:text-[#60A5FA] transition-colors leading-snug">
-                  {sh.title}
-                </h4>
-              </div>
-            </a>
-          ))}
-        </div>
+                <div className="p-3 flex-1 flex flex-col justify-between space-y-1 bg-[#141414]">
+                  <h4 className="text-xs font-semibold text-white line-clamp-2 leading-snug group-hover:text-[#60A5FA] transition-colors">
+                    {sh.title}
+                  </h4>
+                  <div className="flex items-center gap-1.5 text-[11px] text-[#9CA3AF] font-mono-studio pt-1">
+                    <span>{sh.views}</span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* ── 4. "Videos" Shelf (Matching Real YouTube Screen) ── */}
+      {/* ── 3. "Videos" Shelf (Matching Real YouTube Screen) ── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
               <Video className="w-4 h-4" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">Videos</h3>
+            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+              <span>Videos</span>
+              {feedLoading && videosFeed.length === 0 && (
+                <span className="text-[10px] text-purple-400 bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium animate-pulse">
+                  <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                  Loading...
+                </span>
+              )}
+            </h3>
           </div>
 
           <button
@@ -293,55 +277,71 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
           </button>
         </div>
 
-        {/* Real Widescreen Videos Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {videosFeed.slice(0, 8).map((vid) => (
-            <a
-              key={vid.id}
-              href={vid.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex flex-col rounded-2xl overflow-hidden bg-[#141414] border border-[#2F2F2F] hover:border-[#3B82F6] transition-all hover:shadow-xl hover:shadow-black/60"
-            >
-              <div className="aspect-video w-full relative overflow-hidden bg-[#0A0A0A] border-b border-[#262626]">
-                <img
-                  src={vid.thumbnailUrl}
-                  alt={vid.title}
-                  onError={(e) => {
-                    e.currentTarget.src = `https://i.ytimg.com/vi/${vid.id}/hqdefault.jpg`;
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+        {/* Loading State matching YouTube style */}
+        {feedLoading ? (
+          <YouTubeLoadingState
+            title="Fetching live YouTube video catalog…"
+            description="Connecting to YouTube servers for live video metrics"
+          />
+        ) : videosFeed.length === 0 ? (
+          <div className="py-10 px-4 text-center rounded-2xl bg-[#141414] border border-[#262626] text-[#9CA3AF] space-y-2">
+            <Video className="w-8 h-8 text-[#6B7280] mx-auto opacity-50" />
+            <p className="text-sm font-semibold text-white">No published videos found</p>
+            <p className="text-xs text-[#9CA3AF]">
+              Published long-form videos and brain teaser quizzes will appear here.
+            </p>
+          </div>
+        ) : (
+          /* Real Widescreen Videos Grid */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {videosFeed.slice(0, 8).map((vid) => (
+              <a
+                key={vid.id}
+                href={vid.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col rounded-2xl overflow-hidden bg-[#141414] border border-[#2F2F2F] hover:border-[#3B82F6] transition-all hover:shadow-xl hover:shadow-black/60"
+              >
+                <div className="aspect-video w-full relative overflow-hidden bg-[#0A0A0A] border-b border-[#262626]">
+                  <img
+                    src={vid.thumbnailUrl}
+                    alt={vid.title}
+                    onError={(e) => {
+                      e.currentTarget.src = `https://i.ytimg.com/vi/${vid.id}/hqdefault.jpg`;
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
 
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-115 group-hover:bg-red-600 transition-all">
-                    <Play className="w-4 h-4 fill-white translate-x-0.5" />
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-115 group-hover:bg-red-600 transition-all">
+                      <Play className="w-4 h-4 fill-white translate-x-0.5" />
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/85 font-mono-studio text-[10px] font-bold text-white border border-white/10">
+                    {vid.duration}
                   </div>
                 </div>
 
-                <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/85 font-mono-studio text-[10px] font-bold text-white border border-white/10">
-                  {vid.duration}
-                </div>
-              </div>
+                <div className="p-3 flex-1 flex flex-col justify-between space-y-1.5 bg-[#141414]">
+                  <h4 className="text-xs font-semibold text-white line-clamp-2 leading-snug group-hover:text-[#60A5FA] transition-colors">
+                    {vid.title}
+                  </h4>
 
-              <div className="p-3 flex-1 flex flex-col justify-between space-y-1.5 bg-[#141414]">
-                <h4 className="text-xs font-semibold text-white line-clamp-2 leading-snug group-hover:text-[#60A5FA] transition-colors">
-                  {vid.title}
-                </h4>
-
-                <div className="flex items-center gap-1.5 text-[11px] text-[#9CA3AF] font-mono-studio pt-1 border-t border-[#262626]">
-                  <span>{vid.views}</span>
-                  {vid.published && (
-                    <>
-                      <span>·</span>
-                      <span>{vid.published}</span>
-                    </>
-                  )}
+                  <div className="flex items-center gap-1.5 text-[11px] text-[#9CA3AF] font-mono-studio pt-1 border-t border-[#262626]">
+                    <span>{vid.views}</span>
+                    {vid.published && (
+                      <>
+                        <span>·</span>
+                        <span>{vid.published}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </a>
-          ))}
-        </div>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

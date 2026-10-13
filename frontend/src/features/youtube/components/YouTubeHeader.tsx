@@ -30,9 +30,12 @@ export interface YouTubeHeaderProps {
   onConnectChannel?: () => void;
   activeTab: YouTubeTab;
   onTabChange: (tab: YouTubeTab) => void;
-  activeChannelHandle?: string;
-  shortsCount?: number;
-  schedulesCount?: number;
+  videosCount?: number | string;
+  shortsCount?: number | string;
+  playlistsCount?: number | string;
+  postsCount?: number | string;
+  schedulesCount?: number | string;
+  analyticsCount?: number | string;
   className?: string;
 }
 
@@ -43,9 +46,12 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
   onConnectChannel,
   activeTab,
   onTabChange,
-  activeChannelHandle,
+  videosCount,
   shortsCount,
+  playlistsCount,
+  postsCount,
   schedulesCount,
+  analyticsCount,
   className = '',
 }) => {
   const tabs: { id: YouTubeTab; label: string; icon: React.ReactNode; badge?: number | string }[] = [
@@ -58,6 +64,7 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
       id: 'videos',
       label: 'Videos',
       icon: <Video className="w-3.5 h-3.5" />,
+      badge: videosCount !== undefined ? videosCount : undefined,
     },
     {
       id: 'shorts',
@@ -69,11 +76,13 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
       id: 'playlists',
       label: 'Playlists',
       icon: <ListVideo className="w-3.5 h-3.5" />,
+      badge: playlistsCount !== undefined ? playlistsCount : undefined,
     },
     {
       id: 'posts',
       label: 'Posts',
       icon: <MessageSquare className="w-3.5 h-3.5" />,
+      badge: postsCount !== undefined ? postsCount : undefined,
     },
     {
       id: 'schedules',
@@ -85,6 +94,7 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
       id: 'analytics',
       label: 'Analytics',
       icon: <TrendingUp className="w-3.5 h-3.5" />,
+      badge: analyticsCount !== undefined ? analyticsCount : undefined,
     },
     {
       id: 'settings',
@@ -116,7 +126,7 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
               <span>{tab.label}</span>
               {tab.badge !== undefined && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono-studio ${
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono-studio font-semibold leading-none ${
                     isActive
                       ? 'bg-[#3B82F6]/25 text-[#93C5FD]'
                       : 'bg-[#262626] text-[#9CA3AF]'
@@ -130,16 +140,8 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
         })}
       </nav>
 
-      {/* Right: Actions & Channel Status */}
+      {/* Right: Actions */}
       <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
-        {activeChannelHandle && (
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-[#181818] border border-[#2F2F2F] text-[11px] shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[#9CA3AF]">Active:</span>
-            <span className="font-mono-studio font-bold text-white">{activeChannelHandle}</span>
-          </div>
-        )}
-
         <Button
           variant="secondary"
           size="sm"

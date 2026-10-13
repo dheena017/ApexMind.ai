@@ -1,25 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ListVideo, Play, Plus, ExternalLink, Sparkles, Layers } from 'lucide-react';
 import { Card, Badge, Button, Modal, Input } from '@/src/shared/ui/common';
-import { YouTubeChannel, YouTubeLiveVideo } from '../types';
+import { YouTubeChannel, YouTubeLiveVideo, YouTubePlaylist } from '../types';
+import { youtubeApi } from '../api/youtubeApi';
+import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
 
 export interface YouTubePlaylistsPageProps {
   channels: YouTubeChannel[];
   liveVideos?: YouTubeLiveVideo[];
+  loading?: boolean;
   onNavigate: (page: string) => void;
 }
 
 export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
   channels,
   liveVideos = [],
+  loading = false,
   onNavigate,
 }) => {
   const activeChannel = channels[0];
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [fetchingPlaylists, setFetchingPlaylists] = useState(false);
 
-  // Dynamic playlists derived from real channel videos
+  // Dynamic playlists derived from real channel videos and YouTube playlists API
   const [playlists, setPlaylists] = useState<Array<{
     id: string;
     title: string;
@@ -27,34 +32,67 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
     videoCount: number;
     lastUpdated: string;
     thumbnailUrl: string;
+    playlistUrl?: string;
   }>>([]);
 
-  React.useEffect(() => {
-    if (liveVideos.length > 0) {
-      setPlaylists([
-        {
-          id: 'pl-channel-uploads',
-          title: 'Official Channel Uploads & Series',
-          description: `All published videos and challenges on ${activeChannel?.name || 'the channel'}.`,
-          videoCount: liveVideos.length,
-          lastUpdated: 'Live Feed',
-          thumbnailUrl: liveVideos[0].thumbnailUrl,
-        },
-        ...(liveVideos.length > 2
-          ? [
-              {
-                id: 'pl-popular-challenges',
-                title: 'Featured Challenges & Quizzes',
-                description: `High-engagement uploads on ${activeChannel?.name || 'YouTube'}.`,
-                videoCount: Math.min(5, liveVideos.length),
-                lastUpdated: 'Live Feed',
-                thumbnailUrl: liveVideos[1]?.thumbnailUrl || liveVideos[0].thumbnailUrl,
-              },
-            ]
-          : []),
-      ]);
+  const loadPlaylists = async () => {
+    if (!activeChannel?.id) {
+      setPlaylists([]);
+      return;
     }
-  }, [liveVideos, activeChannel?.name]);
+    setFetchingPlaylists(true);
+    try {
+      const realPl = await youtubeApi.getPlaylists(activeChannel.id);
+      if (realPl.length > 0) {
+        setPlaylists(
+          realPl.map((p) => ({
+            id: p.id,
+            title: p.title,
+            description: p.description || `Official playlist series on ${activeChannel.name}.`,
+            videoCount: p.videoCount || 1,
+            lastUpdated: p.lastUpdated || 'Live from YouTube',
+            thumbnailUrl: p.thumbnailUrl || (liveVideos[0]?.thumbnailUrl ?? activeChannel.avatarUrl ?? ''),
+            playlistUrl: p.playlistUrl,
+          }))
+        );
+      } else if (liveVideos.length > 0) {
+        setPlaylists([
+          {
+            id: 'pl-channel-uploads',
+            title: 'Official Channel Uploads & Series',
+            description: `All published videos and challenges on ${activeChannel?.name || 'the channel'}.`,
+            videoCount: liveVideos.length,
+            lastUpdated: 'Live Feed',
+            thumbnailUrl: liveVideos[0].thumbnailUrl,
+          },
+          ...(liveVideos.length > 2
+            ? [
+                {
+                  id: 'pl-popular-challenges',
+                  title: 'Featured Challenges & Quizzes',
+                  description: `High-engagement uploads on ${activeChannel?.name || 'YouTube'}.`,
+                  videoCount: Math.min(5, liveVideos.length),
+                  lastUpdated: 'Live Feed',
+                  thumbnailUrl: liveVideos[1]?.thumbnailUrl || liveVideos[0].thumbnailUrl,
+                },
+              ]
+            : []),
+        ]);
+      } else {
+        setPlaylists([]);
+      }
+    } catch (err) {
+      console.warn('Could not fetch playlists from API', err);
+    } finally {
+      setFetchingPlaylists(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPlaylists();
+  }, [activeChannel?.id, loading]);
+
+  const isLoading = loading || fetchingPlaylists;
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,18 +130,39 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
           </div>
         </div>
 
-        <Button
-          size="sm"
-          variant="primary"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={() => setShowCreateModal(true)}
-        >
-          Create Playlist
-        </Button>
+        <div className="flex items-center gap-2.5">
+          {loading && (
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-500/10 text-[#60A5FA] border border-blue-500/25 font-semibold flex items-center gap-1.5 animate-pulse">
+              Syncing…
+            </span>
+          )}
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={() => setShowCreateModal(true)}
+          >
+            Create Playlist
+          </Button>
+        </div>
       </div>
 
       {/* Playlists Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {isLoading ? (
+        <YouTubeLoadingState
+          title="Fetching live YouTube playlists…"
+          description="Connecting to YouTube servers for playlists & video series"
+        />
+      ) : playlists.length === 0 ? (
+        <div className="py-12 px-4 text-center rounded-2xl bg-[#141414] border border-[#262626] text-[#9CA3AF] space-y-2">
+          <ListVideo className="w-8 h-8 text-[#6B7280] mx-auto opacity-50" />
+          <p className="text-sm font-semibold text-white">No playlists found</p>
+          <p className="text-xs text-[#9CA3AF]">
+            Playlists and collections will automatically populate once channel uploads are synced.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {playlists.map((pl) => (
           <div
             key={pl.id}
@@ -156,6 +215,7 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
           </div>
         ))}
       </div>
+    )}
 
       {/* Create Playlist Modal */}
       <Modal

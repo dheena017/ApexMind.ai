@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { UserRound, Save } from 'lucide-react';
 import { Card, Button } from '@/src/shared/ui/common';
 import { useCreatorProfileSettings } from '../hooks/useCreatorProfileSettings';
 
@@ -46,47 +47,55 @@ export default function ProfileDetailsPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5">
-      <header>
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">Creator details</h1>
-        <p className="mt-1 text-xs text-[#9CA3AF]">Manage your public creator identity and profile links.</p>
-      </header>
-      <Card>
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {field('Display name', 'displayName', 'text', 'Enter your public creator name')}
-            <label className="block space-y-1.5">
-              <span className={labelClass}>Account email</span>
-              <input value={user?.email || ''} readOnly className={`${inputClass} cursor-not-allowed text-[#777]`} />
-            </label>
-            {field('Creator handle', 'creatorHandle', 'text', '@yourchannel')}
-            {field('Avatar image URL', 'avatarUrl', 'url', 'Paste an image URL')}
-            {field('Website', 'websiteUrl', 'url', 'https://yourwebsite.com')}
-            {field('Instagram profile', 'instagramUrl', 'url', 'https://instagram.com/yourname')}
-            {field('TikTok profile', 'tiktokUrl', 'url', 'https://tiktok.com/@yourname')}
-            {field('YouTube profile', 'youtubeUrl', 'url', 'https://youtube.com/@yourchannel')}
+    <div className="w-full space-y-5">
+      <div className="flex items-center justify-between pb-4 border-b border-[#262626]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3B82F6]/10 border border-[#3B82F6]/25 text-[#60A5FA]">
+            <UserRound className="h-5 w-5" />
           </div>
+          <div>
+            <h2 className="text-lg font-bold text-white">Edit Creator Details</h2>
+            <p className="mt-0.5 text-xs text-[#9CA3AF]">Update your public creator identity, avatar photo, and social presence.</p>
+          </div>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {field('Display name', 'displayName', 'text', 'Enter your public creator name')}
           <label className="block space-y-1.5">
-            <span className={labelClass}>Short bio</span>
-            <textarea
-              value={profile.bio}
-              onChange={(event) => setProfile((current) => ({ ...current, bio: event.target.value }))}
-              className={`${inputClass} min-h-28 resize-y`}
-              maxLength={280}
-              placeholder="What do you create and who do you create it for?"
-            />
-            <span className="block text-right text-[11px] text-[#6B7280]">{profile.bio.length}/280</span>
+            <span className={labelClass}>Account email</span>
+            <input value={user?.email || ''} readOnly className={`${inputClass} cursor-not-allowed text-[#777]`} />
           </label>
-          {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
-          {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary">Save creator details</Button>
-          </div>
-        </form>
-        <p className="mt-4 border-t border-[#2F2F2F] pt-4 text-xs text-[#6B7280]">
-          Details are stored in this browser for this signed-in profile and are not synced to other devices.
-        </p>
-      </Card>
+          {field('Creator handle', 'creatorHandle', 'text', '@yourchannel')}
+          {field('Avatar image URL', 'avatarUrl', 'url', 'Paste an image URL')}
+          {field('Website', 'websiteUrl', 'url', 'https://yourwebsite.com')}
+          {field('Instagram profile', 'instagramUrl', 'url', 'https://instagram.com/yourname')}
+          {field('TikTok profile', 'tiktokUrl', 'url', 'https://tiktok.com/@yourname')}
+          {field('YouTube profile', 'youtubeUrl', 'url', 'https://youtube.com/@yourchannel')}
+        </div>
+        <label className="block space-y-1.5">
+          <span className={labelClass}>Short bio</span>
+          <textarea
+            value={profile.bio}
+            onChange={(event) => setProfile((current) => ({ ...current, bio: event.target.value }))}
+            className={`${inputClass} min-h-28 resize-y`}
+            maxLength={280}
+            placeholder="What do you create and who do you create it for?"
+          />
+          <span className="block text-right text-[11px] text-[#6B7280]">{profile.bio.length}/280</span>
+        </label>
+        {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+        {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
+        <div className="flex justify-end">
+          <Button type="submit" variant="primary">
+            <Save className="h-4 w-4" />
+            <span>Save creator details</span>
+          </Button>
+        </div>
+      </form>
+      <p className="mt-4 border-t border-[#262626] pt-4 text-xs text-[#6B7280]">
+        Details are stored in this browser for this signed-in profile and are not synced to other devices.
+      </p>
     </div>
   );
 }

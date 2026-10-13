@@ -12,6 +12,7 @@ import {
 } from './app/routes';
 import { consoleLogger } from './shared/utils/logger';
 import { useAuth } from './features/auth/context/AuthContext';
+import { WorkspaceTabType } from './features/workspace/components/WorkspaceSidebar';
 
 export default function App() {
   const { isAuthenticated } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
 
     return parsed;
   });
+  const [activeWorkspacePane, setActiveWorkspacePane] = useState<WorkspaceTabType>('script');
 
   // Auth Guard: Unauthenticated users attempting to access internal studio pages are redirected to login with redirect intent
   useEffect(() => {
@@ -139,8 +141,18 @@ export default function App() {
   );
 
   return (
-    <AppLayout activePage={activePage} onNavigate={handleNavigate}>
-      <AppRouter activePage={activePage} onNavigate={handleNavigate} />
+    <AppLayout
+      activePage={activePage}
+      onNavigate={handleNavigate}
+      activeWorkspacePane={activeWorkspacePane}
+      onWorkspacePaneChange={setActiveWorkspacePane}
+    >
+      <AppRouter
+        activePage={activePage}
+        onNavigate={handleNavigate}
+        activeWorkspacePane={activeWorkspacePane}
+        onWorkspacePaneChange={setActiveWorkspacePane}
+      />
     </AppLayout>
 
   );

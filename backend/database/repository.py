@@ -539,5 +539,97 @@ def get_latest_user() -> Optional[Dict[str, Any]]:
     }
 
 
+def get_community_posts(channel_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS community_posts (
+        id TEXT PRIMARY KEY,
+        channel_id TEXT,
+        author TEXT NOT NULL,
+        handle TEXT NOT NULL,
+        avatar_url TEXT,
+        content TEXT NOT NULL,
+        likes INTEGER DEFAULT 0,
+        comments INTEGER DEFAULT 0,
+        published_at TEXT NOT NULL
+    )
+    """)
+    if channel_id:
+        cursor.execute("SELECT * FROM community_posts WHERE channel_id = ? ORDER BY published_at DESC", (channel_id,))
+    else:
+        cursor.execute("SELECT * FROM community_posts ORDER BY published_at DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [
+        {
+            "id": r["id"],
+            "channelId": r["channel_id"],
+            "author": r["author"],
+            "handle": r["handle"],
+            "avatarUrl": r["avatar_url"],
+            "content": r["content"],
+            "likes": r["likes"],
+            "comments": r["comments"],
+            "publishedAt": r["published_at"],
+        }
+        for r in rows
+    ]
+
+
+def add_community_post(
+    content: str,
+    channel_id: Optional[str] = None,
+    author: Optional[str] = None,
+    handle: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS community_posts (
+        id TEXT PRIMARY KEY,
+        channel_id TEXT,
+        author TEXT NOT NULL,
+        handle TEXT NOT NULL,
+        avatar_url TEXT,
+        content TEXT NOT NULL,
+        likes INTEGER DEFAULT 0,
+        comments INTEGER DEFAULT 0,
+        published_at TEXT NOT NULL
+    )
+    """)
+    post_id = f"cp_{int(datetime.utcnow().timestamp() * 1000)}"
+    timestamp = datetime.utcnow().isoformat()
+    cursor.execute("""
+    INSERT INTO community_posts (id, channel_id, author, handle, avatar_url, content, likes, comments, published_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        post_id,
+        channel_id,
+        author or "Channel Creator",
+        handle or "@channel",
+        avatar_url,
+        content,
+        0,
+        0,
+        timestamp,
+    ))
+    conn.commit()
+    conn.close()
+    return {
+        "id": post_id,
+        "channelId": channel_id,
+        "author": author or "Channel Creator",
+        "handle": handle or "@channel",
+        "avatarUrl": avatar_url,
+        "content": content,
+        "likes": 0,
+        "comments": 0,
+        "publishedAt": timestamp,
+    }
+
+
+
 
 

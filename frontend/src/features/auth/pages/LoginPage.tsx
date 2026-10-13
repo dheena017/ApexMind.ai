@@ -273,15 +273,11 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-[#0A0A0A] px-4 py-6 text-[#E5E5E5] sm:px-6 sm:py-8 font-sans-studio">
-      <div className="pointer-events-none absolute -left-40 top-1/4 h-96 w-96 rounded-full bg-[#3B82F6]/10 blur-[120px]" />
-      <div className="pointer-events-none absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-[#2563EB]/10 blur-[120px]" />
-
       <div className="relative grid w-full max-w-4xl rounded-[28px] border border-[#2F2F2F] bg-[#1E1E1E] shadow-2xl shadow-black/50 lg:grid-cols-[1fr_1.1fr]">
         <section className="relative hidden flex-col justify-between overflow-hidden rounded-l-[28px] bg-gradient-to-br from-[#172554] via-[#121212] to-[#1E1E1E] p-8 lg:flex xl:p-10">
-          <div className="pointer-events-none absolute -right-20 top-24 h-72 w-72 rounded-full bg-[#3B82F6]/15 blur-[90px]" />
           <div className="relative">
             <div className="flex w-fit items-center gap-3">
-              <div className="rounded-2xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-3 text-white shadow-lg shadow-[#3B82F6]/25">
+              <div className="rounded-2xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-3 text-white shadow-lg shadow-black/40">
                 <Sparkles className="h-6 w-6" />
               </div>
               <span className="text-xl font-extrabold tracking-tight text-white">ApexMind</span>
@@ -313,10 +309,10 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           </div>
         </section>
 
-        <section className="p-8 sm:p-10 lg:p-12 flex flex-col justify-center">
+        <section className="relative flex flex-col justify-center p-8 sm:p-10 lg:p-12">
           <div className="mb-6 flex items-center justify-between lg:hidden">
             <div className="flex items-center gap-2.5">
-              <div className="rounded-xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-2 text-white">
+              <div className="rounded-xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-2 text-white shadow-lg shadow-black/40">
                 <Sparkles className="h-5 w-5" />
               </div>
               <span className="font-extrabold tracking-tight text-white">ApexMind</span>
@@ -324,59 +320,50 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           </div>
 
           <div className="mx-auto w-full max-w-sm space-y-6">
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
                 <button
                   type="button"
                   onClick={() => onNavigate('landing')}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#2F2F2F] bg-[#121212]/70 px-3 text-xs font-medium text-[#9CA3AF] shadow-sm transition-colors hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer"
+                  className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#2F2F2F] bg-[#121212]/70 px-3 text-xs font-medium text-[#9CA3AF] shadow-sm transition-all duration-200 hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <ArrowLeft className="h-3.5 w-3.5" />
                   <span>Back to ApexMind</span>
                 </button>
               </div>
 
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#60A5FA]/20 bg-[#3B82F6]/5 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#93C5FD]">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Secure Studio Access
+              </div>
+
               <div>
-                {targetDestination !== 'dashboard' ? (
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/30 bg-[#3B82F6]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[#93C5FD]">
-                    <Sparkles className="h-3.5 w-3.5 text-[#60A5FA]" />
-                    <span>
-                      Redirecting to <strong className="text-white font-semibold">{targetDisplayName}</strong> after sign in
-                    </span>
-                  </div>
-                ) : (
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/25 bg-[#3B82F6]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#93C5FD]">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    Google Authentication Required
-                  </div>
-                )}
                 <h2 className="text-3xl font-extrabold tracking-tight text-white">Sign In</h2>
                 <p className="mt-2 text-sm leading-6 text-[#9CA3AF]">
-                  Sign in with your Google Account to unlock the ApexMind Studio workspace.
+                  Sign in with your Google account to unlock the ApexMind Studio workspace.
                 </p>
               </div>
             </div>
 
-            {/* Google OAuth & YouTube Authorization Action - Single Elegant Button */}
             <div className="space-y-3.5 pt-1">
               {rememberedUser?.email && (
-                <div className="rounded-2xl bg-[#121212] border border-[#2F2F2F] p-3.5 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#2F2F2F] bg-[#121212] p-3.5 shadow-lg shadow-black/10 transition-all duration-200 hover:border-[#3B82F6]/50">
+                  <div className="flex min-w-0 items-center gap-3">
                     <img
                       src={rememberedUser.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rememberedUser.name || 'Creator')}`}
                       alt=""
-                      className="w-9 h-9 rounded-full border border-white/10 shrink-0"
+                      className="h-9 w-9 shrink-0 rounded-full border border-white/10"
                     />
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{rememberedUser.name || 'Creator'}</p>
-                      <p className="text-[11px] text-[#9CA3AF] truncate">{rememberedUser.email}</p>
+                      <p className="truncate text-xs font-bold text-white">{rememberedUser.name || 'Creator'}</p>
+                      <p className="truncate text-[11px] text-[#9CA3AF]">{rememberedUser.email}</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleGoogleLogin(rememberedUser.email, rememberedUser.name)}
                     disabled={googleLoading}
-                    className="shrink-0 px-3 py-1.5 rounded-lg bg-[#3B82F6]/10 hover:bg-[#3B82F6]/20 text-[#60A5FA] text-xs font-semibold transition-colors cursor-pointer"
+                    className="shrink-0 rounded-lg bg-[#3B82F6]/10 px-3 py-1.5 text-xs font-semibold text-[#60A5FA] transition-colors hover:bg-[#3B82F6]/20 cursor-pointer"
                   >
                     Continue →
                   </button>
@@ -387,39 +374,41 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 type="button"
                 onClick={handleGoogleWithYouTubeAuth}
                 disabled={googleLoading}
-                className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl disabled:opacity-60 cursor-pointer active:scale-[0.99] border border-gray-200"
+                className="group relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-bold text-gray-900 shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-lg disabled:opacity-60 cursor-pointer active:scale-[0.99]"
               >
-                {googleLoading ? (
-                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <GoogleIcon className="h-5 w-5" />
-                    <Youtube className="h-5 w-5 text-red-600" />
-                  </div>
-                )}
-                <span>Sign In & Authorize YouTube</span>
+                <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#60A5FA]/70 to-transparent" />
+                <span className="flex items-center justify-center gap-3">
+                  {googleLoading ? (
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+                  ) : (
+                    <span className="flex items-center gap-2.5">
+                      <GoogleIcon className="h-5 w-5" />
+                      <Youtube className="h-5 w-5 text-red-600" />
+                    </span>
+                  )}
+                  <span>Sign In & Authorize YouTube</span>
+                </span>
               </button>
 
-              <div className="text-center pt-1">
+              <div className="pt-1 text-center">
                 <button
                   type="button"
                   onClick={() => setShowGoogleModal(true)}
-                  className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#2F2F2F] bg-[#121212]/70 px-4 text-xs font-semibold text-[#9CA3AF] shadow-sm transition-colors hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-[#93C5FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer"
+                  className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#2F2F2F] bg-[#121212]/70 px-4 text-xs font-semibold text-[#9CA3AF] shadow-sm transition-all duration-200 hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-[#93C5FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer"
                 >
                   Sign in with another Google account
                 </button>
               </div>
             </div>
 
-
             {notice && (
-              <p role="status" className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-5 text-amber-200">
+              <p role="status" className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-5 text-amber-200 shadow-inner shadow-black/20">
                 {notice}
               </p>
             )}
 
-            <div className="pt-4 border-t border-[#2F2F2F]">
-              <div className="flex items-start gap-3 rounded-xl bg-[#121212] border border-[#2F2F2F] p-3.5">
+            <div className="border-t border-[#2F2F2F] pt-4">
+              <div className="flex items-start gap-3 rounded-xl border border-[#2F2F2F] bg-[#121212] p-3.5 shadow-inner shadow-black/30">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                 <p className="text-xs leading-5 text-[#9CA3AF]">
                   ApexMind uses Google OAuth authentication. Only verified sign-ins are permitted into the studio.

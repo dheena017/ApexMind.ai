@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Sliders, Save } from 'lucide-react';
 import { Button, Card } from '@/src/shared/ui/common';
 import { useCreatorProfileSettings } from '../hooks/useCreatorProfileSettings';
 
@@ -15,60 +16,68 @@ export default function ProfilePreferencesPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5">
-      <header>
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">Content preferences</h1>
-        <p className="mt-1 text-xs text-[#9CA3AF]">Set defaults for new scripts and voiceovers in the Creation Studio.</p>
-      </header>
-      <Card>
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <label className="block space-y-1.5">
-            <span className={labelClass}>Niche / default category</span>
-            <select value={profile.niche} onChange={(event) => setProfile((current) => ({ ...current, niche: event.target.value }))} className={inputClass}>
-              {[
-                'Stoic Mindset & Discipline',
-                'Morning Energy & Grit',
-                'Fitness & Power',
-                'Financial Freedom',
-                'Dark Psychology & Focus',
-                'Warrior Mentality & Resilience',
-              ].map((option) => <option key={option} value={option}>{option}</option>)}
-            </select>
-          </label>
-          <label className="block space-y-1.5">
-            <span className={labelClass}>Preferred tone</span>
-            <select value={profile.tone} onChange={(event) => setProfile((current) => ({ ...current, tone: event.target.value }))} className={inputClass}>
-              {['Authoritative & Inspiring', 'Calm & Reflective', 'Energetic & Bold', 'Warm & Encouraging'].map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block space-y-1.5">
-            <span className={labelClass}>Default voice</span>
-            <select value={profile.defaultVoice} onChange={(event) => setProfile((current) => ({ ...current, defaultVoice: event.target.value }))} className={inputClass}>
-              {['Fenrir', 'Kore', 'Puck', 'Zephyr', 'Charon'].map((option) => <option key={option} value={option}>{option}</option>)}
-            </select>
-          </label>
-          <label className="block space-y-1.5">
-            <span className={labelClass}>Target audience</span>
-            <input
-              value={profile.audience}
-              onChange={(event) => setProfile((current) => ({ ...current, audience: event.target.value }))}
-              className={inputClass}
-              maxLength={120}
-              placeholder="e.g. busy professionals building better habits"
-            />
-          </label>
-          <p className="text-xs leading-relaxed text-[#6B7280]">
-            The niche and tone are sent with script generation. The target audience is included in the generation prompt, and the default voice is selected for voiceovers.
-          </p>
-          {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
-          {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary">Save preferences</Button>
+    <div className="w-full space-y-5">
+      <div className="flex items-center justify-between pb-4 border-b border-[#262626]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-400">
+            <Sliders className="h-5 w-5" />
           </div>
-        </form>
-      </Card>
+          <div>
+            <h2 className="text-lg font-bold text-white">Content &amp; Studio Preferences</h2>
+            <p className="mt-0.5 text-xs text-[#9CA3AF]">Set default niche, tone, voice, and audience parameters for script &amp; video generation.</p>
+          </div>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <label className="block space-y-1.5">
+          <span className={labelClass}>Niche / default category</span>
+          <select value={profile.niche} onChange={(event) => setProfile((current) => ({ ...current, niche: event.target.value }))} className={inputClass}>
+            {[
+              'Stoic Mindset & Discipline',
+              'Morning Energy & Grit',
+              'Fitness & Power',
+              'Financial Freedom',
+              'Dark Psychology & Focus',
+              'Warrior Mentality & Resilience',
+            ].map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+        </label>
+        <label className="block space-y-1.5">
+          <span className={labelClass}>Preferred tone</span>
+          <select value={profile.tone} onChange={(event) => setProfile((current) => ({ ...current, tone: event.target.value }))} className={inputClass}>
+            {['Authoritative & Inspiring', 'Calm & Reflective', 'Energetic & Bold', 'Warm & Encouraging'].map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block space-y-1.5">
+          <span className={labelClass}>Default voice</span>
+          <select value={profile.defaultVoice} onChange={(event) => setProfile((current) => ({ ...current, defaultVoice: event.target.value }))} className={inputClass}>
+            {['Fenrir', 'Kore', 'Puck', 'Zephyr', 'Charon'].map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+        </label>
+        <label className="block space-y-1.5">
+          <span className={labelClass}>Target audience</span>
+          <input
+            value={profile.audience}
+            onChange={(event) => setProfile((current) => ({ ...current, audience: event.target.value }))}
+            className={inputClass}
+            maxLength={120}
+            placeholder="e.g. busy professionals building better habits"
+          />
+        </label>
+        <p className="text-xs leading-relaxed text-[#6B7280]">
+          The niche and tone are sent with script generation. The target audience is included in the generation prompt, and the default voice is selected for voiceovers.
+        </p>
+        {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+        {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
+        <div className="flex justify-end">
+          <Button type="submit" variant="primary">
+            <Save className="h-4 w-4" />
+            <span>Save preferences</span>
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

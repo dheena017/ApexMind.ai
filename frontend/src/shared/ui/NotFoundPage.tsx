@@ -18,9 +18,6 @@ export default function NotFoundPage({ onNavigate, currentPath }: NotFoundPagePr
 
   return (
     <div className="flex-1 w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-6 bg-[#0A0A0A] text-[#E5E5E5] relative overflow-hidden">
-      {/* Background Ambient Glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[350px] bg-[#3B82F6]/10 blur-[130px] rounded-full pointer-events-none" />
-
       <div className="max-w-xl w-full text-center space-y-8 relative z-10">
         {/* Glowing Badge & Big 404 */}
         <div className="space-y-3">

@@ -5,6 +5,9 @@ import {
   YouTubeLookupResult,
   YouTubeLiveShort,
   YouTubeLiveFeedResponse,
+  YouTubeCommunityPost,
+  YouTubePlaylist,
+  YouTubeAnalyticsData,
 } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -215,5 +218,59 @@ export const youtubeApi = {
     const data = await res.json();
     consoleLogger.success('YouTube', `Updated automation schedules`, data.automations);
     return data.automations;
+  },
+
+  // Community Posts
+  async getCommunityPosts(channelId: string): Promise<YouTubeCommunityPost[]> {
+    const start = performance.now();
+    const res = await fetch(`/api/youtube/channels/${channelId}/posts`);
+    const duration = performance.now() - start;
+    consoleLogger.api('GET', `/api/youtube/channels/${channelId}/posts`, res.status, duration);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.posts || [];
+  },
+
+  async publishCommunityPost(
+    channelId: string,
+    payload: { content: string; author?: string; handle?: string; avatarUrl?: string }
+  ): Promise<YouTubeCommunityPost> {
+    consoleLogger.info('YouTube', `Publishing community post for channel ${channelId}...`);
+    const start = performance.now();
+    const res = await fetch(`/api/youtube/channels/${channelId}/posts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const duration = performance.now() - start;
+    consoleLogger.api('POST', `/api/youtube/channels/${channelId}/posts`, res.status, duration);
+    if (!res.ok) {
+      throw new Error('Failed to publish community post');
+    }
+    const data = await res.json();
+    consoleLogger.success('YouTube', 'Community post published', data.post);
+    return data.post;
+  },
+
+  // Playlists
+  async getPlaylists(channelId: string): Promise<YouTubePlaylist[]> {
+    const start = performance.now();
+    const res = await fetch(`/api/youtube/channels/${channelId}/playlists`);
+    const duration = performance.now() - start;
+    consoleLogger.api('GET', `/api/youtube/channels/${channelId}/playlists`, res.status, duration);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.playlists || [];
+  },
+
+  // Analytics
+  async getChannelAnalytics(channelId: string): Promise<YouTubeAnalyticsData | null> {
+    const start = performance.now();
+    const res = await fetch(`/api/youtube/channels/${channelId}/analytics`);
+    const duration = performance.now() - start;
+    consoleLogger.api('GET', `/api/youtube/channels/${channelId}/analytics`, res.status, duration);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.analytics || null;
   },
 };

@@ -13,17 +13,20 @@ import {
 } from 'lucide-react';
 import { Card, Badge, Button, Modal } from '@/src/shared/ui/common';
 import { YouTubeChannel, YouTubeVideo, YouTubeLiveVideo } from '../types';
+import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
 
 export interface YouTubeVideosPageProps {
   channels: YouTubeChannel[];
   videos: YouTubeVideo[];
   liveVideos?: YouTubeLiveVideo[];
+  loading?: boolean;
   onNavigate: (page: string) => void;
 }
 
 export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
   channels,
   liveVideos = [],
+  loading = false,
   onNavigate,
 }) => {
   const activeChannel = channels[0];
@@ -121,10 +124,17 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
               </p>
             </div>
           </div>
-          <Badge variant="blue">{filteredVideos.length} Videos Available</Badge>
+          <Badge variant="blue">
+            {loading && filteredVideos.length === 0 ? 'Syncing...' : `${filteredVideos.length} Videos Available`}
+          </Badge>
         </div>
 
-        {filteredVideos.length === 0 ? (
+        {loading ? (
+          <YouTubeLoadingState
+            title="Fetching live YouTube video catalog…"
+            description="Connecting to YouTube servers for live video metrics"
+          />
+        ) : filteredVideos.length === 0 ? (
           <div className="py-16 text-center text-[#9CA3AF] space-y-3">
             <Video className="w-10 h-10 text-[#6B7280] mx-auto opacity-50" />
             <h4 className="text-sm font-bold text-white">No Videos Found</h4>
@@ -242,7 +252,7 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
                   href={selectedVideo.videoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-lg shadow-red-600/20"
+                  className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors flex items-center gap-2"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
                   <span>Watch on YouTube</span>
