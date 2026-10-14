@@ -80,6 +80,15 @@ def create_app() -> FastAPI:
             "version": "2.0.0",
         }
 
+    @app.get("/api/audio/{filename}", tags=["Audio"])
+    def get_audio_file(filename: str):
+        from fastapi.responses import FileResponse
+        from pathlib import Path
+        file_path = Path("backend/data/audio") / filename
+        if file_path.exists():
+            return FileResponse(file_path, media_type="audio/wav")
+        raise HTTPException(status_code=404, detail="Audio file not found")
+
     # Set custom OpenAPI schema
     app.openapi = lambda: custom_openapi(app)
 

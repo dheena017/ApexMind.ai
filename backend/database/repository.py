@@ -721,6 +721,23 @@ def add_website_video(data: Dict[str, Any]) -> Dict[str, Any]:
     tags_raw = data.get("tags")
     tags_str = json.dumps(tags_raw) if isinstance(tags_raw, list) else (tags_raw or "[]")
 
+    audio_raw = data.get("audioUrl", "") or ""
+    if isinstance(audio_raw, str) and audio_raw.startswith("data:audio"):
+        try:
+            import base64
+            from pathlib import Path
+            audio_dir = Path("backend/data/audio")
+            audio_dir.mkdir(parents=True, exist_ok=True)
+            parts = audio_raw.split(",", 1)
+            if len(parts) == 2:
+                audio_bytes = base64.b64decode(parts[1])
+                audio_file = audio_dir / f"{vid_id}.wav"
+                with open(audio_file, "wb") as f:
+                    f.write(audio_bytes)
+                audio_raw = f"/api/audio/{vid_id}.wav"
+        except Exception as e:
+            logger.warning(f"Could not write voiceover audio file: {e}")
+
     cover_img = data.get("coverImageUrl") or "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85"
 
     conn = get_connection()
@@ -739,7 +756,7 @@ def add_website_video(data: Dict[str, Any]) -> Dict[str, Any]:
         data.get("category", "Stoic Mindset & Discipline"),
         cover_img,
         data.get("videoUrl", ""),
-        data.get("audioUrl", ""),
+        audio_raw,
         data.get("voice", "Fenrir"),
         data.get("aspectRatio", "9:16"),
         data.get("duration", "00:30"),

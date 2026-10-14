@@ -828,7 +828,7 @@ export default function WorkspacePage({
         coverImageUrl:
           backdrops.find((b) => b.id === selectedBackdrop)?.imageUrl ||
           'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85',
-        audioUrl: audioUrl || '',
+        audioUrl: audioUrl && !audioUrl.startsWith('data:') ? audioUrl : '',
         voice: selectedVoice,
         aspectRatio: canvasAspectRatio,
         duration: `00:${String(Math.round(duration || 30)).padStart(2, '0')}`,
