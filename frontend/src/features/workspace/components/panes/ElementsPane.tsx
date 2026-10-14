@@ -112,24 +112,24 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
-      {/* ── Top Header Bar (Matching Right Pane) ── */}
-      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Shapes className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+      {/* ── Top Header Bar (Matching Studio Shell) ── */}
+      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Shapes className="w-4 h-4 shrink-0 text-purple-400" />
           <span className="text-xs font-bold text-white truncate">
             Studio Elements &amp; Overlays
           </span>
         </div>
 
         {appliedItem && (
-          <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
             ✓ Applied
           </span>
         )}
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
         {[
           { id: 'badges', label: 'Badges' },
           { id: 'fx', label: 'Visual FX' },
@@ -142,7 +142,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id as any)}
-            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
               activeTab === tab.id
                 ? 'text-white border-white'
                 : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'

@@ -106,10 +106,10 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
-      {/* ── Top Header Bar (Matching Right Inspector Pane) ── */}
-      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <LayoutTemplate className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+      {/* ── Top Header Bar (Matching Studio Shell) ── */}
+      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <LayoutTemplate className="w-4 h-4 shrink-0 text-amber-400" />
           <span className="text-xs font-bold text-white truncate">
             Canvas &amp; Frame Studio
           </span>
@@ -118,16 +118,16 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         <button
           type="button"
           onClick={() => handleSelectBg('#000000')}
-          className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
-          title="Reset to default black"
+          className="h-7 px-2.5 rounded-md bg-[#222226] hover:bg-[#2C2C32] text-[11px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#323238] flex items-center gap-1.5"
+          title="Reset canvas to default black"
         >
-          <RotateCcw className="w-3 h-3" />
+          <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
           <span>Reset</span>
         </button>
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
         {[
           { id: 'ratio', label: 'Aspect Ratio' },
           { id: 'luts', label: 'Color LUTs' },
@@ -140,7 +140,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id as any)}
-            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
               activeTab === tab.id
                 ? 'text-white border-white'
                 : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'

@@ -3,11 +3,15 @@ export type PageRoute =
   | 'dashboard'
   | 'workspace'
   | 'workspace-script'
+  | 'workspace-prompt'
+  | 'workspace-editor'
   | 'workspace-media'
   | 'workspace-audio'
   | 'workspace-elements'
   | 'workspace-text'
   | 'workspace-canvas'
+  | 'workspace-image'
+  | 'workspace-video'
   | 'videos'
   | 'youtube'
   | 'youtube-videos'
@@ -50,11 +54,15 @@ export const APP_ROUTES: RouteConfig[] = [
   // ── 2. AI Video Creation Workspace & Sub-Panes ──
   { id: 'workspace', path: '/workspace', title: 'AI Video Studio - ApexMind', aliases: ['/studio', '/editor'] },
   { id: 'workspace-script', path: '/workspace/script', title: 'Script & AI - ApexMind Studio', aliases: ['/studio/script'] },
+  { id: 'workspace-prompt', path: '/workspace/prompt', title: 'AI Script Creator - ApexMind Studio', aliases: ['/studio/prompt'] },
+  { id: 'workspace-editor', path: '/workspace/editor', title: 'Script & Subtitles - ApexMind Studio', aliases: ['/studio/editor'] },
   { id: 'workspace-media', path: '/workspace/media', title: 'Media Library - ApexMind Studio', aliases: ['/studio/media'] },
   { id: 'workspace-audio', path: '/workspace/audio', title: 'Voice & Audio - ApexMind Studio', aliases: ['/studio/audio'] },
   { id: 'workspace-elements', path: '/workspace/elements', title: 'Visual Elements - ApexMind Studio', aliases: ['/studio/elements'] },
   { id: 'workspace-text', path: '/workspace/text', title: 'Text & Captions - ApexMind Studio', aliases: ['/studio/text'] },
   { id: 'workspace-canvas', path: '/workspace/canvas', title: 'Video Canvas - ApexMind Studio', aliases: ['/studio/canvas'] },
+  { id: 'workspace-image', path: '/workspace/image', title: 'Stock Photos - ApexMind Studio', aliases: ['/studio/photos', '/workspace/photos'] },
+  { id: 'workspace-video', path: '/workspace/video', title: 'Stock Videos - ApexMind Studio', aliases: ['/studio/videos', '/workspace/videos'] },
 
   // ── 3. Video Assets Library ──
   { id: 'videos', path: '/videos', title: 'Website Video Library - ApexMind', aliases: ['/video-library', '/studio-videos', '/library'] },

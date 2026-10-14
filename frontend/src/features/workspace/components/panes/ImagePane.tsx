@@ -377,31 +377,31 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
-      {/* ── Top Header Bar (Matching Right Inspector Pane) ── */}
-      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <ImageIcon className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+      {/* ── Top Header Bar (Matching Studio Shell) ── */}
+      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <ImageIcon className="w-4 h-4 shrink-0 text-indigo-400" />
           <span className="text-xs font-bold text-white truncate">
-            Backdrop Images
+            Backdrop Photos
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {isLoadingBackend && (
-            <RefreshCw className="w-3 h-3 text-[#60A5FA] animate-spin" />
+            <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
-          <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
+          <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
             {filteredImages.length} Photos
           </span>
         </div>
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
         <button
           type="button"
           onClick={() => setActiveTab('catalog')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'catalog'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
@@ -412,19 +412,19 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('filters')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'filters'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <Sliders className="w-3 h-3 text-[#60A5FA]" />
-          Color Filters
+          <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
+          <span>Color Filters</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('url')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'url'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
@@ -435,14 +435,14 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('saved')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'saved'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <Bookmark className="w-3 h-3" />
-          Saved ({savedImages.length})
+          <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+          <span>Saved ({savedImages.length})</span>
         </button>
       </div>
 

@@ -317,20 +317,20 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         className="hidden"
       />
 
-      {/* ── Top Header Bar (Matching Right Inspector Pane) ── */}
-      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Music className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+      {/* ── Top Header Bar (Matching Studio Shell) ── */}
+      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Music className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="text-xs font-bold text-white truncate">
             Audio &amp; Voiceover Studio
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {isLoadingBackend && (
-            <RefreshCw className="w-3 h-3 text-[#60A5FA] animate-spin" />
+            <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
-          <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
+          <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
             {activeTab === 'soundtracks'
               ? `${filteredSoundtracks.length} Tracks`
               : activeTab === 'sfx'
@@ -341,11 +341,11 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
         <button
           type="button"
           onClick={() => setActiveTab('soundtracks')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'soundtracks'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
@@ -356,7 +356,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('sfx')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'sfx'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
@@ -367,43 +367,43 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('soundboard')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'soundboard'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <Sparkles className="w-3 h-3 text-amber-400" />
-          Soundboard ({VIRAL_MEME_SOUNDBOARD.length})
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span>Soundboard ({VIRAL_MEME_SOUNDBOARD.length})</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('mixer')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'mixer'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <Sliders className="w-3 h-3 text-[#60A5FA]" />
-          Mixer
+          <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
+          <span>Mixer</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('record')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'record'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <Mic className="w-3 h-3 text-rose-400" />
-          Voiceover
+          <Mic className="w-3.5 h-3.5 text-rose-400" />
+          <span>Voiceover</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('url')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'url'
               ? 'text-white border-white'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'

@@ -170,10 +170,10 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl">
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
       {/* ── Top Bar: Active Compound Indicator, Home Button & Switcher Dropdown ── */}
-      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20">
-        <div className="flex items-center gap-1.5 min-w-0">
+      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
           <CurrentIcon className={`w-4 h-4 shrink-0 ${compoundMetadata.color}`} />
           <span className="text-xs font-bold text-white truncate">
             {compoundMetadata.label}
@@ -181,7 +181,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
         </div>
 
         {/* Right Actions: Home Button & Compound Switcher */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* Home Button */}
           <button
             type="button"

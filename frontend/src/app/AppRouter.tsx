@@ -76,11 +76,15 @@ export default function AppRouter({
             return <DashboardPage onNavigate={onNavigate} />;
           case 'workspace':
           case 'workspace-script':
+          case 'workspace-prompt':
+          case 'workspace-editor':
           case 'workspace-media':
           case 'workspace-audio':
           case 'workspace-elements':
           case 'workspace-text':
           case 'workspace-canvas':
+          case 'workspace-image':
+          case 'workspace-video':
             return (
               <WorkspacePage
                 onNavigate={onNavigate}
