@@ -274,4 +274,21 @@ export const youtubeApi = {
     const data = await res.json();
     return data.analytics || null;
   },
+
+  // Google OAuth 2.0 Live YouTube Authorization
+  async getAuthConnectUrl(): Promise<{ success: boolean; authUrl: string; redirectUri: string }> {
+    const res = await fetch(apiUrl('/api/youtube/auth/connect'));
+    if (!res.ok) {
+      throw new Error('Failed to generate YouTube authorization URL');
+    }
+    return res.json();
+  },
+
+  async getAuthStatus(): Promise<{ success: boolean; connected: boolean; channel?: any }> {
+    const res = await fetch(apiUrl('/api/youtube/auth/status'));
+    if (!res.ok) {
+      return { success: false, connected: false };
+    }
+    return res.json();
+  },
 };

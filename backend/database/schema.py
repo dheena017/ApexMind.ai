@@ -45,13 +45,26 @@ def init_db():
     except Exception as e:
         logger.warning(f"Notifications schema migration notice: {e}")
 
-    # 4. Dynamic migration for youtube_channels banner_url
+    # 4. Dynamic migration for youtube_channels columns (banner_url & OAuth credentials)
     try:
         cursor.execute("PRAGMA table_info(youtube_channels)")
         ch_cols = {row[1] for row in cursor.fetchall()}
-        if ch_cols and "banner_url" not in ch_cols:
-            cursor.execute("ALTER TABLE youtube_channels ADD COLUMN banner_url TEXT")
-            logger.info("Migrated youtube_channels: added 'banner_url' column")
+        if ch_cols:
+            if "banner_url" not in ch_cols:
+                cursor.execute("ALTER TABLE youtube_channels ADD COLUMN banner_url TEXT")
+                logger.info("Migrated youtube_channels: added 'banner_url' column")
+            if "refresh_token" not in ch_cols:
+                cursor.execute("ALTER TABLE youtube_channels ADD COLUMN refresh_token TEXT")
+                logger.info("Migrated youtube_channels: added 'refresh_token' column")
+            if "access_token" not in ch_cols:
+                cursor.execute("ALTER TABLE youtube_channels ADD COLUMN access_token TEXT")
+                logger.info("Migrated youtube_channels: added 'access_token' column")
+            if "token_expiry" not in ch_cols:
+                cursor.execute("ALTER TABLE youtube_channels ADD COLUMN token_expiry TEXT")
+                logger.info("Migrated youtube_channels: added 'token_expiry' column")
+            if "is_oauth_authenticated" not in ch_cols:
+                cursor.execute("ALTER TABLE youtube_channels ADD COLUMN is_oauth_authenticated INTEGER DEFAULT 0")
+                logger.info("Migrated youtube_channels: added 'is_oauth_authenticated' column")
     except Exception as e:
         logger.warning(f"YouTube channels schema migration notice: {e}")
 

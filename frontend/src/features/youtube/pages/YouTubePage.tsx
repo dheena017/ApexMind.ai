@@ -170,6 +170,20 @@ export default function YouTubePage({ onNavigate }: { onNavigate: (page: string)
 
   useEffect(() => {
     loadData();
+
+    // Check OAuth return parameters from Google
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('oauth') === 'success') {
+        const ch = params.get('channel') || 'channel';
+        notify(`🎉 Google OAuth verified! Channel "${ch}" is authorized for live YouTube Shorts uploads.`);
+        window.history.replaceState({}, '', window.location.pathname);
+      } else if (params.get('oauth') === 'error') {
+        const err = params.get('message') || 'Authentication failed';
+        notify(`⚠️ YouTube authorization failed: ${err}`);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, []);
 
   // Show temporary status notification

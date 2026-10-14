@@ -187,6 +187,34 @@ get_live_channel_shorts = get_channel_shorts
 delete_youtube_channel_route = disconnect_channel
 
 
+from .youtube_live_service import (
+    generate_youtube_auth_url,
+    handle_oauth_callback,
+    get_authenticated_youtube_client,
+    render_vertical_short,
+    upload_video_to_live_youtube,
+)
+
+
+def get_youtube_authorization_url(redirect_uri: str) -> str:
+    return generate_youtube_auth_url(redirect_uri)
+
+
+def process_youtube_oauth_callback(code: str, redirect_uri: str) -> Dict[str, Any]:
+    return handle_oauth_callback(code, redirect_uri)
+
+
+def get_oauth_status() -> Dict[str, Any]:
+    yt = get_authenticated_youtube_client()
+    from backend.database.repository import get_oauth_channel
+    ch = get_oauth_channel()
+    return {
+        "success": True,
+        "connected": yt is not None,
+        "channel": ch,
+    }
+
+
 def publish_video_to_shorts(
     title: Any = None,
     quote: str = "",
@@ -209,16 +237,49 @@ def publish_video_to_shorts(
         category = kwargs.get("category", category)
         channel_id = kwargs.get("channel_id") or kwargs.get("channelId") or channel_id
 
+    real_video_url = None
+    real_video_id = None
+    live_uploaded = False
+
+    # Check if Google OAuth authorized YouTube channel is active
+    yt_client = get_authenticated_youtube_client()
+    if yt_client:
+        try:
+            logger.info(f"Rendering vertical 9:16 video for live YouTube upload: '{title}'")
+            video_file = render_vertical_short(
+                title=title,
+                quote=quote,
+                cover_image_url=kwargs.get("coverImageUrl") or kwargs.get("visualTheme"),
+                duration_seconds=15,
+            )
+            upload_result = upload_video_to_live_youtube(
+                video_path=video_file,
+                title=title,
+                quote=quote,
+                category=category,
+                tags=kwargs.get("tags"),
+            )
+            real_video_id = upload_result.get("id")
+            real_video_url = upload_result.get("videoUrl")
+            live_uploaded = True
+            logger.info(f"Live YouTube Short published successfully: {real_video_url}")
+        except Exception as e:
+            logger.error(f"Live YouTube upload encounter error ({e}), storing in studio catalog with fallback link.")
+
     created = insert_video(
         title=title,
         quote=quote,
         voice=voice,
         category=category,
         channel_id=channel_id,
+        video_url=real_video_url,
+        custom_id=real_video_id,
     )
+    created["liveUploaded"] = live_uploaded
     return {
         "success": True,
         "video": created,
+        "liveUploaded": live_uploaded,
     }
 
 

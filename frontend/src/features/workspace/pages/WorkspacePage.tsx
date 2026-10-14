@@ -811,7 +811,7 @@ export default function WorkspacePage({
     setPublishing(true);
     consoleLogger.info('YouTube', `📤 Uploading video to YouTube Shorts: "${publishTitle}"`);
     try {
-      await workspaceApi.publishVideo({
+      const publishedShort = await workspaceApi.publishVideo({
         title: publishTitle,
         quote: publishQuote,
         voice: selectedVoice,
@@ -838,12 +838,16 @@ export default function WorkspacePage({
         status: 'ready',
       }).catch(() => {}); // Non-blocking
       setPublishedSuccess(true);
-      toast.success('Published video to YouTube!', {
-        description: script.title || 'Live on YouTube',
+      const isLive = Boolean(publishedShort?.liveUploaded);
+      const videoLink = publishedShort?.videoUrl || publishedShort?.url;
+      toast.success(isLive ? 'Uploaded LIVE to YouTube Shorts!' : 'Published video to YouTube!', {
+        description: videoLink || script.title || 'Live on YouTube',
       });
       addWorkspaceNotification({
-        title: 'Published to YouTube Shorts',
-        message: `"${script.title}" broadcast to connected YouTube channel.`,
+        title: isLive ? 'Live YouTube Short Broadcast' : 'Published to YouTube Shorts',
+        message: isLive
+          ? `"${script.title}" uploaded directly to your channel: ${videoLink}`
+          : `"${script.title}" broadcast to connected YouTube channel.`,
         category: 'export',
         type: 'success',
         targetPane: 'canvas',

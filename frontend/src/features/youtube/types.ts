@@ -13,6 +13,8 @@ export interface YouTubeChannel {
   channelUrl?: string;
   description?: string;
   bannerUrl?: string;
+  isOAuthAuthenticated?: boolean;
+  hasRefreshToken?: boolean;
 }
 
 export interface YouTubeLookupResult {

@@ -30,7 +30,11 @@ CREATE TABLE IF NOT EXISTS youtube_channels (
     is_auto_upload_enabled INTEGER DEFAULT 1,
     schedule_cron TEXT DEFAULT 'Daily at 08:00 AM EST',
     connected_at TEXT NOT NULL,
-    niche TEXT DEFAULT 'Motivational Quotes'
+    niche TEXT DEFAULT 'Motivational Quotes',
+    refresh_token TEXT,
+    access_token TEXT,
+    token_expiry TEXT,
+    is_oauth_authenticated INTEGER DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_youtube_channels_connected_at ON youtube_channels (connected_at DESC);

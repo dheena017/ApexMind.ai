@@ -71,6 +71,8 @@ def get_channels() -> List[Dict[str, Any]]:
             "scheduleCron": r["schedule_cron"],
             "connectedAt": r["connected_at"],
             "niche": r["niche"],
+            "isOAuthAuthenticated": bool(r["is_oauth_authenticated"]) if "is_oauth_authenticated" in r.keys() else False,
+            "hasRefreshToken": bool(r["refresh_token"]) if "refresh_token" in r.keys() and r["refresh_token"] else False,
         }
         for r in rows
     ]
@@ -95,7 +97,59 @@ def get_channel_by_id(channel_id: str) -> Optional[Dict[str, Any]]:
         "scheduleCron": r["schedule_cron"],
         "connectedAt": r["connected_at"],
         "niche": r["niche"],
+        "isOAuthAuthenticated": bool(r["is_oauth_authenticated"]) if "is_oauth_authenticated" in r.keys() else False,
+        "hasRefreshToken": bool(r["refresh_token"]) if "refresh_token" in r.keys() and r["refresh_token"] else False,
     }
+
+def save_channel_oauth(
+    channel_id: str,
+    name: str,
+    handle: str,
+    avatar_url: Optional[str],
+    subscribers: int,
+    refresh_token: str,
+    access_token: Optional[str] = None,
+    token_expiry: Optional[str] = None,
+) -> Dict[str, Any]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    timestamp = datetime.utcnow().isoformat()
+    clean_handle = handle if handle.startswith("@") else f"@{handle}"
+
+    cursor.execute("DELETE FROM youtube_channels")
+    cursor.execute("""
+    INSERT INTO youtube_channels (
+        id, name, handle, subscribers, videos_uploaded, avatar_url,
+        is_auto_upload_enabled, schedule_cron, connected_at, niche,
+        refresh_token, access_token, token_expiry, is_oauth_authenticated
+    ) VALUES (?, ?, ?, ?, ?, ?, 1, 'Daily at 08:00 AM EST', ?, 'Motivational Quotes', ?, ?, ?, 1)
+    """, (channel_id, name, clean_handle, subscribers, 0, avatar_url, timestamp, refresh_token, access_token, token_expiry))
+    conn.commit()
+    conn.close()
+    logger.info(f"Saved OAuth-authorized YouTube channel: '{name}' ({clean_handle}) (ID: {channel_id})")
+    return get_channel_by_id(channel_id) or {}
+
+def get_oauth_channel() -> Optional[Dict[str, Any]]:
+    import sqlite3
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM youtube_channels WHERE is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != '') ORDER BY connected_at DESC LIMIT 1")
+        r = cursor.fetchone()
+        conn.close()
+        if not r:
+            return None
+        return dict(r)
+    except sqlite3.OperationalError:
+        conn.close()
+        from backend.database.schema import init_db
+        init_db()
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM youtube_channels WHERE is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != '') ORDER BY connected_at DESC LIMIT 1")
+        r = cursor.fetchone()
+        conn.close()
+        return dict(r) if r else None
 
 def add_channel(
     name: str,
@@ -225,12 +279,20 @@ def get_videos() -> List[Dict[str, Any]]:
         for r in rows
     ]
 
-def publish_video(title: str, quote: str, voice: str, category: str, channel_id: Optional[str] = None) -> Dict[str, Any]:
+def publish_video(
+    title: str,
+    quote: str,
+    voice: str,
+    category: str,
+    channel_id: Optional[str] = None,
+    video_url: Optional[str] = None,
+    custom_id: Optional[str] = None,
+) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
-    vid_id = f"yt_{int(datetime.utcnow().timestamp() * 1000)}"
+    vid_id = custom_id or f"yt_{int(datetime.utcnow().timestamp() * 1000)}"
     timestamp = datetime.utcnow().isoformat()
-    video_url = f"https://youtube.com/shorts/{int(datetime.utcnow().timestamp())}"
+    final_video_url = video_url or f"https://youtube.com/shorts/{int(datetime.utcnow().timestamp())}"
     views = 0
     likes = 0
 
@@ -248,7 +310,7 @@ def publish_video(title: str, quote: str, voice: str, category: str, channel_id:
     cursor.execute("""
     INSERT INTO published_videos (id, title, quote, views, likes, published_at, status, duration, channel_id, video_url, category, voice)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (vid_id, title, quote, views, likes, timestamp, "published", "00:30", target_channel_id, video_url, category, voice))
+    """, (vid_id, title, quote, views, likes, timestamp, "published", "00:30", target_channel_id, final_video_url, category, voice))
 
     # Increment video count on the channel if channel exists
     if target_channel_id:
@@ -265,7 +327,7 @@ def publish_video(title: str, quote: str, voice: str, category: str, channel_id:
     conn.commit()
     conn.close()
 
-    logger.info(f"Published Short to YouTube: '{title}' [Voice: {voice}, Channel: {target_channel_id}] -> URL: {video_url}")
+    logger.info(f"Published Short to YouTube: '{title}' [Voice: {voice}, Channel: {target_channel_id}] -> URL: {final_video_url}")
 
     return {
         "id": vid_id,
@@ -277,7 +339,7 @@ def publish_video(title: str, quote: str, voice: str, category: str, channel_id:
         "status": "published",
         "duration": "00:30",
         "channelId": target_channel_id or "",
-        "videoUrl": video_url,
+        "videoUrl": final_video_url,
         "category": category,
         "voice": voice,
     }

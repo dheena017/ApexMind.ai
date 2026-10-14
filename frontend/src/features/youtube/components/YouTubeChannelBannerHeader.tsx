@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button, Modal } from '@/src/shared/ui/common';
 import { YouTubeChannel } from '../types';
+import { youtubeApi } from '../api/youtubeApi';
 
 export interface YouTubeChannelBannerHeaderProps {
   channel?: YouTubeChannel | null;
@@ -32,12 +33,26 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
   className = '',
 }) => {
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [authorizing, setAuthorizing] = useState(false);
   const channelName = channel?.name || 'Connected Channel';
   const handle = channel?.handle || '@channel';
   const defaultAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(channelName)}&backgroundColor=0284c7,4f46e5,7c3aed`;
 
   const [bannerImgSrc, setBannerImgSrc] = useState<string>(channel?.bannerUrl || '');
   const [avatarImgSrc, setAvatarImgSrc] = useState<string>(channel?.avatarUrl || defaultAvatar);
+
+  const handleAuthorizeOAuth = async () => {
+    try {
+      setAuthorizing(true);
+      const res = await youtubeApi.getAuthConnectUrl();
+      if (res?.authUrl) {
+        window.location.href = res.authUrl;
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Failed to initialize YouTube authorization');
+      setAuthorizing(false);
+    }
+  };
 
   React.useEffect(() => {
     setBannerImgSrc(channel?.bannerUrl || '');
@@ -163,8 +178,29 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
           </div>
         </div>
 
-        {/* Right: Authentic YouTube Action Buttons (Customise channel & Manage videos) */}
-        <div className="flex items-center gap-2.5 shrink-0 self-stretch sm:self-auto pt-2 md:pt-0">
+        {/* Right: Authentic YouTube Action Buttons (Authorize live, Customise channel & Manage videos) */}
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-stretch sm:self-auto pt-2 md:pt-0">
+          {channel?.isOAuthAuthenticated || channel?.hasRefreshToken ? (
+            <div
+              className="px-3.5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+              title="Channel is authorized with Google OAuth (youtube.upload). Videos are uploaded live to YouTube."
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Live Upload Ready</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={authorizing}
+              onClick={handleAuthorizeOAuth}
+              className="px-4 py-2 rounded-full bg-[#EA4335] hover:bg-[#D93025] active:bg-[#B3261E] text-white text-xs sm:text-sm font-semibold transition-all border border-red-500/40 cursor-pointer shadow-sm flex items-center justify-center gap-2"
+              title="Authorize your Google account to publish real YouTube Shorts directly"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              <span>{authorizing ? 'Connecting Google…' : 'Authorize YouTube'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onCustomiseChannel}

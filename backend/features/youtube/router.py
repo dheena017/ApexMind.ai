@@ -6,8 +6,11 @@ publishing, and automations.
 
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
+import os
+import urllib.parse
 
 from backend.database.repository import (
     get_community_posts,
@@ -39,6 +42,9 @@ from .service import (
     publish_video_to_shorts,
     list_automations,
     toggle_automation,
+    get_youtube_authorization_url,
+    process_youtube_oauth_callback,
+    get_oauth_status,
 )
 from .youtube_service import (
     get_channel_live_feed,
@@ -49,6 +55,54 @@ from .youtube_service import (
 
 logger = logging.getLogger("ApexMind.features.youtube")
 router = APIRouter(tags=["YouTube Studio"])
+
+
+@router.get(
+    "/api/youtube/auth/connect",
+    summary="Get Google OAuth authorization URL for YouTube upload",
+    description="Initiates Google OAuth 2.0 flow requesting 'youtube.upload' scope."
+)
+async def get_youtube_auth_connect(request: Request, redirect_host: Optional[str] = None):
+    try:
+        host = redirect_host or request.headers.get("host") or "127.0.0.1:8000"
+        scheme = request.url.scheme or "http"
+        redirect_uri = f"{scheme}://{host}/api/youtube/auth/callback"
+        auth_url = get_youtube_authorization_url(redirect_uri)
+        return {
+            "success": True,
+            "authUrl": auth_url,
+            "redirectUri": redirect_uri,
+        }
+    except Exception as e:
+        logger.error(f"Error generating YouTube auth URL: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/api/youtube/auth/callback",
+    summary="Google OAuth callback for YouTube upload authorization"
+)
+async def get_youtube_auth_callback(request: Request, code: str):
+    try:
+        host = request.headers.get("host") or "127.0.0.1:8000"
+        scheme = request.url.scheme or "http"
+        redirect_uri = f"{scheme}://{host}/api/youtube/auth/callback"
+        res = process_youtube_oauth_callback(code, redirect_uri)
+        ch_name = res.get("channel", {}).get("name", "channel")
+        frontend_url = os.getenv("APP_URL", "http://127.0.0.1:5173/").rstrip("/")
+        return RedirectResponse(url=f"{frontend_url}/youtube?oauth=success&channel={urllib.parse.quote(ch_name)}")
+    except Exception as e:
+        logger.error(f"Error in YouTube OAuth callback: {e}")
+        frontend_url = os.getenv("APP_URL", "http://127.0.0.1:5173/").rstrip("/")
+        return RedirectResponse(url=f"{frontend_url}/youtube?oauth=error&message={urllib.parse.quote(str(e))}")
+
+
+@router.get(
+    "/api/youtube/auth/status",
+    summary="Check YouTube live OAuth authorization status"
+)
+async def get_youtube_auth_status():
+    return get_oauth_status()
 
 @router.get(
     "/api/youtube/channels",
