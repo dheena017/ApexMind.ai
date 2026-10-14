@@ -4,6 +4,7 @@ import { useReactMediaRecorder } from 'react-media-recorder';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Music,
+  Plus,
   Mic,
   MicOff,
   Play,
@@ -13,11 +14,7 @@ import {
   Sparkles,
   Radio,
   RotateCcw,
-  VolumeX,
-  Disc,
-  Sliders,
   Activity,
-  Layers,
 } from 'lucide-react';
 
 export interface SoundtrackItem {
@@ -42,6 +39,7 @@ export interface AudioPaneProps {
   onSelectMusic?: (musicId: string) => void;
   selectedMusic?: string;
   onApplyRecordedVoice?: (recordedUrl: string) => void;
+  onAddSfxToTimeline?: (sfx: SoundEffectItem) => void;
 }
 
 const SOUNDTRACKS: SoundtrackItem[] = [
@@ -96,28 +94,25 @@ const SOUND_EFFECTS: SoundEffectItem[] = [
   { id: 'sfx-1', name: 'Cinematic Bass Boom', category: 'Impact', duration: '2.5s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3527e30eb.mp3' },
   { id: 'sfx-2', name: 'Fast Whoosh Transition', category: 'Transition', duration: '0.8s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
   { id: 'sfx-3', name: 'Sub Riser Tension', category: 'Tension', duration: '3.2s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
-  { id: 'sfx-4', name: 'Heartbeat Pulse', category: 'Atmosphere', duration: '4.0s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_2753a81765.mp3' },
-  { id: 'sfx-5', name: 'Typewriter Keystroke', category: 'Foley', duration: '1.2s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c761e0cb60.mp3' },
 ];
 
 export const AudioPane: React.FC<AudioPaneProps> = ({
   onSelectMusic,
-  selectedMusic = 'track-1',
+  selectedMusic,
   onApplyRecordedVoice,
+  onAddSfxToTimeline,
 }) => {
   const [activeTab, setActiveTab] = useState<'soundtracks' | 'recorder' | 'sfx'>('soundtracks');
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
-  const [activeAudioUrl, setActiveAudioUrl] = useState<string | null>(SOUNDTRACKS[0].audioUrl);
+  const [activeAudioUrl, setActiveAudioUrl] = useState<string>(SOUNDTRACKS[0].audioUrl);
   const [isWsPlaying, setIsWsPlaying] = useState(false);
-  const [wsCurrentTime, setWsCurrentTime] = useState(0);
   const [wsDuration, setWsDuration] = useState(0);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [wsCurrentTime, setWsCurrentTime] = useState(0);
 
   const waveformContainerRef = useRef<HTMLDivElement | null>(null);
   const wavesurferInstance = useRef<WaveSurfer | null>(null);
-  const timerIntervalRef = useRef<any>(null);
 
-  // Open-Source react-media-recorder integration
+  // react-media-recorder integration
   const {
     status: recordStatus,
     startRecording,
@@ -127,73 +122,59 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   } = useReactMediaRecorder({ audio: true });
 
   const isRecording = recordStatus === 'recording';
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
 
-  // Live recording timer
   useEffect(() => {
+    let timer: NodeJS.Timeout;
     if (isRecording) {
       setRecordingSeconds(0);
-      timerIntervalRef.current = setInterval(() => {
+      timer = setInterval(() => {
         setRecordingSeconds((prev) => prev + 1);
       }, 1000);
-    } else {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     }
-    return () => {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    };
+    return () => clearInterval(timer);
   }, [isRecording]);
 
-  // Open-Source wavesurfer.js Canvas Waveform Visualizer
   useEffect(() => {
     if (!waveformContainerRef.current) return;
 
-    if (wavesurferInstance.current) {
-      wavesurferInstance.current.destroy();
-    }
+    wavesurferInstance.current = WaveSurfer.create({
+      container: waveformContainerRef.current,
+      waveColor: '#3F3F46',
+      progressColor: '#3B82F6',
+      cursorColor: '#60A5FA',
+      barWidth: 2,
+      barGap: 3,
+      barRadius: 2,
+      height: 48,
+      normalize: true,
+    });
 
-    try {
-      const ws = WaveSurfer.create({
-        container: waveformContainerRef.current,
-        waveColor: '#3B82F6',
-        progressColor: '#93C5FD',
-        cursorColor: '#FFFFFF',
-        cursorWidth: 2,
-        barWidth: 2,
-        barGap: 2,
-        barRadius: 2,
-        height: 44,
-        url: activeAudioUrl || SOUNDTRACKS[0].audioUrl,
-      });
+    wavesurferInstance.current.load(activeAudioUrl);
 
-      ws.on('ready', () => {
-        setWsDuration(ws.getDuration());
-      });
+    wavesurferInstance.current.on('ready', () => {
+      if (wavesurferInstance.current) {
+        setWsDuration(wavesurferInstance.current.getDuration());
+      }
+    });
 
-      ws.on('timeupdate', (currentTime) => {
-        setWsCurrentTime(currentTime);
-      });
+    wavesurferInstance.current.on('audioprocess', () => {
+      if (wavesurferInstance.current) {
+        setWsCurrentTime(wavesurferInstance.current.getCurrentTime());
+      }
+    });
 
-      ws.on('play', () => setIsWsPlaying(true));
-      ws.on('pause', () => setIsWsPlaying(false));
-      ws.on('finish', () => {
-        setIsWsPlaying(false);
-        setPlayingTrackId(null);
-      });
-
-      wavesurferInstance.current = ws;
-    } catch (err) {
-      console.warn('WaveSurfer initialization error:', err);
-    }
+    wavesurferInstance.current.on('play', () => setIsWsPlaying(true));
+    wavesurferInstance.current.on('pause', () => setIsWsPlaying(false));
+    wavesurferInstance.current.on('finish', () => setIsWsPlaying(false));
 
     return () => {
       if (wavesurferInstance.current) {
         wavesurferInstance.current.destroy();
-        wavesurferInstance.current = null;
       }
     };
   }, [activeAudioUrl]);
 
-  // Load recorded voice into wavesurfer when recorded
   useEffect(() => {
     if (mediaBlobUrl) {
       setActiveAudioUrl(mediaBlobUrl);
@@ -243,102 +224,98 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col font-sans-studio text-[#E5E5E5] space-y-4">
-      {/* ── Top Header Bar ────────────────────────────────────────────── */}
-      <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#2F2F2F] bg-[#121212]/90 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
-            <Music className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-tight">Audio Studio Engine</h2>
-            <p className="text-[10px] text-[#9CA3AF]">wavesurfer.js • react-media-recorder</p>
-          </div>
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Music className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+          <span className="text-xs font-bold text-white truncate">
+            Audio Studio Engine
+          </span>
+          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
+            24kHz
+          </span>
         </div>
 
-        <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-[#60A5FA] font-semibold">
-          24kHz Studio Audio
-        </span>
+        {/* Right Status Pill */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-lg bg-[#222228] border border-[#32323C] text-[#A1A1AA]">
+            {isRecording ? 'REC ON' : 'READY'}
+          </span>
+        </div>
       </div>
 
-      {/* ── Open-Source WaveSurfer.js Visualizer Dock ────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-[#2F2F2F] bg-[#0E0E0E] p-3.5 shadow-xl space-y-2.5 relative overflow-hidden"
-      >
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-[#60A5FA] animate-pulse" />
-            <span className="font-bold text-white text-[11px]">
-              Live Interactive Waveform Visualizer
+      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveTab('soundtracks')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'soundtracks' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Soundtracks
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('recorder')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'recorder' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Mic Recorder
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('sfx')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'sfx' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Sound FX
+        </button>
+      </div>
+
+      {/* ── Main Tab Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+        {/* WaveSurfer.js Visualizer Dock */}
+        <div className="rounded-xl border border-[#2A2A30] bg-[#1C1C20] p-3 space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <Activity className="w-3.5 h-3.5 text-[#60A5FA] animate-pulse" />
+              <span className="font-bold text-white text-[11px]">Waveform Visualizer</span>
+            </div>
+            <span className="font-mono-studio text-[10px] text-[#A1A1AA]">
+              {formatSecs(wsCurrentTime)} / {formatSecs(wsDuration)}
             </span>
           </div>
-          <span className="font-mono-studio text-[10px] text-[#9CA3AF]">
-            {formatSecs(wsCurrentTime)} / {formatSecs(wsDuration)}
-          </span>
+
+          <div
+            ref={waveformContainerRef}
+            className="w-full bg-[#121214] rounded-lg p-2 border border-[#26262B] min-h-[48px] cursor-pointer"
+          />
+
+          <div className="flex items-center justify-between pt-0.5">
+            <button
+              type="button"
+              onClick={handleToggleWavePlay}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[11px] font-bold transition-all cursor-pointer"
+            >
+              {isWsPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+              <span>{isWsPlaying ? 'Pause' : 'Play'}</span>
+            </button>
+            <span className="text-[9px] text-[#71717A] font-mono-studio">Drag playhead to scrub</span>
+          </div>
         </div>
 
-        {/* Real WaveSurfer.js Canvas Mount */}
-        <div
-          ref={waveformContainerRef}
-          className="w-full bg-[#050505] rounded-xl p-2 border border-[#222222] min-h-[50px] cursor-pointer"
-        />
-
-        {/* Scrubber playback controls */}
-        <div className="flex items-center justify-between pt-1">
-          <button
-            type="button"
-            onClick={handleToggleWavePlay}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold transition-all cursor-pointer"
-          >
-            {isWsPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-            <span>{isWsPlaying ? 'Pause Audio' : 'Play Waveform'}</span>
-          </button>
-
-          <span className="text-[9px] text-[#71717A] font-mono-studio">
-            Drag playhead to scrub audio
-          </span>
-        </div>
-      </motion.div>
-
-      {/* ── Sub Navigation Tabs ──────────────────────────────────────── */}
-      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#141414] border border-[#262626]">
-        {(
-          [
-            { id: 'soundtracks', label: 'Soundtracks' },
-            { id: 'recorder', label: 'Mic Recorder' },
-            { id: 'sfx', label: 'Sound FX' },
-          ] as const
-        ).map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-all cursor-pointer relative ${
-              activeTab === tab.id
-                ? 'bg-[#3B82F6] text-white shadow-xs'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Soundtracks List ─────────────────────────────────────────── */}
-      <AnimatePresence mode="wait">
+        {/* Tab 1: Soundtracks */}
         {activeTab === 'soundtracks' && (
-          <motion.div
-            key="soundtracks"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="space-y-2"
-          >
-            <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block px-1">
+          <div className="space-y-2">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
               Curated Motivational Background Scores
-            </span>
+            </label>
 
             <div className="space-y-2">
               {SOUNDTRACKS.map((track) => {
@@ -346,33 +323,31 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 const isPlaying = playingTrackId === track.id && isWsPlaying;
 
                 return (
-                  <motion.div
+                  <div
                     key={track.id}
-                    whileHover={{ scale: 1.01 }}
                     className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'border-[#3B82F6] bg-[#3B82F6]/10 ring-1 ring-[#3B82F6]/40'
-                        : 'border-[#262626] bg-[#141414] hover:border-[#404040]'
+                        ? 'border-[#3B82F6] bg-[#3B82F6]/15 ring-1 ring-[#3B82F6]/40'
+                        : 'border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* Play/Preview Waveform Button */}
                       <button
                         type="button"
                         onClick={() => handleSelectTrack(track)}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-md ${
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-md ${
                           isPlaying
                             ? 'bg-[#3B82F6] text-white animate-pulse'
-                            : 'bg-[#1E1E1E] text-white hover:bg-[#2A2A2A] hover:text-[#60A5FA]'
+                            : 'bg-[#17171A] text-white hover:bg-[#26262B] hover:text-[#60A5FA]'
                         }`}
-                        title={isPlaying ? 'Pause' : 'Load into WaveSurfer'}
+                        title={isPlaying ? 'Pause' : 'Preview'}
                       >
-                        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                        {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                       </button>
 
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white truncate">{track.title}</p>
-                        <div className="flex items-center gap-2 text-[10px] text-[#71717A] font-mono-studio">
+                        <div className="flex items-center gap-1.5 text-[10px] text-[#71717A] font-mono-studio">
                           <span>{track.genre}</span>
                           <span>•</span>
                           <span>{track.duration}</span>
@@ -382,41 +357,34 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       </div>
                     </div>
 
-                    {/* Apply Track Button */}
                     <button
                       type="button"
                       onClick={() => handleApplyMusic(track)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
                         isSelected
                           ? 'bg-[#3B82F6] text-white'
-                          : 'border border-[#2F2F2F] text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
+                          : 'border border-[#32323C] text-[#A1A1AA] hover:text-white hover:bg-[#222228]'
                       }`}
                     >
                       {isSelected ? (
                         <>
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          <Check className="w-3 h-3 stroke-[3]" />
                           <span>Active</span>
                         </>
                       ) : (
                         <span>Apply</span>
                       )}
                     </button>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
         )}
 
-        {/* ── Open-Source react-media-recorder Live Mic ───────────────── */}
+        {/* Tab 2: Mic Recorder */}
         {activeTab === 'recorder' && (
-          <motion.div
-            key="recorder"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="p-4 rounded-2xl border border-[#2F2F2F] bg-[#141414] space-y-4"
-          >
+          <div className="p-4 rounded-xl border border-[#2A2A30] bg-[#1C1C20] space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span
@@ -428,41 +396,35 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   {isRecording ? `Recording... (${formatSecs(recordingSeconds)})` : 'Microphone Ready'}
                 </span>
               </div>
-              <span className="text-[10px] font-mono-studio text-[#9CA3AF] uppercase">
+              <span className="text-[10px] font-mono-studio text-[#A1A1AA] uppercase">
                 Status: {recordStatus}
               </span>
             </div>
 
-            {/* Record Control Circle */}
-            <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-[#0A0A0A] rounded-xl border border-[#222222]">
+            <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-[#121214] rounded-xl border border-[#26262B]">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 type="button"
                 onClick={isRecording ? stopRecording : startRecording}
-                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg ${
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg ${
                   isRecording
-                    ? 'bg-red-600 hover:bg-red-700 text-white scale-110 shadow-black/50'
-                    : 'bg-[#3B82F6] hover:bg-[#2563EB] text-white hover:scale-105 shadow-black/40'
+                    ? 'bg-red-600 hover:bg-red-700 text-white scale-110'
+                    : 'bg-[#3B82F6] hover:bg-[#2563EB] text-white hover:scale-105'
                 }`}
                 title={isRecording ? 'Stop Recording' : 'Start Recording'}
               >
-                {isRecording ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+                {isRecording ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
               </motion.button>
               <p className="text-xs font-bold text-white">
                 {isRecording ? 'Tap to Stop Recording' : 'Tap Mic to Start Speaking'}
               </p>
               <p className="text-[10px] text-[#71717A]">
-                Audio is instantly loaded into WaveSurfer.js visualizer above!
+                Voice is instantly loaded into WaveSurfer.js visualizer!
               </p>
             </div>
 
-            {/* Recorded Playback & Apply */}
             {mediaBlobUrl && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="p-3 rounded-xl bg-[#1E1E1E] border border-[#2F2F2F] space-y-3"
-              >
+              <div className="p-3 rounded-xl bg-[#17171A] border border-[#26262B] space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-emerald-400">
                     Voiceover Captured ({formatSecs(recordingSeconds || 5)})
@@ -479,64 +441,65 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 <button
                   type="button"
                   onClick={handleApplyVoice}
-                  className="w-full py-2.5 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full py-2 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <Check className="w-4 h-4" /> Apply Voiceover to Reel Timeline
+                  <Check className="w-3.5 h-3.5" /> Apply Voiceover to Reel
                 </button>
-              </motion.div>
+              </div>
             )}
-          </motion.div>
+          </div>
         )}
 
-        {/* ── Sound Effects SFX ────────────────────────────────────────── */}
+        {/* Tab 3: SFX */}
         {activeTab === 'sfx' && (
-          <motion.div
-            key="sfx"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="space-y-2"
-          >
-            <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block px-1">
-              Reel Transition & Impact Sound Effects
-            </span>
+          <div className="space-y-2">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+              Transition &amp; Impact Sound Effects
+            </label>
             <div className="space-y-2">
               {SOUND_EFFECTS.map((sfx) => {
                 const isPlaying = playingTrackId === sfx.id && isWsPlaying;
                 return (
-                  <motion.div
+                  <div
                     key={sfx.id}
-                    whileHover={{ scale: 1.01 }}
-                    className="p-3 rounded-xl border border-[#262626] bg-[#141414] hover:border-[#404040] flex items-center justify-between cursor-pointer"
-                    onClick={() => handlePlaySFX(sfx)}
+                    className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] flex items-center justify-between gap-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                          isPlaying
-                            ? 'bg-[#3B82F6] text-white'
-                            : 'bg-[#1E1E1E] text-white group-hover:bg-[#2A2A2A]'
+                    <button
+                      type="button"
+                      onClick={() => handlePlaySFX(sfx)}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
+                    >
+                      <span
+                        className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center transition-all ${
+                          isPlaying ? 'bg-[#3B82F6] text-white' : 'bg-[#17171A] text-white'
                         }`}
                       >
-                        {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-white">{sfx.name}</p>
-                        <span className="text-[10px] text-[#71717A] font-mono-studio">
+                        {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-xs font-bold text-white">{sfx.name}</span>
+                        <span className="block text-[10px] text-[#71717A] font-mono-studio">
                           {sfx.category} • {sfx.duration}
                         </span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-[#60A5FA] font-mono-studio font-semibold">
-                      Preview Wave →
-                    </span>
-                  </motion.div>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onAddSfxToTimeline?.(sfx)}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#32323C] bg-[#222228] px-2 py-1 text-[10px] font-semibold text-[#60A5FA] hover:text-white transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add
+                    </button>
+                  </div>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 };
+
+export default AudioPane;

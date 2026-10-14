@@ -13,7 +13,6 @@ import {
   EyeOff,
   Lock,
   Unlock,
-  Plus,
 } from 'lucide-react';
 import { EnabledTracks, SelectedClip } from './timelineTypes';
 
@@ -39,7 +38,6 @@ export interface TimelineTrackHeadersProps {
   onToggleMusicTrackMuted: () => void;
   sfxTrackMuted: boolean;
   onToggleSfxTrackMuted: () => void;
-  onOpenAddTrackMenu: () => void;
 }
 
 export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
@@ -64,7 +62,6 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
   onToggleMusicTrackMuted,
   sfxTrackMuted,
   onToggleSfxTrackMuted,
-  onOpenAddTrackMenu,
 }) => {
   return (
     <div className="w-48 shrink-0 border-r border-[#262626] bg-[#141414] flex flex-col z-20">
@@ -285,15 +282,6 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         </div>
       )}
 
-      {/* Quick Add Track Footer */}
-      <div
-        onClick={onOpenAddTrackMenu}
-        className="h-8 border-t border-[#262626] flex items-center justify-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 hover:bg-white/[0.02] cursor-pointer transition-colors"
-        title="Add a compound track"
-      >
-        <Plus className="w-3 h-3" />
-        <span>Add Track</span>
-      </div>
     </div>
   );
 };

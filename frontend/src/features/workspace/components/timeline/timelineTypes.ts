@@ -1,11 +1,26 @@
 import { GeneratedScript, VisualBackdrop, ScriptSubtitle, VoiceProfile, MusicTrack } from '../../types';
 
+export const MIN_TIMELINE_ZOOM = 0.25;
+export const MAX_TIMELINE_ZOOM = 3;
+export const TIMELINE_ZOOM_STEP = 0.25;
+
+export interface TimelineSoundEffect {
+  id: string;
+  name: string;
+  audioUrl: string;
+  duration: number;
+  start: number;
+}
+
 export interface StudioTimelinePaneProps {
   currentTime: number;
   duration: number;
   isPlaying: boolean;
   onTogglePlay: () => void;
   onSeek: (time: number) => void;
+  onTimelineDurationChange?: (duration: number) => void;
+  selectedSfx?: TimelineSoundEffect | null;
+  onRemoveSfx?: () => void;
   script: GeneratedScript;
   onUpdateSubtitles?: (subtitles: ScriptSubtitle[]) => void;
   activeBackdrop?: VisualBackdrop | null;

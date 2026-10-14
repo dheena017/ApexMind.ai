@@ -2,6 +2,7 @@ export type PageRoute =
   | 'landing'
   | 'dashboard'
   | 'workspace'
+  | 'videos'
   | 'youtube'
   | 'notifications'
   | 'profile'
@@ -29,6 +30,7 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'landing', path: '/', title: 'ApexMind - AI Motivational YouTube Studio', aliases: ['/landing'] },
   { id: 'dashboard', path: '/dashboard', title: 'Dashboard - ApexMind Studio' },
   { id: 'workspace', path: '/workspace', title: 'AI Video Studio - ApexMind', aliases: ['/studio'] },
+  { id: 'videos', path: '/videos', title: 'Website Video Library - ApexMind', aliases: ['/video-library', '/studio-videos'] },
   { id: 'youtube', path: '/youtube', title: 'YouTube Manager - ApexMind', aliases: ['/channels'] },
   { id: 'notifications', path: '/notifications', title: 'Notifications - ApexMind', aliases: ['/alerts'] },
   { id: 'profile', path: '/profile', title: 'Profile & Badges - ApexMind', aliases: ['/account'] },

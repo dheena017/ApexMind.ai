@@ -6,6 +6,7 @@ import LoadingPage from '@/src/shared/ui/LoadingPage';
 import LoginPage from '@/src/features/auth/pages/LoginPage';
 import DashboardPage from '@/src/features/dashboard/pages/DashboardPage';
 import WorkspacePage from '@/src/features/workspace/pages/WorkspacePage';
+import VideosPage from '@/src/features/videos/pages/VideosPage';
 import YouTubePage from '@/src/features/youtube/pages/YouTubePage';
 import ProfilePage from '@/src/features/profile/pages/ProfilePage';
 import ProfileDetailsPage from '@/src/features/profile/pages/ProfileDetailsPage';
@@ -73,6 +74,8 @@ export default function AppRouter({
             );
           case 'youtube':
             return <YouTubePage onNavigate={onNavigate} />;
+          case 'videos':
+            return <VideosPage onNavigate={onNavigate} />;
           case 'profile':
             return <ProfilePage onNavigate={onNavigate} />;
           case 'profile-details':

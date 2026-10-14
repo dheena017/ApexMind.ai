@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { workspaceApi } from '../api/workspaceApi';
+import { videosApi } from '@/src/features/videos/api/videosApi';
 import { GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { VideoPreviewPane } from '../components/VideoPreview';
@@ -38,6 +39,7 @@ export default function WorkspacePage({
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
+  const [targetLength, setTargetLength] = useState('30 seconds');
   const [loadingAgent, setLoadingAgent] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [testingVoiceId, setTestingVoiceId] = useState<string | null>(null);
@@ -79,6 +81,13 @@ export default function WorkspacePage({
   // Active Selections
   const [selectedVoice, setSelectedVoice] = useState('Fenrir');
   const [selectedMusic, setSelectedMusic] = useState('');
+  const [selectedSfx, setSelectedSfx] = useState<{
+    id: string;
+    name: string;
+    audioUrl: string;
+    duration: number;
+    start: number;
+  } | null>(null);
   const [selectedBackdrop, setSelectedBackdrop] = useState('');
   const [preferredTone, setPreferredTone] = useState(DEFAULT_CREATOR_PROFILE.tone);
   const [targetAudience, setTargetAudience] = useState(DEFAULT_CREATOR_PROFILE.audience);
@@ -88,6 +97,7 @@ export default function WorkspacePage({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [timelineDuration, setTimelineDuration] = useState(30);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
@@ -119,14 +129,6 @@ export default function WorkspacePage({
         setMusicTracks(media.musicTracks || []);
         setBackdrops(media.visualBackdrops || []);
         setVoices(media.voiceProfiles || []);
-
-        if (media.visualBackdrops && media.visualBackdrops.length > 0) {
-          setSelectedBackdrop((currentBackdrop) =>
-            media.visualBackdrops.some((b) => b.id === currentBackdrop)
-              ? currentBackdrop
-              : media.visualBackdrops[0].id
-          );
-        }
 
         if (media.voiceProfiles && media.voiceProfiles.length > 0) {
           setSelectedVoice((currentVoice) =>
@@ -208,7 +210,12 @@ export default function WorkspacePage({
 
       setScript({ ...generated, recommendedVoice: selectedVoice || generated.recommendedVoice });
       if (generated.visualTheme) {
-        setSelectedBackdrop(generated.visualTheme);
+        const generatedBackdrop = backdrops.find(
+          (backdrop) =>
+            backdrop.id === generated.visualTheme ||
+            backdrop.name.toLowerCase() === generated.visualTheme?.trim().toLowerCase()
+        );
+        if (generatedBackdrop) setSelectedBackdrop(generatedBackdrop.id);
       }
 
       const mem = await workspaceApi.getQuoteMemory();
@@ -282,7 +289,7 @@ export default function WorkspacePage({
     // If audio is actively playing, audio event listener handles time updates
     if (audioRef.current && audioUrl && !audioRef.current.paused) return;
 
-    const maxTime = duration > 0 ? duration : 30;
+    const maxTime = Math.max(duration > 0 ? duration : 30, timelineDuration);
     let lastTs = performance.now();
     let animId: number;
 
@@ -308,7 +315,7 @@ export default function WorkspacePage({
 
     animId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animId);
-  }, [isPlaying, duration, playbackRate, isLooping, audioUrl]);
+  }, [isPlaying, duration, timelineDuration, playbackRate, isLooping, audioUrl]);
 
   // Play / Pause Audio & Timeline Playhead
   const togglePlay = () => {
@@ -318,7 +325,7 @@ export default function WorkspacePage({
         audioRef.current.pause();
       }
     } else {
-      const maxTime = duration > 0 ? duration : 30;
+      const maxTime = Math.max(duration > 0 ? duration : 30, timelineDuration);
       if (currentTime >= maxTime - 0.1) {
         handleSeek(0);
       }
@@ -331,11 +338,13 @@ export default function WorkspacePage({
 
   // Seek playhead (functional across full timeline even without audio synthesized yet)
   const handleSeek = (newTime: number) => {
-    const maxTime = duration > 0 ? duration : 30;
+    const maxTime = Math.max(duration > 0 ? duration : 30, timelineDuration);
     const clamped = Math.max(0, Math.min(maxTime, parseFloat(newTime.toFixed(2))));
     setCurrentTime(clamped);
-    if (audioRef.current && duration > 0 && !Number.isNaN(audioRef.current.duration)) {
+    if (audioRef.current && duration > 0 && !Number.isNaN(audioRef.current.duration) && clamped <= duration) {
       audioRef.current.currentTime = clamped;
+    } else if (audioRef.current && clamped > duration) {
+      audioRef.current.pause();
     }
   };
 
@@ -357,6 +366,25 @@ export default function WorkspacePage({
         visualTheme: selectedBackdrop,
         category,
       });
+      // Also save to website video library automatically
+      await videosApi.createVideo({
+        title: script.title,
+        quote: script.quote,
+        hook: script.hook || '',
+        cta: script.cta || '',
+        category,
+        coverImageUrl:
+          backdrops.find((b) => b.id === selectedBackdrop)?.imageUrl ||
+          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85',
+        audioUrl: audioUrl || '',
+        voice: selectedVoice,
+        aspectRatio: canvasAspectRatio,
+        duration: `00:${String(Math.round(duration || 30)).padStart(2, '0')}`,
+        visualTheme: selectedBackdrop || 'v1',
+        subtitles: script.subtitles as any,
+        tags: script.hashtags || [],
+        status: 'ready',
+      }).catch(() => {}); // Non-blocking
       setPublishedSuccess(true);
       setTimeout(() => {
         onNavigate('youtube');
@@ -368,10 +396,39 @@ export default function WorkspacePage({
     }
   };
 
+  // Save to Website Video Library (without publishing to YouTube)
+  const handleSaveToLibrary = async () => {
+    if (!script.title && !script.quote) return;
+    try {
+      await videosApi.createVideo({
+        title: script.title || 'Untitled Short',
+        quote: script.quote || '',
+        hook: script.hook || '',
+        cta: script.cta || '',
+        category,
+        coverImageUrl:
+          backdrops.find((b) => b.id === selectedBackdrop)?.imageUrl ||
+          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85',
+        audioUrl: audioUrl || '',
+        voice: selectedVoice,
+        aspectRatio: canvasAspectRatio,
+        duration: `00:${String(Math.round(duration || 30)).padStart(2, '0')}`,
+        visualTheme: selectedBackdrop || 'v1',
+        subtitles: script.subtitles as any,
+        tags: script.hashtags || [],
+        status: 'ready',
+      });
+      consoleLogger.success('Library', `✅ Saved "${script.title}" to Website Video Library`);
+      onNavigate('videos');
+    } catch (err) {
+      consoleLogger.error('Library', 'Save to library failed:', err);
+    }
+  };
+
   // Selected backdrop & music objects
   const activeBackdropObj =
     backdrops.find((b) => b.id === selectedBackdrop) ||
-    backdrops[0] || {
+    {
       id: '',
       name: '',
       category: '',
@@ -460,6 +517,15 @@ export default function WorkspacePage({
     return () => window.removeEventListener('workspace:trigger-publish', handleTriggerPublish);
   }, [canPublish, publishing, handlePublish]);
 
+  // Listen for save-to-library event from header
+  useEffect(() => {
+    const handleSave = () => {
+      if (canPublish) handleSaveToLibrary();
+    };
+    window.addEventListener('workspace:save-to-library', handleSave);
+    return () => window.removeEventListener('workspace:save-to-library', handleSave);
+  }, [canPublish, handleSaveToLibrary]);
+
   const centerColSpan =
     showLeftPane && showRightPane
       ? 'lg:col-span-4'
@@ -477,8 +543,101 @@ export default function WorkspacePage({
         {/* Left Pane: Dynamic Active Studio Panel (col-span-4) */}
         {showLeftPane && (
           <div className="lg:col-span-4 min-h-[520px] lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
-            <div className="flex-1 min-h-0 bg-[#121212] border border-[#3A3A3A] rounded-2xl p-3.5 overflow-y-auto custom-scrollbar shadow-xl">
-            {activePane === 'canvas' ? (
+            {activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
+              <ScriptEditorPane
+                script={script}
+                onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
+                onSwitchToAgent={() => {
+                  setScriptSubPane('prompt');
+                  onPaneChange('prompt');
+                }}
+                onStartNewVideo={() => {
+                  setAgentPrompt('');
+                  setScriptSubPane('prompt');
+                  onPaneChange('prompt');
+                  setAudioUrl(null);
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.src = '';
+                  }
+                  setIsPlaying(false);
+                  setCurrentTime(0);
+                  setScript({
+                    title: '',
+                    hook: '',
+                    quote: '',
+                    cta: '',
+                    speechStyle: '',
+                    visualTheme: '',
+                    recommendedVoice: selectedVoice || 'Fenrir',
+                    tags: [],
+                    hashtags: [],
+                    subtitles: [],
+                  });
+                  setSelectedBackdrop('');
+                  setSelectedMusic('');
+                  setCustomBackdropImage(undefined);
+                  setCustomBackdropVideo(undefined);
+                  setActiveElementOverlay(null);
+                }}
+              />
+            ) : activePane === 'script' ? (
+              <AIAgentCreatorPane
+                agentPrompt={agentPrompt}
+                onPromptChange={setAgentPrompt}
+                category={category}
+                onCategoryChange={setCategory}
+                targetLength={targetLength}
+                onTargetLengthChange={setTargetLength}
+                selectedVoice={selectedVoice}
+                onVoiceChange={(vId) => {
+                  setSelectedVoice(vId);
+                  handleSynthesizeVoice(script, vId);
+                }}
+                voices={voices}
+                onTestVoice={handleTestVoice}
+                testingVoiceId={testingVoiceId}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                loadingAgent={loadingAgent}
+                onRunAgent={async () => {
+                  await handleRunAIAgent();
+                  setScriptSubPane('editor');
+                  onPaneChange('editor');
+                }}
+                onSwitchToEditor={() => {
+                  setScriptSubPane('editor');
+                  onPaneChange('editor');
+                }}
+                onStartNewVideo={() => {
+                  setAgentPrompt('');
+                  setAudioUrl(null);
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.src = '';
+                  }
+                  setIsPlaying(false);
+                  setCurrentTime(0);
+                  setScript({
+                    title: '',
+                    hook: '',
+                    quote: '',
+                    cta: '',
+                    speechStyle: '',
+                    visualTheme: '',
+                    recommendedVoice: selectedVoice || 'Fenrir',
+                    tags: [],
+                    hashtags: [],
+                    subtitles: [],
+                  });
+                  setSelectedBackdrop('');
+                  setSelectedMusic('');
+                  setCustomBackdropImage(undefined);
+                  setCustomBackdropVideo(undefined);
+                  setActiveElementOverlay(null);
+                }}
+              />
+            ) : activePane === 'canvas' ? (
               <CanvasPane
                 aspectRatio={canvasAspectRatio}
                 onAspectRatioChange={(r) => {
@@ -560,6 +719,17 @@ export default function WorkspacePage({
                   setSelectedMusic(mId);
                 }}
                 selectedMusic={selectedMusic}
+                onAddSfxToTimeline={(sfx) => {
+                  const durationSeconds = Number.parseFloat(sfx.duration);
+                  setSelectedSfx({
+                    id: sfx.id,
+                    name: sfx.name,
+                    audioUrl: sfx.audioUrl,
+                    duration: Number.isFinite(durationSeconds) ? durationSeconds : 0.5,
+                    start: currentTime,
+                  });
+                  setShowTimeline(true);
+                }}
                 onApplyRecordedVoice={(recordedUrl) => {
                   setShowRightPane(true);
                   setActiveCompound('voice');
@@ -591,102 +761,10 @@ export default function WorkspacePage({
                 }}
                 activeVideoUrl={customBackdropVideo}
               />
-            ) : activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
-              <ScriptEditorPane
-                script={script}
-                onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
-                onSwitchToAgent={() => {
-                  setScriptSubPane('prompt');
-                  onPaneChange('prompt');
-                }}
-                onStartNewVideo={() => {
-                  setAgentPrompt('');
-                  setScriptSubPane('prompt');
-                  onPaneChange('prompt');
-                  setAudioUrl(null);
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current.src = '';
-                  }
-                  setIsPlaying(false);
-                  setCurrentTime(0);
-                  setScript({
-                    title: '',
-                    hook: '',
-                    quote: '',
-                    cta: '',
-                    speechStyle: '',
-                    visualTheme: '',
-                    recommendedVoice: selectedVoice || 'Fenrir',
-                    tags: [],
-                    hashtags: [],
-                    subtitles: [],
-                  });
-                  setSelectedBackdrop('');
-                  setSelectedMusic('');
-                  setCustomBackdropImage(undefined);
-                  setCustomBackdropVideo(undefined);
-                  setActiveElementOverlay(null);
-                }}
-              />
-            ) : (
-              <AIAgentCreatorPane
-                agentPrompt={agentPrompt}
-                onPromptChange={setAgentPrompt}
-                category={category}
-                onCategoryChange={setCategory}
-                selectedVoice={selectedVoice}
-                onVoiceChange={(vId) => {
-                  setSelectedVoice(vId);
-                  handleSynthesizeVoice(script, vId);
-                }}
-                voices={voices}
-                onTestVoice={handleTestVoice}
-                testingVoiceId={testingVoiceId}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                loadingAgent={loadingAgent}
-                onRunAgent={async () => {
-                  await handleRunAIAgent();
-                  setScriptSubPane('editor');
-                  onPaneChange('editor');
-                }}
-                onSwitchToEditor={() => {
-                  setScriptSubPane('editor');
-                  onPaneChange('editor');
-                }}
-                onStartNewVideo={() => {
-                  setAgentPrompt('');
-                  setAudioUrl(null);
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current.src = '';
-                  }
-                  setIsPlaying(false);
-                  setCurrentTime(0);
-                  setScript({
-                    title: '',
-                    hook: '',
-                    quote: '',
-                    cta: '',
-                    speechStyle: '',
-                    visualTheme: '',
-                    recommendedVoice: selectedVoice || 'Fenrir',
-                    tags: [],
-                    hashtags: [],
-                    subtitles: [],
-                  });
-                  setSelectedBackdrop('');
-                  setSelectedMusic('');
-                  setCustomBackdropImage(undefined);
-                  setCustomBackdropVideo(undefined);
-                  setActiveElementOverlay(null);
-                }}
-              />
-            )}
+            ) : null}
           </div>
-        </div>
         )}
+
 
         {/* Center Pane: Video Preview Canvas */}
         <div className={`${centerColSpan} min-h-[520px] lg:h-full lg:min-h-0 flex flex-col items-center justify-center transition-all duration-200`}>
@@ -750,50 +828,48 @@ export default function WorkspacePage({
         {/* Right Pane: Inspiration Studio Panel */}
         {showRightPane && (
           <div className="lg:col-span-4 min-h-[520px] lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
-            <div className="flex-1 min-h-0 bg-[#121212] border border-[#3A3A3A] rounded-2xl p-3.5 overflow-y-auto custom-scrollbar shadow-xl">
-              <StudioControlsPane
-                voices={voices}
-                selectedVoice={selectedVoice}
-                onSelectVoice={(vId) => {
-                  setSelectedVoice(vId);
-                  handleSynthesizeVoice(script, vId);
-                }}
-                onTestVoice={handleTestVoice}
-                testingVoiceId={testingVoiceId}
-                backdrops={backdrops}
-                selectedBackdrop={selectedBackdrop}
-                onSelectBackdrop={setSelectedBackdrop}
-                musicTracks={musicTracks}
-                selectedMusic={selectedMusic}
-                onSelectMusic={setSelectedMusic}
-                onPublish={handlePublish}
-                publishing={publishing}
-                canPublish={canPublish}
-                publishedSuccess={publishedSuccess}
-                script={script}
-                onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
-                duration={duration}
-                currentTime={currentTime}
-                playbackRate={playbackRate}
-                onPlaybackRateChange={setPlaybackRate}
-                volume={volume}
-                onVolumeChange={handleVolumeChange}
-                category={category}
-                customImageUrl={customBackdropImage}
-                customVideoUrl={customBackdropVideo}
-                activeElementOverlay={activeElementOverlay}
-                onSetCustomImage={(url) => {
-                  setCustomBackdropImage(url);
-                }}
-                onSetCustomVideo={(url) => {
-                  setCustomBackdropVideo(url);
-                }}
-                canvasBackground={canvasBackground}
-                onCanvasBackgroundChange={setCanvasBackground}
-                activeCompound={activeCompound}
-                onSelectCompound={setActiveCompound}
-              />
-            </div>
+            <StudioControlsPane
+              voices={voices}
+              selectedVoice={selectedVoice}
+              onSelectVoice={(vId) => {
+                setSelectedVoice(vId);
+                handleSynthesizeVoice(script, vId);
+              }}
+              onTestVoice={handleTestVoice}
+              testingVoiceId={testingVoiceId}
+              backdrops={backdrops}
+              selectedBackdrop={selectedBackdrop}
+              onSelectBackdrop={setSelectedBackdrop}
+              musicTracks={musicTracks}
+              selectedMusic={selectedMusic}
+              onSelectMusic={setSelectedMusic}
+              onPublish={handlePublish}
+              publishing={publishing}
+              canPublish={canPublish}
+              publishedSuccess={publishedSuccess}
+              script={script}
+              onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
+              duration={duration}
+              currentTime={currentTime}
+              playbackRate={playbackRate}
+              onPlaybackRateChange={setPlaybackRate}
+              volume={volume}
+              onVolumeChange={handleVolumeChange}
+              category={category}
+              customImageUrl={customBackdropImage}
+              customVideoUrl={customBackdropVideo}
+              activeElementOverlay={activeElementOverlay}
+              onSetCustomImage={(url) => {
+                setCustomBackdropImage(url);
+              }}
+              onSetCustomVideo={(url) => {
+                setCustomBackdropVideo(url);
+              }}
+              canvasBackground={canvasBackground}
+              onCanvasBackgroundChange={setCanvasBackground}
+              activeCompound={activeCompound}
+              onSelectCompound={setActiveCompound}
+            />
           </div>
         )}
       </div>
@@ -807,6 +883,9 @@ export default function WorkspacePage({
             isPlaying={isPlaying}
             onTogglePlay={togglePlay}
             onSeek={handleSeek}
+            onTimelineDurationChange={setTimelineDuration}
+            selectedSfx={selectedSfx}
+            onRemoveSfx={() => setSelectedSfx(null)}
             script={script}
             onUpdateSubtitles={(newSubtitles) =>
               setScript((prev) => ({ ...prev, subtitles: newSubtitles }))

@@ -8,6 +8,7 @@ import {
   Check,
   Pipette,
   Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 
 export interface CanvasPaneProps {
@@ -23,8 +24,8 @@ const ASPECT_RATIOS: Array<{
   sublabel: string;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
-  { id: '16:9', label: 'Widescreen — 16:9', sublabel: 'YouTube, Desktop', icon: RectangleHorizontal },
   { id: '9:16', label: 'Stories / Shorts — 9:16', sublabel: 'Shorts, Reels, TikTok', icon: RectangleVertical },
+  { id: '16:9', label: 'Widescreen — 16:9', sublabel: 'YouTube, Desktop', icon: RectangleHorizontal },
   { id: '1:1', label: 'Square — 1:1', sublabel: 'Instagram, Square Posts', icon: Square },
   { id: '4:5', label: 'Portrait — 4:5', sublabel: 'Instagram Feed, FB', icon: RectangleVertical },
   { id: '21:9', label: 'Cinematic — 21:9', sublabel: 'Ultrawide Film', icon: RectangleHorizontal },
@@ -61,10 +62,11 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   background,
   onBackgroundChange,
 }) => {
+  const [activeTab, setActiveTab] = useState<'ratio' | 'background'>('ratio');
   const [isRatioDropdownOpen, setIsRatioDropdownOpen] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
-  const currentRatioObj = ASPECT_RATIOS.find((r) => r.id === aspectRatio) || ASPECT_RATIOS[1];
+  const currentRatioObj = ASPECT_RATIOS.find((r) => r.id === aspectRatio) || ASPECT_RATIOS[0];
   const RatioIcon = currentRatioObj.icon;
 
   const handleSelectBg = (val: string) => {
@@ -81,208 +83,228 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   const isColorActive = (val: string) => background.toLowerCase() === val.toLowerCase();
 
   return (
-    <div className="flex flex-col font-sans-studio text-[#E5E5E5] space-y-6 select-none p-1">
-      {/* ── Top Header Bar ────────────────────────────────────────────── */}
-      <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#2F2F2F] bg-[#121212]/90 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
-            <LayoutTemplate className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-tight">Canvas</h2>
-            <p className="text-[10px] text-[#9CA3AF]">Aspect Ratio • Background Color & Gradients</p>
-          </div>
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <LayoutTemplate className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+          <span className="text-xs font-bold text-white truncate">
+            Canvas &amp; Frame
+          </span>
+          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
+            {aspectRatio}
+          </span>
         </div>
 
-        <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-full bg-[#181818] border border-[#2F2F2F] text-[#9CA3AF]">
-          {aspectRatio}
-        </span>
-      </div>
-
-      {/* ── Section 1: Resize ─────────────────────────────────────────── */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-[#A1A1AA] block text-center">
-          Resize
-        </label>
-
-        {/* Dropdown Selector Button */}
-        <div className="relative">
+        {/* Right Action: Reset Button */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            onClick={() => setIsRatioDropdownOpen((prev) => !prev)}
-            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#1A1A1D] hover:bg-[#222226] border border-[#2E2E33] hover:border-[#3E3E46] transition-all cursor-pointer text-white shadow-sm"
+            onClick={() => {
+              handleSelectRatio('9:16');
+              handleSelectBg('#000000');
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border bg-[#222228] hover:bg-[#2C2C34] text-[#D4D4D8] hover:text-white border-[#32323C]"
+            title="Reset to 9:16 Black Canvas"
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <RatioIcon className="w-4 h-4 text-[#9CA3AF] shrink-0" />
-              <span className="text-xs font-medium text-white truncate">
-                {currentRatioObj.label}
-              </span>
-            </div>
-            <ChevronsUpDown className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+            <RotateCcw className="w-3 h-3 text-sky-400" />
+            <span>Reset</span>
           </button>
-
-          {/* Dropdown Options Popup */}
-          {isRatioDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#17171A] border border-[#2F2F36] rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5">
-              {ASPECT_RATIOS.map((item) => {
-                const ItemIcon = item.icon;
-                const isSelected = item.id === aspectRatio;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleSelectRatio(item.id)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer text-left ${
-                      isSelected
-                        ? 'bg-[#3B82F6]/20 text-[#60A5FA] font-medium'
-                        : 'text-[#D4D4D8] hover:text-white hover:bg-[#202026]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <ItemIcon className="w-4 h-4 shrink-0 text-[#9CA3AF]" />
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-medium">{item.label}</p>
-                        <p className="text-[10px] text-[#71717A] truncate">{item.sublabel}</p>
-                      </div>
-                    </div>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── Section 2: Background ─────────────────────────────────────── */}
-      <div className="space-y-3">
-        <label className="text-xs font-semibold text-[#A1A1AA] block text-center">
-          Background
-        </label>
+      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveTab('ratio')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'ratio' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Aspect Ratio
+        </button>
 
-        {/* 2-Row Swatch Grid */}
-        <div className="flex flex-col gap-2.5 items-center justify-center p-3.5 rounded-2xl bg-[#17171A] border border-[#26262B]">
-          
-          {/* Row 1: Rainbow Wheel + Solid Colors */}
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            {/* Rainbow Wheel Custom Color Picker */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => colorInputRef.current?.click()}
-                className="w-7 h-7 rounded-full border border-white/20 shadow-md hover:scale-110 active:scale-95 transition-transform cursor-pointer flex items-center justify-center"
-                style={{
-                  background: 'conic-gradient(from 0deg, red, yellow, lime, aqua, blue, magenta, red)',
-                }}
-                title="Custom color picker"
-              >
-                <input
-                  ref={colorInputRef}
-                  type="color"
-                  value={background.startsWith('#') ? background : '#3B82F6'}
-                  onChange={(e) => handleSelectBg(e.target.value)}
-                  className="sr-only"
-                />
-              </button>
-            </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('background')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'background' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Background &amp; Colors
+        </button>
+      </div>
 
-            {/* Solid Colors */}
-            {SOLID_COLORS.map((swatch) => {
-              const active = isColorActive(swatch.value);
-              return (
-                <button
-                  key={swatch.id}
-                  type="button"
-                  onClick={() => handleSelectBg(swatch.value)}
-                  className={`w-7 h-7 rounded-full transition-transform cursor-pointer relative hover:scale-110 active:scale-95 flex items-center justify-center shadow-xs border ${
-                    active
-                      ? 'border-white ring-2 ring-white/50 scale-105'
-                      : swatch.value === '#000000'
-                      ? 'border-[#333333]'
-                      : swatch.value === '#FFFFFF'
-                      ? 'border-zinc-300'
-                      : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: swatch.value }}
-                  title={swatch.name}
-                >
-                  {active && (
-                    <Check
-                      className={`w-3.5 h-3.5 stroke-[3] ${
-                        swatch.value === '#FFFFFF' || swatch.value === '#EAB308'
-                          ? 'text-black'
-                          : 'text-white'
+      {/* ── Main Tab Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-5">
+        {activeTab === 'ratio' && (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
+                Video Format &amp; Ratio
+              </label>
+
+              {/* Aspect Ratio Cards Grid */}
+              <div className="grid grid-cols-1 gap-2.5">
+                {ASPECT_RATIOS.map((item) => {
+                  const ItemIcon = item.icon;
+                  const isSelected = item.id === aspectRatio;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleSelectRatio(item.id)}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                        isSelected
+                          ? 'border-[#3B82F6] bg-[#3B82F6]/15 text-white'
+                          : 'border-[#2A2A30] bg-[#1C1C20] text-[#9CA3AF] hover:border-[#3A3A42] hover:text-white'
                       }`}
-                    />
-                  )}
-                </button>
-              );
-            })}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-[#3B82F6]/20 text-[#60A5FA]' : 'bg-[#17171A] text-[#71717A]'}`}>
+                          <ItemIcon className="w-4 h-4 shrink-0" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-[#D4D4D8]'}`}>
+                            {item.label}
+                          </p>
+                          <p className="text-[10px] text-[#71717A] truncate">{item.sublabel}</p>
+                        </div>
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+        )}
 
-          {/* Row 2: Pastels + Gradients */}
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            {SECOND_ROW_SWATCHES.map((swatch) => {
-              const active = isColorActive(swatch.value);
-              return (
-                <button
-                  key={swatch.id}
-                  type="button"
-                  onClick={() => handleSelectBg(swatch.value)}
-                  className={`w-7 h-7 rounded-full transition-transform cursor-pointer relative hover:scale-110 active:scale-95 flex items-center justify-center shadow-xs border ${
-                    active
-                      ? 'border-white ring-2 ring-white/50 scale-105'
-                      : 'border-black/20'
-                  }`}
+        {activeTab === 'background' && (
+          <div className="flex flex-col gap-5">
+            {/* Color Swatches Grid */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
+                Solid Colors &amp; Gradients
+              </label>
+
+              <div className="flex flex-col gap-3 items-center justify-center p-4 rounded-xl bg-[#1C1C20] border border-[#2A2A30]">
+                {/* Row 1: Rainbow Picker + Solids */}
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => colorInputRef.current?.click()}
+                      className="w-7 h-7 rounded-full border border-white/20 shadow-md hover:scale-110 active:scale-95 transition-transform cursor-pointer flex items-center justify-center"
+                      style={{
+                        background: 'conic-gradient(from 0deg, red, yellow, lime, aqua, blue, magenta, red)',
+                      }}
+                      title="Custom color picker"
+                    >
+                      <input
+                        ref={colorInputRef}
+                        type="color"
+                        value={background.startsWith('#') ? background : '#3B82F6'}
+                        onChange={(e) => handleSelectBg(e.target.value)}
+                        className="sr-only"
+                      />
+                    </button>
+                  </div>
+
+                  {SOLID_COLORS.map((swatch) => {
+                    const active = isColorActive(swatch.value);
+                    return (
+                      <button
+                        key={swatch.id}
+                        type="button"
+                        onClick={() => handleSelectBg(swatch.value)}
+                        className={`w-7 h-7 rounded-full transition-transform cursor-pointer relative hover:scale-110 active:scale-95 flex items-center justify-center shadow-xs border ${
+                          active
+                            ? 'border-white ring-2 ring-white/50 scale-105'
+                            : swatch.value === '#000000'
+                            ? 'border-[#333333]'
+                            : swatch.value === '#FFFFFF'
+                            ? 'border-zinc-300'
+                            : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: swatch.value }}
+                        title={swatch.name}
+                      >
+                        {active && (
+                          <Check
+                            className={`w-3.5 h-3.5 stroke-[3] ${
+                              swatch.value === '#FFFFFF' || swatch.value === '#EAB308' ? 'text-black' : 'text-white'
+                            }`}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Row 2: Pastels & Gradients */}
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {SECOND_ROW_SWATCHES.map((swatch) => {
+                    const active = isColorActive(swatch.value);
+                    return (
+                      <button
+                        key={swatch.id}
+                        type="button"
+                        onClick={() => handleSelectBg(swatch.value)}
+                        className={`w-7 h-7 rounded-full transition-transform cursor-pointer relative hover:scale-110 active:scale-95 flex items-center justify-center shadow-xs border ${
+                          active ? 'border-white ring-2 ring-white/50 scale-105' : 'border-black/20'
+                        }`}
+                        style={swatch.isGradient ? { backgroundImage: swatch.value } : { backgroundColor: swatch.value }}
+                        title={swatch.name}
+                      >
+                        {active && (
+                          <Check
+                            className={`w-3.5 h-3.5 stroke-[3] ${
+                              swatch.id === 'beige' || swatch.id === 'mint' || swatch.id === 'sky' || swatch.id === 'soft-pink'
+                                ? 'text-black'
+                                : 'text-white'
+                            }`}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Active Color Preview & Hex input */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#1C1C20] border border-[#2A2A30]">
+                <div
+                  className="w-5 h-5 rounded-md border border-white/20 shrink-0 shadow-inner"
                   style={
-                    swatch.isGradient
-                      ? { backgroundImage: swatch.value }
-                      : { backgroundColor: swatch.value }
+                    background.startsWith('linear-gradient')
+                      ? { backgroundImage: background }
+                      : { backgroundColor: background }
                   }
-                  title={swatch.name}
-                >
-                  {active && (
-                    <Check
-                      className={`w-3.5 h-3.5 stroke-[3] ${
-                        swatch.id === 'beige' || swatch.id === 'mint' || swatch.id === 'sky' || swatch.id === 'soft-pink'
-                          ? 'text-black'
-                          : 'text-white'
-                      }`}
+                />
+                <span className="text-[11px] text-[#A1A1AA] font-mono-studio flex-1 truncate">
+                  {background.startsWith('linear-gradient') ? 'Dynamic Gradient' : background}
+                </span>
+                {!background.startsWith('linear-gradient') && (
+                  <div className="flex items-center gap-1">
+                    <Pipette className="w-3 h-3 text-[#71717A]" />
+                    <input
+                      type="text"
+                      value={background}
+                      onChange={(e) => onBackgroundChange(e.target.value)}
+                      placeholder="#000000"
+                      className="w-16 bg-transparent text-[10px] font-mono-studio text-white outline-none text-right uppercase"
                     />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Current Active Color Preview & Hex input */}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#141416] border border-[#26262B]">
-          <div
-            className="w-5 h-5 rounded-md border border-white/20 shrink-0 shadow-inner"
-            style={
-              background.startsWith('linear-gradient')
-                ? { backgroundImage: background }
-                : { backgroundColor: background }
-            }
-          />
-          <span className="text-[11px] text-[#A1A1AA] font-mono-studio flex-1 truncate">
-            {background.startsWith('linear-gradient') ? 'Dynamic Gradient' : background}
-          </span>
-          {!background.startsWith('linear-gradient') && (
-            <div className="flex items-center gap-1">
-              <Pipette className="w-3 h-3 text-[#71717A]" />
-              <input
-                type="text"
-                value={background}
-                onChange={(e) => onBackgroundChange(e.target.value)}
-                placeholder="#000000"
-                className="w-16 bg-transparent text-[10px] font-mono-studio text-white outline-none text-right uppercase"
-              />
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+export default CanvasPane;

@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, Youtube, RefreshCw, Plus, Zap, Users, ArrowUpRight, Volume2 } from 'lucide-react';
+import { Sparkles, Youtube, RefreshCw, Plus, Zap, Users, ArrowUpRight, Volume2, Film, Play } from 'lucide-react';
 import { Button, Card, Badge } from '@/src/shared/ui/common';
 import { dashboardApi } from '../api/dashboardApi';
 import { YouTubeChannel, YouTubeVideo } from '../types';
-import { RecentStudioActivity } from '@/src/features/profile/components/RecentStudioActivity';
+import { videosApi } from '@/src/features/videos/api/videosApi';
+import { WebsiteVideo } from '@/src/features/videos/types';
 
 export default function DashboardPage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const [loading, setLoading] = useState(false);
   const [channels, setChannels] = useState<YouTubeChannel[]>([]);
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
+  const [websiteVideos, setWebsiteVideos] = useState<WebsiteVideo[]>([]);
   const loadData = async () => {
     setLoading(true);
     try {
@@ -21,6 +23,11 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
       setLoading(false);
     }
   };
+
+  // Load website studio videos for the library card
+  useEffect(() => {
+    videosApi.getVideos().then(setWebsiteVideos).catch(() => {});
+  }, []);
 
 
   useEffect(() => {
@@ -158,15 +165,6 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
             )}
           </Card>
 
-          {/* Recent Studio Activity Component */}
-          <RecentStudioActivity
-            limit={6}
-            showFilters={true}
-            showSearch={true}
-            title="Recent Studio Activity"
-            subtitle="Latest AI generated scripts and published YouTube Shorts."
-            onNavigate={onNavigate}
-          />
         </div>
 
         {/* Sidebar Controls */}
@@ -182,6 +180,60 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
             <Button variant="primary" className="w-full mt-4" icon={<Plus className="w-4 h-4" />} onClick={() => onNavigate('workspace')}>
               Open Creation Studio
             </Button>
+          </Card>
+
+          {/* Website Video Library Quick Card */}
+          <Card className="border-[#2A2A2A]">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-[#3B82F6]/10 text-[#60A5FA]">
+                  <Film className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-bold text-white">Website Video Library</span>
+              </div>
+              <Button variant="outline" size="sm" icon={<ArrowUpRight className="w-3.5 h-3.5" />} onClick={() => onNavigate('videos')}>
+                View All
+              </Button>
+            </div>
+
+            {websiteVideos.length === 0 ? (
+              <div className="py-5 text-center">
+                <p className="text-xs text-[#9CA3AF]">No videos created yet.</p>
+                <Button variant="secondary" size="sm" className="mt-2" onClick={() => onNavigate('workspace')}>
+                  Create First Video
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-1.5">
+                {websiteVideos.slice(0, 6).map((vid) => (
+                  <button
+                    key={vid.id}
+                    onClick={() => onNavigate('videos')}
+                    className="group relative aspect-[9/13] rounded-lg overflow-hidden bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#3B82F6]/50 transition-all cursor-pointer"
+                    title={vid.title}
+                  >
+                    <img
+                      src={vid.coverImageUrl}
+                      alt={vid.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="w-4 h-4 text-white fill-white drop-shadow-lg" />
+                    </div>
+                    <span className="absolute bottom-1 left-1 right-1 text-[8px] font-bold text-white/90 truncate leading-none">
+                      {vid.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {websiteVideos.length > 0 && (
+              <p className="text-center text-[10px] text-[#6B7280] mt-2.5">
+                {websiteVideos.length} website video{websiteVideos.length !== 1 ? 's' : ''} created
+              </p>
+            )}
           </Card>
 
         </div>

@@ -2,13 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   Film,
   Play,
-  Pause,
   Check,
-  Sparkles,
-  Search,
-  Flame,
-  Activity,
-  Layers,
 } from 'lucide-react';
 
 export interface StockVideoItem {
@@ -112,59 +106,56 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col font-sans-studio text-[#E5E5E5] space-y-4">
-      {/* ── Top Header Bar ────────────────────────────────────────────── */}
-      <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#2F2F2F] bg-[#121212]/90 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
-            <Film className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-tight">Stock Videos</h2>
-            <p className="text-[10px] text-[#9CA3AF]">9:16 Vertical B-Roll Video Loops</p>
-          </div>
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Film className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+          <span className="text-xs font-bold text-white truncate">
+            Video Loops &amp; Motion
+          </span>
+          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
+            1080x1920
+          </span>
         </div>
 
-        <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-full bg-[#181818] border border-[#2F2F2F] text-[#9CA3AF]">
-          Open Source B-Roll
+        <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
+          {filteredVideos.length} Clips
         </span>
       </div>
 
-      {/* ── Category Chips ───────────────────────────────────────────── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {[
-          { id: 'all', label: 'All Loops' },
-          { id: 'clouds', label: 'Dark Clouds' },
-          { id: 'gym', label: 'Gym & Iron' },
-          { id: 'city', label: 'Neon City' },
-          { id: 'ocean', label: 'Ocean Waves' },
-          { id: 'fire', label: 'Embers & Fire' },
-        ].map((cat) => (
+      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        {(
+          [
+            { id: 'all', label: 'All' },
+            { id: 'gym', label: 'Gym' },
+            { id: 'clouds', label: 'Clouds' },
+            { id: 'city', label: 'City' },
+            { id: 'ocean', label: 'Ocean' },
+            { id: 'fire', label: 'Fire' },
+          ] as const
+        ).map((tab) => (
           <button
-            key={cat.id}
+            key={tab.id}
             type="button"
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-              selectedCategory === cat.id
-                ? 'bg-[#3B82F6] text-white shadow-xs'
-                : 'bg-[#141414] border border-[#262626] text-[#9CA3AF] hover:text-white hover:border-[#404040]'
+            onClick={() => setSelectedCategory(tab.id)}
+            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+              selectedCategory === tab.id
+                ? 'text-white border-white'
+                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
             }`}
           >
-            {cat.label}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* ── Video Grid ──────────────────────────────────────────────── */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-[11px] font-extrabold text-[#9CA3AF] uppercase tracking-wider px-1">
-          <span>Cinematic Vertical Loops ({filteredVideos.length})</span>
-          <span className="text-[10px] lowercase font-normal text-[#71717A]">hover to preview clip</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
+      {/* ── Main Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-2">
           {filteredVideos.map((vid) => {
-            const isCurrent = activeVideoUrl === vid.videoUrl || selectedId === vid.id;
+            const isSelected = activeVideoUrl === vid.videoUrl || selectedId === vid.id;
             const isHovered = hoveredId === vid.id;
 
             return (
@@ -173,61 +164,54 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 onClick={() => handleApply(vid)}
                 onMouseEnter={() => handleMouseEnter(vid.id)}
                 onMouseLeave={() => handleMouseLeave(vid.id)}
-                className={`group relative flex flex-col rounded-xl border overflow-hidden bg-[#141414] transition-all cursor-pointer ${
-                  isCurrent
-                    ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 scale-[1.01]'
-                    : 'border-[#262626] hover:border-[#404040]'
+                className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
+                  isSelected
+                    ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
+                    : 'border-[#2A2A30] hover:border-[#3A3A42]'
                 }`}
               >
-                {/* 4:5 aspect thumbnail/video */}
-                <div className="relative aspect-[4/5] w-full bg-[#0E0E0E] overflow-hidden">
-                  <video
-                    ref={(el) => {
-                      videoRefs.current[vid.id] = el;
-                    }}
-                    src={vid.videoUrl}
-                    poster={vid.posterUrl}
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+                <img
+                  src={vid.posterUrl}
+                  alt={vid.title}
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
+                    isHovered ? 'opacity-0' : 'opacity-100'
+                  }`}
+                  loading="lazy"
+                />
 
-                  {/* Play icon overlay if not hovered */}
-                  {!isHovered && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-xs flex items-center justify-center text-white border border-white/20">
-                        <Play className="w-3.5 h-3.5 ml-0.5 fill-current" />
-                      </div>
-                    </div>
-                  )}
+                <video
+                  ref={(el) => {
+                    videoRefs.current[vid.id] = el;
+                  }}
+                  src={vid.videoUrl}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                    isHovered ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  muted
+                  loop
+                  playsInline
+                />
 
-                  {/* Applied Checkmark */}
-                  {isCurrent && (
-                    <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#3B82F6] text-white flex items-center justify-center shadow-md z-10">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
-                  )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
 
-                  {/* Duration Tag */}
-                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[8px] font-mono-studio text-[#E5E5E5]">
-                    {vid.duration}
-                  </div>
-
-                  <div className="absolute bottom-1.5 inset-x-1.5 text-left pointer-events-none">
-                    <p className="text-[10px] font-bold text-white truncate leading-tight">
-                      {vid.title}
-                    </p>
-                  </div>
+                <div className="absolute top-2 left-2 p-1.5 rounded-full bg-black/60 text-white/90 backdrop-blur-xs">
+                  <Play className="w-3 h-3 fill-white" />
                 </div>
 
-                <div className="p-1.5 flex items-center justify-between text-[9px] font-mono-studio text-[#71717A]">
-                  <span>{vid.resolution}</span>
-                  <span className="text-[#3B82F6] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                    Apply →
-                  </span>
+                <div className="absolute bottom-2 left-2 right-2">
+                  <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
+                    {vid.title}
+                  </p>
+                  <p className="text-[9px] text-[#A1A1AA] truncate">
+                    {vid.duration} • {vid.resolution}
+                  </p>
                 </div>
+
+                {isSelected && (
+                  <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -236,3 +220,5 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     </div>
   );
 };
+
+export default VideoStockPane;

@@ -629,6 +629,214 @@ def add_community_post(
         "publishedAt": timestamp,
     }
 
+# =============================================================================
+# Website Studio Videos (Website-created videos with cover images)
+# =============================================================================
+
+def get_website_videos(category: Optional[str] = None, search: Optional[str] = None) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM website_videos WHERE 1=1"
+    params: List[Any] = []
+
+    if category and category.lower() != 'all':
+        query += " AND LOWER(category) LIKE ?"
+        params.append(f"%{category.lower()}%")
+
+    if search and search.strip():
+        query += " AND (LOWER(title) LIKE ? OR LOWER(quote) LIKE ? OR LOWER(voice) LIKE ?)"
+        s = f"%{search.strip().lower()}%"
+        params.extend([s, s, s])
+
+    query += " ORDER BY created_at DESC"
+    cursor.execute(query, tuple(params))
+    rows = cursor.fetchall()
+    conn.close()
+
+    result: List[Dict[str, Any]] = []
+    for r in rows:
+        result.append({
+            "id": r["id"],
+            "title": r["title"],
+            "quote": r["quote"],
+            "hook": r["hook"] or "",
+            "cta": r["cta"] or "",
+            "category": r["category"],
+            "coverImageUrl": r["cover_image_url"],
+            "videoUrl": r["video_url"] or "",
+            "audioUrl": r["audio_url"] or "",
+            "voice": r["voice"],
+            "aspectRatio": r["aspect_ratio"] or "9:16",
+            "duration": r["duration"] or "00:30",
+            "visualTheme": r["visual_theme"] or "v1",
+            "subtitles": r["subtitles"] or "[]",
+            "tags": r["tags"] or "[]",
+            "status": r["status"] or "ready",
+            "createdAt": r["created_at"],
+        })
+    logger.info(f"Queried website studio videos -> Found {len(result)} video(s)")
+    return result
+
+
+def get_website_video_by_id(video_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM website_videos WHERE id = ?", (video_id,))
+    r = cursor.fetchone()
+    conn.close()
+    if not r:
+        return None
+    return {
+        "id": r["id"],
+        "title": r["title"],
+        "quote": r["quote"],
+        "hook": r["hook"] or "",
+        "cta": r["cta"] or "",
+        "category": r["category"],
+        "coverImageUrl": r["cover_image_url"],
+        "videoUrl": r["video_url"] or "",
+        "audioUrl": r["audio_url"] or "",
+        "voice": r["voice"],
+        "aspectRatio": r["aspect_ratio"] or "9:16",
+        "duration": r["duration"] or "00:30",
+        "visualTheme": r["visual_theme"] or "v1",
+        "subtitles": r["subtitles"] or "[]",
+        "tags": r["tags"] or "[]",
+        "status": r["status"] or "ready",
+        "createdAt": r["created_at"],
+    }
+
+
+def add_website_video(data: Dict[str, Any]) -> Dict[str, Any]:
+    import json
+    vid_id = data.get("id") or f"vid_web_{int(datetime.utcnow().timestamp() * 1000)}"
+    timestamp = data.get("createdAt") or datetime.utcnow().isoformat()
+    subtitles_raw = data.get("subtitles")
+    subtitles_str = json.dumps(subtitles_raw) if isinstance(subtitles_raw, list) else (subtitles_raw or "[]")
+    tags_raw = data.get("tags")
+    tags_str = json.dumps(tags_raw) if isinstance(tags_raw, list) else (tags_raw or "[]")
+
+    cover_img = data.get("coverImageUrl") or "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85"
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO website_videos (
+        id, title, quote, hook, cta, category, cover_image_url, video_url, audio_url,
+        voice, aspect_ratio, duration, visual_theme, subtitles, tags, status, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        vid_id,
+        data.get("title", "Untitled AI Short"),
+        data.get("quote", ""),
+        data.get("hook", ""),
+        data.get("cta", ""),
+        data.get("category", "Stoic Mindset & Discipline"),
+        cover_img,
+        data.get("videoUrl", ""),
+        data.get("audioUrl", ""),
+        data.get("voice", "Fenrir"),
+        data.get("aspectRatio", "9:16"),
+        data.get("duration", "00:30"),
+        data.get("visualTheme", "v1"),
+        subtitles_str,
+        tags_str,
+        data.get("status", "ready"),
+        timestamp,
+    ))
+
+    # Add notification that a website video was created
+    try:
+        notif_id = f"notif_{int(datetime.utcnow().timestamp() * 1000)}"
+        iso_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("""
+        INSERT INTO notifications (id, title, message, timestamp, read, type, category, action_url, priority)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            notif_id,
+            "Website Video Created",
+            f"'{data.get('title', 'Untitled Short')}' is ready in your Video Library.",
+            iso_now,
+            0,
+            "success",
+            "studio",
+            "/videos",
+            "normal"
+        ))
+    except Exception as e:
+        logger.warning(f"Could not create notification for website video: {e}")
+
+    conn.commit()
+    conn.close()
+
+    logger.info(f"Added website video: '{data.get('title')}' (ID: {vid_id})")
+    return {
+        "id": vid_id,
+        "title": data.get("title", "Untitled AI Short"),
+        "quote": data.get("quote", ""),
+        "hook": data.get("hook", ""),
+        "cta": data.get("cta", ""),
+        "category": data.get("category", "Stoic Mindset & Discipline"),
+        "coverImageUrl": cover_img,
+        "videoUrl": data.get("videoUrl", ""),
+        "audioUrl": data.get("audioUrl", ""),
+        "voice": data.get("voice", "Fenrir"),
+        "aspectRatio": data.get("aspectRatio", "9:16"),
+        "duration": data.get("duration", "00:30"),
+        "visualTheme": data.get("visualTheme", "v1"),
+        "subtitles": subtitles_str,
+        "tags": tags_str,
+        "status": data.get("status", "ready"),
+        "createdAt": timestamp,
+    }
+
+
+def delete_website_video(video_id: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM website_videos WHERE id = ?", (video_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    logger.info(f"Deleted website video {video_id}: {deleted}")
+    return deleted
+
+
+def update_website_video(video_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    allowed_fields = {
+        "title": "title",
+        "quote": "quote",
+        "hook": "hook",
+        "cta": "cta",
+        "category": "category",
+        "coverImageUrl": "cover_image_url",
+        "videoUrl": "video_url",
+        "audioUrl": "audio_url",
+        "voice": "voice",
+        "aspectRatio": "aspect_ratio",
+        "duration": "duration",
+        "visualTheme": "visual_theme",
+        "status": "status",
+    }
+    set_clauses = []
+    params = []
+    for k, v in updates.items():
+        if k in allowed_fields:
+            set_clauses.append(f"{allowed_fields[k]} = ?")
+            params.append(v)
+    if not set_clauses:
+        conn.close()
+        return get_website_video_by_id(video_id)
+    params.append(video_id)
+    sql = f"UPDATE website_videos SET {', '.join(set_clauses)} WHERE id = ?"
+    cursor.execute(sql, tuple(params))
+    conn.commit()
+    conn.close()
+    return get_website_video_by_id(video_id)
+
+
 
 
 

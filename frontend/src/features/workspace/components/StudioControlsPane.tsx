@@ -121,7 +121,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
 
   const activeBackdropObj =
     backdrops.find((b) => b.id === selectedBackdrop) ||
-    backdrops[0] || {
+    {
       id: '',
       name: 'No Backdrop Selected',
       category: '',
@@ -132,19 +132,18 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     };
 
   const compoundMetadata = {
-    home: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400', badge: 'Home' },
-    project: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400', badge: 'Home' },
+    home: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' },
+    project: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' },
     video: {
       label: customImageUrl ? 'Image Inspector (V1)' : 'Video Backdrop (V1)',
       icon: customImageUrl ? ImageIcon : Film,
       color: 'text-amber-400',
-      badge: customImageUrl ? 'V1 Image' : 'V1 Video',
     },
-    text: { label: 'Captions & Title (T1)', icon: Type, color: 'text-blue-400', badge: 'T1 Text' },
-    voice: { label: `Voice: ${selectedVoice || 'Fenrir'} (A1)`, icon: Mic, color: 'text-emerald-400', badge: 'A1 Voice' },
-    music: { label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-purple-400', badge: 'A2 Music' },
-    overlay: { label: 'Overlay Sticker / Badge', icon: Layers, color: 'text-indigo-400', badge: 'Sticker' },
-  }[activeCompound] || { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400', badge: 'Home' };
+    text: { label: 'Captions & Title (T1)', icon: Type, color: 'text-blue-400' },
+    voice: { label: `Voice: ${selectedVoice || 'Fenrir'} (A1)`, icon: Mic, color: 'text-emerald-400' },
+    music: { label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-purple-400' },
+    overlay: { label: 'Overlay Sticker / Badge', icon: Layers, color: 'text-indigo-400' },
+  }[activeCompound] || { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' };
 
   const CurrentIcon = compoundMetadata.icon;
 
@@ -162,9 +161,6 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
           <CurrentIcon className={`w-4 h-4 shrink-0 ${compoundMetadata.color}`} />
           <span className="text-xs font-bold text-white truncate">
             {compoundMetadata.label}
-          </span>
-          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
-            {compoundMetadata.badge}
           </span>
         </div>
 

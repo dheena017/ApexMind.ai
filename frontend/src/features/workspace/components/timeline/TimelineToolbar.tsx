@@ -3,9 +3,11 @@ import {
   Play,
   Pause,
   RotateCcw,
+  SkipForward,
   Sliders,
   ZoomIn,
   ZoomOut,
+  Maximize2,
   ChevronDown,
   ChevronUp,
   Scissors,
@@ -13,14 +15,15 @@ import {
   Trash2,
   Copy,
   Magnet,
+  Keyboard,
 } from 'lucide-react';
-import { formatTime, SelectedClip, EnabledTracks } from './timelineTypes';
+import { formatTime, SelectedClip, EnabledTracks, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM } from './timelineTypes';
 import { TimelineAddTrackMenu } from './TimelineAddTrackMenu';
 
 export interface TimelineToolbarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  activeCompoundsCount?: number;
+  activeTracksCount?: number;
   selectedClip?: SelectedClip | null;
   captionsTrackLocked: boolean;
   onSplitClip: () => void;
@@ -42,12 +45,13 @@ export interface TimelineToolbarProps {
   zoomLevel: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
+  onZoomFit: () => void;
 }
 
 export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   isCollapsed,
   onToggleCollapse,
-  activeCompoundsCount = 0,
+  activeTracksCount = 0,
   selectedClip,
   captionsTrackLocked,
   onSplitClip,
@@ -69,6 +73,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   zoomLevel,
   onZoomIn,
   onZoomOut,
+  onZoomFit,
 }) => {
   const hasSelection = Boolean(selectedClip);
 
@@ -79,8 +84,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+          className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/8 transition-colors cursor-pointer"
           title={isCollapsed ? 'Expand Timeline' : 'Collapse Timeline'}
+          aria-label={isCollapsed ? 'Expand timeline' : 'Collapse timeline'}
+          aria-expanded={!isCollapsed}
         >
           {isCollapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
@@ -90,8 +97,11 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             <Sliders className="w-3.5 h-3.5 text-[#3B82F6]" />
             Timeline
           </span>
-          <span className="hidden sm:inline-block text-[10px] font-mono-studio text-[#9CA3AF] bg-[#222222] px-1.5 py-0.5 rounded">
-            {activeCompoundsCount} Clips
+          <span
+            className="hidden sm:inline-block text-[10px] font-mono-studio text-[#9CA3AF] bg-[#222222] px-1.5 py-0.5 rounded"
+            title="Tracks containing content"
+          >
+            {activeTracksCount} Tracks
           </span>
         </div>
 
@@ -103,45 +113,45 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onSplitClip}
             disabled={!hasSelection}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+            className={`h-6 w-6 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#60A5FA] ${
               hasSelection
-                ? 'text-[#E5E5E5] hover:text-white hover:bg-white/[0.04] border border-[#3A3A3A]'
-                : 'text-[#52525B] opacity-40 cursor-not-allowed border border-transparent'
+                ? 'text-[#B8B8C0] hover:text-white hover:bg-white/8'
+                : 'text-[#52525B] opacity-40 cursor-not-allowed'
             }`}
-            title="Split selected clip at playhead position (S or Ctrl+B)"
+            title={hasSelection ? 'Split selected clip at playhead position (S or Ctrl+B)' : 'Select a clip to split'}
+            aria-label="Split selected clip at playhead"
           >
-            <Scissors className="w-3 h-3 text-[#D4D4D8]" />
-            <span className="text-[11px] font-mono-studio">Split</span>
+            <Scissors className="w-3.5 h-3.5" />
           </button>
 
           <button
             type="button"
             onClick={onDuplicateClip}
             disabled={!hasSelection}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+            className={`h-6 w-6 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#60A5FA] ${
               hasSelection
-                ? 'text-[#E5E5E5] hover:text-white hover:bg-white/[0.04] border border-[#3A3A3A]'
-                : 'text-[#52525B] opacity-40 cursor-not-allowed border border-transparent'
+                ? 'text-[#B8B8C0] hover:text-white hover:bg-white/8'
+                : 'text-[#52525B] opacity-40 cursor-not-allowed'
             }`}
-            title="Duplicate selected clip (Ctrl+D)"
+            title={hasSelection ? 'Duplicate selected clip (Ctrl+D)' : 'Select a clip to duplicate'}
+            aria-label="Duplicate selected clip"
           >
-            <Copy className="w-3 h-3 text-[#D4D4D8]" />
-            <span className="text-[11px] font-mono-studio">Duplicate</span>
+            <Copy className="w-3.5 h-3.5" />
           </button>
 
           <button
             type="button"
             onClick={onDeleteClip}
             disabled={!hasSelection}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+            className={`h-6 w-6 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-400 ${
               hasSelection
-                ? 'text-[#F5F5F5] hover:text-white hover:bg-[#2A1A1A] border border-[#4A2A2A]'
-                : 'text-[#52525B] opacity-40 cursor-not-allowed border border-transparent'
+                ? 'text-[#D28A8A] hover:text-red-200 hover:bg-red-950/40'
+                : 'text-[#52525B] opacity-40 cursor-not-allowed'
             }`}
-            title="Delete selected clip (Delete or Backspace)"
+            title={hasSelection ? 'Delete selected clip (Delete or Backspace)' : 'Select a clip to delete'}
+            aria-label="Delete selected clip"
           >
-            <Trash2 className="w-3 h-3 text-[#F5A5A5]" />
-            <span className="text-[11px] font-mono-studio">Delete</span>
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -155,9 +165,11 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
               onClick={onToggleAddTrackMenu}
               className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#D4D4D8] hover:text-white hover:bg-white/[0.04] border border-[#3A3A3A] transition-colors cursor-pointer"
               title="Add track from Left Panel categories"
+              aria-label="Add track"
+              aria-expanded={addTrackMenuOpen}
             >
               <Plus className="w-3 h-3 text-[#D4D4D8]" />
-              <span className="text-[11px] font-mono-studio">Track</span>
+              <span className="text-[11px] font-mono-studio">Add Track</span>
             </button>
             <TimelineAddTrackMenu
               isOpen={addTrackMenuOpen}
@@ -172,6 +184,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             disabled={captionsTrackLocked}
             className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#D4D4D8] hover:text-white hover:bg-white/[0.04] border border-[#3A3A3A] transition-colors cursor-pointer disabled:opacity-40"
             title="Add subtitle cue at current playhead (+)"
+            aria-label="Add subtitle cue at playhead"
           >
             <Plus className="w-3 h-3 text-[#D4D4D8]" />
             <span className="text-[11px] font-mono-studio">Cue</span>
@@ -187,6 +200,8 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
                 : 'text-[#6B7280] hover:text-[#9CA3AF] hover:bg-white/[0.04] border border-transparent'
             }`}
             title={snapEnabled ? 'Magnetic snapping ON' : 'Magnetic snapping OFF'}
+            aria-label={snapEnabled ? 'Disable magnetic snapping' : 'Enable magnetic snapping'}
+            aria-pressed={snapEnabled}
           >
             <Magnet className="w-3.5 h-3.5" />
           </button>
@@ -200,6 +215,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           onClick={() => onSeek(0)}
           className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
           title="Jump to Start (00:00)"
+          aria-label="Jump to start"
         >
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
@@ -209,6 +225,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           onClick={onTogglePlay}
           className="w-7 h-7 rounded-full bg-[#3B82F6] hover:bg-[#2563EB] text-white flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
           title={isPlaying ? 'Pause Timeline (Space)' : 'Play Timeline (Space)'}
+          aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
         >
           {isPlaying ? (
             <Pause className="w-3.5 h-3.5 fill-white" />
@@ -217,8 +234,18 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           )}
         </button>
 
+        <button
+          type="button"
+          onClick={() => onSeek(totalDuration)}
+          className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+          title="Jump to End"
+          aria-label="Jump to end"
+        >
+          <SkipForward className="w-3.5 h-3.5" />
+        </button>
+
         {/* Time Readout */}
-        <div className="px-2.5 py-0.5 rounded-md bg-[#0F0F0F] border border-[#2F2F2F] text-[11px] font-mono-studio text-white">
+        <div className="whitespace-nowrap tabular-nums px-2.5 py-0.5 rounded-md bg-[#0F0F0F] border border-[#2F2F2F] text-[11px] font-mono-studio text-white" aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(totalDuration)}`}>
           <span className="text-[#60A5FA] font-bold">{formatTime(currentTime)}</span>
           <span className="text-[#6B7280] mx-1">/</span>
           <span className="text-[#9CA3AF]">{formatTime(totalDuration)}</span>
@@ -237,23 +264,72 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
         <div className="flex items-center bg-[#0F0F0F] border border-[#2F2F2F] rounded-lg p-0.5 text-[#9CA3AF]">
           <button
             type="button"
+            onClick={onZoomFit}
+            disabled={zoomLevel === 1}
+            className="p-1 hover:text-white disabled:opacity-30 cursor-pointer"
+            title="Fit full project in timeline"
+            aria-label="Fit timeline to project"
+          >
+            <Maximize2 className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
             onClick={onZoomOut}
-            disabled={zoomLevel <= 1}
+            disabled={zoomLevel <= MIN_TIMELINE_ZOOM}
             className="p-1 hover:text-white disabled:opacity-30 cursor-pointer"
             title="Zoom Out"
+            aria-label="Zoom out"
           >
             <ZoomOut className="w-3 h-3" />
           </button>
-          <span className="text-[10px] font-mono-studio px-1 text-white">{zoomLevel}x</span>
+          <span className="whitespace-nowrap text-[10px] font-mono-studio px-1 text-white" aria-label={`Zoom level ${zoomLevel}x`}>{zoomLevel}x</span>
           <button
             type="button"
             onClick={onZoomIn}
-            disabled={zoomLevel >= 3}
+            disabled={zoomLevel >= MAX_TIMELINE_ZOOM}
             className="p-1 hover:text-white disabled:opacity-30 cursor-pointer"
             title="Zoom In"
+            aria-label="Zoom in"
           >
             <ZoomIn className="w-3 h-3" />
           </button>
+        </div>
+        <button
+          type="button"
+          popoverTarget="timeline-shortcuts"
+          className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/8 transition-colors cursor-pointer"
+          title="Keyboard shortcuts"
+          aria-label="Show keyboard shortcuts"
+        >
+          <Keyboard className="w-3.5 h-3.5" />
+        </button>
+        <div
+          id="timeline-shortcuts"
+          popover="auto"
+          role="dialog"
+          aria-labelledby="timeline-shortcuts-title"
+          className="fixed bottom-4 right-4 m-0 w-56 rounded-lg border border-[#343434] bg-[#171717] p-3 text-[#E5E5E5] shadow-2xl"
+        >
+          <h3 id="timeline-shortcuts-title" className="mb-2 text-[11px] font-semibold text-white">
+            Keyboard Shortcuts
+          </h3>
+          <div className="space-y-1.5 text-[10px]">
+            {[
+              ['Play / pause', 'Space'],
+              ['Seek', '\u2190 / \u2192'],
+              ['Split', 'S / Ctrl+B'],
+              ['Duplicate', 'Ctrl+D'],
+              ['Delete clip', 'Del / Backspace'],
+              ['Deselect / close menus', 'Esc'],
+            ].map(([action, shortcut]) => (
+              <div key={action} className="flex items-center justify-between gap-3">
+                <span className="text-[#A1A1AA]">{action}</span>
+                <kbd className="whitespace-nowrap rounded border border-[#3A3A3A] bg-[#0F0F0F] px-1.5 py-0.5 font-mono-studio text-[#E5E5E5]">
+                  {shortcut}
+                </kbd>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

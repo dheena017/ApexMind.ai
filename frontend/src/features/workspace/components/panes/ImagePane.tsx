@@ -3,9 +3,7 @@ import {
   Image as ImageIcon,
   Search,
   Check,
-  Sparkles,
-  ExternalLink,
-  Filter,
+  X,
 } from 'lucide-react';
 
 export interface StockImageItem {
@@ -109,7 +107,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   const filteredImages = STOCK_IMAGES.filter((img) => {
     const matchesCategory = selectedCategory === 'all' || img.category === selectedCategory;
     const matchesQuery =
-      searchQuery === '' ||
+      searchQuery.trim() === '' ||
       img.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       img.author.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesQuery;
@@ -122,114 +120,111 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col font-sans-studio text-[#E5E5E5] space-y-4">
-      {/* ── Top Header Bar ────────────────────────────────────────────── */}
-      <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#2F2F2F] bg-[#121212]/90 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
-            <ImageIcon className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-tight">Stock Images</h2>
-            <p className="text-[10px] text-[#9CA3AF]">Royalty-Free Vertical 9:16 Backdrops</p>
-          </div>
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <ImageIcon className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+          <span className="text-xs font-bold text-white truncate">
+            Backdrop Images
+          </span>
+          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
+            1080P HD
+          </span>
         </div>
 
-        <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-full bg-[#181818] border border-[#2F2F2F] text-[#9CA3AF]">
-          Unsplash Open
+        <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
+          {filteredImages.length} Photos
         </span>
       </div>
 
-      {/* ── Search Input ─────────────────────────────────────────────── */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#71717A]" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search mountains, gym, stoic, neon, ocean..."
-          className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#262626] bg-[#0E0E0E] text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
-        />
-      </div>
-
-      {/* ── Category Chips ───────────────────────────────────────────── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {[
-          { id: 'all', label: 'All Photos' },
-          { id: 'stoic', label: 'Stoic & Dark' },
-          { id: 'gym', label: 'Gym & Iron' },
-          { id: 'cyber', label: 'Cyberpunk' },
-          { id: 'nature', label: 'Nature' },
-          { id: 'minimal', label: 'Minimalist' },
-        ].map((cat) => (
+      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        {(
+          [
+            { id: 'all', label: 'All' },
+            { id: 'stoic', label: 'Stoic' },
+            { id: 'gym', label: 'Gym' },
+            { id: 'cyber', label: 'Cyber' },
+            { id: 'nature', label: 'Nature' },
+            { id: 'minimal', label: 'Minimal' },
+          ] as const
+        ).map((tab) => (
           <button
-            key={cat.id}
+            key={tab.id}
             type="button"
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-              selectedCategory === cat.id
-                ? 'bg-[#3B82F6] text-white shadow-xs'
-                : 'bg-[#141414] border border-[#262626] text-[#9CA3AF] hover:text-white hover:border-[#404040]'
+            onClick={() => setSelectedCategory(tab.id)}
+            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+              selectedCategory === tab.id
+                ? 'text-white border-white'
+                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
             }`}
           >
-            {cat.label}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* ── Image Grid ──────────────────────────────────────────────── */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-[11px] font-extrabold text-[#9CA3AF] uppercase tracking-wider px-1">
-          <span>Curated Vertical Frames ({filteredImages.length})</span>
-          <span className="text-[10px] lowercase font-normal text-[#71717A]">click to apply as backdrop</span>
+      {/* ── Main Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search stock photos..."
+            className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
+        {/* Image Grid */}
+        <div className="grid grid-cols-2 gap-2">
           {filteredImages.map((img) => {
-            const isCurrent = activeImageUrl === img.url || selectedId === img.id;
+            const isSelected = activeImageUrl === img.url || selectedId === img.id;
             return (
-              <div
+              <button
                 key={img.id}
+                type="button"
                 onClick={() => handleApply(img)}
-                className={`group relative flex flex-col rounded-xl border overflow-hidden bg-[#141414] transition-all cursor-pointer ${
-                  isCurrent
-                    ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 scale-[1.01]'
-                    : 'border-[#262626] hover:border-[#404040]'
+                className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
+                  isSelected
+                    ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
+                    : 'border-[#2A2A30] hover:border-[#3A3A42]'
                 }`}
               >
-                {/* 4:5 vertical thumbnail */}
-                <div className="relative aspect-[4/5] w-full bg-[#0E0E0E] overflow-hidden">
-                  <img
-                    src={img.thumbnail}
-                    alt={img.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <img
+                  src={img.thumbnail}
+                  alt={img.title}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
 
-                  {isCurrent && (
-                    <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#3B82F6] text-white flex items-center justify-center shadow-md z-10">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
-                  )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
 
-                  <div className="absolute bottom-1.5 inset-x-1.5 text-left">
-                    <p className="text-[10px] font-bold text-white truncate leading-tight">
-                      {img.title}
-                    </p>
-                    <p className="text-[8px] text-[#A1A1AA] truncate font-mono-studio">
-                      by {img.author}
-                    </p>
+                <div className="absolute bottom-2 left-2 right-2">
+                  <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
+                    {img.title}
+                  </p>
+                  <p className="text-[9px] text-[#A1A1AA] truncate">by {img.author}</p>
+                </div>
+
+                {isSelected && (
+                  <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
+                    <Check className="w-3 h-3 stroke-[3]" />
                   </div>
-                </div>
-
-                <div className="p-1.5 flex items-center justify-between text-[9px] font-mono-studio text-[#71717A]">
-                  <span>{img.resolution}</span>
-                  <span className="text-[#3B82F6] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                    Apply →
-                  </span>
-                </div>
-              </div>
+                )}
+              </button>
             );
           })}
         </div>
@@ -237,3 +232,5 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     </div>
   );
 };
+
+export default ImagePane;

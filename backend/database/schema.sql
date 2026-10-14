@@ -114,3 +114,28 @@ CREATE TABLE IF NOT EXISTS community_posts (
 
 CREATE INDEX IF NOT EXISTS idx_community_posts_published_at ON community_posts (published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_community_posts_channel_id ON community_posts (channel_id);
+
+-- 8. Website Studio Videos Table (Videos created exclusively by the website studio)
+CREATE TABLE IF NOT EXISTS website_videos (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    quote TEXT NOT NULL,
+    hook TEXT,
+    cta TEXT,
+    category TEXT DEFAULT 'Stoic Mindset & Discipline',
+    cover_image_url TEXT NOT NULL,
+    video_url TEXT,
+    audio_url TEXT,
+    voice TEXT DEFAULT 'Fenrir',
+    aspect_ratio TEXT DEFAULT '9:16',
+    duration TEXT DEFAULT '00:30',
+    visual_theme TEXT DEFAULT 'v1',
+    subtitles TEXT,
+    tags TEXT,
+    status TEXT DEFAULT 'ready',
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_videos_created_at ON website_videos (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_website_videos_category ON website_videos (category);
+

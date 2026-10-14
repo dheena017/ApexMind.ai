@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   Shapes,
   Square,
@@ -10,16 +9,9 @@ import {
   Flame,
   Crown,
   Target,
-  Sparkles,
-  Sliders,
   Check,
-  ChevronRight,
-  Bookmark,
   Layers,
-  Clock,
-  Activity,
   ArrowRight,
-  Quote,
 } from 'lucide-react';
 
 export interface ElementsPaneProps {
@@ -81,48 +73,44 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col font-sans-studio text-[#E5E5E5] space-y-4">
-      {/* ── Top Header Bar ────────────────────────────────────────────── */}
-      <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#2F2F2F] bg-[#121212]/90 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
-            <Shapes className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-tight">Studio Elements</h2>
-            <p className="text-[10px] text-[#9CA3AF]">motion/react • lucide vector badges</p>
-          </div>
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Shapes className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+          <span className="text-xs font-bold text-white truncate">
+            Studio Elements
+          </span>
+          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
+            OVERLAYS
+          </span>
         </div>
 
         {appliedItem && (
-          <motion.span
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-[10px] font-mono-studio px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-          >
-            ✓ Applied to Canvas!
-          </motion.span>
+          <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            ✓ Applied
+          </span>
         )}
       </div>
 
-      {/* ── Sub Navigation Tabs ──────────────────────────────────────── */}
-      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#141414] border border-[#262626]">
+      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
         {(
           [
             { id: 'badges', label: 'Badges' },
             { id: 'shapes', label: 'Shapes' },
-            { id: 'progress', label: 'Progress' },
-            { id: 'emojis', label: 'Stickers' },
+            { id: 'progress', label: 'Bars' },
+            { id: 'emojis', label: 'Emojis' },
           ] as const
         ).map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${
+            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
               activeTab === tab.id
-                ? 'bg-[#3B82F6] text-white shadow-xs'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
+                ? 'text-white border-white'
+                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
             }`}
           >
             {tab.label}
@@ -130,158 +118,139 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         ))}
       </div>
 
-      {/* ── Animated Tab Content via Framer Motion ───────────────────── */}
-      <AnimatePresence mode="wait">
+      {/* ── Main Tab Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
         {activeTab === 'badges' && (
-          <motion.div
-            key="badges"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="space-y-2"
-          >
-            <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block px-1">
-              Motivational Badges & Viral Stamps
-            </span>
+          <div className="space-y-2">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+              Header Callout Badges
+            </label>
             <div className="grid grid-cols-2 gap-2">
-              {BADGES.map((b) => {
-                const IconComp = b.icon;
-                const isAdded = appliedItem === b.id;
+              {BADGES.map((badge) => {
+                const Icon = badge.icon;
+                const isSelected = appliedItem === badge.id;
                 return (
-                  <motion.div
-                    key={b.id}
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleSelect(b.id, b.label, 'badge', b.label)}
-                    className={`p-3 rounded-xl border bg-[#141414] hover:bg-[#181818] transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
-                      isAdded
-                        ? 'border-emerald-500 ring-1 ring-emerald-500/50'
-                        : 'border-[#262626] hover:border-[#404040]'
+                  <button
+                    key={badge.id}
+                    type="button"
+                    onClick={() => handleSelect(badge.id, badge.label, 'badge', badge.label)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
+                      isSelected
+                        ? 'border-[#3B82F6] bg-[#3B82F6]/15'
+                        : 'border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase text-white bg-gradient-to-r ${b.color} shadow-xs flex items-center gap-1`}
-                      >
-                        <IconComp className="w-3 h-3" />
-                        {b.label}
-                      </span>
-                      {isAdded && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />}
+                      <div className={`p-1.5 rounded-lg bg-gradient-to-tr ${badge.color} text-white shadow-xs`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      {isSelected && <Check className="w-3 h-3 text-[#60A5FA]" />}
                     </div>
                     <div>
-                      <p className="text-[10px] text-[#A1A1AA] font-medium">{b.desc}</p>
-                      <p className="text-[9px] text-[#3B82F6] font-semibold mt-1">Render on Canvas →</p>
+                      <p className="text-xs font-bold text-white tracking-wide">{badge.label}</p>
+                      <p className="text-[10px] text-[#71717A]">{badge.desc}</p>
                     </div>
-                  </motion.div>
+                  </button>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {activeTab === 'shapes' && (
-          <motion.div
-            key="shapes"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="space-y-2"
-          >
-            <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block px-1">
-              Geometric Frames & Framing Masks
-            </span>
-            <div className="space-y-2">
-              {SHAPES.map((s) => {
-                const IconComp = s.icon;
+          <div className="space-y-2">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+              Cinematic Shape Overlays
+            </label>
+            <div className="grid grid-cols-1 gap-2">
+              {SHAPES.map((shape) => {
+                const Icon = shape.icon;
+                const isSelected = appliedItem === shape.id;
                 return (
-                  <motion.div
-                    key={s.id}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => handleSelect(s.id, s.name, 'shape', s.id)}
-                    className="p-3 rounded-xl border border-[#262626] bg-[#141414] hover:bg-[#181818] hover:border-[#3B82F6]/60 transition-all cursor-pointer flex items-center justify-between"
+                  <button
+                    key={shape.id}
+                    type="button"
+                    onClick={() => handleSelect(shape.id, shape.name, 'shape', shape.id)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      isSelected
+                        ? 'border-[#3B82F6] bg-[#3B82F6]/15'
+                        : 'border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42]'
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-[#1E1E1E] text-[#60A5FA] flex items-center justify-center border border-[#2F2F2F]">
-                        <IconComp className="w-4 h-4" />
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-[#121214] text-[#60A5FA] border border-[#26262B]">
+                        <Icon className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-white">{s.name}</p>
-                        <p className="text-[10px] text-[#71717A]">{s.desc}</p>
+                        <p className="text-xs font-bold text-white">{shape.name}</p>
+                        <p className="text-[10px] text-[#71717A]">{shape.desc}</p>
                       </div>
                     </div>
-                    <span className="text-[10px] text-[#3B82F6] font-semibold">Apply</span>
-                  </motion.div>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-[#60A5FA]" />}
+                  </button>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {activeTab === 'progress' && (
-          <motion.div
-            key="progress"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="space-y-2"
-          >
-            <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block px-1">
-              Reel Scrubber & Progress Bars
-            </span>
-            <div className="space-y-2">
-              {PROGRESS_BARS.map((pb) => (
-                <motion.div
-                  key={pb.id}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => handleSelect(pb.id, pb.name, 'progress', pb.id)}
-                  className="p-3 rounded-xl border border-[#262626] bg-[#141414] hover:bg-[#181818] hover:border-[#3B82F6]/60 transition-all cursor-pointer space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">{pb.name}</span>
-                    <span className="text-[10px] text-[#3B82F6] font-semibold">Attach to Video</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-[#262626] overflow-hidden">
-                    <div className="h-full w-2/3 bg-gradient-to-r from-[#3B82F6] to-[#60A5FA] rounded-full" />
-                  </div>
-                  <p className="text-[10px] text-[#71717A]">{pb.desc}</p>
-                </motion.div>
-              ))}
+          <div className="space-y-2">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+              Retention Progress Bars
+            </label>
+            <div className="grid grid-cols-1 gap-2">
+              {PROGRESS_BARS.map((prog) => {
+                const isSelected = appliedItem === prog.id;
+                return (
+                  <button
+                    key={prog.id}
+                    type="button"
+                    onClick={() => handleSelect(prog.id, prog.name, 'progress', prog.id)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      isSelected
+                        ? 'border-[#3B82F6] bg-[#3B82F6]/15'
+                        : 'border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42]'
+                    }`}
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-white">{prog.name}</p>
+                      <p className="text-[10px] text-[#71717A]">{prog.desc}</p>
+                    </div>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-[#60A5FA]" />}
+                  </button>
+                );
+              })}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {activeTab === 'emojis' && (
-          <motion.div
-            key="emojis"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="space-y-2"
-          >
-            <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block px-1">
-              Motivational Stickers & Icons
-            </span>
+          <div className="space-y-2">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+              High Impact Symbols
+            </label>
             <div className="grid grid-cols-5 gap-2">
-              {EMOJI_ELEMENTS.map((em) => (
-                <motion.button
-                  key={em.label}
-                  whileHover={{ scale: 1.15, rotate: 5 }}
-                  whileTap={{ scale: 0.9 }}
+              {EMOJI_ELEMENTS.map((emoji) => (
+                <button
+                  key={emoji.symbol}
                   type="button"
-                  onClick={() => handleSelect(em.label, em.label, 'sticker', em.symbol)}
-                  className="aspect-square flex flex-col items-center justify-center rounded-xl border border-[#262626] bg-[#141414] hover:bg-[#1E1E1E] hover:border-[#3B82F6]/60 transition-all cursor-pointer p-2 shadow-xs"
-                  title={em.label}
+                  onClick={() => handleSelect(emoji.symbol, emoji.label, 'emoji', emoji.symbol)}
+                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3B82F6]/50 hover:bg-[#222228] transition-all cursor-pointer"
+                  title={emoji.label}
                 >
-                  <span className="text-2xl">{em.symbol}</span>
-                  <span className="text-[9px] text-[#71717A] truncate mt-1">{em.label}</span>
-                </motion.button>
+                  <span className="text-xl mb-0.5">{emoji.symbol}</span>
+                  <span className="text-[9px] text-[#71717A] truncate w-full text-center">
+                    {emoji.label}
+                  </span>
+                </button>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 };
+
+export default ElementsPane;

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload,
   FolderOpen,
@@ -9,12 +8,6 @@ import {
   Music,
   Trash2,
   Check,
-  Plus,
-  Sparkles,
-  FileVideo,
-  FileAudio,
-  HardDrive,
-  ExternalLink,
   Camera,
 } from 'lucide-react';
 
@@ -88,7 +81,6 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   const [appliedId, setAppliedId] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
-  // Open-Source react-dropzone integration
   const onDrop = (acceptedFiles: File[]) => {
     acceptedFiles.forEach((file) => {
       const isVideo = file.type.startsWith('video');
@@ -118,24 +110,27 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
     accept: {
       'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.svg'],
       'video/*': ['.mp4', '.webm', '.mov'],
-      'audio/*': ['.mp3', '.wav', '.ogg'],
+      'audio/*': ['.mp3', '.wav', '.ogg', '.m4a'],
     },
   });
+
+  const handleApply = (item: UploadedMediaItem) => {
+    setAppliedId(item.id);
+    if (item.type === 'image') {
+      onApplyBackdrop(item.url, false);
+      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+    } else if (item.type === 'video') {
+      onApplyBackdrop(item.url, true);
+      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+    } else if (item.type === 'audio' && onApplyAudio) {
+      onApplyAudio(item.url);
+      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
+    }
+  };
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setMediaItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const handleApply = (item: UploadedMediaItem) => {
-    setAppliedId(item.id);
-    if (item.type === 'audio' && onApplyAudio) {
-      onApplyAudio(item.url);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
-    } else {
-      onApplyBackdrop(item.url, item.type === 'video');
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
-    }
   };
 
   const handleSnapshot = async () => {
@@ -145,7 +140,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
       const snapUrl = await onCaptureCanvasSnapshot();
       if (snapUrl) {
         const newItem: UploadedMediaItem = {
-          id: `snap-${Date.now()}`,
+          id: `snapshot-${Date.now()}`,
           name: `Canvas Snapshot ${new Date().toLocaleTimeString()}`,
           url: snapUrl,
           type: 'image',
@@ -165,56 +160,38 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   });
 
   return (
-    <div className="flex flex-col font-sans-studio text-[#E5E5E5] space-y-4">
-      {/* ── Top Header Bar ────────────────────────────────────────────── */}
-      <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#2F2F2F] bg-[#121212]/90 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
-            <FolderOpen className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-tight">Media Hub</h2>
-            <p className="text-[10px] text-[#9CA3AF]">react-dropzone • html-to-image engine</p>
-          </div>
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <FolderOpen className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+          <span className="text-xs font-bold text-white truncate">
+            Media &amp; Assets
+          </span>
+          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
+            {filteredItems.length} ITEMS
+          </span>
         </div>
 
+        {/* Right Action: Snapshot Button */}
         {onCaptureCanvasSnapshot && (
-          <button
-            type="button"
-            onClick={handleSnapshot}
-            disabled={isCapturing}
-            className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-[#181818] hover:bg-[#222222] border border-[#2F2F2F] text-[#60A5FA] flex items-center gap-1 cursor-pointer transition-colors"
-            title="Export PNG snapshot of canvas"
-          >
-            <Camera className="w-3 h-3" />
-            <span>{isCapturing ? 'Snapping...' : 'Snapshot'}</span>
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleSnapshot}
+              disabled={isCapturing}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border bg-[#222228] hover:bg-[#2C2C34] text-[#D4D4D8] hover:text-white border-[#32323C]"
+              title="Export snapshot of canvas"
+            >
+              <Camera className="w-3 h-3 text-sky-400" />
+              <span>{isCapturing ? 'Snapping...' : 'Snapshot'}</span>
+            </button>
+          </div>
         )}
       </div>
 
-      {/* ── Open-Source react-dropzone Ingestion Zone ─────────────────── */}
-      <div
-        {...getRootProps()}
-        className={`group relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer hover:scale-[1.01] ${
-          isDragActive
-            ? 'border-[#3B82F6] bg-[#3B82F6]/15 scale-[1.02]'
-            : 'border-[#2F2F2F] hover:border-[#3B82F6]/60 bg-[#141414] hover:bg-[#181818]'
-        }`}
-      >
-        <input {...getInputProps()} />
-        <div className="flex items-center justify-center w-11 h-11 rounded-full bg-[#1E1E1E] border border-[#2F2F2F] text-[#60A5FA] mb-2.5 group-hover:scale-110 transition-transform shadow-md">
-          <Upload className="w-5 h-5" />
-        </div>
-        <p className="text-xs font-bold text-white text-center">
-          {isDragActive ? 'Drop files here right now...' : 'Click or Drag & Drop Media Here'}
-        </p>
-        <p className="text-[10px] text-[#71717A] text-center mt-1">
-          Supports MP4, WEBM, JPG, PNG, WEBP, MP3, WAV (up to 50MB)
-        </p>
-      </div>
-
-      {/* ── Filter Tabs ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#141414] border border-[#262626]">
+      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
         {(
           [
             { id: 'all', label: 'All Media' },
@@ -227,10 +204,10 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
             key={tab.id}
             type="button"
             onClick={() => setFilterType(tab.id)}
-            className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${
+            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
               filterType === tab.id
-                ? 'bg-[#3B82F6] text-white shadow-xs'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
+                ? 'text-white border-white'
+                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
             }`}
           >
             {tab.label}
@@ -238,104 +215,110 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
         ))}
       </div>
 
-      {/* ── Media Grid ──────────────────────────────────────────────── */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between text-[11px] font-extrabold text-[#9CA3AF] uppercase tracking-wider px-1">
-          <span>Project Assets ({filteredItems.length})</span>
-          <span className="text-[10px] lowercase font-normal text-[#71717A]">click to apply to video</span>
+      {/* ── Main Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+        {/* Upload Zone */}
+        <div
+          {...getRootProps()}
+          className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
+            isDragActive
+              ? 'border-[#3B82F6] bg-[#3B82F6]/15'
+              : 'border-[#2A2A30] hover:border-[#3B82F6]/60 bg-[#1C1C20] hover:bg-[#222228]'
+          }`}
+        >
+          <input {...getInputProps()} />
+          <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#121214] border border-[#2A2A30] text-[#60A5FA] mb-2 shadow-xs">
+            <Upload className="w-4 h-4" />
+          </div>
+          <p className="text-xs font-bold text-white text-center">
+            {isDragActive ? 'Drop files here...' : 'Upload Media or Drag & Drop'}
+          </p>
+          <p className="text-[10px] text-[#71717A] text-center mt-0.5">
+            MP4, WEBM, JPG, PNG, WEBP, MP3 (up to 50MB)
+          </p>
         </div>
 
-        {filteredItems.length === 0 ? (
-          <div className="p-8 text-center rounded-xl border border-[#262626] bg-[#121212] text-[#71717A] text-xs">
-            No media matching filter. Drop files above to upload.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2.5">
-            {filteredItems.map((item) => {
-              const isCurrent = activeMediaUrl === item.url || appliedId === item.id;
-              return (
-                <motion.div
-                  key={item.id}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleApply(item)}
-                  className={`group relative flex flex-col rounded-xl border overflow-hidden bg-[#141414] transition-all cursor-pointer ${
-                    isCurrent
-                      ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/30'
-                      : 'border-[#262626] hover:border-[#404040]'
-                  }`}
-                >
-                  {/* Thumbnail / Media Preview */}
-                  <div className="relative aspect-[4/3] w-full bg-[#0E0E0E] overflow-hidden">
-                    {item.type === 'image' && (
+        {/* Media Grid */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+            Project Media Assets ({filteredItems.length})
+          </label>
+
+          {filteredItems.length === 0 ? (
+            <div className="p-8 text-center rounded-xl border border-[#2A2A30] bg-[#1C1C20] text-[#71717A] text-xs">
+              No media matching filter. Drop files above to upload.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {filteredItems.map((item) => {
+                const isCurrentActive =
+                  activeMediaUrl === item.url || appliedId === item.id;
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleApply(item)}
+                    className={`group relative rounded-xl border overflow-hidden transition-all cursor-pointer aspect-video bg-[#1C1C20] ${
+                      isCurrentActive
+                        ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
+                        : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                    }`}
+                  >
+                    {item.type === 'image' ? (
                       <img
                         src={item.url}
                         alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
-                    )}
-                    {item.type === 'video' && (
-                      <div className="relative w-full h-full flex items-center justify-center bg-zinc-900">
+                    ) : item.type === 'video' ? (
+                      <div className="w-full h-full relative bg-black">
                         <video
                           src={item.url}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover opacity-80"
                           muted
                           playsInline
                         />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <Film className="w-6 h-6 text-[#60A5FA]" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <Film className="w-5 h-5 text-white/80" />
                         </div>
                       </div>
-                    )}
-                    {item.type === 'audio' && (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-950/60 to-purple-950/60 p-2 text-[#818CF8]">
-                        <Music className="w-7 h-7 mb-1" />
-                        <span className="text-[9px] font-mono-studio text-[#C7D2FE]">Audio Track</span>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-[#121214] text-[#60A5FA]">
+                        <Music className="w-6 h-6 mb-1" />
+                        <span className="text-[10px] font-bold text-white text-center truncate w-full px-1">
+                          {item.name}
+                        </span>
                       </div>
                     )}
 
-                    {/* Applied Checkmark Badge */}
-                    {isCurrent && (
-                      <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#3B82F6] text-white flex items-center justify-center shadow-md z-10">
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-white truncate max-w-[80%]">
+                        {item.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(item.id, e)}
+                        className="p-1 rounded bg-black/60 hover:bg-red-500/80 text-white/80 hover:text-white transition-colors"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {isCurrentActive && (
+                      <div className="absolute top-1.5 right-1.5 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
                         <Check className="w-3 h-3 stroke-[3]" />
                       </div>
                     )}
-
-                    {/* Type Badge */}
-                    <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[9px] font-mono-studio text-[#E5E5E5] uppercase">
-                      {item.type}
-                    </div>
-
-                    {/* Delete button */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleDelete(item.id, e)}
-                      className="absolute top-1.5 left-1.5 p-1 rounded-md bg-black/70 hover:bg-red-600/90 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Delete asset"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
                   </div>
-
-                  {/* Title and metadata */}
-                  <div className="p-2 space-y-0.5">
-                    <p className="text-[11px] font-semibold text-white truncate group-hover:text-[#60A5FA] transition-colors">
-                      {item.name}
-                    </p>
-                    <div className="flex items-center justify-between text-[9px] font-mono-studio text-[#71717A]">
-                      <span>{item.size}</span>
-                      <span className="text-[#3B82F6] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                        Apply →
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
+
+export default MediaPane;

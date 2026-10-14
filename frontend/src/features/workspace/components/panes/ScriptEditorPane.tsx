@@ -10,6 +10,8 @@ import {
   Plus,
   Copy,
   Check,
+  FileText,
+  ChevronDown,
 } from 'lucide-react';
 import { GeneratedScript } from '../../types';
 
@@ -20,82 +22,15 @@ export interface ScriptEditorPaneProps {
   onStartNewVideo?: () => void;
 }
 
-interface ScriptEditorHeaderProps {
-  onStartNewVideo?: () => void;
-  onSwitchToAgent?: () => void;
-}
-
-interface ScriptEditorSectionProps {
-  title: string;
-  titleClassName?: string;
-  actions?: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-}
-
-const ScriptEditorHeader: React.FC<ScriptEditorHeaderProps> = ({
-  onStartNewVideo,
-  onSwitchToAgent,
-}) => (
-  <header className="sticky top-0 z-10 flex w-full shrink-0 items-center justify-between gap-2 rounded-xl border border-[#2F2F2F] bg-[#121212]/90 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm">
-    <div className="flex min-w-0 items-center gap-2">
-      <h2 className="truncate text-sm font-bold tracking-tight text-white">Script &amp; Subtitles</h2>
-    </div>
-
-    <div className="ml-auto flex shrink-0 items-center gap-1.5">
-      {onStartNewVideo && (
-        <button
-          type="button"
-          onClick={onStartNewVideo}
-          className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-transparent p-1.5 text-xs font-semibold text-[#9CA3AF] transition-colors hover:border-[#2F2F2F] hover:bg-[#1E1E1E] hover:text-white"
-          title="Start a fresh empty project"
-        >
-          <Plus className="h-4 w-4 text-white" />
-          <span className="hidden sm:inline">New</span>
-        </button>
-      )}
-
-      {onSwitchToAgent && (
-        <button
-          type="button"
-          onClick={onSwitchToAgent}
-          className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-transparent p-1.5 text-xs font-semibold text-[#9CA3AF] transition-colors hover:border-[#2F2F2F] hover:bg-[#1E1E1E] hover:text-white"
-          title="Open AI Prompt Generator"
-        >
-          <Wand2 className="h-4 w-4" />
-          <span className="hidden sm:inline">AI Prompt</span>
-        </button>
-      )}
-    </div>
-  </header>
-);
-
-const ScriptEditorSection: React.FC<ScriptEditorSectionProps> = ({
-  title,
-  titleClassName = 'text-white',
-  actions,
-  children,
-  className = '',
-}) => (
-  <section className={`relative overflow-hidden rounded-2xl border border-[#2F2F2F] bg-[#181818] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all hover:border-[#4B4B4B] ${className}`}>
-    <div className="flex items-center justify-between border-b border-[#2F2F2F] bg-[#151515] px-3 py-2.5">
-      <div className="flex items-center">
-        <span className={`text-xs font-bold uppercase tracking-wider ${titleClassName}`}>{title}</span>
-      </div>
-      {actions && <div className="relative flex items-center gap-2">{actions}</div>}
-    </div>
-    {children}
-  </section>
-);
-
 export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   script,
   onUpdateScript,
   onSwitchToAgent,
   onStartNewVideo,
 }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'content' | 'subtitles'>('content');
   const [copyState, setCopyState] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const hookRef = useRef<HTMLTextAreaElement | null>(null);
   const quoteRef = useRef<HTMLTextAreaElement | null>(null);
   const subtitleRefs = useRef<Array<HTMLInputElement | null>>([]);
@@ -147,214 +82,229 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
     window.speechSynthesis.speak(utterance);
   };
 
-  const renderSubtitleMenu = () => {
-    const currentText = script.subtitles.map((sub) => sub.text).join('\n');
-    return (
-      <div className="absolute right-0 top-full z-20 mt-2 w-44 rounded-xl border border-[#2F2F2F] bg-[#111111] p-1.5 shadow-2xl">
-        <button
-          type="button"
-          onClick={() => {
-            setMenuOpen(false);
-            subtitleRefs.current[0]?.focus();
-          }}
-          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-[#E5E5E5] hover:bg-[#1D1D1D]"
-        >
-          <Edit2 className="w-3.5 h-3.5 text-white" />
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMenuOpen(false);
-            if (currentText) playTextPreview(currentText);
-          }}
-          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-[#E5E5E5] hover:bg-[#1D1D1D]"
-        >
-          <Volume2 className="w-3.5 h-3.5 text-white" />
-          Preview
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMenuOpen(false);
-            void handleCopySubtitles(currentText);
-          }}
-          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-[#E5E5E5] hover:bg-[#1D1D1D]"
-        >
-          {copyState ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-white" />}
-          {copyState ? 'Copied' : 'Copy'}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMenuOpen(false);
-            onUpdateScript({ subtitles: [] });
-          }}
-          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-red-300 hover:bg-[#1D1D1D]"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Clear
-        </button>
-      </div>
-    );
-  };
-
   return (
-    <div className="flex flex-col gap-3 font-sans-studio text-[#E5E5E5]">
-      <ScriptEditorHeader
-        onStartNewVideo={onStartNewVideo}
-        onSwitchToAgent={onSwitchToAgent}
-      />
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl">
+      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileText className="w-4 h-4 shrink-0 text-emerald-400" />
+          <span className="text-xs font-bold text-white truncate">
+            Script &amp; Subtitles
+          </span>
+          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
+            T1 TEXT
+          </span>
+        </div>
 
-      <div className="flex flex-col space-y-3 animate-fade-in">
-        <ScriptEditorSection
-          title="THE HOOK"
-          titleClassName="text-white"
+        {/* Right Actions: New & Switch */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onStartNewVideo && (
+            <button
+              type="button"
+              onClick={onStartNewVideo}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border bg-[#222228] hover:bg-[#2C2C34] text-[#D4D4D8] hover:text-white border-[#32323C]"
+              title="Start a fresh empty project"
+            >
+              <Plus className="w-3.5 h-3.5 text-sky-400" />
+              <span>New</span>
+            </button>
+          )}
+
+          {onSwitchToAgent && (
+            <button
+              type="button"
+              onClick={onSwitchToAgent}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#222228] hover:bg-[#2C2C34] text-[10px] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer border border-[#32323C]"
+              title="Open AI Prompt Studio"
+            >
+              <Wand2 className="w-3.5 h-3.5 text-[#60A5FA]" />
+              <span>AI Prompt</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveTab('content')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'content' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
         >
-          <div className="space-y-2 p-3">
-            <textarea
-              ref={hookRef}
-              value={script.hook}
-              onChange={(e) => updateField('hook', e.target.value)}
-              rows={2}
-              className="w-full resize-none rounded-lg border border-[#262626] bg-[#0E0E0E] p-2 text-xs text-white outline-none transition-colors focus:border-[#6B7280]"
-              placeholder="Enter an attention-grabbing 3-5 word hook spoken in the first 2 seconds..."
-            />
+          Hook &amp; Monologue
+        </button>
 
-          </div>
-        </ScriptEditorSection>
-
-        <ScriptEditorSection
-          title="THE QUOTE"
-          titleClassName="text-white"
+        <button
+          type="button"
+          onClick={() => setActiveTab('subtitles')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'subtitles' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
         >
-          <div className="space-y-2 p-3">
-            <textarea
-              ref={quoteRef}
-              value={script.quote}
-              onChange={(e) => updateField('quote', e.target.value)}
-              rows={3}
-              className="w-full resize-none rounded-lg border border-[#262626] bg-[#0E0E0E] p-2 text-xs leading-relaxed text-white outline-none transition-colors focus:border-[#6B7280]"
-              placeholder="Enter the motivational monologue / quote body..."
-            />
+          Subtitles ({script.subtitles?.length || 0})
+        </button>
 
-            <div className="flex items-center justify-between border-t border-[#262626] pt-1 text-[11px] text-[#9CA3AF]">
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => formatSelection('quote', 'bold')}
-                  className="cursor-pointer font-bold hover:text-white"
-                  title="Bold"
-                >
-                  <Bold className="h-3 w-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => formatSelection('quote', 'italic')}
-                  className="cursor-pointer italic hover:text-white"
-                  title="Italic"
-                >
-                  <Italic className="h-3 w-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => quoteRef.current?.focus()}
-                  className="cursor-pointer hover:text-white"
-                  title="Edit formatting"
-                >
-                  <Edit2 className="h-3 w-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateField('quote', '')}
-                  className="cursor-pointer hover:text-red-400"
-                  title="Clear"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
+        {onSwitchToAgent && (
+          <button
+            type="button"
+            onClick={onSwitchToAgent}
+            className="pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 text-[#71717A] border-transparent hover:text-[#D4D4D8]"
+          >
+            Switch to AI Prompt
+          </button>
+        )}
+      </div>
+
+      {/* ── Main Tab Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+        {activeTab === 'content' && (
+          <>
+            {/* The Hook */}
+            <div className="flex flex-col rounded-xl border border-[#2A2A30] bg-[#1C1C20] overflow-hidden">
+              <div className="flex items-center justify-between border-b border-[#26262B] bg-[#17171A] px-3 py-2">
+                <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
+                  The Hook (First 2–3s)
+                </span>
+                <span className="text-[9px] text-[#9CA3AF]">Attention Grabber</span>
               </div>
-              {onSwitchToAgent && (
+              <div className="p-3">
+                <textarea
+                  ref={hookRef}
+                  value={script.hook}
+                  onChange={(e) => updateField('hook', e.target.value)}
+                  rows={2}
+                  className="w-full resize-none bg-transparent text-xs text-white outline-none placeholder:text-[#525252] leading-relaxed"
+                  placeholder="Enter an attention-grabbing 3-5 word hook..."
+                />
+              </div>
+            </div>
+
+            {/* The Quote / Monologue */}
+            <div className="flex flex-col rounded-xl border border-[#2A2A30] bg-[#1C1C20] overflow-hidden">
+              <div className="flex items-center justify-between border-b border-[#26262B] bg-[#17171A] px-3 py-2">
+                <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
+                  The Quote / Monologue Body
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => formatSelection('quote', 'bold')}
+                    className="cursor-pointer text-[#9CA3AF] hover:text-white p-0.5"
+                    title="Bold"
+                  >
+                    <Bold className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => formatSelection('quote', 'italic')}
+                    className="cursor-pointer text-[#9CA3AF] hover:text-white p-0.5"
+                    title="Italic"
+                  >
+                    <Italic className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateField('quote', '')}
+                    className="cursor-pointer text-[#9CA3AF] hover:text-red-400 p-0.5"
+                    title="Clear"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-3">
+                <textarea
+                  ref={quoteRef}
+                  value={script.quote}
+                  onChange={(e) => updateField('quote', e.target.value)}
+                  rows={4}
+                  className="w-full resize-none bg-transparent text-xs leading-relaxed text-white outline-none placeholder:text-[#525252]"
+                  placeholder="Enter the motivational monologue / quote body..."
+                />
+              </div>
+            </div>
+
+            {/* Call To Action */}
+            <div className="flex flex-col rounded-xl border border-[#2A2A30] bg-[#1C1C20] overflow-hidden">
+              <div className="flex items-center justify-between border-b border-[#26262B] bg-[#17171A] px-3 py-2">
+                <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
+                  Call to Action (CTA)
+                </span>
+                <span className="text-[9px] text-[#9CA3AF]">Ending Prompt</span>
+              </div>
+              <div className="p-3">
+                <input
+                  type="text"
+                  value={script.cta || ''}
+                  onChange={(e) => onUpdateScript({ cta: e.target.value })}
+                  className="w-full bg-transparent text-xs text-white outline-none placeholder:text-[#525252]"
+                  placeholder="e.g. Subscribe to ApexMind. Discipline beats motivation."
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'subtitles' && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between pb-1">
+              <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
+                Timed Subtitle Clips
+              </label>
+              {script.subtitles?.length > 0 && (
                 <button
                   type="button"
-                  onClick={onSwitchToAgent}
-                  className="flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-white hover:underline"
+                  onClick={() => handleCopySubtitles(script.subtitles.map((s) => s.text).join('\n'))}
+                  className="text-[10px] text-[#60A5FA] hover:text-white flex items-center gap-1 cursor-pointer"
                 >
-                  <RefreshCw className="h-3 w-3" />
-                  <span>Re-generate with AI</span>
+                  {copyState ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  <span>{copyState ? 'Copied' : 'Copy All'}</span>
                 </button>
               )}
             </div>
-          </div>
-        </ScriptEditorSection>
 
-        <ScriptEditorSection
-          title="SUBTITLES"
-          titleClassName="text-white"
-          className="flex min-h-[140px] flex-1 flex-col"
-          actions={
-            <>
-              <button
-                type="button"
-                onClick={() => setMenuOpen((current) => !current)}
-                className="flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-white hover:underline"
-              >
-                <Edit2 className="h-3 w-3" />
-                Edit
-              </button>
-            </>
-          }
-        >
-          <div className="flex flex-1 flex-col space-y-1.5 overflow-y-auto p-3 pr-1 custom-scrollbar">
-            {script.subtitles.length === 0 ? (
-              <div className="py-6 text-center text-[11px] italic text-[#6B7280]">
-                No subtitles yet. Generate a script with AI to populate this section.
+            {(!script.subtitles || script.subtitles.length === 0) ? (
+              <div className="py-12 text-center text-xs text-[#71717A] border border-dashed border-[#2A2A30] rounded-xl p-6">
+                No subtitles generated yet. Run the AI Agent to generate speech with timed captions.
               </div>
             ) : (
-              script.subtitles.map((sub, idx) => (
-                <div
-                  key={idx}
-                  className="group flex items-center justify-between gap-2 rounded-lg border border-[#262626] bg-[#0E0E0E] p-1.5 text-[11px] transition-colors hover:border-[#4B4B4B]"
-                >
-                  <span className="shrink-0 rounded bg-[#1A1A1A] px-1 py-0.2 font-mono-studio text-[10px] text-white">
-                    {`00:${Math.floor(sub.start).toString().padStart(2, '0')}`}
-                  </span>
-                  <input
-                    ref={(el) => {
-                      subtitleRefs.current[idx] = el;
-                    }}
-                    value={sub.text}
-                    onChange={(e) => {
-                      const next = [...script.subtitles];
-                      next[idx] = { ...sub, text: e.target.value };
-                      onUpdateScript({ subtitles: next });
-                    }}
-                    placeholder="Enter subtitle text..."
-                    className="flex-1 border-none bg-transparent text-[11px] text-white outline-none truncate"
-                  />
-                  <div className="flex items-center gap-1.5 text-[#6B7280] group-hover:text-[#9CA3AF]">
+              <div className="flex flex-col gap-1.5">
+                {script.subtitles.map((sub, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2.5 p-2 rounded-xl bg-[#1C1C20] border border-[#2A2A30] hover:border-[#3A3A42] transition-colors"
+                  >
+                    <span className="text-[10px] font-mono-studio px-1.5 py-0.5 rounded bg-white/10 text-white/80 border border-white/15 shrink-0">
+                      {`00:${Math.floor(sub.start).toString().padStart(2, '0')}`}
+                    </span>
+                    <input
+                      ref={(el) => {
+                        subtitleRefs.current[idx] = el;
+                      }}
+                      value={sub.text}
+                      onChange={(e) => {
+                        const next = [...script.subtitles];
+                        next[idx] = { ...sub, text: e.target.value };
+                        onUpdateScript({ subtitles: next });
+                      }}
+                      className="flex-1 bg-transparent text-xs text-white outline-none truncate"
+                    />
                     <button
                       type="button"
-                      onClick={() => subtitleRefs.current[idx]?.focus()}
-                      className="cursor-pointer hover:text-white"
-                      aria-label={`Edit subtitle ${idx + 1}`}
+                      onClick={() => playTextPreview(sub.text || '')}
+                      className="text-[#71717A] hover:text-white p-1 cursor-pointer"
+                      title="Audio Preview"
                     >
-                      <Edit2 className="h-3 w-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => playTextPreview(sub.text || 'Subtitle preview')}
-                      className="cursor-pointer hover:text-white"
-                      aria-label={`Preview subtitle ${idx + 1}`}
-                    >
-                      <Volume2 className="h-3 w-3" />
+                      <Volume2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
-          {menuOpen && renderSubtitleMenu()}
-        </ScriptEditorSection>
+        )}
       </div>
     </div>
   );

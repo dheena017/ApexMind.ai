@@ -222,6 +222,22 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           <span>Save Draft</span>
         </button>
 
+        {/* Save to Website Library */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('workspace:save-to-library'))}
+          disabled={!canPublish}
+          className={`hidden sm:flex items-center gap-1 h-7 px-2.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+            canPublish
+              ? 'bg-[#3B82F6]/10 text-[#60A5FA] border-[#3B82F6]/40 hover:bg-[#3B82F6]/20 hover:border-[#3B82F6]/70'
+              : 'bg-[#181818] text-[#555555] border-[#262626] cursor-not-allowed'
+          }`}
+          title="Save this video to your Website Video Library"
+        >
+          <Film className="w-3 h-3" />
+          <span>Save to Library</span>
+        </button>
+
         {/* Publish to YouTube */}
         <button
           type="button"

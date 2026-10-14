@@ -346,7 +346,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               <CustomSelect
                 label="Visual Backdrop Preset"
                 labelClassName="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1.5 block"
-                value={activeBackdrop?.id || backdrops[0]?.id || ''}
+                value={activeBackdrop?.id || ''}
                 onChange={(backdropId) => {
                   onSetCustomImage?.(undefined);
                   onSetCustomVideo?.(undefined);

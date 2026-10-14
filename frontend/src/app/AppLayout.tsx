@@ -9,7 +9,8 @@ import {
   Bell,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Film,
 } from 'lucide-react';
 import { Badge } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
@@ -95,6 +96,7 @@ export default function AppLayout({
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
     { id: 'workspace', label: 'AI Video Studio', icon: <Wand2 className="w-5 h-5 shrink-0" /> },
+    { id: 'videos', label: 'Website Videos', icon: <Film className="w-5 h-5 shrink-0" /> },
     { id: 'youtube', label: 'YouTube Manager', icon: <Youtube className="w-5 h-5 text-red-400 shrink-0" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-5 h-5 shrink-0" />, badge: unreadCount > 0 ? unreadCount : undefined },
     { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5 shrink-0" /> },

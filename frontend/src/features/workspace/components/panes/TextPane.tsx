@@ -1,17 +1,10 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import {
   Type,
-  Heading1,
-  Heading2,
   AlignLeft,
-  Sparkles,
-  Palette,
   Check,
   Plus,
   Zap,
-  Flame,
-  Award,
 } from 'lucide-react';
 
 export interface TextPreset {
@@ -97,6 +90,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
   onUpdateHook,
   onUpdateQuote,
 }) => {
+  const [activeTab, setActiveTab] = useState<'presets' | 'blocks' | 'hooks'>('presets');
   const [selectedPresetId, setSelectedPresetId] = useState<string>('impact-bold');
   const [appliedFeedback, setAppliedFeedback] = useState<string | null>(null);
 
@@ -111,17 +105,17 @@ export const TextPane: React.FC<TextPaneProps> = ({
       const text = 'UNSTOPPABLE DISCIPLINE';
       if (onUpdateTitle) onUpdateTitle(text);
       if (onInsertText) onInsertText(text, 'heading');
-      triggerFeedback('Heading title updated!');
+      triggerFeedback('Heading updated!');
     } else if (type === 'subheading') {
       const text = 'Stop waiting for the perfect day.';
       if (onUpdateHook) onUpdateHook(text);
       if (onInsertText) onInsertText(text, 'subheading');
-      triggerFeedback('Subheading hook updated!');
+      triggerFeedback('Hook updated!');
     } else {
       const text = 'Work in silence. Let your compounding daily discipline make all the noise.';
       if (onUpdateQuote) onUpdateQuote(text);
       if (onInsertText) onInsertText(text, 'body');
-      triggerFeedback('Body quote updated!');
+      triggerFeedback('Monologue updated!');
     }
   };
 
@@ -129,192 +123,197 @@ export const TextPane: React.FC<TextPaneProps> = ({
     setSelectedPresetId(preset.id);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
     if (onApplyPreset) onApplyPreset(preset);
-    triggerFeedback(`Applied "${preset.name}" style!`);
+    triggerFeedback(`Applied "${preset.name}"!`);
   };
 
   const handleApplyHook = (hook: string) => {
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
     if (onUpdateHook) onUpdateHook(hook);
-    triggerFeedback('Hook updated in script!');
+    triggerFeedback('Hook applied!');
   };
 
   return (
-    <div className="flex flex-col font-sans-studio text-[#E5E5E5] space-y-4">
-      {/* ── Top Header Bar ────────────────────────────────────────────── */}
-      <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#2F2F2F] bg-[#121212]/90 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
-            <Type className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-tight">Text & Typography</h2>
-            <p className="text-[10px] text-[#9CA3AF]">motion/react • Dynamic Typography Engine</p>
-          </div>
+    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Type className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+          <span className="text-xs font-bold text-white truncate">
+            Text &amp; Typography
+          </span>
+          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
+            FONTS
+          </span>
         </div>
 
         {appliedFeedback && (
-          <motion.span
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-[10px] font-mono-studio px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-          >
+          <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
             ✓ {appliedFeedback}
-          </motion.span>
+          </span>
         )}
       </div>
 
-      {/* ── Standard Text Block Inserters ─────────────────────────────── */}
-      <div className="space-y-2">
-        <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block px-1">
-          Add Standard Text Box
-        </span>
-        <div className="space-y-2">
-          {/* Add Heading */}
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            type="button"
-            onClick={() => handleAddDefault('heading')}
-            className="w-full flex items-center justify-between p-3 rounded-xl border border-[#262626] bg-[#141414] hover:bg-[#181818] hover:border-[#3B82F6]/60 transition-all cursor-pointer group text-left"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-[#1F1F1F] text-[#60A5FA] flex items-center justify-center font-bold text-xs">
-                H1
-              </div>
-              <div>
-                <p className="text-sm font-black text-white group-hover:text-[#60A5FA] transition-colors uppercase">
-                  Add a Cinematic Heading
-                </p>
-                <p className="text-[10px] text-[#71717A]">Impact title for reel opening</p>
-              </div>
-            </div>
-            <Plus className="w-4 h-4 text-[#71717A] group-hover:text-white transition-colors" />
-          </motion.button>
+      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveTab('presets')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'presets' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Preset Styles
+        </button>
 
-          {/* Add Subheading */}
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            type="button"
-            onClick={() => handleAddDefault('subheading')}
-            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-[#262626] bg-[#141414] hover:bg-[#181818] hover:border-[#3B82F6]/60 transition-all cursor-pointer group text-left"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-[#1F1F1F] text-zinc-300 flex items-center justify-center font-bold text-xs">
-                H2
-              </div>
-              <div>
-                <p className="text-xs font-bold text-white group-hover:text-[#60A5FA] transition-colors">
-                  Add Subheading / Punchline
-                </p>
-                <p className="text-[10px] text-[#71717A]">3-5 word secondary hook</p>
-              </div>
-            </div>
-            <Plus className="w-4 h-4 text-[#71717A] group-hover:text-white transition-colors" />
-          </motion.button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('blocks')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'blocks' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Text Blocks
+        </button>
 
-          {/* Add Body Monologue */}
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            type="button"
-            onClick={() => handleAddDefault('body')}
-            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-[#262626] bg-[#141414] hover:bg-[#181818] hover:border-[#3B82F6]/60 transition-all cursor-pointer group text-left"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-[#1F1F1F] text-zinc-400 flex items-center justify-center text-xs">
-                <AlignLeft className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-white group-hover:text-[#60A5FA] transition-colors">
-                  Add Monologue Quote Paragraph
-                </p>
-                <p className="text-[10px] text-[#71717A]">Motivational speech body</p>
-              </div>
-            </div>
-            <Plus className="w-4 h-4 text-[#71717A] group-hover:text-white transition-colors" />
-          </motion.button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('hooks')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'hooks' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Viral Hooks
+        </button>
       </div>
 
-      {/* ── Viral Preset Text Styles ─────────────────────────────────── */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block">
-            Viral Typography Presets
-          </span>
-          <span className="text-[10px] text-[#60A5FA] font-medium flex items-center gap-1">
-            <Sparkles className="w-3 h-3" /> 6 Styles
-          </span>
-        </div>
+      {/* ── Main Tab Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+        {activeTab === 'presets' && (
+          <div className="flex flex-col gap-2.5">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+              Trending Reel Caption Fonts
+            </label>
 
-        <div className="grid grid-cols-1 gap-2">
-          {MOTIVATIONAL_PRESETS.map((preset) => {
-            const isSelected = selectedPresetId === preset.id;
-            return (
-              <motion.div
-                key={preset.id}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => handleApplyPreset(preset)}
-                className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-2 ${
-                  isSelected
-                    ? 'border-[#3B82F6] bg-[#3B82F6]/10 ring-1 ring-[#3B82F6]/40'
-                    : 'border-[#262626] bg-[#141414] hover:border-[#404040] hover:bg-[#181818]'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: preset.color }}
-                    />
-                    {preset.name}
-                  </span>
-                  {isSelected && (
-                    <span className="w-4 h-4 rounded-full bg-[#3B82F6] text-white flex items-center justify-center text-[10px]">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+            <div className="grid grid-cols-1 gap-2.5">
+              {MOTIVATIONAL_PRESETS.map((preset) => {
+                const isSelected = selectedPresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleApplyPreset(preset)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
+                      isSelected
+                        ? 'border-[#3B82F6] bg-[#3B82F6]/15 ring-1 ring-[#3B82F6]/40'
+                        : 'border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#A1A1AA]">{preset.name}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#60A5FA]" />}
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-[#121214] border border-[#26262B] text-center">
+                      <span className={`text-sm ${preset.className}`}>{preset.previewText}</span>
+                    </div>
+
+                    <span className="text-[10px] text-[#71717A] leading-tight">
+                      {preset.styleDescription}
                     </span>
-                  )}
-                </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-                {/* Live Preview Display */}
-                <div className="p-2.5 rounded-lg bg-[#0A0A0A] border border-[#222222] text-center overflow-hidden">
-                  <p className={`text-sm ${preset.className}`}>
-                    {preset.previewText}
-                  </p>
-                </div>
+        {activeTab === 'blocks' && (
+          <div className="flex flex-col gap-2.5">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+              Insert Standard Text
+            </label>
 
-                <div className="flex items-center justify-between text-[10px] text-[#71717A]">
-                  <span>{preset.styleDescription}</span>
-                  <span className="text-[#60A5FA] font-semibold">Apply to Video Canvas →</span>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => handleAddDefault('heading')}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3B82F6]/50 transition-all cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#17171A] text-[#60A5FA] flex items-center justify-center font-bold text-xs border border-[#26262B]">
+                    H1
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white uppercase">Add Cinematic Heading</p>
+                    <p className="text-[10px] text-[#71717A]">Impact title for reel opening</p>
+                  </div>
                 </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
+                <Plus className="w-4 h-4 text-[#71717A]" />
+              </button>
 
-      {/* ── Quick Viral Hooks ────────────────────────────────────────── */}
-      <div className="space-y-2">
-        <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-wider block px-1">
-          Instant Viral Opening Hooks
-        </span>
-        <div className="space-y-1.5">
-          {VIRAL_HOOK_TEMPLATES.map((hook, i) => (
-            <motion.button
-              key={i}
-              whileHover={{ x: 2 }}
-              type="button"
-              onClick={() => handleApplyHook(hook)}
-              className="w-full p-2 rounded-lg border border-[#262626] bg-[#101010] hover:bg-[#1C1C1C] hover:border-[#3B82F6]/50 text-left text-[11px] text-[#D4D4D8] hover:text-white transition-all cursor-pointer flex items-center justify-between"
-            >
-              <span className="truncate">"{hook}"</span>
-              <span className="text-[9px] font-mono-studio text-[#60A5FA] shrink-0 ml-2">Use</span>
-            </motion.button>
-          ))}
-        </div>
+              <button
+                type="button"
+                onClick={() => handleAddDefault('subheading')}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3B82F6]/50 transition-all cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#17171A] text-zinc-300 flex items-center justify-center font-bold text-xs border border-[#26262B]">
+                    H2
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white">Add Subheading / Punchline</p>
+                    <p className="text-[10px] text-[#71717A]">3–5 word secondary hook</p>
+                  </div>
+                </div>
+                <Plus className="w-4 h-4 text-[#71717A]" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAddDefault('body')}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3B82F6]/50 transition-all cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#17171A] text-zinc-400 flex items-center justify-center text-xs border border-[#26262B]">
+                    <AlignLeft className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-white">Add Monologue Paragraph</p>
+                    <p className="text-[10px] text-[#71717A]">Core motivational quote</p>
+                  </div>
+                </div>
+                <Plus className="w-4 h-4 text-[#71717A]" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'hooks' && (
+          <div className="flex flex-col gap-2.5">
+            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
+              High Retention Opening Hooks
+            </label>
+
+            <div className="space-y-2">
+              {VIRAL_HOOK_TEMPLATES.map((hook, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleApplyHook(hook)}
+                  className="w-full flex items-center justify-between p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3B82F6]/50 transition-all cursor-pointer text-left group"
+                >
+                  <span className="text-xs text-white group-hover:text-[#60A5FA] transition-colors font-medium">
+                    "{hook}"
+                  </span>
+                  <Plus className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+export default TextPane;

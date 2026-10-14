@@ -8,6 +8,9 @@ import {
   SelectedClip,
   DragAction,
   EnabledTracks,
+  MIN_TIMELINE_ZOOM,
+  MAX_TIMELINE_ZOOM,
+  TIMELINE_ZOOM_STEP,
 } from './timelineTypes';
 import { TimelineToolbar } from './TimelineToolbar';
 import { TimelineTrackHeaders } from './TimelineTrackHeaders';
@@ -25,6 +28,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   isPlaying,
   onTogglePlay,
   onSeek,
+  onTimelineDurationChange,
+  selectedSfx,
+  onRemoveSfx,
   script,
   onUpdateSubtitles,
   activeBackdrop,
@@ -89,8 +95,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const [musicStart, setMusicStart] = useState<number>(0);
   const [musicDuration, setMusicDuration] = useState<number>(15.0);
 
-  const [sfxStart, setSfxStart] = useState<number>(0.2);
-  const [sfxDuration, setSfxDuration] = useState<number>(2.5);
+  const [sfxStart, setSfxStart] = useState<number>(0);
+  const [sfxDuration, setSfxDuration] = useState<number>(0);
 
   // Subtitle clips for fluid dragging, trimming, and editing
   const [localClips, setLocalClips] = useState<ScriptSubtitle[]>([]);
@@ -103,8 +109,33 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const tracksContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingPlayhead = useRef<boolean>(false);
 
-  const totalDuration = Math.max(0.1, duration > 0 ? duration : 30);
+  const contentEnd = Math.max(
+    enabledTracks.video && (customVideoUrl || activeBackdrop?.id) ? videoStart + videoDuration : 0,
+    enabledTracks.image && (customImageUrl || activeBackdrop?.imageUrl) ? imageStart + imageDuration : 0,
+    enabledTracks.overlay && activeElementOverlay ? overlayStart + overlayDuration : 0,
+    enabledTracks.captions
+      ? localClips.reduce((end, clip) => Math.max(end, clip.start + (clip.duration || 3)), 0)
+      : 0,
+    enabledTracks.title && script.title ? titleStart + titleDuration : 0,
+    enabledTracks.voice && audioUrl ? voiceStart + voiceDuration : 0,
+    enabledTracks.music && selectedMusic ? musicStart + musicDuration : 0,
+    enabledTracks.sfx && selectedSfx ? sfxStart + sfxDuration : 0
+  );
+  const projectDuration = Math.max(0.1, duration > 0 ? duration : 30, contentEnd);
+  const totalDuration = projectDuration / Math.min(zoomLevel, 1);
   const progressPercent = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
+
+  useEffect(() => {
+    onTimelineDurationChange?.(projectDuration);
+  }, [onTimelineDurationChange, projectDuration]);
+
+  useEffect(() => {
+    if (!selectedSfx) return;
+    setSfxStart(selectedSfx.start);
+    setSfxDuration(selectedSfx.duration);
+    setEnabledTracks((previous) => ({ ...previous, sfx: true }));
+    setSelectedClip({ track: 'sfx' });
+  }, [selectedSfx]);
 
   // Dynamic Lane Stacking for Captions (prevent text overlapping; overlapping clips sit ABOVE)
   const { lanes: captionLanes, maxLane: captionMaxLane } = computeCaptionLanes(localClips);
@@ -669,8 +700,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setVideoStart((s) => Math.min(totalDuration - videoDuration, s + 0.5));
   };
   const handleVideoZoom = () => {
-    const ratio = (videoDuration / totalDuration) * 3;
-    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+    const ratio = (videoDuration / projectDuration) * 3;
+    setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // Overlay track
@@ -682,8 +713,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setOverlayStart((s) => Math.min(totalDuration - overlayDuration, s + 0.5));
   };
   const handleOverlayZoom = () => {
-    const ratio = (overlayDuration / totalDuration) * 3;
-    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+    const ratio = (overlayDuration / projectDuration) * 3;
+    setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // Voice track
@@ -692,8 +723,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setSelectedClip(null);
   };
   const handleVoiceZoom = () => {
-    const ratio = (voiceDuration / totalDuration) * 3;
-    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+    const ratio = (voiceDuration / projectDuration) * 3;
+    setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // Music track
@@ -702,14 +733,16 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setSelectedClip(null);
   };
   const handleMusicZoom = () => {
-    const ratio = (musicDuration / totalDuration) * 3;
-    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+    const ratio = (musicDuration / projectDuration) * 3;
+    setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // SFX track
   const handleSfxDelete = () => {
     setEnabledTracks((p) => ({ ...p, sfx: false }));
     setSelectedClip(null);
+    setSfxDuration(0);
+    onRemoveSfx?.();
   };
 
   // Image track
@@ -721,8 +754,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setImageStart((s) => Math.min(totalDuration - imageDuration, s + 0.5));
   };
   const handleImageZoom = () => {
-    const ratio = (imageDuration / totalDuration) * 3;
-    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+    const ratio = (imageDuration / projectDuration) * 3;
+    setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // Title track
@@ -733,7 +766,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setSelectedClip(null);
   };
   const handleTitleZoom = () => {
-    const ratio = (titleDuration / totalDuration) * 3;
+    const ratio = (titleDuration / projectDuration) * 3;
     setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
   };
 
@@ -810,7 +843,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     : '-14 dB Studio Mix';
 
   // Total active compounds actually containing clips
-  const activeCompoundsCount = [
+  const activeTracksCount = [
     hasVideo && enabledTracks.video,
     hasImage && enabledTracks.image,
     hasOverlay && enabledTracks.overlay,
@@ -818,11 +851,20 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     hasTitle && enabledTracks.title,
     hasVoice && enabledTracks.voice,
     hasMusic && enabledTracks.music,
+    selectedSfx && enabledTracks.sfx,
   ].filter(Boolean).length;
 
   // Ruler tick markers
-  const tickCount = Math.max(6, Math.floor(totalDuration / 2));
-  const ticks = Array.from({ length: tickCount + 1 }, (_, i) => (i * totalDuration) / tickCount);
+  const targetTickInterval = 2 / zoomLevel;
+  const tickMagnitude = 10 ** Math.floor(Math.log10(targetTickInterval));
+  const tickInterval =
+    [1, 2, 5, 10].map((scale) => scale * tickMagnitude).find((interval) => interval >= targetTickInterval) ??
+    10 * tickMagnitude;
+  const ticks = Array.from(
+    { length: Math.floor(totalDuration / tickInterval) + 1 },
+    (_, index) => index * tickInterval
+  );
+  if (totalDuration - (ticks[ticks.length - 1] || 0) > 0.01) ticks.push(totalDuration);
 
   return (
     <div className="w-full bg-[#121212] border border-[#3A3A3A] rounded-2xl overflow-hidden shadow-2xl transition-all font-sans-studio select-none">
@@ -830,7 +872,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       <TimelineToolbar
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-        activeCompoundsCount={activeCompoundsCount}
+        activeTracksCount={activeTracksCount}
         selectedClip={selectedClip}
         captionsTrackLocked={captionsTrackLocked}
         onSplitClip={handleSplitClip}
@@ -850,8 +892,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         totalDuration={totalDuration}
         dragTooltip={dragTooltip}
         zoomLevel={zoomLevel}
-        onZoomIn={() => setZoomLevel(Math.min(3, zoomLevel + 0.5))}
-        onZoomOut={() => setZoomLevel(Math.max(1, zoomLevel - 0.5))}
+        onZoomIn={() => setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, zoomLevel + TIMELINE_ZOOM_STEP))}
+        onZoomOut={() => setZoomLevel(Math.max(MIN_TIMELINE_ZOOM, zoomLevel - TIMELINE_ZOOM_STEP))}
+        onZoomFit={() => setZoomLevel(1)}
       />
 
       {/* ── Collapsible Tracks Body ───────────────────────────────── */}
@@ -881,15 +924,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               onToggleMusicTrackMuted={() => setMusicTrackMuted(!musicTrackMuted)}
               sfxTrackMuted={sfxTrackMuted}
               onToggleSfxTrackMuted={() => setSfxTrackMuted(!sfxTrackMuted)}
-              onOpenAddTrackMenu={() => setAddTrackMenuOpen(true)}
             />
 
             {/* ── Timeline Tracks Area (Scrollable / Zoomable) ───── */}
-            <div className="flex-1 overflow-x-auto custom-scrollbar relative">
+            <div className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar relative">
               <div
                 ref={tracksContainerRef}
-                className="relative min-w-full"
-                style={{ width: `${100 * zoomLevel}%` }}
+                className="relative overflow-hidden"
+                style={{ width: `${100 * Math.max(1, zoomLevel)}%` }}
               >
                 {/* ── Magnetic Snapping Guideline (Laser Line) ──────── */}
                 {snapGuideTime !== null && (
@@ -1332,7 +1374,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 )}
 
                 {/* ── Track 8: Sound FX Track ──────────────────────────────── */}
-                {enabledTracks.sfx && (
+                {enabledTracks.sfx && selectedSfx && (
                   <div className="h-10 p-1 relative flex items-center">
                     <AudioTrackClip
                       type="sfx"
@@ -1341,7 +1383,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       totalDuration={totalDuration}
                       selectedClip={selectedClip}
                       isMuted={sfxTrackMuted}
-                      label="SFX: Cinematic Transition & Impact Burst"
+                      label={`SFX: ${selectedSfx.name}`}
                       onSelect={() => handleSelectClip({ track: 'sfx' }, 'music')}
                       onPointerDownMove={(e) => {
                         handleSelectClip({ track: 'sfx' });
