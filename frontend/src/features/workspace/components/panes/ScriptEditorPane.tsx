@@ -91,9 +91,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
           <span className="text-xs font-bold text-white truncate">
             Script &amp; Subtitles
           </span>
-          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
-            T1 TEXT
-          </span>
         </div>
 
         {/* Right Actions: New & Switch */}
@@ -146,15 +143,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
           Subtitles ({script.subtitles?.length || 0})
         </button>
 
-        {onSwitchToAgent && (
-          <button
-            type="button"
-            onClick={onSwitchToAgent}
-            className="pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 text-[#71717A] border-transparent hover:text-[#D4D4D8]"
-          >
-            Switch to AI Prompt
-          </button>
-        )}
       </div>
 
       {/* ── Main Tab Content Area ── */}

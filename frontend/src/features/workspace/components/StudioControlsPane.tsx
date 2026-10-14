@@ -97,6 +97,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
 }) => {
   // Current active compound page (defaults to home, reacts to timeline / canvas clicks)
   const [activeCompound, setActiveCompound] = useState<CompoundType>(propCompound || 'home');
+  const [videoInspectorTab, setVideoInspectorTab] = useState<'transform' | 'style'>('transform');
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
   // Sync prop changes
@@ -147,8 +148,9 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
 
   const CurrentIcon = compoundMetadata.icon;
 
-  const handleSwitchCompound = (type: CompoundType) => {
+  const handleSwitchCompound = (type: CompoundType, videoTab?: 'transform' | 'style') => {
     setActiveCompound(type);
+    if (type === 'video') setVideoInspectorTab(videoTab || 'transform');
     onSelectCompound?.(type);
     setIsSwitcherOpen(false);
   };
@@ -257,6 +259,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             onSetCustomVideo={onSetCustomVideo}
             canvasBackground={canvasBackground}
             onCanvasBackgroundChange={onCanvasBackgroundChange}
+            initialSubTab={videoInspectorTab}
           />
         )}
 

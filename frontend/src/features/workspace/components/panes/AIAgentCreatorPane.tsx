@@ -5,6 +5,7 @@ import {
   Plus,
   Cpu,
   Compass,
+  FileText,
   Mic,
   Volume2,
   Radio,
@@ -110,15 +111,17 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('prompt')}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#222228] hover:bg-[#2C2C34] text-[10px] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer border border-[#32323C]"
-            title="Open AI Prompt Studio"
-          >
-            <Wand2 className="w-3.5 h-3.5 text-[#60A5FA]" />
-            <span>AI Prompt</span>
-          </button>
+          {onSwitchToEditor && (
+            <button
+              type="button"
+              onClick={onSwitchToEditor}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#222228] hover:bg-[#2C2C34] text-[10px] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer border border-[#32323C]"
+              title="Open Script & Subtitles"
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Script</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -133,16 +136,6 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         >
           Prompt &amp; Niche
         </button>
-
-        {onSwitchToEditor ? (
-          <button
-            type="button"
-            onClick={onSwitchToEditor}
-            className="pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 text-[#71717A] border-transparent hover:text-[#D4D4D8] flex items-center gap-1.5"
-          >
-            <span>Script Editor</span>
-          </button>
-        ) : null}
 
         <button
           type="button"

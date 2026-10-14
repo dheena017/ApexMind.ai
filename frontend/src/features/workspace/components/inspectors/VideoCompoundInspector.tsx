@@ -11,6 +11,16 @@ import {
 import { VisualBackdrop } from '../../types';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
+type VideoInspectorTab = 'transform' | 'style' | 'animations' | 'adjust' | 'audio' | 'speed' | 'time';
+
+const VIDEO_STYLE_PRESETS = [
+  { label: 'Natural', brightness: 100, contrast: 100, saturation: 100, vignette: 0 },
+  { label: 'Cinematic', brightness: 96, contrast: 125, saturation: 82, vignette: 24 },
+  { label: 'Vivid', brightness: 105, contrast: 115, saturation: 145, vignette: 8 },
+  { label: 'Noir', brightness: 95, contrast: 140, saturation: 0, vignette: 35 },
+  { label: 'Vintage', brightness: 105, contrast: 90, saturation: 72, vignette: 22 },
+];
+
 export interface VideoCompoundInspectorProps {
   activeBackdrop: VisualBackdrop;
   backdrops: VisualBackdrop[];
@@ -25,6 +35,7 @@ export interface VideoCompoundInspectorProps {
   onSetCustomVideo?: (url: string | undefined) => void;
   canvasBackground?: string;
   onCanvasBackgroundChange?: (bg: string) => void;
+  initialSubTab?: VideoInspectorTab;
 }
 
 export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
@@ -41,8 +52,9 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   onSetCustomVideo,
   canvasBackground = '#050505',
   onCanvasBackgroundChange,
+  initialSubTab = 'transform',
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'transform' | 'animations' | 'adjust' | 'audio' | 'speed' | 'time'>('transform');
+  const [activeSubTab, setActiveSubTab] = useState<VideoInspectorTab>(initialSubTab);
 
   // Transform states (Image 1)
   const [fitMode, setFitMode] = useState<'fill' | 'fit' | 'crop'>('fill');
@@ -59,6 +71,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
   const [vignette, setVignette] = useState(0);
+  const [activeStyle, setActiveStyle] = useState('Natural');
 
   // Audio / Animation states
   const [videoVolume, setVideoVolume] = useState(100);
@@ -147,7 +160,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar (Exactly matching Image 1 & 2) ── */}
       <div className="flex items-center gap-4 px-3 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar">
-        {(['transform', 'animations', 'adjust', 'audio', 'speed', 'time'] as const).map((tab) => (
+        {(['transform', 'style', 'animations', 'adjust', 'audio', 'speed', 'time'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -165,6 +178,34 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
       {/* ── Tab Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+        {activeSubTab === 'style' && (
+          <div className="flex flex-col gap-3 pt-1">
+            <span className="text-xs text-[#71717A]">Choose a video look</span>
+            <div className="grid grid-cols-2 gap-2.5">
+              {VIDEO_STYLE_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => {
+                    setBrightness(preset.brightness);
+                    setContrast(preset.contrast);
+                    setSaturation(preset.saturation);
+                    setVignette(preset.vignette);
+                    setActiveStyle(preset.label);
+                  }}
+                  className={`p-3.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
+                    activeStyle === preset.label
+                      ? 'bg-[#2A2A34] border-[#3B82F6] text-white shadow'
+                      : 'bg-[#1C1C20] border-[#2A2A30] text-[#9CA3AF] hover:bg-[#25252A]'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* TAB 1: Transform (Image 1) */}
         {activeSubTab === 'transform' && (
           <div className="flex flex-col items-center gap-6 pt-1">
@@ -462,7 +503,10 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   min={adj.min}
                   max={adj.max}
                   value={adj.val}
-                  onChange={(e) => adj.set(Number(e.target.value))}
+                  onChange={(e) => {
+                    adj.set(Number(e.target.value));
+                    setActiveStyle('Custom');
+                  }}
                   className="w-full accent-[#3B82F6] cursor-pointer"
                 />
               </div>

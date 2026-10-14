@@ -26,7 +26,10 @@ export interface HomeCompoundInspectorProps {
   script?: GeneratedScript;
   duration?: number;
   category?: string;
-  onSelectCompound?: (compound: 'video' | 'text' | 'voice' | 'music' | 'overlay') => void;
+  onSelectCompound?: (
+    compound: 'video' | 'text' | 'voice' | 'music' | 'overlay',
+    videoTab?: 'transform' | 'style'
+  ) => void;
 }
 
 export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
@@ -53,6 +56,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
 
   const compoundShortcuts = [
     { id: 'video' as const, label: 'Video Backdrop (V1)', icon: Film, color: 'text-amber-400', badge: 'Visuals' },
+    { id: 'video' as const, videoTab: 'style' as const, label: 'Video Styles', icon: Sparkles, color: 'text-sky-400', badge: 'Looks' },
     { id: 'text' as const, label: 'Captions & Title (T1)', icon: Type, color: 'text-blue-400', badge: 'Captions' },
     { id: 'voice' as const, label: 'Voiceover Audio (A1)', icon: Mic, color: 'text-emerald-400', badge: 'Voice' },
     { id: 'music' as const, label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-purple-400', badge: 'Music' },
@@ -113,10 +117,10 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                   const Icon = c.icon;
                   return (
                     <button
-                      key={c.id}
+                      key={`${c.id}-${c.videoTab || 'default'}`}
                       type="button"
                       onClick={() => {
-                        if (onSelectCompound) onSelectCompound(c.id);
+                        if (onSelectCompound) onSelectCompound(c.id, c.videoTab);
                         window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: c.id }));
                       }}
                       className="flex items-center justify-between p-2.5 rounded-xl bg-[#18181C] hover:bg-[#222228] border border-[#282830] transition-colors cursor-pointer text-left group"
