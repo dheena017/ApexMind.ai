@@ -1,3 +1,5 @@
+import { apiUrl } from '@/src/shared/utils/api';
+
 export interface GeminiApiStatus {
   configured: boolean;
   usageUrl: string;
@@ -5,7 +7,7 @@ export interface GeminiApiStatus {
 
 export const settingsApi = {
   async getGeminiApiStatus(): Promise<GeminiApiStatus> {
-    const response = await fetch('/api/settings/gemini');
+    const response = await fetch(apiUrl('/api/settings/gemini'));
     if (!response.ok) {
       throw new Error(`Failed to check Gemini API configuration (HTTP ${response.status}).`);
     }

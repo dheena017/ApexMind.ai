@@ -1,5 +1,6 @@
 import { NotificationItem, NotificationsListResult } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
+import { apiUrl } from '@/src/shared/utils/api';
 
 export const notificationsApi = {
   // Get notifications with backward compatibility (returns array)
@@ -9,11 +10,11 @@ export const notificationsApi = {
     if (params?.unreadOnly) query.set('unread_only', 'true');
     if (params?.limit) query.set('limit', String(params.limit));
 
-    const url = `/api/notifications${query.toString() ? `?${query.toString()}` : ''}`;
+    const path = `/api/notifications${query.toString() ? `?${query.toString()}` : ''}`;
     const start = performance.now();
-    const res = await fetch(url);
+    const res = await fetch(apiUrl(path));
     const duration = performance.now() - start;
-    consoleLogger.api('GET', url, res.status, duration);
+    consoleLogger.api('GET', path, res.status, duration);
     const data = await res.json();
     consoleLogger.info('Notifications', `Loaded ${data.notifications?.length || 0} alert(s)`);
     return data.notifications || [];
@@ -26,8 +27,8 @@ export const notificationsApi = {
     if (params?.unreadOnly) query.set('unread_only', 'true');
     if (params?.limit) query.set('limit', String(params.limit));
 
-    const url = `/api/notifications${query.toString() ? `?${query.toString()}` : ''}`;
-    const res = await fetch(url);
+    const path = `/api/notifications${query.toString() ? `?${query.toString()}` : ''}`;
+    const res = await fetch(apiUrl(path));
     const data = await res.json();
     return {
       notifications: data.notifications || [],
@@ -38,7 +39,7 @@ export const notificationsApi = {
 
   async markNotificationRead(id: string, read: boolean = true): Promise<void> {
     const start = performance.now();
-    const res = await fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
+    const res = await fetch(apiUrl(`/api/notifications/${encodeURIComponent(id)}/read`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ read }),
@@ -49,7 +50,7 @@ export const notificationsApi = {
 
   async deleteNotification(id: string): Promise<void> {
     const start = performance.now();
-    const res = await fetch(`/api/notifications/${encodeURIComponent(id)}`, {
+    const res = await fetch(apiUrl(`/api/notifications/${encodeURIComponent(id)}`), {
       method: 'DELETE',
     });
     const duration = performance.now() - start;
@@ -66,7 +67,7 @@ export const notificationsApi = {
     priority?: string;
   }): Promise<NotificationItem> {
     const start = performance.now();
-    const res = await fetch('/api/notifications', {
+    const res = await fetch(apiUrl('/api/notifications'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -78,20 +79,20 @@ export const notificationsApi = {
   },
 
   async markNotificationsRead(category?: string): Promise<void> {
-    const url = category && category !== 'all' ? `/api/notifications/mark-read?category=${encodeURIComponent(category)}` : '/api/notifications/mark-read';
+    const path = category && category !== 'all' ? `/api/notifications/mark-read?category=${encodeURIComponent(category)}` : '/api/notifications/mark-read';
     const start = performance.now();
-    const res = await fetch(url, { method: 'POST' });
+    const res = await fetch(apiUrl(path), { method: 'POST' });
     const duration = performance.now() - start;
-    consoleLogger.api('POST', url, res.status, duration);
+    consoleLogger.api('POST', path, res.status, duration);
     consoleLogger.success('Notifications', 'Notifications marked as read');
   },
 
   async clearNotifications(category?: string): Promise<void> {
-    const url = category && category !== 'all' ? `/api/notifications?category=${encodeURIComponent(category)}` : '/api/notifications';
+    const path = category && category !== 'all' ? `/api/notifications?category=${encodeURIComponent(category)}` : '/api/notifications';
     const start = performance.now();
-    const res = await fetch(url, { method: 'DELETE' });
+    const res = await fetch(apiUrl(path), { method: 'DELETE' });
     const duration = performance.now() - start;
-    consoleLogger.api('DELETE', url, res.status, duration);
+    consoleLogger.api('DELETE', path, res.status, duration);
     consoleLogger.warn('Notifications', 'Notifications cleared');
   },
 };

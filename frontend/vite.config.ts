@@ -119,6 +119,9 @@ export default defineConfig(({mode}) => {
       'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(
         env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || ''
       ),
+      'import.meta.env.VITE_API_URL': JSON.stringify(
+        env.VITE_API_URL || env.BACKEND_URL || ''
+      ),
     },
     resolve: {
       alias: {

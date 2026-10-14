@@ -1,12 +1,14 @@
 import { UserProfile, GoogleAuthPayload } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
+import { apiUrl } from '@/src/shared/utils/api';
 
 export const authApi = {
   // Sign in with Google
   async googleLogin(payload: GoogleAuthPayload): Promise<{ user: UserProfile; token: string }> {
     const start = performance.now();
     consoleLogger.info('Auth', `Attempting Google authentication for ${payload.email || 'user'}...`);
-    const res = await fetch('/api/auth/google', {
+    const endpoint = apiUrl('/api/auth/google');
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -28,7 +30,8 @@ export const authApi = {
   async emailLogin(email: string, password?: string): Promise<{ user: UserProfile; token: string }> {
     const start = performance.now();
     consoleLogger.info('Auth', `Attempting email authentication for ${email}...`);
-    const res = await fetch('/api/auth/login', {
+    const endpoint = apiUrl('/api/auth/login');
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -49,7 +52,8 @@ export const authApi = {
   // Fetch current user profile
   async getMe(): Promise<UserProfile> {
     const start = performance.now();
-    const res = await fetch('/api/auth/me');
+    const endpoint = apiUrl('/api/auth/me');
+    const res = await fetch(endpoint);
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/auth/me', res.status, duration);
     if (!res.ok) {
@@ -63,7 +67,7 @@ export const authApi = {
   async logout(): Promise<void> {
     consoleLogger.info('Auth', 'Logging out creator session...');
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch(apiUrl('/api/auth/logout'), { method: 'POST' });
     } catch {
       // Ignored
     }

@@ -10,6 +10,7 @@ import {
   YouTubeAnalyticsData,
 } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
+import { apiUrl } from '@/src/shared/utils/api';
 
 export const youtubeApi = {
   // Get connected YouTube channels and videos
@@ -18,7 +19,7 @@ export const youtubeApi = {
     videos: YouTubeVideo[];
   }> {
     const start = performance.now();
-    const res = await fetch('/api/youtube/channels');
+    const res = await fetch(apiUrl('/api/youtube/channels'));
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/youtube/channels', res.status, duration);
     const data = await res.json();
@@ -30,7 +31,7 @@ export const youtubeApi = {
   async lookupChannel(query: string): Promise<YouTubeLookupResult> {
     consoleLogger.info('YouTube', `Looking up YouTube channel info for "${query}"...`);
     const start = performance.now();
-    const res = await fetch('/api/youtube/lookup', {
+    const res = await fetch(apiUrl('/api/youtube/lookup'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
@@ -60,7 +61,7 @@ export const youtubeApi = {
   }): Promise<YouTubeChannel> {
     consoleLogger.info('YouTube', `Connecting channel "${payload.channelName || payload.handle}"...`);
     const start = performance.now();
-    const res = await fetch('/api/youtube/connect', {
+    const res = await fetch(apiUrl('/api/youtube/connect'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -82,7 +83,7 @@ export const youtubeApi = {
   async syncChannel(channelId: string): Promise<{ channel: YouTubeChannel; message: string }> {
     consoleLogger.info('YouTube', `Syncing channel ${channelId} with live YouTube...`);
     const start = performance.now();
-    const res = await fetch(`/api/youtube/channels/${channelId}/sync`, {
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}/sync`), {
       method: 'POST',
     });
     const duration = performance.now() - start;
@@ -102,7 +103,7 @@ export const youtubeApi = {
   async correctChannel(channelId: string, query: string): Promise<{ channel: YouTubeChannel; message: string }> {
     consoleLogger.info('YouTube', `Correcting channel ${channelId} to "${query}"...`);
     const start = performance.now();
-    const res = await fetch('/api/youtube/correct', {
+    const res = await fetch(apiUrl('/api/youtube/correct'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channelId, query }),
@@ -123,7 +124,7 @@ export const youtubeApi = {
   // Get live shorts published on this YouTube channel
   async getLiveShorts(channelId: string, limit = 12): Promise<YouTubeLiveShort[]> {
     const start = performance.now();
-    const res = await fetch(`/api/youtube/channels/${channelId}/shorts?limit=${limit}`);
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}/shorts?limit=${limit}`));
     const duration = performance.now() - start;
     consoleLogger.api('GET', `/api/youtube/channels/${channelId}/shorts`, res.status, duration);
     if (!res.ok) return [];
@@ -134,7 +135,7 @@ export const youtubeApi = {
   // Get live comprehensive channel feed: real channel info, real videos, real shorts, and for-you recommendations
   async getLiveFeed(channelId: string): Promise<YouTubeLiveFeedResponse> {
     const start = performance.now();
-    const res = await fetch(`/api/youtube/channels/${channelId}/live-feed`);
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}/live-feed`));
     const duration = performance.now() - start;
     consoleLogger.api('GET', `/api/youtube/channels/${channelId}/live-feed`, res.status, duration);
     if (!res.ok) {
@@ -147,7 +148,7 @@ export const youtubeApi = {
   async updateChannel(channelId: string, updates: Partial<YouTubeChannel>): Promise<YouTubeChannel> {
     consoleLogger.info('YouTube', `Updating channel ${channelId}...`, updates);
     const start = performance.now();
-    const res = await fetch(`/api/youtube/channels/${channelId}`, {
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
@@ -165,7 +166,7 @@ export const youtubeApi = {
   // Disconnect channel
   async deleteChannel(channelId: string): Promise<boolean> {
     consoleLogger.info('YouTube', `Disconnecting channel ${channelId}...`);
-    const res = await fetch(`/api/youtube/channels/${channelId}`, {
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}`), {
       method: 'DELETE',
     });
     return res.ok;
@@ -182,7 +183,7 @@ export const youtubeApi = {
   }): Promise<YouTubeVideo> {
     consoleLogger.info('YouTube', `Publishing Short: "${payload.title}"...`, payload);
     const start = performance.now();
-    const res = await fetch('/api/youtube/publish', {
+    const res = await fetch(apiUrl('/api/youtube/publish'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -197,7 +198,7 @@ export const youtubeApi = {
   // Automations
   async getAutomations(): Promise<AutomationJob[]> {
     const start = performance.now();
-    const res = await fetch('/api/automations');
+    const res = await fetch(apiUrl('/api/automations'));
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/automations', res.status, duration);
     const data = await res.json();
@@ -208,7 +209,7 @@ export const youtubeApi = {
   async toggleAutomation(id: string): Promise<AutomationJob[]> {
     consoleLogger.info('YouTube', `Toggling automation schedule ${id}...`);
     const start = performance.now();
-    const res = await fetch('/api/automations/toggle', {
+    const res = await fetch(apiUrl('/api/automations/toggle'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
@@ -223,7 +224,7 @@ export const youtubeApi = {
   // Community Posts
   async getCommunityPosts(channelId: string): Promise<YouTubeCommunityPost[]> {
     const start = performance.now();
-    const res = await fetch(`/api/youtube/channels/${channelId}/posts`);
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}/posts`));
     const duration = performance.now() - start;
     consoleLogger.api('GET', `/api/youtube/channels/${channelId}/posts`, res.status, duration);
     if (!res.ok) return [];
@@ -237,7 +238,7 @@ export const youtubeApi = {
   ): Promise<YouTubeCommunityPost> {
     consoleLogger.info('YouTube', `Publishing community post for channel ${channelId}...`);
     const start = performance.now();
-    const res = await fetch(`/api/youtube/channels/${channelId}/posts`, {
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}/posts`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -255,7 +256,7 @@ export const youtubeApi = {
   // Playlists
   async getPlaylists(channelId: string): Promise<YouTubePlaylist[]> {
     const start = performance.now();
-    const res = await fetch(`/api/youtube/channels/${channelId}/playlists`);
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}/playlists`));
     const duration = performance.now() - start;
     consoleLogger.api('GET', `/api/youtube/channels/${channelId}/playlists`, res.status, duration);
     if (!res.ok) return [];
@@ -266,7 +267,7 @@ export const youtubeApi = {
   // Analytics
   async getChannelAnalytics(channelId: string): Promise<YouTubeAnalyticsData | null> {
     const start = performance.now();
-    const res = await fetch(`/api/youtube/channels/${channelId}/analytics`);
+    const res = await fetch(apiUrl(`/api/youtube/channels/${channelId}/analytics`));
     const duration = performance.now() - start;
     consoleLogger.api('GET', `/api/youtube/channels/${channelId}/analytics`, res.status, duration);
     if (!res.ok) return null;

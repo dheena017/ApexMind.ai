@@ -1,5 +1,6 @@
 import { GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
+import { apiUrl } from '@/src/shared/utils/api';
 
 export const workspaceApi = {
   // Generate motivational quote script via Gemini
@@ -14,7 +15,7 @@ export const workspaceApi = {
     const topicText = params.userPrompt || params.topic || params.category;
     consoleLogger.info('Gemini', `Generating AI script with model: "${params.model || 'gemini-2.5-flash'}" for topic: "${topicText}"...`);
     const start = performance.now();
-    const res = await fetch('/api/generate-script', {
+    const res = await fetch(apiUrl('/api/generate-script'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -43,7 +44,7 @@ export const workspaceApi = {
 
     consoleLogger.info('Gemini', `Synthesizing TTS audio for persona "${voice}"...`);
     const start = performance.now();
-    const res = await fetch('/api/generate-voiceover', {
+    const res = await fetch(apiUrl('/api/generate-voiceover'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, voiceName: voice, model }),
@@ -72,7 +73,7 @@ export const workspaceApi = {
     voiceProfiles: VoiceProfile[];
   }> {
     const start = performance.now();
-    const res = await fetch('/api/media-library');
+    const res = await fetch(apiUrl('/api/media-library'));
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/media-library', res.status, duration);
     const data = await res.json();
@@ -86,7 +87,7 @@ export const workspaceApi = {
   // Fetch quote memory catalog to avoid repetition
   async getQuoteMemory(): Promise<{ totalQuotesInMemory: number; quotes: string[]; memoryStore?: any[] }> {
     const start = performance.now();
-    const res = await fetch('/api/quote-memory');
+    const res = await fetch(apiUrl('/api/quote-memory'));
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/quote-memory', res.status, duration);
     const data = await res.json();
@@ -100,7 +101,7 @@ export const workspaceApi = {
   // Fetch connected YouTube channel info
   async getConnectedChannels(): Promise<any[]> {
     try {
-      const res = await fetch('/api/youtube/channels');
+      const res = await fetch(apiUrl('/api/youtube/channels'));
       const data = await res.json();
       return data.channels || [];
     } catch {
@@ -110,7 +111,7 @@ export const workspaceApi = {
 
   // Clear quote memory
   async clearQuoteMemory(): Promise<void> {
-    await fetch('/api/quote-memory', { method: 'DELETE' });
+    await fetch(apiUrl('/api/quote-memory'), { method: 'DELETE' });
   },
 
   // Upload & Publish to YouTube Shorts
@@ -123,7 +124,7 @@ export const workspaceApi = {
   }): Promise<any> {
     consoleLogger.info('YouTube', `Publishing Short: "${payload.title}"...`, payload);
     const start = performance.now();
-    const res = await fetch('/api/youtube/publish', {
+    const res = await fetch(apiUrl('/api/youtube/publish'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

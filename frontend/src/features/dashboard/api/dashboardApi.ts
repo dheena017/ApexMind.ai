@@ -1,5 +1,6 @@
 import { YouTubeChannel, YouTubeVideo, DashboardStats } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
+import { apiUrl } from '@/src/shared/utils/api';
 
 export const dashboardApi = {
   async getDashboardData(): Promise<{
@@ -9,8 +10,8 @@ export const dashboardApi = {
   }> {
     const start = performance.now();
     const [channelsRes, statsRes] = await Promise.all([
-      fetch('/api/youtube/channels'),
-      fetch('/api/dashboard/stats').catch(() => null),
+      fetch(apiUrl('/api/youtube/channels')),
+      fetch(apiUrl('/api/dashboard/stats')).catch(() => null),
     ]);
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/youtube/channels', channelsRes.status, duration);
