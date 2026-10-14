@@ -9,6 +9,9 @@ import {
   Pipette,
   Sparkles,
   RotateCcw,
+  Sliders,
+  Maximize2,
+  Tv,
 } from 'lucide-react';
 
 export interface CanvasPaneProps {
@@ -18,42 +21,46 @@ export interface CanvasPaneProps {
   onBackgroundChange: (bg: string) => void;
 }
 
-const ASPECT_RATIOS: Array<{
+const PLATFORM_PRESETS: Array<{
   id: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+  platform: string;
   label: string;
-  sublabel: string;
+  resolution: string;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
-  { id: '9:16', label: 'Stories / Shorts — 9:16', sublabel: 'Shorts, Reels, TikTok', icon: RectangleVertical },
-  { id: '16:9', label: 'Widescreen — 16:9', sublabel: 'YouTube, Desktop', icon: RectangleHorizontal },
-  { id: '1:1', label: 'Square — 1:1', sublabel: 'Instagram, Square Posts', icon: Square },
-  { id: '4:5', label: 'Portrait — 4:5', sublabel: 'Instagram Feed, FB', icon: RectangleVertical },
-  { id: '21:9', label: 'Cinematic — 21:9', sublabel: 'Ultrawide Film', icon: RectangleHorizontal },
+  { id: '9:16', platform: 'Shorts & Reels', label: 'Vertical Video (9:16)', resolution: '1080 × 1920 HD', icon: RectangleVertical },
+  { id: '16:9', platform: 'YouTube Standard', label: 'Widescreen (16:9)', resolution: '1920 × 1080 HD', icon: RectangleHorizontal },
+  { id: '1:1', platform: 'Instagram Feed', label: 'Square Post (1:1)', resolution: '1080 × 1080 SQ', icon: Square },
+  { id: '4:5', platform: 'IG & FB Feed', label: 'Portrait Feed (4:5)', resolution: '1080 × 1350 PT', icon: RectangleVertical },
+  { id: '21:9', platform: 'Cinematic Cinema', label: 'Ultrawide Film (21:9)', resolution: '2560 × 1080 UW', icon: RectangleHorizontal },
 ];
 
-const SOLID_COLORS: Array<{ id: string; value: string; name: string }> = [
-  { id: 'black', value: '#000000', name: 'Black' },
-  { id: 'white', value: '#FFFFFF', name: 'White' },
-  { id: 'red', value: '#EF4444', name: 'Red' },
-  { id: 'orange', value: '#F97316', name: 'Orange' },
-  { id: 'yellow', value: '#EAB308', name: 'Yellow' },
-  { id: 'green', value: '#22C55E', name: 'Green' },
-  { id: 'blue', value: '#3B82F6', name: 'Blue' },
-  { id: 'purple', value: '#8B5CF6', name: 'Purple' },
-  { id: 'pink', value: '#EC4899', name: 'Pink' },
+const STUDIO_SOLIDS = [
+  { id: 'black', value: '#000000', name: 'Pitch Black' },
+  { id: 'obsidian', value: '#0A0A0C', name: 'Obsidian' },
+  { id: 'slate', value: '#1E293B', name: 'Slate Gray' },
+  { id: 'white', value: '#FFFFFF', name: 'Studio White' },
+  { id: 'crimson', value: '#DC2626', name: 'Crimson' },
+  { id: 'ember', value: '#EA580C', name: 'Ember Orange' },
+  { id: 'gold', value: '#D97706', name: 'Imperial Gold' },
+  { id: 'emerald', value: '#059669', name: 'Emerald' },
+  { id: 'cyan', value: '#0891B2', name: 'Electric Cyan' },
+  { id: 'blue', value: '#2563EB', name: 'Royal Blue' },
+  { id: 'indigo', value: '#4F46E5', name: 'Deep Indigo' },
+  { id: 'purple', value: '#7C3AED', name: 'Cyber Purple' },
+  { id: 'rose', value: '#E11D48', name: 'Rose Red' },
+  { id: 'zinc', value: '#27272A', name: 'Deep Zinc' },
 ];
 
-const SECOND_ROW_SWATCHES: Array<{ id: string; value: string; name: string; isGradient?: boolean }> = [
-  { id: 'gray', value: '#9CA3AF', name: 'Gray' },
-  { id: 'beige', value: '#D4C5B9', name: 'Warm Beige' },
-  { id: 'mint', value: '#A7F3D0', name: 'Soft Mint' },
-  { id: 'sky', value: '#BAE6FD', name: 'Soft Sky Blue' },
-  { id: 'soft-pink', value: '#FBCFE8', name: 'Soft Pink' },
-  { id: 'grad-cyan-blue', value: 'linear-gradient(135deg, #06B6D4, #3B82F6)', name: 'Cyan Blue', isGradient: true },
-  { id: 'grad-sunset', value: 'linear-gradient(135deg, #EC4899, #F59E0B)', name: 'Sunset', isGradient: true },
-  { id: 'grad-purple-pink', value: 'linear-gradient(135deg, #8B5CF6, #EC4899)', name: 'Neon Purple', isGradient: true },
-  { id: 'grad-mint-cyan', value: 'linear-gradient(135deg, #10B981, #06B6D4)', name: 'Mint Cyan', isGradient: true },
-  { id: 'grad-rose', value: 'linear-gradient(135deg, #F43F5E, #FB7185)', name: 'Rose Dawn', isGradient: true },
+const STUDIO_GRADIENTS = [
+  { id: 'grad-cyber', value: 'linear-gradient(135deg, #09090b 0%, #1e1b4b 50%, #312e81 100%)', name: 'Midnight Cyber' },
+  { id: 'grad-sunset', value: 'linear-gradient(135deg, #4c0519 0%, #831843 50%, #ea580c 100%)', name: 'Blood Sunset' },
+  { id: 'grad-gold', value: 'linear-gradient(135deg, #1c1917 0%, #451a03 50%, #b45309 100%)', name: 'Golden Vault' },
+  { id: 'grad-emerald', value: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%)', name: 'Emerald Deep' },
+  { id: 'grad-neon', value: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 50%, #8B5CF6 100%)', name: 'Neon Spectrum' },
+  { id: 'grad-violet', value: 'linear-gradient(135deg, #581c87 0%, #3b0764 50%, #020617 100%)', name: 'Dark Void' },
+  { id: 'grad-titan', value: 'linear-gradient(180deg, #18181b 0%, #09090b 100%)', name: 'Titan Monochrome' },
+  { id: 'grad-fire', value: 'linear-gradient(135deg, #991b1b 0%, #b91c1c 50%, #f97316 100%)', name: 'Inferno Forge' },
 ];
 
 export const CanvasPane: React.FC<CanvasPaneProps> = ({
@@ -62,12 +69,15 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   background,
   onBackgroundChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'ratio' | 'background'>('ratio');
-  const [isRatioDropdownOpen, setIsRatioDropdownOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'ratio' | 'solid' | 'gradient' | 'custom'>('ratio');
   const colorInputRef = useRef<HTMLInputElement>(null);
 
-  const currentRatioObj = ASPECT_RATIOS.find((r) => r.id === aspectRatio) || ASPECT_RATIOS[0];
-  const RatioIcon = currentRatioObj.icon;
+  // Custom Gradient Builder
+  const [gradColor1, setGradColor1] = useState('#09090b');
+  const [gradColor2, setGradColor2] = useState('#1e1b4b');
+  const [gradAngle, setGradAngle] = useState(135);
+
+  const currentPreset = PLATFORM_PRESETS.find((r) => r.id === aspectRatio) || PLATFORM_PRESETS[0];
 
   const handleSelectBg = (val: string) => {
     onBackgroundChange(val);
@@ -76,230 +86,277 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
   const handleSelectRatio = (ratioId: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => {
     onAspectRatioChange(ratioId);
-    setIsRatioDropdownOpen(false);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
   };
 
-  const isColorActive = (val: string) => background.toLowerCase() === val.toLowerCase();
+  const applyCustomGradient = () => {
+    const customGrad = `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
+    handleSelectBg(customGrad);
+  };
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
-      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      {/* ── Top Header Bar (Matching Right Inspector Pane) ── */}
       <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <LayoutTemplate className="w-4 h-4 shrink-0 text-[#60A5FA]" />
           <span className="text-xs font-bold text-white truncate">
-            Canvas &amp; Frame
+            Canvas &amp; Frame Studio
           </span>
           <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
             {aspectRatio}
           </span>
         </div>
 
-        {/* Right Action: Reset Button */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={() => handleSelectBg('#000000')}
+          className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+          title="Reset to default black"
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>Reset</span>
+        </button>
+      </div>
+
+      {/* ── Subtabs Header Bar ── */}
+      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        {[
+          { id: 'ratio', label: 'Platform Ratio' },
+          { id: 'solid', label: 'Solid Color' },
+          { id: 'gradient', label: 'Gradients' },
+          { id: 'custom', label: 'Custom Grad' },
+        ].map((tab) => (
           <button
+            key={tab.id}
             type="button"
-            onClick={() => {
-              handleSelectRatio('9:16');
-              handleSelectBg('#000000');
-            }}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border bg-[#222228] hover:bg-[#2C2C34] text-[#D4D4D8] hover:text-white border-[#32323C]"
-            title="Reset to 9:16 Black Canvas"
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+              activeTab === tab.id
+                ? 'text-white border-white'
+                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+            }`}
           >
-            <RotateCcw className="w-3 h-3 text-sky-400" />
-            <span>Reset</span>
+            {tab.label}
           </button>
-        </div>
+        ))}
       </div>
 
-      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
-      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
-        <button
-          type="button"
-          onClick={() => setActiveTab('ratio')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'ratio' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Aspect Ratio
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('background')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'background' ? 'text-white border-white' : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Background &amp; Colors
-        </button>
-      </div>
-
-      {/* ── Main Tab Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-5">
+      {/* ── Main Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
+        {/* ── Tab 1: Platform Aspect Ratios ── */}
         {activeTab === 'ratio' && (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
-                Video Format &amp; Ratio
-              </label>
+          <div className="flex flex-col gap-2.5">
+            <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
+              Target Output Platforms
+            </span>
 
-              {/* Aspect Ratio Cards Grid */}
-              <div className="grid grid-cols-1 gap-2.5">
-                {ASPECT_RATIOS.map((item) => {
-                  const ItemIcon = item.icon;
-                  const isSelected = item.id === aspectRatio;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleSelectRatio(item.id)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? 'border-[#3B82F6] bg-[#3B82F6]/15 text-white'
-                          : 'border-[#2A2A30] bg-[#1C1C20] text-[#9CA3AF] hover:border-[#3A3A42] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-[#3B82F6]/20 text-[#60A5FA]' : 'bg-[#17171A] text-[#71717A]'}`}>
-                          <ItemIcon className="w-4 h-4 shrink-0" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-[#D4D4D8]'}`}>
-                            {item.label}
-                          </p>
-                          <p className="text-[10px] text-[#71717A] truncate">{item.sublabel}</p>
-                        </div>
+            <div className="flex flex-col gap-2">
+              {PLATFORM_PRESETS.map((p) => {
+                const Icon = p.icon;
+                const isSelected = aspectRatio === p.id;
+
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSelectRatio(p.id)}
+                    className={`p-3 rounded-xl border transition-all flex items-center justify-between text-left cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-md'
+                        : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                          isSelected ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A32] text-[#60A5FA]'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
                       </div>
-                      {isSelected && <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-white truncate">{p.label}</p>
+                          <span className="text-[9px] font-mono-studio px-1 rounded bg-zinc-800 text-zinc-300">
+                            {p.platform}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#A1A1AA] mt-0.5">{p.resolution}</p>
+                      </div>
+                    </div>
+
+                    {isSelected && (
+                      <div className="p-1 rounded-full bg-[#3B82F6] text-white">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {activeTab === 'background' && (
-          <div className="flex flex-col gap-5">
-            {/* Color Swatches Grid */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">
-                Solid Colors &amp; Gradients
-              </label>
+        {/* ── Tab 2: Studio Solid Colors ── */}
+        {activeTab === 'solid' && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
+                Studio Solid Swatches
+              </span>
 
-              <div className="flex flex-col gap-3 items-center justify-center p-4 rounded-xl bg-[#1C1C20] border border-[#2A2A30]">
-                {/* Row 1: Rainbow Picker + Solids */}
-                <div className="flex items-center justify-center gap-2 flex-wrap">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => colorInputRef.current?.click()}
-                      className="w-7 h-7 rounded-full border border-white/20 shadow-md hover:scale-110 active:scale-95 transition-transform cursor-pointer flex items-center justify-center"
-                      style={{
-                        background: 'conic-gradient(from 0deg, red, yellow, lime, aqua, blue, magenta, red)',
-                      }}
-                      title="Custom color picker"
-                    >
-                      <input
-                        ref={colorInputRef}
-                        type="color"
-                        value={background.startsWith('#') ? background : '#3B82F6'}
-                        onChange={(e) => handleSelectBg(e.target.value)}
-                        className="sr-only"
-                      />
-                    </button>
-                  </div>
+              {/* Eyedropper / Color Picker */}
+              <button
+                type="button"
+                onClick={() => colorInputRef.current?.click()}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-white text-[10px] font-semibold transition-colors cursor-pointer border border-[#3A3A44]"
+              >
+                <Pipette className="w-3 h-3 text-[#60A5FA]" />
+                <span>Custom Hex</span>
+              </button>
+              <input
+                ref={colorInputRef}
+                type="color"
+                className="hidden"
+                onChange={(e) => handleSelectBg(e.target.value)}
+              />
+            </div>
 
-                  {SOLID_COLORS.map((swatch) => {
-                    const active = isColorActive(swatch.value);
-                    return (
-                      <button
-                        key={swatch.id}
-                        type="button"
-                        onClick={() => handleSelectBg(swatch.value)}
-                        className={`w-7 h-7 rounded-full transition-transform cursor-pointer relative hover:scale-110 active:scale-95 flex items-center justify-center shadow-xs border ${
-                          active
-                            ? 'border-white ring-2 ring-white/50 scale-105'
-                            : swatch.value === '#000000'
-                            ? 'border-[#333333]'
-                            : swatch.value === '#FFFFFF'
-                            ? 'border-zinc-300'
-                            : 'border-transparent'
-                        }`}
-                        style={{ backgroundColor: swatch.value }}
-                        title={swatch.name}
-                      >
-                        {active && (
-                          <Check
-                            className={`w-3.5 h-3.5 stroke-[3] ${
-                              swatch.value === '#FFFFFF' || swatch.value === '#EAB308' ? 'text-black' : 'text-white'
-                            }`}
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+            <div className="grid grid-cols-4 gap-2.5">
+              {STUDIO_SOLIDS.map((c) => {
+                const isActive = background.toLowerCase() === c.value.toLowerCase();
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleSelectBg(c.value)}
+                    className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-between transition-all cursor-pointer relative overflow-hidden ${
+                      isActive
+                        ? 'border-white ring-2 ring-white/50 scale-105 shadow-lg'
+                        : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                    }`}
+                    style={{ backgroundColor: c.value }}
+                  >
+                    <span className="sr-only">{c.name}</span>
+                    {isActive && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <Check className="w-4 h-4 text-white stroke-[3]" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-                {/* Row 2: Pastels & Gradients */}
-                <div className="flex items-center justify-center gap-2 flex-wrap">
-                  {SECOND_ROW_SWATCHES.map((swatch) => {
-                    const active = isColorActive(swatch.value);
-                    return (
-                      <button
-                        key={swatch.id}
-                        type="button"
-                        onClick={() => handleSelectBg(swatch.value)}
-                        className={`w-7 h-7 rounded-full transition-transform cursor-pointer relative hover:scale-110 active:scale-95 flex items-center justify-center shadow-xs border ${
-                          active ? 'border-white ring-2 ring-white/50 scale-105' : 'border-black/20'
-                        }`}
-                        style={swatch.isGradient ? { backgroundImage: swatch.value } : { backgroundColor: swatch.value }}
-                        title={swatch.name}
-                      >
-                        {active && (
-                          <Check
-                            className={`w-3.5 h-3.5 stroke-[3] ${
-                              swatch.id === 'beige' || swatch.id === 'mint' || swatch.id === 'sky' || swatch.id === 'soft-pink'
-                                ? 'text-black'
-                                : 'text-white'
-                            }`}
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
+        {/* ── Tab 3: Studio Gradients ── */}
+        {activeTab === 'gradient' && (
+          <div className="flex flex-col gap-2.5">
+            <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
+              Cinematic Multi-Stop Gradients
+            </span>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {STUDIO_GRADIENTS.map((g) => {
+                const isActive = background === g.value;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => handleSelectBg(g.value)}
+                    className={`h-20 rounded-xl border p-2 flex flex-col justify-end text-left transition-all cursor-pointer relative overflow-hidden group ${
+                      isActive
+                        ? 'border-white ring-2 ring-white/50 shadow-lg'
+                        : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                    }`}
+                    style={{ background: g.value }}
+                  >
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                    <span className="relative z-10 text-[10px] font-bold text-white drop-shadow-md truncate">
+                      {g.name}
+                    </span>
+                    {isActive && (
+                      <div className="absolute top-2 right-2 p-1 rounded-full bg-white text-black shadow-md z-10">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab 4: Custom Gradient Builder ── */}
+        {activeTab === 'custom' && (
+          <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+            <span className="text-xs font-bold text-white">Gradient Studio Builder</span>
+            <p className="text-[11px] text-[#A1A1AA]">
+              Blend custom colors and customize gradient angles for unique reel backgrounds.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Color 1</label>
+                <div className="flex items-center gap-2 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
+                  <input
+                    type="color"
+                    value={gradColor1}
+                    onChange={(e) => setGradColor1(e.target.value)}
+                    className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
+                  />
+                  <span className="text-xs font-mono text-zinc-300">{gradColor1}</span>
                 </div>
               </div>
 
-              {/* Active Color Preview & Hex input */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#1C1C20] border border-[#2A2A30]">
-                <div
-                  className="w-5 h-5 rounded-md border border-white/20 shrink-0 shadow-inner"
-                  style={
-                    background.startsWith('linear-gradient')
-                      ? { backgroundImage: background }
-                      : { backgroundColor: background }
-                  }
-                />
-                <span className="text-[11px] text-[#A1A1AA] font-mono-studio flex-1 truncate">
-                  {background.startsWith('linear-gradient') ? 'Dynamic Gradient' : background}
-                </span>
-                {!background.startsWith('linear-gradient') && (
-                  <div className="flex items-center gap-1">
-                    <Pipette className="w-3 h-3 text-[#71717A]" />
-                    <input
-                      type="text"
-                      value={background}
-                      onChange={(e) => onBackgroundChange(e.target.value)}
-                      placeholder="#000000"
-                      className="w-16 bg-transparent text-[10px] font-mono-studio text-white outline-none text-right uppercase"
-                    />
-                  </div>
-                )}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Color 2</label>
+                <div className="flex items-center gap-2 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
+                  <input
+                    type="color"
+                    value={gradColor2}
+                    onChange={(e) => setGradColor2(e.target.value)}
+                    className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
+                  />
+                  <span className="text-xs font-mono text-zinc-300">{gradColor2}</span>
+                </div>
               </div>
             </div>
+
+            {/* Angle Slider */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <span className="text-[#71717A]">ANGLE</span>
+                <span className="text-[#60A5FA] font-bold">{gradAngle}°</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="360"
+                value={gradAngle}
+                onChange={(e) => setGradAngle(Number(e.target.value))}
+                className="w-full accent-[#3B82F6]"
+              />
+            </div>
+
+            {/* Live Gradient Preview */}
+            <div
+              className="w-full h-16 rounded-xl border border-[#2A2A30] shadow-inner mt-1"
+              style={{
+                background: `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`,
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={applyCustomGradient}
+              className="mt-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Apply Custom Gradient
+            </button>
           </div>
         )}
       </div>

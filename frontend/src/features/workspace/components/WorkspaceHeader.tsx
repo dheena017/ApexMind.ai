@@ -28,6 +28,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   const [canPublish, setCanPublish] = useState(true);
   const [publishedSuccess, setPublishedSuccess] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
 
   // Panel layout toggles state
@@ -69,14 +70,26 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
       }
     };
 
+    const handleExportState = (e: Event) => {
+      const customEvent = e as CustomEvent<{ exporting: boolean; message: string }>;
+      if (!customEvent.detail) return;
+      setExporting(customEvent.detail.exporting);
+      setNotice(customEvent.detail.message);
+      if (!customEvent.detail.exporting) {
+        window.setTimeout(() => setNotice(null), 5000);
+      }
+    };
+
     window.addEventListener('workspace:publish-state', handlePublishState);
     window.addEventListener('workspace:panel-state', handlePanelState);
     window.addEventListener('workspace:title-change', handleTitleState);
+    window.addEventListener('workspace:export-state', handleExportState);
 
     return () => {
       window.removeEventListener('workspace:publish-state', handlePublishState);
       window.removeEventListener('workspace:panel-state', handlePanelState);
       window.removeEventListener('workspace:title-change', handleTitleState);
+      window.removeEventListener('workspace:export-state', handleExportState);
     };
   }, []);
 
@@ -98,8 +111,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   };
 
   const handleExport = () => {
-    setNotice('Exporting MP4...');
-    setTimeout(() => setNotice(null), 2500);
+    window.dispatchEvent(new CustomEvent('workspace:export-video'));
   };
 
   const handleSaveDraft = () => {
@@ -206,10 +218,12 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         <button
           type="button"
           onClick={handleExport}
-          className="hidden sm:flex items-center gap-1 h-7 px-2 rounded-lg bg-[#161616] hover:bg-[#1F1F1F] border border-[#282828] hover:border-[#383838] text-[10px] font-semibold text-[#CCCCCC] hover:text-white transition-all cursor-pointer"
+          disabled={exporting}
+          className="hidden sm:flex items-center gap-1 h-7 px-2 rounded-lg bg-[#161616] hover:bg-[#1F1F1F] border border-[#282828] hover:border-[#383838] text-[10px] font-semibold text-[#CCCCCC] hover:text-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          title={exporting ? 'Rendering the final video' : 'Export the composed video preview'}
         >
           <Download className="w-3 h-3 text-[#3B82F6]" />
-          <span>Export MP4</span>
+          <span>{exporting ? 'Exporting...' : 'Export MP4'}</span>
         </button>
 
         {/* Save Draft */}

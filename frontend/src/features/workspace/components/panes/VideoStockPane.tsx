@@ -1,14 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Film,
   Play,
   Check,
+  Search,
+  X,
+  ExternalLink,
+  Plus,
+  Trash2,
+  Bookmark,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
+import { workspaceApi } from '../../api/workspaceApi';
 
 export interface StockVideoItem {
   id: string;
   title: string;
-  category: 'gym' | 'clouds' | 'city' | 'ocean' | 'fire';
+  category: 'gym' | 'clouds' | 'city' | 'ocean' | 'fire' | 'abstract' | 'minimal';
   videoUrl: string;
   posterUrl: string;
   duration: string;
@@ -20,7 +29,7 @@ export interface VideoStockPaneProps {
   activeVideoUrl?: string;
 }
 
-const STOCK_VIDEOS: StockVideoItem[] = [
+const CURATED_STOCK_VIDEOS: StockVideoItem[] = [
   {
     id: 'vid-1',
     title: 'Cinematic Clouds & Mountain Drone',
@@ -66,21 +75,107 @@ const STOCK_VIDEOS: StockVideoItem[] = [
     duration: '10s Loop',
     resolution: '1080x1920',
   },
+  {
+    id: 'vid-6',
+    title: 'Thunderstorm Lightning Cloudscape',
+    category: 'clouds',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=400&q=80',
+    duration: '14s Loop',
+    resolution: '1080x1920',
+  },
+  {
+    id: 'vid-7',
+    title: 'Tunnel Speed Neon Blur Rush',
+    category: 'abstract',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80',
+    duration: '16s Loop',
+    resolution: '1080x1920',
+  },
+  {
+    id: 'vid-8',
+    title: 'Night Skyline Time-lapse Stars',
+    category: 'city',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
+    duration: '22s Loop',
+    resolution: '1080x1920',
+  },
 ];
+
+const LOCAL_STORAGE_VIDEOS_KEY = 'apexmind_custom_videos';
 
 export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   onSelectVideo,
   activeVideoUrl,
 }) => {
+  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'saved'>('catalog');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  const [videos, setVideos] = useState<StockVideoItem[]>(CURATED_STOCK_VIDEOS);
+  const [savedVideos, setSavedVideos] = useState<StockVideoItem[]>([]);
+  const [customUrlInput, setCustomUrlInput] = useState('');
+  const [customTitleInput, setCustomTitleInput] = useState('');
+  const [urlVideoValid, setUrlVideoValid] = useState<boolean | null>(null);
+  const [isLoadingBackend, setIsLoadingBackend] = useState(false);
 
-  const filteredVideos = STOCK_VIDEOS.filter((vid) => {
-    if (selectedCategory === 'all') return true;
-    return vid.category === selectedCategory;
-  });
+  const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Load saved videos from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_VIDEOS_KEY);
+      if (stored) {
+        setSavedVideos(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  // Fetch backend media library video backdrops
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBackendVideos = async () => {
+      try {
+        setIsLoadingBackend(true);
+        const data = await workspaceApi.getMediaLibrary();
+        if (isMounted && data?.visualBackdrops?.length) {
+          const apiVideos: StockVideoItem[] = data.visualBackdrops
+            .filter((b) => Boolean(b.videoUrl))
+            .map((b) => ({
+              id: `api-vid-${b.id}`,
+              title: b.name,
+              category: (b.category?.toLowerCase() || 'abstract') as any,
+              videoUrl: b.videoUrl!,
+              posterUrl: b.imageUrl || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80',
+              duration: '15s Loop',
+              resolution: '1080x1920 HD',
+            }));
+
+          if (apiVideos.length > 0) {
+            setVideos((prev) => {
+              const existingUrls = new Set(prev.map((v) => v.videoUrl));
+              const newItems = apiVideos.filter((v) => !existingUrls.has(v.videoUrl));
+              return [...newItems, ...prev];
+            });
+          }
+        }
+      } catch {
+        // Fallback to curated
+      } finally {
+        if (isMounted) setIsLoadingBackend(false);
+      }
+    };
+    fetchBackendVideos();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleMouseEnter = (id: string) => {
     setHoveredId(id);
@@ -105,6 +200,56 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
   };
 
+  const handleAddCustomUrl = (saveToFavorites = false) => {
+    if (!customUrlInput.trim()) return;
+    const url = customUrlInput.trim();
+    const title = customTitleInput.trim() || 'Custom Video Clip';
+
+    const newItem: StockVideoItem = {
+      id: `custom-vid-${Date.now()}`,
+      title,
+      category: 'minimal',
+      videoUrl: url,
+      posterUrl: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=400&q=80',
+      duration: 'Custom',
+      resolution: 'Stream HD',
+    };
+
+    onSelectVideo(url);
+    window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+
+    if (saveToFavorites) {
+      const updated = [newItem, ...savedVideos];
+      setSavedVideos(updated);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_VIDEOS_KEY, JSON.stringify(updated));
+      } catch {}
+    }
+
+    setCustomUrlInput('');
+    setCustomTitleInput('');
+    setUrlVideoValid(null);
+  };
+
+  const handleDeleteSaved = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = savedVideos.filter((item) => item.id !== id);
+    setSavedVideos(updated);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_VIDEOS_KEY, JSON.stringify(updated));
+    } catch {}
+  };
+
+  const sourceList = activeTab === 'saved' ? savedVideos : videos;
+
+  const filteredVideos = sourceList.filter((vid) => {
+    const matchesCategory = selectedCategory === 'all' || vid.category === selectedCategory;
+    const matchesQuery =
+      searchQuery.trim() === '' ||
+      vid.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesQuery;
+  });
+
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
       {/* ── Top Header Bar (Matching Right Pane) ── */}
@@ -112,110 +257,302 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         <div className="flex items-center gap-2 min-w-0">
           <Film className="w-4 h-4 shrink-0 text-[#60A5FA]" />
           <span className="text-xs font-bold text-white truncate">
-            Video Loops &amp; Motion
+            Motion Stock Clips
           </span>
           <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
-            1080x1920
+            60 FPS
           </span>
         </div>
 
-        <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
-          {filteredVideos.length} Clips
-        </span>
+        <div className="flex items-center gap-2">
+          {isLoadingBackend && (
+            <RefreshCw className="w-3 h-3 text-[#60A5FA] animate-spin" />
+          )}
+          <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
+            {filteredVideos.length} Clips
+          </span>
+        </div>
       </div>
 
-      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      {/* ── Subtabs Header Bar ── */}
       <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
-        {(
-          [
-            { id: 'all', label: 'All' },
-            { id: 'gym', label: 'Gym' },
-            { id: 'clouds', label: 'Clouds' },
-            { id: 'city', label: 'City' },
-            { id: 'ocean', label: 'Ocean' },
-            { id: 'fire', label: 'Fire' },
-          ] as const
-        ).map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setSelectedCategory(tab.id)}
-            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-              selectedCategory === tab.id
-                ? 'text-white border-white'
-                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => setActiveTab('catalog')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'catalog'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Motion Catalog
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('url')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'url'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Direct Video URL
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('saved')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'saved'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <Bookmark className="w-3 h-3" />
+          Saved Clips ({savedVideos.length})
+        </button>
       </div>
+
+      {/* ── Category Filter Chips (In Catalog Mode) ── */}
+      {activeTab === 'catalog' && (
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#26262B]/60 overflow-x-auto custom-scrollbar shrink-0 bg-[#141416]">
+          {(
+            [
+              { id: 'all', label: 'All' },
+              { id: 'clouds', label: 'Clouds' },
+              { id: 'gym', label: 'Gym' },
+              { id: 'city', label: 'City' },
+              { id: 'ocean', label: 'Ocean' },
+              { id: 'fire', label: 'Fire' },
+              { id: 'abstract', label: 'Abstract' },
+            ] as const
+          ).map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+                selectedCategory === cat.id
+                  ? 'bg-[#3B82F6] text-white shadow-sm'
+                  : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-2">
-          {filteredVideos.map((vid) => {
-            const isSelected = activeVideoUrl === vid.videoUrl || selectedId === vid.id;
-            const isHovered = hoveredId === vid.id;
-
-            return (
-              <div
-                key={vid.id}
-                onClick={() => handleApply(vid)}
-                onMouseEnter={() => handleMouseEnter(vid.id)}
-                onMouseLeave={() => handleMouseLeave(vid.id)}
-                className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
-                  isSelected
-                    ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
-                    : 'border-[#2A2A30] hover:border-[#3A3A42]'
-                }`}
-              >
-                <img
-                  src={vid.posterUrl}
-                  alt={vid.title}
-                  className={`w-full h-full object-cover transition-opacity duration-300 ${
-                    isHovered ? 'opacity-0' : 'opacity-100'
-                  }`}
-                  loading="lazy"
-                />
-
-                <video
-                  ref={(el) => {
-                    videoRefs.current[vid.id] = el;
-                  }}
-                  src={vid.videoUrl}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-                    isHovered ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  muted
-                  loop
-                  playsInline
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
-
-                <div className="absolute top-2 left-2 p-1.5 rounded-full bg-black/60 text-white/90 backdrop-blur-xs">
-                  <Play className="w-3 h-3 fill-white" />
-                </div>
-
-                <div className="absolute bottom-2 left-2 right-2">
-                  <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
-                    {vid.title}
-                  </p>
-                  <p className="text-[9px] text-[#A1A1AA] truncate">
-                    {vid.duration} • {vid.resolution}
-                  </p>
-                </div>
-
-                {isSelected && (
-                  <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
-                    <Check className="w-3 h-3 stroke-[3]" />
-                  </div>
-                )}
+        {activeTab === 'url' ? (
+          /* Custom Video URL Input Form */
+          <div className="flex flex-col gap-4">
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <ExternalLink className="w-4 h-4 text-[#60A5FA]" />
+                <span className="text-xs font-bold text-white">Import Custom Video URL</span>
               </div>
-            );
-          })}
-        </div>
+              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+                Paste any direct MP4, WebM, or public video link to render as the animated background in your canvas.
+              </p>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Clip Title</label>
+                <input
+                  type="text"
+                  value={customTitleInput}
+                  onChange={(e) => setCustomTitleInput(e.target.value)}
+                  placeholder="e.g. Cinematic Rain Drone"
+                  className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Video URL (MP4 / WebM / Cloud Storage)</label>
+                <input
+                  type="url"
+                  value={customUrlInput}
+                  onChange={(e) => {
+                    setCustomUrlInput(e.target.value);
+                    setUrlVideoValid(null);
+                  }}
+                  placeholder="https://commondatastorage.googleapis.com/...mp4"
+                  className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                />
+              </div>
+
+              {/* Video Preview */}
+              {customUrlInput.trim() && (
+                <div className="mt-2 rounded-xl overflow-hidden border border-[#2A2A30] bg-[#121214] aspect-[9/12] max-h-56 relative flex items-center justify-center">
+                  <video
+                    ref={previewVideoRef}
+                    src={customUrlInput.trim()}
+                    className="w-full h-full object-cover"
+                    controls
+                    muted
+                    loop
+                    onCanPlay={() => setUrlVideoValid(true)}
+                    onError={() => setUrlVideoValid(false)}
+                  />
+                  {urlVideoValid === false && (
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-3 text-center">
+                      <p className="text-xs text-rose-400 font-semibold">Video could not be played</p>
+                      <p className="text-[10px] text-[#A1A1AA] mt-1">Check that URL is direct .mp4 or .webm</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomUrl(false)}
+                  disabled={!customUrlInput.trim()}
+                  className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Apply to Canvas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomUrl(true)}
+                  disabled={!customUrlInput.trim()}
+                  className="bg-[#2A2A32] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#3A3A44]"
+                  title="Save to My Clips"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Motion Catalog / Saved Clips */
+          <>
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search motion clips by theme..."
+                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Empty Saved State */}
+            {activeTab === 'saved' && savedVideos.length === 0 ? (
+              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
+                <Bookmark className="w-8 h-8 text-[#52525B]" />
+                <p className="text-xs font-bold text-white">No Saved Clips Yet</p>
+                <p className="text-[11px] text-[#A1A1AA] max-w-xs">
+                  Import video loops using the &ldquo;Direct Video URL&rdquo; tab to build your library.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('url')}
+                  className="mt-2 bg-[#3B82F6] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#2563EB] transition-colors"
+                >
+                  Import Video URL
+                </button>
+              </div>
+            ) : filteredVideos.length === 0 ? (
+              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 text-center text-xs text-[#A1A1AA]">
+                No video clips matching &ldquo;{searchQuery}&rdquo;
+              </div>
+            ) : (
+              /* Video Grid */
+              <div className="grid grid-cols-2 gap-2.5">
+                {filteredVideos.map((vid) => {
+                  const isHovered = hoveredId === vid.id;
+                  const isSelected = activeVideoUrl === vid.videoUrl || selectedId === vid.id;
+
+                  return (
+                    <button
+                      key={vid.id}
+                      type="button"
+                      onClick={() => handleApply(vid)}
+                      onMouseEnter={() => handleMouseEnter(vid.id)}
+                      onMouseLeave={() => handleMouseLeave(vid.id)}
+                      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
+                        isSelected
+                          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
+                          : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                      }`}
+                    >
+                      {/* Video element for hover preview */}
+                      <video
+                        ref={(el) => {
+                          videoRefs.current[vid.id] = el;
+                        }}
+                        src={vid.videoUrl}
+                        poster={vid.posterUrl}
+                        loop
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+
+                      {/* Overlay Gradients */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+
+                      {/* Play indicator on hover */}
+                      {!isHovered && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/20">
+                            <Play className="w-3.5 h-3.5 text-white ml-0.5" fill="white" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Video Info Bottom */}
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
+                          {vid.title}
+                        </p>
+                        <p className="text-[9px] text-[#A1A1AA] truncate">{vid.duration}</p>
+                      </div>
+
+                      {/* Category Tag */}
+                      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[8px] font-mono-studio text-white/80 border border-white/10 uppercase">
+                        {vid.category}
+                      </div>
+
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                      )}
+
+                      {/* Delete button for Saved clips */}
+                      {activeTab === 'saved' && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteSaved(vid.id, e)}
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
+                          title="Delete from Saved"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

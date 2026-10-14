@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Moveable from 'react-moveable';
+import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { toCanvas } from 'html-to-image';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings } from '../../types';
 import { CanvasSafeZonesOverlay } from './CanvasSafeZonesOverlay';
 import { consoleLogger } from '@/src/shared/utils/logger';
@@ -78,6 +80,12 @@ interface VideoPreviewPaneProps {
   captionPresetColor?: string;
   canvasAspectRatio?: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
   canvasBackground?: string;
+  playbackDuration?: number;
+  isExporting?: boolean;
+  exportDuration?: number;
+  exportFileName?: string;
+  audioElement?: HTMLAudioElement | null;
+  onExportComplete?: (error?: string) => void;
 }
 
 // Backdrop-specific visual theme configs
@@ -142,6 +150,12 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   captionPresetColor,
   canvasAspectRatio = '9:16',
   canvasBackground,
+  playbackDuration,
+  isExporting = false,
+  exportDuration = 30,
+  exportFileName = 'apexmind-video',
+  audioElement,
+  onExportComplete,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
@@ -159,6 +173,115 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   // ── Timeline state (live sync from StudioTimelinePane events) ─────────
   const [timelineState, setTimelineState] = useState<TimelineState>(DEFAULT_TIMELINE_STATE);
+
+  useEffect(() => {
+    if (!isExporting) return;
+
+    let cancelled = false;
+    let recorder: MediaRecorder | null = null;
+    let outputStream: MediaStream | null = null;
+
+    const exportVideo = async () => {
+      try {
+        const preview = canvasRef.current;
+        if (!preview) throw new Error('The video preview is not available.');
+        if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported('video/mp4')) {
+          throw new Error('MP4 export is not supported by this browser.');
+        }
+        const h264MimeType = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
+        const mimeType = MediaRecorder.isTypeSupported(h264MimeType) ? h264MimeType : 'video/mp4';
+
+        const dimensions = {
+          '9:16': { width: 1080, height: 1920 },
+          '16:9': { width: 1920, height: 1080 },
+          '1:1': { width: 1080, height: 1080 },
+          '4:5': { width: 1080, height: 1350 },
+          '21:9': { width: 1920, height: 823 },
+        }[canvasAspectRatio];
+        const outputCanvas = document.createElement('canvas');
+        outputCanvas.width = dimensions.width;
+        outputCanvas.height = dimensions.height;
+        const context = outputCanvas.getContext('2d');
+        if (!context) throw new Error('Could not create the video export canvas.');
+
+        const captureFrame = async () => {
+          const frame = await toCanvas(preview, {
+            pixelRatio: 1,
+            skipFonts: true,
+            style: { border: 'none', borderRadius: '0', boxShadow: 'none' },
+          });
+          context.drawImage(frame, 0, 0, dimensions.width, dimensions.height);
+        };
+
+        await captureFrame();
+        outputStream = outputCanvas.captureStream(30);
+        const captureAudio = audioElement as (HTMLAudioElement & {
+          captureStream?: () => MediaStream;
+          mozCaptureStream?: () => MediaStream;
+        }) | null | undefined;
+        const audioStream = captureAudio?.captureStream?.() ?? captureAudio?.mozCaptureStream?.();
+        audioStream?.getAudioTracks().forEach((track) => outputStream?.addTrack(track));
+
+        const chunks: BlobPart[] = [];
+        recorder = new MediaRecorder(outputStream, {
+          mimeType,
+          videoBitsPerSecond: 8_000_000,
+          audioBitsPerSecond: 192_000,
+        });
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) chunks.push(event.data);
+        };
+        recorder.onstop = () => {
+          if (cancelled) return;
+          const blob = new Blob(chunks, { type: mimeType });
+          if (blob.size === 0) {
+            onExportComplete?.('The MP4 export did not contain any video frames.');
+            return;
+          }
+
+          const safeName = exportFileName.trim().replace(/[<>:"/\\|?*]+/g, '').slice(0, 80) || 'apexmind-video';
+          const link = document.createElement('a');
+          const downloadUrl = URL.createObjectURL(blob);
+          link.href = downloadUrl;
+          link.download = `${safeName}.mp4`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60_000);
+          onExportComplete?.();
+        };
+        recorder.onerror = () => {
+          if (!cancelled) onExportComplete?.('The browser could not encode the MP4.');
+        };
+        recorder.start(1000);
+
+        const exportStartedAt = performance.now();
+        const exportLength = Math.max(1, exportDuration) * 1000;
+        while (!cancelled && performance.now() - exportStartedAt < exportLength) {
+          const frameStartedAt = performance.now();
+          await captureFrame();
+          const delay = Math.max(0, 1000 / 15 - (performance.now() - frameStartedAt));
+          if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
+        }
+
+        if (!cancelled && recorder.state === 'recording') recorder.stop();
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : 'Video export failed.';
+          onExportComplete?.(message.includes('tainted') || message.includes('cross-origin')
+            ? 'A media source blocks capture. Upload the video or image file directly, or use a CORS-enabled source.'
+            : message);
+        }
+      }
+    };
+
+    void exportVideo();
+    return () => {
+      cancelled = true;
+      if (recorder?.state === 'recording') recorder.stop();
+      outputStream?.getTracks().forEach((track) => track.stop());
+    };
+  }, [audioElement, canvasAspectRatio, exportDuration, exportFileName, isExporting, onExportComplete]);
 
   useEffect(() => {
     const handleTimelineState = (e: Event) => {
@@ -369,6 +492,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const currentTitle = script.title?.trim() || '';
   const currentSubtitle = activeSubtitle.trim();
+  const controlDuration = playbackDuration ?? (duration > 0 ? duration : 30);
+  const formatPlaybackTime = (time: number) => {
+    const wholeSeconds = Math.max(0, Math.floor(time));
+    const minutes = Math.floor(wholeSeconds / 60).toString().padStart(2, '0');
+    const seconds = (wholeSeconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
+  };
 
   // Caption font size styling map
   const captionSizeClass = {
@@ -394,25 +524,25 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     : 'h-full max-h-full'; // height-driven → width auto-computed by aspect-ratio
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-1.5 select-none font-sans-studio overflow-hidden">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1 select-none font-sans-studio overflow-hidden">
       {/* ── Dynamic Aspect Ratio Video Studio Canvas ────────────────── */}
-      <div
-        ref={canvasRef}
-        onClick={(e) => {
-          // Only toggle play if clicking the empty canvas background (not a layer element)
-          if (e.target === canvasRef.current) {
-            setSelectedLayer(null);
-            setTargetElement(null);
-            onTogglePlay();
-          }
-        }}
-        className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-all duration-300 cursor-pointer focus:outline-none`}
-        tabIndex={-1}
-        style={{
-          background: canvasBackground || '#050505',
-        }}
-        title="Canvas"
-      >
+      <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
+        <div
+          ref={canvasRef}
+          onClick={(e) => {
+            if (e.target === canvasRef.current) {
+              setSelectedLayer(null);
+              setTargetElement(null);
+              onTogglePlay();
+            }
+          }}
+          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-all duration-300 cursor-pointer focus:outline-none`}
+          tabIndex={-1}
+          style={{
+            background: canvasBackground || '#050505',
+          }}
+          title="Canvas"
+        >
         {/* Layer 1: Cinematic Background (Custom Color/Gradient or Theme Gradient) */}
         <div
           data-canvas-bg="true"
@@ -599,7 +729,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         <div className="h-6 pointer-events-none" />
 
         {/* ── React Moveable Transform Bounding Box (Clideo/Canva Style) ── */}
-        {targetElement && (
+        {targetElement && !isExporting && (
           <Moveable
             target={targetElement}
             container={canvasRef.current}
@@ -644,8 +774,50 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         )}
 
         {/* Layer: Shorts / Reels Safe Zones Overlay */}
-        <CanvasSafeZonesOverlay isVisible={showSafeZones} platform="shorts" />
+          <CanvasSafeZonesOverlay isVisible={showSafeZones && !isExporting} platform="shorts" />
+        </div>
       </div>
+
+      {!isExporting && (
+        <div className="flex items-center gap-2 w-full max-w-[520px] h-9 shrink-0 rounded-lg border border-[#29292F] bg-[#151518] px-2">
+          <button
+            type="button"
+            onClick={onTogglePlay}
+            className="w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-white hover:bg-white/10 cursor-pointer"
+            title={isPlaying ? 'Pause preview' : 'Play preview'}
+            aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
+          >
+            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+          </button>
+          <span className="w-9 shrink-0 text-center text-[9px] font-mono-studio tabular-nums text-[#A1A1AA]">
+            {formatPlaybackTime(currentTime)}
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={controlDuration}
+            step={0.1}
+            value={Math.min(currentTime, controlDuration)}
+            onChange={(event) => onSeek(Number(event.target.value))}
+            className="min-w-0 flex-1 h-1 accent-[#3B82F6] cursor-pointer"
+            aria-label="Seek video preview"
+          />
+          <span className="w-9 shrink-0 text-center text-[9px] font-mono-studio tabular-nums text-[#71717A]">
+            {formatPlaybackTime(controlDuration)}
+          </span>
+          <button
+            type="button"
+            onClick={onToggleMute}
+            className="w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-[#A1A1AA] hover:bg-white/10 hover:text-white cursor-pointer"
+            title={isMuted ? 'Unmute preview' : 'Mute preview'}
+            aria-label={isMuted ? 'Unmute preview' : 'Mute preview'}
+          >
+            {isMuted || volume === 0
+              ? <VolumeX className="w-3.5 h-3.5" />
+              : <Volume2 className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

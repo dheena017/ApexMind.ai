@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Image as ImageIcon,
   Search,
   Check,
   X,
+  Plus,
+  Trash2,
+  ExternalLink,
+  Sparkles,
+  Bookmark,
+  RefreshCw,
 } from 'lucide-react';
+import { workspaceApi } from '../../api/workspaceApi';
 
 export interface StockImageItem {
   id: string;
   title: string;
-  category: 'stoic' | 'gym' | 'cyber' | 'nature' | 'minimal';
+  category: 'stoic' | 'gym' | 'cyber' | 'nature' | 'minimal' | 'architecture';
   url: string;
   thumbnail: string;
   author: string;
@@ -21,7 +28,7 @@ export interface ImagePaneProps {
   activeImageUrl?: string;
 }
 
-const STOCK_IMAGES: StockImageItem[] = [
+const CURATED_STOCK_IMAGES: StockImageItem[] = [
   {
     id: 'img-1',
     title: 'Dark Misty Mountains Dawn',
@@ -60,7 +67,7 @@ const STOCK_IMAGES: StockImageItem[] = [
   },
   {
     id: 'img-5',
-    title: 'Stoic Classical Marble Statue',
+    title: 'Marcus Aurelius Roman Marble Statue',
     category: 'stoic',
     url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1080&q=85',
     thumbnail: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=400&q=80',
@@ -94,24 +101,148 @@ const STOCK_IMAGES: StockImageItem[] = [
     author: 'Bailey Zindel',
     resolution: '1080x1920 HD',
   },
+  {
+    id: 'img-9',
+    title: 'Ancient Greek Temple Columns',
+    category: 'architecture',
+    url: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=1080&q=85',
+    thumbnail: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=400&q=80',
+    author: 'Sorin Gheorghita',
+    resolution: '1080x1920 HD',
+  },
+  {
+    id: 'img-10',
+    title: 'Athletic Runner Concrete Grit',
+    category: 'gym',
+    url: 'https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=1080&q=85',
+    thumbnail: 'https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=400&q=80',
+    author: 'Chander R',
+    resolution: '1080x1920 HD',
+  },
+  {
+    id: 'img-11',
+    title: 'Moody Obsidian Stone Texture',
+    category: 'minimal',
+    url: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=1080&q=85',
+    thumbnail: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=400&q=80',
+    author: 'Mourad Saadi',
+    resolution: '1080x1920 HD',
+  },
+  {
+    id: 'img-12',
+    title: 'Electric Violet Cyber Highway',
+    category: 'cyber',
+    url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1080&q=85',
+    thumbnail: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80',
+    author: 'Florian Olivo',
+    resolution: '1080x1920 HD',
+  },
+  {
+    id: 'img-13',
+    title: 'Brutalist Concrete Monolith',
+    category: 'architecture',
+    url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1080&q=85',
+    thumbnail: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80',
+    author: 'Simone Hutsch',
+    resolution: '1080x1920 HD',
+  },
+  {
+    id: 'img-14',
+    title: 'Dumbbell Heavy Metal Weights',
+    category: 'gym',
+    url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1080&q=85',
+    thumbnail: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=400&q=80',
+    author: 'Victor Freitas',
+    resolution: '1080x1920 HD',
+  },
+  {
+    id: 'img-15',
+    title: 'Pine Forest Morning Sunlight Rays',
+    category: 'nature',
+    url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1080&q=85',
+    thumbnail: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=400&q=80',
+    author: 'Sebastian Unrau',
+    resolution: '1080x1920 HD',
+  },
+  {
+    id: 'img-16',
+    title: 'Sculpted Bronze Warrior Silhouette',
+    category: 'stoic',
+    url: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1080&q=85',
+    thumbnail: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=400&q=80',
+    author: 'Giammarco Boscaro',
+    resolution: '1080x1920 HD',
+  },
 ];
+
+const LOCAL_STORAGE_KEY = 'apexmind_custom_images';
 
 export const ImagePane: React.FC<ImagePaneProps> = ({
   onSelectImage,
   activeImageUrl,
 }) => {
+  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'saved'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [images, setImages] = useState<StockImageItem[]>(CURATED_STOCK_IMAGES);
+  const [savedImages, setSavedImages] = useState<StockImageItem[]>([]);
+  const [customUrlInput, setCustomUrlInput] = useState('');
+  const [customTitleInput, setCustomTitleInput] = useState('');
+  const [urlPreviewValid, setUrlPreviewValid] = useState<boolean | null>(null);
+  const [isLoadingBackend, setIsLoadingBackend] = useState(false);
 
-  const filteredImages = STOCK_IMAGES.filter((img) => {
-    const matchesCategory = selectedCategory === 'all' || img.category === selectedCategory;
-    const matchesQuery =
-      searchQuery.trim() === '' ||
-      img.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      img.author.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesQuery;
-  });
+  // Load saved images from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        setSavedImages(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  // Fetch live media from backend media-library API
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBackendMedia = async () => {
+      try {
+        setIsLoadingBackend(true);
+        const data = await workspaceApi.getMediaLibrary();
+        if (isMounted && data?.visualBackdrops?.length) {
+          const apiImages: StockImageItem[] = data.visualBackdrops
+            .filter((b) => Boolean(b.imageUrl))
+            .map((b) => ({
+              id: `api-img-${b.id}`,
+              title: b.name,
+              category: (b.category?.toLowerCase() || 'stoic') as any,
+              url: b.imageUrl!,
+              thumbnail: b.imageUrl!,
+              author: 'Apex Media Engine',
+              resolution: '1080x1920 HD',
+            }));
+
+          if (apiImages.length > 0) {
+            setImages((prev) => {
+              const existingIds = new Set(prev.map((i) => i.url));
+              const newItems = apiImages.filter((i) => !existingIds.has(i.url));
+              return [...newItems, ...prev];
+            });
+          }
+        }
+      } catch {
+        // Fallback to curated catalog
+      } finally {
+        if (isMounted) setIsLoadingBackend(false);
+      }
+    };
+    fetchBackendMedia();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleApply = (img: StockImageItem) => {
     setSelectedId(img.id);
@@ -119,9 +250,61 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
   };
 
+  const handleAddCustomUrl = (saveToFavorites = false) => {
+    if (!customUrlInput.trim()) return;
+    const url = customUrlInput.trim();
+    const title = customTitleInput.trim() || 'Custom Web Image';
+
+    const newItem: StockImageItem = {
+      id: `custom-${Date.now()}`,
+      title,
+      category: 'minimal',
+      url,
+      thumbnail: url,
+      author: 'Imported Asset',
+      resolution: 'Custom URL',
+    };
+
+    onSelectImage(url);
+    window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+
+    if (saveToFavorites) {
+      const updated = [newItem, ...savedImages];
+      setSavedImages(updated);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      } catch {}
+    }
+
+    setCustomUrlInput('');
+    setCustomTitleInput('');
+    setUrlPreviewValid(null);
+  };
+
+  const handleDeleteSaved = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = savedImages.filter((item) => item.id !== id);
+    setSavedImages(updated);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+  };
+
+  const sourceList = activeTab === 'saved' ? savedImages : images;
+
+  const filteredImages = sourceList.filter((img) => {
+    const matchesCategory =
+      selectedCategory === 'all' || img.category === selectedCategory;
+    const matchesQuery =
+      searchQuery.trim() === '' ||
+      img.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      img.author.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesQuery;
+  });
+
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
-      {/* ── Top Header Bar (Matching Right Pane) ── */}
+      {/* ── Top Header Bar (Matching Right Inspector Pane) ── */}
       <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <ImageIcon className="w-4 h-4 shrink-0 text-[#60A5FA]" />
@@ -133,101 +316,270 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           </span>
         </div>
 
-        <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
-          {filteredImages.length} Photos
-        </span>
+        <div className="flex items-center gap-2">
+          {isLoadingBackend && (
+            <RefreshCw className="w-3 h-3 text-[#60A5FA] animate-spin" />
+          )}
+          <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
+            {filteredImages.length} Photos
+          </span>
+        </div>
       </div>
 
-      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      {/* ── Subtabs Header Bar (Catalog, Custom URL, Saved) ── */}
       <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
-        {(
-          [
-            { id: 'all', label: 'All' },
-            { id: 'stoic', label: 'Stoic' },
-            { id: 'gym', label: 'Gym' },
-            { id: 'cyber', label: 'Cyber' },
-            { id: 'nature', label: 'Nature' },
-            { id: 'minimal', label: 'Minimal' },
-          ] as const
-        ).map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setSelectedCategory(tab.id)}
-            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-              selectedCategory === tab.id
-                ? 'text-white border-white'
-                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => setActiveTab('catalog')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'catalog'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Photo Catalog
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('url')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'url'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          Direct Image URL
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('saved')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'saved'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <Bookmark className="w-3 h-3" />
+          My Saved ({savedImages.length})
+        </button>
       </div>
+
+      {/* ── Category Chips Filter (Visible in Catalog mode) ── */}
+      {activeTab === 'catalog' && (
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#26262B]/60 overflow-x-auto custom-scrollbar shrink-0 bg-[#141416]">
+          {(
+            [
+              { id: 'all', label: 'All' },
+              { id: 'stoic', label: 'Stoic' },
+              { id: 'gym', label: 'Gym' },
+              { id: 'cyber', label: 'Cyber' },
+              { id: 'nature', label: 'Nature' },
+              { id: 'architecture', label: 'Arch' },
+              { id: 'minimal', label: 'Minimal' },
+            ] as const
+          ).map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+                selectedCategory === cat.id
+                  ? 'bg-[#3B82F6] text-white shadow-sm'
+                  : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search stock photos..."
-            className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+        {activeTab === 'url' ? (
+          /* Custom Image URL Importer */
+          <div className="flex flex-col gap-4">
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <ExternalLink className="w-4 h-4 text-[#60A5FA]" />
+                <span className="text-xs font-bold text-white">Import Custom Image URL</span>
+              </div>
+              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+                Paste any high-resolution image URL (Unsplash, Pexels, Imgur, or direct CDN link) to set as canvas background.
+              </p>
 
-        {/* Image Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          {filteredImages.map((img) => {
-            const isSelected = activeImageUrl === img.url || selectedId === img.id;
-            return (
-              <button
-                key={img.id}
-                type="button"
-                onClick={() => handleApply(img)}
-                className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
-                  isSelected
-                    ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
-                    : 'border-[#2A2A30] hover:border-[#3A3A42]'
-                }`}
-              >
-                <img
-                  src={img.thumbnail}
-                  alt={img.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Image Title</label>
+                <input
+                  type="text"
+                  value={customTitleInput}
+                  onChange={(e) => setCustomTitleInput(e.target.value)}
+                  placeholder="e.g. Cinematic Mountain Sunset"
+                  className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
                 />
+              </div>
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Direct Image URL (JPG / PNG / WebP)</label>
+                <input
+                  type="url"
+                  value={customUrlInput}
+                  onChange={(e) => {
+                    setCustomUrlInput(e.target.value);
+                    setUrlPreviewValid(null);
+                  }}
+                  placeholder="https://images.unsplash.com/photo-..."
+                  className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                />
+              </div>
 
-                <div className="absolute bottom-2 left-2 right-2">
-                  <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
-                    {img.title}
-                  </p>
-                  <p className="text-[9px] text-[#A1A1AA] truncate">by {img.author}</p>
+              {/* Preview Container */}
+              {customUrlInput.trim() && (
+                <div className="mt-2 rounded-xl overflow-hidden border border-[#2A2A30] bg-[#121214] aspect-[9/12] max-h-56 relative flex items-center justify-center">
+                  <img
+                    src={customUrlInput.trim()}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onLoad={() => setUrlPreviewValid(true)}
+                    onError={() => setUrlPreviewValid(false)}
+                  />
+                  {urlPreviewValid === false && (
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-3 text-center">
+                      <p className="text-xs text-rose-400 font-semibold">Unable to load image preview</p>
+                      <p className="text-[10px] text-[#A1A1AA] mt-1">Make sure URL allows direct embedding</p>
+                    </div>
+                  )}
                 </div>
+              )}
 
-                {isSelected && (
-                  <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
-                    <Check className="w-3 h-3 stroke-[3]" />
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomUrl(false)}
+                  disabled={!customUrlInput.trim()}
+                  className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Apply to Canvas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomUrl(true)}
+                  disabled={!customUrlInput.trim()}
+                  className="bg-[#2A2A32] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#3A3A44]"
+                  title="Save to My Library"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Catalog or Saved Images Grid */
+          <>
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search stock photos by mood or subject..."
+                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Empty Saved State */}
+            {activeTab === 'saved' && savedImages.length === 0 ? (
+              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
+                <Bookmark className="w-8 h-8 text-[#52525B]" />
+                <p className="text-xs font-bold text-white">No Saved Images Yet</p>
+                <p className="text-[11px] text-[#A1A1AA] max-w-xs">
+                  Import images using the &ldquo;Direct Image URL&rdquo; tab to build your custom studio backdrops library.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('url')}
+                  className="mt-2 bg-[#3B82F6] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#2563EB] transition-colors"
+                >
+                  Import an Image
+                </button>
+              </div>
+            ) : filteredImages.length === 0 ? (
+              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 text-center text-xs text-[#A1A1AA]">
+                No images matching &ldquo;{searchQuery}&rdquo;
+              </div>
+            ) : (
+              /* Image Grid */
+              <div className="grid grid-cols-2 gap-2.5">
+                {filteredImages.map((img) => {
+                  const isSelected = activeImageUrl === img.url || selectedId === img.id;
+                  return (
+                    <button
+                      key={img.id}
+                      type="button"
+                      onClick={() => handleApply(img)}
+                      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
+                        isSelected
+                          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
+                          : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                      }`}
+                    >
+                      <img
+                        src={img.thumbnail}
+                        alt={img.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
+                          {img.title}
+                        </p>
+                        <p className="text-[9px] text-[#A1A1AA] truncate">by {img.author}</p>
+                      </div>
+
+                      {/* Resolution Tag */}
+                      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[8px] font-mono-studio text-white/80 border border-white/10 uppercase">
+                        {img.category}
+                      </div>
+
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                      )}
+
+                      {/* Delete button for Saved images */}
+                      {activeTab === 'saved' && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteSaved(img.id, e)}
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
+                          title="Delete from Saved"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

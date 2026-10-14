@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { workspaceApi } from '../api/workspaceApi';
 import { videosApi } from '@/src/features/videos/api/videosApi';
 import { GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
@@ -102,7 +102,25 @@ export default function WorkspacePage({
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isLooping, setIsLooping] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isExportingRef = useRef(false);
+  const wasLoopingBeforeExportRef = useRef(true);
+
+  const handleVideoExportComplete = useCallback((error?: string) => {
+    if (!isExportingRef.current) return;
+    isExportingRef.current = false;
+    setIsExporting(false);
+    setIsPlaying(false);
+    audioRef.current?.pause();
+    setIsLooping(wasLoopingBeforeExportRef.current);
+    window.dispatchEvent(new CustomEvent('workspace:export-state', {
+      detail: {
+        exporting: false,
+        message: error || 'MP4 download started.',
+      },
+    }));
+  }, []);
 
   // Load Media Library & Quote Memory from live backend API
   useEffect(() => {
@@ -166,6 +184,10 @@ export default function WorkspacePage({
         audio.currentTime = 0;
         audio.play().catch(() => {});
         setIsPlaying(true);
+      } else if (isExporting) {
+        const exportEnd = Math.max(duration > 0 ? duration : 30, timelineDuration);
+        setCurrentTime(audio.currentTime);
+        setIsPlaying(audio.currentTime < exportEnd - 0.05);
       } else {
         setIsPlaying(false);
         setCurrentTime(0);
@@ -181,7 +203,7 @@ export default function WorkspacePage({
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [isLooping]);
+  }, [duration, isExporting, isLooping, timelineDuration]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -287,7 +309,8 @@ export default function WorkspacePage({
   useEffect(() => {
     if (!isPlaying) return;
     // If audio is actively playing, audio event listener handles time updates
-    if (audioRef.current && audioUrl && !audioRef.current.paused) return;
+    const audio = audioRef.current;
+    if (audio && audioUrl && !audio.paused && !isExporting) return;
 
     const maxTime = Math.max(duration > 0 ? duration : 30, timelineDuration);
     let lastTs = performance.now();
@@ -296,6 +319,12 @@ export default function WorkspacePage({
     const tick = (now: number) => {
       const deltaSec = ((now - lastTs) / 1000) * playbackRate;
       lastTs = now;
+
+      if (isExporting && audio && audioUrl && !audio.paused) {
+        setCurrentTime(audio.currentTime);
+        animId = requestAnimationFrame(tick);
+        return;
+      }
 
       setCurrentTime((prev) => {
         const next = prev + deltaSec;
@@ -315,7 +344,7 @@ export default function WorkspacePage({
 
     animId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animId);
-  }, [isPlaying, duration, timelineDuration, playbackRate, isLooping, audioUrl]);
+  }, [isPlaying, duration, timelineDuration, playbackRate, isLooping, audioUrl, isExporting]);
 
   // Play / Pause Audio & Timeline Playhead
   const togglePlay = () => {
@@ -517,6 +546,31 @@ export default function WorkspacePage({
     return () => window.removeEventListener('workspace:trigger-publish', handleTriggerPublish);
   }, [canPublish, publishing, handlePublish]);
 
+  useEffect(() => {
+    const handleExportRequest = () => {
+      if (isExportingRef.current) return;
+      isExportingRef.current = true;
+      wasLoopingBeforeExportRef.current = isLooping;
+      setIsExporting(true);
+      setIsLooping(false);
+      setCurrentTime(0);
+      setIsPlaying(true);
+
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+        if (audioUrl) audio.play().catch(() => {});
+      }
+
+      window.dispatchEvent(new CustomEvent('workspace:export-state', {
+        detail: { exporting: true, message: 'Rendering final video...' },
+      }));
+    };
+    window.addEventListener('workspace:export-video', handleExportRequest);
+    return () => window.removeEventListener('workspace:export-video', handleExportRequest);
+  }, [audioUrl, isLooping]);
+
   // Listen for save-to-library event from header
   useEffect(() => {
     const handleSave = () => {
@@ -539,7 +593,7 @@ export default function WorkspacePage({
       <audio ref={audioRef} className="hidden" preload="auto" />
 
       {/* ── Tri-Pane Studio Layout (Left: AI Prompt/Script, Center: Video Preview, Right: Inspiration Studio) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 h-auto min-h-0 flex-1 lg:h-full overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-1 h-auto min-h-0 flex-1 lg:h-full overflow-hidden">
         {/* Left Pane: Dynamic Active Studio Panel (col-span-4) */}
         {showLeftPane && (
           <div className="lg:col-span-4 min-h-[520px] lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
@@ -796,10 +850,16 @@ export default function WorkspacePage({
               onPlaybackRateChange={setPlaybackRate}
               currentTime={currentTime}
               duration={duration}
+              playbackDuration={Math.max(duration, timelineDuration)}
               onSeek={handleSeek}
               isLooping={isLooping}
               onToggleLoop={() => setIsLooping((prev) => !prev)}
               audioUrl={audioUrl}
+              audioElement={audioRef.current}
+              isExporting={isExporting}
+              exportDuration={Math.max(duration, timelineDuration)}
+              exportFileName={script.title || 'apexmind-video'}
+              onExportComplete={handleVideoExportComplete}
               onApplyRecordedVoice={(recordedUrl) => {
                 setAudioUrl(recordedUrl);
                 if (audioRef.current) {

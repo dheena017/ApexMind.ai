@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
   Upload,
@@ -9,6 +9,12 @@ import {
   Trash2,
   Check,
   Camera,
+  ExternalLink,
+  Search,
+  Plus,
+  Play,
+  Copy,
+  Sparkles,
 } from 'lucide-react';
 
 export interface UploadedMediaItem {
@@ -27,7 +33,7 @@ export interface MediaPaneProps {
   activeMediaUrl?: string;
 }
 
-const CURATED_PROJECT_ASSETS: UploadedMediaItem[] = [
+const DEFAULT_STARTER_ASSETS: UploadedMediaItem[] = [
   {
     id: 'asset-1',
     name: 'Misty Alpine Peaks 4K',
@@ -46,7 +52,7 @@ const CURATED_PROJECT_ASSETS: UploadedMediaItem[] = [
   },
   {
     id: 'asset-3',
-    name: 'Iron Barbell Grit',
+    name: 'Iron Barbell Chalked Grit',
     url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=720&q=80',
     type: 'image',
     size: '1.9 MB',
@@ -54,7 +60,7 @@ const CURATED_PROJECT_ASSETS: UploadedMediaItem[] = [
   },
   {
     id: 'asset-4',
-    name: 'Deep Oceanic Waves',
+    name: 'Deep Storm Mist Waves',
     url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=720&q=80',
     type: 'image',
     size: '2.8 MB',
@@ -62,7 +68,7 @@ const CURATED_PROJECT_ASSETS: UploadedMediaItem[] = [
   },
   {
     id: 'asset-5',
-    name: 'Cinematic Clouds Loop',
+    name: 'Cinematic Clouds Loop Video',
     url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     type: 'video',
     size: '8.2 MB',
@@ -70,16 +76,51 @@ const CURATED_PROJECT_ASSETS: UploadedMediaItem[] = [
   },
 ];
 
+const LOCAL_STORAGE_MEDIA_KEY = 'apexmind_workspace_user_media';
+
 export const MediaPane: React.FC<MediaPaneProps> = ({
   onApplyBackdrop,
   onApplyAudio,
   onCaptureCanvasSnapshot,
   activeMediaUrl,
 }) => {
-  const [mediaItems, setMediaItems] = useState<UploadedMediaItem[]>(CURATED_PROJECT_ASSETS);
+  const [mediaItems, setMediaItems] = useState<UploadedMediaItem[]>(DEFAULT_STARTER_ASSETS);
+  const [activeTab, setActiveTab] = useState<'library' | 'import-url'>('library');
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video' | 'audio'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [appliedId, setAppliedId] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Custom Import URL state
+  const [importUrl, setImportUrl] = useState('');
+  const [importName, setImportName] = useState('');
+  const [importType, setImportType] = useState<'image' | 'video' | 'audio'>('image');
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_MEDIA_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMediaItems(parsed);
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  // Save to localStorage whenever items change
+  const persistItems = (items: UploadedMediaItem[]) => {
+    setMediaItems(items);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_MEDIA_KEY, JSON.stringify(items));
+    } catch {
+      // Ignore
+    }
+  };
 
   const onDrop = (acceptedFiles: File[]) => {
     acceptedFiles.forEach((file) => {
@@ -99,7 +140,12 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
           size: sizeMb,
           createdAt: Date.now(),
         };
-        setMediaItems((prev) => [newItem, ...prev]);
+
+        setMediaItems((prev) => {
+          const updated = [newItem, ...prev];
+          persistItems(updated);
+          return updated;
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -108,13 +154,13 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.svg'],
-      'video/*': ['.mp4', '.webm', '.mov'],
-      'audio/*': ['.mp3', '.wav', '.ogg', '.m4a'],
+      'image/*': ['.png', '.jpg', '.jpeg', '.webp'],
+      'video/*': ['.mp4', '.webm'],
+      'audio/*': ['.mp3', '.wav', '.ogg'],
     },
   });
 
-  const handleApply = (item: UploadedMediaItem) => {
+  const handleApplyItem = (item: UploadedMediaItem) => {
     setAppliedId(item.id);
     if (item.type === 'image') {
       onApplyBackdrop(item.url, false);
@@ -126,37 +172,83 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
       onApplyAudio(item.url);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
     }
+    setTimeout(() => setAppliedId(null), 2000);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDeleteItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setMediaItems((prev) => prev.filter((item) => item.id !== id));
+    const updated = mediaItems.filter((i) => i.id !== id);
+    persistItems(updated);
   };
 
-  const handleSnapshot = async () => {
+  const handleClearAll = () => {
+    if (window.confirm('Clear all uploaded media items from this project?')) {
+      persistItems([]);
+    }
+  };
+
+  const handleCopyUrl = (url: string, id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const handleAddFromUrl = () => {
+    if (!importUrl.trim()) return;
+    const url = importUrl.trim();
+    const name = importName.trim() || `Imported ${importType.toUpperCase()}`;
+
+    const newItem: UploadedMediaItem = {
+      id: `url-asset-${Date.now()}`,
+      name,
+      url,
+      type: importType,
+      size: 'Web Stream',
+      createdAt: Date.now(),
+    };
+
+    const updated = [newItem, ...mediaItems];
+    persistItems(updated);
+
+    // Auto apply
+    if (importType === 'image') onApplyBackdrop(url, false);
+    if (importType === 'video') onApplyBackdrop(url, true);
+    if (importType === 'audio' && onApplyAudio) onApplyAudio(url);
+
+    setImportUrl('');
+    setImportName('');
+    setActiveTab('library');
+  };
+
+  const handleCaptureSnapshot = async () => {
     if (!onCaptureCanvasSnapshot) return;
-    setIsCapturing(true);
     try {
-      const snapUrl = await onCaptureCanvasSnapshot();
-      if (snapUrl) {
+      setIsCapturing(true);
+      const snapshotUrl = await onCaptureCanvasSnapshot();
+      if (snapshotUrl) {
         const newItem: UploadedMediaItem = {
           id: `snapshot-${Date.now()}`,
-          name: `Canvas Snapshot ${new Date().toLocaleTimeString()}`,
-          url: snapUrl,
+          name: `Canvas Snapshot ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+          url: snapshotUrl,
           type: 'image',
-          size: '1.2 MB',
+          size: 'Snapshot',
           createdAt: Date.now(),
         };
-        setMediaItems((prev) => [newItem, ...prev]);
+        const updated = [newItem, ...mediaItems];
+        persistItems(updated);
       }
     } finally {
       setIsCapturing(false);
     }
   };
 
-  const filteredItems = mediaItems.filter((item) => {
-    if (filterType === 'all') return true;
-    return item.type === filterType;
+  const filteredMedia = mediaItems.filter((m) => {
+    const matchesType = filterType === 'all' || m.type === filterType;
+    const matchesSearch =
+      searchQuery.trim() === '' ||
+      m.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesType && matchesSearch;
   });
 
   return (
@@ -166,156 +258,296 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
         <div className="flex items-center gap-2 min-w-0">
           <FolderOpen className="w-4 h-4 shrink-0 text-[#60A5FA]" />
           <span className="text-xs font-bold text-white truncate">
-            Media &amp; Assets
+            Project Media Library
           </span>
           <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
-            {filteredItems.length} ITEMS
+            PERSISTED
           </span>
         </div>
 
-        {/* Right Action: Snapshot Button */}
-        {onCaptureCanvasSnapshot && (
-          <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2">
+          {mediaItems.length > 0 && (
             <button
               type="button"
-              onClick={handleSnapshot}
-              disabled={isCapturing}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border bg-[#222228] hover:bg-[#2C2C34] text-[#D4D4D8] hover:text-white border-[#32323C]"
-              title="Export snapshot of canvas"
+              onClick={handleClearAll}
+              className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors"
             >
-              <Camera className="w-3 h-3 text-sky-400" />
-              <span>{isCapturing ? 'Snapping...' : 'Snapshot'}</span>
+              Clear
             </button>
-          </div>
-        )}
+          )}
+          <span className="text-[10px] font-mono-studio text-[#A1A1AA]">
+            {filteredMedia.length} Assets
+          </span>
+        </div>
       </div>
 
-      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
+      {/* ── Subtabs Header Bar ── */}
       <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
-        {(
-          [
-            { id: 'all', label: 'All Media' },
-            { id: 'image', label: 'Images' },
-            { id: 'video', label: 'Videos' },
-            { id: 'audio', label: 'Audio' },
-          ] as const
-        ).map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setFilterType(tab.id)}
-            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-              filterType === tab.id
-                ? 'text-white border-white'
-                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Main Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
-        {/* Upload Zone */}
-        <div
-          {...getRootProps()}
-          className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
-            isDragActive
-              ? 'border-[#3B82F6] bg-[#3B82F6]/15'
-              : 'border-[#2A2A30] hover:border-[#3B82F6]/60 bg-[#1C1C20] hover:bg-[#222228]'
+        <button
+          type="button"
+          onClick={() => setActiveTab('library')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+            activeTab === 'library'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <input {...getInputProps()} />
-          <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#121214] border border-[#2A2A30] text-[#60A5FA] mb-2 shadow-xs">
-            <Upload className="w-4 h-4" />
+          My Assets ({mediaItems.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('import-url')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'import-url'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <ExternalLink className="w-3 h-3 text-[#60A5FA]" />
+          Import Web URL
+        </button>
+      </div>
+
+      {/* ── Media Type Filter Chips (In Library Mode) ── */}
+      {activeTab === 'library' && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-[#26262B]/60 bg-[#141416] shrink-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
+            {(
+              [
+                { id: 'all', label: 'All' },
+                { id: 'image', label: 'Images' },
+                { id: 'video', label: 'Videos' },
+                { id: 'audio', label: 'Audio' },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setFilterType(t.id)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+                  filterType === t.id
+                    ? 'bg-[#3B82F6] text-white shadow-sm'
+                    : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
-          <p className="text-xs font-bold text-white text-center">
-            {isDragActive ? 'Drop files here...' : 'Upload Media or Drag & Drop'}
-          </p>
-          <p className="text-[10px] text-[#71717A] text-center mt-0.5">
-            MP4, WEBM, JPG, PNG, WEBP, MP3 (up to 50MB)
-          </p>
-        </div>
 
-        {/* Media Grid */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
-            Project Media Assets ({filteredItems.length})
-          </label>
-
-          {filteredItems.length === 0 ? (
-            <div className="p-8 text-center rounded-xl border border-[#2A2A30] bg-[#1C1C20] text-[#71717A] text-xs">
-              No media matching filter. Drop files above to upload.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {filteredItems.map((item) => {
-                const isCurrentActive =
-                  activeMediaUrl === item.url || appliedId === item.id;
-
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => handleApply(item)}
-                    className={`group relative rounded-xl border overflow-hidden transition-all cursor-pointer aspect-video bg-[#1C1C20] ${
-                      isCurrentActive
-                        ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
-                        : 'border-[#2A2A30] hover:border-[#3A3A42]'
-                    }`}
-                  >
-                    {item.type === 'image' ? (
-                      <img
-                        src={item.url}
-                        alt={item.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : item.type === 'video' ? (
-                      <div className="w-full h-full relative bg-black">
-                        <video
-                          src={item.url}
-                          className="w-full h-full object-cover opacity-80"
-                          muted
-                          playsInline
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                          <Film className="w-5 h-5 text-white/80" />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-[#121214] text-[#60A5FA]">
-                        <Music className="w-6 h-6 mb-1" />
-                        <span className="text-[10px] font-bold text-white text-center truncate w-full px-1">
-                          {item.name}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-white truncate max-w-[80%]">
-                        {item.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => handleDelete(item.id, e)}
-                        className="p-1 rounded bg-black/60 hover:bg-red-500/80 text-white/80 hover:text-white transition-colors"
-                        title="Remove"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-
-                    {isCurrentActive && (
-                      <div className="absolute top-1.5 right-1.5 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
-                        <Check className="w-3 h-3 stroke-[3]" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          {onCaptureCanvasSnapshot && (
+            <button
+              type="button"
+              onClick={handleCaptureSnapshot}
+              disabled={isCapturing}
+              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-[#60A5FA] border border-[#3A3A44] transition-colors shrink-0"
+              title="Snapshot current canvas frame to library"
+            >
+              <Camera className="w-3 h-3" />
+              Snapshot
+            </button>
           )}
         </div>
+      )}
+
+      {/* ── Main Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
+        {activeTab === 'import-url' ? (
+          /* Import from Web URL Form */
+          <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#60A5FA]" />
+              <span className="text-xs font-bold text-white">Import Web Asset into Project</span>
+            </div>
+            <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+              Add any public web asset (image, video, or audio track) to your project media library.
+            </p>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Asset Name</label>
+              <input
+                type="text"
+                value={importName}
+                onChange={(e) => setImportName(e.target.value)}
+                placeholder="e.g. Neon Horizon Background"
+                className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Media Type</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['image', 'video', 'audio'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setImportType(t)}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold capitalize border transition-all ${
+                      importType === t
+                        ? 'bg-[#3B82F6] text-white border-[#3B82F6]'
+                        : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30] hover:text-white'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Direct Web URL</label>
+              <input
+                type="url"
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                placeholder="https://..."
+                className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddFromUrl}
+              disabled={!importUrl.trim()}
+              className="mt-2 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add to Project Media
+            </button>
+          </div>
+        ) : (
+          /* Library Grid */
+          <>
+            {/* Dropzone Upload Zone */}
+            <div
+              {...getRootProps()}
+              className={`p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-1.5 ${
+                isDragActive
+                  ? 'border-[#3B82F6] bg-[#3B82F6]/10'
+                  : 'border-[#2A2A30] hover:border-[#3B82F6]/50 bg-[#161619] hover:bg-[#1A1A1E]'
+              }`}
+            >
+              <input {...getInputProps()} />
+              <div className="w-8 h-8 rounded-full bg-[#24242A] flex items-center justify-center text-[#60A5FA]">
+                <Upload className="w-4 h-4" />
+              </div>
+              <p className="text-xs font-bold text-white">
+                Upload Images, Videos, or Audio
+              </p>
+              <p className="text-[10px] text-[#A1A1AA]">
+                Drag &amp; drop or click to browse files (MP4, PNG, JPG, MP3)
+              </p>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search assets in library..."
+                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+              />
+            </div>
+
+            {/* Assets Grid */}
+            {filteredMedia.length === 0 ? (
+              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-6 text-center text-xs text-[#A1A1AA]">
+                No media assets found
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                {filteredMedia.map((item) => {
+                  const isSelected = activeMediaUrl === item.url || appliedId === item.id;
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleApplyItem(item)}
+                      className={`group relative rounded-xl border overflow-hidden aspect-[9/13] bg-[#1C1C20] transition-all cursor-pointer flex flex-col justify-end text-left ${
+                        isSelected
+                          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
+                          : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                      }`}
+                    >
+                      {/* Media Preview Thumbnail */}
+                      {item.type === 'image' && (
+                        <img
+                          src={item.url}
+                          alt={item.name}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      )}
+                      {item.type === 'video' && (
+                        <video
+                          src={item.url}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          muted
+                          loop
+                        />
+                      )}
+                      {item.type === 'audio' && (
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-[#1C1C20] to-black flex items-center justify-center">
+                          <Music className="w-10 h-10 text-[#60A5FA]/60" />
+                        </div>
+                      )}
+
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
+                      {/* Top Action Icons */}
+                      <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
+                        <span className="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[8px] font-mono-studio text-white/80 border border-white/10 uppercase">
+                          {item.type}
+                        </span>
+
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyUrl(item.url, item.id, e)}
+                            className="p-1.5 rounded-full bg-black/70 hover:bg-[#3B82F6] text-white transition-colors"
+                            title="Copy URL"
+                          >
+                            {copiedId === item.id ? (
+                              <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteItem(item.id, e)}
+                            className="p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
+                            title="Delete Asset"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bottom Info */}
+                      <div className="relative z-10 p-2.5">
+                        <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
+                          {item.name}
+                        </p>
+                        <p className="text-[9px] text-[#A1A1AA]">{item.size}</p>
+                      </div>
+
+                      {/* Applied indicator */}
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md z-20">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

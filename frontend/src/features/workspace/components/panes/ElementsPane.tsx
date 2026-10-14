@@ -12,6 +12,11 @@ import {
   Check,
   Layers,
   ArrowRight,
+  Sparkles,
+  Plus,
+  Eye,
+  Sliders,
+  Tv,
 } from 'lucide-react';
 
 export interface ElementsPaneProps {
@@ -27,19 +32,26 @@ const BADGES = [
   { id: 'badge-4', label: 'STOIC MINDSET', desc: 'Mental Fortress', color: 'from-zinc-600 to-zinc-800', icon: Shield },
   { id: 'badge-5', label: 'DAY 1 OR ONE DAY', desc: 'Action Bias', color: 'from-emerald-600 to-teal-700', icon: Target },
   { id: 'badge-6', label: 'SILENT WARRIOR', desc: 'Zero Talk', color: 'from-purple-600 to-indigo-800', icon: Award },
+  { id: 'badge-7', label: '4:00 AM CLUB', desc: 'Early Discipline', color: 'from-cyan-600 to-blue-700', icon: Zap },
+  { id: 'badge-8', label: 'ZERO DISTRACTIONS', desc: 'Laser Focus', color: 'from-fuchsia-600 to-pink-700', icon: Target },
+  { id: 'badge-9', label: 'FORGE YOURSELF', desc: 'Iron Will', color: 'from-orange-600 to-red-700', icon: Flame },
+  { id: 'badge-10', label: 'UNSTOPPABLE', desc: 'Pure Momentum', color: 'from-emerald-500 to-cyan-600', icon: Crown },
+  { id: 'badge-11', label: 'MEMENTO MORI', desc: 'Time Scarcity', color: 'from-zinc-700 to-zinc-900', icon: Shield },
+  { id: 'badge-12', label: 'EMPIRE BUILDER', desc: 'Generational Wealth', color: 'from-amber-600 to-yellow-700', icon: Award },
 ];
 
 const SHAPES = [
-  { id: 'shape-box', name: 'Rounded Quote Card', desc: 'Semi-transparent background container', icon: Square },
-  { id: 'shape-spotlight', name: 'Center Spotlight', desc: 'Radial focus highlighting the subject', icon: Circle },
-  { id: 'shape-letterbox', name: 'Cinematic Cinema Bars', desc: 'Top & bottom film letterbox borders', icon: Layers },
-  { id: 'shape-divider', name: 'Accent Divider Line', desc: 'Horizontal solid rule between lines', icon: ArrowRight },
+  { id: 'shape-box', name: 'Rounded Glass Quote Box', desc: 'Dark blur container behind subtitles', icon: Square },
+  { id: 'shape-spotlight', name: 'Center Spotlight Radial', desc: 'Focused radial lighting highlighting speaker', icon: Circle },
+  { id: 'shape-letterbox', name: 'Cinematic 2.39:1 Letterbox', desc: 'Top & bottom film letterbox borders', icon: Layers },
+  { id: 'shape-divider', name: 'Accent Divider Line', desc: 'Horizontal rule separating hook and quote', icon: ArrowRight },
+  { id: 'shape-scanlines', name: 'CRT Retro Scanlines', desc: 'Subtle cyberpunk monitor scanlines', icon: Tv },
 ];
 
 const PROGRESS_BARS = [
-  { id: 'prog-top', name: 'Top Reel Countdown Scrubber', desc: 'Smooth 0-100% time bar on top' },
+  { id: 'prog-top', name: 'Top Reel Countdown Scrubber', desc: 'Smooth 0-100% time bar on top edge' },
   { id: 'prog-bottom', name: 'Bottom Progress Scrubber', desc: 'Clean blue fill bar across bottom' },
-  { id: 'prog-soundwave', name: 'Dynamic Soundwave Bars', desc: 'Moving audio spectrum bars' },
+  { id: 'prog-soundwave', name: 'Dynamic Soundwave Bars', desc: 'Animated audio spectrum equalizer bars' },
 ];
 
 const EMOJI_ELEMENTS = [
@@ -53,6 +65,12 @@ const EMOJI_ELEMENTS = [
   { symbol: '💎', label: 'Diamond' },
   { symbol: '🧠', label: 'Mind' },
   { symbol: '🏛️', label: 'Stoic Pillar' },
+  { symbol: '🏆', label: 'Trophy' },
+  { symbol: '🛡️', label: 'Shield' },
+  { symbol: '🚀', label: 'Rocket' },
+  { symbol: '🐺', label: 'Wolf' },
+  { symbol: '⛓️', label: 'Chains' },
+  { symbol: '📈', label: 'Growth' },
 ];
 
 export const ElementsPane: React.FC<ElementsPaneProps> = ({
@@ -60,8 +78,12 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
   onToggleVignette,
   onToggleGrain,
 }) => {
-  const [activeTab, setActiveTab] = useState<'badges' | 'shapes' | 'progress' | 'emojis'>('badges');
+  const [activeTab, setActiveTab] = useState<'badges' | 'shapes' | 'progress' | 'emojis' | 'custom'>('badges');
   const [appliedItem, setAppliedItem] = useState<string | null>(null);
+
+  // Custom Badge Creator
+  const [customBadgeText, setCustomBadgeText] = useState('');
+  const [customBadgeGradient, setCustomBadgeGradient] = useState('from-amber-500 to-orange-600');
 
   const handleSelect = (id: string, name: string, type: string, value: string) => {
     setAppliedItem(id);
@@ -70,6 +92,13 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
       onInsertElement({ id, name, type, value });
     }
     setTimeout(() => setAppliedItem(null), 1800);
+  };
+
+  const handleCreateCustomBadge = () => {
+    if (!customBadgeText.trim()) return;
+    const text = customBadgeText.trim().toUpperCase();
+    handleSelect(`custom-badge-${Date.now()}`, text, 'badge', text);
+    setCustomBadgeText('');
   };
 
   return (
@@ -93,20 +122,19 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         )}
       </div>
 
-      {/* ── Subtabs Header Bar (Matching Right Pane) ── */}
-      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
-        {(
-          [
-            { id: 'badges', label: 'Badges' },
-            { id: 'shapes', label: 'Shapes' },
-            { id: 'progress', label: 'Bars' },
-            { id: 'emojis', label: 'Emojis' },
-          ] as const
-        ).map((tab) => (
+      {/* ── Subtabs Header Bar ── */}
+      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        {[
+          { id: 'badges', label: 'Badges' },
+          { id: 'shapes', label: 'Overlays' },
+          { id: 'progress', label: 'Progress' },
+          { id: 'emojis', label: 'Emojis' },
+          { id: 'custom', label: 'Custom' },
+        ].map((tab) => (
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => setActiveTab(tab.id as any)}
             className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
               activeTab === tab.id
                 ? 'text-white border-white'
@@ -118,134 +146,165 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         ))}
       </div>
 
-      {/* ── Main Tab Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+      {/* ── Main Content Area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
+        {/* ── Tab 1: Badges ── */}
         {activeTab === 'badges' && (
-          <div className="space-y-2">
-            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
-              Header Callout Badges
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {BADGES.map((badge) => {
-                const Icon = badge.icon;
-                const isSelected = appliedItem === badge.id;
-                return (
-                  <button
-                    key={badge.id}
-                    type="button"
-                    onClick={() => handleSelect(badge.id, badge.label, 'badge', badge.label)}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
-                      isSelected
-                        ? 'border-[#3B82F6] bg-[#3B82F6]/15'
-                        : 'border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className={`p-1.5 rounded-lg bg-gradient-to-tr ${badge.color} text-white shadow-xs`}>
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      {isSelected && <Check className="w-3 h-3 text-[#60A5FA]" />}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-white tracking-wide">{badge.label}</p>
-                      <p className="text-[10px] text-[#71717A]">{badge.desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'shapes' && (
-          <div className="space-y-2">
-            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
-              Cinematic Shape Overlays
-            </label>
-            <div className="grid grid-cols-1 gap-2">
-              {SHAPES.map((shape) => {
-                const Icon = shape.icon;
-                const isSelected = appliedItem === shape.id;
-                return (
-                  <button
-                    key={shape.id}
-                    type="button"
-                    onClick={() => handleSelect(shape.id, shape.name, 'shape', shape.id)}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? 'border-[#3B82F6] bg-[#3B82F6]/15'
-                        : 'border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-[#121214] text-[#60A5FA] border border-[#26262B]">
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-white">{shape.name}</p>
-                        <p className="text-[10px] text-[#71717A]">{shape.desc}</p>
-                      </div>
-                    </div>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[#60A5FA]" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'progress' && (
-          <div className="space-y-2">
-            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
-              Retention Progress Bars
-            </label>
-            <div className="grid grid-cols-1 gap-2">
-              {PROGRESS_BARS.map((prog) => {
-                const isSelected = appliedItem === prog.id;
-                return (
-                  <button
-                    key={prog.id}
-                    type="button"
-                    onClick={() => handleSelect(prog.id, prog.name, 'progress', prog.id)}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? 'border-[#3B82F6] bg-[#3B82F6]/15'
-                        : 'border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42]'
-                    }`}
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-white">{prog.name}</p>
-                      <p className="text-[10px] text-[#71717A]">{prog.desc}</p>
-                    </div>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[#60A5FA]" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'emojis' && (
-          <div className="space-y-2">
-            <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider block">
-              High Impact Symbols
-            </label>
-            <div className="grid grid-cols-5 gap-2">
-              {EMOJI_ELEMENTS.map((emoji) => (
+          <div className="grid grid-cols-2 gap-2">
+            {BADGES.map((b) => {
+              const Icon = b.icon;
+              return (
                 <button
-                  key={emoji.symbol}
+                  key={b.id}
                   type="button"
-                  onClick={() => handleSelect(emoji.symbol, emoji.label, 'emoji', emoji.symbol)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3B82F6]/50 hover:bg-[#222228] transition-all cursor-pointer"
-                  title={emoji.label}
+                  onClick={() => handleSelect(b.id, b.label, 'badge', b.label)}
+                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
                 >
-                  <span className="text-xl mb-0.5">{emoji.symbol}</span>
-                  <span className="text-[9px] text-[#71717A] truncate w-full text-center">
-                    {emoji.label}
-                  </span>
+                  <div
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white bg-gradient-to-r ${b.color} shadow-md flex items-center gap-1`}
+                  >
+                    <Icon className="w-3 h-3" />
+                    <span>{b.label}</span>
+                  </div>
+                  <span className="text-[10px] text-[#A1A1AA]">{b.desc}</span>
                 </button>
-              ))}
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Tab 2: Shapes & Overlays ── */}
+        {activeTab === 'shapes' && (
+          <div className="flex flex-col gap-2">
+            {SHAPES.map((s) => {
+              const Icon = s.icon;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleSelect(s.id, s.name, 'shape', s.id)}
+                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex items-center gap-3 text-left cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-[#2A2A32] flex items-center justify-center text-[#60A5FA] shrink-0">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white">{s.name}</p>
+                    <p className="text-[10px] text-[#A1A1AA] truncate">{s.desc}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Tab 3: Progress Scrubbers ── */}
+        {activeTab === 'progress' && (
+          <div className="flex flex-col gap-2">
+            {PROGRESS_BARS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => handleSelect(p.id, p.name, 'progress', p.id)}
+                className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col gap-1.5 text-left cursor-pointer"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white">{p.name}</span>
+                  <span className="text-[9px] font-mono-studio text-[#60A5FA]">OVERLAY</span>
+                </div>
+                <span className="text-[10px] text-[#A1A1AA]">{p.desc}</span>
+
+                {/* Mini Preview Bar */}
+                <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden mt-1">
+                  <div className="w-2/3 h-full bg-[#3B82F6] rounded-full" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── Tab 4: Emojis ── */}
+        {activeTab === 'emojis' && (
+          <div className="grid grid-cols-4 gap-2">
+            {EMOJI_ELEMENTS.map((e, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelect(`emoji-${idx}`, e.label, 'emoji', e.symbol)}
+                className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col items-center justify-center gap-1 cursor-pointer"
+              >
+                <span className="text-2xl">{e.symbol}</span>
+                <span className="text-[9px] text-[#A1A1AA] truncate">{e.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── Tab 5: Custom Badge Creator ── */}
+        {activeTab === 'custom' && (
+          <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+            <span className="text-xs font-bold text-white">Create Custom Badge</span>
+            <p className="text-[11px] text-[#A1A1AA]">
+              Generate a personalized motivational pill badge to pin above your captions.
+            </p>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Badge Text</label>
+              <input
+                type="text"
+                value={customBadgeText}
+                onChange={(e) => setCustomBadgeText(e.target.value)}
+                placeholder="e.g. CHAPTER 1 • AWAKENING"
+                className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+              />
             </div>
+
+            {/* Gradient Selector */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Badge Gradient</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { name: 'Gold Fire', grad: 'from-amber-500 to-orange-600' },
+                  { name: 'Cyber Blue', grad: 'from-blue-600 to-indigo-700' },
+                  { name: 'Red Fury', grad: 'from-red-600 to-rose-700' },
+                  { name: 'Emerald', grad: 'from-emerald-600 to-teal-700' },
+                  { name: 'Violet', grad: 'from-purple-600 to-indigo-800' },
+                  { name: 'Obsidian', grad: 'from-zinc-700 to-zinc-900' },
+                ].map((g) => (
+                  <button
+                    key={g.grad}
+                    type="button"
+                    onClick={() => setCustomBadgeGradient(g.grad)}
+                    className={`py-1.5 px-2 rounded-lg text-[10px] font-bold text-white bg-gradient-to-r ${g.grad} border transition-all ${
+                      customBadgeGradient === g.grad ? 'border-white ring-2 ring-white/40' : 'border-transparent'
+                    }`}
+                  >
+                    {g.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview */}
+            {customBadgeText.trim() && (
+              <div className="mt-2 p-3 rounded-lg bg-[#141417] border border-[#26262B] flex items-center justify-center">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-black uppercase text-white bg-gradient-to-r ${customBadgeGradient} shadow-md`}
+                >
+                  {customBadgeText.trim()}
+                </span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleCreateCustomBadge}
+              disabled={!customBadgeText.trim()}
+              className="mt-2 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Insert Badge
+            </button>
           </div>
         )}
       </div>
