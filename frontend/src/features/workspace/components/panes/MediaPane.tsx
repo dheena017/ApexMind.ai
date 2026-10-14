@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import {
   Upload,
+  UploadCloud,
   FolderOpen,
   Image as ImageIcon,
   Film,
-  Music,
   Trash2,
   Check,
   Camera,
@@ -28,7 +28,7 @@ export interface UploadedMediaItem {
   id: string;
   name: string;
   url: string;
-  type: 'image' | 'video' | 'audio';
+  type: 'image' | 'video';
   size: string;
   createdAt: number;
 }
@@ -40,50 +40,7 @@ export interface MediaPaneProps {
   activeMediaUrl?: string;
 }
 
-const DEFAULT_STARTER_ASSETS: UploadedMediaItem[] = [
-  {
-    id: 'asset-1',
-    name: 'Misty Alpine Peaks 4K',
-    url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=720&q=80',
-    type: 'image',
-    size: '2.4 MB',
-    createdAt: Date.now() - 3600000,
-  },
-  {
-    id: 'asset-2',
-    name: 'Cyberpunk Neon Alley',
-    url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=720&q=80',
-    type: 'image',
-    size: '3.1 MB',
-    createdAt: Date.now() - 7200000,
-  },
-  {
-    id: 'asset-3',
-    name: 'Iron Barbell Chalked Grit',
-    url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=720&q=80',
-    type: 'image',
-    size: '1.9 MB',
-    createdAt: Date.now() - 10800000,
-  },
-  {
-    id: 'asset-4',
-    name: 'Deep Storm Mist Waves',
-    url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=720&q=80',
-    type: 'image',
-    size: '2.8 MB',
-    createdAt: Date.now() - 14400000,
-  },
-  {
-    id: 'asset-5',
-    name: 'Cinematic Clouds Loop Video',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    type: 'video',
-    size: '8.2 MB',
-    createdAt: Date.now() - 18000000,
-  },
-];
-
-const LOCAL_STORAGE_MEDIA_KEY = 'apexmind_workspace_user_media';
+const LOCAL_STORAGE_MEDIA_KEY = 'apexmind_workspace_user_media_v2';
 
 export const MediaPane: React.FC<MediaPaneProps> = ({
   onApplyBackdrop,
@@ -91,9 +48,9 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   onCaptureCanvasSnapshot,
   activeMediaUrl,
 }) => {
-  const [mediaItems, setMediaItems] = useState<UploadedMediaItem[]>(DEFAULT_STARTER_ASSETS);
+  const [mediaItems, setMediaItems] = useState<UploadedMediaItem[]>([]);
   const [activeTab, setActiveTab] = useState<'library' | 'import-url'>('library');
-  const [filterType, setFilterType] = useState<'all' | 'image' | 'video' | 'audio'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'image' | 'video'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedId, setAppliedId] = useState<string | null>(null);
@@ -104,16 +61,22 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   // Custom Import URL state
   const [importUrl, setImportUrl] = useState('');
   const [importName, setImportName] = useState('');
-  const [importType, setImportType] = useState<'image' | 'video' | 'audio'>('image');
+  const [importType, setImportType] = useState<'image' | 'video'>('image');
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount (default is empty, never auto-populate starter items)
   useEffect(() => {
     try {
+      // Clear legacy storage that had starter mock assets
+      localStorage.removeItem('apexmind_workspace_user_media');
       const stored = localStorage.getItem(LOCAL_STORAGE_MEDIA_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMediaItems(parsed);
+        if (Array.isArray(parsed)) {
+          const onlyUserMedia = parsed.filter(
+            (item): item is UploadedMediaItem =>
+              Boolean(item && (item.type === 'image' || item.type === 'video') && !item.id?.startsWith('asset-'))
+          );
+          setMediaItems(onlyUserMedia);
         }
       }
     } catch {}
@@ -128,10 +91,11 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
 
   const onDrop = (acceptedFiles: File[]) => {
     acceptedFiles.forEach((file) => {
-      const isVideo = file.type.startsWith('video');
-      const isAudio = file.type.startsWith('audio');
-      const type: 'image' | 'video' | 'audio' = isVideo ? 'video' : isAudio ? 'audio' : 'image';
+      const isVideo = file.type.startsWith('video') || Boolean(file.name.match(/\.(mp4|mov|webm|mkv)$/i));
+      const isImage = file.type.startsWith('image') || Boolean(file.name.match(/\.(png|jpg|jpeg|webp)$/i));
+      if (!isVideo && !isImage) return;
 
+      const type: 'image' | 'video' = isVideo ? 'video' : 'image';
       const reader = new FileReader();
       reader.onload = (e) => {
         const url = e.target?.result as string;
@@ -150,17 +114,26 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
           persistItems(updated);
           return updated;
         });
+
+        try {
+          confetti({
+            particleCount: 25,
+            spread: 45,
+            origin: { y: 0.8 },
+          });
+        } catch {}
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open: openFilePicker } = useDropzone({
     onDrop,
+    noClick: false,
+    noKeyboard: false,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.webp'],
-      'video/*': ['.mp4', '.webm'],
-      'audio/*': ['.mp3', '.wav', '.ogg'],
+      'video/*': ['.mp4', '.mov', '.webm', '.mkv'],
     },
   });
 
@@ -172,9 +145,6 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
     } else if (item.type === 'video') {
       onApplyBackdrop(item.url, true);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
-    } else if (item.type === 'audio' && onApplyAudio) {
-      onApplyAudio(item.url);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
     }
     setTimeout(() => setAppliedId(null), 2000);
   };
@@ -186,7 +156,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   };
 
   const handleClearAll = () => {
-    if (window.confirm('Clear all uploaded media items from this project?')) {
+    if (window.confirm('Clear all uploaded images and videos from this project?')) {
       persistItems([]);
     }
   };
@@ -217,7 +187,6 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
 
     if (importType === 'image') onApplyBackdrop(url, false);
     if (importType === 'video') onApplyBackdrop(url, true);
-    if (importType === 'audio' && onApplyAudio) onApplyAudio(url);
 
     setImportUrl('');
     setImportName('');
@@ -318,7 +287,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          My Assets ({mediaItems.length})
+          My Uploads ({mediaItems.length})
         </button>
         <button
           type="button"
@@ -335,7 +304,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
       </div>
 
       {/* ── Media Type Filter & Sort ── */}
-      {activeTab === 'library' && (
+      {activeTab === 'library' && mediaItems.length > 0 && (
         <div className="flex items-center justify-between px-4 py-2 border-b border-[#26262B]/60 bg-[#141416] shrink-0">
           <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
             {(
@@ -343,7 +312,6 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                 { id: 'all', label: 'All' },
                 { id: 'image', label: 'Images' },
                 { id: 'video', label: 'Videos' },
-                { id: 'audio', label: 'Audio' },
               ] as const
             ).map((t) => (
               <button
@@ -396,10 +364,10 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
           <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#60A5FA]" />
-              <span className="text-xs font-bold text-white">Import Web Asset into Project</span>
+              <span className="text-xs font-bold text-white">Import Web Media</span>
             </div>
             <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
-              Add any public web asset (image, video, or audio track) to your project media library.
+              Add any direct web image or video URL into your project uploads.
             </p>
 
             <div className="flex flex-col gap-1.5">
@@ -415,8 +383,8 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
 
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Media Type</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['image', 'video', 'audio'] as const).map((t) => (
+              <div className="grid grid-cols-2 gap-2">
+                {(['image', 'video'] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -427,7 +395,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                         : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30] hover:text-white'
                     }`}
                   >
-                    {t}
+                    {t === 'image' ? 'Image' : 'Video'}
                   </button>
                 ))}
               </div>
@@ -451,30 +419,67 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
               className="mt-2 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
             >
               <Plus className="w-3.5 h-3.5" />
-              Add to Project Media
+              Add to Project Uploads
+            </button>
+          </div>
+        ) : mediaItems.length === 0 ? (
+          /* Empty State - Prominent Hero Dropzone */
+          <div
+            {...getRootProps()}
+            className={`flex-1 min-h-[300px] p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-3 my-auto ${
+              isDragActive
+                ? 'border-[#3B82F6] bg-[#3B82F6]/10 shadow-lg shadow-[#3B82F6]/20'
+                : 'border-[#2A2A30] hover:border-[#3B82F6]/60 bg-[#16161A] hover:bg-[#1A1A20]'
+            }`}
+          >
+            <input {...getInputProps()} />
+            <div className="w-14 h-14 rounded-2xl bg-[#222228] border border-[#2F2F38] flex items-center justify-center text-[#60A5FA] shadow-inner">
+              <UploadCloud className="w-7 h-7" />
+            </div>
+            <div className="flex flex-col gap-1 max-w-[260px]">
+              <p className="text-sm font-bold text-white">Upload Images &amp; Videos</p>
+              <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                Drag &amp; drop files here, or browse from your device
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap justify-center">
+              <span className="px-2 py-0.5 rounded-md bg-[#222228] border border-[#2E2E36] text-[10px] font-mono-studio text-[#94A3B8]">
+                MP4 • MOV • WEBM
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-[#222228] border border-[#2E2E36] text-[10px] font-mono-studio text-[#94A3B8]">
+                PNG • JPG • WEBP
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                openFilePicker();
+              }}
+              className="mt-2 h-8 px-4 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold shadow-md shadow-[#3B82F6]/25 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Select Files</span>
             </button>
           </div>
         ) : (
-          /* Library Grid */
+          /* Populated Library: Compact dropzone + search + grid */
           <>
-            {/* Dropzone Upload Zone */}
+            {/* Compact Dropzone */}
             <div
               {...getRootProps()}
-              className={`p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-1.5 ${
+              className={`p-3 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center text-center gap-2 ${
                 isDragActive
                   ? 'border-[#3B82F6] bg-[#3B82F6]/10'
                   : 'border-[#2A2A30] hover:border-[#3B82F6]/50 bg-[#161619] hover:bg-[#1A1A1E]'
               }`}
             >
               <input {...getInputProps()} />
-              <div className="w-8 h-8 rounded-full bg-[#24242A] flex items-center justify-center text-[#60A5FA]">
-                <Upload className="w-4 h-4" />
+              <div className="w-6 h-6 rounded-full bg-[#24242A] flex items-center justify-center text-[#60A5FA]">
+                <Upload className="w-3 h-3" />
               </div>
-              <p className="text-xs font-bold text-white">
-                Upload Images, Videos, or Audio
-              </p>
-              <p className="text-[10px] text-[#A1A1AA]">
-                Drag &amp; drop or click to browse files (MP4, PNG, JPG, MP3)
+              <p className="text-[11px] font-medium text-zinc-300">
+                Drag &amp; drop more images or videos here, or <span className="text-[#60A5FA] underline">browse</span>
               </p>
             </div>
 
@@ -485,7 +490,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search assets in library..."
+                placeholder="Search uploads..."
                 className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
               />
             </div>
@@ -493,7 +498,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
             {/* Assets Grid */}
             {filteredMedia.length === 0 ? (
               <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-6 text-center text-xs text-[#A1A1AA]">
-                No media assets found
+                No matching media uploads found
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2.5">
@@ -530,11 +535,6 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                           loop
                         />
                       )}
-                      {item.type === 'audio' && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-[#1C1C20] to-black flex items-center justify-center">
-                          <Music className="w-10 h-10 text-[#60A5FA]/60" />
-                        </div>
-                      )}
 
                       {/* Gradient Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -550,7 +550,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                             type="button"
                             onClick={(e) => handleCopyUrl(item.url, item.id, e)}
                             className="p-1.5 rounded-full bg-black/70 hover:bg-[#3B82F6] text-white transition-colors"
-                            title="Copy URL"
+                            title="Copy Media URL"
                           >
                             {copiedId === item.id ? (
                               <Check className="w-3 h-3 text-emerald-400" />
