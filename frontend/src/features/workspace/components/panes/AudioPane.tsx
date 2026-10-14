@@ -23,6 +23,7 @@ import {
   Gauge,
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
+import { DEFAULT_SOUNDTRACK_AUDIO_URL } from '../../types';
 
 export interface SoundtrackItem {
   id: string;
@@ -195,7 +196,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             duration: m.duration || '2:00',
             bpm: m.bpm || 90,
             mood: m.genre || 'Epic Focus',
-            audioUrl: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cinematic-time-lapse-115672.mp3',
+            audioUrl: m.audioUrl || DEFAULT_SOUNDTRACK_AUDIO_URL,
           }));
 
           if (apiTracks.length > 0) {

@@ -85,6 +85,7 @@ interface VideoPreviewPaneProps {
   exportDuration?: number;
   exportFileName?: string;
   audioElement?: HTMLAudioElement | null;
+  audioOutputStream?: MediaStream | null;
   onExportComplete?: (error?: string) => void;
 }
 
@@ -156,6 +157,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   exportDuration = 30,
   exportFileName = 'apexmind-video',
   audioElement,
+  audioOutputStream,
   onExportComplete,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -251,7 +253,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           captureStream?: () => MediaStream;
           mozCaptureStream?: () => MediaStream;
         }) | null | undefined;
-        const audioStream = captureAudio?.captureStream?.() ?? captureAudio?.mozCaptureStream?.();
+        const audioStream = audioOutputStream ?? captureAudio?.captureStream?.() ?? captureAudio?.mozCaptureStream?.();
         audioStream?.getAudioTracks().forEach((track) => outputStream?.addTrack(track));
 
         const chunks: BlobPart[] = [];
@@ -313,7 +315,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       if (recorder?.state === 'recording') recorder.stop();
       outputStream?.getTracks().forEach((track) => track.stop());
     };
-  }, [audioElement, canvasAspectRatio, exportDuration, exportFileName, isExporting, onExportComplete]);
+  }, [audioElement, audioOutputStream, canvasAspectRatio, exportDuration, exportFileName, isExporting, onExportComplete]);
 
   useEffect(() => {
     const handleTimelineState = (e: Event) => {
@@ -621,6 +623,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               onTogglePlay();
             }
           }}
+          id="apex-video-canvas-container"
           className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-all duration-300 cursor-pointer focus:outline-none`}
           tabIndex={-1}
           style={{

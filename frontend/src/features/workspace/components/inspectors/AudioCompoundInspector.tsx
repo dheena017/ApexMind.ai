@@ -52,6 +52,12 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   const [fadeOut, setFadeOut] = useState(0.0);
   const [noiseReduction, setNoiseReduction] = useState(false);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('workspace:audio-effects-change', {
+      detail: { audioType, fadeIn, fadeOut, noiseReduction },
+    }));
+  }, [audioType, fadeIn, fadeOut, noiseReduction]);
+
   // Format mm:ss.ms
   const formatTimeDigital = (seconds: number) => {
     const m = Math.floor(seconds / 60);

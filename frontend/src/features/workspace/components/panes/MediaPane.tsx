@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+import * as htmlToImage from 'html-to-image';
+import { motion, AnimatePresence } from 'motion/react';
+import confetti from 'canvas-confetti';
 import {
   Upload,
   FolderOpen,
@@ -222,22 +225,42 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   };
 
   const handleCaptureSnapshot = async () => {
-    if (!onCaptureCanvasSnapshot) return;
     try {
       setIsCapturing(true);
-      const snapshotUrl = await onCaptureCanvasSnapshot();
+      let snapshotUrl: string | null = null;
+      if (onCaptureCanvasSnapshot) {
+        snapshotUrl = await onCaptureCanvasSnapshot();
+      }
+      if (!snapshotUrl) {
+        const node = document.getElementById('apex-video-canvas-container');
+        if (node) {
+          snapshotUrl = await htmlToImage.toPng(node, {
+            quality: 0.95,
+            pixelRatio: 2,
+          });
+        }
+      }
       if (snapshotUrl) {
         const newItem: UploadedMediaItem = {
           id: `snapshot-${Date.now()}`,
-          name: `Canvas Snapshot ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+          name: `Canvas Frame ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
           url: snapshotUrl,
           type: 'image',
-          size: 'Snapshot',
+          size: 'Snapshot PNG',
           createdAt: Date.now(),
         };
         const updated = [newItem, ...mediaItems];
         persistItems(updated);
+        try {
+          confetti({
+            particleCount: 35,
+            spread: 55,
+            origin: { y: 0.75 },
+          });
+        } catch {}
       }
+    } catch (err) {
+      console.error('Snapshot failed:', err);
     } finally {
       setIsCapturing(false);
     }
@@ -481,12 +504,15 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                   const isSelected = activeMediaUrl === item.url || appliedId === item.id;
 
                   return (
-                    <div
+                    <motion.div
                       key={item.id}
                       onClick={() => handleApplyItem(item)}
+                      whileHover={{ scale: 1.025, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                       className={`group relative rounded-xl border overflow-hidden aspect-[9/13] bg-[#1C1C20] transition-all cursor-pointer flex flex-col justify-end text-left ${
                         isSelected
-                          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
+                          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg shadow-[#3B82F6]/20'
                           : 'border-[#2A2A30] hover:border-[#3A3A42]'
                       }`}
                     >
@@ -560,7 +586,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                           <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>

@@ -51,6 +51,8 @@ export interface StudioControlsPaneProps {
   onPlaybackRateChange?: (rate: number) => void;
   volume?: number;
   onVolumeChange?: (volume: number) => void;
+  musicVolume?: number;
+  onMusicVolumeChange?: (volume: number) => void;
   category?: string;
   customImageUrl?: string;
   customVideoUrl?: string;
@@ -88,6 +90,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   onPlaybackRateChange,
   volume = 1,
   onVolumeChange,
+  musicVolume,
+  onMusicVolumeChange,
   category,
   customImageUrl,
   customVideoUrl,
@@ -292,8 +296,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             musicTracks={musicTracks}
             selectedMusic={selectedMusic}
             onSelectMusic={onSelectMusic}
-            volume={volume}
-            onVolumeChange={onVolumeChange}
+            volume={activeCompound === 'music' ? musicVolume ?? volume : volume}
+            onVolumeChange={activeCompound === 'music' ? onMusicVolumeChange || onVolumeChange : onVolumeChange}
             playbackRate={playbackRate}
             onPlaybackRateChange={onPlaybackRateChange}
             duration={duration}

@@ -1,4 +1,6 @@
 import React, { useRef, useState } from 'react';
+import confetti from 'canvas-confetti';
+import { motion } from 'motion/react';
 import {
   Volume2,
   Edit2,
@@ -559,14 +561,17 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
                     downloadFile(
                       generateSrt(),
                       `${(script.title || 'subtitles').replace(/\s+/g, '_')}.srt`,
                       'text/plain'
-                    )
-                  }
-                  className="bg-[#2A2A32] hover:bg-[#34343E] text-white rounded-xl py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 border border-[#3A3A44]"
+                    );
+                    try {
+                      confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
+                    } catch {}
+                  }}
+                  className="bg-[#2A2A32] hover:bg-[#34343E] text-white rounded-xl py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 border border-[#3A3A44] cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5 text-[#60A5FA]" />
                   Download .SRT
@@ -574,14 +579,17 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
 
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
                     downloadFile(
                       generateVtt(),
                       `${(script.title || 'subtitles').replace(/\s+/g, '_')}.vtt`,
                       'text/vtt'
-                    )
-                  }
-                  className="bg-[#2A2A32] hover:bg-[#34343E] text-white rounded-xl py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 border border-[#3A3A44]"
+                    );
+                    try {
+                      confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
+                    } catch {}
+                  }}
+                  className="bg-[#2A2A32] hover:bg-[#34343E] text-white rounded-xl py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 border border-[#3A3A44] cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5 text-[#10B981]" />
                   Download .VTT
@@ -594,9 +602,12 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                   const fullText = `TITLE: ${script.title}\n\nHOOK: ${script.hook}\n\nQUOTE: ${script.quote}\n\nCTA: ${script.cta}\n\nTAGS: ${(script.hashtags || []).join(' ')}`;
                   navigator.clipboard.writeText(fullText);
                   setCopyState(true);
+                  try {
+                    confetti({ particleCount: 35, spread: 60, origin: { y: 0.7 } });
+                  } catch {}
                   setTimeout(() => setCopyState(false), 1500);
                 }}
-                className="mt-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-[#3B82F6]/20"
+                className="mt-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-[#3B82F6]/20 cursor-pointer"
               >
                 {copyState ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copyState ? 'Copied Full Script to Clipboard' : 'Copy Full Script'}

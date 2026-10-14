@@ -22,11 +22,15 @@ export interface MusicTrack {
   title: string;
   genre: string;
   duration: string;
+  audioUrl?: string;
   bpm: number;
   copyrightFree: boolean;
   license: string;
   frequencyData: number[];
 }
+
+export const DEFAULT_SOUNDTRACK_AUDIO_URL =
+  'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cinematic-time-lapse-115672.mp3';
 
 export interface VisualBackdrop {
   id: string;

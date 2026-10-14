@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Wand2,
   Sparkles,
@@ -423,10 +425,18 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 {PROMPT_INSPIRATION_SEEDS.map((seed, idx) => {
                   const Icon = seed.icon;
                   return (
-                    <button
+                    <motion.button
                       key={idx}
                       type="button"
-                      onClick={() => onPromptChange(seed.prompt)}
+                      whileHover={{ scale: 1.025, y: -1 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                      onClick={() => {
+                        onPromptChange(seed.prompt);
+                        try {
+                          confetti({ particleCount: 20, spread: 40, origin: { y: 0.6 } });
+                        } catch {}
+                      }}
                       className="p-2.5 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all text-left flex flex-col gap-1 cursor-pointer group"
                     >
                       <div className="flex items-center gap-1.5 text-[#60A5FA]">
@@ -438,7 +448,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                       <span className="text-[9px] text-[#A1A1AA] line-clamp-2">
                         {seed.prompt}
                       </span>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
@@ -583,7 +593,16 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       {/* ── Bottom Action Footer ── */}
       <div className="p-4 border-t border-[#26262B] bg-[#17171A] shrink-0">
         <Button
-          onClick={onRunAgent}
+          onClick={() => {
+            try {
+              confetti({
+                particleCount: 45,
+                spread: 60,
+                origin: { y: 0.8 },
+              });
+            } catch {}
+            onRunAgent();
+          }}
           disabled={loadingAgent}
           className="w-full bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-[#3B82F6]/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
         >

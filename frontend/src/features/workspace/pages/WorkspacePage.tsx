@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { workspaceApi } from '../api/workspaceApi';
 import { videosApi } from '@/src/features/videos/api/videosApi';
-import { GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
+import { DEFAULT_SOUNDTRACK_AUDIO_URL, GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { VideoPreviewPane } from '../components/VideoPreview';
 import { StudioControlsPane, CompoundType } from '../components/StudioControlsPane';
@@ -94,6 +94,7 @@ export default function WorkspacePage({
 
   // Audio Playback Engine
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [musicVolume, setMusicVolume] = useState(0.35);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -102,18 +103,182 @@ export default function WorkspacePage({
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isLooping, setIsLooping] = useState(true);
+  const [voiceFadeSettings, setVoiceFadeSettings] = useState({ fadeIn: 0, fadeOut: 0 });
+  const [musicFadeSettings, setMusicFadeSettings] = useState({ fadeIn: 0, fadeOut: 0 });
+  const [noiseReduction, setNoiseReduction] = useState(false);
+  const [audioOutputStream, setAudioOutputStream] = useState<MediaStream | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioProcessingGraphRef = useRef<{
+    context: AudioContext;
+    source: MediaElementAudioSourceNode;
+    musicSource: MediaElementAudioSourceNode | null;
+    highPass: BiquadFilterNode;
+    lowPass: BiquadFilterNode;
+    gain: GainNode;
+    musicGain: GainNode;
+    destination: MediaStreamAudioDestinationNode;
+  } | null>(null);
   const isExportingRef = useRef(false);
   const wasLoopingBeforeExportRef = useRef(true);
+
+  const ensureAudioProcessingGraph = useCallback(() => {
+    if (audioProcessingGraphRef.current) return audioProcessingGraphRef.current;
+    const audio = audioRef.current;
+    if (!audio || typeof window.AudioContext === 'undefined') return null;
+
+    try {
+      const context = new AudioContext();
+      const source = context.createMediaElementSource(audio);
+      const highPass = context.createBiquadFilter();
+      const lowPass = context.createBiquadFilter();
+      const gain = context.createGain();
+      const musicGain = context.createGain();
+      const destination = context.createMediaStreamDestination();
+      highPass.type = 'highpass';
+      lowPass.type = 'lowpass';
+      highPass.frequency.value = 80;
+      lowPass.frequency.value = 11_000;
+      source.connect(highPass);
+      highPass.connect(lowPass);
+      lowPass.connect(gain);
+      gain.connect(context.destination);
+      gain.connect(destination);
+      musicGain.connect(context.destination);
+      musicGain.connect(destination);
+      audioProcessingGraphRef.current = {
+        context,
+        source,
+        musicSource: null,
+        highPass,
+        lowPass,
+        gain,
+        musicGain,
+        destination,
+      };
+      setAudioOutputStream(destination.stream);
+      return audioProcessingGraphRef.current;
+    } catch (error) {
+      consoleLogger.error('Audio', 'Could not initialize the audio processing graph:', error);
+      return null;
+    }
+  }, []);
+
+  const ensureMusicAudioGraph = useCallback(() => {
+    const graph = ensureAudioProcessingGraph();
+    const musicAudio = musicAudioRef.current;
+    if (!graph || !musicAudio) return null;
+    if (!graph.musicSource) {
+      graph.musicSource = graph.context.createMediaElementSource(musicAudio);
+      graph.musicSource.connect(graph.musicGain);
+    }
+    return graph;
+  }, [ensureAudioProcessingGraph]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.volume = volume;
-    audio.muted = isMuted;
+    const trackDuration = duration > 0 ? duration : timelineDuration;
+    const fadeInGain = voiceFadeSettings.fadeIn > 0
+      ? Math.min(1, currentTime / voiceFadeSettings.fadeIn)
+      : 1;
+    const fadeOutGain = voiceFadeSettings.fadeOut > 0
+      ? Math.min(1, Math.max(0, (trackDuration - currentTime) / voiceFadeSettings.fadeOut))
+      : 1;
+    const effectiveGain = isMuted ? 0 : volume * Math.min(fadeInGain, fadeOutGain);
+    const graph = audioProcessingGraphRef.current;
+    if (graph) {
+      audio.volume = 1;
+      audio.muted = false;
+      graph.gain.gain.setTargetAtTime(effectiveGain, graph.context.currentTime, 0.02);
+      graph.highPass.frequency.setTargetAtTime(noiseReduction ? 100 : 10, graph.context.currentTime, 0.05);
+      graph.lowPass.frequency.setTargetAtTime(noiseReduction ? 10_000 : 20_000, graph.context.currentTime, 0.05);
+    } else {
+      audio.volume = effectiveGain;
+      audio.muted = isMuted;
+    }
     audio.playbackRate = playbackRate;
-  }, [isMuted, playbackRate, volume]);
+    if (isPlaying && graph?.context.state === 'suspended') void graph.context.resume();
+  }, [currentTime, duration, isMuted, isPlaying, noiseReduction, playbackRate, timelineDuration, volume, voiceFadeSettings]);
+
+  useEffect(() => {
+    const handleAudioEffects = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        audioType: 'voice' | 'music';
+        fadeIn: number;
+        fadeOut: number;
+        noiseReduction: boolean;
+      }>).detail;
+      if (detail?.audioType === 'voice') {
+        setVoiceFadeSettings({ fadeIn: detail.fadeIn, fadeOut: detail.fadeOut });
+        setNoiseReduction(detail.noiseReduction);
+        if (detail.noiseReduction) {
+          const graph = ensureAudioProcessingGraph();
+          if (graph?.context.state === 'suspended') void graph.context.resume();
+        }
+      } else if (detail?.audioType === 'music') {
+        setMusicFadeSettings({ fadeIn: detail.fadeIn, fadeOut: detail.fadeOut });
+      }
+    };
+    window.addEventListener('workspace:audio-effects-change', handleAudioEffects);
+    return () => window.removeEventListener('workspace:audio-effects-change', handleAudioEffects);
+  }, [ensureAudioProcessingGraph]);
+
+  useEffect(() => {
+    const musicAudio = musicAudioRef.current;
+    if (!musicAudio) return;
+    const selectedTrack = musicTracks.find((track) => track.id === selectedMusic);
+    const sourceUrl = selectedTrack
+      ? selectedTrack.audioUrl || DEFAULT_SOUNDTRACK_AUDIO_URL
+      : '';
+    if (!sourceUrl) {
+      musicAudio.pause();
+      musicAudio.removeAttribute('src');
+      musicAudio.load();
+      return;
+    }
+
+    if (musicAudio.src !== new URL(sourceUrl, window.location.href).href) {
+      musicAudio.src = sourceUrl;
+      musicAudio.load();
+    }
+    const graph = ensureMusicAudioGraph();
+    if (graph?.context.state === 'suspended') void graph.context.resume();
+  }, [ensureMusicAudioGraph, musicTracks, selectedMusic]);
+
+  useEffect(() => {
+    const musicAudio = musicAudioRef.current;
+    if (!musicAudio || !selectedMusic) return;
+    const totalDuration = duration > 0 ? duration : timelineDuration;
+    const fadeInGain = musicFadeSettings.fadeIn > 0
+      ? Math.min(1, currentTime / musicFadeSettings.fadeIn)
+      : 1;
+    const fadeOutGain = musicFadeSettings.fadeOut > 0
+      ? Math.min(1, Math.max(0, (totalDuration - currentTime) / musicFadeSettings.fadeOut))
+      : 1;
+    const graph = audioProcessingGraphRef.current;
+    if (graph?.musicSource) {
+      musicAudio.volume = 1;
+      graph.musicGain.gain.setTargetAtTime(musicVolume * Math.min(fadeInGain, fadeOutGain), graph.context.currentTime, 0.02);
+    } else {
+      musicAudio.volume = musicVolume * Math.min(fadeInGain, fadeOutGain);
+    }
+    musicAudio.playbackRate = playbackRate;
+    if (Math.abs(musicAudio.currentTime - currentTime) > 0.5 && Number.isFinite(musicAudio.duration)) {
+      musicAudio.currentTime = Math.min(currentTime, musicAudio.duration);
+    }
+    if (isPlaying && musicAudio.paused) musicAudio.play().catch(() => {});
+    if (!isPlaying && !musicAudio.paused) musicAudio.pause();
+  }, [currentTime, duration, isPlaying, musicFadeSettings, musicVolume, playbackRate, selectedMusic, timelineDuration]);
+
+  useEffect(() => () => {
+    const graph = audioProcessingGraphRef.current;
+    if (!graph) return;
+    graph.destination.stream.getTracks().forEach((track) => track.stop());
+    void graph.context.close();
+    audioProcessingGraphRef.current = null;
+  }, []);
 
   const handleVideoExportComplete = useCallback((error?: string) => {
     if (!isExportingRef.current) return;
@@ -599,6 +764,7 @@ export default function WorkspacePage({
     <div className="w-full h-auto min-h-full lg:h-full flex flex-col min-h-0 font-sans-studio select-none gap-2">
       {/* Hidden Audio Element */}
       <audio ref={audioRef} className="hidden" preload="auto" />
+      <audio ref={musicAudioRef} className="hidden" preload="auto" crossOrigin="anonymous" loop />
 
       {/* ── Tri-Pane Studio Layout (Left: AI Prompt/Script, Center: Video Preview, Right: Inspiration Studio) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-1 h-auto min-h-0 flex-1 lg:h-full overflow-hidden">
@@ -864,6 +1030,7 @@ export default function WorkspacePage({
               onToggleLoop={() => setIsLooping((prev) => !prev)}
               audioUrl={audioUrl}
               audioElement={audioRef.current}
+              audioOutputStream={audioOutputStream}
               isExporting={isExporting}
               exportDuration={Math.max(duration, timelineDuration)}
               exportFileName={script.title || 'apexmind-video'}
@@ -925,6 +1092,8 @@ export default function WorkspacePage({
               onPlaybackRateChange={setPlaybackRate}
               volume={volume}
               onVolumeChange={handleVolumeChange}
+              musicVolume={musicVolume}
+              onMusicVolumeChange={setMusicVolume}
               category={category}
               customImageUrl={customBackdropImage}
               customVideoUrl={customBackdropVideo}
