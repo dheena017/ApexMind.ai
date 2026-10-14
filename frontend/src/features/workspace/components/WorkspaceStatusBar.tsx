@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Radio,
   Layers,
+  Search,
 } from 'lucide-react';
 import { useWorkspaceNotifications } from '../hooks/useWorkspaceNotifications';
 import { WorkspaceNotification, WorkspaceNotificationCategory } from '../types';
@@ -80,7 +81,8 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
   workspaceStatus,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'script' | 'voice' | 'autosave'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'script' | 'voice' | 'media' | 'autosave' | 'export'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -90,6 +92,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
     markRead,
     markAllRead,
     removeNotification,
+    clearRead,
     clearAll,
     notify,
   } = useWorkspaceNotifications();
@@ -120,10 +123,21 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
   }, [isOpen]);
 
   const filteredNotifications = notifications.filter((item) => {
-    if (filter === 'unread') return !item.read;
-    if (filter === 'script') return item.category === 'script';
-    if (filter === 'voice') return item.category === 'voice';
-    if (filter === 'autosave') return item.category === 'autosave';
+    if (filter === 'unread' && item.read) return false;
+    if (filter === 'script' && item.category !== 'script') return false;
+    if (filter === 'voice' && item.category !== 'voice') return false;
+    if (filter === 'media' && item.category !== 'media') return false;
+    if (filter === 'autosave' && item.category !== 'autosave') return false;
+    if (filter === 'export' && item.category !== 'export') return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = item.title.toLowerCase().includes(q);
+      const matchMsg = item.message.toLowerCase().includes(q);
+      const matchCat = item.category.toLowerCase().includes(q);
+      if (!matchTitle && !matchMsg && !matchCat) return false;
+    }
+
     return true;
   });
 
@@ -157,7 +171,6 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
     <>
       {/* =========================================================================
           WORKSPACE BOTTOM STATUS & NOTIFICATION BAR
-          Matches ApexMind Studio Design System: #0D0D0D, #2F2F2F, #3B82F6, #E5E5E5
           ========================================================================= */}
       <footer className="h-6 shrink-0 border-t border-[#2F2F2F] bg-[#0D0D0D] px-2.5 sm:px-3 flex items-center justify-between gap-2.5 font-mono-studio text-[9px] text-[#9CA3AF] select-none z-30 relative">
         {/* Left: Studio Metrics & Context */}
@@ -276,12 +289,11 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
 
       {/* =========================================================================
           WORKSPACE NOTIFICATION CENTER POPOVER TRAY
-          Strictly following Website Design System (#141414, #2F2F2F, #3B82F6)
           ========================================================================= */}
       {isOpen && (
         <div
           ref={popoverRef}
-          className="fixed bottom-7 right-2 sm:right-3 w-[calc(100vw-16px)] sm:w-96 max-h-[480px] bg-[#141414] border border-[#2F2F2F] rounded-2xl z-50 flex flex-col overflow-hidden font-sans-studio shadow-2xl"
+          className="fixed bottom-7 right-2 sm:right-3 w-[calc(100vw-16px)] sm:w-96 max-h-[500px] bg-[#141414] border border-[#2F2F2F] rounded-2xl z-50 flex flex-col overflow-hidden font-sans-studio shadow-2xl"
           role="dialog"
           aria-label="Workspace Notification Center"
         >
@@ -293,14 +305,14 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs font-bold text-[#E5E5E5] tracking-wide">Workspace Alerts</h3>
+                  <h3 className="text-xs font-bold text-[#E5E5E5] tracking-wide">Workspace Production Alerts</h3>
                   {unreadCount > 0 && (
                     <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
                       {unreadCount} unread
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-[#6B7280]">Timeline • Vocal • Media • Render Events</p>
+                <p className="text-[10px] text-[#6B7280]">AI Scripts • Audio • Media • Timeline • Renders</p>
               </div>
             </div>
 
@@ -313,6 +325,16 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                   title="Mark all as read"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {notifications.some((n) => n.read) && (
+                <button
+                  type="button"
+                  onClick={clearRead}
+                  className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer text-[10px]"
+                  title="Clear read items"
+                >
+                  Clear Read
                 </button>
               )}
               {notifications.length > 0 && (
@@ -336,15 +358,38 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
             </div>
           </div>
 
+          {/* Search Bar */}
+          <div className="px-3 py-1.5 border-b border-[#2F2F2F] bg-[#101010] flex items-center gap-2 shrink-0">
+            <Search className="w-3.5 h-3.5 text-[#6B7280] shrink-0" />
+            <input
+              type="text"
+              placeholder="Filter notifications (e.g., Fenrir, 9:16, Script, Export)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-transparent text-[11px] text-[#E5E5E5] placeholder-[#6B7280] outline-none"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-[#6B7280] hover:text-[#E5E5E5] p-0.5 rounded cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
           {/* Filter Pills */}
           <div className="px-3.5 py-2 border-b border-[#2F2F2F] bg-[#101010] flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
             {(
               [
-                { id: 'all', label: 'All' },
+                { id: 'all', label: `All (${notifications.length})` },
                 { id: 'unread', label: `Unread (${unreadCount})` },
                 { id: 'script', label: 'AI Script' },
                 { id: 'voice', label: 'Voices' },
+                { id: 'media', label: 'Media' },
                 { id: 'autosave', label: 'Auto-Save' },
+                { id: 'export', label: 'Exports' },
               ] as const
             ).map((tab) => (
               <button
@@ -363,13 +408,15 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
           </div>
 
           {/* Notifications Scroll List */}
-          <div className="flex-1 overflow-y-auto p-2.5 space-y-2 max-h-[320px] scrollbar-thin scrollbar-thumb-[#2F2F2F]">
+          <div className="flex-1 overflow-y-auto p-2.5 space-y-2 max-h-[300px] scrollbar-thin scrollbar-thumb-[#2F2F2F]">
             {filteredNotifications.length === 0 ? (
               <div className="py-8 px-4 text-center">
                 <CheckCircle2 className="w-7 h-7 mx-auto mb-2 text-[#4A4A4A]" />
-                <p className="text-xs font-semibold text-[#E5E5E5]">No notifications</p>
+                <p className="text-xs font-semibold text-[#E5E5E5]">No notifications found</p>
                 <p className="text-[10px] text-[#6B7280] mt-0.5">
-                  {filter === 'unread'
+                  {searchQuery
+                    ? 'No workspace events match your search query.'
+                    : filter === 'unread'
                     ? 'All workspace events have been read.'
                     : 'Workspace pipeline is operating smoothly.'}
                 </p>
@@ -454,28 +501,64 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
             )}
           </div>
 
-          {/* Footer Diagnostic Tools */}
-          <div className="p-2.5 px-4 border-t border-[#2F2F2F] bg-[#101010] flex items-center justify-between text-[10px] text-[#6B7280] font-mono-studio shrink-0">
+          {/* Footer Diagnostic & Quick Event Emitters */}
+          <div className="p-2.5 px-4 border-t border-[#2F2F2F] bg-[#101010] flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#6B7280] font-mono-studio shrink-0">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-              Auto-Save Active
+              Auto-Save Sync Active
             </span>
-            <button
-              type="button"
-              onClick={() => {
-                notify({
-                  title: 'Manual Test Event',
-                  message: `Studio diagnostic broadcast sent at ${new Date().toLocaleTimeString()}.`,
-                  category: 'script',
-                  type: 'ai',
-                  targetPane: 'editor',
-                  actionLabel: 'View Script',
-                });
-              }}
-              className="text-[#9CA3AF] hover:text-[#60A5FA] hover:underline cursor-pointer"
-            >
-              + Emit Test Event
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  notify({
+                    title: 'Voiceover Synthesized',
+                    message: '24kHz vocal profile Fenrir synthesized for current script hook.',
+                    category: 'voice',
+                    type: 'success',
+                    targetPane: 'audio',
+                    actionLabel: 'Audio Settings',
+                  });
+                }}
+                className="text-[#9CA3AF] hover:text-[#60A5FA] hover:underline cursor-pointer"
+              >
+                + Voice
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  notify({
+                    title: 'Render Completed',
+                    message: 'Hardware encoder completed 1080x1920 MP4 rendering at 60FPS.',
+                    category: 'export',
+                    type: 'render',
+                    targetPane: 'canvas',
+                    actionLabel: 'Preview',
+                  });
+                }}
+                className="text-[#9CA3AF] hover:text-[#60A5FA] hover:underline cursor-pointer"
+              >
+                + Render
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  notify({
+                    title: 'Aspect Ratio: 9:16',
+                    message: 'Viewport adjusted to 9:16 Vertical Short format.',
+                    category: 'media',
+                    type: 'info',
+                    targetPane: 'canvas',
+                    actionLabel: 'Canvas',
+                  });
+                }}
+                className="text-[#9CA3AF] hover:text-[#60A5FA] hover:underline cursor-pointer"
+              >
+                + Layout
+              </button>
+            </div>
           </div>
         </div>
       )}

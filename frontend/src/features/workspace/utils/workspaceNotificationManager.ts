@@ -1,52 +1,118 @@
 import { WorkspaceNotification, WorkspaceNotificationCategory, WorkspaceNotificationType } from '../types';
 
-const STORAGE_KEY = 'apexmind_workspace_notifications_v1';
-const MAX_NOTIFICATIONS = 50;
+const STORAGE_KEY = 'apexmind_workspace_notifications_v2';
+const MAX_NOTIFICATIONS = 60;
 
 const DEFAULT_WORKSPACE_NOTIFICATIONS: WorkspaceNotification[] = [
   {
     id: 'wn-init-1',
-    title: 'AI Script Engine Active',
-    message: 'Google Gemini 2.5 Flash neural model loaded and ready for high-retention script generation.',
+    title: 'AI Script Engine Ready',
+    message: 'Gemini 2.5 Flash neural model loaded with viral hook retention optimization (94.2% predicted score).',
     category: 'script',
     type: 'ai',
-    timestamp: new Date(Date.now() - 1000 * 60 * 3).toISOString(),
+    timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
     read: false,
     targetPane: 'editor',
     actionLabel: 'Open Script',
   },
   {
     id: 'wn-init-2',
-    title: 'Studio Vocal Profiles Loaded',
-    message: '24kHz HD neural vocal engines ready (Fenrir, Kore, Puck, Zephyr, Charon).',
+    title: '24kHz HD Vocal Profiles Active',
+    message: 'High-definition vocal engine synchronized with Fenrir (Stoic Leader, 0.95x speed) as default voice.',
     category: 'voice',
     type: 'success',
-    timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+    timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
     read: false,
     targetPane: 'audio',
     actionLabel: 'View Voices',
   },
   {
     id: 'wn-init-3',
-    title: 'Auto-Save Snapshot Synchronized',
-    message: 'Workspace draft, visual backdrops, and active timeline state saved to local storage.',
-    category: 'autosave',
+    title: 'Vertical 9:16 Backdrop Selected',
+    message: 'UHD 1080x1920 video backdrop "Dark Mountain Dawn" loaded with cinematic depth filter.',
+    category: 'media',
     type: 'info',
-    timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-    read: true,
+    timestamp: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+    read: false,
     targetPane: 'canvas',
-    actionLabel: 'Inspect Canvas',
+    actionLabel: 'Canvas View',
   },
   {
     id: 'wn-init-4',
-    title: 'Vertical 9:16 Media Catalog Connected',
-    message: 'Curated 1080x1920 cinematic visual backdrops and royalty-free soundtracks available.',
-    category: 'media',
+    title: 'Audio Ducking & SFX Synced',
+    message: 'Soundtrack auto-ducked to -18dB during voiceover intervals. Swoosh transition cue added at 00:03.',
+    category: 'voice',
     type: 'info',
+    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    read: true,
+    targetPane: 'audio',
+    actionLabel: 'Audio Settings',
+  },
+  {
+    id: 'wn-init-5',
+    title: 'Kinetic Subtitles Preset Applied',
+    message: 'Bold Impact subtitle cue cards generated with safe margin boundaries for YouTube Shorts and TikTok.',
+    category: 'script',
+    type: 'success',
     timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     read: true,
-    targetPane: 'media',
-    actionLabel: 'Browse Media',
+    targetPane: 'text',
+    actionLabel: 'Text Styling',
+  },
+  {
+    id: 'wn-init-6',
+    title: 'Auto-Save Snapshot Synchronized',
+    message: 'Workspace project draft #14 saved to browser local store. Quote memory deduplication verified.',
+    category: 'autosave',
+    type: 'info',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    read: true,
+    targetPane: 'canvas',
+    actionLabel: 'Inspect',
+  },
+  {
+    id: 'wn-init-7',
+    title: 'Visual Overlay Element Attached',
+    message: 'Dynamic audio spectrum visualizer attached to the lower canvas layer.',
+    category: 'media',
+    type: 'info',
+    timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+    read: true,
+    targetPane: 'elements',
+    actionLabel: 'View Elements',
+  },
+  {
+    id: 'wn-init-8',
+    title: 'Timeline Duration Clamped: 00:30',
+    message: 'Target short duration set to 30.0s with seamless loop repeat enabled.',
+    category: 'timeline',
+    type: 'info',
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    read: true,
+    targetPane: 'canvas',
+    actionLabel: 'Timeline',
+  },
+  {
+    id: 'wn-init-9',
+    title: 'Hardware MP4 Encoder Ready',
+    message: '60FPS hardware-accelerated rendering pipeline ready for instant short video export.',
+    category: 'export',
+    type: 'render',
+    timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+    read: true,
+    targetPane: 'canvas',
+    actionLabel: 'Export Video',
+  },
+  {
+    id: 'wn-init-10',
+    title: 'YouTube Creator Channel Linked',
+    message: 'Connected channel @ApexMindStudio verified for direct publishing.',
+    category: 'export',
+    type: 'success',
+    timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+    read: true,
+    targetPane: 'canvas',
+    actionLabel: 'Channel Info',
   },
 ];
 
@@ -131,6 +197,12 @@ export const deleteWorkspaceNotification = (id: string): void => {
   const current = getStoredWorkspaceNotifications();
   const updated = current.filter((n) => n.id !== id);
   persistWorkspaceNotifications(updated);
+};
+
+export const clearReadWorkspaceNotifications = (): void => {
+  const current = getStoredWorkspaceNotifications();
+  const unreadOnly = current.filter((n) => !n.read);
+  persistWorkspaceNotifications(unreadOnly);
 };
 
 export const clearAllWorkspaceNotifications = (): void => {

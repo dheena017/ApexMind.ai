@@ -6,6 +6,7 @@ import {
   markWorkspaceNotificationAsRead,
   markAllWorkspaceNotificationsAsRead,
   deleteWorkspaceNotification,
+  clearReadWorkspaceNotifications,
   clearAllWorkspaceNotifications,
 } from '../utils/workspaceNotificationManager';
 
@@ -52,6 +53,10 @@ export function useWorkspaceNotifications() {
     deleteWorkspaceNotification(id);
   }, []);
 
+  const clearRead = useCallback(() => {
+    clearReadWorkspaceNotifications();
+  }, []);
+
   const clearAll = useCallback(() => {
     clearAllWorkspaceNotifications();
   }, []);
@@ -63,6 +68,7 @@ export function useWorkspaceNotifications() {
     markRead,
     markAllRead,
     removeNotification,
+    clearRead,
     clearAll,
   };
 }

@@ -1303,6 +1303,14 @@ export default function WorkspacePage({
                   setCanvasAspectRatio(r);
                   setShowRightPane(true);
                   setActiveCompound('video');
+                  addWorkspaceNotification({
+                    title: `Canvas Aspect Ratio: ${r}`,
+                    message: `Studio viewport adjusted to ${r === '9:16' ? '9:16 Vertical Short (1080x1920)' : r}.`,
+                    category: 'media',
+                    type: 'info',
+                    targetPane: 'canvas',
+                    actionLabel: 'Canvas View',
+                  });
                 }}
                 background={canvasBackground}
                 onBackgroundChange={(bg) => {
@@ -1323,6 +1331,14 @@ export default function WorkspacePage({
                     setCustomBackdropImage(url);
                     setCustomBackdropVideo(undefined);
                   }
+                  addWorkspaceNotification({
+                    title: isVideo ? 'Dynamic Video Backdrop Applied' : 'Custom Image Backdrop Applied',
+                    message: 'Backdrop mapped to active 9:16 viewport layer.',
+                    category: 'media',
+                    type: 'info',
+                    targetPane: 'canvas',
+                    actionLabel: 'Preview',
+                  });
                 }}
                 onApplyAudio={(url) => {
                   setShowRightPane(true);
@@ -1333,6 +1349,14 @@ export default function WorkspacePage({
                     audioRef.current.play().catch(() => {});
                     setIsPlaying(true);
                   }
+                  addWorkspaceNotification({
+                    title: 'Custom Audio Loaded',
+                    message: 'Audio asset attached to active timeline soundtrack.',
+                    category: 'voice',
+                    type: 'info',
+                    targetPane: 'audio',
+                    actionLabel: 'Audio Settings',
+                  });
                 }}
                 activeMediaUrl={customBackdropVideo || customBackdropImage}
               />
@@ -1357,6 +1381,14 @@ export default function WorkspacePage({
                   setShowRightPane(true);
                   setActiveCompound('text');
                   setCaptionPreset({ className: p.className, color: p.color });
+                  addWorkspaceNotification({
+                    title: `Subtitle Preset Applied`,
+                    message: `Kinetic typography styling updated for subtitle cue cards.`,
+                    category: 'script',
+                    type: 'info',
+                    targetPane: 'text',
+                    actionLabel: 'Text Styling',
+                  });
                 }}
               />
             ) : activePane === 'elements' ? (
@@ -1368,6 +1400,14 @@ export default function WorkspacePage({
                   if (el.type === 'badge') {
                     setScript((prev) => ({ ...prev, title: prev.title ? `${el.value}: ${prev.title}` : el.value }));
                   }
+                  addWorkspaceNotification({
+                    title: `Overlay Added: ${el.name || el.type}`,
+                    message: 'Visual element attached to timeline canvas.',
+                    category: 'media',
+                    type: 'info',
+                    targetPane: 'elements',
+                    actionLabel: 'View Overlay',
+                  });
                 }}
               />
             ) : activePane === 'audio' ? (
@@ -1376,6 +1416,15 @@ export default function WorkspacePage({
                   setShowRightPane(true);
                   setActiveCompound('music');
                   setSelectedMusic(mId);
+                  const track = musicTracks.find((t) => t.id === mId);
+                  addWorkspaceNotification({
+                    title: 'Soundtrack Selected',
+                    message: track ? `Loaded "${track.title}" (${track.genre}, ${track.bpm} BPM).` : 'Soundtrack updated.',
+                    category: 'voice',
+                    type: 'info',
+                    targetPane: 'audio',
+                    actionLabel: 'Audio Settings',
+                  });
                 }}
                 selectedMusic={selectedMusic}
                 onAddSfxToTimeline={(sfx) => {
@@ -1388,6 +1437,15 @@ export default function WorkspacePage({
                     start: currentTime,
                   });
                   setShowTimeline(true);
+                  const formattedCurrentTime = `${Math.floor(currentTime / 60).toString().padStart(2, '0')}:${Math.floor(currentTime % 60).toString().padStart(2, '0')}`;
+                  addWorkspaceNotification({
+                    title: `SFX Cue: ${sfx.name}`,
+                    message: `Sound effect placed at timecode ${formattedCurrentTime}.`,
+                    category: 'voice',
+                    type: 'info',
+                    targetPane: 'audio',
+                    actionLabel: 'Audio Mixer',
+                  });
                 }}
                 onApplyRecordedVoice={(recordedUrl) => {
                   setShowRightPane(true);
@@ -1398,6 +1456,14 @@ export default function WorkspacePage({
                     audioRef.current.play().catch(() => {});
                     setIsPlaying(true);
                   }
+                  addWorkspaceNotification({
+                    title: 'Voice Recording Attached',
+                    message: 'Live voice recording synchronized with timeline.',
+                    category: 'voice',
+                    type: 'success',
+                    targetPane: 'audio',
+                    actionLabel: 'Voice Settings',
+                  });
                 }}
               />
             ) : activePane === 'image' ? (
