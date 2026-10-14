@@ -31,6 +31,11 @@ router = APIRouter(prefix="/api/studio-videos", tags=["Website Studio Videos"])
     summary="Get all website-created studio videos",
     description="Retrieve list of videos created and rendered by ApexMind AI Video Studio with cover images and metadata."
 )
+@router.get(
+    "/",
+    response_model=WebsiteVideoListResponse,
+    include_in_schema=False,
+)
 async def list_website_videos(
     category: Optional[str] = Query(None, description="Filter by category"),
     search: Optional[str] = Query(None, description="Search by title, quote, voice"),
@@ -56,6 +61,12 @@ async def list_website_videos(
     status_code=status.HTTP_201_CREATED,
     summary="Save a newly created website studio video",
     description="Stores a new video created in the AI Video Studio with cover image and audio track."
+)
+@router.post(
+    "/",
+    response_model=WebsiteVideoSchema,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 async def create_website_video_endpoint(payload: CreateWebsiteVideoRequest):
     try:

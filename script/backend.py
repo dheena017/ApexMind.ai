@@ -571,8 +571,7 @@ def main() -> int:
     if args.reload is not None:
         reload_enabled = args.reload
     else:
-        default_reload = "false" if os.name == "nt" else "true"
-        backend_reload = env.get("BACKEND_RELOAD", default_reload).strip().lower()
+        backend_reload = env.get("BACKEND_RELOAD", "true").strip().lower()
         reload_enabled = backend_reload != "false" and env.get("NODE_ENV", "development").strip().lower() != "production"
 
     log_level = args.log_level or (env.get("LOG_LEVEL") or env.get("LL") or "info").strip().lower()
