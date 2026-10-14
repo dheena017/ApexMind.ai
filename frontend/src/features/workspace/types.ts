@@ -88,3 +88,20 @@ export interface BackdropFilterSettings {
   grain: boolean;
   activeOverlay?: 'none' | 'equalizer' | 'particles' | 'badge';
 }
+
+export type WorkspaceNotificationType = 'info' | 'success' | 'warning' | 'error' | 'render' | 'ai';
+export type WorkspaceNotificationCategory = 'script' | 'voice' | 'media' | 'timeline' | 'export' | 'autosave' | 'general';
+
+export interface WorkspaceNotification {
+  id: string;
+  title: string;
+  message: string;
+  category: WorkspaceNotificationCategory;
+  type: WorkspaceNotificationType;
+  timestamp: string;
+  read: boolean;
+  targetPane?: string;
+  actionLabel?: string;
+  progress?: number;
+}
+

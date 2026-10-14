@@ -18,6 +18,7 @@ import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHeader';
 import { WorkspaceSidebar, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
+import { WorkspaceStatusBar } from '@/src/features/workspace/components/WorkspaceStatusBar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
 
 interface AppLayoutProps {
@@ -29,12 +30,6 @@ interface AppLayoutProps {
   unreadCount?: number;
 }
 
-const formatWorkspaceTime = (seconds: number) => {
-  const totalSeconds = Math.max(0, Math.floor(seconds || 0));
-  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-  const remainder = (totalSeconds % 60).toString().padStart(2, '0');
-  return `${minutes}:${remainder}`;
-};
 
 export default function AppLayout({
   children,
@@ -162,41 +157,13 @@ export default function AppLayout({
               </div>
             </main>
           </div>
-          <footer className="h-6 shrink-0 border-t border-[#26262B] bg-[#111114] px-2 sm:px-3 flex items-center justify-between gap-3 font-mono-studio text-[9px] text-[#8B8B94] select-none">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="hidden sm:inline truncate text-[#C4C4CC]">
-                {{
-                  script: 'AI Script Studio',
-                  prompt: 'AI Script Studio',
-                  editor: 'Script & Subtitles',
-                  canvas: 'Canvas',
-                  media: 'Media Library',
-                  text: 'Text & Titles',
-                  elements: 'Elements',
-                  audio: 'Audio & SFX',
-                  image: 'Stock Images',
-                  video: 'Stock Videos',
-                }[activeWorkspacePane] || 'Workspace'}
-              </span>
-              <span className="text-[#55555D]">{workspaceStatus.aspectRatio}</span>
-              <span className="hidden sm:inline tabular-nums">
-                {formatWorkspaceTime(workspaceStatus.currentTime)} / {formatWorkspaceTime(workspaceStatus.duration)}
-              </span>
-              {workspaceStatus.visual && <span className="hidden lg:inline max-w-24 truncate">V1 {workspaceStatus.visual}</span>}
-              {workspaceStatus.captionCount > 0 && <span className="hidden lg:inline">T1 {workspaceStatus.captionCount}</span>}
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="hidden lg:inline">{workspaceStatus.playbackRate}x</span>
-              <span className="hidden md:inline max-w-24 truncate">{workspaceStatus.voice}</span>
-              {workspaceStatus.music && <span className="hidden lg:inline max-w-28 truncate">{workspaceStatus.music}</span>}
-              {workspaceStatus.overlay && <span className="hidden xl:inline max-w-20 truncate">O1 {workspaceStatus.overlay}</span>}
-              {workspaceStatus.sfx && <span className="hidden xl:inline max-w-20 truncate">SFX {workspaceStatus.sfx}</span>}
-              <span className={`flex items-center gap-1 ${workspaceStatus.isExporting ? 'text-sky-400' : workspaceStatus.isPlaying ? 'text-emerald-400' : 'text-[#8B8B94]'}`}>
-                <CheckCircle2 className="w-3 h-3" />
-                {workspaceStatus.isExporting ? 'Exporting' : workspaceStatus.isPlaying ? 'Playing' : 'Paused'}
-              </span>
-            </div>
-          </footer>
+          <WorkspaceStatusBar
+            activePage={activePage}
+            onNavigate={onNavigate}
+            activeWorkspacePane={activeWorkspacePane}
+            onWorkspacePaneChange={onWorkspacePaneChange}
+            workspaceStatus={workspaceStatus}
+          />
         </>
       ) : (
         <>

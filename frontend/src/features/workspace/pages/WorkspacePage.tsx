@@ -23,6 +23,7 @@ import confetti from 'canvas-confetti';
 import { WorkspaceCommandPalette } from '../components/WorkspaceCommandPalette';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DEFAULT_CREATOR_PROFILE, getCreatorProfile } from '@/src/features/profile/api/profileApi';
+import { addWorkspaceNotification } from '../utils/workspaceNotificationManager';
 
 interface WorkspacePageProps {
   onNavigate: (page: string) => void;
@@ -324,6 +325,25 @@ export default function WorkspacePage({
         message: error || 'MP4 download started.',
       },
     }));
+    if (!error) {
+      addWorkspaceNotification({
+        title: 'Video Export Completed',
+        message: 'High-definition MP4 short rendered and downloaded successfully.',
+        category: 'export',
+        type: 'success',
+        targetPane: 'canvas',
+        actionLabel: 'Preview',
+      });
+    } else {
+      addWorkspaceNotification({
+        title: 'Video Export Failed',
+        message: error,
+        category: 'export',
+        type: 'error',
+        targetPane: 'canvas',
+        actionLabel: 'Retry',
+      });
+    }
   }, []);
 
   // Load Media Library & Quote Memory from live backend API
@@ -614,7 +634,15 @@ export default function WorkspacePage({
       toast.success('AI Script Generated!', {
         description: generated.title || 'Ready for studio editing',
       });
-      confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+
+      addWorkspaceNotification({
+        title: 'AI Script Generated',
+        message: `"${generated.title || 'Short'}" ready with ${generated.subtitles?.length || 0} cue points.`,
+        category: 'script',
+        type: 'ai',
+        targetPane: 'editor',
+        actionLabel: 'Review Script',
+      });
 
       // Automatically synthesize 24kHz voiceover with updated script
       handleSynthesizeVoice(generated, selectedVoice || generated.recommendedVoice || 'Fenrir');
@@ -622,6 +650,14 @@ export default function WorkspacePage({
       consoleLogger.error('Studio', 'Error generating script:', err);
       toast.error('Script generation failed', {
         description: err instanceof Error ? err.message : 'Please check connection',
+      });
+      addWorkspaceNotification({
+        title: 'Script Generation Failed',
+        message: err instanceof Error ? err.message : 'Please check API key or prompt parameters.',
+        category: 'script',
+        type: 'error',
+        targetPane: 'script',
+        actionLabel: 'Retry Prompt',
       });
     } finally {
       setLoadingAgent(false);
@@ -648,6 +684,14 @@ export default function WorkspacePage({
           audioRef.current.currentTime = 0;
           setCurrentTime(0);
         }
+        addWorkspaceNotification({
+          title: '24kHz Voiceover Synthesized',
+          message: `Vocal track rendered with voice profile '${voiceName}'.`,
+          category: 'voice',
+          type: 'success',
+          targetPane: 'audio',
+          actionLabel: 'Audio Settings',
+        });
       }
     } catch (err) {
       consoleLogger.error('Studio', 'Failed to generate voiceover:', err);
@@ -761,20 +805,23 @@ export default function WorkspacePage({
 
   // Publish to YouTube Shorts
   const handlePublish = async () => {
+    const publishTitle = script.title?.trim() || 'Untitled Short';
+    const publishQuote = script.quote?.trim() || script.hook?.trim() || script.cta?.trim() || 'ApexMind video';
+
     setPublishing(true);
-    consoleLogger.info('YouTube', `📤 Uploading video to YouTube Shorts: "${script.title}"`);
+    consoleLogger.info('YouTube', `📤 Uploading video to YouTube Shorts: "${publishTitle}"`);
     try {
       await workspaceApi.publishVideo({
-        title: script.title,
-        quote: script.quote,
+        title: publishTitle,
+        quote: publishQuote,
         voice: selectedVoice,
         visualTheme: selectedBackdrop,
         category,
       });
       // Also save to website video library automatically
       await videosApi.createVideo({
-        title: script.title,
-        quote: script.quote,
+        title: publishTitle,
+        quote: publishQuote,
         hook: script.hook || '',
         cta: script.cta || '',
         category,
@@ -794,7 +841,14 @@ export default function WorkspacePage({
       toast.success('Published video to YouTube!', {
         description: script.title || 'Live on YouTube',
       });
-      confetti({ particleCount: 75, spread: 80, origin: { y: 0.6 } });
+      addWorkspaceNotification({
+        title: 'Published to YouTube Shorts',
+        message: `"${script.title}" broadcast to connected YouTube channel.`,
+        category: 'export',
+        type: 'success',
+        targetPane: 'canvas',
+        actionLabel: 'View Preview',
+      });
       setTimeout(() => {
         onNavigate('youtube');
       }, 1500);
@@ -832,7 +886,14 @@ export default function WorkspacePage({
       });
       consoleLogger.success('Library', `✅ Saved "${script.title}" to Website Video Library`);
       toast.success(`Saved "${script.title}" to Video Library!`);
-      confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+      addWorkspaceNotification({
+        title: 'Saved to Video Library',
+        message: `"${script.title}" archived in website videos.`,
+        category: 'export',
+        type: 'success',
+        targetPane: 'media',
+        actionLabel: 'View Library',
+      });
       onNavigate('videos');
     } catch (err) {
       consoleLogger.error('Library', 'Save to library failed:', err);
@@ -855,7 +916,13 @@ export default function WorkspacePage({
       particleEffect: '',
     };
 
-  const canPublish = Boolean(script.title && script.quote);
+  const canPublish = Boolean(
+    script.title?.trim() ||
+    script.quote?.trim() ||
+    script.hook?.trim() ||
+    script.cta?.trim() ||
+    (Array.isArray(script.subtitles) && script.subtitles.some((subtitle) => subtitle.text?.trim()))
+  );
 
   // Panel layout visibility states
   const [showLeftPane, setShowLeftPane] = useState(true);
@@ -1095,6 +1162,14 @@ export default function WorkspacePage({
       window.dispatchEvent(new CustomEvent('workspace:export-state', {
         detail: { exporting: true, message: 'Rendering final video...' },
       }));
+      addWorkspaceNotification({
+        title: 'Export Render Started',
+        message: `Rendering 1080p short (${canvasAspectRatio}) with timeline audio...`,
+        category: 'export',
+        type: 'render',
+        targetPane: 'canvas',
+        actionLabel: 'Watch Render',
+      });
     };
     window.addEventListener('workspace:export-video', handleExportRequest);
     return () => window.removeEventListener('workspace:export-video', handleExportRequest);
