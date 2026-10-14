@@ -43,11 +43,20 @@ export const YouTubeAnalyticsPage: React.FC<YouTubeAnalyticsPageProps> = ({
 
   const isLoading = loading || loadingAnalytics;
 
+  const parseCount = (v: string | number | undefined): number => {
+    if (!v) return 0;
+    if (typeof v === 'number') return v;
+    const clean = v.toLowerCase().replace(/views?/g, '').trim();
+    if (clean.endsWith('k')) return Math.floor(parseFloat(clean) * 1000);
+    if (clean.endsWith('m')) return Math.floor(parseFloat(clean) * 1000000);
+    return parseInt(clean.replace(/\D/g, '') || '0', 10);
+  };
+
   // Real or derived view counts
   const totalViews =
     analytics?.totalViews ??
-    videos.reduce((acc, v) => acc + v.views, 0) +
-      liveVideos.reduce((acc, v) => acc + parseInt(v.views.replace(/\D/g, '') || '0', 10), 0);
+    (videos.reduce((acc, v) => acc + parseCount(v.views), 0) +
+      liveVideos.reduce((acc, v) => acc + parseCount(v.views), 0));
 
   const retention = analytics?.retentionRate ?? 86.4;
   const engagement = analytics?.engagementRate ?? 12.8;
@@ -85,14 +94,16 @@ export const YouTubeAnalyticsPage: React.FC<YouTubeAnalyticsPageProps> = ({
                   </span>
                 </h3>
                 <p className="text-xs text-[#9CA3AF]">
-                  Real-time algorithmic analytics for {activeChannel?.name || 'Emoji Eye Spy'} ({activeChannel?.handle || '@emoji-eye-spy'})
+                  {activeChannel
+                    ? `Real-time algorithmic analytics for ${activeChannel.name} (${activeChannel.handle})`
+                    : 'Real-time algorithmic analytics for your connected channel'}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="text-xs px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#60A5FA] font-mono-studio">
-                {(activeChannel?.subscribers ?? 72).toLocaleString()} Subscribers
+                {(activeChannel?.subscribers ?? 0).toLocaleString()} Subscribers
               </span>
             </div>
           </div>

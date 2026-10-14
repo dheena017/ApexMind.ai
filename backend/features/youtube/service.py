@@ -255,11 +255,10 @@ def publish_video_to_shorts(
             upload_result = upload_video_to_live_youtube(
                 video_path=video_file,
                 title=title,
-                quote=quote,
-                category=category,
+                description=quote,
                 tags=kwargs.get("tags"),
             )
-            real_video_id = upload_result.get("id")
+            real_video_id = upload_result.get("videoId") or upload_result.get("id")
             real_video_url = upload_result.get("videoUrl")
             live_uploaded = True
             logger.info(f"Live YouTube Short published successfully: {real_video_url}")

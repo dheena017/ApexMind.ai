@@ -5,12 +5,30 @@ import { dashboardApi } from '../api/dashboardApi';
 import { YouTubeChannel, YouTubeVideo } from '../types';
 import { videosApi } from '@/src/features/videos/api/videosApi';
 import { WebsiteVideo } from '@/src/features/videos/types';
+import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
+import { YouTubeIcon } from '@/src/features/youtube/components/YouTubeIcon';
 
 export default function DashboardPage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const [loading, setLoading] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [connectNotice, setConnectNotice] = useState<string | null>(null);
   const [channels, setChannels] = useState<YouTubeChannel[]>([]);
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const [websiteVideos, setWebsiteVideos] = useState<WebsiteVideo[]>([]);
+
+  const handleConnectWithGoogle = () => {
+    setConnectNotice(null);
+    connectYouTubeWithGoogle({
+      onLoading: setConnecting,
+      onSuccess: (ch: any) => {
+        setChannels([ch]);
+        setConnectNotice(`Channel "${ch.name}" connected successfully!`);
+      },
+      onError: (err) => {
+        setConnectNotice(err);
+      },
+    });
+  };
   const loadData = async () => {
     setLoading(true);
     try {
@@ -34,7 +52,16 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
     loadData();
   }, []);
 
-  const totalViews = videos.reduce((acc, v) => acc + v.views, 0);
+  const parseViews = (views: string | number | undefined): number => {
+    if (!views) return 0;
+    if (typeof views === 'number') return views;
+    const clean = views.toLowerCase().replace(/views?/g, '').trim();
+    if (clean.endsWith('k')) return parseFloat(clean) * 1000;
+    if (clean.endsWith('m')) return parseFloat(clean) * 1000000;
+    return parseFloat(clean.replace(/,/g, '')) || 0;
+  };
+
+  const totalViews = videos.reduce((acc, v) => acc + parseViews(v.views), 0);
 
   return (
     <div className="w-full space-y-8">
@@ -134,11 +161,20 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
             </div>
 
             {channels.length === 0 ? (
-              <div className="pt-6 pb-2 text-center text-[#9CA3AF] text-xs">
+              <div className="pt-6 pb-2 text-center text-[#9CA3AF] text-xs space-y-3">
                 <p>No YouTube channel connected yet.</p>
-                <Button variant="secondary" size="sm" className="mt-3" onClick={() => onNavigate('youtube')}>
-                  Connect Channel
-                </Button>
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={connecting}
+                    icon={<YouTubeIcon />}
+                    onClick={handleConnectWithGoogle}
+                  >
+                    {connecting ? 'Connecting…' : 'Connect YouTube Channel'}
+                  </Button>
+                </div>
+                {connectNotice && <p className="text-xs text-amber-400 mt-2">{connectNotice}</p>}
               </div>
             ) : (
               channels.map((ch) => (

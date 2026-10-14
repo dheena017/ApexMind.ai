@@ -118,8 +118,8 @@ export const YouTubeShortsPage: React.FC<YouTubeShortsPageProps> = ({
           <a
             href={
               channelToDisplay?.handle
-                ? `https://www.youtube.com/${channelToDisplay.handle}/shorts`
-                : 'https://www.youtube.com/@emoji-eye-spy/shorts'
+                ? `https://www.youtube.com/${channelToDisplay.handle.startsWith('@') ? channelToDisplay.handle : `@${channelToDisplay.handle}`}/shorts`
+                : 'https://www.youtube.com'
             }
             target="_blank"
             rel="noopener noreferrer"

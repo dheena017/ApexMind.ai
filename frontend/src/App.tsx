@@ -11,7 +11,7 @@ import {
   type PageRoute,
 } from './app/routes';
 import { consoleLogger } from './shared/utils/logger';
-import { useAuth } from './features/auth/context/AuthContext';
+import { useAuth, isSessionValid } from './features/auth/context/AuthContext';
 import { WorkspaceTabType } from './features/workspace/components/WorkspaceSidebar';
 
 export default function App() {
@@ -19,15 +19,12 @@ export default function App() {
 
   const [activePage, setActivePage] = useState<PageRoute>(() => {
     const parsed = typeof window === 'undefined' ? 'landing' : parseRoute(window.location.pathname);
-    // If user is already authenticated and visits '/', default to dashboard
-    if (parsed === 'landing' && typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('apexmind_user');
-        const token = localStorage.getItem('apexmind_token');
-        if (stored && token) {
-          return 'dashboard';
-        }
-      } catch {}
+    // If user is already authenticated and visits '/' or '/login', send directly to dashboard
+    if ((parsed === 'landing' || parsed === 'login') && typeof window !== 'undefined' && isSessionValid()) {
+      if (window.location.pathname !== '/dashboard') {
+        window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
+      }
+      return 'dashboard';
     }
 
     // If an unauthenticated user opens directly to an internal studio page, store the intent and load login
@@ -39,19 +36,29 @@ export default function App() {
       parsed === 'terms' ||
       parsed === 'privacy';
     if (!isPublic && typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('apexmind_user');
-        const token = localStorage.getItem('apexmind_token');
-        if (!stored || !token) {
-          savePostLoginRedirect(parsed);
-          return 'login';
-        }
-      } catch {}
+      if (!isSessionValid()) {
+        savePostLoginRedirect(parsed);
+        return 'login';
+      }
     }
 
     return parsed;
   });
-  const [activeWorkspacePane, setActiveWorkspacePane] = useState<WorkspaceTabType>('script');
+  const [activeWorkspacePane, setActiveWorkspacePane] = useState<WorkspaceTabType>(() => {
+    const parsed = typeof window === 'undefined' ? 'landing' : parseRoute(window.location.pathname);
+    if (parsed.startsWith('workspace-')) {
+      return parsed.replace('workspace-', '') as WorkspaceTabType;
+    }
+    return 'script';
+  });
+
+  // Sync activeWorkspacePane if activePage changes to a workspace sub-path
+  useEffect(() => {
+    if (activePage.startsWith('workspace-')) {
+      const pane = activePage.replace('workspace-', '') as WorkspaceTabType;
+      setActiveWorkspacePane(pane);
+    }
+  }, [activePage]);
 
   // Auth Guard: Unauthenticated users attempting to access internal studio pages are redirected to login with redirect intent
   useEffect(() => {
@@ -73,16 +80,16 @@ export default function App() {
     }
   }, [isAuthenticated, activePage]);
 
-  // When user completes login, redirect to requested target (or Dashboard by default)
+  // If already authenticated and on login or landing, send directly to Dashboard
   useEffect(() => {
-    if (isAuthenticated && activePage === 'login') {
-      const destination = getPostLoginRedirect();
+    if (isAuthenticated && (activePage === 'login' || activePage === 'landing')) {
+      const destination = getPostLoginRedirect() || 'dashboard';
       clearPostLoginRedirect();
-      consoleLogger.info('Auth', `Authenticated user on login view -> redirecting to target: [${destination}]`);
+      consoleLogger.info('Auth', `Authenticated creator on [${activePage}] -> directing directly to Dashboard [${destination}]`);
       setActivePage(destination);
       const targetPath = routeToPath(destination);
       if (window.location.pathname !== targetPath) {
-        window.history.pushState({ page: destination }, '', targetPath);
+        window.history.replaceState({ page: destination }, '', targetPath);
       }
     }
   }, [isAuthenticated, activePage]);
@@ -109,6 +116,12 @@ export default function App() {
         setActivePage('login');
         return;
       }
+      // If user is authenticated and clicks back to landing or login, direct to dashboard
+      if (isAuthenticated && (parsed === 'landing' || parsed === 'login')) {
+        setActivePage('dashboard');
+        window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
+        return;
+      }
       consoleLogger.action('Router', `Browser History PopState detected -> navigating to: "${parsed}"`);
       setActivePage(parsed);
     };
@@ -122,6 +135,11 @@ export default function App() {
       let targetRoute = APP_ROUTES.find((route) => route.id === page)?.id ?? '404';
       const isPublicPage =
         targetRoute === 'landing' || targetRoute === 'login' || targetRoute === 'loading' || targetRoute === '404';
+
+      // If user is already authenticated and tries to navigate to login or landing, route directly to dashboard
+      if (isAuthenticated && (targetRoute === 'login' || targetRoute === 'landing')) {
+        targetRoute = 'dashboard';
+      }
 
       // If user explicitly navigates to login (e.g. clicks "Sign In"), clear prior deep redirect
       if (targetRoute === 'login') {
@@ -156,18 +174,30 @@ export default function App() {
     [isAuthenticated]
   );
 
+  const handleWorkspacePaneChange = useCallback(
+    (pane: WorkspaceTabType) => {
+      setActiveWorkspacePane(pane);
+      const targetRoute = `workspace-${pane}` as PageRoute;
+      const targetPath = routeToPath(targetRoute);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ page: targetRoute }, '', targetPath);
+      }
+    },
+    []
+  );
+
   return (
     <AppLayout
       activePage={activePage}
       onNavigate={handleNavigate}
       activeWorkspacePane={activeWorkspacePane}
-      onWorkspacePaneChange={setActiveWorkspacePane}
+      onWorkspacePaneChange={handleWorkspacePaneChange}
     >
       <AppRouter
         activePage={activePage}
         onNavigate={handleNavigate}
         activeWorkspacePane={activeWorkspacePane}
-        onWorkspacePaneChange={setActiveWorkspacePane}
+        onWorkspacePaneChange={handleWorkspacePaneChange}
       />
     </AppLayout>
 

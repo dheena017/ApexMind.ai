@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Youtube } from 'lucide-react';
-import { Badge, Button, Card } from '@/src/shared/ui/common';
+import { Youtube, Plus, Loader2, CheckCircle2 } from 'lucide-react';
+import { Badge, Button } from '@/src/shared/ui/common';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
+import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
+import { YouTubeIcon } from '@/src/features/youtube/components/YouTubeIcon';
 import { useCreatorStudioData } from '../hooks/useCreatorStudioData';
 
-function formatDate(value: string): string {
+function formatDate(value?: string): string {
+  if (!value) return 'Date unavailable';
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? 'Date unavailable'
@@ -16,6 +19,22 @@ export default function ProfileChannelsPage({ onNavigate }: { onNavigate: (page:
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+
+  const handleConnectWithGoogle = () => {
+    setActionError(null);
+    setNotice(null);
+    connectYouTubeWithGoogle({
+      onLoading: setConnecting,
+      onSuccess: (connectedChannel) => {
+        setChannels([connectedChannel]);
+        setNotice(`Successfully connected YouTube channel "${connectedChannel.name}" (${connectedChannel.handle})!`);
+      },
+      onError: (err) => {
+        setActionError(err);
+      },
+    });
+  };
 
   const disconnect = async (channelId: string, name: string) => {
     if (!window.confirm(`Disconnect ${name} from this studio?`)) return;
@@ -36,6 +55,7 @@ export default function ProfileChannelsPage({ onNavigate }: { onNavigate: (page:
 
   return (
     <div className="w-full space-y-5">
+      {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#262626]">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/25 text-red-400">
@@ -46,14 +66,47 @@ export default function ProfileChannelsPage({ onNavigate }: { onNavigate: (page:
             <p className="mt-0.5 text-xs text-[#9CA3AF]">Manage the channels connected to your studio account for live sync &amp; automations.</p>
           </div>
         </div>
-        <Button type="button" variant="primary" size="sm" onClick={() => onNavigate('youtube')}>Open YouTube Manager</Button>
+
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={connecting}
+            icon={<YouTubeIcon />}
+            onClick={handleConnectWithGoogle}
+          >
+            {connecting ? 'Connecting…' : 'Connect YouTube Channel'}
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => onNavigate('youtube')}>
+            Open Studio
+          </Button>
+        </div>
       </div>
-      {loading ? <p className="text-sm text-[#9CA3AF]">Loading connected channels…</p> : channels.length === 0 ? (
-        <div className="py-8 text-center">
-          <Youtube className="mx-auto h-8 w-8 text-red-400" />
-          <h2 className="mt-3 font-semibold text-white">No connected channels</h2>
-          <p className="mt-1 text-xs text-[#9CA3AF]">Connect a channel in YouTube Manager to publish and track Shorts.</p>
-          <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => onNavigate('youtube')}>Connect a channel</Button>
+
+      {loading ? (
+        <p className="text-sm text-[#9CA3AF]">Loading connected channels…</p>
+      ) : channels.length === 0 ? (
+        <div className="py-12 px-4 text-center rounded-2xl bg-[#141414] border border-[#2F2F2F] space-y-4 max-w-lg mx-auto">
+          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+            <Youtube className="h-7 w-7" />
+          </div>
+          <div>
+            <h2 className="font-bold text-base text-white">No connected YouTube channel</h2>
+            <p className="mt-1 text-xs text-[#9CA3AF] max-w-sm mx-auto leading-relaxed">
+              Connect your YouTube channel using Google Sign-In to stream authentic video statistics, manage uploads, and publish Shorts.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={connecting}
+            icon={<YouTubeIcon />}
+            onClick={handleConnectWithGoogle}
+          >
+            {connecting ? 'Connecting…' : 'Connect YouTube Channel'}
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -87,8 +140,10 @@ export default function ProfileChannelsPage({ onNavigate }: { onNavigate: (page:
           ))}
         </div>
       )}
-      {(error || actionError) && <p role="alert" className="mt-4 text-sm text-red-300">{actionError || error}</p>}
+
+      {actionError && <p role="alert" className="mt-4 text-sm text-red-300">{actionError}</p>}
       {notice && <p role="status" className="mt-4 text-sm text-emerald-300">{notice}</p>}
+
     </div>
   );
 }

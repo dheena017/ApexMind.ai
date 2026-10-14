@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Youtube,
   Zap,
@@ -8,6 +8,14 @@ import {
   Video,
   ChevronRight,
   Loader2,
+  ExternalLink,
+  Sparkles,
+  TrendingUp,
+  Target,
+  Flame,
+  ListVideo,
+  BarChart2,
+  ArrowUpRight,
 } from 'lucide-react';
 import {
   YouTubeChannel,
@@ -16,28 +24,32 @@ import {
   YouTubeLiveVideo,
   YouTubeLiveShort,
   YouTubeForYouItem,
+  YouTubePlaylist,
 } from '../types';
 import { YouTubeTab } from '../components/YouTubeHeader';
 import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
+import { Button } from '@/src/shared/ui/common';
+import { YouTubeIcon } from '../components/YouTubeIcon';
 
 export interface YouTubeHomePageProps {
   channels: YouTubeChannel[];
-  videos: YouTubeVideo[];
-  automations: AutomationJob[];
+  videos?: YouTubeVideo[];
+  automations?: AutomationJob[];
   liveVideos?: YouTubeLiveVideo[];
   liveShorts?: YouTubeLiveShort[];
   liveForYou?: YouTubeForYouItem[];
+  playlists?: YouTubePlaylist[];
   feedLoading?: boolean;
-  syncingId: string | null;
-  togglingAutoUploadId: string | null;
-  copiedId: string | null;
-  onCopyId: (id: string) => void;
-  onSyncChannel: (id: string) => void;
-  onToggleAutoUpload: (ch: YouTubeChannel) => void;
-  onLoadLiveShorts: (ch: YouTubeChannel) => void;
-  onOpenCorrectModal: (ch: YouTubeChannel) => void;
-  onDeleteChannel: (id: string, name: string) => void;
-  onOpenConnectModal: () => void;
+  syncingId?: string | null;
+  togglingAutoUploadId?: string | null;
+  copiedId?: string | null;
+  onCopyId?: (id: string) => void;
+  onSyncChannel?: (id: string) => void;
+  onToggleAutoUpload?: (ch: YouTubeChannel) => void;
+  onLoadLiveShorts?: (ch: YouTubeChannel) => void;
+  onOpenCorrectModal?: (ch: YouTubeChannel) => void;
+  onDeleteChannel?: (id: string, name: string) => void;
+  onOpenConnectModal?: () => void;
   onNavigate: (page: string) => void;
   onTabChange: (tab: YouTubeTab) => void;
 }
@@ -46,51 +58,43 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
   channels,
   liveVideos = [],
   liveShorts = [],
-  liveForYou = [],
+  playlists = [],
   feedLoading = false,
   onOpenConnectModal,
   onNavigate,
   onTabChange,
 }) => {
   const activeChannel = channels[0];
-
-  if (!activeChannel) {
-    return (
-      <div className="py-16 px-4 text-center rounded-2xl bg-[#141414] border border-[#262626] text-[#9CA3AF] space-y-3">
-        <Youtube className="w-10 h-10 text-[#6B7280] mx-auto opacity-50" />
-        <h3 className="text-sm font-bold text-white">
-          {feedLoading ? 'Loading YouTube channel…' : 'No YouTube channel connected'}
-        </h3>
-        {feedLoading ? (
-          <YouTubeLoadingState
-            title="Loading YouTube channel…"
-            description="Checking for connected channels and published content"
-          />
-        ) : (
-          <>
-            <p className="text-xs text-[#9CA3AF]">
-              Connect a channel to see its videos, Shorts, and live metrics here.
-            </p>
-            <button
-              type="button"
-              onClick={onOpenConnectModal}
-              className="px-4 py-2 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-sm font-semibold text-white transition-colors"
-            >
-              Connect YouTube channel
-            </button>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  // Dynamic real data feeds directly from YouTube
   const shortsFeed: YouTubeLiveShort[] = liveShorts;
   const videosFeed: YouTubeLiveVideo[] = liveVideos;
+  const latestVideo = videosFeed[0];
+
+  // Dynamic metrics calculated purely from live channel data
+  const metrics = useMemo(() => {
+    const subs = activeChannel?.subscribers ?? 0;
+
+    // Calculate milestone goal (e.g. 100, 500, 1000, 5000, 10000, 50000, 100000...)
+    const milestones = [100, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 500000, 1000000];
+    const nextMilestone = milestones.find((m) => m > subs) || (subs + 1000);
+    const progressPercent = Math.min(100, Math.max(5, Math.round((subs / nextMilestone) * 100)));
+
+    // Total content items count from live feeds
+    const totalVideos = activeChannel?.videosUploaded ?? (videosFeed.length + shortsFeed.length);
+
+    return {
+      subs,
+      nextMilestone,
+      progressPercent,
+      totalVideos,
+      totalShorts: shortsFeed.length,
+      totalLongForm: videosFeed.length,
+      totalPlaylists: playlists.length,
+    };
+  }, [activeChannel, videosFeed, shortsFeed, playlists]);
 
   return (
     <div className="space-y-8 animate-fade-in font-sans-studio text-[#E5E5E5]">
-      {/* ── 1. Real Channel Metric Strip ── */}
+      {/* ── 1. Live Channel Metric Strip ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="p-3.5 sm:p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] flex items-center gap-3.5 shadow-sm hover:border-[#3B82F6]/40 transition-colors">
           <div className="p-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
@@ -101,12 +105,19 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
               Channel
             </p>
             <p className="text-base sm:text-lg font-extrabold text-white mt-0.5 truncate">
-              {activeChannel ? activeChannel.name : 'Emoji Eye Spy'}
+              {activeChannel ? activeChannel.name : 'No Channel Connected'}
             </p>
-            <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 mt-0.5 truncate">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span>{activeChannel?.handle || '@emoji-eye-spy'} · Live</span>
-            </p>
+            {activeChannel ? (
+              <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 mt-0.5 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span>{activeChannel.handle} · Live</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-zinc-400 font-medium flex items-center gap-1.5 mt-0.5 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 shrink-0" />
+                <span>Disconnected</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -119,7 +130,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
               Subscribers
             </p>
             <p className="text-lg sm:text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-              {(activeChannel?.subscribers ?? 72).toLocaleString()}
+              {metrics.subs.toLocaleString()}
             </p>
             <p className="text-[11px] text-[#93C5FD] font-medium mt-0.5">Real Audience</p>
           </div>
@@ -134,7 +145,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
               Public Videos
             </p>
             <p className="text-lg sm:text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-              {(activeChannel?.videosUploaded ?? 11).toLocaleString()}
+              {metrics.totalVideos.toLocaleString()}
             </p>
             <p className="text-[11px] text-[#C084FC] font-medium mt-0.5">Uploaded Videos</p>
           </div>
@@ -149,16 +160,252 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
               Upload Cadence
             </p>
             <p className="text-lg sm:text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-              {activeChannel ? (activeChannel.isAutoUploadEnabled ? 'Active' : 'Daily') : 'Daily'}
+              {activeChannel ? (activeChannel.isAutoUploadEnabled ? 'Active' : 'Manual') : '—'}
             </p>
             <p className="text-[11px] text-emerald-400 font-medium mt-0.5 truncate">
-              {activeChannel?.scheduleCron || 'Daily Schedule'}
+              {activeChannel?.scheduleCron || (activeChannel ? 'On demand' : 'No schedule')}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── 2. "Shorts" Shelf (Matching Real YouTube Screen) ── */}
+      {/* ── 2. Real Milestone & Channel Health Tracker ── */}
+      {activeChannel && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#141414] via-[#181818] to-[#141414] border border-[#2B2B2B] shadow-sm space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <Target className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Subscriber Milestone Goal</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                    Next: {metrics.nextMilestone.toLocaleString()} Subs
+                  </span>
+                </h4>
+                <p className="text-xs text-[#9CA3AF]">
+                  Currently at {metrics.subs.toLocaleString()} subscribers ({metrics.progressPercent}% of goal)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onTabChange('analytics')}
+                className="px-3 py-1.5 rounded-xl bg-[#202020] hover:bg-[#2A2A2A] text-white text-xs font-semibold transition-all border border-[#333333] flex items-center gap-1.5 cursor-pointer"
+              >
+                <BarChart2 className="w-3.5 h-3.5 text-[#60A5FA]" />
+                <span>Audience Analytics</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Progress Track */}
+          <div className="space-y-1.5">
+            <div className="w-full h-2 rounded-full bg-[#202020] overflow-hidden p-0.5 border border-white/5">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 transition-all duration-500"
+                style={{ width: `${metrics.progressPercent}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-[#9CA3AF] font-mono-studio">
+              <span>{metrics.subs.toLocaleString()} subs</span>
+              <span>{Math.max(0, metrics.nextMilestone - metrics.subs).toLocaleString()} subs needed to level up</span>
+              <span>{metrics.nextMilestone.toLocaleString()} subs</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. Latest Published Upload Spotlight ── */}
+      {latestVideo && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
+                <Youtube className="w-4 h-4" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <span>Latest Channel Upload</span>
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              </h3>
+            </div>
+            <a
+              href={latestVideo.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[#60A5FA] hover:text-[#93C5FD] font-semibold flex items-center gap-1 transition-colors"
+            >
+              <span>Watch on YouTube</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#141414] border border-[#2F2F2F] hover:border-[#3B82F6]/50 transition-all shadow-md grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+            {/* Widescreen Preview */}
+            <div className="md:col-span-5 relative rounded-xl overflow-hidden aspect-video bg-[#0A0A0A] border border-[#262626] group">
+              <img
+                src={latestVideo.thumbnailUrl}
+                alt={latestVideo.title}
+                onError={(e) => {
+                  e.currentTarget.src = `https://i.ytimg.com/vi/${latestVideo.id}/hqdefault.jpg`;
+                }}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              <a
+                href={latestVideo.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute inset-0 bg-black/30 group-hover:bg-transparent flex items-center justify-center transition-colors"
+              >
+                <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                  <Play className="w-5 h-5 fill-white translate-x-0.5" />
+                </div>
+              </a>
+              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/85 text-[11px] font-mono-studio font-bold text-white border border-white/10">
+                {latestVideo.duration}
+              </div>
+            </div>
+
+            {/* Video Details & Quick Actions */}
+            <div className="md:col-span-7 space-y-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md">
+                  Most Recent
+                </span>
+                <h4 className="text-base sm:text-lg font-bold text-white line-clamp-2 leading-snug">
+                  {latestVideo.title}
+                </h4>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 text-xs text-[#9CA3AF] font-mono-studio">
+                <span className="px-2 py-1 rounded-lg bg-[#1E1E1E] text-white border border-white/5 font-semibold">
+                  {latestVideo.views}
+                </span>
+                {latestVideo.published && (
+                  <span>Published {latestVideo.published}</span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={<Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                  onClick={() => onTabChange('seo')}
+                >
+                  Inspect SEO &amp; Tags
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />}
+                  onClick={() => onTabChange('analytics')}
+                >
+                  View Analytics
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4. Creator Studio Launchpad (Fast Actions) ── */}
+      <div className="space-y-3">
+        <h3 className="text-base sm:text-lg font-bold text-white tracking-tight px-1 flex items-center gap-2">
+          <span>Creator Studio Launchpad</span>
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <button
+            type="button"
+            onClick={() => onNavigate('generator')}
+            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-red-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
+          >
+            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 w-fit group-hover:scale-105 transition-transform">
+              <Film className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">
+                  Create AI Short
+                </h4>
+                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
+              </div>
+              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                Generate high-retention script, AI voiceover, and export direct to YouTube.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onTabChange('analytics')}
+            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-blue-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
+          >
+            <div className="p-2.5 rounded-xl bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/20 w-fit group-hover:scale-105 transition-transform">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA] transition-colors">
+                  Audience Analytics
+                </h4>
+                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
+              </div>
+              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                Track real views, subscriber velocities, and retention metrics.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onTabChange('seo')}
+            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-amber-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
+          >
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 w-fit group-hover:scale-105 transition-transform">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
+                  SEO &amp; Tags Radar
+                </h4>
+                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
+              </div>
+              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                Inspect YouTube autocomplete trends and competitor video tags.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onTabChange('trending')}
+            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-orange-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
+          >
+            <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 w-fit group-hover:scale-105 transition-transform">
+              <Flame className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">
+                  Trending Shorts
+                </h4>
+                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
+              </div>
+              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                Monitor real-time viral trends and top ranking vertical formats.
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* ── 5. "Shorts" Shelf (Real Vertical Grid) ── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
@@ -249,7 +496,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         )}
       </div>
 
-      {/* ── 3. "Videos" Shelf (Matching Real YouTube Screen) ── */}
+      {/* ── 6. "Videos" Shelf (Real 16:9 Uploads) ── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
@@ -284,12 +531,21 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
             description="Connecting to YouTube servers for live video metrics"
           />
         ) : videosFeed.length === 0 ? (
-          <div className="py-10 px-4 text-center rounded-2xl bg-[#141414] border border-[#262626] text-[#9CA3AF] space-y-2">
+          <div className="py-10 px-4 text-center rounded-2xl bg-[#141414] border border-[#262626] text-[#9CA3AF] space-y-3">
             <Video className="w-8 h-8 text-[#6B7280] mx-auto opacity-50" />
             <p className="text-sm font-semibold text-white">No published videos found</p>
             <p className="text-xs text-[#9CA3AF]">
-              Published long-form videos and brain teaser quizzes will appear here.
+              {activeChannel
+                ? 'Published long-form videos and brain teaser quizzes will appear here.'
+                : 'Connect your YouTube channel using Google Sign-In to view your live videos.'}
             </p>
+            {!activeChannel && (
+              <div className="pt-1">
+                <Button size="sm" variant="primary" icon={<YouTubeIcon />} onClick={onOpenConnectModal}>
+                  Connect YouTube Channel
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           /* Real Widescreen Videos Grid */
@@ -343,6 +599,69 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
           </div>
         )}
       </div>
+
+      {/* ── 7. Real Playlists Shelf (if present) ── */}
+      {playlists.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                <ListVideo className="w-4 h-4" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <span>Playlists</span>
+                <span className="text-xs font-mono-studio px-2 py-0.5 rounded-full bg-[#202020] text-[#9CA3AF]">
+                  {playlists.length}
+                </span>
+              </h3>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onTabChange('playlists')}
+              className="text-xs text-[#60A5FA] hover:text-[#93C5FD] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <span>View all</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {playlists.slice(0, 4).map((pl) => (
+              <a
+                key={pl.id}
+                href={pl.playlistUrl || `https://www.youtube.com/playlist?list=${pl.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col rounded-2xl overflow-hidden bg-[#141414] border border-[#2F2F2F] hover:border-[#10B981] transition-all hover:shadow-xl"
+              >
+                <div className="aspect-video w-full relative overflow-hidden bg-[#0A0A0A] border-b border-[#262626]">
+                  <img
+                    src={pl.thumbnailUrl || (videosFeed[0]?.thumbnailUrl ?? '')}
+                    alt={pl.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/85 text-[11px] font-mono-studio font-bold text-white border border-white/10 flex items-center gap-1">
+                    <ListVideo className="w-3 h-3 text-emerald-400" />
+                    <span>{pl.videoCount || 0} videos</span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 space-y-1">
+                  <h4 className="text-xs sm:text-sm font-bold text-white line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                    {pl.title}
+                  </h4>
+                  {pl.description && (
+                    <p className="text-[11px] text-[#9CA3AF] line-clamp-2 leading-relaxed">
+                      {pl.description}
+                    </p>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

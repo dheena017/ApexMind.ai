@@ -54,7 +54,7 @@ def clear_quote_memory() -> int:
 def get_channels() -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM youtube_channels ORDER BY connected_at DESC")
+    cursor.execute("SELECT * FROM youtube_channels WHERE is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != '') ORDER BY connected_at DESC")
     rows = cursor.fetchall()
     conn.close()
     logger.info(f"Queried YouTube channels -> Found {len(rows)} connected channel(s)")
@@ -128,6 +128,16 @@ def save_channel_oauth(
     conn.close()
     logger.info(f"Saved OAuth-authorized YouTube channel: '{name}' ({clean_handle}) (ID: {channel_id})")
     return get_channel_by_id(channel_id) or {}
+
+save_oauth_channel = save_channel_oauth
+
+def update_channel_access_token(channel_id: str, access_token: str) -> None:
+    """Updates access token for an OAuth-connected YouTube channel."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE youtube_channels SET access_token = ? WHERE id = ?", (access_token, channel_id))
+    conn.commit()
+    conn.close()
 
 def get_oauth_channel() -> Optional[Dict[str, Any]]:
     import sqlite3

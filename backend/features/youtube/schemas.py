@@ -1,50 +1,167 @@
 """
 backend/features/youtube/schemas.py
-Pydantic schemas and DTOs for YouTube integration & automations.
+Pydantic schemas and DTOs for YouTube live integration, SEO, analytics, and mutation endpoints.
 """
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
-# ── 1. Request Models ─────────────────────────────────────────────────────────
 
-class ConnectChannelRequest(BaseModel):
-    channelName: Optional[str] = Field(default=None, description="Name of the YouTube channel")
-    handle: Optional[str] = Field(default="", description="YouTube @handle or URL")
-    niche: Optional[str] = Field(default="Motivational Quotes", description="Channel niche / focus")
-    avatarUrl: Optional[str] = Field(default=None, description="Channel Avatar URL")
-    bannerUrl: Optional[str] = Field(default=None, description="Channel Banner URL")
-    subscribers: Optional[int] = Field(default=0, description="Subscriber count")
-    videosUploaded: Optional[int] = Field(default=0, description="Videos count")
-    autoResolve: Optional[bool] = Field(default=True, description="Whether to auto-fetch live stats from YouTube")
+# ── 1. Query & Mutation Request Models ───────────────────────────────────────
 
 class LookupChannelRequest(BaseModel):
     query: str = Field(..., min_length=1, description="YouTube @handle, full URL, or Channel ID")
 
+
+class UpdateVideoRequest(BaseModel):
+    videoId: str = Field(..., description="ID of the video on YouTube")
+    title: Optional[str] = Field(default=None, description="New video title")
+    description: Optional[str] = Field(default=None, description="New video description")
+    tags: Optional[List[str]] = Field(default=None, description="Updated tags")
+    privacyStatus: Optional[str] = Field(default="public", description="public, unlisted, private")
+
+
+class DeleteVideoRequest(BaseModel):
+    videoId: str = Field(..., description="ID of the video to delete from YouTube")
+
+
+class CreatePlaylistRequest(BaseModel):
+    title: str = Field(..., min_length=1, description="Playlist title")
+    description: Optional[str] = Field(default="", description="Playlist description")
+    privacyStatus: Optional[str] = Field(default="public", description="public, unlisted, private")
+
+
+class UpdatePlaylistRequest(BaseModel):
+    playlistId: str = Field(..., description="Playlist ID")
+    title: Optional[str] = Field(default=None, description="Updated title")
+    description: Optional[str] = Field(default=None, description="Updated description")
+    privacyStatus: Optional[str] = Field(default=None, description="Updated privacy")
+
+
+class DeletePlaylistRequest(BaseModel):
+    playlistId: str = Field(..., description="ID of the playlist to delete")
+
+
+class AddPlaylistItemRequest(BaseModel):
+    playlistId: str = Field(..., description="Target playlist ID")
+    videoId: str = Field(..., description="Video ID to append to playlist")
+
+
+class ReplyCommentRequest(BaseModel):
+    videoId: str = Field(..., description="Video ID")
+    text: str = Field(..., min_length=1, description="Comment text or reply")
+    parentId: Optional[str] = Field(default=None, description="Parent comment ID if replying")
+
+
+# ── 2. Backwards-compatible Legacy Request Models ─────────────────────────────
+
+class ConnectChannelRequest(BaseModel):
+    channelName: Optional[str] = Field(default=None)
+    handle: Optional[str] = Field(default="")
+    niche: Optional[str] = Field(default="Motivational Quotes")
+    avatarUrl: Optional[str] = Field(default=None)
+    bannerUrl: Optional[str] = Field(default=None)
+    subscribers: Optional[int] = Field(default=0)
+    videosUploaded: Optional[int] = Field(default=0)
+    autoResolve: Optional[bool] = Field(default=True)
+
+
 class CorrectChannelRequest(BaseModel):
-    channelId: str = Field(..., description="ID of the channel to correct in database")
-    query: Optional[str] = Field(default=None, description="New YouTube @handle or URL to correct with")
+    channelId: str = Field(...)
+    query: Optional[str] = Field(default=None)
+
 
 class PublishVideoRequest(BaseModel):
-    title: str = Field(..., min_length=1, description="Video title")
-    quote: str = Field(..., min_length=1, description="Script quote text")
-    voice: Optional[str] = Field(default="Fenrir", description="Voice profile used")
-    visualTheme: Optional[str] = Field(default="Dark Mountain Dawn", description="Visual backdrop theme")
-    category: Optional[str] = Field(default="Motivation", description="Category")
-    channelId: Optional[str] = Field(default=None, description="Target YouTube Channel ID")
-    audioUrl: Optional[str] = Field(default=None, description="Generated voiceover audio URL")
-    coverImageUrl: Optional[str] = Field(default=None, description="Visual backdrop cover image URL")
+    title: str = Field(..., min_length=1)
+    quote: str = Field(..., min_length=1)
+    voice: Optional[str] = Field(default="Fenrir")
+    visualTheme: Optional[str] = Field(default="Dark Mountain Dawn")
+    category: Optional[str] = Field(default="Motivation")
+    channelId: Optional[str] = Field(default=None)
+    audioUrl: Optional[str] = Field(default=None)
+    coverImageUrl: Optional[str] = Field(default=None)
 
-class ExchangeCodeRequest(BaseModel):
-    code: str = Field(..., description="Google OAuth authorization code")
-    redirectUri: Optional[str] = Field(default="http://127.0.0.1:5173", description="Redirect URI used during authorization")
 
 class ToggleAutomationRequest(BaseModel):
-    id: str = Field(..., description="ID of the automation job to toggle")
+    id: str = Field(...)
 
 
-# ── 2. Response DTOs ──────────────────────────────────────────────────────────
+# ── 3. Response DTOs ──────────────────────────────────────────────────────────
 
+class ChannelDetailsResponse(BaseModel):
+    success: bool
+    source: str = "youtube-official-live"
+    channel: Dict[str, Any]
+
+
+class ChannelVideosResponse(BaseModel):
+    success: bool
+    source: str = "youtube-official-live"
+    total: int
+    videos: List[Dict[str, Any]]
+
+
+class ChannelShortsResponse(BaseModel):
+    success: bool
+    source: str = "youtube-official-live"
+    total: int
+    shorts: List[Dict[str, Any]]
+
+
+class ChannelPlaylistsResponse(BaseModel):
+    success: bool
+    source: str = "youtube-official-live"
+    playlists: List[Dict[str, Any]]
+
+
+class ChannelAnalyticsResponse(BaseModel):
+    success: bool
+    source: str = "youtube-official-live"
+    analytics: Dict[str, Any]
+
+
+class VideoDetailsResponse(BaseModel):
+    success: bool
+    source: str = "youtube-official-live"
+    video: Dict[str, Any]
+
+
+class VideoCommentsResponse(BaseModel):
+    success: bool
+    source: str = "youtube-official-live"
+    total: int
+    comments: List[Dict[str, Any]]
+
+
+class VideoThumbnailsResponse(BaseModel):
+    success: bool
+    videoId: str
+    thumbnails: Dict[str, str]
+    bestAvailable: str
+
+
+class VideoChaptersResponse(BaseModel):
+    success: bool
+    videoId: str
+    hasChapters: bool
+    chapters: List[Dict[str, Any]]
+
+
+class VideoTranscriptResponse(BaseModel):
+    success: bool
+    videoId: str
+    language: str
+    transcript: List[Dict[str, Any]]
+    fullText: str
+
+
+class SeoAutocompleteResponse(BaseModel):
+    success: bool
+    query: str
+    suggestions: List[str]
+
+
+# Legacy response models for backward compatibility
 class ChannelResponse(BaseModel):
     id: str
     name: str
@@ -57,6 +174,7 @@ class ChannelResponse(BaseModel):
     scheduleCron: str
     connectedAt: str
     niche: str
+
 
 class VideoResponse(BaseModel):
     id: str
@@ -72,42 +190,44 @@ class VideoResponse(BaseModel):
     category: str
     voice: str
 
-class AutomationJobResponse(BaseModel):
-    id: str
-    theme: str
-    schedule: str
-    voice: str
-    musicTrack: str
-    active: bool
-    nextRun: str
 
 class ChannelsListResponse(BaseModel):
     success: bool
     channels: List[ChannelResponse]
     videos: List[VideoResponse]
 
+
 class ConnectChannelResponse(BaseModel):
     success: bool
     channel: ChannelResponse
+
 
 class PublishVideoResponse(BaseModel):
     success: bool
     video: VideoResponse
 
+
 class AutomationsListResponse(BaseModel):
     success: bool
-    automations: List[AutomationJobResponse]
+    automations: List[Dict[str, Any]]
+
 
 class LookupChannelResponse(BaseModel):
     success: bool
-    channel: dict
+    channel: Dict[str, Any]
+
 
 class SyncChannelResponse(BaseModel):
     success: bool
     channel: ChannelResponse
     message: str
 
+
 class ShortsListResponse(BaseModel):
     success: bool
-    shorts: List[dict]
+    shorts: List[Dict[str, Any]]
+
+
+class TokenConnectRequest(BaseModel):
+    accessToken: str
 

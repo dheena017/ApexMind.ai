@@ -64,7 +64,8 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
     { name: 'Channel connected', description: 'Connect a YouTube channel', value: Math.min(channels.length, 1), goal: 1, icon: <CheckCircle2 className="h-4 w-4" /> },
   ];
 
-  const formatDate = (value: string) => {
+  const formatDate = (value?: string) => {
+    if (!value) return 'Date unavailable';
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? 'Date unavailable'
@@ -291,7 +292,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
             <div className="rounded-xl border border-dashed border-[#2F2F2F] px-4 py-6 text-center">
               <Youtube className="mx-auto h-6 w-6 text-[#6B7280]" />
               <p className="mt-2 text-sm text-[#9CA3AF]">No YouTube channels connected.</p>
-              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => onNavigate('profile-channels')}>Connect a channel</Button>
+              <Button type="button" variant="primary" size="sm" className="mt-3" onClick={() => onNavigate('profile-channels')}>Connect a channel</Button>
             </div>
           )}
         </div>

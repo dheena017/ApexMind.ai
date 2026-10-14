@@ -2,8 +2,15 @@ import React from 'react';
 import { Sparkles, Youtube, Play, Zap, Shield, Wand2, Volume2, ArrowRight, CheckCircle2, Captions, CalendarClock, CircleHelp, FileText } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import LandingFooter from '../components/LandingFooter';
+import { isSessionValid } from '@/src/features/auth/context/AuthContext';
 
 export default function LandingPage({ onNavigate }: { onNavigate: (page: string) => void }) {
+
+  React.useEffect(() => {
+    if (isSessionValid()) {
+      onNavigate('dashboard');
+    }
+  }, [onNavigate]);
   return (
     <div className="w-full h-screen flex flex-col bg-[#0A0A0A] text-[#E5E5E5] overflow-hidden">
       {/* Fixed Top Bar - Sits above the scrollable area */}

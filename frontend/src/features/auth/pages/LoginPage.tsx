@@ -36,7 +36,7 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
 }
 
 export default function LoginPage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, isAuthenticated } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [showGoogleModal, setShowGoogleModal] = useState(false);
@@ -44,6 +44,14 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [customGoogleName, setCustomGoogleName] = useState('');
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [showAgreementError, setShowAgreementError] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const destination = getPostLoginRedirect() || 'dashboard';
+      clearPostLoginRedirect();
+      onNavigate(destination);
+    }
+  }, [isAuthenticated, onNavigate]);
 
   const requireAgreement = () => {
     if (!agreementChecked) {
@@ -150,20 +158,19 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     }
   }, [googleClientId]);
 
-  // Request Google OAuth 2.0 with explicit YouTube Scopes and confirmation consent screen
-  const handleGoogleWithYouTubeAuth = () => {
+  // Request Google OAuth 2.0 with standard user profile scopes (pure account login, zero channel coupling)
+  const handleGoogleAccountAuth = () => {
     if (!requireAgreement()) return;
     if (typeof window === 'undefined') return;
 
     if (window.google?.accounts?.oauth2 && googleClientId) {
       setGoogleLoading(true);
-      setNotice('Requesting Google confirmation for YouTube permissions...');
+      setNotice('Connecting to Google account...');
 
       try {
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
-          scope: 'openid email profile https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload',
-          prompt: 'consent', // Prompts Google OAuth confirmation screen specifically for YouTube permissions
+          scope: 'openid email profile',
           callback: async (tokenResponse: any) => {
             if (tokenResponse.error) {
               setNotice(
@@ -174,10 +181,10 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
             }
 
             try {
-              setNotice('YouTube permissions confirmed! Connecting profile...');
+              setNotice('Signing in to your account...');
               const accessToken = tokenResponse.access_token;
 
-              // 1. Fetch user profile from Google UserInfo
+              // Fetch user profile from Google UserInfo
               let profileEmail = '';
               let profileName = '';
               let profilePicture = '';
@@ -198,31 +205,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 console.warn('UserInfo fetch note:', e);
               }
 
-              // 2. Fetch YouTube channel details using YouTube Data API v3
-              let channelData: any = null;
-              try {
-                const ytRes = await fetch(
-                  'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true',
-                  { headers: { Authorization: `Bearer ${accessToken}` } }
-                );
-                if (ytRes.ok) {
-                  const yt = await ytRes.json();
-                  if (yt.items && yt.items.length > 0) {
-                    const item = yt.items[0];
-                    channelData = {
-                      channelName: item.snippet?.title,
-                      handle: item.snippet?.customUrl || `@${item.snippet?.title?.toLowerCase().replace(/\s+/g, '')}`,
-                      avatarUrl: item.snippet?.thumbnails?.default?.url,
-                      subscribers: parseInt(item.statistics?.subscriberCount || '0', 10),
-                      videosUploaded: parseInt(item.statistics?.videoCount || '0', 10),
-                      niche: 'Motivational Quotes',
-                    };
-                  }
-                }
-              } catch (ytErr) {
-                console.warn('YouTube channel fetch note:', ytErr);
-              }
-
               const finalEmail = (profileEmail || rememberedUser?.email || customGoogleEmail || '').trim();
               if (!finalEmail) {
                 setNotice('No email received from Google. Please sign in below.');
@@ -236,8 +218,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 name: finalName,
                 picture: profilePicture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(finalName)}`,
                 sub: profileSub,
-                accessToken,
-                channel: channelData,
               });
 
               handleSuccessfulAuth();
@@ -249,7 +229,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           },
         });
 
-        tokenClient.requestAccessToken({ prompt: 'consent' });
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
       } catch (err: any) {
         setNotice(`OAuth client notice: ${err.message}`);
         setGoogleLoading(false);
@@ -449,7 +429,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
               <button
                 type="button"
-                onClick={handleGoogleWithYouTubeAuth}
+                onClick={handleGoogleAccountAuth}
                 disabled={googleLoading || !agreementChecked}
                 title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
                 className="group relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-bold text-gray-900 shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.99]"
@@ -459,12 +439,9 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   {googleLoading ? (
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
                   ) : (
-                    <span className="flex items-center gap-2.5">
-                      <GoogleIcon className="h-5 w-5" />
-                      <Youtube className="h-5 w-5 text-red-600" />
-                    </span>
+                    <GoogleIcon className="h-5 w-5" />
                   )}
-                  <span>Sign In & Authorize YouTube</span>
+                  <span>Sign In with Google</span>
                 </span>
               </button>
 

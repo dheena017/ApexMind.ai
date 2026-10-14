@@ -1,20 +1,22 @@
 export interface YouTubeChannel {
   id: string;
+  channelId?: string;
   name: string;
   handle: string;
   subscribers: number;
   videosUploaded: number;
   avatarUrl: string;
-  isAutoUploadEnabled: boolean;
-  scheduleCron: string;
-  connectedAt: string;
-  niche: string;
+  bannerUrl?: string;
   verified?: boolean;
   channelUrl?: string;
   description?: string;
-  bannerUrl?: string;
+  isAutoUploadEnabled?: boolean;
+  scheduleCron?: string;
+  connectedAt?: string;
+  niche?: string;
   isOAuthAuthenticated?: boolean;
   hasRefreshToken?: boolean;
+  source?: string;
 }
 
 export interface YouTubeLookupResult {
@@ -34,52 +36,37 @@ export interface YouTubeLookupResult {
 export interface YouTubeLiveShort {
   id: string;
   title: string;
-  views: string;
+  views: string | number;
   thumbnailUrl: string;
   videoUrl: string;
   published: string;
-}
-
-export interface YouTubeVideo {
-  id: string;
-  title: string;
-  quote: string;
-  views: number;
-  likes: number;
-  publishedAt: string;
-  status: 'published' | 'queued' | 'rendering';
-  duration: string;
-  channelId: string | null;
-  videoUrl: string;
-  category: string;
-  voice: string;
-}
-
-export interface AutomationJob {
-  id: string;
-  theme: string;
-  schedule: string;
-  voice: string;
-  musicTrack: string;
-  active: boolean;
-  nextRun: string;
+  isShort?: boolean;
 }
 
 export interface YouTubeLiveVideo {
   id: string;
   title: string;
   duration: string;
-  views: string;
+  views: string | number;
   published: string;
+  publishedAt?: string;
   thumbnailUrl: string;
   videoUrl: string;
   category?: string;
+  isShort?: boolean;
+  quote?: string;
+  status?: string;
+  likes?: number;
+  voice?: string;
 }
+
+// Backwards compatibility alias for older page references
+export type YouTubeVideo = YouTubeLiveVideo;
 
 export interface YouTubeForYouItem {
   id: string;
   title: string;
-  views: string;
+  views: string | number;
   published?: string;
   duration?: string;
   thumbnailUrl: string;
@@ -110,8 +97,7 @@ export interface YouTubePlaylist {
   id: string;
   title: string;
   description?: string;
-  videoCount: number;
-  videoCountText?: string;
+  videoCount?: number | string;
   thumbnailUrl: string;
   playlistUrl?: string;
   lastUpdated?: string;
@@ -121,21 +107,72 @@ export interface YouTubeAnalyticsData {
   channelId: string;
   channelName: string;
   subscribers: number;
-  videosUploaded: number;
-  totalViews: number;
-  avgViewsPerVideo: number;
-  retentionRate: number;
-  engagementRate: number;
-  monthlyProjection: string;
-  niches: Array<{
+  totalVideosUploaded?: number;
+  videosUploaded?: number;
+  totalViews?: number;
+  totalEstimatedViews?: number;
+  avgViewsPerVideo?: number;
+  averageViewsPerVideo?: number;
+  uploadCadence?: string;
+  retentionRate?: number;
+  engagementRate?: number;
+  monthlyProjection?: string;
+  topVideo?: YouTubeLiveVideo | null;
+  latestUploadDate?: string;
+  niches?: Array<{
     name: string;
     percentage: number;
     views: string;
     color: string;
   }>;
-  bestPostingWindows: Array<{
+  bestPostingWindows?: Array<{
     time: string;
     status: string;
     recommendation: string;
   }>;
+}
+
+export interface YouTubeVideoDetails {
+  id: string;
+  title: string;
+  author: string;
+  authorUrl: string;
+  views: number;
+  likes: number;
+  description: string;
+  tags: string[];
+  duration: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+}
+
+export interface YouTubeComment {
+  id: string;
+  author: string;
+  authorAvatar: string;
+  text: string;
+  likes: number;
+  publishedAt: string;
+}
+
+export interface YouTubeChapter {
+  time: string;
+  seconds: number;
+  title: string;
+}
+
+export interface YouTubeTranscriptSnippet {
+  start: number;
+  duration: number;
+  text: string;
+}
+
+export interface AutomationJob {
+  id: string;
+  theme: string;
+  schedule: string;
+  voice: string;
+  musicTrack: string;
+  active: boolean;
+  nextRun: string;
 }

@@ -1,17 +1,15 @@
 import React from 'react';
 import {
-  RefreshCw,
-  Plus,
   Home,
   Video,
   Film,
   ListVideo,
   MessageSquare,
-  Clock,
   TrendingUp,
   Sliders,
+  Sparkles,
+  Flame,
 } from 'lucide-react';
-import { Button } from '@/src/shared/ui/common';
 
 export type YouTubeTab =
   | 'overview'
@@ -19,8 +17,9 @@ export type YouTubeTab =
   | 'shorts'
   | 'playlists'
   | 'posts'
-  | 'schedules'
   | 'analytics'
+  | 'seo'
+  | 'trending'
   | 'settings';
 
 export interface YouTubeHeaderProps {
@@ -34,102 +33,126 @@ export interface YouTubeHeaderProps {
   shortsCount?: number | string;
   playlistsCount?: number | string;
   postsCount?: number | string;
-  schedulesCount?: number | string;
   analyticsCount?: number | string;
+  currentChannelQuery?: string;
+  onSearchChannel?: (query: string) => void;
   className?: string;
 }
 
 export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
-  loading,
-  onSyncLive,
-  channelsCount,
-  onConnectChannel,
   activeTab,
   onTabChange,
   videosCount,
   shortsCount,
   playlistsCount,
   postsCount,
-  schedulesCount,
-  analyticsCount,
   className = '',
 }) => {
-  const tabs: { id: YouTubeTab; label: string; icon: React.ReactNode; badge?: number | string }[] = [
+  const tabs: { id: YouTubeTab; label: string; badge?: number | string }[] = [
     {
       id: 'overview',
       label: 'Home',
-      icon: <Home className="w-3.5 h-3.5" />,
     },
     {
       id: 'videos',
       label: 'Videos',
-      icon: <Video className="w-3.5 h-3.5" />,
       badge: videosCount !== undefined ? videosCount : undefined,
     },
     {
       id: 'shorts',
       label: 'Shorts',
-      icon: <Film className="w-3.5 h-3.5" />,
       badge: shortsCount !== undefined ? shortsCount : undefined,
     },
     {
       id: 'playlists',
       label: 'Playlists',
-      icon: <ListVideo className="w-3.5 h-3.5" />,
       badge: playlistsCount !== undefined ? playlistsCount : undefined,
     },
     {
       id: 'posts',
-      label: 'Posts',
-      icon: <MessageSquare className="w-3.5 h-3.5" />,
+      label: 'Community',
       badge: postsCount !== undefined ? postsCount : undefined,
-    },
-    {
-      id: 'schedules',
-      label: 'Schedules',
-      icon: <Clock className="w-3.5 h-3.5" />,
-      badge: schedulesCount !== undefined ? schedulesCount : undefined,
     },
     {
       id: 'analytics',
       label: 'Analytics',
-      icon: <TrendingUp className="w-3.5 h-3.5" />,
-      badge: analyticsCount !== undefined ? analyticsCount : undefined,
+    },
+    {
+      id: 'seo',
+      label: 'SEO & Tags',
+    },
+    {
+      id: 'trending',
+      label: 'Trending',
     },
     {
       id: 'settings',
       label: 'Settings',
-      icon: <Sliders className="w-3.5 h-3.5" />,
     },
   ];
 
+  const renderIcon = (id: YouTubeTab, isActive: boolean) => {
+    const iconClass = `w-4 h-4 shrink-0 transition-colors ${
+      isActive ? 'text-gray-950' : 'transition-transform group-hover:scale-110'
+    }`;
+
+    switch (id) {
+      case 'overview':
+        return <Home className={iconClass} />;
+      case 'videos':
+        return <Video className={iconClass} />;
+      case 'shorts':
+        return <Film className={`${iconClass} ${!isActive ? 'text-red-500' : ''}`} />;
+      case 'playlists':
+        return <ListVideo className={iconClass} />;
+      case 'posts':
+        return <MessageSquare className={iconClass} />;
+      case 'analytics':
+        return <TrendingUp className={`${iconClass} ${!isActive ? 'text-emerald-400' : ''}`} />;
+      case 'seo':
+        return <Sparkles className={`${iconClass} ${!isActive ? 'text-amber-400' : ''}`} />;
+      case 'trending':
+        return <Flame className={`${iconClass} ${!isActive ? 'text-orange-500' : ''}`} />;
+      case 'settings':
+        return <Sliders className={iconClass} />;
+    }
+  };
+
   return (
     <header
-      className={`w-full bg-[#141414] border border-[#2F2F2F] rounded-2xl p-2.5 sm:p-3 shadow-xl shadow-black/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 ${className}`}
+      className={`relative z-10 w-full rounded-2xl border border-[#262626] bg-[#0E0E0E] px-3 sm:px-6 py-2.5 transition-all shadow-md ${className}`}
     >
-      {/* Nav Tabs */}
-      <nav className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar" aria-label="YouTube sub-pages">
+      <nav
+        aria-label="YouTube Studio sub-navigation"
+        className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5"
+      >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
+          const hasCount = tab.badge !== undefined;
+          const countNum = Number(tab.badge);
+          const isNonZero = !isNaN(countNum) && countNum > 0;
+
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => onTabChange(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none ${
                 isActive
-                  ? 'bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-[#60A5FA] shadow-xs'
-                  : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
+                  ? 'bg-white text-gray-950 font-bold shadow-md shadow-white/10 scale-[1.02]'
+                  : 'bg-[#141414] text-[#A1A1AA] hover:text-white hover:bg-[#202020] border border-[#262626] hover:border-[#383838] active:scale-95'
               }`}
             >
-              <span>{tab.icon}</span>
+              <span>{renderIcon(tab.id, isActive)}</span>
               <span>{tab.label}</span>
-              {tab.badge !== undefined && (
+              {hasCount && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono-studio font-semibold leading-none ${
+                  className={`text-[11px] px-2 py-0.5 rounded-full font-mono-studio font-bold leading-none transition-colors ${
                     isActive
-                      ? 'bg-[#3B82F6]/25 text-[#93C5FD]'
-                      : 'bg-[#262626] text-[#9CA3AF]'
+                      ? 'bg-black/10 text-gray-950'
+                      : isNonZero
+                      ? 'bg-[#242424] text-white border border-white/10 group-hover:bg-[#2E2E2E]'
+                      : 'bg-[#1A1A1A] text-[#6B7280]'
                   }`}
                 >
                   {tab.badge}
@@ -139,32 +162,6 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
           );
         })}
       </nav>
-
-      {/* Right: Actions */}
-      <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
-          onClick={onSyncLive}
-          title="Fetch latest subscriber count, view stats, and published Shorts"
-          className="hover:border-[#3B82F6]/50 transition-colors text-xs"
-        >
-          Sync Live
-        </Button>
-
-        {channelsCount === 0 && onConnectChannel && (
-          <Button
-            variant="primary"
-            size="sm"
-            icon={<Plus className="w-3.5 h-3.5" />}
-            onClick={onConnectChannel}
-            className="text-xs"
-          >
-            Connect Channel
-          </Button>
-        )}
-      </div>
     </header>
   );
 };

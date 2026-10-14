@@ -8,6 +8,7 @@ import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
 export interface YouTubePlaylistsPageProps {
   channels: YouTubeChannel[];
   liveVideos?: YouTubeLiveVideo[];
+  playlists?: YouTubePlaylist[];
   loading?: boolean;
   onNavigate: (page: string) => void;
 }
@@ -15,6 +16,7 @@ export interface YouTubePlaylistsPageProps {
 export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
   channels,
   liveVideos = [],
+  playlists: initialPlaylists = [],
   loading = false,
   onNavigate,
 }) => {
@@ -24,46 +26,74 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
   const [newDesc, setNewDesc] = useState('');
   const [fetchingPlaylists, setFetchingPlaylists] = useState(false);
 
+  const formatPlaylist = (p: YouTubePlaylist) => ({
+    id: p.id,
+    title: p.title || 'Playlist',
+    description: p.description || `Official playlist series on ${activeChannel?.name || 'YouTube'}.`,
+    videoCount: p.videoCount || 1,
+    lastUpdated: p.lastUpdated || 'Live from YouTube',
+    thumbnailUrl: p.thumbnailUrl || (liveVideos[0]?.thumbnailUrl ?? activeChannel?.avatarUrl ?? ''),
+    playlistUrl: p.playlistUrl || (p.id ? `https://www.youtube.com/playlist?list=${p.id}` : undefined),
+  });
+
   // Dynamic playlists derived from real channel videos and YouTube playlists API
   const [playlists, setPlaylists] = useState<Array<{
     id: string;
     title: string;
     description: string;
-    videoCount: number;
+    videoCount: number | string;
     lastUpdated: string;
     thumbnailUrl: string;
     playlistUrl?: string;
-  }>>([]);
+  }>>(() => initialPlaylists.map(formatPlaylist));
+
+  // Sync when initialPlaylists updates from parent
+  useEffect(() => {
+    if (initialPlaylists && initialPlaylists.length > 0) {
+      setPlaylists(initialPlaylists.map(formatPlaylist));
+    }
+  }, [initialPlaylists]);
 
   const loadPlaylists = async () => {
-    if (!activeChannel?.id) {
-      setPlaylists([]);
+    const target = (
+      activeChannel?.handle ||
+      activeChannel?.id ||
+      (typeof window !== 'undefined' ? localStorage.getItem('apexmind_yt_active_channel') : '') ||
+      ''
+    ).trim();
+
+    if (!target) {
+      if (liveVideos.length > 0) {
+        setPlaylists([
+          {
+            id: 'pl-channel-uploads',
+            title: 'Official Channel Uploads & Series',
+            description: `All published videos and challenges on ${activeChannel?.name || 'the channel'}.`,
+            videoCount: `${liveVideos.length} videos`,
+            lastUpdated: 'Live Feed',
+            thumbnailUrl: liveVideos[0].thumbnailUrl,
+            playlistUrl: activeChannel?.handle ? `https://www.youtube.com/${activeChannel.handle}/playlists` : undefined,
+          },
+        ]);
+      }
       return;
     }
+
     setFetchingPlaylists(true);
     try {
-      const realPl = await youtubeApi.getPlaylists(activeChannel.id);
+      const realPl = await youtubeApi.getPlaylists(target);
       if (realPl.length > 0) {
-        setPlaylists(
-          realPl.map((p) => ({
-            id: p.id,
-            title: p.title,
-            description: p.description || `Official playlist series on ${activeChannel.name}.`,
-            videoCount: p.videoCount || 1,
-            lastUpdated: p.lastUpdated || 'Live from YouTube',
-            thumbnailUrl: p.thumbnailUrl || (liveVideos[0]?.thumbnailUrl ?? activeChannel.avatarUrl ?? ''),
-            playlistUrl: p.playlistUrl,
-          }))
-        );
+        setPlaylists(realPl.map(formatPlaylist));
       } else if (liveVideos.length > 0) {
         setPlaylists([
           {
             id: 'pl-channel-uploads',
             title: 'Official Channel Uploads & Series',
             description: `All published videos and challenges on ${activeChannel?.name || 'the channel'}.`,
-            videoCount: liveVideos.length,
+            videoCount: `${liveVideos.length} videos`,
             lastUpdated: 'Live Feed',
             thumbnailUrl: liveVideos[0].thumbnailUrl,
+            playlistUrl: activeChannel?.handle ? `https://www.youtube.com/${activeChannel.handle}/playlists` : undefined,
           },
           ...(liveVideos.length > 2
             ? [
@@ -71,9 +101,10 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
                   id: 'pl-popular-challenges',
                   title: 'Featured Challenges & Quizzes',
                   description: `High-engagement uploads on ${activeChannel?.name || 'YouTube'}.`,
-                  videoCount: Math.min(5, liveVideos.length),
+                  videoCount: `${Math.min(5, liveVideos.length)} videos`,
                   lastUpdated: 'Live Feed',
                   thumbnailUrl: liveVideos[1]?.thumbnailUrl || liveVideos[0].thumbnailUrl,
+                  playlistUrl: activeChannel?.handle ? `https://www.youtube.com/${activeChannel.handle}/playlists` : undefined,
                 },
               ]
             : []),
@@ -83,6 +114,18 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
       }
     } catch (err) {
       console.warn('Could not fetch playlists from API', err);
+      if (liveVideos.length > 0) {
+        setPlaylists([
+          {
+            id: 'pl-channel-uploads',
+            title: 'Official Channel Uploads & Series',
+            description: `All published videos and challenges on ${activeChannel?.name || 'the channel'}.`,
+            videoCount: `${liveVideos.length} videos`,
+            lastUpdated: 'Live Feed',
+            thumbnailUrl: liveVideos[0].thumbnailUrl,
+          },
+        ]);
+      }
     } finally {
       setFetchingPlaylists(false);
     }
@@ -90,9 +133,9 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
 
   useEffect(() => {
     loadPlaylists();
-  }, [activeChannel?.id, loading]);
+  }, [activeChannel?.handle, activeChannel?.id, loading]);
 
-  const isLoading = loading || fetchingPlaylists;
+  const isLoading = (loading || fetchingPlaylists) && playlists.length === 0;
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +146,7 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
         id: `pl-${Date.now()}`,
         title: newTitle.trim(),
         description: newDesc.trim() || `Curated series on ${activeChannel?.name || 'YouTube'}.`,
-        videoCount: 1,
+        videoCount: '1 video',
         lastUpdated: 'Just now',
         thumbnailUrl: fallbackThumb,
       },
@@ -163,59 +206,71 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {playlists.map((pl) => (
-          <div
-            key={pl.id}
-            className="rounded-2xl bg-[#141414] border border-[#2F2F2F] overflow-hidden hover:border-[#3B82F6] transition-all flex flex-col justify-between group shadow-xl"
-          >
-            {/* Playlist Thumbnail Cover with Stacked Effect */}
-            <div className="aspect-video w-full relative overflow-hidden bg-[#0A0A0A] border-b border-[#262626]">
-              <img
-                src={pl.thumbnailUrl}
-                alt={pl.title}
-                onError={(e) => {
-                  e.currentTarget.src = 'https://i.ytimg.com/vi/DXHgZhfhDGI/hqdefault.jpg';
-                }}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
+          {playlists.map((pl) => {
+            const countText =
+              typeof pl.videoCount === 'string' && pl.videoCount.toLowerCase().includes('video')
+                ? pl.videoCount
+                : `${pl.videoCount} videos`;
 
-              {/* Dark overlay */}
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                <div className="w-11 h-11 rounded-full bg-black/75 border border-white/20 text-white group-hover:scale-110 group-hover:bg-[#3B82F6] transition-all flex items-center justify-center shadow-xl">
-                  <Play className="w-5 h-5 fill-white text-white translate-x-0.5" />
+            return (
+              <a
+                key={pl.id}
+                href={pl.playlistUrl || (pl.id ? `https://www.youtube.com/playlist?list=${pl.id}` : '#')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-2xl bg-[#141414] border border-[#2F2F2F] overflow-hidden hover:border-[#3B82F6] transition-all flex flex-col justify-between group shadow-xl hover:shadow-black/60"
+              >
+                {/* Playlist Thumbnail Cover with Stacked Effect */}
+                <div className="aspect-video w-full relative overflow-hidden bg-[#0A0A0A] border-b border-[#262626]">
+                  <img
+                    src={pl.thumbnailUrl || (liveVideos[0]?.thumbnailUrl ?? '')}
+                    alt={pl.title}
+                    onError={(e) => {
+                      if (liveVideos[0]?.thumbnailUrl) {
+                        e.currentTarget.src = liveVideos[0].thumbnailUrl;
+                      }
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+
+                  {/* Dark overlay */}
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <div className="w-11 h-11 rounded-full bg-black/75 border border-white/20 text-white group-hover:scale-110 group-hover:bg-red-600 group-hover:border-red-500 transition-all flex items-center justify-center shadow-xl">
+                      <Play className="w-5 h-5 fill-white text-white translate-x-0.5" />
+                    </div>
+                  </div>
+
+                  {/* Video Count Overlay Bar */}
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/85 backdrop-blur-md border border-white/10 text-[10px] font-mono-studio font-bold text-white shadow">
+                    <Layers className="w-3 h-3 text-[#60A5FA]" />
+                    <span>{countText}</span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Video Count Overlay Bar */}
-              <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/85 backdrop-blur-md border border-white/10 text-[10px] font-mono-studio font-bold text-white shadow">
-                <Layers className="w-3 h-3 text-[#60A5FA]" />
-                <span>{pl.videoCount} videos</span>
-              </div>
-            </div>
+                {/* Playlist Info */}
+                <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA] transition-colors leading-snug line-clamp-2">
+                      {pl.title}
+                    </h4>
+                    <p className="text-xs text-[#9CA3AF] line-clamp-2 leading-relaxed">
+                      {pl.description}
+                    </p>
+                  </div>
 
-            {/* Playlist Info */}
-            <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA] transition-colors leading-snug">
-                  {pl.title}
-                </h4>
-                <p className="text-xs text-[#9CA3AF] line-clamp-2 leading-relaxed">
-                  {pl.description}
-                </p>
-              </div>
-
-              <div className="pt-2 border-t border-[#262626] flex items-center justify-between text-[11px] text-[#6B7280]">
-                <span>Updated: {pl.lastUpdated}</span>
-                <span className="text-[#60A5FA] group-hover:underline flex items-center gap-0.5 cursor-pointer">
-                  <span>Play All</span>
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
+                  <div className="pt-2 border-t border-[#262626] flex items-center justify-between text-[11px] text-[#6B7280]">
+                    <span>{pl.lastUpdated}</span>
+                    <span className="text-[#60A5FA] group-hover:underline flex items-center gap-1">
+                      <span>View Playlist</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
 
       {/* Create Playlist Modal */}
       <Modal

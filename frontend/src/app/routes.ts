@@ -2,8 +2,23 @@ export type PageRoute =
   | 'landing'
   | 'dashboard'
   | 'workspace'
+  | 'workspace-script'
+  | 'workspace-media'
+  | 'workspace-audio'
+  | 'workspace-elements'
+  | 'workspace-text'
+  | 'workspace-canvas'
   | 'videos'
   | 'youtube'
+  | 'youtube-videos'
+  | 'youtube-shorts'
+  | 'youtube-playlists'
+  | 'youtube-posts'
+  | 'youtube-analytics'
+  | 'youtube-seo'
+  | 'youtube-trending'
+  | 'youtube-schedules'
+  | 'youtube-settings'
   | 'notifications'
   | 'profile'
   | 'profile-details'
@@ -11,6 +26,7 @@ export type PageRoute =
   | 'profile-channels'
   | 'profile-activity'
   | 'profile-usage'
+  | 'profile-studio-activity'
   | 'profile-security'
   | 'settings'
   | 'terms'
@@ -27,23 +43,52 @@ export interface RouteConfig {
 }
 
 export const APP_ROUTES: RouteConfig[] = [
-  { id: 'landing', path: '/', title: 'ApexMind - AI Motivational YouTube Studio', aliases: ['/landing'] },
-  { id: 'dashboard', path: '/dashboard', title: 'Dashboard - ApexMind Studio' },
-  { id: 'workspace', path: '/workspace', title: 'AI Video Studio - ApexMind', aliases: ['/studio'] },
-  { id: 'videos', path: '/videos', title: 'Website Video Library - ApexMind', aliases: ['/video-library', '/studio-videos'] },
-  { id: 'youtube', path: '/youtube', title: 'YouTube Manager - ApexMind', aliases: ['/channels'] },
-  { id: 'notifications', path: '/notifications', title: 'Notifications - ApexMind', aliases: ['/alerts'] },
+  // ── 1. Landing & Home ──
+  { id: 'landing', path: '/', title: 'ApexMind - AI Motivational YouTube Studio', aliases: ['/landing', '/home'] },
+  { id: 'dashboard', path: '/dashboard', title: 'Dashboard - ApexMind Studio', aliases: ['/home-dashboard'] },
+
+  // ── 2. AI Video Creation Workspace & Sub-Panes ──
+  { id: 'workspace', path: '/workspace', title: 'AI Video Studio - ApexMind', aliases: ['/studio', '/editor'] },
+  { id: 'workspace-script', path: '/workspace/script', title: 'Script & AI - ApexMind Studio', aliases: ['/studio/script'] },
+  { id: 'workspace-media', path: '/workspace/media', title: 'Media Library - ApexMind Studio', aliases: ['/studio/media'] },
+  { id: 'workspace-audio', path: '/workspace/audio', title: 'Voice & Audio - ApexMind Studio', aliases: ['/studio/audio'] },
+  { id: 'workspace-elements', path: '/workspace/elements', title: 'Visual Elements - ApexMind Studio', aliases: ['/studio/elements'] },
+  { id: 'workspace-text', path: '/workspace/text', title: 'Text & Captions - ApexMind Studio', aliases: ['/studio/text'] },
+  { id: 'workspace-canvas', path: '/workspace/canvas', title: 'Video Canvas - ApexMind Studio', aliases: ['/studio/canvas'] },
+
+  // ── 3. Video Assets Library ──
+  { id: 'videos', path: '/videos', title: 'Website Video Library - ApexMind', aliases: ['/video-library', '/studio-videos', '/library'] },
+
+  // ── 4. YouTube Channel Studio & Dedicated Sub-Paths ──
+  { id: 'youtube', path: '/youtube', title: 'YouTube Studio Hub - ApexMind', aliases: ['/channels', '/studio/youtube', '/youtube/overview'] },
+  { id: 'youtube-videos', path: '/youtube/videos', title: 'Channel Videos - ApexMind Studio', aliases: ['/channel/videos', '/youtube-videos'] },
+  { id: 'youtube-shorts', path: '/youtube/shorts', title: 'Channel Shorts - ApexMind Studio', aliases: ['/channel/shorts', '/shorts', '/youtube-shorts'] },
+  { id: 'youtube-playlists', path: '/youtube/playlists', title: 'Channel Playlists - ApexMind Studio', aliases: ['/channel/playlists', '/playlists'] },
+  { id: 'youtube-posts', path: '/youtube/community', title: 'Community Posts - ApexMind Studio', aliases: ['/youtube/posts', '/channel/community', '/community'] },
+  { id: 'youtube-seo', path: '/youtube/seo', title: 'SEO & Tags Generator - ApexMind Studio', aliases: ['/youtube/tags', '/seo', '/tags'] },
+  { id: 'youtube-trending', path: '/youtube/trending', title: 'Viral Trending Shorts - ApexMind Studio', aliases: ['/youtube/viral', '/trending', '/viral'] },
+  { id: 'youtube-schedules', path: '/youtube/schedules', title: 'Auto Upload Schedules - ApexMind Studio', aliases: ['/schedules', '/automation'] },
+  { id: 'youtube-analytics', path: '/youtube/analytics', title: 'Realtime Channel Analytics - ApexMind Studio', aliases: ['/analytics', '/channel/analytics'] },
+  { id: 'youtube-settings', path: '/youtube/settings', title: 'YouTube Channel Settings - ApexMind Studio', aliases: ['/youtube/config'] },
+
+  // ── 5. Creator Profile & Badges ──
   { id: 'profile', path: '/profile', title: 'Profile & Badges - ApexMind', aliases: ['/account'] },
   { id: 'profile-details', path: '/profile/details', title: 'Creator Details - ApexMind' },
   { id: 'profile-preferences', path: '/profile/preferences', title: 'Creator Preferences - ApexMind' },
   { id: 'profile-channels', path: '/profile/channels', title: 'Connected Channels - ApexMind' },
   { id: 'profile-activity', path: '/profile/activity', title: 'Creator Activity - ApexMind' },
-  { id: 'profile-usage', path: '/profile/usage', title: 'Studio Usage - ApexMind' },
+  { id: 'profile-usage', path: '/profile/usage', title: 'Studio Usage - ApexMind', aliases: ['/usage'] },
+  { id: 'profile-studio-activity', path: '/profile/studio-activity', title: 'Studio Activity - ApexMind', aliases: ['/activity'] },
   { id: 'profile-security', path: '/profile/security', title: 'Account Security - ApexMind' },
-  { id: 'settings', path: '/settings', title: 'Settings - ApexMind' },
+
+  // ── 6. Global Notifications & System Settings ──
+  { id: 'notifications', path: '/notifications', title: 'Notifications - ApexMind', aliases: ['/alerts', '/inbox'] },
+  { id: 'settings', path: '/settings', title: 'Settings - ApexMind', aliases: ['/config', '/preferences'] },
+
+  // ── 7. Public & Legal ──
   { id: 'terms', path: '/terms', title: 'Terms of Service - ApexMind', aliases: ['/terms-of-service', '/tos'] },
   { id: 'privacy', path: '/privacy', title: 'Privacy Policy - ApexMind', aliases: ['/privacy-policy'] },
-  { id: 'login', path: '/login', title: 'Sign In - ApexMind' },
+  { id: 'login', path: '/login', title: 'Sign In - ApexMind', aliases: ['/signin', '/auth'] },
   { id: 'loading', path: '/loading', title: 'Loading - ApexMind' },
   { id: '404', path: '/404', title: '404 Page Not Found - ApexMind' },
 ];

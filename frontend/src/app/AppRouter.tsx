@@ -14,6 +14,7 @@ import ProfilePreferencesPage from '@/src/features/profile/pages/ProfilePreferen
 import ProfileChannelsPage from '@/src/features/profile/pages/ProfileChannelsPage';
 import ProfileActivityPage from '@/src/features/profile/pages/ProfileActivityPage';
 import ProfileUsagePage from '@/src/features/profile/pages/ProfileUsagePage';
+import RecentStudioActivityPage from '@/src/features/profile/pages/RecentStudioActivityPage';
 import ProfileSecurityPage from '@/src/features/profile/pages/ProfileSecurityPage';
 import ProfileSectionLayout from '@/src/features/profile/components/ProfileSectionLayout';
 import SettingsPage from '@/src/features/settings/pages/SettingsPage';
@@ -52,6 +53,15 @@ export default function AppRouter({
     return <LoginPage onNavigate={onNavigate} />;
   }
 
+  // Authenticated users on login or landing are sent directly to Dashboard
+  if (isAuthenticated && (activePage === 'login' || activePage === 'landing')) {
+    return (
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <DashboardPage onNavigate={onNavigate} />
+      </Suspense>
+    );
+  }
+
   const page = (
     <Suspense fallback={<RouteLoadingFallback />}>
       {(() => {
@@ -65,6 +75,12 @@ export default function AppRouter({
           case 'dashboard':
             return <DashboardPage onNavigate={onNavigate} />;
           case 'workspace':
+          case 'workspace-script':
+          case 'workspace-media':
+          case 'workspace-audio':
+          case 'workspace-elements':
+          case 'workspace-text':
+          case 'workspace-canvas':
             return (
               <WorkspacePage
                 onNavigate={onNavigate}
@@ -73,7 +89,25 @@ export default function AppRouter({
               />
             );
           case 'youtube':
-            return <YouTubePage onNavigate={onNavigate} />;
+            return <YouTubePage onNavigate={onNavigate} initialTab="overview" />;
+          case 'youtube-videos':
+            return <YouTubePage onNavigate={onNavigate} initialTab="videos" />;
+          case 'youtube-shorts':
+            return <YouTubePage onNavigate={onNavigate} initialTab="shorts" />;
+          case 'youtube-playlists':
+            return <YouTubePage onNavigate={onNavigate} initialTab="playlists" />;
+          case 'youtube-posts':
+            return <YouTubePage onNavigate={onNavigate} initialTab="posts" />;
+          case 'youtube-seo':
+            return <YouTubePage onNavigate={onNavigate} initialTab="seo" />;
+          case 'youtube-trending':
+            return <YouTubePage onNavigate={onNavigate} initialTab="trending" />;
+          case 'youtube-schedules':
+            return <YouTubePage onNavigate={onNavigate} initialTab="overview" />;
+          case 'youtube-analytics':
+            return <YouTubePage onNavigate={onNavigate} initialTab="analytics" />;
+          case 'youtube-settings':
+            return <YouTubePage onNavigate={onNavigate} initialTab="settings" />;
           case 'videos':
             return <VideosPage onNavigate={onNavigate} />;
           case 'profile':
@@ -87,8 +121,9 @@ export default function AppRouter({
           case 'profile-activity':
             return <ProfileActivityPage />;
           case 'profile-usage':
-          case 'profile-studio-activity':
             return <ProfileUsagePage onNavigate={onNavigate} />;
+          case 'profile-studio-activity':
+            return <RecentStudioActivityPage onNavigate={onNavigate} />;
           case 'profile-security':
             return <ProfileSecurityPage />;
           case 'settings':

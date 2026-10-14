@@ -16,55 +16,138 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  loginWithGoogle: async () => {
-    throw new Error('AuthContext not initialized');
+  loginWithGoogle: async (payload) => {
+    if (!payload) {
+      throw new Error('Google account details are required to sign in.');
+    }
+
+    try {
+      const authData = await authApi.googleLogin(payload);
+      localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
+      localStorage.setItem('apexmind_token', authData.token);
+      return authData.user;
+    } catch (error) {
+      consoleLogger.error('Auth', `Google login failed: ${error}`);
+      throw error;
+    }
   },
-  loginWithEmail: async () => {
-    throw new Error('AuthContext not initialized');
+  loginWithEmail: async (email, password) => {
+    try {
+      const authData = await authApi.emailLogin(email, password);
+      localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
+      localStorage.setItem('apexmind_token', authData.token);
+      return authData.user;
+    } catch (error) {
+      consoleLogger.error('Auth', `Email login failed: ${error}`);
+      throw error;
+    }
   },
   logout: async () => {},
 });
 
+export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+export const AUTH_USER_KEY = 'apexmind_user';
+export const AUTH_TOKEN_KEY = 'apexmind_token';
+export const AUTH_TIMESTAMP_KEY = 'apexmind_auth_timestamp';
+
+/**
+ * Validates whether the active creator session exists and was created within the last 7 days.
+ * If expired (> 7 days), returns false so session is terminated.
+ */
+export function isSessionValid(): boolean {
+  try {
+    const stored = localStorage.getItem(AUTH_USER_KEY);
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!stored || !token) return false;
+
+    const authTimestamp = localStorage.getItem(AUTH_TIMESTAMP_KEY);
+    if (!authTimestamp) {
+      // Legacy session: seed timestamp now so user gets full 7 days from first run
+      localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
+      return true;
+    }
+
+    const loginTime = parseInt(authTimestamp, 10);
+    if (isNaN(loginTime)) {
+      return false;
+    }
+
+    const elapsed = Date.now() - loginTime;
+    return elapsed >= 0 && elapsed < SEVEN_DAYS_MS;
+  } catch {
+    return false;
+  }
+}
+
+export function clearAuthStorage(): void {
+  try {
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_TIMESTAMP_KEY);
+  } catch {}
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(() => {
     try {
-      const stored = localStorage.getItem('apexmind_user');
-      const token = localStorage.getItem('apexmind_token');
-      if (stored && token) {
-        return JSON.parse(stored);
+      if (!isSessionValid()) {
+        clearAuthStorage();
+        return null;
       }
-      return null;
+      const stored = localStorage.getItem(AUTH_USER_KEY);
+      return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
     }
   });
   const [isLoading, setIsLoading] = useState(false);
 
+  // Monitor 7-day session lifecycle & auto-logout when 7 days lapse
   useEffect(() => {
-    // Only verify session if token and user already exist in storage
-    const token = localStorage.getItem('apexmind_token');
-    const stored = localStorage.getItem('apexmind_user');
-    if (!token || !stored) {
-      setUser(null);
-      return;
+    const enforceSessionLimits = () => {
+      if (!isSessionValid()) {
+        if (localStorage.getItem(AUTH_USER_KEY) || localStorage.getItem(AUTH_TOKEN_KEY)) {
+          consoleLogger.warn('Auth', 'Session expired after 7 days. Automatic logout initiated.');
+          clearAuthStorage();
+          setUser(null);
+        }
+      }
+    };
+
+    // Run immediate check
+    enforceSessionLimits();
+
+    // Check periodically every 10 seconds while application is open
+    const interval = setInterval(enforceSessionLimits, 10000);
+
+    // Also verify when window regains focus or storage event fires from other tabs
+    window.addEventListener('focus', enforceSessionLimits);
+    window.addEventListener('storage', enforceSessionLimits);
+
+    // If session is valid, verify remote identity
+    if (isSessionValid()) {
+      authApi
+        .getMe()
+        .then((remoteUser) => {
+          setUser((prev) => {
+            if (!prev) return null;
+            const merged = { ...prev, ...remoteUser };
+            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(merged));
+            return merged;
+          });
+        })
+        .catch(() => {
+          // Session invalid on backend - reset
+          setUser(null);
+          clearAuthStorage();
+        });
     }
 
-    authApi
-      .getMe()
-      .then((remoteUser) => {
-        setUser((prev) => {
-          if (!prev) return null;
-          const merged = { ...prev, ...remoteUser };
-          localStorage.setItem('apexmind_user', JSON.stringify(merged));
-          return merged;
-        });
-      })
-      .catch(() => {
-        // Session invalid or expired - reset
-        setUser(null);
-        localStorage.removeItem('apexmind_user');
-        localStorage.removeItem('apexmind_token');
-      });
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', enforceSessionLimits);
+      window.removeEventListener('storage', enforceSessionLimits);
+    };
   }, []);
 
   const loginWithGoogle = async (payload?: GoogleAuthPayload): Promise<UserProfile> => {
@@ -108,8 +191,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const authData = await authApi.googleLogin(finalPayload);
       setUser(authData.user);
-      localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
-      localStorage.setItem('apexmind_token', authData.token);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authData.user));
+      localStorage.setItem(AUTH_TOKEN_KEY, authData.token);
+      localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
       return authData.user;
     } finally {
       setIsLoading(false);
@@ -121,8 +205,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const authData = await authApi.emailLogin(email, password);
       setUser(authData.user);
-      localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
-      localStorage.setItem('apexmind_token', authData.token);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authData.user));
+      localStorage.setItem(AUTH_TOKEN_KEY, authData.token);
+      localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
       return authData.user;
     } finally {
       setIsLoading(false);
@@ -133,11 +218,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       await authApi.logout();
-      setUser(null);
-      localStorage.removeItem('apexmind_user');
-      localStorage.removeItem('apexmind_token');
-      consoleLogger.info('Auth', 'Session cleared successfully');
+    } catch {
+      // Ignored
     } finally {
+      setUser(null);
+      clearAuthStorage();
+      consoleLogger.info('Auth', 'Session cleared successfully');
       setIsLoading(false);
     }
   };
@@ -146,7 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && isSessionValid(),
         isLoading,
         loginWithGoogle,
         loginWithEmail,

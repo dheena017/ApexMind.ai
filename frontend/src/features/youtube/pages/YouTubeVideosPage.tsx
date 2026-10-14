@@ -8,12 +8,11 @@ import {
   Sparkles,
   Eye,
   ThumbsUp,
-  Share2,
-  Check,
 } from 'lucide-react';
-import { Card, Badge, Button, Modal } from '@/src/shared/ui/common';
+import { Card, Badge, Button } from '@/src/shared/ui/common';
 import { YouTubeChannel, YouTubeVideo, YouTubeLiveVideo } from '../types';
 import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
+import { YouTubeVideoDetailsModal } from '../components/YouTubeVideoDetailsModal';
 
 export interface YouTubeVideosPageProps {
   channels: YouTubeChannel[];
@@ -33,7 +32,6 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
   const [search, setSearch] = useState('');
   const [activeSort, setActiveSort] = useState<'latest' | 'popular' | 'oldest'>('latest');
   const [selectedVideo, setSelectedVideo] = useState<YouTubeLiveVideo | null>(null);
-  const [copiedVideoId, setCopiedVideoId] = useState<string | null>(null);
 
   const videoCatalog: YouTubeLiveVideo[] = liveVideos;
 
@@ -45,18 +43,19 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
     )
     .sort((a, b) => {
       if (activeSort === 'popular') {
-        const aNum = parseInt(a.views.replace(/\D/g, '') || '0', 10);
-        const bNum = parseInt(b.views.replace(/\D/g, '') || '0', 10);
+        const parseV = (val: string | number) => {
+          if (typeof val === 'number') return val;
+          const clean = val.toLowerCase().replace(/views?/g, '').trim();
+          if (clean.endsWith('k')) return Math.floor(parseFloat(clean) * 1000);
+          if (clean.endsWith('m')) return Math.floor(parseFloat(clean) * 1000000);
+          return parseInt(clean.replace(/\D/g, '') || '0', 10);
+        };
+        const aNum = parseV(a.views);
+        const bNum = parseV(b.views);
         return bNum - aNum;
       }
       return 0;
     });
-
-  const handleCopyLink = (vid: YouTubeLiveVideo) => {
-    navigator.clipboard.writeText(vid.videoUrl);
-    setCopiedVideoId(vid.id);
-    setTimeout(() => setCopiedVideoId(null), 2500);
-  };
 
   return (
     <div className="space-y-6 animate-fade-in font-sans-studio text-[#E5E5E5]">
@@ -207,83 +206,14 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
         )}
       </Card>
 
-      {/* Video Details Modal */}
-      {selectedVideo && (
-        <Modal
-          isOpen={Boolean(selectedVideo)}
-          onClose={() => setSelectedVideo(null)}
-          title="Video Details"
-        >
-          <div className="space-y-4 text-sm text-[#E5E5E5]">
-            <div className="aspect-video w-full rounded-2xl overflow-hidden relative bg-black border border-[#2F2F2F]">
-              <img
-                src={selectedVideo.thumbnailUrl}
-                alt={selectedVideo.title}
-                onError={(e) => {
-                  e.currentTarget.src = `https://i.ytimg.com/vi/${selectedVideo.id}/hqdefault.jpg`;
-                }}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                <a
-                  href={selectedVideo.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-110"
-                >
-                  <Play className="w-7 h-7 fill-white translate-x-0.5" />
-                </a>
-              </div>
-              <span className="absolute bottom-3 right-3 px-2.5 py-1 rounded-md bg-black/85 text-xs font-mono-studio font-bold text-white">
-                {selectedVideo.duration}
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="text-base sm:text-lg font-bold text-white">{selectedVideo.title}</h3>
-              <p className="text-xs text-[#9CA3AF] font-mono-studio">
-                {selectedVideo.views} · {selectedVideo.published}
-              </p>
-            </div>
-
-            <div className="pt-3 border-t border-[#2F2F2F] flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <a
-                  href={selectedVideo.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors flex items-center gap-2"
-                >
-                  <Play className="w-3.5 h-3.5 fill-white" />
-                  <span>Watch on YouTube</span>
-                </a>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleCopyLink(selectedVideo)}
-                  icon={
-                    copiedVideoId === selectedVideo.id ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    ) : (
-                      <Share2 className="w-3.5 h-3.5" />
-                    )
-                  }
-                  className="text-xs"
-                >
-                  {copiedVideoId === selectedVideo.id ? 'Copied Link' : 'Share Video'}
-                </Button>
-              </div>
-
-              <Button variant="secondary" size="sm" onClick={() => setSelectedVideo(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* Video Details Modal (Rendered via React createPortal to root DOM) */}
+      <YouTubeVideoDetailsModal
+        isOpen={Boolean(selectedVideo)}
+        video={selectedVideo}
+        onClose={() => setSelectedVideo(null)}
+      />
     </div>
   );
 };
 
-export default YouTubeVideosPage;
+

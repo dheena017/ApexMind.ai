@@ -2,6 +2,7 @@ import React from 'react';
 import { Copy, Check, ShieldCheck } from 'lucide-react';
 import { Card, Badge, Button } from '@/src/shared/ui/common';
 import { YouTubeChannel } from '../types';
+import { YouTubeIcon } from '../components/YouTubeIcon';
 
 export interface YouTubeSettingsPageProps {
   channels: YouTubeChannel[];
@@ -61,9 +62,10 @@ export const YouTubeSettingsPage: React.FC<YouTubeSettingsPageProps> = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onOpenCorrectModal(activeChannel)}
+                icon={<YouTubeIcon />}
+                onClick={onOpenConnectModal}
               >
-                Change Handle
+                Switch Channel
               </Button>
               <Button
                 size="sm"
@@ -75,10 +77,10 @@ export const YouTubeSettingsPage: React.FC<YouTubeSettingsPageProps> = ({
             </div>
           </div>
         ) : (
-          <div className="py-6 text-center text-[#9CA3AF] space-y-2">
+          <div className="py-6 text-center text-[#9CA3AF] space-y-3">
             <p className="text-xs">No channel connected currently.</p>
-            <Button size="sm" variant="primary" onClick={onOpenConnectModal}>
-              Connect Channel
+            <Button size="sm" variant="primary" icon={<YouTubeIcon />} onClick={onOpenConnectModal}>
+              Connect YouTube Channel
             </Button>
           </div>
         )}

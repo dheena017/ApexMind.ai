@@ -33,7 +33,7 @@ export interface ActivityItem {
   snippet?: string;
   date: string;
   url?: string;
-  views?: number;
+  views?: number | string;
   duration?: string;
   rawScript?: RecentGeneratedScript;
   rawVideo?: YouTubeVideo;
@@ -95,7 +95,7 @@ export const RecentStudioActivity: React.FC<RecentStudioActivityProps> = ({
         title: video.title || 'YouTube Short',
         category: video.category || 'Short',
         snippet: video.quote || undefined,
-        date: video.publishedAt,
+        date: video.publishedAt || video.published || new Date().toISOString(),
         url: video.videoUrl || undefined,
         views: video.views,
         duration: video.duration,

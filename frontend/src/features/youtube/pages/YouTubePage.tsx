@@ -5,10 +5,9 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
   Loader2,
 } from 'lucide-react';
-import { Button, Modal, Input } from '@/src/shared/ui/common';
+import { Button } from '@/src/shared/ui/common';
 import { YouTubeChannelBannerHeader } from '../components/YouTubeChannelBannerHeader';
 import { YouTubeHeader, YouTubeTab } from '../components/YouTubeHeader';
 import { YouTubeHomePage } from './YouTubeHomePage';
@@ -16,655 +15,335 @@ import { YouTubeVideosPage } from './YouTubeVideosPage';
 import { YouTubeShortsPage } from './YouTubeShortsPage';
 import { YouTubePlaylistsPage } from './YouTubePlaylistsPage';
 import { YouTubePostsPage } from './YouTubePostsPage';
-import { YouTubeSchedulesPage } from './YouTubeSchedulesPage';
 import { YouTubeAnalyticsPage } from './YouTubeAnalyticsPage';
 import { YouTubeSettingsPage } from './YouTubeSettingsPage';
+import { YouTubeSeoPage } from './YouTubeSeoPage';
+import { YouTubeTrendingPage } from './YouTubeTrendingPage';
+import { YouTubeVideoDetailsModal } from '../components/YouTubeVideoDetailsModal';
 import { youtubeApi } from '../api/youtubeApi';
+import { connectYouTubeWithGoogle } from '../utils/googleOAuthConnect';
+import { PageRoute } from '@/src/app/routes';
 import {
   YouTubeChannel,
-  YouTubeVideo,
-  AutomationJob,
-  YouTubeLookupResult,
   YouTubeLiveShort,
   YouTubeLiveVideo,
   YouTubeForYouItem,
+  YouTubePlaylist,
 } from '../types';
 
-export default function YouTubePage({ onNavigate }: { onNavigate: (page: string) => void }) {
+export default function YouTubePage({
+  onNavigate,
+  initialTab = 'overview',
+}: {
+  onNavigate: (page: string) => void;
+  initialTab?: YouTubeTab;
+}) {
   const [loading, setLoading] = useState(false);
-  const [channels, setChannels] = useState<YouTubeChannel[]>([]);
-  const [videos, setVideos] = useState<YouTubeVideo[]>([]);
-  const [automations, setAutomations] = useState<AutomationJob[]>([]);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<YouTubeTab>('overview');
-  const [shortsSearch, setShortsSearch] = useState('');
+  const [currentChannelQuery, setCurrentChannelQuery] = useState<string>('');
 
-  // Channel details interactive states
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [togglingAutoUploadId, setTogglingAutoUploadId] = useState<string | null>(null);
-
-  // Connect Channel Modal & Live Lookup
-  const [showConnectModal, setShowConnectModal] = useState(false);
-  const [channelInput, setChannelInput] = useState('');
-  const [niche, setNiche] = useState('');
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupResult, setLookupResult] = useState<YouTubeLookupResult | null>(null);
-  const [lookupError, setLookupError] = useState<string | null>(null);
-  const [connectLoading, setConnectLoading] = useState(false);
-
-  // Syncing status
-  const [syncingId, setSyncingId] = useState<string | null>(null);
-
-  // Live Shorts explorer modal
-  const [selectedChannelForShorts, setSelectedChannelForShorts] = useState<YouTubeChannel | null>(null);
-  const [liveShorts, setLiveShorts] = useState<YouTubeLiveShort[]>([]);
-  const [liveShortsLoading, setLiveShortsLoading] = useState(false);
-
-  // Correct Handle modal
-  const [showCorrectModal, setShowCorrectModal] = useState(false);
-  const [channelToCorrect, setChannelToCorrect] = useState<YouTubeChannel | null>(null);
-  const [newHandleInput, setNewHandleInput] = useState('');
-  const [correctLoading, setCorrectLoading] = useState(false);
-
-  // Live YouTube dynamic feed data (fetched purely from YouTube API)
+  const [channel, setChannel] = useState<YouTubeChannel | null>(null);
   const [liveVideos, setLiveVideos] = useState<YouTubeLiveVideo[]>([]);
-  const [liveShortsFeed, setLiveShortsFeed] = useState<YouTubeLiveShort[]>([]);
+  const [liveShorts, setLiveShorts] = useState<YouTubeLiveShort[]>([]);
   const [liveForYou, setLiveForYou] = useState<YouTubeForYouItem[]>([]);
-  const [feedLoading, setFeedLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<YouTubeTab>(initialTab);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // Tab count tracking
+  // Sync state if initialTab prop changes (e.g., from browser back/forward or route navigation)
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  const handleTabChange = (tab: YouTubeTab) => {
+    setActiveTab(tab);
+    const targetRoute = tab === 'overview' ? 'youtube' : (`youtube-${tab}` as PageRoute);
+    onNavigate(targetRoute);
+  };
+
+  // Tab counts & items
+  const [livePlaylists, setLivePlaylists] = useState<YouTubePlaylist[]>([]);
   const [playlistsCount, setPlaylistsCount] = useState<number>(0);
   const [postsCount, setPostsCount] = useState<number>(0);
-  const [totalAnalyticsViews, setTotalAnalyticsViews] = useState<number>(0);
 
-  // Initial Data Load & Full Live Sync
-  const loadData = async () => {
-    setLoading(true);
-    setFeedLoading(true);
-    setLiveShortsLoading(true);
+  // Shorts search filter
+  const [shortsSearch, setShortsSearch] = useState('');
+
+  // Interactive in-studio video player modal
+  const [activePlayingVideo, setActivePlayingVideo] = useState<YouTubeLiveVideo | YouTubeLiveShort | null>(null);
+
+  // Connect Channel with Google OAuth (GIS popup flow)
+  const handleConnectWithGoogle = () => {
+    connectYouTubeWithGoogle({
+      onLoading: setLoading,
+      onSuccess: (connectedChannel) => {
+        setChannel(connectedChannel);
+        setCurrentChannelQuery(connectedChannel.handle);
+        loadChannelLive(connectedChannel.handle);
+      },
+      onError: (err) => {
+        alert(`YouTube authorization notice: ${err}`);
+      },
+    });
+  };
+
+  const handleDisconnectChannel = async () => {
+    if (!window.confirm('Disconnect this YouTube channel from ApexMind Studio?')) return;
     try {
-      const [{ channels: chData, videos: vData }, aData] = await Promise.all([
-        youtubeApi.getYouTubeData(),
-        youtubeApi.getAutomations(),
-      ]);
-      setChannels(chData);
-      setVideos(vData);
-      setAutomations(aData);
-
-      // Fast initial fallback from published videos in SQLite while live scrape fetches
-      if (vData.length > 0) {
-        const mappedVideos: YouTubeLiveVideo[] = vData.map((v) => ({
-          id: v.id,
-          title: v.title,
-          duration: v.duration || '3:36',
-          views: `${v.views.toLocaleString()} views`,
-          published: v.publishedAt ? new Date(v.publishedAt).toLocaleDateString() : '',
-          thumbnailUrl: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`,
-          videoUrl: v.videoUrl || `https://www.youtube.com/watch?v=${v.id}`,
-          category: v.category,
-        }));
-        setLiveVideos((prev) => (prev.length === 0 ? mappedVideos : prev));
-        setLiveForYou((prev) =>
-          prev.length === 0
-            ? mappedVideos.slice(0, 6).map((v) => ({
-                id: v.id,
-                title: v.title,
-                views: v.views,
-                published: v.published,
-                duration: v.duration,
-                thumbnailUrl: v.thumbnailUrl,
-                videoUrl: v.videoUrl,
-                isShort: false,
-              }))
-            : prev
-        );
-      }
-
-      if (chData.length > 0) {
-        try {
-          // Sync channel in backend to refresh live subscribers, avatar & banner
-          const syncRes = await youtubeApi.syncChannel(chData[0].id).catch(() => null);
-          if (syncRes && syncRes.channel) {
-            setChannels((prev) => prev.map((c) => (c.id === chData[0].id ? syncRes.channel : c)));
-          }
-
-          // Fetch feed, playlists, posts, and analytics in parallel for real live counts
-          const [feed, plList, communityPosts, analytics] = await Promise.all([
-            youtubeApi.getLiveFeed(chData[0].id).catch(() => ({ videos: [], shorts: [], forYou: [] })),
-            youtubeApi.getPlaylists(chData[0].id).catch(() => []),
-            youtubeApi.getCommunityPosts(chData[0].id).catch(() => []),
-            youtubeApi.getChannelAnalytics(chData[0].id).catch(() => null),
-          ]);
-
-          setLiveVideos(feed.videos);
-          setLiveShortsFeed(feed.shorts);
-          setLiveShorts(feed.shorts);
-          setLiveForYou(feed.forYou);
-
-          // Real counts
-          setPlaylistsCount(plList.length > 0 ? plList.length : (feed.videos.length > 0 ? Math.max(1, Math.ceil(feed.videos.length / 4)) : 0));
-          setPostsCount(communityPosts.length);
-          if (analytics) {
-            setTotalAnalyticsViews(analytics.totalViews);
-          }
-        } catch (feedErr) {
-          console.warn('Could not load live feed from YouTube API', feedErr);
-        }
-      } else {
-        setLiveVideos([]);
-        setLiveShortsFeed([]);
-        setLiveShorts([]);
-        setLiveForYou([]);
-        setPlaylistsCount(0);
-        setPostsCount(0);
-        setTotalAnalyticsViews(0);
-      }
-    } catch (e) {
-      console.error('Failed to load YouTube data', e);
+      setLoading(true);
+      await youtubeApi.disconnectOAuth();
+      setChannel(null);
+      setCurrentChannelQuery('');
+      setLiveVideos([]);
+      setLiveShorts([]);
+      setLiveForYou([]);
+      localStorage.removeItem('apexmind_yt_active_channel');
+    } catch (e: any) {
+      console.warn('Disconnect note:', e);
     } finally {
       setLoading(false);
-      setFeedLoading(false);
-      setLiveShortsLoading(false);
+    }
+  };
+
+  // Load channel data live from YouTube (Zero local DB reads)
+  const loadChannelLive = async (targetQuery: string) => {
+    const cleanQuery = (targetQuery || '').trim();
+    if (
+      !cleanQuery ||
+      cleanQuery === '@channel' ||
+      cleanQuery === 'channel' ||
+      cleanQuery.toLowerCase().includes('emoji')
+    ) {
+      setChannel(null);
+      setLiveVideos([]);
+      setLiveShorts([]);
+      setLiveForYou([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const ch = await youtubeApi.getChannelDetails(cleanQuery);
+      setChannel(ch);
+      localStorage.setItem('apexmind_yt_active_channel', ch.handle || cleanQuery);
+
+      // Fetch uploads, shorts, playlists, and analytics in parallel
+      const channelIdentifier = ch.id || ch.channelId || ch.handle || cleanQuery;
+      const [vids, shortsList, playlists] = await Promise.all([
+        youtubeApi.getChannelVideos(channelIdentifier, 24).catch(() => []),
+        youtubeApi.getChannelShorts(channelIdentifier, 24).catch(() => []),
+        youtubeApi.getPlaylists(channelIdentifier).catch(() => []),
+      ]);
+
+      setLiveVideos(vids);
+      setLiveShorts(shortsList);
+      setLivePlaylists(playlists);
+      setPlaylistsCount(playlists.length);
+
+      // Construct live for-you recommendations
+      const forYou: YouTubeForYouItem[] = [
+        ...shortsList.slice(0, 2).map((s) => ({
+          id: s.id,
+          title: s.title,
+          views: s.views,
+          thumbnailUrl: s.thumbnailUrl,
+          videoUrl: s.videoUrl,
+          isShort: true,
+        })),
+        ...vids.slice(0, 4).map((v) => ({
+          id: v.id,
+          title: v.title,
+          views: v.views,
+          duration: v.duration,
+          thumbnailUrl: v.thumbnailUrl,
+          videoUrl: v.videoUrl,
+          isShort: false,
+        })),
+      ];
+      setLiveForYou(forYou);
+    } catch (err: any) {
+      console.error('Failed to load channel live from YouTube', err);
+      setChannel(null);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-
     // Check OAuth return parameters from Google
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('oauth') === 'success') {
-        const ch = params.get('channel') || 'channel';
-        notify(`🎉 Google OAuth verified! Channel "${ch}" is authorized for live YouTube Shorts uploads.`);
-        window.history.replaceState({}, '', window.location.pathname);
-      } else if (params.get('oauth') === 'error') {
-        const err = params.get('message') || 'Authentication failed';
-        notify(`⚠️ YouTube authorization failed: ${err}`);
+      if (params.get('oauth')) {
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
+
+    // Check backend for authenticated Google OAuth YouTube channel
+    const initChannel = async () => {
+      try {
+        const authStatus = await youtubeApi.getAuthStatus();
+        if (authStatus.connected && authStatus.channel) {
+          const ch = authStatus.channel;
+          setChannel(ch);
+          setCurrentChannelQuery(ch.handle);
+          localStorage.setItem('apexmind_yt_active_channel', ch.handle);
+          loadChannelLive(ch.handle);
+          return;
+        } else {
+          setChannel(null);
+          setLiveVideos([]);
+          setLiveShorts([]);
+          setLiveForYou([]);
+          localStorage.removeItem('apexmind_yt_active_channel');
+          setCurrentChannelQuery('');
+        }
+      } catch (e) {
+        console.warn('OAuth status check note:', e);
+        setChannel(null);
+      }
+    };
+
+    initChannel();
   }, []);
 
-  // Show temporary status notification
-  const notify = (msg: string) => {
-    setStatusMessage(msg);
-    setTimeout(() => setStatusMessage(null), 4500);
-  };
 
-  const handleCopyId = (id: string) => {
-    navigator.clipboard.writeText(id);
-    setCopiedId(id);
-    notify(`Channel ID copied: ${id}`);
-    setTimeout(() => setCopiedId(null), 2500);
-  };
-
-  const handleToggleAutoUpload = async (ch: YouTubeChannel) => {
-    setTogglingAutoUploadId(ch.id);
-    try {
-      const nextStatus = !ch.isAutoUploadEnabled;
-      const updated = await youtubeApi.updateChannel(ch.id, { isAutoUploadEnabled: nextStatus });
-      setChannels((prev) => prev.map((item) => (item.id === ch.id ? updated : item)));
-      notify(`Auto-upload ${nextStatus ? 'enabled' : 'paused'} for ${ch.name}`);
-    } catch (err: any) {
-      notify(`Failed to toggle auto-upload: ${err.message}`);
-    } finally {
-      setTogglingAutoUploadId(null);
-    }
-  };
-
-  // Perform Live YouTube channel lookup
-  const handleLookupChannel = async (queryToLookup?: string) => {
-    const q = (queryToLookup || channelInput).trim();
-    if (!q) return;
-    setLookupLoading(true);
-    setLookupError(null);
-    try {
-      const result = await youtubeApi.lookupChannel(q);
-      setLookupResult(result);
-    } catch (err: any) {
-      setLookupError(err.message || 'Could not find YouTube channel. Check handle and retry.');
-      setLookupResult(null);
-    } finally {
-      setLookupLoading(false);
-    }
-  };
-
-  // Connect verified or manual channel
-  const handleConnectChannel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setConnectLoading(true);
-    try {
-      const payload = lookupResult
-        ? {
-            channelName: lookupResult.name,
-            handle: lookupResult.handle,
-            niche: niche || 'General motivation',
-            avatarUrl: lookupResult.avatarUrl,
-            subscribers: lookupResult.subscribers,
-            videosUploaded: lookupResult.videosUploaded,
-            autoResolve: false,
-          }
-        : {
-            handle: channelInput,
-            niche: niche || 'General motivation',
-            autoResolve: true,
-          };
-
-      const newChan = await youtubeApi.connectYouTubeChannel(payload);
-      setChannels([newChan]);
-      setShowConnectModal(false);
-      setLookupResult(null);
-      setChannelInput('');
-      try {
-        const feed = await youtubeApi.getLiveFeed(newChan.id);
-        if (feed.videos) setLiveVideos(feed.videos);
-        if (feed.shorts) setLiveShortsFeed(feed.shorts);
-        if (feed.forYou) setLiveForYou(feed.forYou);
-      } catch (feedErr) {
-        console.warn('Could not load live feed for connected channel', feedErr);
-      }
-      notify(`Connected & verified YouTube channel: ${newChan.name} (${newChan.handle})`);
-    } catch (e: any) {
-      setLookupError(e.message || 'Failed to connect YouTube channel');
-    } finally {
-      setConnectLoading(false);
-    }
-  };
-
-  // Sync channel with live YouTube
-  const handleSyncChannel = async (id: string) => {
-    setSyncingId(id);
-    try {
-      const res = await youtubeApi.syncChannel(id);
-      setChannels((prev) => prev.map((c) => (c.id === id ? res.channel : c)));
-      try {
-        const feed = await youtubeApi.getLiveFeed(id);
-        if (feed.videos) setLiveVideos(feed.videos);
-        if (feed.shorts) setLiveShortsFeed(feed.shorts);
-        if (feed.forYou) setLiveForYou(feed.forYou);
-      } catch (feedErr) {
-        console.warn('Could not refresh live feed', feedErr);
-      }
-      notify(res.message);
-    } catch (err: any) {
-      notify(`Sync failed: ${err.message}`);
-    } finally {
-      setSyncingId(null);
-    }
-  };
-
-  // Open Correct Handle Modal
-  const openCorrectModal = (ch: YouTubeChannel) => {
-    setChannelToCorrect(ch);
-    setNewHandleInput(ch.handle);
-    setShowCorrectModal(true);
-  };
-
-  // Execute Correction
-  const handleCorrectChannel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!channelToCorrect) return;
-    setCorrectLoading(true);
-    try {
-      const res = await youtubeApi.correctChannel(channelToCorrect.id, newHandleInput);
-      setChannels((prev) => prev.map((c) => (c.id === channelToCorrect.id ? res.channel : c)));
-      try {
-        const feed = await youtubeApi.getLiveFeed(channelToCorrect.id);
-        if (feed.videos) setLiveVideos(feed.videos);
-        if (feed.shorts) setLiveShortsFeed(feed.shorts);
-        if (feed.forYou) setLiveForYou(feed.forYou);
-      } catch (feedErr) {
-        console.warn('Could not refresh live feed for corrected channel', feedErr);
-      }
-      setShowCorrectModal(false);
-      notify(res.message);
-    } catch (err: any) {
-      notify(`Correction error: ${err.message}`);
-    } finally {
-      setCorrectLoading(false);
-    }
-  };
-
-  // Delete channel
-  const handleDeleteChannel = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to disconnect channel "${name}"?`)) return;
-    try {
-      await youtubeApi.deleteChannel(id);
-      setChannels((prev) => prev.filter((c) => c.id !== id));
-      if (selectedChannelForShorts?.id === id) {
-        setSelectedChannelForShorts(null);
-      }
-      notify(`Disconnected channel: ${name}`);
-    } catch (err: any) {
-      notify(`Failed to disconnect: ${err.message}`);
-    }
-  };
-
-  // Load Live Shorts Feed
-  const handleLoadLiveShorts = async (ch: YouTubeChannel) => {
-    setSelectedChannelForShorts(ch);
-    setLiveShortsLoading(true);
-    try {
-      const shorts = await youtubeApi.getLiveShorts(ch.id);
-      setLiveShorts(shorts);
-    } catch (err: any) {
-      notify(`Could not load live shorts: ${err.message}`);
-      setLiveShorts([]);
-    } finally {
-      setLiveShortsLoading(false);
-    }
-  };
-
-  const handleToggleAuto = async (id: string) => {
-    try {
-      const updated = await youtubeApi.toggleAutomation(id);
-      setAutomations(updated);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const channelsList = channel ? [channel] : [];
 
   return (
-    <div className="w-full space-y-4 font-sans-studio">
-      {/* ── YouTube Channel Banner & Profile Identity Header ── */}
-      <YouTubeChannelBannerHeader
-        channel={channels[0]}
-        onCustomiseChannel={() => {
-          if (channels[0]) {
-            openCorrectModal(channels[0]);
-          } else {
-            setShowConnectModal(true);
-          }
-        }}
-        onManageVideos={() => {
-          setActiveTab('videos');
-        }}
-        onSyncLive={loadData}
-        syncing={loading}
-      />
+    <div className="w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] space-y-6 pb-20 font-sans-studio animate-fade-in">
+      {/* ── 1. Top Channel Banner & Studio Navigation Group ── */}
+      <div className="space-y-3">
+        <YouTubeChannelBannerHeader
+          channel={channel}
+          onCustomiseChannel={() => handleTabChange('settings')}
+          onManageVideos={() => handleTabChange('videos')}
+          onSyncLive={() => loadChannelLive(currentChannelQuery)}
+          onConnectChannel={handleConnectWithGoogle}
+          syncing={loading}
+        />
 
-      {/* ── YouTube Sub-Pages Navigation Tabs (Home, Videos, Shorts, Playlists, Posts...) ── */}
-      <YouTubeHeader
-        loading={loading}
-        onSyncLive={loadData}
-        channelsCount={channels.length}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        videosCount={liveVideos.length > 0 ? liveVideos.length : (channels[0]?.videosUploaded || videos.length)}
-        shortsCount={liveShortsFeed.length > 0 ? liveShortsFeed.length : (liveShorts.length > 0 ? liveShorts.length : videos.length)}
-        playlistsCount={playlistsCount > 0 ? playlistsCount : (liveVideos.length > 0 ? Math.max(1, Math.ceil(liveVideos.length / 4)) : 0)}
-        postsCount={postsCount}
-        schedulesCount={automations.length}
-        analyticsCount={
-          totalAnalyticsViews > 0
-            ? totalAnalyticsViews >= 1000
-              ? `${(totalAnalyticsViews / 1000).toFixed(1)}k`
-              : totalAnalyticsViews
-            : channels[0] ? 4 : 0
-        }
-        onConnectChannel={() => {
-          setLookupResult(null);
-          setLookupError(null);
-          setShowConnectModal(true);
-        }}
-      />
+        <YouTubeHeader
+          loading={loading}
+          onSyncLive={() => loadChannelLive(currentChannelQuery)}
+          channelsCount={channel ? 1 : 0}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          videosCount={liveVideos.length}
+          shortsCount={liveShorts.length}
+          playlistsCount={playlistsCount}
+          postsCount={postsCount}
+        />
+      </div>
 
-      {/* Floating Status Notification */}
-      {statusMessage && (
-        <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in shadow-lg">
-          <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-[#60A5FA] shrink-0" />
-            <span>{statusMessage}</span>
-          </div>
-          <button
-            onClick={() => setStatusMessage(null)}
-            className="text-blue-400 hover:text-white text-xs font-bold px-2 py-0.5 rounded cursor-pointer"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
 
-      {/* ── Sub-Page 1: HOME (Channel Overview, Studio Actions & Automation Pipeline) ── */}
+      {/* ── Tab 1: HOME (Overview) ── */}
       {activeTab === 'overview' && (
         <YouTubeHomePage
-          channels={channels}
-          videos={videos}
-          automations={automations}
+          channels={channelsList}
+          videos={[]}
+          automations={[]}
           liveVideos={liveVideos}
-          liveShorts={liveShortsFeed}
+          liveShorts={liveShorts}
           liveForYou={liveForYou}
-          feedLoading={feedLoading || loading}
-          syncingId={syncingId}
-          togglingAutoUploadId={togglingAutoUploadId}
-          copiedId={copiedId}
-          onCopyId={handleCopyId}
-          onSyncChannel={handleSyncChannel}
-          onToggleAutoUpload={handleToggleAutoUpload}
-          onLoadLiveShorts={handleLoadLiveShorts}
-          onOpenCorrectModal={openCorrectModal}
-          onDeleteChannel={handleDeleteChannel}
-          onOpenConnectModal={() => {
-            setChannelInput('');
-            setShowConnectModal(true);
-          }}
+          playlists={livePlaylists}
+          feedLoading={loading}
+          syncingId={null}
+          togglingAutoUploadId={null}
+          copiedId={null}
+          onCopyId={() => {}}
+          onSyncChannel={() => loadChannelLive(currentChannelQuery)}
+          onToggleAutoUpload={() => {}}
+          onLoadLiveShorts={() => {}}
+          onOpenCorrectModal={handleConnectWithGoogle}
+          onDeleteChannel={() => {}}
+          onOpenConnectModal={handleConnectWithGoogle}
           onNavigate={onNavigate}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
         />
       )}
 
-      {/* ── Sub-Page 2: VIDEOS (Long-form / Standard Channel Catalog) ── */}
+      {/* ── Tab 2: VIDEOS (Real 16:9 Uploads) ── */}
       {activeTab === 'videos' && (
         <YouTubeVideosPage
-          channels={channels}
-          videos={videos}
+          channels={channelsList}
+          videos={[]}
           liveVideos={liveVideos}
-          loading={feedLoading || loading}
+          loading={loading}
           onNavigate={onNavigate}
         />
       )}
 
-      {/* ── Sub-Page 3: YOUTUBE SHORTS FEED ── */}
+      {/* ── Tab 3: SHORTS (Real 9:16 Vertical Feed) ── */}
       {activeTab === 'shorts' && (
         <YouTubeShortsPage
-          videos={videos}
-          channels={channels}
+          channels={channelsList}
           shortsSearch={shortsSearch}
           onShortsSearchChange={setShortsSearch}
-          selectedChannelForShorts={selectedChannelForShorts}
+          selectedChannelForShorts={channel}
           liveShorts={liveShorts}
-          liveShortsLoading={loading || feedLoading || liveShortsLoading}
-          onLoadLiveShorts={handleLoadLiveShorts}
-          onCloseLiveShorts={() => {
-            setSelectedChannelForShorts(null);
-            setLiveShorts([]);
-          }}
+          liveShortsLoading={loading}
+          onLoadLiveShorts={() => loadChannelLive(currentChannelQuery)}
           onNavigate={onNavigate}
         />
       )}
 
-      {/* ── Sub-Page 4: PLAYLISTS & SERIES ── */}
+      {/* ── Tab 4: PLAYLISTS ── */}
       {activeTab === 'playlists' && (
         <YouTubePlaylistsPage
-          channels={channels}
+          channels={channelsList}
           liveVideos={liveVideos}
-          loading={loading || feedLoading}
-          onNavigate={onNavigate}
-        />
-      )}
-
-      {/* ── Sub-Page 5: COMMUNITY POSTS & ANNOUNCEMENTS ── */}
-      {activeTab === 'posts' && (
-        <YouTubePostsPage
-          channels={channels}
-          loading={loading || feedLoading}
-        />
-      )}
-
-      {/* ── Sub-Page 3: DAILY AUTOMATION SCHEDULES ── */}
-      {activeTab === 'schedules' && (
-        <YouTubeSchedulesPage
-          automations={automations}
+          playlists={livePlaylists}
           loading={loading}
-          onToggleAuto={handleToggleAuto}
           onNavigate={onNavigate}
         />
       )}
 
-      {/* ── Sub-Page 4: ANALYTICS & GROWTH ── */}
+      {/* ── Tab 5: SEO & KEYWORDS ── */}
+      {activeTab === 'seo' && <YouTubeSeoPage />}
+
+      {/* ── Tab 6: TRENDING SHORTS ── */}
+      {activeTab === 'trending' && (
+        <YouTubeTrendingPage
+          onPlayShort={(short) => setActivePlayingVideo(short)}
+          onNavigate={onNavigate}
+        />
+      )}
+
+      {/* ── Tab 7: COMMUNITY ── */}
+      {activeTab === 'posts' && (
+        <YouTubePostsPage channels={channelsList} loading={loading} />
+      )}
+
+      {/* ── Tab 8: ANALYTICS ── */}
       {activeTab === 'analytics' && (
         <YouTubeAnalyticsPage
-          videos={videos}
-          channels={channels}
+          videos={[]}
+          channels={channelsList}
           liveVideos={liveVideos}
-          loading={loading || feedLoading}
+          loading={loading}
         />
       )}
 
-      {/* ── Sub-Page 5: CHANNEL SETTINGS ── */}
+      {/* ── Tab 9: SETTINGS ── */}
       {activeTab === 'settings' && (
         <YouTubeSettingsPage
-          channels={channels}
-          copiedId={copiedId}
-          onCopyId={handleCopyId}
-          onOpenCorrectModal={openCorrectModal}
-          onDeleteChannel={handleDeleteChannel}
-          onOpenConnectModal={() => setShowConnectModal(true)}
+          channels={channelsList}
+          copiedId={null}
+          onCopyId={() => {}}
+          onOpenCorrectModal={handleConnectWithGoogle}
+          onDeleteChannel={handleDisconnectChannel}
+          onOpenConnectModal={handleConnectWithGoogle}
         />
       )}
 
-      {/* Connect YouTube Channel Modal with Real Live Verification */}
-      <Modal
-        isOpen={showConnectModal}
-        onClose={() => setShowConnectModal(false)}
-        title="Connect & Verify YouTube Channel"
-      >
-        <form onSubmit={handleConnectChannel} className="space-y-4">
-          <p className="text-xs text-[#9CA3AF]">
-            Enter a YouTube handle or channel URL to fetch real live subscriber and video metrics.
-          </p>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">
-              YouTube Channel Handle or URL
-            </label>
-            <div className="flex gap-2">
-              <input
-                value={channelInput}
-                onChange={(e) => {
-                  setChannelInput(e.target.value);
-                  setLookupResult(null);
-                  setLookupError(null);
-                }}
-                placeholder="e.g. @EmojiEyeSpy or @HubermanLab"
-                required
-                className="flex-1 bg-[#121212] border border-[#2F2F2F] text-sm text-[#E5E5E5] placeholder-[#6B7280] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#3B82F6]"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => handleLookupChannel()}
-                disabled={lookupLoading || !channelInput.trim()}
-                icon={<RefreshCw className={`w-3.5 h-3.5 ${lookupLoading ? 'animate-spin' : ''}`} />}
-              >
-                {lookupLoading ? 'Checking…' : 'Verify'}
-              </Button>
-            </div>
-          </div>
-
-          {lookupError && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{lookupError}</span>
-            </div>
-          )}
-
-          {lookupResult && (
-            <div className="p-3.5 rounded-xl bg-[#121212] border border-[#3B82F6]/40 flex items-center gap-3">
-              <img
-                src={lookupResult.avatarUrl}
-                alt={lookupResult.name}
-                className="w-12 h-12 rounded-xl border border-[#2F2F2F] object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <h4 className="font-bold text-white text-sm truncate">{lookupResult.name}</h4>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                    Live
-                  </span>
-                </div>
-                <p className="text-xs text-[#9CA3AF] font-mono-studio">{lookupResult.handle}</p>
-                <div className="flex items-center gap-3 text-[11px] text-[#60A5FA] font-medium pt-0.5">
-                  <span>{lookupResult.subscribers.toLocaleString()} subscribers</span>
-                  <span>·</span>
-                  <span>{lookupResult.videosUploaded.toLocaleString()} videos</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <Input
-            label="Niche Focus"
-            value={niche}
-            onChange={(e) => setNiche(e.target.value)}
-            placeholder="e.g. Motivational Quotes, Stoic Mindset"
-          />
-
-          <div className="flex justify-end gap-2.5 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setShowConnectModal(false);
-                setLookupResult(null);
-                setLookupError(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={connectLoading || (!lookupResult && !channelInput.trim())}
-              icon={<Plus className="w-4 h-4" />}
-            >
-              {connectLoading ? 'Connecting…' : 'Save & Connect Channel'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Correct Channel Handle Modal */}
-      <Modal
-        isOpen={showCorrectModal}
-        onClose={() => setShowCorrectModal(false)}
-        title="Change Channel Handle"
-      >
-        <form onSubmit={handleCorrectChannel} className="space-y-4">
-          <p className="text-xs text-[#9CA3AF]">
-            Update your handle if the current handle differs from your public YouTube channel.
-          </p>
-
-          <Input
-            label="New YouTube Handle"
-            value={newHandleInput}
-            onChange={(e) => setNewHandleInput(e.target.value)}
-            placeholder="e.g. @EmojiEyeSpy"
-            required
-          />
-            label="Updated YouTube Handle or URL"
-          <div className="flex justify-end gap-2.5 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setShowCorrectModal(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" disabled={correctLoading || !newHandleInput.trim()}>
-              {correctLoading ? 'Saving…' : 'Update Handle'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      {/* ── In-Studio Embedded Video Player Modal (via React createPortal) ── */}
+      <YouTubeVideoDetailsModal
+        isOpen={Boolean(activePlayingVideo)}
+        video={activePlayingVideo}
+        onClose={() => setActivePlayingVideo(null)}
+      />
     </div>
   );
 }
+
+

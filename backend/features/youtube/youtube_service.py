@@ -702,3 +702,11 @@ def get_channel_analytics(channel_handle_or_id: str) -> Dict[str, Any]:
             {"time": "8:00 AM – 10:00 AM", "status": "Morning Discovery", "recommendation": "Good for initial subscriber notifications"},
         ],
     }
+
+
+# Forward mutation functions from live service for convenience
+from .youtube_live_service import (
+    upload_video_to_live_youtube,
+    update_live_video_metadata,
+    delete_live_video,
+)

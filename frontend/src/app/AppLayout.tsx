@@ -294,7 +294,11 @@ export default function AppLayout({
         <div className="flex-1 p-4 sm:p-5 overflow-y-auto">
           <nav aria-label="Main navigation" className="space-y-2">
             {navItems.map((item) => {
-              const isActive = activePage === item.id || (item.id === 'profile' && activePage.startsWith('profile-'));
+              const isActive =
+                activePage === item.id ||
+                (item.id === 'profile' && activePage.startsWith('profile-')) ||
+                (item.id === 'youtube' && activePage.startsWith('youtube-')) ||
+                (item.id === 'workspace' && activePage.startsWith('workspace-'));
               return (
                 <button
                   key={item.id}
