@@ -30,17 +30,18 @@ interface WorkspaceSidebarProps {
 const SIDEBAR_ITEMS: Array<{
   id: WorkspaceTabType;
   label: string;
+  shortLabel: string;
   icon: React.ComponentType<{ className?: string }>;
   isScriptGroup?: boolean;
 }> = [
-  { id: 'script', label: 'Script & AI', icon: FileText, isScriptGroup: true },
-  { id: 'canvas', label: 'Canvas', icon: LayoutTemplate },
-  { id: 'media', label: 'Media Library', icon: FolderOpen },
-  { id: 'text', label: 'Text & Titles', icon: Type },
-  { id: 'elements', label: 'Elements', icon: Shapes },
-  { id: 'audio', label: 'Audio & SFX', icon: Music },
-  { id: 'image', label: 'Stock Images', icon: ImageIcon },
-  { id: 'video', label: 'Stock Videos', icon: Film },
+  { id: 'script', label: 'Script & AI', shortLabel: 'Script', icon: FileText, isScriptGroup: true },
+  { id: 'canvas', label: 'Canvas', shortLabel: 'Canvas', icon: LayoutTemplate },
+  { id: 'media', label: 'Media Library', shortLabel: 'Media', icon: FolderOpen },
+  { id: 'text', label: 'Text & Titles', shortLabel: 'Text', icon: Type },
+  { id: 'elements', label: 'Elements', shortLabel: 'Elements', icon: Shapes },
+  { id: 'audio', label: 'Audio & SFX', shortLabel: 'Audio', icon: Music },
+  { id: 'image', label: 'Stock Photos', shortLabel: 'Photos', icon: ImageIcon },
+  { id: 'video', label: 'Stock Videos', shortLabel: 'Videos', icon: Film },
 ];
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
@@ -72,7 +73,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             >
               <IconComp className="h-3 w-3 shrink-0 transition-transform group-hover:scale-110" />
               <span className="text-[6px] font-semibold mt-0.5 tracking-tight truncate max-w-[30px] leading-none">
-                {item.id === 'script' ? 'Script' : item.label.split(' ')[0]}
+                {item.shortLabel}
               </span>
 
               {/* Flyout Tooltip */}

@@ -581,7 +581,7 @@ export default function WorkspacePage({
                   setActiveElementOverlay(null);
                 }}
               />
-            ) : activePane === 'script' ? (
+            ) : activePane === 'prompt' || (activePane === 'script' && scriptSubPane === 'prompt') ? (
               <AIAgentCreatorPane
                 agentPrompt={agentPrompt}
                 onPromptChange={setAgentPrompt}
