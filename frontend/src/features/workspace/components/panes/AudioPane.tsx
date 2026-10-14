@@ -50,99 +50,29 @@ export interface AudioPaneProps {
   onAddSfxToTimeline?: (sfx: SoundEffectItem) => void;
 }
 
-const CURATED_SOUNDTRACKS: SoundtrackItem[] = [
-  {
-    id: 'track-1',
-    title: 'Titan Solitude Ambient',
-    genre: 'Cinematic Ambient',
-    duration: '2:15',
-    bpm: 72,
-    mood: 'Stoic & Solitary',
-    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cinematic-time-lapse-115672.mp3',
-  },
-  {
-    id: 'track-2',
-    title: 'Relentless Iron Grit',
-    genre: 'Deep Bass Drone',
-    duration: '1:45',
-    bpm: 90,
-    mood: 'Aggressive Discipline',
-    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8bbf72e81.mp3?filename=epic-cinematic-trailer-110023.mp3',
-  },
-  {
-    id: 'track-3',
-    title: 'Midnight Cyber Drive',
-    genre: 'Dark Synthwave',
-    duration: '2:30',
-    bpm: 120,
-    mood: 'Futuristic Focus',
-    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3?filename=synthwave-80s-110045.mp3',
-  },
-  {
-    id: 'track-4',
-    title: 'Dawn Meditation Piano',
-    genre: 'Reflective Classical',
-    duration: '2:05',
-    bpm: 65,
-    mood: 'Deep Wisdom',
-    audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_349dcc842a.mp3?filename=soft-piano-ambient-9689.mp3',
-  },
-  {
-    id: 'track-5',
-    title: 'Apex Phonk Acceleration',
-    genre: 'High-Octane Phonk',
-    duration: '1:50',
-    bpm: 135,
-    mood: 'Maximum Adrenaline',
-    audioUrl: 'https://cdn.pixabay.com/download/audio/2023/04/18/audio_650630ba81.mp3?filename=phonk-drift-146399.mp3',
-  },
-  {
-    id: 'track-6',
-    title: 'Echoes of the Coliseum',
-    genre: 'Orchestral Hybrid',
-    duration: '2:20',
-    bpm: 80,
-    mood: 'Historical Grandeur',
-    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/26/audio_d0c6ff1101.mp3?filename=cinematic-atmosphere-score-10928.mp3',
-  },
-  {
-    id: 'track-7',
-    title: 'Dark Room Cyber Lofi',
-    genre: 'Chill Synth Lofi',
-    duration: '2:10',
-    bpm: 84,
-    mood: 'Deep Coding & Flow',
-    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/05/16/audio_c83d6a718f.mp3?filename=lofi-study-112191.mp3',
-  },
-  {
-    id: 'track-8',
-    title: 'Sub Zero Tension Drone',
-    genre: 'Minimalist Suspense',
-    duration: '1:55',
-    bpm: 68,
-    mood: 'Dark Psychology',
-    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_c29c87d4f9.mp3?filename=cinematic-drone-110484.mp3',
-  },
-];
+import {
+  CURATED_SOUNDTRACKS as EXPANDED_SOUNDTRACKS,
+  CURATED_SFX as EXPANDED_SFX,
+  VIRAL_MEME_SOUNDBOARD,
+} from '../../data/mediaCatalogData';
 
-const CURATED_SOUND_EFFECTS: SoundEffectItem[] = [
-  { id: 'sfx-1', name: 'Cinematic Bass Boom', category: 'Impact', duration: '2.5s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3527e30eb.mp3' },
-  { id: 'sfx-2', name: 'Sub Drop 808 Slam', category: 'Impact', duration: '1.8s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8bbf72e81.mp3' },
-  { id: 'sfx-3', name: 'Heavy Metal Anvil', category: 'Impact', duration: '1.2s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
-  { id: 'sfx-4', name: 'Cinematic Trailer Hit', category: 'Impact', duration: '2.0s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3527e30eb.mp3' },
-  { id: 'sfx-5', name: 'Fast Whoosh Air Cut', category: 'Transition', duration: '0.8s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
-  { id: 'sfx-6', name: 'Glitch Swoosh Whip', category: 'Transition', duration: '1.1s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
-  { id: 'sfx-7', name: 'Vinyl Record Stop', category: 'Transition', duration: '1.4s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
-  { id: 'sfx-8', name: 'Film Reel Rewind', category: 'Transition', duration: '1.6s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
-  { id: 'sfx-9', name: 'Sub Riser Pitch Rise', category: 'Tension', duration: '3.2s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
-  { id: 'sfx-10', name: 'Heartbeat Pulse Low', category: 'Tension', duration: '4.0s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3527e30eb.mp3' },
-  { id: 'sfx-11', name: 'Ticking Clock Metronome', category: 'Tension', duration: '2.8s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
-  { id: 'sfx-12', name: 'Dark Cyber Drone Swell', category: 'Tension', duration: '3.5s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/26/audio_d0c6ff1101.mp3' },
-  { id: 'sfx-13', name: 'Camera Shutter Click', category: 'Action', duration: '0.5s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
-  { id: 'sfx-14', name: 'Cyber Bell Hologram', category: 'Action', duration: '1.2s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
-  { id: 'sfx-15', name: 'Sword Blade Draw', category: 'Action', duration: '1.0s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
-  { id: 'sfx-16', name: 'Page Turn Fast Whisper', category: 'Action', duration: '0.7s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
-];
+const CURATED_SOUNDTRACKS: SoundtrackItem[] = EXPANDED_SOUNDTRACKS.map((t) => ({
+  id: t.id,
+  title: t.title,
+  genre: t.genre,
+  duration: t.duration,
+  bpm: t.bpm,
+  mood: t.mood,
+  audioUrl: t.audioUrl,
+}));
+
+const CURATED_SOUND_EFFECTS: SoundEffectItem[] = EXPANDED_SFX.map((s) => ({
+  id: s.id,
+  name: s.name,
+  category: s.category === 'whoosh' ? 'Transition' : s.category === 'impact' ? 'Impact' : s.category === 'riser' ? 'Tension' : 'Action',
+  duration: s.duration,
+  audioUrl: s.audioUrl,
+}));
 
 export const AudioPane: React.FC<AudioPaneProps> = ({
   onSelectMusic,
@@ -150,7 +80,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   onApplyRecordedVoice,
   onAddSfxToTimeline,
 }) => {
-  const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'record' | 'mixer' | 'url'>('soundtracks');
+  const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'soundboard' | 'record' | 'mixer' | 'url'>('soundtracks');
   const [soundtracks, setSoundtracks] = useState<SoundtrackItem[]>(CURATED_SOUNDTRACKS);
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [selectedSfxCategory, setSelectedSfxCategory] = useState<string>('all');
@@ -309,6 +239,34 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     }
   };
 
+  const [isSearchingJamendo, setIsSearchingJamendo] = useState(false);
+
+  const handleSearchJamendo = async () => {
+    if (!searchQuery.trim()) return;
+    try {
+      setIsSearchingJamendo(true);
+      const res = await workspaceApi.searchOpenTracks(searchQuery, selectedGenre === 'all' ? '' : selectedGenre);
+      if (res?.items?.length) {
+        const liveTracks: SoundtrackItem[] = res.items.map((it: any) => ({
+          id: it.id,
+          title: it.title,
+          genre: it.genre || 'Royalty-Free',
+          duration: it.duration || '2:30',
+          bpm: it.bpm || 95,
+          mood: it.artist ? `By ${it.artist}` : 'Creative Commons',
+          audioUrl: it.audioUrl,
+        }));
+        setSoundtracks((prev) => {
+          const existing = new Set(prev.map((p) => p.audioUrl));
+          const newOnes = liveTracks.filter((it) => !existing.has(it.audioUrl));
+          return [...newOnes, ...prev];
+        });
+      }
+    } finally {
+      setIsSearchingJamendo(false);
+    }
+  };
+
   const downloadRecordedVoice = () => {
     if (!mediaBlobUrl) return;
     const a = document.createElement('a');
@@ -405,6 +363,18 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           }`}
         >
           Sound Effects
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('soundboard')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'soundboard'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <Sparkles className="w-3 h-3 text-amber-400" />
+          Soundboard ({VIRAL_MEME_SOUNDBOARD.length})
         </button>
         <button
           type="button"
@@ -609,7 +579,35 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
         {/* ── Tab 1: Soundtracks ── */}
         {activeTab === 'soundtracks' && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
+            {/* Search Input with Free Jamendo API Button */}
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search music vibes, phonk, lofi..."
+                  className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSearchJamendo}
+                disabled={!searchQuery.trim() || isSearchingJamendo}
+                className="flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-[#1E2330] hover:bg-[#252D3F] disabled:opacity-50 border border-[#3B82F6]/40 text-[#60A5FA] text-[10px] font-bold transition-all cursor-pointer shrink-0"
+                title="Search live royalty-free music via Jamendo API"
+              >
+                {isSearchingJamendo ? (
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Search className="w-3 h-3" />
+                )}
+                <span>Free Jamendo</span>
+              </button>
+            </div>
+
             {filteredSoundtracks.map((track) => {
               const isSelected = selectedMusic === track.id;
               const isPlaying = playingTrackId === track.id;
@@ -741,6 +739,70 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ── Tab: Viral Meme Soundboard ── */}
+        {activeTab === 'soundboard' && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
+                Instant Zero-Latency Viral Pads
+              </span>
+              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                Live Hotkeys
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {VIRAL_MEME_SOUNDBOARD.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    try {
+                      const sound = new Audio(item.audioUrl);
+                      sound.volume = 0.8;
+                      sound.play();
+                    } catch {}
+                  }}
+                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-amber-500/50 hover:bg-[#25252D] active:scale-[0.98] transition-all cursor-pointer flex flex-col gap-1.5 group relative"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl select-none">{item.emoji}</span>
+                    <span className="text-[9px] font-mono-studio font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                      {item.shortcut}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate group-hover:text-amber-400 transition-colors">
+                      {item.name}
+                    </p>
+                    <p className="text-[10px] text-[#A1A1AA] truncate">{item.desc}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onAddSfxToTimeline) {
+                        onAddSfxToTimeline({
+                          id: item.id,
+                          name: `${item.emoji} ${item.name}`,
+                          category: 'Impact',
+                          duration: '1.5s',
+                          audioUrl: item.audioUrl,
+                        });
+                      }
+                    }}
+                    className="mt-1 text-[9px] font-bold text-blue-400 hover:text-white bg-blue-500/10 hover:bg-blue-600 px-2 py-1 rounded transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                    + Timeline
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -126,3 +126,31 @@ async def delete_quotes_memory_route():
 )
 async def get_media_library_route():
     return get_media_library()
+
+@router.get(
+    "/api/workspace/open-media/images",
+    summary="Search open-source images",
+    description="Query Openverse and curated public-domain photography."
+)
+async def get_open_images_route(q: str = "", page: int = 1, pageSize: int = 24):
+    from .open_media_service import search_open_images
+    return search_open_images(query=q, page=page, page_size=pageSize)
+
+@router.get(
+    "/api/workspace/open-media/tracks",
+    summary="Search royalty-free soundtracks",
+    description="Query Jamendo & open audio tracks by mood or genre."
+)
+async def get_open_tracks_route(q: str = "", genre: str = "", limit: int = 20):
+    from .open_media_service import search_open_tracks
+    return search_open_tracks(query=q, genre=genre, limit=limit)
+
+@router.get(
+    "/api/workspace/open-media/sfx",
+    summary="Search sound effects",
+    description="Query open sound effects library."
+)
+async def get_open_sfx_route(q: str = "whoosh", limit: int = 20):
+    from .open_media_service import search_open_sfx
+    return search_open_sfx(query=q, limit=limit)
+

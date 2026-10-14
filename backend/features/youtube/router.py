@@ -304,7 +304,7 @@ async def post_publish_video(payload: PublishVideoRequest):
         logger.error(f"Error publishing video: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to publish video."
+            detail=f"Failed to publish video: {e}"
         )
 
 @router.get(

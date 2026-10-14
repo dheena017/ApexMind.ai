@@ -235,6 +235,11 @@ def publish_video(title: str, quote: str, voice: str, category: str, channel_id:
     likes = 0
 
     target_channel_id = channel_id
+    if target_channel_id:
+        cursor.execute("SELECT id FROM youtube_channels WHERE id = ?", (target_channel_id,))
+        if not cursor.fetchone():
+            target_channel_id = None
+
     if not target_channel_id:
         cursor.execute("SELECT id FROM youtube_channels ORDER BY connected_at DESC LIMIT 1")
         channel_row = cursor.fetchone()

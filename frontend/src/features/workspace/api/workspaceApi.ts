@@ -172,7 +172,63 @@ export const workspaceApi = {
     const duration = performance.now() - start;
     consoleLogger.api('POST', '/api/youtube/publish', res.status, duration);
     const data = await res.json();
+    if (!res.ok) {
+      const errDetail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail || 'Failed to publish video');
+      throw new Error(errDetail);
+    }
     consoleLogger.success('YouTube', `Short published to catalog: ${data.video?.title}`, data.video);
     return data.video;
   },
+
+  // Search free open-source images via Openverse API & curated fallback
+  async searchOpenImages(query: string, page: number = 1, pageSize: number = 24): Promise<any> {
+    try {
+      const res = await fetch(
+        apiUrl(`/api/workspace/open-media/images?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`)
+      );
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.warn('OpenMedia', `Openverse search error: ${e}`);
+    }
+    return { success: false, items: [] };
+  },
+
+  // Search free royalty-free tracks via Jamendo API
+  async searchOpenTracks(query: string = '', genre: string = '', limit: number = 20): Promise<any> {
+    try {
+      const res = await fetch(
+        apiUrl(`/api/workspace/open-media/tracks?q=${encodeURIComponent(query)}&genre=${encodeURIComponent(genre)}&limit=${limit}`)
+      );
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.warn('OpenMedia', `Jamendo search error: ${e}`);
+    }
+    return { success: false, items: [] };
+  },
+
+  // Search free sound effects via FreeSound / Open SFX
+  async searchOpenSfx(query: string = 'whoosh', limit: number = 20): Promise<any> {
+    try {
+      const res = await fetch(
+        apiUrl(`/api/workspace/open-media/sfx?q=${encodeURIComponent(query)}&limit=${limit}`)
+      );
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.warn('OpenMedia', `SFX search error: ${e}`);
+    }
+    return { success: false, items: [] };
+  },
+
+  // Generate 100% free instant AI visual via Pollinations (No API key needed)
+  getFreeAiImageUrl(prompt: string, width: number = 1080, height: number = 1920): string {
+    const encoded = encodeURIComponent(prompt.trim());
+    return `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&nologo=true`;
+  },
 };
+

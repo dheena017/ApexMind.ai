@@ -52,7 +52,15 @@ def remove_channel(channel_id: str) -> bool:
 def fetch_videos() -> List[Dict[str, Any]]:
     return get_videos()
 
-def insert_video(title: str, quote: str, voice: str, category: str, channel_id: Optional[str] = None) -> Dict[str, Any]:
+def insert_video(title: Any, quote: str = "", voice: str = "Fenrir", category: str = "Motivation", channel_id: Optional[str] = None) -> Dict[str, Any]:
+    if isinstance(title, dict):
+        return publish_video(
+            title=title.get("title", "Untitled Short"),
+            quote=title.get("quote", ""),
+            voice=title.get("voice", "Fenrir"),
+            category=title.get("category", "Motivation"),
+            channel_id=title.get("channel_id") or title.get("channelId"),
+        )
     return publish_video(
         title=title,
         quote=quote,

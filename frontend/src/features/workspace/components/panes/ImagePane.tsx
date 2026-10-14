@@ -37,17 +37,19 @@ export interface ImagePaneProps {
   activeImageUrl?: string;
 }
 
+import { CURATED_STOCK_IMAGES as EXPANDED_IMAGES } from '../../data/mediaCatalogData';
+
 const CURATED_STOCK_IMAGES: StockImageItem[] = [
-  {
-    id: 'img-1',
-    title: 'Dark Misty Mountains Dawn',
-    category: 'nature',
-    url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80',
-    author: 'Kalen Emsley',
-    resolution: '1080x1920 HD',
-    tags: ['mountains', 'fog', 'solitude', 'dawn'],
-  },
+  ...EXPANDED_IMAGES.map((img) => ({
+    id: img.id,
+    title: img.title,
+    category: (img.category === 'stoic' ? 'stoic' : img.category === 'gym' ? 'gym' : img.category === 'cyber' ? 'cyber' : img.category === 'luxury' ? 'architecture' : img.category === 'cosmos' ? 'nature' : 'minimal') as any,
+    url: img.url,
+    thumbnail: img.thumbnail,
+    author: img.author,
+    resolution: img.resolution,
+    tags: img.tags,
+  })),
   {
     id: 'img-2',
     title: 'Cyberpunk Neon Tokyo Corridor',
@@ -264,6 +266,52 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       } catch {}
       return updated;
     });
+  };
+
+  const [isSearchingOpenverse, setIsSearchingOpenverse] = useState(false);
+
+  const handleSearchOpenverse = async () => {
+    if (!searchQuery.trim()) return;
+    try {
+      setIsSearchingOpenverse(true);
+      const res = await workspaceApi.searchOpenImages(searchQuery);
+      if (res?.items?.length) {
+        const liveItems: StockImageItem[] = res.items.map((it: any) => ({
+          id: it.id || `ov-${Date.now()}-${Math.random()}`,
+          title: it.title || searchQuery,
+          category: 'nature',
+          url: it.url,
+          thumbnail: it.thumbnail || it.url,
+          author: it.author || 'Openverse CC0',
+          resolution: it.resolution || '1080x1920 HD',
+          tags: it.tags || [searchQuery],
+        }));
+        setImages((prev) => {
+          const existing = new Set(prev.map((p) => p.url));
+          const newOnes = liveItems.filter((it) => !existing.has(it.url));
+          return [...newOnes, ...prev];
+        });
+      }
+    } finally {
+      setIsSearchingOpenverse(false);
+    }
+  };
+
+  const handleGeneratePollinationsAi = () => {
+    const prompt = searchQuery.trim() || 'Cinematic dark moody luxury vertical photography';
+    const aiUrl = workspaceApi.getFreeAiImageUrl(prompt);
+    const aiItem: StockImageItem = {
+      id: `ai-pollinations-${Date.now()}`,
+      title: `AI: ${prompt}`,
+      category: 'cyber',
+      url: aiUrl,
+      thumbnail: aiUrl,
+      author: 'Pollinations AI (Free)',
+      resolution: '1080x1920 4K',
+      tags: ['ai', 'generated', 'free'],
+    };
+    setImages((prev) => [aiItem, ...prev]);
+    handleApply(aiItem);
   };
 
   const handleAddCustomUrl = (saveToFavorites = false) => {
@@ -684,6 +732,33 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
+            </div>
+
+            {/* Free Open-Source API Action Bar */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSearchOpenverse}
+                disabled={!searchQuery.trim() || isSearchingOpenverse}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-[#1E2330] hover:bg-[#252D3F] disabled:opacity-50 border border-[#3B82F6]/30 text-[#60A5FA] text-[10px] font-bold transition-all cursor-pointer shadow-sm"
+              >
+                {isSearchingOpenverse ? (
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Search className="w-3 h-3" />
+                )}
+                <span>Search Openverse (Free CC0)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGeneratePollinationsAi}
+                className="flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg bg-[#2A2438] hover:bg-[#352D47] border border-purple-500/30 text-purple-300 text-[10px] font-bold transition-all cursor-pointer shadow-sm shrink-0"
+                title="Generate instant 4K visual via Pollinations AI (100% Free)"
+              >
+                <Sparkles className="w-3 h-3 text-purple-400" />
+                <span>Free AI</span>
+              </button>
             </div>
 
             {/* Recently Used Carousel */}

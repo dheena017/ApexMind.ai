@@ -187,14 +187,39 @@ get_live_channel_shorts = get_channel_shorts
 delete_youtube_channel_route = disconnect_channel
 
 
-def publish_video_to_shorts(title: str, quote: str, voice: str = "Fenrir", category: str = "Motivation", channel_id: Optional[str] = None) -> Dict[str, Any]:
-    return publish_video_record({
-        "title": title,
-        "quote": quote,
-        "voice": voice,
-        "category": category,
-        "channel_id": channel_id,
-    })
+def publish_video_to_shorts(
+    title: Any = None,
+    quote: str = "",
+    voice: str = "Fenrir",
+    category: str = "Motivation",
+    channel_id: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, Any]:
+    if isinstance(title, dict):
+        d = title
+        title = d.get("title", "Untitled Short")
+        quote = d.get("quote", "")
+        voice = d.get("voice", "Fenrir")
+        category = d.get("category", "Motivation")
+        channel_id = d.get("channel_id") or d.get("channelId")
+    elif not title:
+        title = kwargs.get("title", "Untitled Short")
+        quote = kwargs.get("quote", quote)
+        voice = kwargs.get("voice", voice)
+        category = kwargs.get("category", category)
+        channel_id = kwargs.get("channel_id") or kwargs.get("channelId") or channel_id
+
+    created = insert_video(
+        title=title,
+        quote=quote,
+        voice=voice,
+        category=category,
+        channel_id=channel_id,
+    )
+    return {
+        "success": True,
+        "video": created,
+    }
 
 
 def list_automations() -> Dict[str, Any]:

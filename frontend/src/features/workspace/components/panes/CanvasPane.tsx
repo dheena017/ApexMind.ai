@@ -64,13 +64,16 @@ const STUDIO_GRADIENTS = [
   { id: 'grad-fire', value: 'linear-gradient(135deg, #991b1b 0%, #b91c1c 50%, #f97316 100%)', name: 'Inferno Forge' },
 ];
 
+import { COLOR_LUTS, ColorLUTItem, PLATFORM_SAFE_ZONES } from '../../data/mediaCatalogData';
+
 export const CanvasPane: React.FC<CanvasPaneProps> = ({
   aspectRatio,
   onAspectRatioChange,
   background,
   onBackgroundChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'ratio' | 'solid' | 'gradient' | 'builder' | 'guides'>('ratio');
+  const [activeTab, setActiveTab] = useState<'ratio' | 'solid' | 'gradient' | 'luts' | 'builder' | 'guides'>('ratio');
+  const [activeLutId, setActiveLutId] = useState<string>('lut-natural');
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Custom Gradient Builder
@@ -127,6 +130,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
       <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
         {[
           { id: 'ratio', label: 'Aspect Ratio' },
+          { id: 'luts', label: 'Color LUTs' },
           { id: 'solid', label: 'Solid Color' },
           { id: 'gradient', label: 'Gradients' },
           { id: 'builder', label: 'Builder' },
@@ -149,6 +153,61 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
+        {/* ── Tab: Cinematic Color LUTs ── */}
+        {activeTab === 'luts' && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                24 Cinematic Color LUT Presets
+              </span>
+              <span className="text-[10px] font-mono-studio text-[#60A5FA]">
+                CSS Filter Matrices
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {COLOR_LUTS.map((lut) => {
+                const isSelected = activeLutId === lut.id;
+                return (
+                  <button
+                    key={lut.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveLutId(lut.id);
+                      window.dispatchEvent(
+                        new CustomEvent('workspace:set-backdrop-filter', {
+                          detail: { lutId: lut.id, filter: lut.cssFilter },
+                        })
+                      );
+                    }}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-1.5 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg'
+                        : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
+                    }`}
+                  >
+                    <div
+                      className={`w-full h-8 rounded-lg bg-gradient-to-r ${lut.previewGradient} border border-white/10 shadow-inner flex items-center justify-end px-2`}
+                    >
+                      {isSelected && (
+                        <div className="p-0.5 rounded-full bg-[#3B82F6] text-white">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{lut.name}</p>
+                      <p className="text-[10px] text-[#A1A1AA] truncate">{lut.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ── Tab: Safe Zone Guides ── */}
         {activeTab === 'guides' && (
           <div className="flex flex-col gap-3">

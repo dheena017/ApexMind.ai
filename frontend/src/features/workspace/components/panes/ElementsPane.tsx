@@ -29,28 +29,22 @@ export interface ElementsPaneProps {
   onToggleGrain?: () => void;
 }
 
-const BADGES = [
-  { id: 'badge-1', label: 'RULE #1', desc: 'Core Principle', color: 'from-amber-500 to-orange-600', icon: Zap },
-  { id: 'badge-2', label: 'THE 1% CLUB', desc: 'Elite Standards', color: 'from-blue-600 to-indigo-700', icon: Crown },
-  { id: 'badge-3', label: 'NO EXCUSES', desc: 'Raw Discipline', color: 'from-red-600 to-rose-700', icon: Flame },
-  { id: 'badge-4', label: 'STOIC MINDSET', desc: 'Mental Fortress', color: 'from-zinc-600 to-zinc-800', icon: Shield },
-  { id: 'badge-5', label: 'DAY 1 OR ONE DAY', desc: 'Action Bias', color: 'from-emerald-600 to-teal-700', icon: Target },
-  { id: 'badge-6', label: 'SILENT WARRIOR', desc: 'Zero Talk', color: 'from-purple-600 to-indigo-800', icon: Award },
-  { id: 'badge-7', label: '4:00 AM CLUB', desc: 'Early Discipline', color: 'from-cyan-600 to-blue-700', icon: Zap },
-  { id: 'badge-8', label: 'ZERO DISTRACTIONS', desc: 'Laser Focus', color: 'from-fuchsia-600 to-pink-700', icon: Target },
-  { id: 'badge-9', label: 'FORGE YOURSELF', desc: 'Iron Will', color: 'from-orange-600 to-red-700', icon: Flame },
-  { id: 'badge-10', label: 'UNSTOPPABLE', desc: 'Pure Momentum', color: 'from-emerald-500 to-cyan-600', icon: Crown },
-  { id: 'badge-11', label: 'MEMENTO MORI', desc: 'Time Scarcity', color: 'from-zinc-700 to-zinc-900', icon: Shield },
-  { id: 'badge-12', label: 'EMPIRE BUILDER', desc: 'Generational Wealth', color: 'from-amber-600 to-yellow-700', icon: Award },
-];
+import { VISUAL_ELEMENTS, VisualElementItem } from '../../data/mediaCatalogData';
 
-const SHAPES = [
-  { id: 'shape-box', name: 'Rounded Glass Quote Box', desc: 'Dark blur container behind subtitles', icon: Square },
-  { id: 'shape-spotlight', name: 'Center Spotlight Radial', desc: 'Focused radial lighting highlighting speaker', icon: Circle },
-  { id: 'shape-letterbox', name: 'Cinematic 2.39:1 Letterbox', desc: 'Top & bottom film letterbox borders', icon: Layers },
-  { id: 'shape-divider', name: 'Accent Divider Line', desc: 'Horizontal rule separating hook and quote', icon: ArrowRight },
-  { id: 'shape-scanlines', name: 'CRT Retro Scanlines', desc: 'Subtle cyberpunk monitor scanlines', icon: Tv },
-];
+const BADGES = VISUAL_ELEMENTS.filter((e) => e.category === 'badges').map((e) => ({
+  id: e.id,
+  label: e.label,
+  desc: e.desc,
+  color: e.color,
+  icon: Zap,
+}));
+
+const SHAPES = VISUAL_ELEMENTS.filter((e) => e.category === 'frames').map((e) => ({
+  id: e.id,
+  name: e.name,
+  desc: e.desc,
+  icon: Square,
+}));
 
 const SOCIAL_TAGS = [
   { id: 'social-yt', name: 'YouTube Subscribe Pill', icon: Youtube, defaultVal: 'SUBSCRIBE FOR MORE' },

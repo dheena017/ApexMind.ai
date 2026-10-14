@@ -35,80 +35,17 @@ export interface TextPaneProps {
   onUpdateQuote?: (quote: string) => void;
 }
 
-const VIRAL_TYPOGRAPHY_PRESETS: TextPreset[] = [
-  {
-    id: 'impact-bold',
-    name: 'Titan Impact',
-    previewText: 'STAY IN SILENCE',
-    color: '#FFFFFF',
-    className: 'font-black tracking-tight text-white uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)]',
-    styleDescription: 'High-contrast TikTok & Shorts bold punchy font',
-    fontFamily: 'Impact, sans-serif',
-  },
-  {
-    id: 'neon-cyan',
-    name: 'Cyber Cyan Bold',
-    previewText: 'RELENTLESS MOMENTUM',
-    color: '#06B6D4',
-    className: 'font-black tracking-wider text-[#06B6D4] uppercase drop-shadow-[0_3px_8px_rgba(0,0,0,0.9)]',
-    styleDescription: 'Crisp cyber style for tech & motivation reels',
-    fontFamily: 'Inter, sans-serif',
-  },
-  {
-    id: 'golden-legacy',
-    name: 'Stoic Gold',
-    previewText: 'FORGE YOUR DESTINY',
-    color: '#F59E0B',
-    className: 'font-extrabold tracking-wide text-amber-400 uppercase drop-shadow-[0_3px_8px_rgba(0,0,0,0.9)]',
-    styleDescription: 'Warm luxury gold for philosophy and wealth',
-    fontFamily: 'Cinzel, Georgia, serif',
-  },
-  {
-    id: 'crimson-fury',
-    name: 'Aggressive Crimson',
-    previewText: 'NOBODY CARES. WORK HARDER.',
-    color: '#EF4444',
-    className: 'font-black tracking-tighter text-red-500 uppercase drop-shadow-[0_3px_8px_rgba(0,0,0,0.9)]',
-    styleDescription: 'High adrenaline gym & grind energy',
-    fontFamily: 'Anton, sans-serif',
-  },
-  {
-    id: 'emerald-mindset',
-    name: 'Emerald Discipline',
-    previewText: 'CONSISTENCY BEATS TALENT',
-    color: '#10B981',
-    className: 'font-extrabold tracking-tight text-emerald-400 uppercase drop-shadow-[0_3px_8px_rgba(0,0,0,0.9)]',
-    styleDescription: 'Discipline, financial habits, and growth',
-    fontFamily: 'Montserrat, sans-serif',
-  },
-  {
-    id: 'minimal-mono',
-    name: 'Minimalist Terminal',
-    previewText: '4:00 AM • THE STANDARD',
-    color: '#E4E4E7',
-    className: 'font-mono font-bold tracking-[0.2em] text-zinc-200 uppercase',
-    styleDescription: 'Clean documentary aesthetic with spaced tracking',
-    fontFamily: 'Courier New, monospace',
-  },
-  {
-    id: 'syne-futuristic',
-    name: 'Syne Hyper Future',
-    previewText: 'THE UNSEEN GRIND',
-    color: '#A855F7',
-    className: 'font-black tracking-widest text-purple-400 uppercase drop-shadow-[0_3px_10px_rgba(168,85,247,0.4)]',
-    styleDescription: 'Ultra futuristic aesthetic for deep tech & AI reels',
-    fontFamily: 'Trebuchet MS, sans-serif',
-  },
-  {
-    id: 'bebas-poster',
-    name: 'Bebas Billboard',
-    previewText: 'WIN IN THE DARK',
-    color: '#FACC15',
-    className: 'font-black tracking-normal text-yellow-300 uppercase drop-shadow-[0_4px_14px_rgba(0,0,0,1)]',
-    styleDescription: 'Giant vertical typography dominating screen space',
-    fontFamily: 'Impact, sans-serif',
-  },
-];
+import { TYPOGRAPHY_PRESETS, TypographyPresetItem } from '../../data/mediaCatalogData';
+
+const VIRAL_TYPOGRAPHY_PRESETS: TextPreset[] = TYPOGRAPHY_PRESETS.map((p) => ({
+  id: p.id,
+  name: p.name,
+  previewText: p.previewText,
+  className: p.className,
+  color: p.color,
+  styleDescription: p.styleDescription,
+  fontFamily: p.fontFamily,
+}));
 
 const CAPTION_ANIMATIONS = [
   { id: 'karaoke', name: 'Karaoke Active Word', desc: 'Active word highlighted in radiant yellow/cyan' },
@@ -515,12 +452,53 @@ export const TextPane: React.FC<TextPaneProps> = ({
         {/* ── Tab 1: Typography Packs ── */}
         {activeTab === 'presets' && (
           <div className="flex flex-col gap-2.5">
-            <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
-              Curated Reel Typography Packs
-            </span>
+            {/* Category Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+              {[
+                { id: 'all', label: 'All Packs' },
+                { id: 'subtitles', label: 'Subtitles' },
+                { id: 'hooks', label: 'Hooks' },
+                { id: 'quotes', label: 'Quotes' },
+                { id: 'lowerthirds', label: 'Lower Thirds' },
+                { id: 'cta', label: 'Call To Action' },
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+                    selectedCategory === cat.id
+                      ? 'bg-[#3B82F6] text-white shadow-sm'
+                      : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Presets Search */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search typography presets..."
+                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-4 py-1.5 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+              />
+            </div>
 
             <div className="grid grid-cols-1 gap-2.5">
-              {VIRAL_TYPOGRAPHY_PRESETS.map((preset) => {
+              {TYPOGRAPHY_PRESETS.filter((p) => {
+                const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
+                const matchesQ =
+                  searchQuery.trim() === '' ||
+                  p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  p.previewText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  p.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+                return matchesCat && matchesQ;
+              }).map((preset) => {
                 const isSelected = selectedPresetId === preset.id;
 
                 return (

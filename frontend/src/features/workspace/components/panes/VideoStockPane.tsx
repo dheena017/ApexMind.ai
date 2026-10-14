@@ -35,17 +35,19 @@ export interface VideoStockPaneProps {
   activeVideoUrl?: string;
 }
 
+import { CURATED_STOCK_VIDEOS as EXPANDED_VIDEOS } from '../../data/mediaCatalogData';
+
 const CURATED_STOCK_VIDEOS: StockVideoItem[] = [
-  {
-    id: 'vid-1',
-    title: 'Cinematic Clouds & Mountain Drone',
-    category: 'clouds',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80',
-    duration: '15s Loop',
-    resolution: '1080x1920',
-    tags: ['clouds', 'drone', 'mountains', 'nature'],
-  },
+  ...EXPANDED_VIDEOS.map((v) => ({
+    id: v.id,
+    title: v.title,
+    category: (v.category === 'atmospheric' ? 'clouds' : v.category === 'urban' ? 'city' : v.category === 'abstract' ? 'abstract' : 'gym') as any,
+    videoUrl: v.videoUrl,
+    posterUrl: v.posterUrl,
+    duration: v.duration,
+    resolution: v.resolution,
+    tags: v.tags,
+  })),
   {
     id: 'vid-2',
     title: 'Heavy Barbell Gym Deadlift Grit',
