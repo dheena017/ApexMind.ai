@@ -32,6 +32,12 @@ class PublishVideoRequest(BaseModel):
     visualTheme: Optional[str] = Field(default="Dark Mountain Dawn", description="Visual backdrop theme")
     category: Optional[str] = Field(default="Motivation", description="Category")
     channelId: Optional[str] = Field(default=None, description="Target YouTube Channel ID")
+    audioUrl: Optional[str] = Field(default=None, description="Generated voiceover audio URL")
+    coverImageUrl: Optional[str] = Field(default=None, description="Visual backdrop cover image URL")
+
+class ExchangeCodeRequest(BaseModel):
+    code: str = Field(..., description="Google OAuth authorization code")
+    redirectUri: Optional[str] = Field(default="http://127.0.0.1:5173", description="Redirect URI used during authorization")
 
 class ToggleAutomationRequest(BaseModel):
     id: str = Field(..., description="ID of the automation job to toggle")
