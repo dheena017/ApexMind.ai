@@ -1,5 +1,0 @@
--- =============================================================================
--- ApexMind Studio - Database Seed (Zero Hardcoded/Mock Records)
--- All media catalogs are served dynamically from code catalog modules.
--- Dynamic user data (channels, videos, quotes, notifications) is managed live.
--- =============================================================================
