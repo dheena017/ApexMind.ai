@@ -44,6 +44,8 @@ export interface StudioControlsPaneProps {
   script?: GeneratedScript;
   onUpdateScript?: (updated: Partial<GeneratedScript>) => void;
   duration?: number;
+  timelineDuration?: number;
+  onDurationChange?: (duration: number) => void;
   currentTime?: number;
   playbackRate?: number;
   onPlaybackRateChange?: (rate: number) => void;
@@ -80,6 +82,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   script,
   onUpdateScript,
   duration = 12.1,
+  timelineDuration,
+  onDurationChange,
   playbackRate = 1,
   onPlaybackRateChange,
   volume = 1,
@@ -250,7 +254,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             activeBackdrop={activeBackdropObj}
             backdrops={backdrops}
             onSelectBackdrop={onSelectBackdrop}
-            duration={duration}
+            duration={timelineDuration ?? duration}
+            onUpdateDuration={onDurationChange}
             playbackRate={playbackRate}
             onPlaybackRateChange={onPlaybackRateChange}
             customImageUrl={customImageUrl}

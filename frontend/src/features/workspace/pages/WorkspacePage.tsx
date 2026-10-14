@@ -107,6 +107,14 @@ export default function WorkspacePage({
   const isExportingRef = useRef(false);
   const wasLoopingBeforeExportRef = useRef(true);
 
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = volume;
+    audio.muted = isMuted;
+    audio.playbackRate = playbackRate;
+  }, [isMuted, playbackRate, volume]);
+
   const handleVideoExportComplete = useCallback((error?: string) => {
     if (!isExportingRef.current) return;
     isExportingRef.current = false;
@@ -910,6 +918,8 @@ export default function WorkspacePage({
               script={script}
               onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
               duration={duration}
+              timelineDuration={timelineDuration}
+              onDurationChange={setTimelineDuration}
               currentTime={currentTime}
               playbackRate={playbackRate}
               onPlaybackRateChange={setPlaybackRate}

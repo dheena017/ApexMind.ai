@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import { useReactMediaRecorder } from 'react-media-recorder';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   Music,
   Plus,
@@ -11,15 +10,17 @@ import {
   Pause,
   Check,
   Volume2,
+  VolumeX,
   Sparkles,
   Radio,
   RotateCcw,
   Activity,
   Search,
   ExternalLink,
-  VolumeX,
   RefreshCw,
-  Layers,
+  Sliders,
+  Download,
+  Gauge,
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
 
@@ -124,22 +125,18 @@ const CURATED_SOUNDTRACKS: SoundtrackItem[] = [
 ];
 
 const CURATED_SOUND_EFFECTS: SoundEffectItem[] = [
-  // Impacts
   { id: 'sfx-1', name: 'Cinematic Bass Boom', category: 'Impact', duration: '2.5s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3527e30eb.mp3' },
   { id: 'sfx-2', name: 'Sub Drop 808 Slam', category: 'Impact', duration: '1.8s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8bbf72e81.mp3' },
   { id: 'sfx-3', name: 'Heavy Metal Anvil', category: 'Impact', duration: '1.2s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
   { id: 'sfx-4', name: 'Cinematic Trailer Hit', category: 'Impact', duration: '2.0s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3527e30eb.mp3' },
-  // Transitions
   { id: 'sfx-5', name: 'Fast Whoosh Air Cut', category: 'Transition', duration: '0.8s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
   { id: 'sfx-6', name: 'Glitch Swoosh Whip', category: 'Transition', duration: '1.1s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
   { id: 'sfx-7', name: 'Vinyl Record Stop', category: 'Transition', duration: '1.4s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
   { id: 'sfx-8', name: 'Film Reel Rewind', category: 'Transition', duration: '1.6s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
-  // Tension
   { id: 'sfx-9', name: 'Sub Riser Pitch Rise', category: 'Tension', duration: '3.2s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
   { id: 'sfx-10', name: 'Heartbeat Pulse Low', category: 'Tension', duration: '4.0s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3527e30eb.mp3' },
   { id: 'sfx-11', name: 'Ticking Clock Metronome', category: 'Tension', duration: '2.8s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
   { id: 'sfx-12', name: 'Dark Cyber Drone Swell', category: 'Tension', duration: '3.5s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/26/audio_d0c6ff1101.mp3' },
-  // Action & UI
   { id: 'sfx-13', name: 'Camera Shutter Click', category: 'Action', duration: '0.5s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
   { id: 'sfx-14', name: 'Cyber Bell Hologram', category: 'Action', duration: '1.2s', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3' },
   { id: 'sfx-15', name: 'Sword Blade Draw', category: 'Action', duration: '1.0s', audioUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_bb63045688.mp3' },
@@ -152,7 +149,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   onApplyRecordedVoice,
   onAddSfxToTimeline,
 }) => {
-  const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'record' | 'url'>('soundtracks');
+  const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'record' | 'mixer' | 'url'>('soundtracks');
   const [soundtracks, setSoundtracks] = useState<SoundtrackItem[]>(CURATED_SOUNDTRACKS);
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [selectedSfxCategory, setSelectedSfxCategory] = useState<string>('all');
@@ -163,6 +160,12 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const [customAudioTitle, setCustomAudioTitle] = useState('');
   const [customAudioPlaying, setCustomAudioPlaying] = useState(false);
   const [isLoadingBackend, setIsLoadingBackend] = useState(false);
+
+  // Audio Mixer State
+  const [musicVolume, setMusicVolume] = useState<number>(65);
+  const [voiceVolume, setVoiceVolume] = useState<number>(100);
+  const [autoDucking, setAutoDucking] = useState<boolean>(true);
+  const [reverbRoom, setReverbRoom] = useState<'dry' | 'studio' | 'hall'>('studio');
 
   // Hidden audio preview elements
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -204,7 +207,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           }
         }
       } catch {
-        // Fallback to curated
+        // Fallback
       } finally {
         if (isMounted) setIsLoadingBackend(false);
       }
@@ -261,6 +264,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     } else {
       if (previewAudioRef.current) {
         previewAudioRef.current.src = track.audioUrl;
+        previewAudioRef.current.volume = musicVolume / 100;
         previewAudioRef.current.play().catch(() => {});
         setPlayingTrackId(track.id);
       }
@@ -302,6 +306,14 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       onApplyRecordedVoice(mediaBlobUrl);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'voice' }));
     }
+  };
+
+  const downloadRecordedVoice = () => {
+    if (!mediaBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = mediaBlobUrl;
+    a.download = `voiceover-${Date.now()}.webm`;
+    a.click();
   };
 
   const filteredSoundtracks = soundtracks.filter((t) => {
@@ -351,7 +363,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         <div className="flex items-center gap-2 min-w-0">
           <Music className="w-4 h-4 shrink-0 text-[#60A5FA]" />
           <span className="text-xs font-bold text-white truncate">
-            Audio &amp; Voiceover
+            Audio &amp; Voiceover Studio
           </span>
           <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
             HQ AUDIO
@@ -367,7 +379,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               ? `${filteredSoundtracks.length} Tracks`
               : activeTab === 'sfx'
               ? `${filteredSfx.length} SFX`
-              : 'Studio Mic'}
+              : 'Studio Audio'}
           </span>
         </div>
       </div>
@@ -398,6 +410,18 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab('mixer')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'mixer'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <Sliders className="w-3 h-3 text-[#60A5FA]" />
+          Mixer
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('record')}
           className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'record'
@@ -406,7 +430,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           }`}
         >
           <Mic className="w-3 h-3 text-rose-400" />
-          Voice Record
+          Voiceover
         </button>
         <button
           type="button"
@@ -417,7 +441,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          Custom Audio URL
+          Direct URL
         </button>
       </div>
 
@@ -425,7 +449,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       {activeTab === 'soundtracks' && (
         <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#26262B]/60 overflow-x-auto custom-scrollbar shrink-0 bg-[#141416]">
           {[
-            { id: 'all', label: 'All Vibe' },
+            { id: 'all', label: 'All Vibes' },
             { id: 'cinematic', label: 'Cinematic' },
             { id: 'drone', label: 'Bass Drone' },
             { id: 'synthwave', label: 'Synthwave' },
@@ -490,6 +514,98 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               }
               className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
             />
+          </div>
+        )}
+
+        {/* ── Tab: Audio Mixer ── */}
+        {activeTab === 'mixer' && (
+          <div className="flex flex-col gap-3.5">
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
+                Reel Audio Level Mixing
+              </span>
+
+              {/* Music Volume */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#71717A]">SOUNDTRACK VOLUME</span>
+                  <span className="text-[#60A5FA] font-bold">{musicVolume}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={musicVolume}
+                  onChange={(e) => setMusicVolume(Number(e.target.value))}
+                  className="w-full accent-[#3B82F6]"
+                />
+              </div>
+
+              {/* Voice Volume */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#71717A]">VOICEOVER / NARRATION LEVEL</span>
+                  <span className="text-[#60A5FA] font-bold">{voiceVolume}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="150"
+                  value={voiceVolume}
+                  onChange={(e) => setVoiceVolume(Number(e.target.value))}
+                  className="w-full accent-[#3B82F6]"
+                />
+              </div>
+
+              {/* Auto-Ducking Switch */}
+              <div className="flex items-center justify-between pt-2 border-t border-[#26262B]">
+                <div>
+                  <p className="text-xs font-semibold text-white">Smart Music Ducking</p>
+                  <p className="text-[10px] text-[#A1A1AA]">Lower music volume when voiceover speaks</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAutoDucking((d) => !d)}
+                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                    autoDucking ? 'bg-[#3B82F6]' : 'bg-zinc-700'
+                  }`}
+                >
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full bg-white transition-transform absolute top-0.5 ${
+                      autoDucking ? 'right-0.5' : 'left-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Room Ambience */}
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-2">
+              <span className="text-[10px] uppercase font-mono-studio text-[#71717A]">
+                Voiceover Room Reverb
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'dry', label: 'Dry / Clean' },
+                  { id: 'studio', label: 'Studio Room' },
+                  { id: 'hall', label: 'Cathedral Hall' },
+                ].map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setReverbRoom(r.id as any)}
+                    className={`p-2 rounded-lg text-xs font-semibold border transition-all ${
+                      reverbRoom === r.id
+                        ? 'bg-[#1E2330] text-white border-[#3B82F6]'
+                        : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -688,9 +804,18 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             {/* Waveform & Playback of Recorded Voice */}
             {mediaBlobUrl && (
               <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
-                <span className="text-[10px] uppercase font-mono-studio text-[#71717A]">
-                  Recorded Preview Waveform
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono-studio text-[#71717A]">
+                    Recorded Waveform
+                  </span>
+                  <button
+                    type="button"
+                    onClick={downloadRecordedVoice}
+                    className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white"
+                  >
+                    <Download className="w-3 h-3" /> Download
+                  </button>
+                </div>
 
                 <div ref={waveformRef} className="w-full bg-[#141416] rounded-lg p-2" />
 
@@ -701,7 +826,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     className="flex-1 bg-[#2A2A32] hover:bg-[#34343E] text-white rounded-xl py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5" />
-                    Preview Playback
+                    Preview
                   </button>
                   <button
                     type="button"
@@ -717,7 +842,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 4: Custom Audio URL ── */}
+        {/* ── Tab 5: Custom Audio URL ── */}
         {activeTab === 'url' && (
           <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
             <div className="flex items-center gap-2">

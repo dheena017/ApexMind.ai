@@ -11,6 +11,10 @@ import {
   Sliders,
   Sparkles,
   Search,
+  Wand2,
+  Maximize2,
+  Palette,
+  Eye,
 } from 'lucide-react';
 
 export interface TextPreset {
@@ -104,67 +108,36 @@ const VIRAL_TYPOGRAPHY_PRESETS: TextPreset[] = [
     styleDescription: 'Giant vertical typography dominating screen space',
     fontFamily: 'Impact, sans-serif',
   },
-  {
-    id: 'classic-editorial',
-    name: 'Roman Editorial',
-    previewText: 'AMOR FATI',
-    color: '#F4F4F5',
-    className: 'font-serif italic tracking-wide text-zinc-100 drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]',
-    styleDescription: 'Timeless Roman wisdom and literature aesthetic',
-    fontFamily: 'Georgia, serif',
-  },
-  {
-    id: 'pastel-punch',
-    name: 'Electric Coral',
-    previewText: 'RESET YOUR MIND',
-    color: '#FB7185',
-    className: 'font-extrabold tracking-tight text-rose-400 uppercase drop-shadow-[0_3px_8px_rgba(0,0,0,0.9)]',
-    styleDescription: 'High contrast lifestyle and self-improvement pop',
-    fontFamily: 'Verdana, sans-serif',
-  },
 ];
 
-const VIRAL_HOOK_CATEGORIES = [
-  {
-    category: 'Stoic Discipline',
-    hooks: [
-      'Nobody is coming to save you.',
-      'Rule #1: Never explain your goals.',
-      'Silence is your deadliest weapon.',
-      'Win in private before you speak in public.',
-      'You are not tired. You are undisciplined.',
-    ],
-  },
-  {
-    category: 'Fitness & Iron Will',
-    hooks: [
-      'Your excuses are lying to you.',
-      'Suffer the pain of discipline or the pain of regret.',
-      'The standard is the standard.',
-      'Do it tired. Do it broke. Just do it.',
-      'Pain today. Strength tomorrow.',
-    ],
-  },
-  {
-    category: 'Dark Psychology',
-    hooks: [
-      'They do not want you to succeed. They want you to fit in.',
-      'Never reveal your next move.',
-      'Observe everything. React to nothing.',
-      'The loudest in the room is the weakest.',
-      'Master your mind or someone else will.',
-    ],
-  },
-  {
-    category: 'Wealth & Success',
-    hooks: [
-      'In 6 months, you can be unrecognizable.',
-      'Stop trading your focus for cheap validation.',
-      'Build the empire while they party.',
-      'Focus is the new currency of the 21st century.',
-      'Consistency compounds in the dark.',
-    ],
-  },
+const CAPTION_ANIMATIONS = [
+  { id: 'karaoke', name: 'Karaoke Active Word', desc: 'Active word highlighted in radiant yellow/cyan' },
+  { id: 'pop', name: 'Pop Scale Zoom', desc: 'Each word punches onto screen with scale bounce' },
+  { id: 'typewriter', name: 'Typewriter Cursor', desc: 'Terminal character typing motion' },
+  { id: 'fade-rise', name: 'Cinematic Fade & Rise', desc: 'Documentary smooth vertical fade' },
+];
+
+const INITIAL_VIRAL_HOOKS = [
+  { category: 'Stoic Discipline', hook: 'Nobody is coming to save you.' },
+  { category: 'Stoic Discipline', hook: 'Rule #1: Never explain your goals.' },
+  { category: 'Stoic Discipline', hook: 'Silence is your deadliest weapon.' },
+  { category: 'Stoic Discipline', hook: 'Win in private before you speak in public.' },
+  { category: 'Stoic Discipline', hook: 'You are not tired. You are undisciplined.' },
+  { category: 'Fitness & Iron Will', hook: 'Your excuses are lying to you.' },
+  { category: 'Fitness & Iron Will', hook: 'Suffer the pain of discipline or the pain of regret.' },
+  { category: 'Fitness & Iron Will', hook: 'The standard is the standard.' },
+  { category: 'Fitness & Iron Will', hook: 'Do it tired. Do it broke. Just do it.' },
+  { category: 'Fitness & Iron Will', hook: 'Pain today. Strength tomorrow.' },
+  { category: 'Dark Psychology', hook: 'They do not want you to succeed. They want you to fit in.' },
+  { category: 'Dark Psychology', hook: 'Never reveal your next move.' },
+  { category: 'Dark Psychology', hook: 'Observe everything. React to nothing.' },
+  { category: 'Dark Psychology', hook: 'The loudest in the room is the weakest.' },
+  { category: 'Dark Psychology', hook: 'Master your mind or someone else will.' },
+  { category: 'Wealth & Success', hook: 'In 6 months, you can be unrecognizable.' },
+  { category: 'Wealth & Success', hook: 'Stop trading your focus for cheap validation.' },
+  { category: 'Wealth & Success', hook: 'Build the empire while they party.' },
+  { category: 'Wealth & Success', hook: 'Focus is the new currency of the 21st century.' },
+  { category: 'Wealth & Success', hook: 'Consistency compounds in the dark.' },
 ];
 
 const LOCAL_STORAGE_SNIPPETS_KEY = 'apexmind_saved_text_snippets';
@@ -176,15 +149,25 @@ export const TextPane: React.FC<TextPaneProps> = ({
   onUpdateHook,
   onUpdateQuote,
 }) => {
-  const [activeTab, setActiveTab] = useState<'presets' | 'hooks' | 'custom'>('presets');
+  const [activeTab, setActiveTab] = useState<'presets' | 'customizer' | 'hooks' | 'custom'>('presets');
   const [selectedPresetId, setSelectedPresetId] = useState<string>('impact-bold');
+  const [selectedAnimation, setSelectedAnimation] = useState<string>('karaoke');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedFeedback, setAppliedFeedback] = useState<string | null>(null);
 
+  // Customizer styling state
+  const [fontSize, setFontSize] = useState<number>(36);
+  const [letterSpacing, setLetterSpacing] = useState<number>(0);
+  const [textColor, setTextColor] = useState<string>('#FFFFFF');
+  const [hasOutline, setHasOutline] = useState<boolean>(true);
+  const [hasShadow, setHasShadow] = useState<boolean>(true);
+  const [boxBackground, setBoxBackground] = useState<'none' | 'blur' | 'solid' | 'gold'>('none');
+
   // Custom Snippets
   const [savedSnippets, setSavedSnippets] = useState<string[]>([]);
   const [newSnippetInput, setNewSnippetInput] = useState('');
+  const [hooksList, setHooksList] = useState(INITIAL_VIRAL_HOOKS);
 
   // Load saved snippets
   useEffect(() => {
@@ -210,20 +193,31 @@ export const TextPane: React.FC<TextPaneProps> = ({
     triggerFeedback(`Applied "${preset.name}" preset`);
   };
 
+  const handleApplyCustomizer = () => {
+    const customClassName = `font-black uppercase ${
+      hasShadow ? 'drop-shadow-[0_4px_12px_rgba(0,0,0,1)]' : ''
+    } ${hasOutline ? 'stroke-black stroke-2' : ''}`;
+
+    if (onApplyPreset) {
+      onApplyPreset({
+        id: `custom-style-${Date.now()}`,
+        name: 'Custom Styled Captions',
+        previewText: 'CUSTOM STYLE',
+        color: textColor,
+        className: customClassName,
+        styleDescription: `Size: ${fontSize}px, Tracking: ${letterSpacing}px`,
+      });
+    }
+    window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
+    triggerFeedback('Applied custom typography style');
+  };
+
   const handleInsertHook = (hookText: string) => {
     if (onUpdateHook) {
       onUpdateHook(hookText);
     }
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
     triggerFeedback('Hook applied to reel');
-  };
-
-  const handleInsertTitle = (text: string) => {
-    if (onUpdateTitle) {
-      onUpdateTitle(text);
-    }
-    window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
-    triggerFeedback('Title updated');
   };
 
   const handleInsertQuote = (text: string) => {
@@ -254,11 +248,18 @@ export const TextPane: React.FC<TextPaneProps> = ({
     } catch {}
   };
 
-  const allHooks = VIRAL_HOOK_CATEGORIES.flatMap((c) =>
-    c.hooks.map((h) => ({ hook: h, category: c.category }))
-  );
+  const handleGenerateFreshHooks = () => {
+    const freshPacks = [
+      { category: 'Stoic Discipline', hook: 'They will laugh now. They will watch later.' },
+      { category: 'Fitness & Iron Will', hook: 'Tired is a state of mind. Action is a decision.' },
+      { category: 'Dark Psychology', hook: 'Silence is the best response to an insecure person.' },
+      { category: 'Wealth & Success', hook: 'Invest in assets that pay you while you sleep.' },
+    ];
+    setHooksList((prev) => [...freshPacks, ...prev]);
+    triggerFeedback('Synthesized 4 new hooks');
+  };
 
-  const filteredHooks = allHooks.filter((item) => {
+  const filteredHooks = hooksList.filter((item) => {
     const matchesCategory =
       selectedCategory === 'all' || item.category === selectedCategory;
     const matchesSearch =
@@ -289,7 +290,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
         <button
           type="button"
           onClick={() => setActiveTab('presets')}
@@ -299,7 +300,19 @@ export const TextPane: React.FC<TextPaneProps> = ({
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          Typography Styles
+          Packs
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('customizer')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'customizer'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <Sliders className="w-3 h-3 text-[#60A5FA]" />
+          Customizer
         </button>
         <button
           type="button"
@@ -310,7 +323,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          Viral Hook Vault ({allHooks.length})
+          Hook Vault ({hooksList.length})
         </button>
         <button
           type="button"
@@ -322,39 +335,187 @@ export const TextPane: React.FC<TextPaneProps> = ({
           }`}
         >
           <Bookmark className="w-3 h-3" />
-          My Snippets ({savedSnippets.length})
+          My Vault ({savedSnippets.length})
         </button>
       </div>
 
       {/* ── Hook Categories (When in hooks tab) ── */}
       {activeTab === 'hooks' && (
-        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#26262B]/60 overflow-x-auto custom-scrollbar shrink-0 bg-[#141416]">
-          {[
-            { id: 'all', label: 'All Categories' },
-            { id: 'Stoic Discipline', label: 'Stoic' },
-            { id: 'Fitness & Iron Will', label: 'Fitness' },
-            { id: 'Dark Psychology', label: 'Psychology' },
-            { id: 'Wealth & Success', label: 'Wealth' },
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
-                selectedCategory === cat.id
-                  ? 'bg-[#3B82F6] text-white shadow-sm'
-                  : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-[#26262B]/60 bg-[#141416] shrink-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
+            {[
+              { id: 'all', label: 'All Categories' },
+              { id: 'Stoic Discipline', label: 'Stoic' },
+              { id: 'Fitness & Iron Will', label: 'Fitness' },
+              { id: 'Dark Psychology', label: 'Psychology' },
+              { id: 'Wealth & Success', label: 'Wealth' },
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+                  selectedCategory === cat.id
+                    ? 'bg-[#3B82F6] text-white shadow-sm'
+                    : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGenerateFreshHooks}
+            className="flex items-center gap-1 text-[10px] text-[#60A5FA] bg-[#2A2A32] hover:bg-[#34343E] px-2 py-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+            title="Generate 4 fresh viral hooks"
+          >
+            <Sparkles className="w-3 h-3" />
+            +New
+          </button>
         </div>
       )}
 
       {/* ── Main Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
-        {/* ── Tab 1: Presets ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3.5">
+        {/* ── Tab 2: Live Customizer ── */}
+        {activeTab === 'customizer' && (
+          <div className="flex flex-col gap-3.5">
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
+                Fine-Tune Caption Typography
+              </span>
+
+              {/* Font Size */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#71717A]">FONT SIZE</span>
+                  <span className="text-[#60A5FA] font-bold">{fontSize}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="20"
+                  max="64"
+                  value={fontSize}
+                  onChange={(e) => setFontSize(Number(e.target.value))}
+                  className="w-full accent-[#3B82F6]"
+                />
+              </div>
+
+              {/* Letter Spacing / Tracking */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#71717A]">LETTER SPACING / TRACKING</span>
+                  <span className="text-[#60A5FA] font-bold">{letterSpacing}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="-2"
+                  max="12"
+                  value={letterSpacing}
+                  onChange={(e) => setLetterSpacing(Number(e.target.value))}
+                  className="w-full accent-[#3B82F6]"
+                />
+              </div>
+
+              {/* Text Color Swatches */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] uppercase font-mono-studio text-[#71717A]">
+                  Caption Color
+                </span>
+                <div className="flex items-center gap-2">
+                  {['#FFFFFF', '#FACC15', '#06B6D4', '#10B981', '#EF4444', '#F43F5E', '#A855F7'].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setTextColor(c)}
+                      className={`w-6 h-6 rounded-full border transition-transform ${
+                        textColor === c ? 'scale-125 border-white ring-2 ring-white/40' : 'border-zinc-700'
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Toggles */}
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#26262B]">
+                <button
+                  type="button"
+                  onClick={() => setHasShadow((s) => !s)}
+                  className={`p-2 rounded-lg text-xs font-semibold border transition-all ${
+                    hasShadow ? 'bg-[#1E2330] text-white border-[#3B82F6]' : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
+                  }`}
+                >
+                  {hasShadow ? '✓ Deep Shadow ON' : 'Shadow OFF'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHasOutline((o) => !o)}
+                  className={`p-2 rounded-lg text-xs font-semibold border transition-all ${
+                    hasOutline ? 'bg-[#1E2330] text-white border-[#3B82F6]' : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
+                  }`}
+                >
+                  {hasOutline ? '✓ High Contrast Outline' : 'Outline OFF'}
+                </button>
+              </div>
+
+              {/* Live Preview Box */}
+              <div className="mt-1 bg-[#121214] border border-[#2A2A30] rounded-xl p-4 flex items-center justify-center text-center">
+                <span
+                  style={{
+                    fontSize: `${fontSize}px`,
+                    letterSpacing: `${letterSpacing}px`,
+                    color: textColor,
+                  }}
+                  className={`font-black uppercase ${
+                    hasShadow ? 'drop-shadow-[0_4px_12px_rgba(0,0,0,1)]' : ''
+                  }`}
+                >
+                  NO EXCUSES
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleApplyCustomizer}
+                className="mt-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 text-xs font-bold transition-all shadow-lg shadow-[#3B82F6]/20 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Apply to Active Captions
+              </button>
+            </div>
+
+            {/* Word-by-Word Caption Animations */}
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-2.5">
+              <span className="text-xs font-bold text-white">Reel Caption Animation Sync</span>
+              <div className="flex flex-col gap-2">
+                {CAPTION_ANIMATIONS.map((anim) => (
+                  <button
+                    key={anim.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAnimation(anim.id);
+                      triggerFeedback(`Set "${anim.name}" animation`);
+                    }}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      selectedAnimation === anim.id
+                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
+                        : 'bg-[#141417] border-[#2A2A30] hover:bg-[#202026]'
+                    }`}
+                  >
+                    <p className="text-xs font-bold text-white">{anim.name}</p>
+                    <p className="text-[10px] text-[#A1A1AA]">{anim.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab 1: Typography Packs ── */}
         {activeTab === 'presets' && (
           <div className="flex flex-col gap-2.5">
             <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
@@ -409,7 +570,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 2: Viral Hook Vault ── */}
+        {/* ── Tab 3: Viral Hook Vault ── */}
         {activeTab === 'hooks' && (
           <div className="flex flex-col gap-3">
             {/* Search Input */}
@@ -462,7 +623,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 3: Custom Snippets ── */}
+        {/* ── Tab 4: Custom Vault ── */}
         {activeTab === 'custom' && (
           <div className="flex flex-col gap-3">
             <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">

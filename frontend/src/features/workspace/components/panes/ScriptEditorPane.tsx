@@ -17,6 +17,9 @@ import {
   Sparkles,
   Type,
   AlignLeft,
+  Flame,
+  Shield,
+  Zap,
 } from 'lucide-react';
 import { GeneratedScript, ScriptSubtitle } from '../../types';
 
@@ -33,7 +36,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   onSwitchToAgent,
   onStartNewVideo,
 }) => {
-  const [activeTab, setActiveTab] = useState<'content' | 'subtitles' | 'export'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'subtitles' | 'ai-tools' | 'export'>('content');
   const [copyState, setCopyState] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const hookRef = useRef<HTMLTextAreaElement | null>(null);
@@ -97,7 +100,33 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
     updateField('subtitles', subs);
   };
 
-  // Export generators
+  const autoRebalanceTimings = (targetDurationSec: number) => {
+    const subs = script.subtitles || [];
+    if (subs.length === 0) return;
+    const durationPerCue = Number((targetDurationSec / subs.length).toFixed(1));
+    const rebalanced = subs.map((s, idx) => ({
+      ...s,
+      start: Number((idx * durationPerCue).toFixed(1)),
+      duration: durationPerCue,
+    }));
+    updateField('subtitles', rebalanced);
+  };
+
+  // AI Polish Presets
+  const applyScriptPolish = (mode: 'punchy' | 'stoic' | 'shorten') => {
+    if (mode === 'punchy') {
+      updateField('hook', (script.hook || '').toUpperCase());
+      updateField('quote', (script.quote || '').replace(/,\s*/g, '. ').replace(/\s+and\s+/gi, '. '));
+    } else if (mode === 'stoic') {
+      updateField('hook', 'Observe everything. Speak on nothing.');
+      updateField('quote', `${script.quote || 'True power does not shout.'} Forge your character in the dark.`);
+    } else if (mode === 'shorten') {
+      const words = (script.quote || '').split(/\s+/).slice(0, 18).join(' ');
+      updateField('quote', `${words}.`);
+    }
+  };
+
+  // Subtitle Export Generators
   const generateSrt = (): string => {
     const subs = script.subtitles || [];
     return subs
@@ -116,6 +145,24 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
       .join('\n');
   };
 
+  const generateVtt = (): string => {
+    const subs = script.subtitles || [];
+    const cues = subs
+      .map((sub) => {
+        const startSec = sub.start;
+        const endSec = sub.start + sub.duration;
+        const formatTime = (sec: number) => {
+          const m = Math.floor(sec / 60);
+          const s = Math.floor(sec % 60);
+          const ms = Math.floor((sec % 1) * 1000);
+          return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+        };
+        return `${formatTime(startSec)} --> ${formatTime(endSec)}\n${sub.text}\n`;
+      })
+      .join('\n');
+    return `WEBVTT\n\n${cues}`;
+  };
+
   const downloadFile = (content: string, filename: string, type: string) => {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
@@ -132,6 +179,8 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
     .trim()
     .split(/\s+/).filter(Boolean).length;
 
+  const estimatedSpeechSeconds = Math.round((totalWords / 150) * 60);
+
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
       {/* ── Top Header Bar (Matching Right Inspector Pane) ── */}
@@ -142,7 +191,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             Script &amp; Subtitles
           </span>
           <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
-            {totalWords} WORDS
+            ~{estimatedSpeechSeconds}S READ
           </span>
         </div>
 
@@ -207,7 +256,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
         <button
           type="button"
           onClick={() => setActiveTab('content')}
@@ -228,10 +277,22 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <span>Timeline Subtitles</span>
+          <span>Subtitles</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">
             {script.subtitles?.length || 0}
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('ai-tools')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1 ${
+            activeTab === 'ai-tools'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <Sparkles className="w-3 h-3 text-[#60A5FA]" />
+          AI Polish
         </button>
         <button
           type="button"
@@ -242,12 +303,71 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          Export &amp; SRT
+          Export
         </button>
       </div>
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+        {/* ── Tab: AI Script Polish ── */}
+        {activeTab === 'ai-tools' && (
+          <div className="flex flex-col gap-3">
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
+                Script Rewriter &amp; Punchiness Optimizer
+              </span>
+              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+                Transform your draft into high-converting reel copy with one click.
+              </p>
+
+              <div className="grid grid-cols-1 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => applyScriptPolish('punchy')}
+                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#141417] hover:bg-[#202026] text-left flex items-center gap-3 transition-colors cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white">Punchy Viral Delivery</p>
+                    <p className="text-[10px] text-[#A1A1AA]">Caps lock hook, short bullet sentences</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyScriptPolish('stoic')}
+                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#141417] hover:bg-[#202026] text-left flex items-center gap-3 transition-colors cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white">Marcus Aurelius Stoic Vibe</p>
+                    <p className="text-[10px] text-[#A1A1AA]">Philosophical gravity, silent action emphasis</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyScriptPolish('shorten')}
+                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#141417] hover:bg-[#202026] text-left flex items-center gap-3 transition-colors cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">
+                    <Flame className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white">Shorten for 15s Blitz Reel</p>
+                    <p className="text-[10px] text-[#A1A1AA]">Truncate to top punchy words for rapid TikToks</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Tab 1: Script Content ── */}
         {activeTab === 'content' && (
           <div className="flex flex-col gap-3">
@@ -340,9 +460,19 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
         {activeTab === 'subtitles' && (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase">
-                Synchronized Subtitle Cues
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono-studio text-[#71717A] uppercase">
+                  Timeline Subtitles
+                </span>
+                <button
+                  type="button"
+                  onClick={() => autoRebalanceTimings(30)}
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[#60A5FA] transition-colors"
+                  title="Auto-distribute cues evenly over 30s"
+                >
+                  Auto-Align 30s
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={handleAddSubtitle}
@@ -355,7 +485,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
 
             {(script.subtitles || []).length === 0 ? (
               <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-6 text-center text-xs text-[#A1A1AA]">
-                No subtitle cues generated yet. Run the AI Agent or click &ldquo;Add Cue&rdquo;.
+                No subtitle cues generated yet. Click &ldquo;Add Cue&rdquo; to start.
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -417,13 +547,13 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 3: Export & SRT ── */}
+        {/* ── Tab 4: Export ── */}
         {activeTab === 'export' && (
           <div className="flex flex-col gap-3">
             <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-4 flex flex-col gap-3">
-              <span className="text-xs font-bold text-white">Subtitle &amp; Caption Export</span>
+              <span className="text-xs font-bold text-white">Export Captions &amp; Scripts</span>
               <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
-                Export subtitle files compatible with Premiere Pro, CapCut, DaVinci Resolve, or YouTube Studio captions.
+                Download broadcast-standard subtitle files for CapCut, Premiere, or YouTube Studio.
               </p>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -441,30 +571,36 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                   <Download className="w-3.5 h-3.5 text-[#60A5FA]" />
                   Download .SRT
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    const fullText = `TITLE: ${script.title}\n\nHOOK: ${script.hook}\n\nQUOTE: ${script.quote}\n\nCTA: ${script.cta}\n\nTAGS: ${(script.hashtags || []).join(' ')}`;
-                    navigator.clipboard.writeText(fullText);
-                    setCopyState(true);
-                    setTimeout(() => setCopyState(false), 1500);
-                  }}
-                  className="bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-[#3B82F6]/20"
+                  onClick={() =>
+                    downloadFile(
+                      generateVtt(),
+                      `${(script.title || 'subtitles').replace(/\s+/g, '_')}.vtt`,
+                      'text/vtt'
+                    )
+                  }
+                  className="bg-[#2A2A32] hover:bg-[#34343E] text-white rounded-xl py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 border border-[#3A3A44]"
                 >
-                  {copyState ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copyState ? 'Copied Full Script' : 'Copy Full Script'}
+                  <Download className="w-3.5 h-3.5 text-[#10B981]" />
+                  Download .VTT
                 </button>
               </div>
-            </div>
 
-            {/* SRT Preview Box */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase">
-                SRT Raw Code Preview
-              </span>
-              <pre className="w-full bg-[#141416] border border-[#26262B] rounded-xl p-3 text-[10px] font-mono text-zinc-300 max-h-48 overflow-y-auto custom-scrollbar select-text">
-                {generateSrt() || 'No subtitles to render.'}
-              </pre>
+              <button
+                type="button"
+                onClick={() => {
+                  const fullText = `TITLE: ${script.title}\n\nHOOK: ${script.hook}\n\nQUOTE: ${script.quote}\n\nCTA: ${script.cta}\n\nTAGS: ${(script.hashtags || []).join(' ')}`;
+                  navigator.clipboard.writeText(fullText);
+                  setCopyState(true);
+                  setTimeout(() => setCopyState(false), 1500);
+                }}
+                className="mt-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-[#3B82F6]/20"
+              >
+                {copyState ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copyState ? 'Copied Full Script to Clipboard' : 'Copy Full Script'}
+              </button>
             </div>
           </div>
         )}

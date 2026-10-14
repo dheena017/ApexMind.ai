@@ -142,6 +142,18 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     );
   }, [brightness, contrast, saturation, vignette]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('workspace:backdrop-animation', {
+      detail: { animation },
+    }));
+  }, [animation]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('workspace:backdrop-audio', {
+      detail: { volume: videoVolume },
+    }));
+  }, [videoVolume]);
+
   // Format mm:ss.ms
   const formatTimeDigital = (seconds: number) => {
     const m = Math.floor(seconds / 60);

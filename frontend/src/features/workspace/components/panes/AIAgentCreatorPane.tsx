@@ -17,6 +17,9 @@ import {
   Brain,
   ChevronDown,
   RefreshCw,
+  Hash,
+  Gauge,
+  Smartphone,
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -68,6 +71,25 @@ const CATEGORY_OPTIONS = [
   { value: 'High Finance & Wealth', label: 'High Finance & Wealth' },
 ];
 
+const HOOK_FORMULAS = [
+  {
+    name: 'Curiosity Gap',
+    template: 'Start with: "This 1 mindset habit changed everything, but 99% ignore it..."',
+  },
+  {
+    name: 'Contrarian Truth',
+    template: 'Start with: "Everything they told you about motivation is completely false..."',
+  },
+  {
+    name: 'Direct Challenge',
+    template: 'Start with: "If you cannot handle the cold truth, scroll away right now..."',
+  },
+  {
+    name: 'Rule #1 Protocol',
+    template: 'Start with: "Rule #1 of high performance: Never explain yourself..."',
+  },
+];
+
 const PROMPT_INSPIRATION_SEEDS = [
   {
     title: 'The Solitary Standard',
@@ -114,10 +136,12 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   selectedModel: propModel,
   onModelChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'prompt' | 'pacing' | 'voice'>('prompt');
+  const [activeTab, setActiveTab] = useState<'prompt' | 'pacing' | 'voice' | 'seo'>('prompt');
   const [liveVoices, setLiveVoices] = useState<VoiceProfile[]>(voices.length > 0 ? voices : DEFAULT_FALLBACK_VOICES);
   const [speechPace, setSpeechPace] = useState<'0.9x' | '1.0x' | '1.15x' | '1.25x'>('1.0x');
   const [speechTone, setSpeechTone] = useState<'authoritative' | 'aggressive' | 'calm' | 'cinematic'>('authoritative');
+  const [voicePitch, setVoicePitch] = useState<number>(0);
+  const [targetPlatform, setTargetPlatform] = useState<'tiktok' | 'reels' | 'shorts'>('tiktok');
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Sync or fetch voices from media library
@@ -150,6 +174,13 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
     } else {
       onPromptChange(`${base} ${modifier}`);
     }
+  };
+
+  const getTrendingTags = () => {
+    if (category.includes('Fitness')) return ['#gymmotivation', '#discipline', '#bodybuilding', '#mindset', '#workout'];
+    if (category.includes('Finance') || category.includes('Wealth')) return ['#wealth', '#money', '#investing', '#success', '#grind'];
+    if (category.includes('Dark')) return ['#darkpsychology', '#power', '#stoic', '#manipulation', '#machiavelli'];
+    return ['#stoicism', '#discipline', '#marcusAurelius', '#selfimprovement', '#mindset'];
   };
 
   return (
@@ -229,7 +260,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-6 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+      <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
         <button
           type="button"
           onClick={() => setActiveTab('prompt')}
@@ -261,12 +292,77 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          AI Voice Actor ({liveVoices.length})
+          Voice Actor ({liveVoices.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('seo')}
+          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1 ${
+            activeTab === 'seo'
+              ? 'text-white border-white'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <Hash className="w-3 h-3 text-[#60A5FA]" />
+          Hashtags
         </button>
       </div>
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+        {/* ── Tab: SEO & Trending Hashtags ── */}
+        {activeTab === 'seo' && (
+          <div className="flex flex-col gap-3">
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5 text-[#60A5FA]" />
+                Auto-Detected Viral Tags &amp; Topics
+              </span>
+              <p className="text-[11px] text-[#A1A1AA]">
+                Optimized for YouTube Shorts and Instagram algorithmic distribution.
+              </p>
+
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {getTrendingTags().map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => enhancePrompt(`Tags to optimize for: ${tag}`)}
+                    className="px-2.5 py-1 rounded-lg bg-[#141417] hover:bg-[#3B82F6] hover:text-white text-[#60A5FA] border border-[#2A2A30] text-xs font-mono transition-colors"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Target Algorithm Preset */}
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-2.5">
+              <span className="text-xs font-bold text-white">Target Algorithm Style</span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'tiktok', label: 'TikTok (Hyper Punchy)' },
+                  { id: 'shorts', label: 'YouTube (High Retention)' },
+                  { id: 'reels', label: 'Reels (Aesthetic Quote)' },
+                ].map((plat) => (
+                  <button
+                    key={plat.id}
+                    type="button"
+                    onClick={() => setTargetPlatform(plat.id as any)}
+                    className={`p-2 rounded-lg text-xs font-semibold border transition-all text-left ${
+                      targetPlatform === plat.id
+                        ? 'bg-[#1E2330] text-white border-[#3B82F6]'
+                        : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
+                    }`}
+                  >
+                    {plat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Tab 1: Prompt & Seeds ── */}
         {activeTab === 'prompt' && (
           <div className="flex flex-col gap-3">
@@ -287,7 +383,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
                 <span className="text-[#71717A]">AI AGENT PROMPT</span>
-                <span className="text-[#60A5FA]">VIRAL HOOK GENERATOR</span>
+                <span className="text-[#60A5FA]">VIRAL HOOK ARCHITECT</span>
               </div>
               <textarea
                 value={agentPrompt}
@@ -298,29 +394,24 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               />
             </div>
 
-            {/* Quick Prompt Enhancers */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => enhancePrompt('Make the hook brutally honest and unforgettable.')}
-                className="px-2 py-1 rounded-lg bg-[#1C1C20] hover:bg-[#26262B] text-[10px] text-zinc-300 border border-[#2A2A30] transition-colors"
-              >
-                + Brutal Hook
-              </button>
-              <button
-                type="button"
-                onClick={() => enhancePrompt('Add an unexpected twist ending that demands comments.')}
-                className="px-2 py-1 rounded-lg bg-[#1C1C20] hover:bg-[#26262B] text-[10px] text-zinc-300 border border-[#2A2A30] transition-colors"
-              >
-                + Viral Twist
-              </button>
-              <button
-                type="button"
-                onClick={() => enhancePrompt('Keep sentences under 6 words for fast caption pacing.')}
-                className="px-2 py-1 rounded-lg bg-[#1C1C20] hover:bg-[#26262B] text-[10px] text-zinc-300 border border-[#2A2A30] transition-colors"
-              >
-                + Short Sentences
-              </button>
+            {/* Hook Formulas */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase">
+                Hook Architecture Formulas
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {HOOK_FORMULAS.map((form) => (
+                  <button
+                    key={form.name}
+                    type="button"
+                    onClick={() => enhancePrompt(form.template)}
+                    className="p-2 rounded-lg bg-[#141417] hover:bg-[#202026] border border-[#2A2A30] text-left text-[10px] text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <p className="font-bold text-[#60A5FA]">{form.name}</p>
+                    <p className="text-[9px] text-[#A1A1AA] truncate">{form.template}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Prompt Inspiration Seeds */}
@@ -426,63 +517,65 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
 
         {/* ── Tab 3: AI Voice Actors ── */}
         {activeTab === 'voice' && (
-          <div className="flex flex-col gap-2">
-            {liveVoices.map((v) => {
-              const isSelected = selectedVoice === v.id || selectedVoice === v.name;
-              const isTesting = testingVoiceId === v.id;
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              {liveVoices.map((v) => {
+                const isSelected = selectedVoice === v.id || selectedVoice === v.name;
+                const isTesting = testingVoiceId === v.id;
 
-              return (
-                <div
-                  key={v.id}
-                  onClick={() => onVoiceChange?.(v.id || v.name)}
-                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                    isSelected
-                      ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
-                      : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                        isSelected ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A32] text-[#60A5FA]'
-                      }`}
-                    >
-                      <Mic className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white truncate">{v.name}</span>
-                        <span className="text-[9px] font-mono-studio px-1 rounded bg-zinc-800 text-zinc-300">
-                          {v.gender}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-[#A1A1AA] truncate">{v.style}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {onTestVoice && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onTestVoice(v.id);
-                        }}
-                        className="p-1.5 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-white transition-colors"
-                        title="Audition voice"
+                return (
+                  <div
+                    key={v.id}
+                    onClick={() => onVoiceChange?.(v.id || v.name)}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
+                        : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                          isSelected ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A32] text-[#60A5FA]'
+                        }`}
                       >
-                        <Volume2 className={`w-3.5 h-3.5 ${isTesting ? 'text-[#60A5FA] animate-pulse' : ''}`} />
-                      </button>
-                    )}
-                    {isSelected && (
-                      <div className="p-1 rounded-full bg-[#3B82F6] text-white">
-                        <Zap className="w-3 h-3 fill-current" />
+                        <Mic className="w-4 h-4" />
                       </div>
-                    )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-white truncate">{v.name}</span>
+                          <span className="text-[9px] font-mono-studio px-1 rounded bg-zinc-800 text-zinc-300">
+                            {v.gender}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#A1A1AA] truncate">{v.style}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {onTestVoice && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onTestVoice(v.id);
+                          }}
+                          className="p-1.5 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-white transition-colors"
+                          title="Audition voice"
+                        >
+                          <Volume2 className={`w-3.5 h-3.5 ${isTesting ? 'text-[#60A5FA] animate-pulse' : ''}`} />
+                        </button>
+                      )}
+                      {isSelected && (
+                        <div className="p-1 rounded-full bg-[#3B82F6] text-white">
+                          <Zap className="w-3 h-3 fill-current" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

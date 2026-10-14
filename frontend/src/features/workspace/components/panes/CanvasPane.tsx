@@ -4,14 +4,15 @@ import {
   RectangleHorizontal,
   RectangleVertical,
   Square,
-  ChevronsUpDown,
   Check,
   Pipette,
   Sparkles,
   RotateCcw,
   Sliders,
   Maximize2,
-  Tv,
+  Grid3X3,
+  Smartphone,
+  Eye,
 } from 'lucide-react';
 
 export interface CanvasPaneProps {
@@ -69,15 +70,18 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   background,
   onBackgroundChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'ratio' | 'solid' | 'gradient' | 'custom'>('ratio');
+  const [activeTab, setActiveTab] = useState<'ratio' | 'solid' | 'gradient' | 'builder' | 'guides'>('ratio');
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Custom Gradient Builder
   const [gradColor1, setGradColor1] = useState('#09090b');
   const [gradColor2, setGradColor2] = useState('#1e1b4b');
   const [gradAngle, setGradAngle] = useState(135);
+  const [gradType, setGradType] = useState<'linear' | 'radial'>('linear');
 
-  const currentPreset = PLATFORM_PRESETS.find((r) => r.id === aspectRatio) || PLATFORM_PRESETS[0];
+  // Safe Zone Simulation
+  const [showTikTokGuide, setShowTikTokGuide] = useState(false);
+  const [showGrid3x3, setShowGrid3x3] = useState(false);
 
   const handleSelectBg = (val: string) => {
     onBackgroundChange(val);
@@ -90,7 +94,10 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   };
 
   const applyCustomGradient = () => {
-    const customGrad = `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`;
+    const customGrad =
+      gradType === 'linear'
+        ? `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`
+        : `radial-gradient(circle at center, ${gradColor2} 0%, ${gradColor1} 100%)`;
     handleSelectBg(customGrad);
   };
 
@@ -122,10 +129,11 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
       {/* ── Subtabs Header Bar ── */}
       <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
         {[
-          { id: 'ratio', label: 'Platform Ratio' },
+          { id: 'ratio', label: 'Aspect Ratio' },
           { id: 'solid', label: 'Solid Color' },
           { id: 'gradient', label: 'Gradients' },
-          { id: 'custom', label: 'Custom Grad' },
+          { id: 'builder', label: 'Builder' },
+          { id: 'guides', label: 'Safe Zones' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -144,6 +152,57 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
+        {/* ── Tab: Safe Zone Guides ── */}
+        {activeTab === 'guides' && (
+          <div className="flex flex-col gap-3">
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5 text-[#60A5FA]" />
+                Platform Safe Zone Guidelines
+              </span>
+              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+                Check whether your captions and quote badges sit inside the visible screen bounds without being obscured by TikTok, Reels, or Shorts UI controls.
+              </p>
+
+              <div className="flex flex-col gap-2 pt-1 border-t border-[#26262B]">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-[#141417]">
+                  <span className="text-xs text-white">TikTok &amp; Reels UI Margins</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowTikTokGuide((g) => !g)}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                      showTikTokGuide ? 'bg-[#3B82F6]' : 'bg-zinc-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-3.5 h-3.5 rounded-full bg-white transition-transform absolute top-0.5 ${
+                        showTikTokGuide ? 'right-0.5' : 'left-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-lg bg-[#141417]">
+                  <span className="text-xs text-white">Rule of Thirds 3×3 Grid</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowGrid3x3((g) => !g)}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                      showGrid3x3 ? 'bg-[#3B82F6]' : 'bg-zinc-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-3.5 h-3.5 rounded-full bg-white transition-transform absolute top-0.5 ${
+                        showGrid3x3 ? 'right-0.5' : 'left-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Tab 1: Platform Aspect Ratios ── */}
         {activeTab === 'ratio' && (
           <div className="flex flex-col gap-2.5">
@@ -290,12 +349,37 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         )}
 
         {/* ── Tab 4: Custom Gradient Builder ── */}
-        {activeTab === 'custom' && (
+        {activeTab === 'builder' && (
           <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
             <span className="text-xs font-bold text-white">Gradient Studio Builder</span>
             <p className="text-[11px] text-[#A1A1AA]">
               Blend custom colors and customize gradient angles for unique reel backgrounds.
             </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setGradType('linear')}
+                className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                  gradType === 'linear'
+                    ? 'bg-[#1E2330] text-white border-[#3B82F6]'
+                    : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
+                }`}
+              >
+                Linear Direction
+              </button>
+              <button
+                type="button"
+                onClick={() => setGradType('radial')}
+                className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                  gradType === 'radial'
+                    ? 'bg-[#1E2330] text-white border-[#3B82F6]'
+                    : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
+                }`}
+              >
+                Radial Glow
+              </button>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
@@ -325,27 +409,32 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
               </div>
             </div>
 
-            {/* Angle Slider */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <span className="text-[#71717A]">ANGLE</span>
-                <span className="text-[#60A5FA] font-bold">{gradAngle}°</span>
+            {/* Angle Slider (Only for Linear) */}
+            {gradType === 'linear' && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#71717A]">ANGLE</span>
+                  <span className="text-[#60A5FA] font-bold">{gradAngle}°</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  value={gradAngle}
+                  onChange={(e) => setGradAngle(Number(e.target.value))}
+                  className="w-full accent-[#3B82F6]"
+                />
               </div>
-              <input
-                type="range"
-                min="0"
-                max="360"
-                value={gradAngle}
-                onChange={(e) => setGradAngle(Number(e.target.value))}
-                className="w-full accent-[#3B82F6]"
-              />
-            </div>
+            )}
 
             {/* Live Gradient Preview */}
             <div
               className="w-full h-16 rounded-xl border border-[#2A2A30] shadow-inner mt-1"
               style={{
-                background: `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`,
+                background:
+                  gradType === 'linear'
+                    ? `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`
+                    : `radial-gradient(circle at center, ${gradColor2} 0%, ${gradColor1} 100%)`,
               }}
             />
 

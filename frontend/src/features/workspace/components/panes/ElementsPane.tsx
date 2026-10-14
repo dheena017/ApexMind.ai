@@ -14,9 +14,13 @@ import {
   ArrowRight,
   Sparkles,
   Plus,
-  Eye,
-  Sliders,
   Tv,
+  Film,
+  Sliders,
+  Share2,
+  AtSign,
+  Youtube,
+  Instagram,
 } from 'lucide-react';
 
 export interface ElementsPaneProps {
@@ -46,6 +50,12 @@ const SHAPES = [
   { id: 'shape-letterbox', name: 'Cinematic 2.39:1 Letterbox', desc: 'Top & bottom film letterbox borders', icon: Layers },
   { id: 'shape-divider', name: 'Accent Divider Line', desc: 'Horizontal rule separating hook and quote', icon: ArrowRight },
   { id: 'shape-scanlines', name: 'CRT Retro Scanlines', desc: 'Subtle cyberpunk monitor scanlines', icon: Tv },
+];
+
+const SOCIAL_TAGS = [
+  { id: 'social-yt', name: 'YouTube Subscribe Pill', icon: Youtube, defaultVal: 'SUBSCRIBE FOR MORE' },
+  { id: 'social-ig', name: 'Instagram Creator Tag', icon: Instagram, defaultVal: '@ApexMind.ai' },
+  { id: 'social-share', name: 'Save & Share Reminder', icon: Share2, defaultVal: 'SAVE THIS REEL' },
 ];
 
 const PROGRESS_BARS = [
@@ -78,8 +88,13 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
   onToggleVignette,
   onToggleGrain,
 }) => {
-  const [activeTab, setActiveTab] = useState<'badges' | 'shapes' | 'progress' | 'emojis' | 'custom'>('badges');
+  const [activeTab, setActiveTab] = useState<'badges' | 'fx' | 'social' | 'shapes' | 'progress' | 'custom'>('badges');
   const [appliedItem, setAppliedItem] = useState<string | null>(null);
+
+  // Visual FX State
+  const [grainIntensity, setGrainIntensity] = useState<number>(30);
+  const [vignetteDarkness, setVignetteDarkness] = useState<number>(50);
+  const [letterboxBars, setLetterboxBars] = useState<number>(0);
 
   // Custom Badge Creator
   const [customBadgeText, setCustomBadgeText] = useState('');
@@ -108,7 +123,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         <div className="flex items-center gap-2 min-w-0">
           <Shapes className="w-4 h-4 shrink-0 text-[#60A5FA]" />
           <span className="text-xs font-bold text-white truncate">
-            Studio Elements
+            Studio Elements &amp; Overlays
           </span>
           <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
             OVERLAYS
@@ -126,9 +141,10 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
       <div className="flex items-center gap-5 px-4 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
         {[
           { id: 'badges', label: 'Badges' },
-          { id: 'shapes', label: 'Overlays' },
+          { id: 'fx', label: 'Visual FX' },
+          { id: 'social', label: 'Social Tags' },
+          { id: 'shapes', label: 'Frames' },
           { id: 'progress', label: 'Progress' },
-          { id: 'emojis', label: 'Emojis' },
           { id: 'custom', label: 'Custom' },
         ].map((tab) => (
           <button
@@ -148,6 +164,132 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
+        {/* ── Tab: Visual FX Sliders ── */}
+        {activeTab === 'fx' && (
+          <div className="flex flex-col gap-3.5">
+            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
+                Cinematic Visual Texture Overlays
+              </span>
+
+              {/* Film Grain */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#71717A]">35MM FILM GRAIN INTENSITY</span>
+                  <span className="text-[#60A5FA] font-bold">{grainIntensity}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={grainIntensity}
+                  onChange={(e) => {
+                    setGrainIntensity(Number(e.target.value));
+                    onToggleGrain?.();
+                  }}
+                  className="w-full accent-[#3B82F6]"
+                />
+              </div>
+
+              {/* Vignette Darkness */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#71717A]">CORNER VIGNETTE SHADOW</span>
+                  <span className="text-[#60A5FA] font-bold">{vignetteDarkness}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={vignetteDarkness}
+                  onChange={(e) => {
+                    setVignetteDarkness(Number(e.target.value));
+                    onToggleVignette?.();
+                  }}
+                  className="w-full accent-[#3B82F6]"
+                />
+              </div>
+
+              {/* Letterbox Bars */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#71717A]">CINEMA LETTERBOX BARS</span>
+                  <span className="text-[#60A5FA] font-bold">{letterboxBars}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="18"
+                  value={letterboxBars}
+                  onChange={(e) => setLetterboxBars(Number(e.target.value))}
+                  className="w-full accent-[#3B82F6]"
+                />
+              </div>
+            </div>
+
+            {/* Retro Overlays */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleSelect('fx-crt', 'CRT Scanlines', 'shape', 'shape-scanlines')}
+                className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] text-left flex flex-col gap-1 cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5 text-[#60A5FA]">
+                  <Tv className="w-3.5 h-3.5" />
+                  <span className="text-xs font-bold text-white">CRT Scanlines</span>
+                </div>
+                <span className="text-[10px] text-[#A1A1AA]">Retro monitor lines</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelect('fx-spotlight', 'Center Spotlight', 'shape', 'shape-spotlight')}
+                className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] text-left flex flex-col gap-1 cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5 text-amber-400">
+                  <Circle className="w-3.5 h-3.5" />
+                  <span className="text-xs font-bold text-white">Center Spotlight</span>
+                </div>
+                <span className="text-[10px] text-[#A1A1AA]">Subject radial focus</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab: Social Tags ── */}
+        {activeTab === 'social' && (
+          <div className="flex flex-col gap-2">
+            {SOCIAL_TAGS.map((tag) => {
+              const Icon = tag.icon;
+              return (
+                <div
+                  key={tag.id}
+                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#2A2A32] flex items-center justify-center text-[#60A5FA] shrink-0">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{tag.name}</p>
+                      <p className="text-[10px] text-[#A1A1AA] truncate">{tag.defaultVal}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelect(tag.id, tag.name, 'badge', tag.defaultVal)}
+                    className="px-2.5 py-1 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-bold transition-colors cursor-pointer shrink-0"
+                  >
+                    Insert
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* ── Tab 1: Badges ── */}
         {activeTab === 'badges' && (
           <div className="grid grid-cols-2 gap-2">
@@ -173,7 +315,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 2: Shapes & Overlays ── */}
+        {/* ── Tab 2: Shapes & Frames ── */}
         {activeTab === 'shapes' && (
           <div className="flex flex-col gap-2">
             {SHAPES.map((s) => {
@@ -223,24 +365,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 4: Emojis ── */}
-        {activeTab === 'emojis' && (
-          <div className="grid grid-cols-4 gap-2">
-            {EMOJI_ELEMENTS.map((e, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelect(`emoji-${idx}`, e.label, 'emoji', e.symbol)}
-                className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col items-center justify-center gap-1 cursor-pointer"
-              >
-                <span className="text-2xl">{e.symbol}</span>
-                <span className="text-[9px] text-[#A1A1AA] truncate">{e.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* ── Tab 5: Custom Badge Creator ── */}
+        {/* ── Tab 4: Custom Badge Creator ── */}
         {activeTab === 'custom' && (
           <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
             <span className="text-xs font-bold text-white">Create Custom Badge</span>

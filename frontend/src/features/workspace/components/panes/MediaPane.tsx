@@ -15,6 +15,10 @@ import {
   Play,
   Copy,
   Sparkles,
+  ArrowUpDown,
+  Download,
+  Eye,
+  X,
 } from 'lucide-react';
 
 export interface UploadedMediaItem {
@@ -87,10 +91,12 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   const [mediaItems, setMediaItems] = useState<UploadedMediaItem[]>(DEFAULT_STARTER_ASSETS);
   const [activeTab, setActiveTab] = useState<'library' | 'import-url'>('library');
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video' | 'audio'>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedId, setAppliedId] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [previewItem, setPreviewItem] = useState<UploadedMediaItem | null>(null);
 
   // Custom Import URL state
   const [importUrl, setImportUrl] = useState('');
@@ -107,19 +113,14 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
           setMediaItems(parsed);
         }
       }
-    } catch {
-      // Ignore
-    }
+    } catch {}
   }, []);
 
-  // Save to localStorage whenever items change
   const persistItems = (items: UploadedMediaItem[]) => {
     setMediaItems(items);
     try {
       localStorage.setItem(LOCAL_STORAGE_MEDIA_KEY, JSON.stringify(items));
-    } catch {
-      // Ignore
-    }
+    } catch {}
   };
 
   const onDrop = (acceptedFiles: File[]) => {
@@ -211,7 +212,6 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
     const updated = [newItem, ...mediaItems];
     persistItems(updated);
 
-    // Auto apply
     if (importType === 'image') onApplyBackdrop(url, false);
     if (importType === 'video') onApplyBackdrop(url, true);
     if (importType === 'audio' && onApplyAudio) onApplyAudio(url);
@@ -243,7 +243,13 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
     }
   };
 
-  const filteredMedia = mediaItems.filter((m) => {
+  const sortedMedia = [...mediaItems].sort((a, b) => {
+    if (sortBy === 'newest') return b.createdAt - a.createdAt;
+    if (sortBy === 'oldest') return a.createdAt - b.createdAt;
+    return a.name.localeCompare(b.name);
+  });
+
+  const filteredMedia = sortedMedia.filter((m) => {
     const matchesType = filterType === 'all' || m.type === filterType;
     const matchesSearch =
       searchQuery.trim() === '' ||
@@ -270,7 +276,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
             <button
               type="button"
               onClick={handleClearAll}
-              className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors"
+              className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer"
             >
               Clear
             </button>
@@ -308,7 +314,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
         </button>
       </div>
 
-      {/* ── Media Type Filter Chips (In Library Mode) ── */}
+      {/* ── Media Type Filter & Sort ── */}
       {activeTab === 'library' && (
         <div className="flex items-center justify-between px-4 py-2 border-b border-[#26262B]/60 bg-[#141416] shrink-0">
           <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
@@ -335,18 +341,31 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
             ))}
           </div>
 
-          {onCaptureCanvasSnapshot && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onCaptureCanvasSnapshot && (
+              <button
+                type="button"
+                onClick={handleCaptureSnapshot}
+                disabled={isCapturing}
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-[#60A5FA] border border-[#3A3A44] transition-colors shrink-0"
+                title="Snapshot current canvas frame to library"
+              >
+                <Camera className="w-3 h-3" />
+                Snapshot
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={handleCaptureSnapshot}
-              disabled={isCapturing}
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-[#60A5FA] border border-[#3A3A44] transition-colors shrink-0"
-              title="Snapshot current canvas frame to library"
+              onClick={() =>
+                setSortBy((prev) => (prev === 'newest' ? 'name' : prev === 'name' ? 'oldest' : 'newest'))
+              }
+              className="p-1.5 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-zinc-300 text-[10px] flex items-center gap-1"
+              title="Change sort order"
             >
-              <Camera className="w-3 h-3" />
-              Snapshot
+              <ArrowUpDown className="w-3 h-3" />
             </button>
-          )}
+          </div>
         </div>
       )}
 

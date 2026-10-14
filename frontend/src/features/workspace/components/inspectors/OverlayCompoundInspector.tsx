@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlipHorizontal,
   FlipVertical,
@@ -28,6 +28,12 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
 
   // Time
   const [duration, setDuration] = useState(5.0);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('workspace:overlay-style-change', {
+      detail: { fitMode, flipH, flipV, rotation, accentColor, opacity, duration },
+    }));
+  }, [fitMode, flipH, flipV, rotation, accentColor, opacity, duration]);
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">

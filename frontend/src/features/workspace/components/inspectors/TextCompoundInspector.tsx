@@ -59,6 +59,23 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     '#EC4899',
   ];
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('workspace:caption-style-change', {
+      detail: {
+        text: textContent,
+        color: textColor,
+        fontFamily: textFont,
+        fontWeight: textWeight,
+        fontSize: textSize,
+        textAlign,
+        dropShadow,
+        background: bgColor,
+        opacity,
+        duration,
+      },
+    }));
+  }, [textContent, textColor, textFont, textWeight, textSize, textAlign, dropShadow, bgColor, opacity, duration]);
+
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar (Exactly matching Image 3) ── */}
