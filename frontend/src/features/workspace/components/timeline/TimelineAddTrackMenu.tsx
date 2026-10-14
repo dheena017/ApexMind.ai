@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useLayoutEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Film,
   Type,
@@ -13,18 +14,56 @@ import { EnabledTracks, SelectedClip } from './timelineTypes';
 export interface TimelineAddTrackMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  anchorRef: { current: HTMLElement | null };
   onEnableTrack: (trackKey: keyof EnabledTracks, selected: SelectedClip, compound: 'video' | 'text' | 'voice' | 'music' | 'overlay') => void;
 }
 
 export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
   isOpen,
   onClose,
+  anchorRef,
   onEnableTrack,
 }) => {
+  const menuRef = React.useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ top: 0, left: 0, maxHeight: 300, openAbove: false });
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+
+    const updatePosition = () => {
+      const rect = anchor.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+      const spaceAbove = rect.top - 8;
+      const openAbove = spaceBelow < 280 && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(120, Math.min(300, openAbove ? spaceAbove : spaceBelow));
+      const menuHeight = Math.min((menuRef.current?.scrollHeight || 257) + 2, maxHeight);
+      setPosition({
+        top: openAbove ? rect.top - menuHeight : rect.bottom,
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - 216)),
+        maxHeight,
+        openAbove,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [anchorRef, isOpen]);
+
   if (!isOpen) return null;
 
-  return (
-    <div className="absolute top-full left-0 mt-1 w-52 bg-[#18181B] border border-[#27272A] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1">
+  return createPortal(
+    <div
+      ref={menuRef}
+      className={`fixed w-52 overflow-y-auto bg-[#18181B] border border-[#27272A] shadow-2xl p-1.5 z-[1000] flex flex-col gap-1 ${position.openAbove ? 'rounded-t-xl rounded-b-none' : 'rounded-t-none rounded-b-xl'}`}
+      style={{ top: position.top, left: position.left, maxHeight: position.maxHeight }}
+    >
       <span className="text-[9px] font-mono-studio text-[#71717A] px-2 py-1 uppercase tracking-wider">
         Left Panel Track Categories
       </span>
@@ -116,7 +155,8 @@ export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
         <Sparkles className="w-3.5 h-3.5 text-amber-400" />
         <span>Sound FX Track (A3)</span>
       </button>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  CheckCircle2,
   Sparkles,
   LayoutDashboard,
   Wand2,
@@ -28,6 +29,13 @@ interface AppLayoutProps {
   unreadCount?: number;
 }
 
+const formatWorkspaceTime = (seconds: number) => {
+  const totalSeconds = Math.max(0, Math.floor(seconds || 0));
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+  const remainder = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${remainder}`;
+};
+
 export default function AppLayout({
   children,
   activePage,
@@ -39,6 +47,29 @@ export default function AppLayout({
   const { user, logout, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dynamicUnread, setDynamicUnread] = useState(0);
+  const [workspaceStatus, setWorkspaceStatus] = useState({
+    aspectRatio: '9:16',
+    currentTime: 0,
+    duration: 30,
+    playbackRate: 1,
+    voice: 'Fenrir',
+    music: '',
+    visual: '',
+    captionCount: 0,
+    overlay: '',
+    sfx: '',
+    isPlaying: false,
+    isExporting: false,
+  });
+
+  useEffect(() => {
+    const handleWorkspaceStatus = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<typeof workspaceStatus>>).detail;
+      if (detail) setWorkspaceStatus((current) => ({ ...current, ...detail }));
+    };
+    window.addEventListener('workspace:status', handleWorkspaceStatus);
+    return () => window.removeEventListener('workspace:status', handleWorkspaceStatus);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -131,6 +162,41 @@ export default function AppLayout({
               </div>
             </main>
           </div>
+          <footer className="h-6 shrink-0 border-t border-[#26262B] bg-[#111114] px-2 sm:px-3 flex items-center justify-between gap-3 font-mono-studio text-[9px] text-[#8B8B94] select-none">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="hidden sm:inline truncate text-[#C4C4CC]">
+                {{
+                  script: 'AI Script Studio',
+                  prompt: 'AI Script Studio',
+                  editor: 'Script & Subtitles',
+                  canvas: 'Canvas',
+                  media: 'Media Library',
+                  text: 'Text & Titles',
+                  elements: 'Elements',
+                  audio: 'Audio & SFX',
+                  image: 'Stock Images',
+                  video: 'Stock Videos',
+                }[activeWorkspacePane] || 'Workspace'}
+              </span>
+              <span className="text-[#55555D]">{workspaceStatus.aspectRatio}</span>
+              <span className="hidden sm:inline tabular-nums">
+                {formatWorkspaceTime(workspaceStatus.currentTime)} / {formatWorkspaceTime(workspaceStatus.duration)}
+              </span>
+              {workspaceStatus.visual && <span className="hidden lg:inline max-w-24 truncate">V1 {workspaceStatus.visual}</span>}
+              {workspaceStatus.captionCount > 0 && <span className="hidden lg:inline">T1 {workspaceStatus.captionCount}</span>}
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="hidden lg:inline">{workspaceStatus.playbackRate}x</span>
+              <span className="hidden md:inline max-w-24 truncate">{workspaceStatus.voice}</span>
+              {workspaceStatus.music && <span className="hidden lg:inline max-w-28 truncate">{workspaceStatus.music}</span>}
+              {workspaceStatus.overlay && <span className="hidden xl:inline max-w-20 truncate">O1 {workspaceStatus.overlay}</span>}
+              {workspaceStatus.sfx && <span className="hidden xl:inline max-w-20 truncate">SFX {workspaceStatus.sfx}</span>}
+              <span className={`flex items-center gap-1 ${workspaceStatus.isExporting ? 'text-sky-400' : workspaceStatus.isPlaying ? 'text-emerald-400' : 'text-[#8B8B94]'}`}>
+                <CheckCircle2 className="w-3 h-3" />
+                {workspaceStatus.isExporting ? 'Exporting' : workspaceStatus.isPlaying ? 'Playing' : 'Paused'}
+              </span>
+            </div>
+          </footer>
         </>
       ) : (
         <>

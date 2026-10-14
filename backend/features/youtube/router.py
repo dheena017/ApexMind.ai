@@ -4,10 +4,17 @@ FastAPI route endpoints for YouTube channel management, live lookups, correction
 publishing, and automations.
 """
 
-from typing import Optional
-from pydantic import BaseModel
 import logging
+from typing import Optional
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
+
+from backend.database.repository import (
+    get_community_posts,
+    add_community_post,
+    get_channel_by_id,
+    update_channel,
+)
 from .schemas import (
     ConnectChannelRequest,
     LookupChannelRequest,
@@ -32,6 +39,12 @@ from .service import (
     publish_video_to_shorts,
     list_automations,
     toggle_automation,
+)
+from .youtube_service import (
+    get_channel_live_feed,
+    fetch_channel_playlists,
+    fetch_channel_community_posts,
+    get_channel_analytics,
 )
 
 logger = logging.getLogger("ApexMind.features.youtube")
@@ -63,64 +76,49 @@ async def post_lookup_channel(payload: LookupChannelRequest):
     try:
         return lookup_youtube_channel(payload.query)
     except Exception as e:
-        logger.warning(f"Error looking up YouTube channel '{payload.query}': {e}")
+        logger.error(f"Error resolving YouTube channel '{payload.query}': {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"YouTube channel lookup failed: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
         )
 
 @router.post(
     "/api/youtube/connect",
     response_model=ConnectChannelResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Connect YouTube channel",
-    description="Link a new YouTube channel, automatically fetching real subscribers, avatar, and videos if requested."
+    summary="Connect a YouTube channel",
+    description="Connects and registers a new YouTube channel, automatically fetching subscriber counts and live avatar."
 )
 async def post_connect_channel(payload: ConnectChannelRequest):
     try:
         return connect_youtube_channel(
-            name=payload.channelName,
-            handle=payload.handle or "",
-            niche=payload.niche or "Motivational Quotes",
+            name=payload.name,
+            handle=payload.handle,
+            niche=payload.niche,
             avatar_url=payload.avatarUrl,
             subscribers=payload.subscribers or 0,
             videos_uploaded=payload.videosUploaded or 0,
-            auto_resolve=payload.autoResolve if payload.autoResolve is not None else True,
+            banner_url=payload.bannerUrl,
+            auto_resolve=True,
         )
     except Exception as e:
         logger.error(f"Error connecting YouTube channel: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail=f"Failed to connect channel: {str(e)}"
         )
 
 @router.post(
-    "/api/youtube/channels/{channel_id}/sync",
+    "/api/youtube/sync",
     response_model=SyncChannelResponse,
-    summary="Sync channel with live YouTube",
-    description="Re-fetches current live YouTube metrics (subscribers, avatar, videos) and updates the channel."
+    summary="Live sync/correct connected channel",
+    description="Synchronizes subscriber counts, live handle, and verified metadata directly from YouTube."
 )
-async def post_sync_channel(channel_id: str):
+async def post_sync_channel(payload: CorrectChannelRequest):
     try:
-        return sync_or_correct_channel(channel_id=channel_id)
+        return sync_or_correct_channel(payload.channelId, new_query=payload.newHandleOrQuery)
     except Exception as e:
-        logger.error(f"Error syncing YouTube channel '{channel_id}': {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
-
-@router.post(
-    "/api/youtube/correct",
-    response_model=SyncChannelResponse,
-    summary="Correct YouTube channel handle/details",
-    description="Corrects a connected channel by supplying an updated YouTube handle or URL and re-verifying."
-)
-async def post_correct_channel(payload: CorrectChannelRequest):
-    try:
-        return sync_or_correct_channel(channel_id=payload.channelId, new_query=payload.query)
-    except Exception as e:
-        logger.error(f"Error correcting YouTube channel '{payload.channelId}': {e}")
+        logger.error(f"Error synchronizing channel '{payload.channelId}': {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -129,17 +127,17 @@ async def post_correct_channel(payload: CorrectChannelRequest):
 @router.get(
     "/api/youtube/channels/{channel_id}/shorts",
     response_model=ShortsListResponse,
-    summary="Get channel live YouTube Shorts",
-    description="Fetches live YouTube Shorts published on the specified channel."
+    summary="Get channel YouTube Shorts",
+    description="Fetches published Shorts from the connected YouTube channel."
 )
-async def get_channel_shorts_route(channel_id: str, limit: int = 12):
+async def get_channel_shorts_route(channel_id: str, limit: Optional[int] = 15):
     try:
-        return get_live_channel_shorts(channel_id=channel_id, limit=limit)
+        return get_live_channel_shorts(channel_id, limit=limit or 15)
     except Exception as e:
-        logger.error(f"Error fetching channel shorts: {e}")
+        logger.error(f"Error fetching channel shorts for '{channel_id}': {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve live shorts."
+            detail="Failed to retrieve YouTube Shorts."
         )
 
 @router.get(
@@ -149,7 +147,6 @@ async def get_channel_shorts_route(channel_id: str, limit: int = 12):
 )
 async def get_channel_live_feed_route(channel_id: str):
     try:
-        from .youtube_service import get_channel_live_feed
         return get_channel_live_feed(channel_id)
     except Exception as e:
         logger.error(f"Error fetching live channel feed for '{channel_id}': {e}")
@@ -165,7 +162,6 @@ async def get_channel_live_feed_route(channel_id: str):
 )
 async def get_channel_playlists_route(channel_id: str):
     try:
-        from .youtube_service import fetch_channel_playlists, get_channel_by_id
         ch = get_channel_by_id(channel_id)
         handle = ch.get("handle") or ch.get("name") if ch else channel_id
         playlists = fetch_channel_playlists(handle)
@@ -184,7 +180,6 @@ async def get_channel_playlists_route(channel_id: str):
 )
 async def get_channel_analytics_route(channel_id: str):
     try:
-        from .youtube_service import get_channel_analytics
         return {"success": True, "analytics": get_channel_analytics(channel_id)}
     except Exception as e:
         logger.error(f"Error fetching channel analytics for '{channel_id}': {e}")
@@ -207,8 +202,6 @@ class CreateCommunityPostPayload(BaseModel):
 )
 async def get_channel_community_posts_route(channel_id: str):
     try:
-        from backend.database.repository import get_community_posts
-        from .youtube_service import fetch_channel_community_posts, get_channel_by_id
         db_posts = get_community_posts(channel_id)
         ch = get_channel_by_id(channel_id)
         handle = ch.get("handle") or ch.get("name") if ch else channel_id
@@ -231,7 +224,6 @@ async def get_channel_community_posts_route(channel_id: str):
 )
 async def create_channel_community_post_route(channel_id: str, payload: CreateCommunityPostPayload):
     try:
-        from backend.database.repository import add_community_post, get_channel_by_id
         ch = get_channel_by_id(channel_id)
         author = payload.author or (ch.get("name") if ch else "Channel Creator")
         handle = payload.handle or (ch.get("handle") if ch else "@channel")
@@ -265,7 +257,6 @@ class UpdateChannelRequest(BaseModel):
 )
 async def patch_channel_route(channel_id: str, payload: UpdateChannelRequest):
     try:
-        from backend.database.repository import update_channel
         updates = {k: v for k, v in payload.dict().items() if v is not None}
         updated = update_channel(channel_id, updates)
         if not updated:

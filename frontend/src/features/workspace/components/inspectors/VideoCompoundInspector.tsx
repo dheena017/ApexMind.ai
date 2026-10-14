@@ -1,31 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Crop,
-  FlipHorizontal,
-  FlipVertical,
-  RotateCw,
-  Minus,
-  Plus,
-  Film,
+  Crop, FlipHorizontal, FlipVertical, RotateCw, Minus, Plus, Film,
+  Sliders, Zap, Palette, Clock, Volume2, VolumeX, RefreshCw,
+  Sun, Contrast, Eye, Layers, Sparkles, Image as ImageIcon,
+  Check, Maximize2, Lock, Unlock, Play, ChevronRight, Gauge,
+  Smartphone, Monitor, Square,
 } from 'lucide-react';
 import { VisualBackdrop } from '../../types';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
-type VideoInspectorTab = 'transform' | 'style' | 'animations' | 'adjust' | 'audio' | 'speed' | 'time';
+export type VideoInspectorTab =
+  | 'transform'
+  | 'style'
+  | 'adjust'
+  | 'animations'
+  | 'lut'
+  | 'speed'
+  | 'audio'
+  | 'time';
 
 const VIDEO_STYLE_PRESETS = [
-  { label: 'Natural', brightness: 100, contrast: 100, saturation: 100, vignette: 0 },
-  { label: 'Cinematic', brightness: 96, contrast: 125, saturation: 82, vignette: 24 },
-  { label: 'Vivid', brightness: 105, contrast: 115, saturation: 145, vignette: 8 },
-  { label: 'Noir', brightness: 95, contrast: 140, saturation: 0, vignette: 35 },
-  { label: 'Vintage', brightness: 105, contrast: 90, saturation: 72, vignette: 22 },
+  { label: 'Natural', brightness: 100, contrast: 100, saturation: 100, vignette: 0, hue: 0, desc: 'Clean authentic look' },
+  { label: 'Cine Warm', brightness: 105, contrast: 110, saturation: 115, vignette: 20, hue: 10, desc: 'Golden warm cinematic tone' },
+  { label: 'Moody Teal', brightness: 95, contrast: 120, saturation: 85, vignette: 30, hue: -15, desc: 'Teal shadows with warm highlights' },
+  { label: 'Noir B&W', brightness: 90, contrast: 130, saturation: 0, vignette: 35, hue: 0, desc: 'High contrast dramatic monochrome' },
+  { label: 'Cyber Neon', brightness: 108, contrast: 125, saturation: 140, vignette: 15, hue: 45, desc: 'Vibrant futuristic glow' },
+  { label: 'Vintage Kodachrome', brightness: 102, contrast: 105, saturation: 90, vignette: 25, hue: 5, desc: '1970s analog retro film' },
+  { label: 'Bleach Bypass', brightness: 110, contrast: 140, saturation: 60, vignette: 40, hue: 0, desc: 'Gritty cinematic desaturation' },
+  { label: 'Vivid Pop', brightness: 105, contrast: 115, saturation: 135, vignette: 0, hue: 0, desc: 'High saturation social feed pop' },
+  { label: 'Golden Hour', brightness: 108, contrast: 108, saturation: 120, vignette: 18, hue: 15, desc: 'Rich amber sunset glow' },
+  { label: 'Cold Glacier', brightness: 98, contrast: 112, saturation: 90, vignette: 20, hue: -25, desc: 'Arctic crisp blue tone' },
+];
+
+const LUT_PRESETS = [
+  { id: 'none', label: 'None / Rec.709', desc: 'Standard standard' },
+  { id: 'fuji-eterna', label: 'Fuji Eterna', desc: 'Soft contrast cinematic' },
+  { id: 'kodak-vision', label: 'Kodak Vision3', desc: 'Hollywood classic blockbuster' },
+  { id: 'alexa-logc', label: 'Arri Alexa LogC', desc: 'High dynamic range master' },
+  { id: 'red-dragon', label: 'RED DragonColor', desc: 'Deep reds & punchy shadows' },
+  { id: 'matrix-green', label: 'Matrix Acid Green', desc: 'Sci-fi cyberpunk tint' },
+  { id: 'sepia-classic', label: 'Sepia Archival', desc: 'Antique historic warm tint' },
+  { id: 'tokyo-drift', label: 'Tokyo Night Drive', desc: 'Neon cyan & magenta' },
+];
+
+const ANIMATION_PRESETS = [
+  { id: 'none', label: 'Static (No Motion)', desc: 'Fixed frame' },
+  { id: 'kenburns', label: 'Ken Burns Pan & Zoom', desc: 'Subtle slow movement' },
+  { id: 'zoom', label: 'Subtle Zoom In', desc: 'Focuses slowly into scene' },
+  { id: 'zoom-out', label: 'Dynamic Zoom Out', desc: 'Reveals broader context' },
+  { id: 'pan-left', label: 'Slow Pan Left', desc: 'Cinematic tracking right-to-left' },
+  { id: 'pan-right', label: 'Slow Pan Right', desc: 'Cinematic tracking left-to-right' },
+  { id: 'glitch', label: 'Glitch Shutter', desc: 'Fast digital micro-shakes' },
+  { id: 'float', label: 'Floating Breathing', desc: 'Organic gentle rise and fall' },
+  { id: 'slide', label: 'Vertical Slide', desc: 'Dramatic vertical camera rise' },
+];
+
+const CANVAS_BG_PRESETS = [
+  { label: 'Pure Black', value: '#000000' },
+  { label: 'Studio Onyx', value: '#050505' },
+  { label: 'Deep Slate', value: '#0F172A' },
+  { label: 'Midnight Blue', value: '#0A0F24' },
+  { label: 'Crimson Dark', value: '#1A080A' },
+  { label: 'Cyber Violet', value: '#120826' },
+  { label: 'Emerald Deep', value: '#061A12' },
+  { label: 'Clean White', value: '#FFFFFF' },
 ];
 
 export interface VideoCompoundInspectorProps {
   activeBackdrop: VisualBackdrop;
   backdrops: VisualBackdrop[];
   onSelectBackdrop: (backdropId: string) => void;
-  duration: number;
+  duration?: number;
   onUpdateDuration?: (duration: number) => void;
   playbackRate?: number;
   onPlaybackRateChange?: (rate: number) => void;
@@ -35,14 +80,23 @@ export interface VideoCompoundInspectorProps {
   onSetCustomVideo?: (url: string | undefined) => void;
   canvasBackground?: string;
   onCanvasBackgroundChange?: (bg: string) => void;
+  canvasAspectRatio?: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+  onCanvasAspectRatioChange?: (ratio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => void;
   initialSubTab?: VideoInspectorTab;
 }
+
+const formatTimeDigital = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 100);
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+};
 
 export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   activeBackdrop,
   backdrops,
   onSelectBackdrop,
-  duration = 12.1,
+  duration = 15,
   onUpdateDuration,
   playbackRate = 1,
   onPlaybackRateChange,
@@ -52,134 +106,135 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   onSetCustomVideo,
   canvasBackground = '#050505',
   onCanvasBackgroundChange,
+  canvasAspectRatio = '9:16',
+  onCanvasAspectRatioChange,
   initialSubTab = 'transform',
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<VideoInspectorTab>(initialSubTab);
 
-  // Transform states (Image 1)
+  // Transform states (user configurable)
   const [fitMode, setFitMode] = useState<'fill' | 'fit' | 'crop'>('fill');
   const [flipH, setFlipH] = useState(false);
   const [flipV, setFlipV] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const [scale, setScale] = useState(100);
+  const [posX, setPosX] = useState(50);
+  const [posY, setPosY] = useState(50);
+  const [lockAspect, setLockAspect] = useState(true);
 
-  // Time states (Image 2)
-  const [timeMode, setTimeMode] = useState<'duration' | 'timing'>('duration');
-  const [localDuration, setLocalDuration] = useState(duration > 0 ? duration : 12.1);
+  // Time & Duration
+  const [localDuration, setLocalDuration] = useState(duration > 0 ? duration : 15);
 
-  // Adjust states
+  useEffect(() => {
+    if (duration > 0) setLocalDuration(duration);
+  }, [duration]);
+
+  // Visual adjustments
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
   const [vignette, setVignette] = useState(0);
+  const [hue, setHue] = useState(0);
+  const [blur, setBlur] = useState(0);
+  const [grain, setGrain] = useState(0);
   const [activeStyle, setActiveStyle] = useState('Natural');
 
-  // Audio / Animation states
+  // Audio & Animation states
   const [videoVolume, setVideoVolume] = useState(100);
   const [animation, setAnimation] = useState('none');
+  const [animSpeed, setAnimSpeed] = useState<'0.5' | '1' | '1.5' | '2'>('1');
+  const [activeLUT, setActiveLUT] = useState('none');
+  const [lutIntensity, setLutIntensity] = useState(80);
+  const [loopVideo, setLoopVideo] = useState(true);
+  const [muteVideo, setMuteVideo] = useState(false);
 
-  // Handlers to notify VideoPreviewPane canvas live
-  const handleSetFitMode = (mode: 'fill' | 'fit' | 'crop') => {
-    setFitMode(mode);
+  // Broadcast transform changes to the canvas in real time
+  useEffect(() => {
     window.dispatchEvent(
       new CustomEvent('workspace:backdrop-transform', {
-        detail: { fitMode: mode },
+        detail: { fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect },
       })
     );
-  };
+  }, [fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect]);
 
-  const handleToggleFlipH = () => {
-    const next = !flipH;
-    setFlipH(next);
+  // Broadcast filter adjustments to the canvas
+  useEffect(() => {
     window.dispatchEvent(
-      new CustomEvent('workspace:backdrop-transform', {
-        detail: { flipH: next },
+      new CustomEvent('workspace:backdrop-filter', {
+        detail: { brightness, contrast, saturate: saturation, vignette, hue, blur, grain, lut: activeLUT, lutIntensity },
       })
     );
-  };
+  }, [brightness, contrast, saturation, vignette, hue, blur, grain, activeLUT, lutIntensity]);
 
-  const handleToggleFlipV = () => {
-    const next = !flipV;
-    setFlipV(next);
+  // Broadcast animation changes
+  useEffect(() => {
     window.dispatchEvent(
-      new CustomEvent('workspace:backdrop-transform', {
-        detail: { flipV: next },
+      new CustomEvent('workspace:backdrop-animation', {
+        detail: { animation, speed: parseFloat(animSpeed) },
       })
     );
-  };
+  }, [animation, animSpeed]);
 
-  const handleUpdateRotation = (newRot: number) => {
-    setRotation(newRot);
+  // Broadcast audio changes
+  useEffect(() => {
     window.dispatchEvent(
-      new CustomEvent('workspace:backdrop-transform', {
-        detail: { rotation: newRot },
+      new CustomEvent('workspace:backdrop-audio', {
+        detail: { volume: muteVideo ? 0 : videoVolume },
       })
     );
-  };
+  }, [videoVolume, muteVideo]);
 
   const handleResetTransform = () => {
     setFitMode('fill');
     setFlipH(false);
     setFlipV(false);
     setRotation(0);
-    window.dispatchEvent(
-      new CustomEvent('workspace:backdrop-transform', {
-        detail: { reset: true, fitMode: 'fill', flipH: false, flipV: false, rotation: 0 },
-      })
-    );
+    setScale(100);
+    setPosX(50);
+    setPosY(50);
   };
 
-  // Sync adjust filters live to the canvas
-  useEffect(() => {
-    window.dispatchEvent(
-      new CustomEvent('workspace:backdrop-filter', {
-        detail: {
-          brightness,
-          contrast,
-          saturate: saturation,
-          vignette,
-        },
-      })
-    );
-  }, [brightness, contrast, saturation, vignette]);
-
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('workspace:backdrop-animation', {
-      detail: { animation },
-    }));
-  }, [animation]);
-
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('workspace:backdrop-audio', {
-      detail: { volume: videoVolume },
-    }));
-  }, [videoVolume]);
-
-  // Format mm:ss.ms
-  const formatTimeDigital = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 100);
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  const handleResetAdjustments = () => {
+    setBrightness(100);
+    setContrast(100);
+    setSaturation(100);
+    setVignette(0);
+    setHue(0);
+    setBlur(0);
+    setGrain(0);
+    setActiveStyle('Natural');
+    setActiveLUT('none');
   };
 
   const handleDurationChange = (newDur: number) => {
-    const val = Math.max(1, Math.min(180, parseFloat(newDur.toFixed(1))));
+    const val = Math.max(1, Math.min(300, parseFloat(newDur.toFixed(1))));
     setLocalDuration(val);
     onUpdateDuration?.(val);
   };
 
+  const applyStylePreset = (preset: typeof VIDEO_STYLE_PRESETS[0]) => {
+    setBrightness(preset.brightness);
+    setContrast(preset.contrast);
+    setSaturation(preset.saturation);
+    setVignette(preset.vignette);
+    setHue(preset.hue);
+    setActiveStyle(preset.label);
+  };
+
+  const tabs: VideoInspectorTab[] = ['transform', 'style', 'adjust', 'animations', 'lut', 'speed', 'audio', 'time'];
+
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
-      {/* ── Subtabs Header Bar (Exactly matching Image 1 & 2) ── */}
-      <div className="flex items-center gap-4 px-3 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar">
-        {(['transform', 'style', 'animations', 'adjust', 'audio', 'speed', 'time'] as const).map((tab) => (
+      {/* ── Subtabs Header Bar ── */}
+      <div className="flex items-center gap-2.5 px-3 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
+        {tabs.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveSubTab(tab)}
             className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
               activeSubTab === tab
-                ? 'text-white border-white'
+                ? 'text-white border-[#3B82F6]'
                 : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
             }`}
           >
@@ -189,216 +244,248 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
       </div>
 
       {/* ── Tab Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-        {activeSubTab === 'style' && (
-          <div className="flex flex-col gap-3 pt-1">
-            <span className="text-xs text-[#71717A]">Choose a video look</span>
-            <div className="grid grid-cols-2 gap-2.5">
-              {VIDEO_STYLE_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => {
-                    setBrightness(preset.brightness);
-                    setContrast(preset.contrast);
-                    setSaturation(preset.saturation);
-                    setVignette(preset.vignette);
-                    setActiveStyle(preset.label);
-                  }}
-                  className={`p-3.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
-                    activeStyle === preset.label
-                      ? 'bg-[#2A2A34] border-[#3B82F6] text-white shadow'
-                      : 'bg-[#1C1C20] border-[#2A2A30] text-[#9CA3AF] hover:bg-[#25252A]'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
 
-        {/* TAB 1: Transform (Image 1) */}
+        {/* ── TRANSFORM TAB ── */}
         {activeSubTab === 'transform' && (
-          <div className="flex flex-col items-center gap-6 pt-1">
-            {/* Fill, Fit, Crop Cards */}
-            <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
-              <button
-                type="button"
-                onClick={() => handleSetFitMode('fill')}
-                className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-2 p-3 transition-all cursor-pointer border ${
-                  fitMode === 'fill'
-                    ? 'bg-[#24242A] border-[#3B82F6] text-white shadow-lg'
-                    : 'bg-[#1C1C20] border-[#2A2A30] text-[#A1A1AA] hover:bg-[#222228]'
-                }`}
-                title="Fill entire canvas with image"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#3A3A44] border-2 border-white/60 flex items-center justify-center" />
-                <span className="text-xs font-medium">Fill</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSetFitMode('fit')}
-                className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-2 p-3 transition-all cursor-pointer border ${
-                  fitMode === 'fit'
-                    ? 'bg-[#24242A] border-[#3B82F6] text-white shadow-lg'
-                    : 'bg-[#1C1C20] border-[#2A2A30] text-[#A1A1AA] hover:bg-[#222228]'
-                }`}
-                title="Fit image inside canvas bounds"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#2A2A34] flex items-center justify-center">
-                  <div className="w-4 h-6 rounded bg-white/70" />
-                </div>
-                <span className="text-xs font-medium">Fit</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSetFitMode('crop')}
-                className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-2 p-3 transition-all cursor-pointer border ${
-                  fitMode === 'crop'
-                    ? 'bg-[#24242A] border-[#3B82F6] text-white shadow-lg'
-                    : 'bg-[#1C1C20] border-[#2A2A30] text-[#A1A1AA] hover:bg-[#222228]'
-                }`}
-                title="Crop image frame"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white/80">
-                  <Crop className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-medium">Crop</span>
-              </button>
+          <div className="flex flex-col gap-3.5 pt-0.5">
+            {/* Aspect Ratio Selector */}
+            <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#18181C] border border-[#282830]">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
+                <span>Canvas Aspect Ratio</span>
+                <span className="text-sky-400 font-bold">{canvasAspectRatio}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { id: '9:16' as const, label: '9:16', desc: 'Shorts/Reels', icon: Smartphone },
+                  { id: '16:9' as const, label: '16:9', desc: 'Landscape', icon: Monitor },
+                  { id: '1:1' as const, label: '1:1', desc: 'Square', icon: Square },
+                  { id: '4:5' as const, label: '4:5', desc: 'Portrait', icon: Maximize2 },
+                ].map((aspect) => {
+                  const Icon = aspect.icon;
+                  const isSelected = canvasAspectRatio === aspect.id;
+                  return (
+                    <button
+                      key={aspect.id}
+                      type="button"
+                      onClick={() => {
+                        onCanvasAspectRatioChange?.(aspect.id);
+                        window.dispatchEvent(new CustomEvent('workspace:aspect-ratio-change', { detail: { aspectRatio: aspect.id } }));
+                      }}
+                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#1E293B] border-sky-500 text-sky-400 shadow-sm'
+                          : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-[#D4D4D8]'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 mb-1" />
+                      <span className="text-[10px] font-bold leading-none">{aspect.label}</span>
+                      <span className="text-[8px] text-[#71717A] mt-0.5">{aspect.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Flip & Rotate Header and Controls */}
-            <div className="w-full flex flex-col items-center gap-3.5 pt-2">
-              <span className="text-xs font-semibold text-[#71717A]">Flip & Rotate</span>
+            {/* Fit Mode Cards */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Fit & Scaling Mode</span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { mode: 'fill' as const, label: 'Cover / Fill', desc: 'No letterbox', icon: <Maximize2 className="w-4 h-4" /> },
+                  { mode: 'fit' as const, label: 'Fit Aspect', desc: 'Full frame visible', icon: <div className="w-3 h-4 border border-white/70 rounded-xs" /> },
+                  { mode: 'crop' as const, label: 'Center Crop', desc: 'Punch in center', icon: <Crop className="w-4 h-4" /> },
+                ].map(({ mode, label, desc, icon }) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setFitMode(mode)}
+                    className={`py-2 px-1.5 rounded-xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
+                      fitMode === mode
+                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-md'
+                        : 'bg-[#1C1C20] border-[#2A2A30] text-[#A1A1AA] hover:text-white hover:bg-[#222228]'
+                    }`}
+                  >
+                    {icon}
+                    <span className="text-[10px] font-bold leading-none">{label}</span>
+                    <span className="text-[8px] text-[#71717A]">{desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-              <div className="flex items-center gap-2.5">
-                {/* Flip Horizontal */}
+            {/* Scale Slider + Numeric Input */}
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#A1A1AA] flex items-center gap-1.5 font-medium">
+                  Scale Zoom
+                  <button
+                    type="button"
+                    onClick={() => setLockAspect(!lockAspect)}
+                    className="cursor-pointer text-[#71717A] hover:text-white"
+                    title={lockAspect ? 'Aspect ratio locked' : 'Aspect ratio free'}
+                  >
+                    {lockAspect ? <Lock className="w-3 h-3 text-[#3B82F6]" /> : <Unlock className="w-3 h-3 text-[#71717A]" />}
+                  </button>
+                </span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="10"
+                    max="400"
+                    value={scale}
+                    onChange={(e) => setScale(Math.max(10, Math.min(400, Number(e.target.value) || 100)))}
+                    className="w-14 bg-[#121215] border border-[#2A2A30] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
+                  />
+                  <span className="text-[10px] text-[#71717A]">%</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                min="10"
+                max="300"
+                value={scale}
+                onChange={(e) => setScale(Number(e.target.value))}
+                className="w-full accent-[#3B82F6] cursor-pointer"
+              />
+            </div>
+
+            {/* Position Offset XY with Numeric Inputs */}
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5">
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Position Offset (Anchor)</span>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'X Center', value: posX, setter: setPosX },
+                  { label: 'Y Center', value: posY, setter: setPosY },
+                ].map((ctrl) => (
+                  <div key={ctrl.label} className="flex flex-col gap-1">
+                    <div className="flex justify-between text-[11px] items-center">
+                      <span className="text-[#A1A1AA]">{ctrl.label}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={ctrl.value}
+                        onChange={(e) => ctrl.setter(Math.max(0, Math.min(100, Number(e.target.value) || 50)))}
+                        className="w-11 bg-[#121215] border border-[#2A2A30] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none"
+                      />
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={ctrl.value}
+                      onChange={(e) => ctrl.setter(Number(e.target.value))}
+                      className="w-full accent-[#8B5CF6] cursor-pointer"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Flip & Rotation */}
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Rotation & Orientation</span>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleToggleFlipH}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-colors cursor-pointer ${
-                    flipH
-                      ? 'bg-[#2E2E36] border-[#3B82F6] text-white'
-                      : 'bg-[#1C1C20] border-[#2A2A30] text-[#D4D4D8] hover:bg-[#26262C]'
+                  onClick={() => setFlipH(!flipH)}
+                  className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border transition-colors cursor-pointer text-xs font-semibold ${
+                    flipH ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#141417] border-[#2A2A30] text-[#A1A1AA] hover:bg-[#202026]'
                   }`}
                   title="Flip Horizontal"
                 >
-                  <FlipHorizontal className="w-4 h-4" />
+                  <FlipHorizontal className="w-3.5 h-3.5" />
+                  Flip H
                 </button>
-
-                {/* Flip Vertical */}
                 <button
                   type="button"
-                  onClick={handleToggleFlipV}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-colors cursor-pointer ${
-                    flipV
-                      ? 'bg-[#2E2E36] border-[#3B82F6] text-white'
-                      : 'bg-[#1C1C20] border-[#2A2A30] text-[#D4D4D8] hover:bg-[#26262C]'
+                  onClick={() => setFlipV(!flipV)}
+                  className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border transition-colors cursor-pointer text-xs font-semibold ${
+                    flipV ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#141417] border-[#2A2A30] text-[#A1A1AA] hover:bg-[#202026]'
                   }`}
                   title="Flip Vertical"
                 >
-                  <FlipVertical className="w-4 h-4" />
+                  <FlipVertical className="w-3.5 h-3.5" />
+                  Flip V
                 </button>
-
-                {/* Rotate 90 deg */}
                 <button
                   type="button"
-                  onClick={() => handleUpdateRotation((rotation + 90) % 360)}
-                  className="w-10 h-10 rounded-xl bg-[#1C1C20] border border-[#2A2A30] flex items-center justify-center text-[#D4D4D8] hover:bg-[#26262C] transition-colors cursor-pointer"
-                  title="Rotate 90 degrees"
+                  onClick={() => setRotation((r) => (r + 90) % 360)}
+                  className="w-9 h-9 rounded-lg bg-[#141417] border border-[#2A2A30] flex items-center justify-center text-[#D4D4D8] hover:bg-[#202026] cursor-pointer"
+                  title="Rotate +90°"
                 >
-                  <RotateCw className="w-4 h-4" />
+                  <RotateCw className="w-3.5 h-3.5" />
                 </button>
-
-                {/* Angle Stepper */}
-                <div className="flex items-center bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-2.5 h-10 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateRotation((rotation - 15 + 360) % 360)}
-                    className="text-[#9CA3AF] hover:text-white cursor-pointer"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="text-xs font-mono-studio text-white min-w-[32px] text-center font-bold">
-                    {rotation}°
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateRotation((rotation + 15) % 360)}
-                    className="text-[#9CA3AF] hover:text-white cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+                <div className="flex items-center bg-[#141417] border border-[#2A2A30] rounded-lg px-2 h-9 gap-1.5">
+                  <button type="button" onClick={() => setRotation((r) => (r - 15 + 360) % 360)} className="text-[#71717A] hover:text-white cursor-pointer"><Minus className="w-3 h-3" /></button>
+                  <span className="text-xs font-mono-studio text-white font-bold w-9 text-center">{rotation}°</span>
+                  <button type="button" onClick={() => setRotation((r) => (r + 15) % 360)} className="text-[#71717A] hover:text-white cursor-pointer"><Plus className="w-3 h-3" /></button>
                 </div>
               </div>
-
-              {/* Reset Transform Button */}
-              <button
-                type="button"
-                onClick={handleResetTransform}
-                className="w-full max-w-xs mt-1 py-2 px-3 rounded-xl bg-[#1C1C20] hover:bg-[#282830] border border-[#2A2A30] text-xs font-semibold text-[#A1A1AA] hover:text-white transition cursor-pointer flex items-center justify-center gap-2"
-                title="Reset position, scale, and rotation to original fill"
-              >
-                <RotateCw className="w-3.5 h-3.5" />
-                Reset Image Transform & Position
-              </button>
             </div>
 
-            {/* Live Backdrop Preview */}
-            {(customVideoUrl || customImageUrl || activeBackdrop?.id) && (
-              <div className="w-full pt-2">
-                <label className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1.5 block">
-                  Active Backdrop Preview
-                </label>
+            {/* Canvas Background Color Chooser */}
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Canvas Background Color</span>
+                <span className="font-mono-studio text-[11px] text-white">{canvasBackground}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={canvasBackground.startsWith('#') ? canvasBackground : '#050505'}
+                  onChange={(e) => onCanvasBackgroundChange?.(e.target.value)}
+                  className="w-8 h-8 rounded-lg border border-[#2A2A30] bg-transparent cursor-pointer shrink-0"
+                />
+                <div className="flex flex-wrap gap-1.5 flex-1">
+                  {CANVAS_BG_PRESETS.map((bg) => (
+                    <button
+                      key={bg.label}
+                      type="button"
+                      onClick={() => onCanvasBackgroundChange?.(bg.value)}
+                      title={bg.label}
+                      style={{ background: bg.value }}
+                      className={`w-6 h-6 rounded-md border transition-transform cursor-pointer ${
+                        canvasBackground === bg.value ? 'scale-110 border-white ring-2 ring-blue-500/50' : 'border-white/20 hover:scale-105'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Active Backdrop Card & Preset Selector */}
+            <div className="flex flex-col gap-2">
+              {(customVideoUrl || customImageUrl || activeBackdrop?.id) && (
                 <div className="w-full aspect-video rounded-xl overflow-hidden border border-[#2A2A30] bg-[#111114] relative">
                   {customVideoUrl ? (
-                    <video
-                      src={customVideoUrl}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
+                    <video src={customVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
                   ) : customImageUrl ? (
-                    <img
-                      src={customImageUrl}
-                      alt="Custom backdrop"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={customImageUrl} alt="Custom backdrop" className="w-full h-full object-cover" />
                   ) : activeBackdrop?.imageUrl ? (
-                    <img
-                      src={activeBackdrop.imageUrl}
-                      alt={activeBackdrop.name}
-                      className="w-full h-full object-cover opacity-70"
-                    />
+                    <img src={activeBackdrop.imageUrl} alt={activeBackdrop.name} className="w-full h-full object-cover opacity-80" />
                   ) : (
-                    <div
-                      className="w-full h-full"
-                      style={{ background: activeBackdrop?.previewColor || '#1a1a2e' }}
-                    />
+                    <div className="w-full h-full" style={{ background: activeBackdrop?.previewColor || '#1a1a2e' }} />
                   )}
+                  <div className="absolute top-1.5 left-1.5 bg-black/70 text-[9px] text-white px-2 py-0.5 rounded font-mono-studio backdrop-blur-sm">
+                    {customVideoUrl ? 'Custom Video' : customImageUrl ? 'Custom Image' : activeBackdrop?.name || 'Backdrop'}
+                  </div>
                   {(customImageUrl || customVideoUrl) && (
                     <button
                       type="button"
                       onClick={() => { onSetCustomImage?.(undefined); onSetCustomVideo?.(undefined); }}
-                      className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-black/90 text-white text-[10px] px-2 py-0.5 rounded-lg border border-white/20 cursor-pointer"
+                      className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-black/90 text-white text-[10px] px-2 py-0.5 rounded border border-white/20 cursor-pointer"
                     >
-                      Clear
+                      Clear Custom
                     </button>
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Backdrop Switcher Preset */}
-            <div className="w-full pt-4">
               <CustomSelect
-                label="Visual Backdrop Preset"
-                labelClassName="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1.5 block"
+                label="Select Visual Backdrop"
+                labelClassName="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1 block"
                 value={activeBackdrop?.id || ''}
                 onChange={(backdropId) => {
                   onSetCustomImage?.(undefined);
@@ -412,113 +499,104 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   badge: b.aspectRatio || '9:16',
                 }))}
                 icon={<Film className="w-3.5 h-3.5 text-[#60A5FA]" />}
-                placeholder="Choose visual backdrop preset..."
+                placeholder="Choose backdrop preset..."
                 buttonClassName="bg-[#1C1C20] border-[#2A2A30] hover:border-[#3B82F6]/50"
                 menuClassName="bg-[#1C1C20] border-[#2A2A30]"
               />
             </div>
 
-
+            {/* Reset Button */}
+            <button
+              type="button"
+              onClick={handleResetTransform}
+              className="w-full py-2 rounded-xl bg-[#1C1C20] hover:bg-[#282830] border border-[#2A2A30] text-xs font-semibold text-[#A1A1AA] hover:text-white transition cursor-pointer flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Reset All Transform Values
+            </button>
           </div>
         )}
 
-
-        {/* TAB 2: Time (Image 2) */}
-        {activeSubTab === 'time' && (
-          <div className="flex flex-col items-center gap-6 pt-1">
-            {/* Duration vs Timing Subtabs */}
-            <div className="flex bg-[#18181C] p-1 rounded-xl border border-[#2A2A30] w-full max-w-xs">
-              <button
-                type="button"
-                onClick={() => setTimeMode('duration')}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  timeMode === 'duration' ? 'bg-[#2A2A32] text-white shadow' : 'text-[#71717A] hover:text-white'
-                }`}
-              >
-                Duration
-              </button>
-              <button
-                type="button"
-                onClick={() => setTimeMode('timing')}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  timeMode === 'timing' ? 'bg-[#2A2A32] text-white shadow' : 'text-[#71717A] hover:text-white'
-                }`}
-              >
-                Timing
-              </button>
-            </div>
-
-            {/* Stepper Box with Centered Digital Timer */}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleDurationChange(localDuration - 0.5)}
-                className="w-10 h-10 rounded-full bg-[#1C1C20] border border-[#2A2A30] flex items-center justify-center text-white hover:bg-[#282830] transition-colors cursor-pointer"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-
-              <div className="px-5 py-2.5 rounded-xl bg-[#1C1C20] border border-[#2F2F36] text-base font-mono-studio font-bold text-white tracking-widest">
-                {formatTimeDigital(localDuration)}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleDurationChange(localDuration + 0.5)}
-                className="w-10 h-10 rounded-full bg-[#1C1C20] border border-[#2A2A30] flex items-center justify-center text-white hover:bg-[#282830] transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Quick Presets */}
-            <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
-              {[
-                { label: '15s', sec: 15 },
-                { label: '30s', sec: 30 },
-                { label: '60s', sec: 60 },
-                { label: '1m', sec: 60 },
-              ].map((p, idx) => (
+        {/* ── STYLE TAB ── */}
+        {activeSubTab === 'style' && (
+          <div className="flex flex-col gap-3 pt-0.5">
+            <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Cinematic Look Presets</span>
+            <div className="grid grid-cols-2 gap-1.5">
+              {VIDEO_STYLE_PRESETS.map((preset) => (
                 <button
-                  key={idx}
+                  key={preset.label}
                   type="button"
-                  onClick={() => handleDurationChange(p.sec)}
-                  className={`py-2 rounded-xl text-xs font-mono-studio transition-all cursor-pointer border ${
-                    localDuration === p.sec
-                      ? 'bg-[#2A2A34] border-[#3B82F6] text-white font-bold'
-                      : 'bg-[#1C1C20] border-[#2A2A30] text-[#9CA3AF] hover:bg-[#26262C] hover:text-white'
+                  onClick={() => applyStylePreset(preset)}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    activeStyle === preset.label
+                      ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-md'
+                      : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
                   }`}
                 >
-                  {p.label}
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs font-bold text-white">{preset.label}</span>
+                    {activeStyle === preset.label && <Check className="w-3 h-3 text-[#3B82F6]" />}
+                  </div>
+                  <p className="text-[9px] text-[#71717A] leading-tight">{preset.desc}</p>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* TAB 3: Adjust */}
+        {/* ── ADJUST TAB (Sliders with Numeric Inputs + Individual Resets) ── */}
         {activeSubTab === 'adjust' && (
-          <div className="flex flex-col gap-4 pt-1">
+          <div className="flex flex-col gap-3 pt-0.5">
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Color & Tone Controls</span>
+              <button
+                type="button"
+                onClick={handleResetAdjustments}
+                className="text-[10px] text-[#3B82F6] hover:text-blue-300 cursor-pointer flex items-center gap-1"
+              >
+                <RefreshCw className="w-2.5 h-2.5" />
+                Reset All
+              </button>
+            </div>
+
             {[
-              { label: 'Brightness', val: brightness, set: setBrightness, min: 0, max: 200, unit: '%' },
-              { label: 'Contrast', val: contrast, set: setContrast, min: 0, max: 200, unit: '%' },
-              { label: 'Saturation', val: saturation, set: setSaturation, min: 0, max: 200, unit: '%' },
-              { label: 'Vignette Depth', val: vignette, set: setVignette, min: 0, max: 100, unit: '%' },
-            ].map((adj) => (
-              <div key={adj.label} className="flex flex-col gap-1.5">
-                <div className="flex justify-between text-xs text-[#9CA3AF]">
-                  <span>{adj.label}</span>
-                  <span className="font-mono-studio text-white">{adj.val}{adj.unit}</span>
+              { label: 'Brightness', value: brightness, setter: setBrightness, min: 20, max: 200, unit: '%', def: 100 },
+              { label: 'Contrast', value: contrast, setter: setContrast, min: 20, max: 200, unit: '%', def: 100 },
+              { label: 'Saturation', value: saturation, setter: setSaturation, min: 0, max: 200, unit: '%', def: 100 },
+              { label: 'Vignette Darkening', value: vignette, setter: setVignette, min: 0, max: 100, unit: '%', def: 0 },
+              { label: 'Hue Rotate', value: hue, setter: setHue, min: -180, max: 180, unit: '°', def: 0 },
+              { label: 'Gaussian Blur', value: blur, setter: setBlur, min: 0, max: 20, unit: 'px', def: 0 },
+              { label: 'Film Grain Intensity', value: grain, setter: setGrain, min: 0, max: 100, unit: '%', def: 0 },
+            ].map((ctrl) => (
+              <div key={ctrl.label} className="p-2.5 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#A1A1AA] font-medium">{ctrl.label}</span>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={ctrl.min}
+                      max={ctrl.max}
+                      value={ctrl.value}
+                      onChange={(e) => ctrl.setter(Number(e.target.value))}
+                      className="w-12 bg-[#121215] border border-[#2A2A30] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none"
+                    />
+                    <span className="text-[10px] text-[#71717A] w-3">{ctrl.unit}</span>
+                    <button
+                      type="button"
+                      onClick={() => ctrl.setter(ctrl.def)}
+                      title={`Reset to default (${ctrl.def}${ctrl.unit})`}
+                      className="text-[#555] hover:text-white cursor-pointer ml-1"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
-                  min={adj.min}
-                  max={adj.max}
-                  value={adj.val}
-                  onChange={(e) => {
-                    adj.set(Number(e.target.value));
-                    setActiveStyle('Custom');
-                  }}
+                  min={ctrl.min}
+                  max={ctrl.max}
+                  value={ctrl.value}
+                  onChange={(e) => ctrl.setter(Number(e.target.value))}
                   className="w-full accent-[#3B82F6] cursor-pointer"
                 />
               </div>
@@ -526,75 +604,233 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* TAB 4: Animations */}
+        {/* ── ANIMATIONS TAB ── */}
         {activeSubTab === 'animations' && (
-          <div className="grid grid-cols-2 gap-2.5 pt-1">
-            {[
-              { id: 'none', label: 'None' },
-              { id: 'fade', label: 'Fade In' },
-              { id: 'zoom', label: 'Slow Zoom' },
-              { id: 'kenburns', label: 'Ken Burns' },
-              { id: 'slide', label: 'Slide Up' },
-              { id: 'glitch', label: 'Kinetic Glitch' },
-            ].map((anim) => (
-              <button
-                key={anim.id}
-                type="button"
-                onClick={() => setAnimation(anim.id)}
-                className={`p-3.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
-                  animation === anim.id
-                    ? 'bg-[#2A2A34] border-[#3B82F6] text-white shadow'
-                    : 'bg-[#1C1C20] border-[#2A2A30] text-[#9CA3AF] hover:bg-[#25252A]'
-                }`}
-              >
-                {anim.label}
-              </button>
-            ))}
+          <div className="flex flex-col gap-3 pt-0.5">
+            <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Camera Motion Presets</span>
+            <div className="flex flex-col gap-1.5">
+              {ANIMATION_PRESETS.map((anim) => (
+                <button
+                  key={anim.id}
+                  type="button"
+                  onClick={() => setAnimation(anim.id)}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
+                    animation === anim.id
+                      ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
+                      : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
+                  }`}
+                >
+                  <div>
+                    <span className="text-xs font-semibold text-white block">{anim.label}</span>
+                    <span className="text-[10px] text-[#71717A]">{anim.desc}</span>
+                  </div>
+                  {animation === anim.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                </button>
+              ))}
+            </div>
+
+            {animation !== 'none' && (
+              <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#A1A1AA]">Motion Velocity</span>
+                  <span className="font-mono-studio text-white">{animSpeed}x</span>
+                </div>
+                <div className="flex gap-1.5">
+                  {(['0.5', '1', '1.5', '2'] as const).map((spd) => (
+                    <button
+                      key={spd}
+                      type="button"
+                      onClick={() => setAnimSpeed(spd)}
+                      className={`flex-1 py-1 rounded-lg text-xs font-semibold border cursor-pointer ${
+                        animSpeed === spd ? 'bg-[#3B82F6] border-transparent text-white' : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                      }`}
+                    >
+                      {spd}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB 5: Speed */}
-        {activeSubTab === 'speed' && (
-          <div className="flex flex-col gap-3 pt-1">
-            <span className="text-xs text-[#71717A]">Video Playback Speed</span>
-            <div className="grid grid-cols-3 gap-2">
-              {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+        {/* ── LUT COLOR GRADING TAB ── */}
+        {activeSubTab === 'lut' && (
+          <div className="flex flex-col gap-3 pt-0.5">
+            <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">3D LUT Film Emulation</span>
+            <div className="flex flex-col gap-1.5">
+              {LUT_PRESETS.map((lut) => (
                 <button
-                  key={rate}
+                  key={lut.id}
                   type="button"
-                  onClick={() => onPlaybackRateChange?.(rate)}
-                  className={`py-2 rounded-xl text-xs font-mono-studio transition-all cursor-pointer border ${
-                    playbackRate === rate
-                      ? 'bg-[#3B82F6] text-white border-transparent font-bold'
-                      : 'bg-[#1C1C20] border-[#2A2A30] text-[#9CA3AF] hover:text-white'
+                  onClick={() => setActiveLUT(lut.id)}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
+                    activeLUT === lut.id
+                      ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
+                      : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
                   }`}
                 >
-                  {rate}x
+                  <div>
+                    <span className="text-xs font-semibold text-white block">{lut.label}</span>
+                    <span className="text-[10px] text-[#71717A]">{lut.desc}</span>
+                  </div>
+                  {activeLUT === lut.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
                 </button>
               ))}
+            </div>
+
+            {activeLUT !== 'none' && (
+              <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#A1A1AA]">LUT Blend Mix</span>
+                  <span className="font-mono-studio text-white">{lutIntensity}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  value={lutIntensity}
+                  onChange={(e) => setLutIntensity(Number(e.target.value))}
+                  className="w-full accent-[#3B82F6] cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── SPEED TAB ── */}
+        {activeSubTab === 'speed' && (
+          <div className="flex flex-col gap-3.5 pt-0.5">
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Playback Velocity Multiplier</span>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((rate) => (
+                  <button
+                    key={rate}
+                    type="button"
+                    onClick={() => onPlaybackRateChange?.(rate)}
+                    className={`py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                      playbackRate === rate
+                        ? 'bg-[#3B82F6] border-transparent text-white shadow-sm'
+                        : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                    }`}
+                  >
+                    {rate}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-white">Loop Backdrop Clip</p>
+                <p className="text-[10px] text-[#71717A]">Automatically restart video at end</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLoopVideo(!loopVideo)}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                  loopVideo ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
+                    loopVideo ? 'left-6' : 'left-1'
+                  }`}
+                />
+              </button>
             </div>
           </div>
         )}
 
-        {/* TAB 6: Audio */}
+        {/* ── AUDIO TAB ── */}
         {activeSubTab === 'audio' && (
-          <div className="flex flex-col gap-4 pt-1">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-xs text-[#9CA3AF]">
-                <span>Video Track Volume</span>
-                <span className="font-mono-studio text-white">{videoVolume}%</span>
+          <div className="flex flex-col gap-3.5 pt-0.5">
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#A1A1AA] flex items-center gap-1.5 font-medium">
+                  {muteVideo ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+                  Video Track Audio
+                </span>
+                <span className="font-mono-studio text-white font-bold">{muteVideo ? 'MUTED' : `${videoVolume}%`}</span>
               </div>
               <input
                 type="range"
                 min="0"
                 max="100"
-                value={videoVolume}
-                onChange={(e) => setVideoVolume(Number(e.target.value))}
-                className="w-full accent-[#3B82F6] cursor-pointer"
+                value={muteVideo ? 0 : videoVolume}
+                onChange={(e) => {
+                  setVideoVolume(Number(e.target.value));
+                  if (muteVideo) setMuteVideo(false);
+                }}
+                className="w-full accent-emerald-500 cursor-pointer"
               />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMuteVideo(!muteVideo)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                    muteVideo ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[#141417] border-[#2A2A30] text-[#A1A1AA] hover:text-white'
+                  }`}
+                >
+                  {muteVideo ? 'Unmute Track' : 'Mute Track'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setVideoVolume(100); setMuteVideo(false); }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#141417] border border-[#2A2A30] text-[#A1A1AA] hover:text-white cursor-pointer"
+                >
+                  100%
+                </button>
+              </div>
             </div>
           </div>
         )}
+
+        {/* ── TIME TAB ── */}
+        {activeSubTab === 'time' && (
+          <div className="flex flex-col gap-3 pt-0.5">
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#A1A1AA] font-medium">Active Clip Duration</span>
+                <span className="font-mono-studio text-white font-bold">{formatTimeDigital(localDuration)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDurationChange(localDuration - 1)}
+                  className="w-9 h-9 rounded-lg bg-[#141417] border border-[#2A2A30] flex items-center justify-center text-white hover:bg-[#222228] cursor-pointer"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="1"
+                  max="300"
+                  value={localDuration}
+                  onChange={(e) => handleDurationChange(Number(e.target.value) || 1)}
+                  className="flex-1 bg-[#121215] border border-[#2A2A30] rounded-lg px-2.5 py-1.5 text-center font-mono-studio text-sm text-white font-bold outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDurationChange(localDuration + 1)}
+                  className="w-9 h-9 rounded-lg bg-[#141417] border border-[#2A2A30] flex items-center justify-center text-white hover:bg-[#222228] cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-1.5 text-[11px] font-mono-studio">
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-0.5">Timeline Diagnostics</span>
+              <div className="flex justify-between"><span className="text-[#71717A]">Framerate</span><span className="text-white">30.00 fps</span></div>
+              <div className="flex justify-between"><span className="text-[#71717A]">Total Frames</span><span className="text-white">{Math.round(localDuration * 30)} frames</span></div>
+              <div className="flex justify-between"><span className="text-[#71717A]">Clip Speed</span><span className="text-white">{playbackRate}x</span></div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

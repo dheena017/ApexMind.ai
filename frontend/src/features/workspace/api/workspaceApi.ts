@@ -11,20 +11,57 @@ export const workspaceApi = {
     tone?: string;
     length?: string;
     model?: string;
+    audioMood?: string;
+    backgroundStyle?: string;
+    textStyle?: string;
+    videoStyle?: string;
+    voiceName?: string;
+    aspectRatio?: string;
+    musicTrack?: string;
+    captionStyle?: string;
+    visualTheme?: string;
+    motionStyle?: string;
+    outputFormat?: string;
+    creativeContext?: Record<string, unknown>;
   }): Promise<GeneratedScript> {
     const topicText = params.userPrompt || params.topic || params.category;
     consoleLogger.info('Gemini', `Generating AI script with model: "${params.model || 'gemini-2.5-flash'}" for topic: "${topicText}"...`);
     const start = performance.now();
+
+    const payload: Record<string, string | number | boolean | null | Record<string, unknown>> = {
+      category: params.category,
+      topic: topicText,
+      tone: params.tone || '',
+      length: params.length || '',
+      model: params.model || '',
+    };
+
+    const optionalFields = {
+      audioMood: params.audioMood,
+      backgroundStyle: params.backgroundStyle,
+      textStyle: params.textStyle,
+      videoStyle: params.videoStyle,
+      voiceName: params.voiceName,
+      aspectRatio: params.aspectRatio,
+      musicTrack: params.musicTrack,
+      captionStyle: params.captionStyle,
+      visualTheme: params.visualTheme,
+      motionStyle: params.motionStyle,
+      outputFormat: params.outputFormat,
+    };
+
+    Object.entries(optionalFields).forEach(([key, value]) => {
+      if (value && value.trim()) payload[key] = value.trim();
+    });
+
+    if (params.creativeContext && Object.keys(params.creativeContext).length > 0) {
+      payload.creativeContext = params.creativeContext;
+    }
+
     const res = await fetch(apiUrl('/api/generate-script'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        category: params.category,
-        topic: topicText,
-        tone: params.tone,
-        length: params.length,
-        model: params.model,
-      }),
+      body: JSON.stringify(payload),
     });
     const duration = performance.now() - start;
     consoleLogger.api('POST', '/api/generate-script', res.status, duration);
@@ -36,10 +73,13 @@ export const workspaceApi = {
   // Generate voiceover audio via Gemini TTS
   async generateVoiceover(
     payloadOrText: string | { text: string; voiceName?: string; model?: string },
-    voiceName: string = 'Fenrir'
+    voiceName?: string
   ): Promise<{ audioBase64: string; mimeType: string; audioUrl: string }> {
     const text = typeof payloadOrText === 'string' ? payloadOrText : payloadOrText.text;
-    const voice = typeof payloadOrText === 'string' ? voiceName : (payloadOrText.voiceName || 'Fenrir');
+    const voice = typeof payloadOrText === 'string' ? voiceName : payloadOrText.voiceName;
+    if (!voice || !voice.trim()) {
+      throw new Error('Voice name is required. Please select a workspace voice before generating audio.');
+    }
     const model = typeof payloadOrText === 'string' ? undefined : payloadOrText.model;
 
     consoleLogger.info('Gemini', `Synthesizing TTS audio for persona "${voice}"...`);

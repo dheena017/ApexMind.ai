@@ -3,14 +3,14 @@ ApexMind Studio - Python Backend Entrypoint
 Powered by FastAPI, Uvicorn, SQLite, and Google Gemini
 """
 
+import uvicorn
 from backend.app.factory import create_app
 from backend.shared.config import settings
+from backend.shared.logger import get_uvicorn_log_config
 
 app = create_app()
 
 if __name__ == "__main__":
-    import uvicorn
-    from backend.shared.logger import get_uvicorn_log_config
     uvicorn.run(
         "backend.main:app",
         host=settings.HOST,

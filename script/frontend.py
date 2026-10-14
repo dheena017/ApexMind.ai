@@ -22,6 +22,8 @@ if hasattr(signal, "SIGBREAK"):
     signal.signal(signal.SIGBREAK, _handle_import_interrupt)
 
 import argparse  # noqa: E402
+import ctypes  # noqa: E402
+from ctypes import wintypes  # noqa: E402
 import http.client  # noqa: E402
 import os  # noqa: E402
 import re  # noqa: E402
@@ -56,8 +58,6 @@ def enable_windows_kill_on_close() -> None:
     global _WINDOWS_JOB_HANDLE
     if sys.platform != "win32":
         return
-    import ctypes
-    from ctypes import wintypes
 
     try:
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)

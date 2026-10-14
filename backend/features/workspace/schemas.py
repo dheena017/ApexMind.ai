@@ -11,14 +11,26 @@ from pydantic import BaseModel, Field
 class GenerateScriptRequest(BaseModel):
     category: Optional[str] = Field(default="Stoic Mindset & Discipline", description="Motivational theme/category")
     topic: Optional[str] = Field(default="Overcoming laziness, building daily grit", description="Topic focus")
-    tone: Optional[str] = Field(default="Authoritative & Inspiring", description="Vocal delivery tone")
-    length: Optional[str] = Field(default="30 seconds", description="Target video duration")
-    model: Optional[str] = Field(default="gemini-2.5-flash", description="AI Model selected by user")
+    tone: Optional[str] = Field(default=None, description="Vocal delivery tone")
+    length: Optional[str] = Field(default=None, description="Target video duration")
+    model: Optional[str] = Field(default=None, description="AI Model selected by user")
+    audioMood: Optional[str] = Field(default=None, description="Audio mood for the generated reel")
+    backgroundStyle: Optional[str] = Field(default=None, description="Background treatment")
+    textStyle: Optional[str] = Field(default=None, description="On-screen text styling")
+    videoStyle: Optional[str] = Field(default=None, description="Video composition and pacing style")
+    voiceName: Optional[str] = Field(default=None, description="Preferred voice profile")
+    aspectRatio: Optional[str] = Field(default=None, description="Video aspect ratio")
+    musicTrack: Optional[str] = Field(default=None, description="Music track style")
+    captionStyle: Optional[str] = Field(default=None, description="Caption styling")
+    visualTheme: Optional[str] = Field(default=None, description="Scene visual style")
+    motionStyle: Optional[str] = Field(default=None, description="Camera movement and transitions")
+    outputFormat: Optional[str] = Field(default=None, description="Output video format")
+    creativeContext: Optional[dict] = Field(default=None, description="Full current workspace creative state for automatic agent reasoning")
 
 class GenerateVoiceoverRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Script text to synthesize")
-    voiceName: Optional[str] = Field(default="Fenrir", description="Voice profile identifier")
-    model: Optional[str] = Field(default="gemini-2.5-flash-preview-tts", description="TTS Audio Model")
+    voiceName: Optional[str] = Field(default=None, description="Selected workspace voice profile identifier")
+    model: Optional[str] = Field(default=None, description="TTS Audio Model")
 
 # ── 2. Response DTOs ──────────────────────────────────────────────────────────
 
@@ -35,6 +47,21 @@ class GeneratedScriptData(BaseModel):
     speechStyle: Optional[str] = None
     visualTheme: Optional[str] = None
     recommendedVoice: Optional[str] = None
+    audioMood: Optional[str] = None
+    backgroundStyle: Optional[str] = None
+    textStyle: Optional[str] = None
+    videoStyle: Optional[str] = None
+    aspectRatio: Optional[str] = None
+    musicTrack: Optional[str] = None
+    captionStyle: Optional[str] = None
+    motionStyle: Optional[str] = None
+    outputFormat: Optional[str] = None
+    shotPacing: Optional[str] = None
+    transitionStyle: Optional[str] = None
+    subtitleMotion: Optional[str] = None
+    textAnimation: Optional[str] = None
+    cameraMovement: Optional[str] = None
+    sceneStructure: Optional[dict] = None
     tags: List[str] = []
     hashtags: List[str] = []
     subtitles: List[SubtitleItem] = []

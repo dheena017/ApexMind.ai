@@ -192,6 +192,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     flipH: boolean;
     flipV: boolean;
     rotation: number;
+    scale: number;
+    posX: number;
+    posY: number;
     accentColor: string;
     opacity: number;
     duration: number;
@@ -200,6 +203,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     flipH: false,
     flipV: false,
     rotation: 0,
+    scale: 100,
+    posX: 50,
+    posY: 78,
     accentColor: '#3B82F6',
     opacity: 100,
     duration: 5,
@@ -577,8 +583,15 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     overlayStyle.flipH ? 'scaleX(-1)' : '',
     overlayStyle.flipV ? 'scaleY(-1)' : '',
     `rotate(${overlayStyle.rotation}deg)`,
+    `scale(${(overlayStyle.scale ?? 100) / 100})`,
     overlayStyle.fitMode === 'fill' ? 'scale(1.15)' : '',
   ].filter(Boolean).join(' ');
+
+  const overlayPositionStyle = {
+    left: `${overlayStyle.posX ?? 50}%`,
+    top: `${overlayStyle.posY ?? 78}%`,
+    transform: `translate(-50%, -50%) ${overlayTransform}`,
+  };
   const controlDuration = playbackDuration ?? (duration > 0 ? duration : 30);
   const formatPlaybackTime = (time: number) => {
     const wholeSeconds = Math.max(0, Math.floor(time));
@@ -611,9 +624,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     : 'h-full max-h-full'; // height-driven → width auto-computed by aspect-ratio
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1 select-none font-sans-studio overflow-hidden">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-1 select-none font-sans-studio overflow-hidden px-0.5 py-0.5">
       {/* ── Dynamic Aspect Ratio Video Studio Canvas ────────────────── */}
-      <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
+      <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden rounded-2xl">
         <div
           ref={canvasRef}
           onClick={(e) => {
@@ -761,14 +774,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         {/* Dynamic Motivational Badge Overlay */}
         {activeElementOverlay?.type === 'badge' && (
           <div
-            className="relative z-20 flex justify-center pb-1 pointer-events-none transition-opacity duration-200"
+            className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-200"
             style={{ opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0 }}
           >
             <div
               ref={overlayRef}
               onClick={(e) => handleSelectLayer(e, 'overlay')}
-              className="w-fit cursor-move select-none pointer-events-auto"
-              style={{ transform: overlayTransform }}
+              className="absolute w-fit cursor-move select-none pointer-events-auto"
+              style={overlayPositionStyle}
             >
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-white shadow-lg border border-white/20 tracking-wider pointer-events-none" style={{ backgroundColor: overlayStyle.accentColor }}>
                 {activeElementOverlay.value}
@@ -782,8 +795,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={overlayRef}
             onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute top-10 right-3.5 z-20 text-3xl cursor-move select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
-            style={{ opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0, transform: overlayTransform }}
+            className="absolute z-20 text-3xl cursor-move select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
+            style={{
+              ...overlayPositionStyle,
+              opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0,
+            }}
           >
             {activeElementOverlay.value}
           </div>

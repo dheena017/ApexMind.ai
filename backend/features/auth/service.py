@@ -6,16 +6,25 @@ and session management.
 
 import os
 import uuid
+import base64
+import json
 import logging
 from typing import Dict, Any, Optional
+
+import requests
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
 from backend.database.repository import (
     upsert_user,
     get_user_by_email,
     get_user_by_id,
     get_latest_user,
 )
+from backend.features.youtube.service import connect_youtube_channel
 
 logger = logging.getLogger("ApexMind.Auth")
+
 
 def authenticate_google_user(
     credential: Optional[str] = None,
@@ -38,9 +47,6 @@ def authenticate_google_user(
 
     if credential:
         try:
-            from google.oauth2 import id_token
-            from google.auth.transport import requests as google_requests
-
             client_id = os.getenv("GOOGLE_CLIENT_ID") or os.getenv("VITE_GOOGLE_CLIENT_ID")
             id_info = id_token.verify_oauth2_token(
                 credential,
@@ -55,8 +61,6 @@ def authenticate_google_user(
         except Exception as e:
             logger.warning(f"Google JWT token direct verification note: {e}")
             try:
-                import base64
-                import json
                 parts = credential.split(".")
                 if len(parts) >= 2:
                     padding = "=" * (4 - len(parts[1]) % 4)
@@ -69,7 +73,6 @@ def authenticate_google_user(
                     logger.info(f"Decoded Google OAuth credential payload for: {verified_email}")
             except Exception as parse_err:
                 logger.error(f"Failed to decode Google credential payload: {parse_err}")
-
 
     if not verified_email:
         raise ValueError("Google authentication requires an email address.")
@@ -90,7 +93,6 @@ def authenticate_google_user(
     # If YouTube OAuth access token was authorized, fetch or link YouTube channel
     if access_token and not channel:
         try:
-            import requests
             yt_res = requests.get(
                 "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true",
                 headers={"Authorization": f"Bearer {access_token}"},
@@ -116,7 +118,6 @@ def authenticate_google_user(
 
     if channel:
         try:
-            from backend.features.youtube.service import connect_youtube_channel
             connect_youtube_channel(
                 name=channel.get("channelName") or channel.get("name"),
                 handle=channel.get("handle"),

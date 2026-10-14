@@ -35,13 +35,13 @@ const SIDEBAR_ITEMS: Array<{
   isScriptGroup?: boolean;
 }> = [
   { id: 'script', label: 'Script & AI', shortLabel: 'Script', icon: FileText, isScriptGroup: true },
-  { id: 'canvas', label: 'Canvas', shortLabel: 'Canvas', icon: LayoutTemplate },
   { id: 'media', label: 'Media Library', shortLabel: 'Media', icon: FolderOpen },
   { id: 'text', label: 'Text & Titles', shortLabel: 'Text', icon: Type },
   { id: 'elements', label: 'Elements', shortLabel: 'Elements', icon: Shapes },
   { id: 'audio', label: 'Audio & SFX', shortLabel: 'Audio', icon: Music },
   { id: 'image', label: 'Stock Photos', shortLabel: 'Photos', icon: ImageIcon },
   { id: 'video', label: 'Stock Videos', shortLabel: 'Videos', icon: Film },
+  { id: 'canvas', label: 'Canvas', shortLabel: 'Canvas', icon: LayoutTemplate },
 ];
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({

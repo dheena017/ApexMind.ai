@@ -12,16 +12,41 @@ export interface GeneratedScript {
   speechStyle: string;
   visualTheme: string;
   recommendedVoice: string;
+  category?: string;
   tags: string[];
   hashtags: string[];
   subtitles: ScriptSubtitle[];
+  audioMood?: string;
+  backgroundStyle?: string;
+  textStyle?: string;
+  videoStyle?: string;
+  voiceName?: string;
+  aspectRatio?: string;
+  musicTrack?: string;
+  captionStyle?: string;
+  motionStyle?: string;
+  outputFormat?: string;
+  shotPacing?: string;
+  transitionStyle?: string;
+  subtitleMotion?: string;
+  textAnimation?: string;
+  cameraMovement?: string;
+  sceneStructure?: {
+    hookPlacement?: string;
+    ctaTiming?: string;
+    emphasisPoints?: string[];
+    shotPlan?: string;
+    subtitlePriority?: string;
+  };
 }
 
 export interface MusicTrack {
   id: string;
   title: string;
+  name?: string;
   genre: string;
   duration: string;
+  mood?: string;
   audioUrl?: string;
   bpm: number;
   copyrightFree: boolean;
@@ -50,6 +75,7 @@ export interface VoiceProfile {
   gender: 'Male' | 'Female';
   style: string;
   speed: string;
+  previewUrl?: string;
 }
 
 export interface BackdropFilterSettings {

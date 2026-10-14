@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, Any, Optional, List
+from backend.database.repository import add_notification
 from .repository import (
     fetch_channels,
     fetch_channel_by_id,
@@ -38,50 +39,45 @@ def lookup_youtube_channel(query: str) -> Dict[str, Any]:
 
 
 def connect_youtube_channel(
-    name: Optional[str] = None,
-    handle: Optional[str] = None,
-    niche: Optional[str] = "Motivational Quotes",
+    name: str,
+    handle: str,
+    niche: str,
     avatar_url: Optional[str] = None,
     subscribers: Optional[int] = 0,
     videos_uploaded: Optional[int] = 0,
+    banner_url: Optional[str] = None,
     auto_resolve: bool = True,
 ) -> Dict[str, Any]:
     """
     Connects a YouTube channel.
-    If auto_resolve is True and a handle or name is provided, queries live YouTube
-    to verify and fill real metrics (subscribers, video count, avatar).
+    If auto_resolve is True (the default), attempts to verify with YouTube Data API.
     """
-    query = (handle or name or "").strip()
+    final_name = name
+    final_handle = handle if handle.startswith("@") else f"@{handle}"
     resolved_info = None
-    banner_url = None
 
-    if auto_resolve and query:
-        try:
-            resolved_info = lookup_channel(query)
-            name = resolved_info.get("name") or name
-            handle = resolved_info.get("handle") or handle
-            avatar_url = resolved_info.get("avatarUrl") or avatar_url
-            banner_url = resolved_info.get("bannerUrl")
-            subscribers = resolved_info.get("subscribers", subscribers or 0)
-            videos_uploaded = resolved_info.get("videosUploaded", videos_uploaded or 0)
-            logger.info(f"Verified live YouTube channel details for '{name}' ({handle})")
-        except Exception as e:
-            logger.warning(f"Could not auto-resolve YouTube live details for '{query}': {e}. Using provided fields.")
-
-    final_name = name or (handle.replace("@", "") if handle else "YouTube Creator")
-    final_handle = handle or f"@{final_name.lower().replace(' ', '')}"
+    if auto_resolve:
+        search_query = handle if handle else name
+        resolved = lookup_channel(search_query)
+        if resolved.get("verified"):
+            resolved_info = resolved
+            final_name = resolved.get("name") or final_name
+            final_handle = resolved.get("handle") or final_handle
+            avatar_url = resolved.get("avatarUrl") or avatar_url
+            subscribers = resolved.get("subscribers", subscribers)
+            videos_uploaded = resolved.get("videosUploaded", videos_uploaded)
+            banner_url = resolved.get("bannerUrl") or banner_url
 
     channel = create_channel(
         name=final_name,
         handle=final_handle,
-        niche=niche or "Motivational Quotes",
+        niche=niche,
         avatar_url=avatar_url,
         subscribers=subscribers or 0,
         videos_uploaded=videos_uploaded or 0,
         banner_url=banner_url,
     )
     try:
-        from backend.database.repository import add_notification
         add_notification(
             title="YouTube Channel Connected",
             message=f"Connected channel '{final_name}' ({final_handle}) with {subscribers:,} subscribers.",
@@ -105,7 +101,6 @@ def sync_or_correct_channel(channel_id: str, new_query: Optional[str] = None) ->
     """
     result = correct_and_sync_channel(channel_id, new_handle_or_query=new_query)
     try:
-        from backend.database.repository import add_notification
         add_notification(
             title="YouTube Channel Synced",
             message=f"Synced metrics for channel '{result['channel'].get('name', channel_id)}'.",
@@ -119,54 +114,51 @@ def sync_or_correct_channel(channel_id: str, new_query: Optional[str] = None) ->
     return {
         "success": True,
         "channel": result["channel"],
-        "message": result["message"],
+        "updated": result["updated"],
+        "source": result.get("source", "youtube_api"),
     }
 
 
-def get_live_channel_shorts(channel_id: str, limit: int = 12) -> Dict[str, Any]:
-    """
-    Fetches real published YouTube Shorts from the specified channel.
-    """
-    ch = fetch_channel_by_id(channel_id)
-    if not ch:
-        # Check if channel_id is already a handle
-        handle_to_use = channel_id if channel_id.startswith("@") else f"@{channel_id}"
-    else:
-        handle_to_use = ch.get("handle") or ch.get("name")
+def get_channel_shorts(channel_id: str, limit: int = 15) -> Dict[str, Any]:
+    """Fetches YouTube Shorts uploaded to a specific connected channel."""
+    channel = fetch_channel_by_id(channel_id)
+    if not channel:
+        return {
+            "success": False,
+            "error": f"Channel '{channel_id}' not found",
+            "shorts": [],
+        }
 
-    shorts = fetch_channel_shorts(handle_to_use, limit=limit)
+    shorts = fetch_channel_shorts(channel_id, channel_handle=channel.get("handle"), max_results=limit)
     return {
         "success": True,
+        "channel": channel,
         "shorts": shorts,
+        "total": len(shorts),
     }
 
 
-def delete_youtube_channel_route(channel_id: str) -> Dict[str, Any]:
-    deleted = remove_channel(channel_id)
-    return {
-        "success": deleted,
-        "message": f"Channel {channel_id} removed.",
-    }
-
-
-def publish_video_to_shorts(title: str, quote: str, voice: str, category: str, channel_id: Optional[str]) -> Dict[str, Any]:
-    video = insert_video(
-        title=title,
-        quote=quote,
-        voice=voice,
-        category=category,
-        channel_id=channel_id,
-    )
+def update_channel(channel_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    updated = update_channel_data(channel_id, data)
     return {
         "success": True,
-        "video": video,
+        "channel": updated,
     }
 
 
-def list_automations() -> Dict[str, Any]:
+def disconnect_channel(channel_id: str) -> Dict[str, Any]:
+    remove_channel(channel_id)
     return {
         "success": True,
-        "automations": fetch_automations(),
+        "channelId": channel_id,
+    }
+
+
+def publish_video_record(video_data: Dict[str, Any]) -> Dict[str, Any]:
+    created = insert_video(video_data)
+    return {
+        "success": True,
+        "video": created,
     }
 
 
@@ -175,7 +167,6 @@ def toggle_automation(job_id: str) -> Dict[str, Any]:
     job = next((j for j in updated_jobs if j.get("id") == job_id), None)
     status_str = "Enabled" if job and job.get("active") else "Paused"
     try:
-        from backend.database.repository import add_notification
         add_notification(
             title="Automation Schedule Updated",
             message=f"Autonomous Shorts scheduler '{job.get('theme', job_id) if job else job_id}' is now {status_str}.",
@@ -190,3 +181,25 @@ def toggle_automation(job_id: str) -> Dict[str, Any]:
         "success": True,
         "automations": updated_jobs,
     }
+
+
+get_live_channel_shorts = get_channel_shorts
+delete_youtube_channel_route = disconnect_channel
+
+
+def publish_video_to_shorts(title: str, quote: str, voice: str = "Fenrir", category: str = "Motivation", channel_id: Optional[str] = None) -> Dict[str, Any]:
+    return publish_video_record({
+        "title": title,
+        "quote": quote,
+        "voice": voice,
+        "category": category,
+        "channel_id": channel_id,
+    })
+
+
+def list_automations() -> Dict[str, Any]:
+    return {
+        "success": True,
+        "automations": fetch_automations(),
+    }
+

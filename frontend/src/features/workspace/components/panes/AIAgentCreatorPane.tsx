@@ -189,13 +189,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
       {/* ── Top Bar: Active Mode Indicator & Switcher Dropdown ── */}
       <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
           <Wand2 className="w-4 h-4 shrink-0 text-[#60A5FA]" />
           <span className="text-xs font-bold text-white truncate">
             AI Script Studio
-          </span>
-          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
-            AGENT
           </span>
         </div>
 
@@ -591,8 +588,9 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       </div>
 
       {/* ── Bottom Action Footer ── */}
-      <div className="p-4 border-t border-[#26262B] bg-[#17171A] shrink-0">
+      <div className="px-3 py-2.5 border-t border-[#26262B] bg-[#17171A] shrink-0">
         <Button
+          size="sm"
           onClick={() => {
             try {
               confetti({
@@ -604,16 +602,16 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             onRunAgent();
           }}
           disabled={loadingAgent}
-          className="w-full bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-[#3B82F6]/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-bold rounded-lg shadow-lg shadow-[#3B82F6]/25 transition-all"
         >
           {loadingAgent ? (
             <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               <span>Generating Script &amp; Directing...</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span>Generate Viral Reel Script</span>
             </>
           )}

@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from .connection import get_connection
 
@@ -83,7 +84,6 @@ def init_db():
         cursor.execute("SELECT COUNT(*) FROM website_videos")
         v_count = cursor.fetchone()[0]
         if v_count == 0:
-            import json
             starter_videos = [
                 (
                     "vid_web_001",

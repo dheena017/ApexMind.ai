@@ -17,7 +17,25 @@ def get_memory_list(limit: int = 50) -> Dict[str, Any]:
     }
 
 
-def generate_script(category: str, topic: str, tone: str, length: str, model: str = "gemini-2.5-flash") -> Dict[str, Any]:
+def generate_script(
+    category: str,
+    topic: str,
+    tone: str = "",
+    length: str = "",
+    model: str = "gemini-2.5-flash",
+    audio_mood: str | None = None,
+    background_style: str | None = None,
+    text_style: str | None = None,
+    video_style: str | None = None,
+    voice_name: str | None = None,
+    aspect_ratio: str | None = None,
+    music_track: str | None = None,
+    caption_style: str | None = None,
+    visual_theme: str | None = None,
+    motion_style: str | None = None,
+    output_format: str | None = None,
+    creative_context: dict | None = None,
+) -> Dict[str, Any]:
     memory = fetch_quote_memory(limit=20)
     data = generate_gemini_script(
         category=category,
@@ -26,6 +44,18 @@ def generate_script(category: str, topic: str, tone: str, length: str, model: st
         length=length,
         memory_quotes=memory,
         model=model,
+        audio_mood=audio_mood,
+        background_style=background_style,
+        text_style=text_style,
+        video_style=video_style,
+        voice_name=voice_name,
+        aspect_ratio=aspect_ratio,
+        music_track=music_track,
+        caption_style=caption_style,
+        visual_theme=visual_theme,
+        motion_style=motion_style,
+        output_format=output_format,
+        creative_context=creative_context,
     )
     if data.get("title") and data.get("quote"):
         save_quote(
@@ -56,7 +86,9 @@ def clear_memory() -> Dict[str, Any]:
     deleted = delete_all_quotes()
     return {"success": True, "message": f"Cleared {deleted} quotes from memory."}
 
-def synthesize_voiceover(text: str, voice_name: str, model: str = "gemini-2.5-flash-preview-tts") -> Dict[str, Any]:
+def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = None) -> Dict[str, Any]:
+    if not voice_name or not str(voice_name).strip():
+        raise ValueError("Voice name is required. Please select a workspace voice before generating audio.")
     result = generate_gemini_voiceover(text=text, voice_name=voice_name, model=model)
     try:
         add_notification(

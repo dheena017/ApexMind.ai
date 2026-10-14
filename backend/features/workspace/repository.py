@@ -6,6 +6,7 @@ Database persistence and SQLite queries for workspace quote memory.
 from datetime import datetime
 from typing import List, Dict, Any
 from backend.database.connection import get_connection
+from backend.database.repository import get_media_library
 
 def fetch_quote_memory(limit: int = 50) -> List[Dict[str, Any]]:
     """Retrieve stored quotes to evaluate uniqueness."""
@@ -52,6 +53,5 @@ def delete_all_quotes() -> int:
 
 def fetch_media_library() -> Dict[str, Any]:
     """Retrieve media library catalog from SQLite database."""
-    from backend.database.repository import get_media_library
     return get_media_library()
 

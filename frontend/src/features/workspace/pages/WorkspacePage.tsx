@@ -18,6 +18,9 @@ import {
   ImagePane,
   VideoStockPane,
 } from '../components/panes';
+import { Toaster, toast } from 'sonner';
+import confetti from 'canvas-confetti';
+import { WorkspaceCommandPalette } from '../components/WorkspaceCommandPalette';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DEFAULT_CREATOR_PROFILE, getCreatorProfile } from '@/src/features/profile/api/profileApi';
 
@@ -26,6 +29,33 @@ interface WorkspacePageProps {
   activePane: WorkspaceTabType;
   onPaneChange: (pane: WorkspaceTabType) => void;
 }
+
+interface WorkspaceDraftSnapshot {
+  version: 1;
+  savedAt: string;
+  script: GeneratedScript;
+  agentPrompt: string;
+  category: string;
+  targetLength: string;
+  selectedModel: string;
+  selectedVoice: string;
+  selectedMusic: string;
+  selectedBackdrop: string;
+  customBackdropImage?: string;
+  customBackdropVideo?: string;
+  canvasAspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+  canvasBackground: string;
+  timelineDuration: number;
+  playbackRate: number;
+  volume: number;
+  isMuted: boolean;
+  musicVolume: number;
+  activeElementOverlay: { id?: string; name?: string; type: string; value: string; label?: string } | null;
+  selectedSfx: { id: string; name: string; audioUrl: string; duration: number; start: number } | null;
+  captionPreset: { className?: string; color?: string } | null;
+}
+
+const getWorkspaceDraftKey = (userId?: string) => `apexmind_workspace_draft_v1:${userId || 'guest'}`;
 
 export default function WorkspacePage({
   onNavigate,
@@ -58,6 +88,7 @@ export default function WorkspacePage({
   const [scriptSubPane, setScriptSubPane] = useState<'prompt' | 'editor'>(
     activePane === 'editor' ? 'editor' : 'prompt'
   );
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Script State (Live dynamic data with initial studio preview)
   const [script, setScript] = useState<GeneratedScript>({
@@ -387,11 +418,162 @@ export default function WorkspacePage({
     audio.loop = isLooping;
   }, [isLooping, isMuted, playbackRate, volume]);
 
+  const getActiveCreativeBrief = () => {
+    const selectedTrack = musicTracks.find((track) => track.id === selectedMusic);
+    const selectedBackdropItem = backdrops.find((backdrop) => backdrop.id === selectedBackdrop);
+    const selectedVoiceProfile = voices.find((voice) => voice.id === selectedVoice);
+
+    const creativeBrief: Record<string, string> = {};
+
+    if (selectedTrack?.mood) creativeBrief.audioMood = selectedTrack.mood;
+    if (selectedVoiceProfile?.style) creativeBrief.audioMood ??= selectedVoiceProfile.style;
+
+    if (selectedBackdropItem) {
+      creativeBrief.backgroundStyle = `${selectedBackdropItem.category} ${selectedBackdropItem.name}`;
+      creativeBrief.visualTheme = selectedBackdropItem.name;
+    } else if (canvasBackground && canvasBackground !== '#050505') {
+      creativeBrief.backgroundStyle = canvasBackground;
+    }
+
+    if (captionPreset?.className) creativeBrief.textStyle = captionPreset.className;
+    if (captionPreset?.color) creativeBrief.captionStyle = captionPreset.color;
+
+    if (canvasAspectRatio) creativeBrief.aspectRatio = canvasAspectRatio;
+    if (selectedTrack?.title || selectedTrack?.name || selectedMusic) {
+      creativeBrief.musicTrack = selectedTrack?.title || selectedTrack?.name || selectedMusic;
+    }
+    if (selectedVoice) creativeBrief.voiceName = selectedVoice;
+    if (selectedBackdropItem?.particleEffect) {
+      creativeBrief.videoStyle = `${canvasAspectRatio} ${selectedBackdropItem.category || 'cinematic'} reel with ${selectedBackdropItem.particleEffect}`;
+    } else if (canvasAspectRatio) {
+      creativeBrief.videoStyle = `${canvasAspectRatio} cinematic short-form reel`;
+    }
+    if (activeElementOverlay) {
+      const overlayText = `${activeElementOverlay.type} ${activeElementOverlay.name || ''}`.trim();
+      if (overlayText) creativeBrief.motionStyle = `overlay: ${overlayText}`;
+    }
+
+    return creativeBrief;
+  };
+
   // Run AI Script Generation
   const handleRunAIAgent = async () => {
     setLoadingAgent(true);
     consoleLogger.info('Studio', `Generating script for category: ${category}`);
     try {
+      const creativeBrief = getActiveCreativeBrief();
+      const selectedTrack = musicTracks.find((track) => track.id === selectedMusic);
+      const selectedBackdropItem = backdrops.find((backdrop) => backdrop.id === selectedBackdrop);
+      const selectedVoiceProfile = voices.find((voice) => voice.id === selectedVoice);
+
+      const creativeContext: Record<string, unknown> = {
+        category,
+        topic: targetAudience || 'broad audience',
+        tone: preferredTone || 'motivational',
+        length: targetLength || '30 seconds',
+        model: selectedModel,
+        audience: targetAudience,
+        creatorPrompt: agentPrompt || null,
+        shotPacing: selectedTrack?.bpm
+          ? `short-form pacing matched to ${selectedTrack.bpm} BPM with quick-cut rhythm`
+          : 'fast vertical short-form pacing with tight retention hooks',
+        transitionStyle: selectedSfx?.name
+          ? `use ${selectedSfx.name} as an impact transition and fast match cut`
+          : (selectedBackdropItem?.particleEffect ? `cinematic ${selectedBackdropItem.particleEffect} transitions` : 'dynamic match cuts and quick transitions'),
+        subtitleMotion: captionPreset?.className
+          ? `subtitle motion styled like ${captionPreset.className}`
+          : 'centered kinetic subtitles with strong readability',
+        textAnimation: captionPreset?.className
+          ? `text animation using ${captionPreset.className}`
+          : 'bold punch-in text reveal with clean title emphasis',
+        cameraMovement: activeElementOverlay
+          ? `camera movement guided by ${activeElementOverlay.type} ${activeElementOverlay.name || ''}`.trim()
+          : (selectedBackdropItem?.particleEffect ? `subtle push-in and parallax around ${selectedBackdropItem.particleEffect}` : 'steady hand-held feel with occasional push-in focus'),
+        sceneStructure: {
+          hookPlacement: 'front-load the strongest emotional hook in the first 1-3 seconds',
+          ctaTiming: 'deliver the closing call-to-action in the final 2-4 seconds with a hard stop',
+          emphasisPoints: [
+            'lead with the most shocking truth or tension',
+            'repeat the emotional payoff once in the middle',
+            'land the final action cue in the closing beat',
+          ],
+          shotPlan: selectedTrack?.bpm
+            ? `3-beat rhythm driven by ${selectedTrack.bpm} BPM energy: hook, escalation, resolution`
+            : '3-beat rhythm: hook, escalation, resolution',
+          subtitlePriority: 'keep subtitles readable, dominant, and synced to the strongest words',
+        },
+        visual: {
+          aspectRatio: canvasAspectRatio,
+          backgroundColor: canvasBackground,
+          selectedBackdrop: selectedBackdropItem
+            ? {
+                id: selectedBackdropItem.id,
+                name: selectedBackdropItem.name,
+                category: selectedBackdropItem.category,
+                particleEffect: selectedBackdropItem.particleEffect,
+                previewColor: selectedBackdropItem.previewColor,
+              }
+            : null,
+          customBackdropImage: customBackdropImage || null,
+          customBackdropVideo: customBackdropVideo || null,
+          captionPreset: captionPreset
+            ? { className: captionPreset.className || null, color: captionPreset.color || null }
+            : null,
+          overlay: activeElementOverlay
+            ? {
+                id: activeElementOverlay.id || null,
+                name: activeElementOverlay.name || null,
+                type: activeElementOverlay.type,
+                value: activeElementOverlay.value,
+                label: activeElementOverlay.label || null,
+              }
+            : null,
+          motionStyle: creativeBrief.motionStyle || null,
+          visualTheme: creativeBrief.visualTheme || null,
+        },
+        audio: {
+          voiceName: selectedVoice || null,
+          voiceStyle: selectedVoiceProfile?.style || null,
+          musicTrack: selectedTrack
+            ? {
+                id: selectedTrack.id,
+                title: selectedTrack.title || selectedTrack.name || selectedMusic,
+                genre: selectedTrack.genre,
+                mood: selectedTrack.mood || null,
+                bpm: selectedTrack.bpm,
+              }
+            : (selectedMusic ? { id: selectedMusic, title: selectedMusic } : null),
+          sfx: selectedSfx
+            ? {
+                id: selectedSfx.id,
+                name: selectedSfx.name,
+                duration: selectedSfx.duration,
+                start: selectedSfx.start,
+              }
+            : null,
+          volume,
+          isMuted,
+          musicVolume,
+          playbackRate,
+          noiseReduction,
+          voiceFade: voiceFadeSettings,
+          musicFade: musicFadeSettings,
+          audioMood: creativeBrief.audioMood || null,
+        },
+        text: {
+          captionStyle: creativeBrief.captionStyle || null,
+          textStyle: creativeBrief.textStyle || null,
+          typographyPreset: captionPreset ? captionPreset.className || null : null,
+        },
+        composition: {
+          aspectRatio: canvasAspectRatio,
+          backgroundStyle: creativeBrief.backgroundStyle || null,
+          videoStyle: creativeBrief.videoStyle || null,
+          outputFormat: creativeBrief.outputFormat || null,
+          activeCompound,
+        },
+      };
+
       const promptParts = [
         agentPrompt.trim(),
         targetAudience.trim() ? `Target audience: ${targetAudience.trim()}` : '',
@@ -401,6 +583,19 @@ export default function WorkspacePage({
         userPrompt: promptParts.join('\n') || undefined,
         tone: preferredTone,
         model: selectedModel,
+        length: targetLength,
+        ...(creativeBrief.audioMood ? { audioMood: creativeBrief.audioMood } : {}),
+        ...(creativeBrief.backgroundStyle ? { backgroundStyle: creativeBrief.backgroundStyle } : {}),
+        ...(creativeBrief.textStyle ? { textStyle: creativeBrief.textStyle } : {}),
+        ...(creativeBrief.videoStyle ? { videoStyle: creativeBrief.videoStyle } : {}),
+        ...(creativeBrief.voiceName ? { voiceName: creativeBrief.voiceName } : {}),
+        ...(creativeBrief.aspectRatio ? { aspectRatio: creativeBrief.aspectRatio } : {}),
+        ...(creativeBrief.musicTrack ? { musicTrack: creativeBrief.musicTrack } : {}),
+        ...(creativeBrief.captionStyle ? { captionStyle: creativeBrief.captionStyle } : {}),
+        ...(creativeBrief.visualTheme ? { visualTheme: creativeBrief.visualTheme } : {}),
+        ...(creativeBrief.motionStyle ? { motionStyle: creativeBrief.motionStyle } : {}),
+        ...(creativeBrief.outputFormat ? { outputFormat: creativeBrief.outputFormat } : {}),
+        creativeContext,
       });
 
       setScript({ ...generated, recommendedVoice: selectedVoice || generated.recommendedVoice });
@@ -416,10 +611,18 @@ export default function WorkspacePage({
       const mem = await workspaceApi.getQuoteMemory();
       setMemoryCount(mem.totalQuotesInMemory || 0);
 
+      toast.success('AI Script Generated!', {
+        description: generated.title || 'Ready for studio editing',
+      });
+      confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+
       // Automatically synthesize 24kHz voiceover with updated script
       handleSynthesizeVoice(generated, selectedVoice || generated.recommendedVoice || 'Fenrir');
     } catch (err) {
       consoleLogger.error('Studio', 'Error generating script:', err);
+      toast.error('Script generation failed', {
+        description: err instanceof Error ? err.message : 'Please check connection',
+      });
     } finally {
       setLoadingAgent(false);
     }
@@ -588,11 +791,18 @@ export default function WorkspacePage({
         status: 'ready',
       }).catch(() => {}); // Non-blocking
       setPublishedSuccess(true);
+      toast.success('Published video to YouTube!', {
+        description: script.title || 'Live on YouTube',
+      });
+      confetti({ particleCount: 75, spread: 80, origin: { y: 0.6 } });
       setTimeout(() => {
         onNavigate('youtube');
       }, 1500);
     } catch (err) {
       consoleLogger.error('YouTube', 'Upload failed:', err);
+      toast.error('YouTube upload failed', {
+        description: err instanceof Error ? err.message : 'Please try again',
+      });
     } finally {
       setPublishing(false);
     }
@@ -621,9 +831,14 @@ export default function WorkspacePage({
         status: 'ready',
       });
       consoleLogger.success('Library', `✅ Saved "${script.title}" to Website Video Library`);
+      toast.success(`Saved "${script.title}" to Video Library!`);
+      confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
       onNavigate('videos');
     } catch (err) {
       consoleLogger.error('Library', 'Save to library failed:', err);
+      toast.error('Save to library failed', {
+        description: err instanceof Error ? err.message : 'Please try again',
+      });
     }
   };
 
@@ -665,6 +880,130 @@ export default function WorkspacePage({
   }, [showLeftPane, showTimeline, showRightPane]);
 
   useEffect(() => {
+    try {
+      const storedDraft = localStorage.getItem(getWorkspaceDraftKey(user?.id));
+      if (!storedDraft) return;
+      const draft = JSON.parse(storedDraft) as WorkspaceDraftSnapshot;
+      if (draft.version !== 1 || !draft.script || typeof draft.script !== 'object') return;
+
+      setScript(draft.script);
+      setAgentPrompt(draft.agentPrompt || '');
+      setCategory(draft.category || 'Stoic Mindset & Discipline');
+      setTargetLength(draft.targetLength || '30 seconds');
+      setSelectedModel(draft.selectedModel || 'gemini-2.5-flash');
+      setSelectedVoice(draft.selectedVoice || 'Fenrir');
+      setSelectedMusic(draft.selectedMusic || '');
+      setSelectedBackdrop(draft.selectedBackdrop || '');
+      setCustomBackdropImage(draft.customBackdropImage);
+      setCustomBackdropVideo(draft.customBackdropVideo);
+      setCanvasAspectRatio(draft.canvasAspectRatio || '9:16');
+      setCanvasBackground(draft.canvasBackground || '#050505');
+      setTimelineDuration(draft.timelineDuration || 30);
+      setPlaybackRate(draft.playbackRate || 1);
+      setVolume(draft.volume ?? 1);
+      setIsMuted(draft.isMuted ?? false);
+      setMusicVolume(draft.musicVolume ?? 0.35);
+      setActiveElementOverlay(draft.activeElementOverlay || null);
+      setSelectedSfx(draft.selectedSfx || null);
+      setCaptionPreset(draft.captionPreset || null);
+    } catch (error) {
+      consoleLogger.warn('Studio', 'Could not restore the local workspace draft:', error);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    const handleSaveDraft = () => {
+      const persistableUrl = (url?: string) => {
+        if (!url) return undefined;
+        if (/^https?:\/\//i.test(url)) return url;
+        if (url.startsWith('data:image/') && url.length < 250_000) return url;
+        return undefined;
+      };
+
+      const draft: WorkspaceDraftSnapshot = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        script,
+        agentPrompt,
+        category,
+        targetLength,
+        selectedModel,
+        selectedVoice,
+        selectedMusic,
+        selectedBackdrop,
+        customBackdropImage: persistableUrl(customBackdropImage),
+        customBackdropVideo: persistableUrl(customBackdropVideo),
+        canvasAspectRatio,
+        canvasBackground,
+        timelineDuration,
+        playbackRate,
+        volume,
+        isMuted,
+        musicVolume,
+        activeElementOverlay,
+        selectedSfx,
+        captionPreset,
+      };
+
+      try {
+        localStorage.setItem(getWorkspaceDraftKey(user?.id), JSON.stringify(draft));
+        window.dispatchEvent(new CustomEvent('workspace:save-draft-state', {
+          detail: { saved: true, message: 'Draft saved on this device.' },
+        }));
+      } catch (error) {
+        consoleLogger.error('Studio', 'Could not save the local workspace draft:', error);
+        window.dispatchEvent(new CustomEvent('workspace:save-draft-state', {
+          detail: { saved: false, message: 'Draft could not be saved. Local storage may be full.' },
+        }));
+      }
+    };
+
+    window.addEventListener('workspace:save-draft', handleSaveDraft);
+    return () => window.removeEventListener('workspace:save-draft', handleSaveDraft);
+  }, [
+    activeElementOverlay,
+    agentPrompt,
+    canvasAspectRatio,
+    canvasBackground,
+    captionPreset,
+    category,
+    customBackdropImage,
+    customBackdropVideo,
+    isMuted,
+    musicVolume,
+    playbackRate,
+    script,
+    selectedBackdrop,
+    selectedModel,
+    selectedMusic,
+    selectedSfx,
+    selectedVoice,
+    targetLength,
+    timelineDuration,
+    user?.id,
+    volume,
+  ]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('workspace:status', {
+      detail: {
+        aspectRatio: canvasAspectRatio,
+        currentTime,
+        duration: Math.max(duration, timelineDuration),
+        playbackRate,
+        voice: selectedVoice,
+        music: musicTracks.find((track) => track.id === selectedMusic)?.title || '',
+        visual: backdrops.find((backdrop) => backdrop.id === selectedBackdrop)?.name || '',
+        captionCount: script.subtitles?.length || 0,
+        overlay: activeElementOverlay?.label || activeElementOverlay?.name || activeElementOverlay?.value || '',
+        sfx: selectedSfx?.name || '',
+        isPlaying,
+        isExporting,
+      },
+    }));
+  }, [activeElementOverlay, backdrops, canvasAspectRatio, currentTime, duration, isExporting, isPlaying, musicTracks, playbackRate, script.subtitles, selectedBackdrop, selectedMusic, selectedSfx, selectedVoice, timelineDuration]);
+
+  useEffect(() => {
     const handleToggle = (e: Event) => {
       const customEvent = e as CustomEvent<{ panel: 'left' | 'bottom' | 'right' }>;
       if (!customEvent.detail) return;
@@ -689,6 +1028,17 @@ export default function WorkspacePage({
     return () => window.removeEventListener('workspace:select-compound', handleCompoundSelect);
   }, []);
 
+  useEffect(() => {
+    const handleAspectRatio = (e: Event) => {
+      const customEvent = e as CustomEvent<{ aspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9' }>;
+      if (customEvent.detail?.aspectRatio) {
+        setCanvasAspectRatio(customEvent.detail.aspectRatio);
+      }
+    };
+    window.addEventListener('workspace:aspect-ratio-change', handleAspectRatio);
+    return () => window.removeEventListener('workspace:aspect-ratio-change', handleAspectRatio);
+  }, []);
+
   // Synchronize script title with header
   useEffect(() => {
     window.dispatchEvent(
@@ -707,6 +1057,12 @@ export default function WorkspacePage({
     };
     window.addEventListener('workspace:update-title', handleUpdateTitle);
     return () => window.removeEventListener('workspace:update-title', handleUpdateTitle);
+  }, []);
+
+  useEffect(() => {
+    const handleOpenPalette = () => setCommandPaletteOpen(true);
+    window.addEventListener('workspace:open-command-palette', handleOpenPalette);
+    return () => window.removeEventListener('workspace:open-command-palette', handleOpenPalette);
   }, []);
 
   useEffect(() => {
@@ -761,7 +1117,7 @@ export default function WorkspacePage({
       : 'lg:col-span-8';
 
   return (
-    <div className="w-full h-auto min-h-full lg:h-full flex flex-col min-h-0 font-sans-studio select-none gap-2">
+    <div className="w-full h-auto lg:h-full flex flex-col min-h-0 font-sans-studio select-none gap-2">
       {/* Hidden Audio Element */}
       <audio ref={audioRef} className="hidden" preload="auto" />
       <audio ref={musicAudioRef} className="hidden" preload="auto" crossOrigin="anonymous" loop />
@@ -770,7 +1126,7 @@ export default function WorkspacePage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-1 h-auto min-h-0 flex-1 lg:h-full overflow-hidden">
         {/* Left Pane: Dynamic Active Studio Panel (col-span-4) */}
         {showLeftPane && (
-          <div className="lg:col-span-4 min-h-[520px] lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
+          <div className="lg:col-span-4 min-h-130 lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
             {activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
               <ScriptEditorPane
                 script={script}
@@ -995,7 +1351,7 @@ export default function WorkspacePage({
 
 
         {/* Center Pane: Video Preview Canvas */}
-        <div className={`${centerColSpan} min-h-[520px] lg:h-full lg:min-h-0 flex flex-col items-center justify-center transition-all duration-200`}>
+        <div className={`${centerColSpan} min-h-130 lg:h-full lg:min-h-0 flex flex-col items-center justify-center transition-all duration-200`}>
           <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
             <VideoPreviewPane
               canvasAspectRatio={canvasAspectRatio}
@@ -1062,7 +1418,7 @@ export default function WorkspacePage({
 
         {/* Right Pane: Inspiration Studio Panel */}
         {showRightPane && (
-          <div className="lg:col-span-4 min-h-[520px] lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
+          <div className="lg:col-span-4 min-h-130 lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
             <StudioControlsPane
               voices={voices}
               selectedVoice={selectedVoice}
@@ -1106,6 +1462,8 @@ export default function WorkspacePage({
               }}
               canvasBackground={canvasBackground}
               onCanvasBackgroundChange={setCanvasBackground}
+              canvasAspectRatio={canvasAspectRatio}
+              onCanvasAspectRatioChange={setCanvasAspectRatio}
               activeCompound={activeCompound}
               onSelectCompound={setActiveCompound}
             />
@@ -1148,6 +1506,21 @@ export default function WorkspacePage({
           />
         </div>
       )}
+
+      {/* Modern Rich Notifications (Sonner) */}
+      <Toaster position="top-right" theme="dark" richColors closeButton />
+
+      {/* Global Command Palette (Cmd+K / Ctrl+K / /) */}
+      <WorkspaceCommandPalette
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+        onSelectPane={onPaneChange}
+        onSelectAspectRatio={setCanvasAspectRatio}
+        onTogglePlay={togglePlay}
+        onToggleMute={() => setIsMuted((prev) => !prev)}
+        onGenerateScript={handleRunAIAgent}
+        onToggleTimeline={() => setShowTimeline((prev) => !prev)}
+      />
     </div>
   );
 }

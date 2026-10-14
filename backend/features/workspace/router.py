@@ -35,9 +35,21 @@ def post_generate_script(payload: GenerateScriptRequest):
         return generate_script(
             category=payload.category or "Stoic Mindset & Discipline",
             topic=payload.topic or "Overcoming laziness, building daily grit",
-            tone=payload.tone or "Authoritative & Inspiring",
-            length=payload.length or "30 seconds",
+            tone=payload.tone or "",
+            length=payload.length or "",
             model=payload.model or "gemini-2.5-flash",
+            audio_mood=payload.audioMood,
+            background_style=payload.backgroundStyle,
+            text_style=payload.textStyle,
+            video_style=payload.videoStyle,
+            voice_name=payload.voiceName,
+            aspect_ratio=payload.aspectRatio,
+            music_track=payload.musicTrack,
+            caption_style=payload.captionStyle,
+            visual_theme=payload.visualTheme,
+            motion_style=payload.motionStyle,
+            output_format=payload.outputFormat,
+            creative_context=payload.creativeContext,
         )
     except Exception as e:
         logger.error(f"Error in script generation: {e}")
@@ -58,11 +70,16 @@ def post_generate_voiceover(payload: GenerateVoiceoverRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Text prompt is required."
         )
+    if not payload.voiceName or not payload.voiceName.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Voice name is required. Please select a voice from the workspace."
+        )
     try:
         return synthesize_voiceover(
             text=payload.text,
-            voice_name=payload.voiceName or "Fenrir",
-            model=payload.model or "gemini-2.5-flash-preview-tts",
+            voice_name=payload.voiceName,
+            model=payload.model,
         )
     except Exception as e:
         logger.error(f"Error in voiceover synthesis: {e}")

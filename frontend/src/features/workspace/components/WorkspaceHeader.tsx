@@ -11,6 +11,7 @@ import {
   Settings,
   ChevronDown,
   Film,
+  Search,
 } from 'lucide-react';
 import { UserProfile } from '@/src/features/auth/types';
 
@@ -80,16 +81,25 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
       }
     };
 
+    const handleSaveDraftState = (e: Event) => {
+      const customEvent = e as CustomEvent<{ saved: boolean; message: string }>;
+      if (!customEvent.detail) return;
+      setNotice(customEvent.detail.message);
+      window.setTimeout(() => setNotice(null), 3000);
+    };
+
     window.addEventListener('workspace:publish-state', handlePublishState);
     window.addEventListener('workspace:panel-state', handlePanelState);
     window.addEventListener('workspace:title-change', handleTitleState);
     window.addEventListener('workspace:export-state', handleExportState);
+    window.addEventListener('workspace:save-draft-state', handleSaveDraftState);
 
     return () => {
       window.removeEventListener('workspace:publish-state', handlePublishState);
       window.removeEventListener('workspace:panel-state', handlePanelState);
       window.removeEventListener('workspace:title-change', handleTitleState);
       window.removeEventListener('workspace:export-state', handleExportState);
+      window.removeEventListener('workspace:save-draft-state', handleSaveDraftState);
     };
   }, []);
 
@@ -115,8 +125,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   };
 
   const handleSaveDraft = () => {
-    setNotice('Draft saved.');
-    setTimeout(() => setNotice(null), 2000);
+    window.dispatchEvent(new CustomEvent('workspace:save-draft'));
   };
 
   return (
@@ -166,6 +175,20 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             {notice}
           </span>
         )}
+
+        {/* Quick Search / Command Palette trigger */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('workspace:open-command-palette'))}
+          className="hidden md:flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-[#161616] hover:bg-[#202022] border border-[#262626] hover:border-[#3B82F6]/50 text-[11px] text-[#A0A0AB] hover:text-white transition-all cursor-pointer shadow-xs group"
+          title="Open Command Palette (⌘K or Ctrl+K)"
+        >
+          <Search className="w-3 h-3 text-[#71717A] group-hover:text-[#3B82F6] transition-colors" />
+          <span className="text-[10px] font-medium">Quick Actions</span>
+          <kbd className="text-[9px] font-mono px-1 py-0.5 bg-[#0F0F10] border border-[#2D2D33] rounded text-[#71717A] group-hover:text-[#CCCCCC]">
+            ⌘K
+          </kbd>
+        </button>
 
         {/* Panel Layout Toggles (Left, Bottom, Right) */}
         <div className="flex items-center gap-0.5 bg-[#161616] p-0.5 rounded-lg border border-[#262626]">

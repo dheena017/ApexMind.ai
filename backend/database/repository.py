@@ -1,6 +1,8 @@
+import json
 import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from backend.shared.media_catalog import get_static_media_catalog
 from .connection import get_connection
 
 logger = logging.getLogger("ApexMind.Database")
@@ -430,7 +432,6 @@ def toggle_automation(job_id: str) -> List[Dict[str, Any]]:
     return get_automations()
 
 def get_media_library() -> Dict[str, Any]:
-    from backend.features.workspace.media_catalog import get_static_media_catalog
     return get_static_media_catalog()
 
 
@@ -708,7 +709,6 @@ def get_website_video_by_id(video_id: str) -> Optional[Dict[str, Any]]:
 
 
 def add_website_video(data: Dict[str, Any]) -> Dict[str, Any]:
-    import json
     vid_id = data.get("id") or f"vid_web_{int(datetime.utcnow().timestamp() * 1000)}"
     timestamp = data.get("createdAt") or datetime.utcnow().isoformat()
     subtitles_raw = data.get("subtitles")

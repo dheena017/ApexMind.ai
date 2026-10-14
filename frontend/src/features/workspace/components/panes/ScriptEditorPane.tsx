@@ -187,13 +187,10 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
       {/* ── Top Header Bar (Matching Right Inspector Pane) ── */}
       <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
           <FileText className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="text-xs font-bold text-white truncate">
             Script &amp; Subtitles
-          </span>
-          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/10 text-white/80 border border-white/15 shrink-0 uppercase font-bold">
-            ~{estimatedSpeechSeconds}S READ
           </span>
         </div>
 
@@ -455,6 +452,81 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#3B82F6]"
               />
             </div>
+
+            {/* AI Scene Plan */}
+            {(script.shotPacing || script.transitionStyle || script.subtitleMotion || script.textAnimation || script.cameraMovement || script.sceneStructure) && (
+              <div className="flex flex-col gap-2.5 rounded-xl border border-[#2A2A30] bg-[#18181B] p-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
+                  <span className="text-[10px] uppercase font-mono-studio font-bold text-white">AI Scene Plan</span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 text-[11px] text-[#E4E4E7]">
+                  {script.shotPacing && (
+                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
+                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Shot pacing</div>
+                      <div>{script.shotPacing}</div>
+                    </div>
+                  )}
+
+                  {script.transitionStyle && (
+                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
+                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Transition style</div>
+                      <div>{script.transitionStyle}</div>
+                    </div>
+                  )}
+
+                  {script.subtitleMotion && (
+                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
+                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Subtitle motion</div>
+                      <div>{script.subtitleMotion}</div>
+                    </div>
+                  )}
+
+                  {script.textAnimation && (
+                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
+                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Text animation</div>
+                      <div>{script.textAnimation}</div>
+                    </div>
+                  )}
+
+                  {script.cameraMovement && (
+                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
+                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Camera movement</div>
+                      <div>{script.cameraMovement}</div>
+                    </div>
+                  )}
+                </div>
+
+                {script.sceneStructure && (
+                  <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2 flex flex-col gap-2 text-[11px] text-[#E4E4E7]">
+                    <div className="text-[9px] uppercase text-[#A1A1AA]">Scene structure</div>
+                    {script.sceneStructure.hookPlacement && (
+                      <div><span className="text-[#A1A1AA]">Hook:</span> {script.sceneStructure.hookPlacement}</div>
+                    )}
+                    {script.sceneStructure.ctaTiming && (
+                      <div><span className="text-[#A1A1AA]">CTA timing:</span> {script.sceneStructure.ctaTiming}</div>
+                    )}
+                    {script.sceneStructure.shotPlan && (
+                      <div><span className="text-[#A1A1AA]">Shot plan:</span> {script.sceneStructure.shotPlan}</div>
+                    )}
+                    {script.sceneStructure.subtitlePriority && (
+                      <div><span className="text-[#A1A1AA]">Subtitle priority:</span> {script.sceneStructure.subtitlePriority}</div>
+                    )}
+                    {Array.isArray(script.sceneStructure.emphasisPoints) && script.sceneStructure.emphasisPoints.length > 0 && (
+                      <div>
+                        <div className="text-[#A1A1AA] mb-1">Emphasis points</div>
+                        <ul className="list-disc pl-4 space-y-1">
+                          {script.sceneStructure.emphasisPoints.map((point, index) => (
+                            <li key={`emphasis-${index}`}>{point}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

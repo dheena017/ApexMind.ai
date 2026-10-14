@@ -61,6 +61,8 @@ export interface StudioControlsPaneProps {
   onSetCustomVideo?: (url: string | undefined) => void;
   canvasBackground?: string;
   onCanvasBackgroundChange?: (bg: string) => void;
+  canvasAspectRatio?: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+  onCanvasAspectRatioChange?: (ratio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => void;
   activeCompound?: CompoundType;
   onSelectCompound?: (compound: CompoundType) => void;
 }
@@ -83,7 +85,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   publishedSuccess,
   script,
   onUpdateScript,
-  duration = 12.1,
+  duration,
   timelineDuration,
   onDurationChange,
   playbackRate = 1,
@@ -100,9 +102,13 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   onSetCustomVideo,
   canvasBackground,
   onCanvasBackgroundChange,
+  canvasAspectRatio = '9:16',
+  onCanvasAspectRatioChange,
   activeCompound: propCompound,
   onSelectCompound,
 }) => {
+  const effectiveDuration = duration || timelineDuration || 15;
+  const effectiveCategory = category || (script?.tags?.[0]) || 'General';
   // Current active compound page (defaults to home, reacts to timeline / canvas clicks)
   const [activeCompound, setActiveCompound] = useState<CompoundType>(propCompound || 'home');
   const [videoInspectorTab, setVideoInspectorTab] = useState<'transform' | 'style'>('transform');
@@ -167,7 +173,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl">
       {/* ── Top Bar: Active Compound Indicator, Home Button & Switcher Dropdown ── */}
       <div className="relative px-3 py-2 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
           <CurrentIcon className={`w-4 h-4 shrink-0 ${compoundMetadata.color}`} />
           <span className="text-xs font-bold text-white truncate">
             {compoundMetadata.label}
@@ -247,8 +253,11 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             canPublish={canPublish}
             publishedSuccess={publishedSuccess}
             script={script}
-            duration={duration}
-            category={category}
+            duration={effectiveDuration}
+            category={effectiveCategory}
+            canvasAspectRatio={canvasAspectRatio}
+            onCanvasAspectRatioChange={onCanvasAspectRatioChange}
+            onUpdateScript={onUpdateScript}
             onSelectCompound={handleSwitchCompound}
           />
         )}
@@ -258,7 +267,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             activeBackdrop={activeBackdropObj}
             backdrops={backdrops}
             onSelectBackdrop={onSelectBackdrop}
-            duration={timelineDuration ?? duration}
+            duration={timelineDuration ?? effectiveDuration}
             onUpdateDuration={onDurationChange}
             playbackRate={playbackRate}
             onPlaybackRateChange={onPlaybackRateChange}
@@ -268,6 +277,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             onSetCustomVideo={onSetCustomVideo}
             canvasBackground={canvasBackground}
             onCanvasBackgroundChange={onCanvasBackgroundChange}
+            canvasAspectRatio={canvasAspectRatio}
+            onCanvasAspectRatioChange={onCanvasAspectRatioChange}
             initialSubTab={videoInspectorTab}
           />
         )}
@@ -300,7 +311,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             onVolumeChange={activeCompound === 'music' ? onMusicVolumeChange || onVolumeChange : onVolumeChange}
             playbackRate={playbackRate}
             onPlaybackRateChange={onPlaybackRateChange}
-            duration={duration}
+            duration={effectiveDuration}
           />
         )}
       </div>

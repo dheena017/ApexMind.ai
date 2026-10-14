@@ -7,8 +7,36 @@ dependency verification, structured error handling, and clean process lifecycle.
 
 from __future__ import annotations
 
+import argparse
+import ctypes
+from ctypes import wintypes
+import http.client
+import importlib.util
+import os
+from pathlib import Path
+import shlex
 import signal
+import socket
+import subprocess
 import sys
+import threading
+import time
+import traceback
+import webbrowser
+
+# Ensure project root is at the head of sys.path so 'backend.*' imports succeed
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    import uvicorn
+    from uvicorn.supervisors.basereload import BaseReload
+    from backend.shared.logger import get_uvicorn_log_config
+except (ImportError, AttributeError):
+    uvicorn = None  # type: ignore[assignment]
+    get_uvicorn_log_config = None  # type: ignore[assignment]
+    BaseReload = None  # type: ignore[assignment]
 
 
 def _handle_import_interrupt(_signum, _frame) -> None:
@@ -20,23 +48,6 @@ def _handle_import_interrupt(_signum, _frame) -> None:
 signal.signal(signal.SIGINT, _handle_import_interrupt)
 if hasattr(signal, "SIGBREAK"):
     signal.signal(signal.SIGBREAK, _handle_import_interrupt)
-
-import argparse  # noqa: E402
-import http.client  # noqa: E402
-import importlib.util  # noqa: E402
-import os  # noqa: E402
-import shlex  # noqa: E402
-import socket  # noqa: E402
-import subprocess  # noqa: E402
-import threading  # noqa: E402
-import time  # noqa: E402
-import webbrowser  # noqa: E402
-from pathlib import Path  # noqa: E402
-
-# Ensure project root is at the head of sys.path so 'backend.*' imports succeed
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 DOTENV_PATH = PROJECT_ROOT / ".env"
 MIN_PYTHON_VERSION = (3, 10)
@@ -57,8 +68,6 @@ def enable_windows_kill_on_close() -> None:
     global _WINDOWS_JOB_HANDLE
     if sys.platform != "win32":
         return
-    import ctypes
-    from ctypes import wintypes
 
     try:
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -141,8 +150,6 @@ def register_windows_ctrl_handler(callback) -> None:
     global _WINDOWS_CTRL_HANDLER_REF
     if sys.platform != "win32":
         return
-    import ctypes
-    from ctypes import wintypes
 
     try:
         HandlerRoutine = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
@@ -377,10 +384,8 @@ def check_dependencies(python_executable: str, env: dict[str, str], auto_install
 def validate_application_import(ansi: Ansi) -> None:
     """Pre-test importing create_app to catch runtime or syntax errors gracefully."""
     try:
-        from backend.app.factory import create_app  # noqa: F401
+        importlib.import_module("backend.app.factory")
     except Exception as exc:
-        import traceback
-
         tb = traceback.format_exc()
         print(
             f"\n{ansi.RED}{ansi.BOLD}[ApexMind Startup Error]{ansi.RESET} Failed to load backend application:\n"
@@ -583,8 +588,8 @@ def main() -> int:
 
     # 8. Start Uvicorn server
     try:
-        import uvicorn
-        from backend.shared.logger import get_uvicorn_log_config
+        if uvicorn is None:
+            raise ImportError("uvicorn is not installed")
 
         uvicorn_extra_args: list[str] = []
         raw_extra = env.get("UVICORN_ARGS", "").strip()
@@ -603,17 +608,17 @@ def main() -> int:
 
         uvicorn.server.Server.handle_exit = hooked_handle_exit
 
-        try:
-            from uvicorn.supervisors.basereload import BaseReload
-            orig_reload_signal = BaseReload.signal_handler
+        if BaseReload is not None:
+            try:
+                orig_reload_signal = BaseReload.signal_handler
 
-            def hooked_reload_signal(self_reload, sig, frame):
-                print_stop_message("Ctrl+C received", ansi=ansi)
-                return orig_reload_signal(self_reload, sig, frame)
+                def hooked_reload_signal(self_reload, sig, frame):
+                    print_stop_message("Ctrl+C received", ansi=ansi)
+                    return orig_reload_signal(self_reload, sig, frame)
 
-            BaseReload.signal_handler = hooked_reload_signal
-        except (ImportError, AttributeError):
-            pass
+                BaseReload.signal_handler = hooked_reload_signal
+            except (AttributeError, Exception):
+                pass
 
         uvicorn.run(
             "backend.main:app",

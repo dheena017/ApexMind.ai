@@ -1,30 +1,32 @@
-import logging
-import json
-import time
 import base64
-from typing import Dict, Any, List
-from .config import settings
+import json
+import logging
+import struct
+import time
+from typing import Any
 
+from google import genai
+from google.genai import types
+
+from .config import settings
 
 logger = logging.getLogger("ApexMind.Gemini")
 
 gemini_client = None
 
-try:
-    from google import genai
-    from google.genai import types
-    if settings.GEMINI_API_KEY:
+if settings.GEMINI_API_KEY:
+    try:
         gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
         logger.info("Google GenAI client initialized successfully.")
-    else:
-        logger.warning("GEMINI_API_KEY is not set.")
-except Exception as e:
-    logger.error(f"Failed to load google.genai: {e}")
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Failed to initialize google.genai client: {e}")
+else:
+    logger.warning("GEMINI_API_KEY is not set.")
 
 DEFAULT_SCRIPT_MODEL = "gemini-2.5-flash"
 
 # Model Registry: Maps model IDs strictly to active, available Google Gemini API models
-SUPPORTED_SCRIPT_MODELS: Dict[str, str] = {
+SUPPORTED_SCRIPT_MODELS: dict[str, str] = {
     # Actively available Google Gemini models
     "gemini-2.5-flash": "gemini-2.5-flash",
     "gemini-2.5-pro": "gemini-2.5-pro",
@@ -44,27 +46,161 @@ def resolve_script_model(model_name: str | None = None) -> str:
         return DEFAULT_SCRIPT_MODEL
     return SUPPORTED_SCRIPT_MODELS.get(model_name.strip().lower(), DEFAULT_SCRIPT_MODEL)
 
+DEFAULT_TTS_MODEL = "gemini-2.5-flash-preview-tts"
+SUPPORTED_TTS_MODELS: dict[str, str] = {
+    "gemini-2.5-flash-preview-tts": "gemini-2.5-flash-preview-tts",
+    "gemini-2.5-flash": "gemini-2.5-flash-preview-tts",
+    "gemini-2.5-pro": "gemini-2.5-flash-preview-tts",
+    "gemini-2.0-flash-preview-tts": "gemini-2.5-flash-preview-tts",
+    "gemini-2.0-flash": "gemini-2.5-flash-preview-tts",
+}
+
+
+def resolve_tts_model(model_name: str | None = None) -> str:
+    """Resolve a supported Gemini TTS model without requiring a hardcoded fallback."""
+    if not model_name:
+        return DEFAULT_TTS_MODEL
+    return SUPPORTED_TTS_MODELS.get(model_name.strip().lower(), DEFAULT_TTS_MODEL)
+
+
+def normalize_voiceover_text(text: str) -> str:
+    """Clean and normalize script text to keep the TTS output stable and natural."""
+    cleaned = " ".join(str(text or "").replace("\r\n", "\n").split())
+    return cleaned.strip()
+
+
+def convert_l16_pcm_to_wav(raw_audio: bytes | str, sample_rate: int = 24000) -> bytes:
+    """Convert raw 16-bit PCM audio into a browser-playable WAV payload."""
+    if isinstance(raw_audio, str):
+        raw_audio = base64.b64decode(raw_audio)
+    if not raw_audio:
+        raise ValueError("Audio payload is empty.")
+
+    data_size = len(raw_audio)
+    byte_rate = sample_rate * 2
+    wav_header = struct.pack(
+        '<4sI4s4sIHHIIHH4sI',
+        b'RIFF',
+        36 + data_size,
+        b'WAVE',
+        b'fmt ',
+        16,
+        1,
+        1,
+        sample_rate,
+        byte_rate,
+        2,
+        16,
+        b'data',
+        data_size,
+    )
+    return wav_header + raw_audio
+
+
+def extract_voiceover_audio(response: Any) -> tuple[bytes, str]:
+    """Extract the inline audio payload from Gemini's TTS response and normalize it for browser playback."""
+    if response is None:
+        raise RuntimeError("Gemini TTS returned no response payload.")
+
+    candidates = getattr(response, "candidates", []) or []
+    for candidate in candidates:
+        content = getattr(candidate, "content", None)
+        parts = getattr(content, "parts", []) or []
+        for part in parts:
+            inline_data = getattr(part, "inline_data", None)
+            if inline_data is None:
+                inline_data = getattr(part, "inlineData", None)
+            if inline_data is None:
+                continue
+            raw_audio = getattr(inline_data, "data", None)
+            mime_type = getattr(inline_data, "mime_type", "audio/wav") or "audio/wav"
+            if raw_audio is None:
+                continue
+            if isinstance(raw_audio, str):
+                raw_audio = base64.b64decode(raw_audio)
+            if "pcm" in mime_type.lower() or "l16" in mime_type.lower():
+                return convert_l16_pcm_to_wav(raw_audio, sample_rate=24000), "audio/wav"
+            return raw_audio, mime_type
+
+    raise RuntimeError("No usable audio inline_data was returned by Gemini TTS.")
+
+
 def generate_gemini_script(
     category: str,
     topic: str,
     tone: str,
     length: str,
-    memory_quotes: List[Dict[str, Any]],
-    model: str = "gemini-2.5-flash"
-) -> Dict[str, Any]:
+    memory_quotes: list[dict[str, Any]],
+    model: str = "gemini-2.5-flash",
+    audio_mood: str | None = None,
+    background_style: str | None = None,
+    text_style: str | None = None,
+    video_style: str | None = None,
+    voice_name: str | None = None,
+    aspect_ratio: str | None = None,
+    music_track: str | None = None,
+    caption_style: str | None = None,
+    visual_theme: str | None = None,
+    motion_style: str | None = None,
+    output_format: str | None = None,
+    creative_context: dict | None = None,
+) -> dict[str, Any]:
     """Generates viral motivational quote scripts via Gemini with memory deduplication."""
     memory_snippets = "\n".join([
         f"- [Title: {q.get('title')}] Quote: {q.get('quote')}"
         for q in memory_quotes[-15:]
     ]) if memory_quotes else "No previous quotes recorded yet."
 
+    selected_context = []
+    for label, value in [
+        ("TONE", tone),
+        ("TARGET LENGTH", length),
+        ("AUDIO MOOD", audio_mood),
+        ("BACKGROUND STYLE", background_style),
+        ("TEXT STYLE", text_style),
+        ("VIDEO STYLE", video_style),
+        ("VOICE", voice_name),
+        ("ASPECT RATIO", aspect_ratio),
+        ("MUSIC TRACK", music_track),
+        ("CAPTION STYLE", caption_style),
+        ("VISUAL THEME", visual_theme),
+        ("MOTION STYLE", motion_style),
+        ("OUTPUT FORMAT", output_format),
+    ]:
+        if value and str(value).strip():
+            selected_context.append(f"{label}: {value}")
+
+    if creative_context:
+        for key, value in creative_context.items():
+            if value is not None and str(value).strip():
+                selected_context.append(f"{key.upper()}: {value}")
+
+    context_block = "\n".join(selected_context) if selected_context else "No specific creative preferences were selected. Let the strongest concept emerge naturally from the prompt."
+    if creative_context:
+        context_block = (
+            f"{context_block}\n\nFULL LIVE CREATIVE CONTEXT JSON:\n"
+            f"{json.dumps(creative_context, ensure_ascii=False, indent=2)}"
+        )
+
     prompt = f"""You are an elite YouTube Shorts motivational writer and virality strategist.
 Produce an inspiring, punchy, retention-optimized motivational quote script.
 
 THEME: {category or 'Stoic Discipline & Relentless Focus'}
 TOPIC: {topic or 'Winning quiet battles, silence over excuses, compounding grit'}
-TONE: {tone or 'Authoritative, calm, stoic, profound'}
-TARGET LENGTH: {length or '30 seconds'}
+
+CURRENT CREATIVE CONTEXT (LIVE WORKSPACE STATE):
+{context_block}
+
+INSTRUCTIONS:
+- The FULL LIVE CREATIVE CONTEXT is the primary source of truth. Treat every non-empty value in the workspace state as intentional user/editor selection and prioritize it above generic defaults.
+- Use the selected values to decide the final audio, background, text, motion, pacing, transitions, subtitle timing, text animation, hook placement, CTA timing, emphasis points, and format combination.
+- If the workspace includes a voice, music, backdrop, caption style, overlay, aspect ratio, motion, or scene structure, reflect that in the generated output instead of inventing generic alternatives.
+- Prioritize shot pacing, transition style, subtitle motion, text animation, camera movement, and scene structure when deciding the final short-form video treatment.
+- Place the strongest emotional hook within the first 1-3 seconds, escalate the message in the middle, and land the CTA in the final 2-4 seconds.
+- Emphasize the key emotional or truth statement with clear visual emphasis and subtitle hierarchy.
+- Do NOT invent placeholder values, do NOT ignore selected creative settings, and do NOT fall back to vague hardcoded defaults when the workspace provides real guidance.
+- If some settings are missing, fill only the missing pieces automatically from the strongest creative logic; never replace existing selected values with generic defaults.
+- Optimize for retention, clarity, and emotional impact for short-form vertical video.
 
 CRITICAL MEMORY & UNIQUENESS CONSTRAINT:
 Your script MUST NOT repeat, paraphrase, or borrow metaphors from any of these previously saved quotes:
@@ -77,8 +213,29 @@ Output MUST be a single raw JSON object with exactly these keys:
   "quote": "A powerful 2-3 sentence motivational monologue",
   "cta": "A sharp 1-sentence closing call-to-action",
   "speechStyle": "Short description of vocal cadence (e.g. Calm, grounded, stoic)",
-  "visualTheme": "Dark Mountain Dawn",
-  "recommendedVoice": "Fenrir",
+  "visualTheme": "Best visual theme matching the message",
+  "recommendedVoice": "Best voice matching the tone",
+  "audioMood": "Best audio mood for the concept",
+  "backgroundStyle": "Best background treatment for the scene",
+  "textStyle": "Best on-screen typography treatment",
+  "videoStyle": "Best video composition and pacing style",
+  "aspectRatio": "Best aspect ratio",
+  "musicTrack": "Best soundtrack style",
+  "captionStyle": "Best caption style",
+  "motionStyle": "Best motion and transition style",
+  "outputFormat": "Best output format",
+  "shotPacing": "How the video should pace the cuts and retention beats",
+  "transitionStyle": "What transition or match-cut language should drive the edits",
+  "subtitleMotion": "How the subtitles should move or appear on screen",
+  "textAnimation": "How key text should animate or reveal itself",
+  "cameraMovement": "How the camera should move or frame the scene",
+  "sceneStructure": {{
+    "hookPlacement": "Where the hook lands in the first seconds",
+    "ctaTiming": "Where the closing CTA lands in timing",
+    "emphasisPoints": ["Primary emotional or truth statement", "Second emphasis beat", "Final payoff line"],
+    "shotPlan": "Short description of the 3-beat hook/escalation/resolution structure",
+    "subtitlePriority": "How subtitles should prioritize the strongest words"
+  }},
   "tags": ["motivation", "discipline", "mindset", "shorts", "stoic"],
   "hashtags": ["#Shorts", "#Motivation", "#Grit"],
   "subtitles": [
@@ -101,7 +258,6 @@ Output MUST be a single raw JSON object with exactly these keys:
     start_t = time.perf_counter()
 
     try:
-        from google.genai import types
         # As recommended by Google GenAI SDK: use Chat.send_message for AFC and content generation
         chat = gemini_client.chats.create(
             model=target_model,
@@ -119,74 +275,45 @@ Output MUST be a single raw JSON object with exactly these keys:
         elapsed = time.perf_counter() - start_t
         logger.info(f"AI Model '{target_model}' generated script in {elapsed:.2f}s | Title: '{result.get('title')}' | Hook: '{result.get('hook')}'")
         return result
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         elapsed = time.perf_counter() - start_t
         logger.error(f"Gemini API generation error after {elapsed:.2f}s: {e}")
         raise RuntimeError(f"Gemini script generation failed: {e}")
 
-EDGE_VOICE_MAP: Dict[str, str] = {
-    "Fenrir": "en-US-ChristopherNeural",   # Deep, stoic, authoritative
-    "Kore": "en-US-JennyNeural",           # Clear, inspiring, authoritative female
-    "Puck": "en-US-GuyNeural",             # Energetic, dynamic motivational male
-    "Zephyr": "en-US-AvaNeural",           # Smooth, calm, mindful female
-    "Charon": "en-US-EricNeural",          # Gritty, intense focus male
-}
-DEFAULT_EDGE_VOICE = "en-US-ChristopherNeural"
 
-def generate_fallback_voiceover(text: str, voice_name: str = "Fenrir") -> Dict[str, Any]:
-    """Synthesizes high-fidelity neural voiceover using Edge Neural TTS when Gemini quota is exhausted."""
-    import io
-    import asyncio
-    import edge_tts
-    
-    edge_voice = EDGE_VOICE_MAP.get(voice_name, DEFAULT_EDGE_VOICE)
-    logger.info(f"Synthesizing high-fidelity neural voiceover fallback | Voice: '{voice_name}' -> '{edge_voice}' | Text Length: {len(text)} chars")
-    start_t = time.perf_counter()
+def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: str | None = None) -> dict[str, Any]:
+    """Generate a proper Gemini-based voiceover using the selected workspace voice.
 
-    async def _stream_edge_audio():
-        communicate = edge_tts.Communicate(text, edge_voice)
-        buffer = io.BytesIO()
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                buffer.write(chunk["data"])
-        return buffer.getvalue()
+    The TTS output is normalized, validated, and converted to a browser-safe WAV payload.
+    """
+    normalized_text = normalize_voiceover_text(text)
+    if not normalized_text:
+        raise ValueError("Text prompt is required to generate voiceover audio.")
 
-    try:
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(lambda: asyncio.run(_stream_edge_audio()))
-            audio_bytes = future.result(timeout=20.0)
-        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
-        elapsed = time.perf_counter() - start_t
-        logger.info(f"Neural TTS fallback synthesized audio in {elapsed:.2f}s for voice '{voice_name}' | bytes={len(audio_bytes)}")
-        return {
-            "success": True,
-            "voiceName": voice_name,
-            "mimeType": "audio/mp3",
-            "audioBase64": audio_b64,
-            "audioUrl": f"data:audio/mp3;base64,{audio_b64}",
-            "fallback": True,
-            "provider": "Edge Neural Engine",
-        }
-    except Exception as e:
-        logger.error(f"Fallback voiceover synthesis failed: {e}")
-        raise RuntimeError(f"Voiceover synthesis failed on all engines: {e}")
+    voice_name = str(voice_name or "").strip()
+    if not voice_name:
+        raise ValueError("A voice name is required to generate voiceover audio.")
 
-def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir", model: str = "gemini-2.5-flash-preview-tts") -> Dict[str, Any]:
-    """Generates audio voiceover via Gemini with seamless Neural TTS fallback on quota exhaustion (429 RESOURCE_EXHAUSTED)."""
     if not gemini_client:
-        logger.warning(f"Voiceover requested for '{voice_name}' but GEMINI_API_KEY is not configured. Using Neural TTS engine.")
-        return generate_fallback_voiceover(text, voice_name)
+        logger.warning(f"Voiceover requested for '{voice_name}' but GEMINI_API_KEY is not configured.")
+        raise ValueError("GEMINI_API_KEY is not configured. Please set GEMINI_API_KEY in your environment to generate voiceover audio.")
 
-    tts_model = model or "gemini-2.5-flash-preview-tts"
-    logger.info(f"Requesting Gemini TTS voiceover synthesis | TTS Model: '{tts_model}' | Voice Persona: '{voice_name}' | Text Length: {len(text)} chars")
+    tts_model = resolve_tts_model(model)
+    logger.info(
+        f"Requesting Gemini TTS voiceover synthesis | Model: '{tts_model}' | "
+        f"Voice: '{voice_name}' | Text Length: {len(normalized_text)} chars"
+    )
     start_t = time.perf_counter()
 
     try:
-        from google.genai import types
+        prompt = (
+            "Narrate this with a polished, cinematic, motivational delivery. "
+            "Keep the pacing natural, the tone charismatic, and the emphasis clear. "
+            f"Script: {normalized_text}"
+        )
         tts_res = gemini_client.models.generate_content(
             model=tts_model,
-            contents=f"Read this motivational script with a powerful, stoic, cinematic voice: {text}",
+            contents=prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
                 speech_config=types.SpeechConfig(
@@ -196,71 +323,30 @@ def generate_gemini_voiceover(text: str, voice_name: str = "Fenrir", model: str 
                         )
                     )
                 ),
-            )
+            ),
         )
-        candidates = getattr(tts_res, "candidates", [])
-        if candidates and candidates[0].content.parts:
-            for part in candidates[0].content.parts:
-                inline = getattr(part, "inline_data", None)
-                if inline and getattr(inline, "data", None):
-                    elapsed = time.perf_counter() - start_t
-                    raw_audio = inline.data
-                    mime = getattr(inline, "mime_type", "audio/wav") or "audio/wav"
-                    
-                    # Convert raw L16 PCM to standard 24kHz 16-bit mono WAV so browsers can play it directly
-                    if "pcm" in mime.lower() or "l16" in mime.lower():
-                        import struct
-                        sample_rate = 24000
-                        if "rate=" in mime:
-                            try:
-                                sample_rate = int(mime.split("rate=")[1].split(";")[0])
-                            except Exception:
-                                sample_rate = 24000
-                        
-                        byte_rate = sample_rate * 2
-                        data_size = len(raw_audio) if isinstance(raw_audio, bytes) else len(base64.b64decode(raw_audio))
-                        pcm_bytes = raw_audio if isinstance(raw_audio, bytes) else base64.b64decode(raw_audio)
-                        wav_header = struct.pack(
-                            '<4sI4s4sIHHIIHH4sI',
-                            b'RIFF',
-                            36 + data_size,
-                            b'WAVE',
-                            b'fmt ',
-                            16,
-                            1,
-                            1,
-                            sample_rate,
-                            byte_rate,
-                            2,
-                            16,
-                            b'data',
-                            data_size
-                        )
-                        raw_audio = wav_header + pcm_bytes
-                        mime = "audio/wav"
 
-                    # Encode bytes to base64 string for JSON transport
-                    if isinstance(raw_audio, bytes):
-                        audio_b64 = base64.b64encode(raw_audio).decode("utf-8")
-                    else:
-                        audio_b64 = raw_audio  # already a string
-                    
-                    logger.info(f"Gemini TTS synthesized audio in {elapsed:.2f}s for voice '{voice_name}' | mime={mime} | b64_len={len(audio_b64)}")
-                    return {
-                        "success": True,
-                        "voiceName": voice_name,
-                        "mimeType": mime,
-                        "audioBase64": audio_b64,
-                        "audioUrl": f"data:{mime};base64,{audio_b64}",
-                    }
-        raise RuntimeError("No audio data returned by Gemini TTS.")
-    except Exception as e:
+        raw_audio, mime_type = extract_voiceover_audio(tts_res)
+        if isinstance(raw_audio, bytes):
+            audio_b64 = base64.b64encode(raw_audio).decode("utf-8")
+        else:
+            audio_b64 = str(raw_audio)
+
         elapsed = time.perf_counter() - start_t
-        error_msg = str(e)
-        logger.warning(
-            f"Gemini TTS unavailable or quota exhausted (429/Error) after {elapsed:.2f}s: {error_msg[:120]}... "
-            f"Seamlessly activating Neural TTS fallback for voice '{voice_name}'."
+        logger.info(
+            f"Gemini TTS synthesized audio in {elapsed:.2f}s for voice '{voice_name}' | "
+            f"mime={mime_type} | b64_len={len(audio_b64)}"
         )
-        return generate_fallback_voiceover(text, voice_name)
+        return {
+            "success": True,
+            "voiceName": voice_name,
+            "mimeType": mime_type,
+            "audioBase64": audio_b64,
+            "audioUrl": f"data:{mime_type};base64,{audio_b64}",
+        }
+    except Exception as e:  # noqa: BLE001
+        elapsed = time.perf_counter() - start_t
+        logger.error(f"Gemini TTS generation failed after {elapsed:.2f}s for voice '{voice_name}': {e}")
+        raise RuntimeError(f"Voiceover synthesis failed: {e}")
 
 

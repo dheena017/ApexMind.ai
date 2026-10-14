@@ -10,8 +10,10 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 import requests
+from googleapiclient.discovery import build
 from backend.database.repository import (
     get_channel_by_id,
+    get_channels,
     update_channel,
     add_channel,
 )
@@ -72,7 +74,6 @@ def normalize_channel_identifier(query: str) -> str:
 def resolve_channel_with_api_key(query: str, api_key: str) -> Optional[Dict[str, Any]]:
     """Tries resolving YouTube channel via official YouTube Data API v3 if key is configured."""
     try:
-        from googleapiclient.discovery import build
         yt = build("youtube", "v3", developerKey=api_key)
 
         clean = normalize_channel_identifier(query)
@@ -657,7 +658,6 @@ def get_channel_analytics(channel_handle_or_id: str) -> Dict[str, Any]:
             handle = ch.get("handle") or ch.get("name")
 
     if not ch:
-        from backend.database.repository import get_channels
         all_ch = get_channels()
         if all_ch:
             ch = all_ch[0]
