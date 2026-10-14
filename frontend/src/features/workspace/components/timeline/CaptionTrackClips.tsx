@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import { LaneSubtitle, SelectedClip } from './timelineTypes';
+import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
 export interface CaptionTrackClipsProps {
   captionLanes: LaneSubtitle[];
@@ -21,6 +22,11 @@ export interface CaptionTrackClipsProps {
   onPointerDownMove: (e: React.PointerEvent<HTMLDivElement>, index: number, start: number, duration: number) => void;
   onPointerDownTrimLeft: (e: React.PointerEvent<HTMLDivElement>, index: number, start: number, duration: number) => void;
   onPointerDownTrimRight: (e: React.PointerEvent<HTMLDivElement>, index: number, start: number, duration: number) => void;
+  // Context menu actions
+  onDeleteCaption?: (index: number) => void;
+  onDuplicateCaption?: (index: number) => void;
+  onSplitCaption?: (index: number) => void;
+  onEditCaption?: (index: number, text: string) => void;
 }
 
 export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
@@ -42,7 +48,30 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
   onPointerDownMove,
   onPointerDownTrimLeft,
   onPointerDownTrimRight,
+  onDeleteCaption,
+  onDuplicateCaption,
+  onSplitCaption,
+  onEditCaption,
 }) => {
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; index: number } | null>(null);
+  const [colorLabels, setColorLabels] = useState<Record<number, string>>({});
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, index: number, start: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelectClip(index, start);
+    setContextMenu({ x: e.clientX, y: e.clientY, index });
+  }, [onSelectClip]);
+
+  const handleColorLabel = useCallback((index: number, color: string) => {
+    setColorLabels((prev) => ({ ...prev, [index]: color }));
+  }, []);
+
+  const handleCopyTimings = useCallback((clip: LaneSubtitle) => {
+    const text = `Start: ${clip.start.toFixed(2)}s | Duration: ${(clip.duration || 3).toFixed(2)}s | End: ${(clip.start + (clip.duration || 3)).toFixed(2)}s | Text: "${clip.text}"`;
+    navigator.clipboard.writeText(text).catch(() => {});
+  }, []);
+
   return (
     <div
       className="border-b border-[#262626] p-1 relative transition-all"
@@ -54,6 +83,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
         const widthPct = Math.max(3, ((clip.duration || 3) / totalDuration) * 100);
         const isSelected = selectedClip?.track === 'caption' && selectedClip.index === index;
         const isEditing = editingClipIndex === index;
+        const clipColor = colorLabels[index] || '';
         // Lane 0 is base row (bottom), higher lanes are positioned ABOVE!
         const topPos = 4 + (captionMaxLane - clip.lane) * (laneHeight + laneGap);
 
@@ -63,19 +93,29 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             onClick={() => onSelectClip(index, clip.start)}
             onDoubleClick={() => onDoubleClickClip(index, clip.text)}
             onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clip.duration || 3)}
+            onContextMenu={(e) => handleContextMenu(e, index, clip.start)}
             className={`absolute rounded-md px-2 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden ${
               isSelected
-                ? 'timeline-clip-selected-blue bg-[#3B82F6]/75 border-[#60A5FA] text-white z-20 ring-2 ring-[#60A5FA]/90 shadow-xl'
-                : 'bg-[#1E293B]/85 hover:bg-[#1E293B] border-blue-500/40 text-blue-100 hover:border-blue-400/70 z-10'
+                ? 'bg-[#1A1A1A] border-[#3A3A3A] text-white z-20 outline outline-1 outline-[#3A3A3A]'
+                : 'bg-[#1A1A1A]/80 hover:bg-[#1C1C1C] border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
             }`}
             style={{
               left: `${startPct}%`,
               width: `${widthPct}%`,
               top: `${topPos}px`,
               height: `${laneHeight}px`,
+              ...(clipColor ? { boxShadow: `inset 0 0 0 2px ${clipColor}40, 0 0 0 1px ${clipColor}` } : {}),
             }}
-            title={`"${clip.text}" (${clip.lane > 0 ? `Layer ${clip.lane + 1} (Above)` : 'Base Layer'}) - Drag to move or trim`}
+            title={`"${clip.text}" (${clip.lane > 0 ? `Layer ${clip.lane + 1} (Above)` : 'Base Layer'}) - Drag to move or trim. Right-click for options.`}
           >
+            {/* Color Label Strip */}
+            {clipColor && (
+              <div
+                className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
+                style={{ background: clipColor }}
+              />
+            )}
+
             {/* Left Trim Handle */}
             {!captionsTrackLocked && (
               <div
@@ -137,6 +177,49 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
           </div>
         );
       })}
+
+      {/* Per-clip Right-click Context Menu (rendered outside clip divs to avoid overflow clipping) */}
+      {contextMenu !== null && (() => {
+        const clip = captionLanes.find((c) => c.origIndex === contextMenu.index);
+        return (
+          <TimelineClipContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            trackType="caption"
+            isVisible
+            isLocked={captionsTrackLocked}
+            onClose={() => setContextMenu(null)}
+            onDelete={
+              !captionsTrackLocked && onDeleteCaption
+                ? () => { onDeleteCaption(contextMenu.index); setContextMenu(null); }
+                : undefined
+            }
+            onDuplicate={
+              !captionsTrackLocked && onDuplicateCaption
+                ? () => { onDuplicateCaption(contextMenu.index); setContextMenu(null); }
+                : undefined
+            }
+            onSplit={
+              !captionsTrackLocked && onSplitCaption
+                ? () => { onSplitCaption(contextMenu.index); setContextMenu(null); }
+                : undefined
+            }
+            onRename={
+              !captionsTrackLocked && onEditCaption && clip
+                ? () => { onEditCaption(contextMenu.index, clip.text); setContextMenu(null); }
+                : undefined
+            }
+            onColorLabel={
+              !captionsTrackLocked
+                ? (color) => { handleColorLabel(contextMenu.index, color); setContextMenu(null); }
+                : undefined
+            }
+            onCopyTimings={
+              clip ? () => { handleCopyTimings(clip); setContextMenu(null); } : undefined
+            }
+          />
+        );
+      })()}
     </div>
   );
 };

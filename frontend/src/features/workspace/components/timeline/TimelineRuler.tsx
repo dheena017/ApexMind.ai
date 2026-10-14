@@ -13,8 +13,9 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
 }) => {
   return (
     <div
-      className="h-6 border-b border-[#262626] bg-[#141414] relative cursor-pointer"
+      className="h-6 border-b border-[#262626] bg-[#141414] relative cursor-ew-resize select-none"
       onPointerDown={onRulerPointerDown}
+      title="Click or drag ruler to scrub playhead"
     >
       {ticks.map((t, idx) => {
         const pct = (t / totalDuration) * 100;

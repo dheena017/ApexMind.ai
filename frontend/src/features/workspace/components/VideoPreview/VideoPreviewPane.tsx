@@ -4,6 +4,45 @@ import { GeneratedScript, VisualBackdrop, BackdropFilterSettings } from '../../t
 import { CanvasSafeZonesOverlay } from './CanvasSafeZonesOverlay';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
+// Timeline state broadcast from StudioTimelinePane
+interface TimelineState {
+  videoVisible: boolean;
+  imageVisible: boolean;
+  overlayVisible: boolean;
+  captionsVisible: boolean;
+  titleVisible: boolean;
+  voiceMuted: boolean;
+  musicMuted: boolean;
+  videoStart: number;
+  videoDuration: number;
+  videoEnabled: boolean;
+  overlayStart: number;
+  overlayDuration: number;
+  titleStart: number;
+  titleDuration: number;
+  imageStart?: number;
+  imageDuration?: number;
+}
+
+const DEFAULT_TIMELINE_STATE: TimelineState = {
+  videoVisible: true,
+  imageVisible: true,
+  overlayVisible: true,
+  captionsVisible: true,
+  titleVisible: true,
+  voiceMuted: false,
+  musicMuted: false,
+  videoStart: 0,
+  videoDuration: 30,
+  videoEnabled: true,
+  imageStart: 0,
+  imageDuration: 8.0,
+  overlayStart: 0,
+  overlayDuration: 30,
+  titleStart: 0,
+  titleDuration: 30,
+};
+
 interface VideoPreviewPaneProps {
   script: GeneratedScript;
   activeBackdrop?: VisualBackdrop | null;
@@ -109,6 +148,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const subtitleRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
 
   const [selectedLayer, setSelectedLayer] = useState<'subtitle' | 'title' | 'overlay' | 'backdrop' | null>(null);
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
@@ -116,6 +156,43 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const [backdropFlipV, setBackdropFlipV] = useState(false);
   const [, setBackdropRotation] = useState(0);
   const [backdropFitMode, setBackdropFitMode] = useState<'fill' | 'fit' | 'crop'>('fill');
+
+  // ── Timeline state (live sync from StudioTimelinePane events) ─────────
+  const [timelineState, setTimelineState] = useState<TimelineState>(DEFAULT_TIMELINE_STATE);
+
+  useEffect(() => {
+    const handleTimelineState = (e: Event) => {
+      const detail = (e as CustomEvent<Partial<TimelineState>>).detail;
+      if (detail) {
+        setTimelineState((prev) => ({ ...prev, ...detail }));
+      }
+    };
+    window.addEventListener('workspace:timeline-state', handleTimelineState);
+    return () => window.removeEventListener('workspace:timeline-state', handleTimelineState);
+  }, []);
+
+  // ── Frame-Accurate Playhead Sync: Check which clip is active under currentTime ──
+  const isVideoTimeActive = currentTime >= timelineState.videoStart &&
+    currentTime <= (timelineState.videoStart + timelineState.videoDuration);
+
+  const imageStart = timelineState.imageStart ?? 0;
+  const imageDuration = timelineState.imageDuration ?? 8.0;
+  const isImageTimeActive = currentTime >= imageStart &&
+    currentTime <= (imageStart + imageDuration);
+
+  const isOverlayTimeActive = currentTime >= timelineState.overlayStart &&
+    currentTime <= (timelineState.overlayStart + timelineState.overlayDuration);
+
+  const isTitleTimeActive = currentTime >= timelineState.titleStart &&
+    currentTime <= (timelineState.titleStart + timelineState.titleDuration);
+
+  // Track enabled & visible states
+  const videoEnabled = timelineState.videoVisible !== false;
+  const imageEnabled = timelineState.imageVisible !== false;
+  const overlayEnabled = timelineState.overlayVisible !== false;
+  const titleEnabled = timelineState.titleVisible !== false;
+  const captionsEnabled = timelineState.captionsVisible !== false;
+
 
   const handleSelectLayer = (e: React.MouseEvent, layer: 'subtitle' | 'title' | 'overlay' | 'backdrop') => {
     e.stopPropagation();
@@ -251,26 +328,47 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   }, []);
 
   const theme = (activeBackdrop?.id && BACKDROP_THEMES[activeBackdrop.id]) || null;
-  const activeVideo = customVideoUrl;
+  const activeVideo = customVideoUrl || activeBackdrop?.videoUrl || (activeBackdrop?.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined);
   const activeImage = customImageUrl || filterSettings.customImageUrl || (activeBackdrop?.imageUrl || theme?.imageUrl || undefined);
 
-  // Active subtitle text matching current playback position
+  // Determine whether video or image layer is shown under the current playhead
+  const showVideoLayer = Boolean(activeVideo) && videoEnabled && isVideoTimeActive;
+  const showImageLayer = Boolean(activeImage) && imageEnabled && isImageTimeActive;
+
+  // Sync video element time and play/pause state with timeline currentTime
+  useEffect(() => {
+    const video = videoElementRef.current;
+    if (!video) return;
+
+    if (showVideoLayer) {
+      const offset = Math.max(0, currentTime - timelineState.videoStart);
+      if (Math.abs(video.currentTime - offset) > 0.25) {
+        video.currentTime = offset;
+      }
+      if (isPlaying) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    } else {
+      video.pause();
+    }
+  }, [currentTime, isPlaying, showVideoLayer, timelineState.videoStart]);
+
+  // Active subtitle text matching current playhead position
   const activeSubtitle = (() => {
     if (!script.subtitles || script.subtitles.length === 0) {
-      return script.quote || script.hook || '';
+      return '';
     }
     const current = script.subtitles.find(
       (s) => currentTime >= s.start && currentTime <= s.start + (s.duration || 3)
     );
     if (current) return current.text;
-    if (currentTime > 0 && script.subtitles.length > 0) {
-      return script.cta || script.subtitles[script.subtitles.length - 1].text;
-    }
     return '';
   })();
 
   const currentTitle = script.title?.trim() || '';
-  const currentSubtitle = (activeSubtitle || script.quote || '').trim();
+  const currentSubtitle = activeSubtitle.trim();
 
   // Caption font size styling map
   const captionSizeClass = {
@@ -326,18 +424,22 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           }}
         />
 
-        {/* Layer 1b: Visual Backdrop — interactive layer with Moveable (resize, move, rotate) */}
-        {activeVideo ? (
+        {/* Layer 1b: Video Layer (V1) - strictly visible when playhead is in video clip */}
+        {activeVideo && (
           <div
             ref={backdropRef}
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
             onDoubleClick={handleResetBackdrop}
-            className="absolute inset-0 z-10 overflow-hidden cursor-move select-none"
-            title="Video Layer • Click to select & resize/move, double-click to reset"
+            className="absolute inset-0 z-10 overflow-hidden cursor-move select-none transition-opacity duration-150"
+            style={{
+              opacity: showVideoLayer ? 1 : 0,
+              pointerEvents: showVideoLayer ? 'auto' : 'none',
+            }}
+            title="Video Layer (V1) • Click to select & resize/move"
           >
             <video
+              ref={videoElementRef}
               src={activeVideo}
-              autoPlay
               loop
               muted
               playsInline
@@ -348,7 +450,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 transform: `${backdropFlipH ? 'scaleX(-1)' : ''} ${backdropFlipV ? 'scaleY(-1)' : ''}`.trim() || undefined,
               }}
             />
-            {/* Vignette Depth — only when explicitly adjusted by user */}
+            {/* Vignette Depth */}
             {filterSettings.vignette > 0 && (
               <div
                 className="absolute inset-0 pointer-events-none transition-opacity"
@@ -358,17 +460,26 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               />
             )}
           </div>
-        ) : activeImage ? (
+        )}
+
+        {/* Layer 1c: Image Layer (V2) - strictly visible when playhead is in image clip */}
+        {activeImage && (
           <div
             ref={backdropRef}
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
             onDoubleClick={handleResetBackdrop}
-            className="absolute inset-0 z-10 overflow-hidden cursor-move select-none"
-            title="Image Layer • Click to select & resize/move, double-click to reset"
+            className="absolute inset-0 z-10 overflow-hidden cursor-move select-none transition-opacity duration-150"
+            style={{
+              opacity: showImageLayer ? 1 : 0,
+              pointerEvents: showImageLayer ? 'auto' : 'none',
+            }}
+            title="Image Layer (V2) • Click to select & resize/move"
           >
             <img
               src={activeImage}
               alt={activeBackdrop?.name || 'Visual Backdrop'}
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
               className={`w-full h-full pointer-events-none transition-all duration-300 ${
                 backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
               } object-center opacity-100`}
@@ -380,7 +491,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               }}
               loading="eager"
             />
-            {/* Vignette Depth — only when explicitly adjusted by user */}
+            {/* Vignette Depth */}
             {filterSettings.vignette > 0 && (
               <div
                 className="absolute inset-0 pointer-events-none transition-opacity"
@@ -390,7 +501,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               />
             )}
           </div>
-        ) : null}
+        )}
 
         {/* Dynamic Canvas Progress Bar Overlay */}
         {activeElementOverlay?.type === 'progress' && (
@@ -405,8 +516,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         )}
 
         {/* ── Title Header ────────────────────────────────────────────── */}
-        {Boolean(currentTitle) && (
-          <div className="relative z-20 px-3 pt-6 pb-0.5 flex justify-center pointer-events-none">
+        {Boolean(currentTitle) && titleEnabled && isTitleTimeActive && (
+          <div className="relative z-20 px-3 pt-6 pb-0.5 flex justify-center pointer-events-none transition-opacity duration-200">
             <div
               ref={titleRef}
               onClick={(e) => handleSelectLayer(e, 'title')}
@@ -427,7 +538,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
         {/* Dynamic Motivational Badge Overlay */}
         {activeElementOverlay?.type === 'badge' && (
-          <div className="relative z-20 flex justify-center pb-1 pointer-events-none">
+          <div
+            className="relative z-20 flex justify-center pb-1 pointer-events-none transition-opacity duration-200"
+            style={{ opacity: (overlayEnabled && isOverlayTimeActive) ? 1 : 0 }}
+          >
             <div
               ref={overlayRef}
               onClick={(e) => handleSelectLayer(e, 'overlay')}
@@ -445,18 +559,19 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={overlayRef}
             onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute top-10 right-3.5 z-20 text-3xl cursor-move select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
+            className="absolute top-10 right-3.5 z-20 text-3xl cursor-move select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
+            style={{ opacity: (overlayEnabled && isOverlayTimeActive) ? 1 : 0 }}
           >
             {activeElementOverlay.value}
           </div>
         )}
 
         {/* ── Subtitle / Quote Dynamic Stage ─────────────────────────── */}
-        {Boolean(currentSubtitle) && (
+        {Boolean(currentSubtitle) && captionsEnabled && (
           <div
             ref={subtitleRef}
             onClick={(e) => handleSelectLayer(e, 'subtitle')}
-            className="absolute left-1/2 -translate-x-1/2 z-20 w-fit max-w-[88%] flex flex-col items-center justify-center cursor-move select-none p-2"
+            className="absolute left-1/2 -translate-x-1/2 z-20 w-fit max-w-[88%] flex flex-col items-center justify-center cursor-move select-none p-2 transition-opacity duration-150"
             style={{
               top: `${subtitleYPercent}%`,
             }}

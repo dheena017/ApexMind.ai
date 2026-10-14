@@ -276,27 +276,67 @@ export default function WorkspacePage({
     }
   };
 
-  // Play / Pause Audio
-  const togglePlay = () => {
-    if (!audioRef.current) return;
+  // Universal Studio Playback Engine
+  useEffect(() => {
+    if (!isPlaying) return;
+    // If audio is actively playing, audio event listener handles time updates
+    if (audioRef.current && audioUrl && !audioRef.current.paused) return;
 
+    const maxTime = duration > 0 ? duration : 30;
+    let lastTs = performance.now();
+    let animId: number;
+
+    const tick = (now: number) => {
+      const deltaSec = ((now - lastTs) / 1000) * playbackRate;
+      lastTs = now;
+
+      setCurrentTime((prev) => {
+        const next = prev + deltaSec;
+        if (next >= maxTime) {
+          if (isLooping) {
+            return 0;
+          } else {
+            setIsPlaying(false);
+            return maxTime;
+          }
+        }
+        return next;
+      });
+
+      animId = requestAnimationFrame(tick);
+    };
+
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, [isPlaying, duration, playbackRate, isLooping, audioUrl]);
+
+  // Play / Pause Audio & Timeline Playhead
+  const togglePlay = () => {
     if (isPlaying) {
-      audioRef.current.pause();
       setIsPlaying(false);
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+      }
     } else {
-      if (!audioUrl) {
-        handleSynthesizeVoice();
-      } else {
-        audioRef.current.play();
-        setIsPlaying(true);
+      const maxTime = duration > 0 ? duration : 30;
+      if (currentTime >= maxTime - 0.1) {
+        handleSeek(0);
+      }
+      setIsPlaying(true);
+      if (audioRef.current && audioUrl) {
+        audioRef.current.play().catch(() => {});
       }
     }
   };
 
+  // Seek playhead (functional across full timeline even without audio synthesized yet)
   const handleSeek = (newTime: number) => {
-    if (!audioRef.current || duration <= 0) return;
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
+    const maxTime = duration > 0 ? duration : 30;
+    const clamped = Math.max(0, Math.min(maxTime, parseFloat(newTime.toFixed(2))));
+    setCurrentTime(clamped);
+    if (audioRef.current && duration > 0 && !Number.isNaN(audioRef.current.duration)) {
+      audioRef.current.currentTime = clamped;
+    }
   };
 
   const handleVolumeChange = (nextVolume: number) => {
@@ -781,6 +821,8 @@ export default function WorkspacePage({
             customImageUrl={customBackdropImage}
             customVideoUrl={customBackdropVideo}
             activeElementOverlay={activeElementOverlay}
+            voices={voices}
+            musicTracks={musicTracks}
             onSelectCompound={(compound) => {
               setShowRightPane(true);
               setActiveCompound(compound as CompoundType);

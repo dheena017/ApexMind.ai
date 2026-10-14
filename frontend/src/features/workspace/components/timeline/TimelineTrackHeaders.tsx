@@ -78,7 +78,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         <div
           onClick={() => onSelectClip({ track: 'video' }, 'video')}
           className={`h-10 border-b border-[#262626] flex items-center justify-between px-2.5 text-xs text-white cursor-pointer transition-colors ${
-            selectedClip?.track === 'video' ? 'bg-amber-950/20' : 'hover:bg-white/[0.02]'
+            selectedClip?.track === 'video' ? 'bg-[#1B1B1B]' : 'hover:bg-white/[0.02]'
           }`}
         >
           <div className="flex items-center gap-1.5 truncate">
@@ -104,7 +104,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         <div
           onClick={() => onSelectClip({ track: 'image' }, 'video')}
           className={`h-10 border-b border-[#262626] flex items-center justify-between px-2.5 text-xs text-white cursor-pointer transition-colors ${
-            selectedClip?.track === 'image' ? 'bg-rose-950/20' : 'hover:bg-white/[0.02]'
+            selectedClip?.track === 'image' ? 'bg-[#1B1B1B]' : 'hover:bg-white/[0.02]'
           }`}
         >
           <div className="flex items-center gap-1.5 truncate">
@@ -130,7 +130,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         <div
           onClick={() => onSelectClip({ track: 'overlay' }, 'overlay')}
           className={`h-10 border-b border-[#262626] flex items-center justify-between px-2.5 text-xs text-white cursor-pointer transition-colors ${
-            selectedClip?.track === 'overlay' ? 'bg-indigo-950/20' : 'hover:bg-white/[0.02]'
+            selectedClip?.track === 'overlay' ? 'bg-[#1B1B1B]' : 'hover:bg-white/[0.02]'
           }`}
         >
           <div className="flex items-center gap-1.5 truncate">

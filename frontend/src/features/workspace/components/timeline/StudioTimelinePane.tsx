@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { Type } from 'lucide-react';
 import { ScriptSubtitle } from '../../types';
 import {
   StudioTimelinePaneProps,
@@ -16,6 +17,7 @@ import { ImageTrackClip } from './ImageTrackClip';
 import { OverlayTrackClip } from './OverlayTrackClip';
 import { CaptionTrackClips } from './CaptionTrackClips';
 import { AudioTrackClip } from './AudioTrackClip';
+import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
 export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   currentTime,
@@ -33,6 +35,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   customVideoUrl,
   activeElementOverlay,
   onSelectCompound,
+  voices = [],
+  musicTracks = [],
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
@@ -112,6 +116,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   useEffect(() => {
     if (customImageUrl) {
       setEnabledTracks((prev) => ({ ...prev, image: true }));
+      setImageTrackVisible(true);
     }
   }, [customImageUrl]);
 
@@ -138,6 +143,55 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       setVoiceDuration(duration);
     }
   }, [duration]);
+
+  // ── Broadcast timeline state to VideoPreviewPane via CustomEvent ──────
+  // Fired whenever any visibility/mute/trim/enabled state changes so the
+  // preview canvas can reflect the current timeline configuration in real time.
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('workspace:timeline-state', {
+        detail: {
+          // Visibility / enabled
+          videoVisible: enabledTracks.video && videoTrackVisible,
+          imageVisible: enabledTracks.image && imageTrackVisible,
+          overlayVisible: enabledTracks.overlay && overlayTrackVisible,
+          captionsVisible: enabledTracks.captions,
+          titleVisible: enabledTracks.title,
+          // Mute
+          voiceMuted: voiceTrackMuted || !enabledTracks.voice,
+          musicMuted: musicTrackMuted || !enabledTracks.music,
+          // Clip timing (for trim offset playback)
+          videoStart,
+          videoDuration,
+          videoEnabled: enabledTracks.video,
+          imageStart,
+          imageDuration,
+          overlayStart,
+          overlayDuration,
+          titleStart,
+          titleDuration,
+          // Track enabled flags
+          enabledTracks,
+        },
+      })
+    );
+  }, [
+    enabledTracks,
+    videoTrackVisible,
+    imageTrackVisible,
+    overlayTrackVisible,
+    voiceTrackMuted,
+    musicTrackMuted,
+    videoStart,
+    videoDuration,
+    imageStart,
+    imageDuration,
+    overlayStart,
+    overlayDuration,
+    titleStart,
+    titleDuration,
+  ]);
+
 
   // Magnetic Snapping Calculation Helper
   const calculateSnap = (
@@ -204,12 +258,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         e.preventDefault();
         onTogglePlay();
       } else if (e.code === 'Delete' || e.code === 'Backspace') {
-        if (selectedClip?.track === 'caption' && !captionsTrackLocked) {
+        if (selectedClip) {
           e.preventDefault();
           handleDeleteClip();
         }
       } else if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyD' || e.key === 'd')) {
-        if (selectedClip?.track === 'caption' && !captionsTrackLocked) {
+        if (selectedClip) {
           e.preventDefault();
           handleDuplicateClip();
         }
@@ -484,10 +538,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     onUpdateSubtitles,
   ]);
 
-  // Split selected caption at current playhead time
+  // Split selected clip at current playhead time
   const handleSplitClip = () => {
-    if (!selectedClip || captionsTrackLocked) return;
-    if (selectedClip.track === 'caption') {
+    if (!selectedClip) return;
+    if (selectedClip.track === 'caption' && !captionsTrackLocked) {
       const clip = localClips[selectedClip.index];
       if (!clip) return;
       const clipEnd = clip.start + (clip.duration || 3);
@@ -512,13 +566,34 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         onUpdateSubtitles?.(updated);
         setSelectedClip({ track: 'caption', index: selectedClip.index + 1 });
       }
+    } else if (selectedClip.track === 'video') {
+      if (currentTime > videoStart + 0.5 && currentTime < videoStart + videoDuration - 0.5) {
+        setVideoDuration(parseFloat((currentTime - videoStart).toFixed(2)));
+      }
+    } else if (selectedClip.track === 'image') {
+      if (currentTime > imageStart + 0.5 && currentTime < imageStart + imageDuration - 0.5) {
+        setImageDuration(parseFloat((currentTime - imageStart).toFixed(2)));
+      }
+    } else if (selectedClip.track === 'overlay') {
+      if (currentTime > overlayStart + 0.5 && currentTime < overlayStart + overlayDuration - 0.5) {
+        setOverlayDuration(parseFloat((currentTime - overlayStart).toFixed(2)));
+      }
+    } else if (selectedClip.track === 'voice') {
+      if (currentTime > voiceStart + 0.5 && currentTime < voiceStart + voiceDuration - 0.5) {
+        setVoiceDuration(parseFloat((currentTime - voiceStart).toFixed(2)));
+      }
+    } else if (selectedClip.track === 'music') {
+      if (currentTime > musicStart + 0.5 && currentTime < musicStart + musicDuration - 0.5) {
+        setMusicDuration(parseFloat((currentTime - musicStart).toFixed(2)));
+      }
     }
   };
 
-  // Duplicate selected caption
+  // Duplicate selected clip
   const handleDuplicateClip = () => {
-    if (!selectedClip || captionsTrackLocked) return;
+    if (!selectedClip) return;
     if (selectedClip.track === 'caption') {
+      if (captionsTrackLocked) return;
       const clip = localClips[selectedClip.index];
       if (!clip) return;
       const newStart = parseFloat((clip.start + (clip.duration || 3) + 0.1).toFixed(2));
@@ -531,6 +606,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       setLocalClips(updated);
       onUpdateSubtitles?.(updated);
       setSelectedClip({ track: 'caption', index: updated.indexOf(duplicated) });
+    } else if (selectedClip.track === 'video') {
+      handleVideoDuplicate();
+    } else if (selectedClip.track === 'image') {
+      handleImageDuplicate();
+    } else if (selectedClip.track === 'overlay') {
+      handleOverlayDuplicate();
     }
   };
 
@@ -549,16 +630,147 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setSelectedClip({ track: 'caption', index: updated.indexOf(newClip) });
   };
 
-  // Delete selected clip
+  // Delete selected clip (all tracks supported)
   const handleDeleteClip = () => {
-    if (!selectedClip || captionsTrackLocked) return;
+    if (!selectedClip) return;
     if (selectedClip.track === 'caption') {
+      if (captionsTrackLocked) return;
       const updated = localClips.filter((_, idx) => idx !== selectedClip.index);
       setLocalClips(updated);
       onUpdateSubtitles?.(updated);
       setSelectedClip(null);
       setEditingClipIndex(null);
+    } else if (selectedClip.track === 'video') {
+      handleVideoDelete();
+    } else if (selectedClip.track === 'image') {
+      handleImageDelete();
+    } else if (selectedClip.track === 'overlay') {
+      handleOverlayDelete();
+    } else if (selectedClip.track === 'voice') {
+      handleVoiceDelete();
+    } else if (selectedClip.track === 'music') {
+      handleMusicDelete();
+    } else if (selectedClip.track === 'title') {
+      handleTitleDelete();
+    } else if (selectedClip.track === 'sfx') {
+      handleSfxDelete();
     }
+  };
+
+  // ── Context menu handlers for non-caption tracks ──────────────────
+
+  // Video track
+  const handleVideoDelete = () => {
+    setEnabledTracks((p) => ({ ...p, video: false }));
+    setSelectedClip(null);
+  };
+  const handleVideoDuplicate = () => {
+    // Offset duplicate slightly for visual distinction
+    setVideoStart((s) => Math.min(totalDuration - videoDuration, s + 0.5));
+  };
+  const handleVideoZoom = () => {
+    const ratio = (videoDuration / totalDuration) * 3;
+    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+  };
+
+  // Overlay track
+  const handleOverlayDelete = () => {
+    setEnabledTracks((p) => ({ ...p, overlay: false }));
+    setSelectedClip(null);
+  };
+  const handleOverlayDuplicate = () => {
+    setOverlayStart((s) => Math.min(totalDuration - overlayDuration, s + 0.5));
+  };
+  const handleOverlayZoom = () => {
+    const ratio = (overlayDuration / totalDuration) * 3;
+    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+  };
+
+  // Voice track
+  const handleVoiceDelete = () => {
+    setEnabledTracks((p) => ({ ...p, voice: false }));
+    setSelectedClip(null);
+  };
+  const handleVoiceZoom = () => {
+    const ratio = (voiceDuration / totalDuration) * 3;
+    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+  };
+
+  // Music track
+  const handleMusicDelete = () => {
+    setEnabledTracks((p) => ({ ...p, music: false }));
+    setSelectedClip(null);
+  };
+  const handleMusicZoom = () => {
+    const ratio = (musicDuration / totalDuration) * 3;
+    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+  };
+
+  // SFX track
+  const handleSfxDelete = () => {
+    setEnabledTracks((p) => ({ ...p, sfx: false }));
+    setSelectedClip(null);
+  };
+
+  // Image track
+  const handleImageDelete = () => {
+    setEnabledTracks((p) => ({ ...p, image: false }));
+    setSelectedClip(null);
+  };
+  const handleImageDuplicate = () => {
+    setImageStart((s) => Math.min(totalDuration - imageDuration, s + 0.5));
+  };
+  const handleImageZoom = () => {
+    const ratio = (imageDuration / totalDuration) * 3;
+    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+  };
+
+  // Title track
+  const [titleContextMenu, setTitleContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [titleColorLabel, setTitleColorLabel] = useState<string>('');
+  const handleTitleDelete = () => {
+    setEnabledTracks((p) => ({ ...p, title: false }));
+    setSelectedClip(null);
+  };
+  const handleTitleZoom = () => {
+    const ratio = (titleDuration / totalDuration) * 3;
+    setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
+  };
+
+  // Caption context menu actions (index-aware wrappers)
+  const handleDeleteCaptionByIndex = (index: number) => {
+    if (captionsTrackLocked) return;
+    const updated = localClips.filter((_, idx) => idx !== index);
+    setLocalClips(updated);
+    onUpdateSubtitles?.(updated);
+    setSelectedClip(null);
+    setEditingClipIndex(null);
+  };
+  const handleDuplicateCaptionByIndex = (index: number) => {
+    if (captionsTrackLocked) return;
+    const clip = localClips[index];
+    if (!clip) return;
+    const newStart = parseFloat((clip.start + (clip.duration || 3) + 0.1).toFixed(2));
+    const duplicated: ScriptSubtitle = {
+      text: `${clip.text} (Copy)`,
+      start: newStart,
+      duration: clip.duration || 3,
+    };
+    const updated = [...localClips, duplicated].sort((a, b) => a.start - b.start);
+    setLocalClips(updated);
+    onUpdateSubtitles?.(updated);
+    setSelectedClip({ track: 'caption', index: updated.indexOf(duplicated) });
+  };
+  const handleSplitCaptionByIndex = (index: number) => {
+    if (captionsTrackLocked) return;
+    setSelectedClip({ track: 'caption', index });
+    // Re-use existing split logic (it reads selectedClip which we just set)
+    setTimeout(handleSplitClip, 0);
+  };
+  const handleEditCaptionByIndex = (index: number, text: string) => {
+    if (captionsTrackLocked) return;
+    setEditingClipIndex(index);
+    setEditingText(text);
   };
 
   // Save inline edited subtitle
@@ -579,6 +791,23 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const hasVoice = Boolean(audioUrl);
   const hasMusic = Boolean(selectedMusic);
   const hasTitle = Boolean(script.title);
+
+  // Dynamic voice profile resolution from loaded voices
+  const activeVoiceObj = voices.find((v) => v.id === selectedVoice || v.name === selectedVoice);
+  const voiceLabel = activeVoiceObj
+    ? `Voice: ${activeVoiceObj.name} (${activeVoiceObj.gender} • ${activeVoiceObj.style || 'Neural TTS'})`
+    : `Voice: ${selectedVoice || 'Neural Voice'} (AI TTS Waves)`;
+
+  // Dynamic soundtrack resolution from loaded music tracks
+  const activeMusicObj = musicTracks.find((m) => m.id === selectedMusic);
+  const musicLabel = activeMusicObj
+    ? `Soundtrack: ${activeMusicObj.title} (${activeMusicObj.genre || 'Score'})`
+    : selectedMusic
+    ? 'Soundtrack: Selected Mix (Looping Bed)'
+    : 'Ambient Motivation (Soundtrack)';
+  const musicSubLabel = activeMusicObj?.duration
+    ? `${activeMusicObj.duration} • -14 dB Studio Mix`
+    : '-14 dB Studio Mix';
 
   // Total active compounds actually containing clips
   const activeCompoundsCount = [
@@ -721,6 +950,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           origDuration: videoDuration,
                         });
                       }}
+                      onDelete={handleVideoDelete}
+                      onDuplicate={handleVideoDuplicate}
+                      onSplit={handleSplitClip}
+                      onHide={() => setVideoTrackVisible(!videoTrackVisible)}
+                      onZoomToClip={handleVideoZoom}
                     />
                   ) : (
                     <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
@@ -771,6 +1005,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           origDuration: imageDuration,
                         });
                       }}
+                      onDelete={handleImageDelete}
+                      onDuplicate={handleImageDuplicate}
+                      onSplit={handleSplitClip}
+                      onHide={() => setImageTrackVisible(!imageTrackVisible)}
+                      onZoomToClip={handleImageZoom}
                     />
                   ) : (
                     <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
@@ -820,6 +1059,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           origDuration: overlayDuration,
                         });
                       }}
+                      onDelete={handleOverlayDelete}
+                      onDuplicate={handleOverlayDuplicate}
+                      onSplit={handleSplitClip}
+                      onHide={() => setOverlayTrackVisible(!overlayTrackVisible)}
+                      onZoomToClip={handleOverlayZoom}
                     />
                   ) : (
                     <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
@@ -888,19 +1132,17 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           origDuration: dur,
                         });
                       }}
+                      onDeleteCaption={handleDeleteCaptionByIndex}
+                      onDuplicateCaption={handleDuplicateCaptionByIndex}
+                      onSplitCaption={handleSplitCaptionByIndex}
+                      onEditCaption={handleEditCaptionByIndex}
                     />
                   ) : (
                     <div
-                      className="border-b border-[#262626] p-1 relative flex items-center"
+                      className="relative border-b border-[#262626]"
                       style={{ height: captionTrackHeight }}
                     >
-                      <div
-                        onClick={handleAddCaption}
-                        className="h-full w-full rounded-md border border-dashed border-[#262626] hover:border-[#3B82F6]/60 flex items-center justify-center cursor-pointer transition-colors text-[10px] text-neutral-500 hover:text-neutral-300 font-mono-studio"
-                        title="Click to add first caption"
-                      >
-                        + Click to add caption cue
-                      </div>
+                      <div className="absolute inset-x-0 top-0 h-px bg-[#2D2D2D]" />
                     </div>
                   )
                 )}
@@ -921,6 +1163,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origDuration: titleDuration,
                           });
                         }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          handleSelectClip({ track: 'title' });
+                          setTitleContextMenu({ x: e.clientX, y: e.clientY });
+                        }}
                         className={`h-full rounded-md px-2.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-colors relative overflow-hidden ${
                           selectedClip?.track === 'title'
                             ? 'bg-sky-950/70 border-sky-400 text-sky-100 z-20 ring-2 ring-sky-400/80'
@@ -929,15 +1176,42 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                         style={{
                           left: `${(titleStart / totalDuration) * 100}%`,
                           width: `${Math.min(100, (titleDuration / totalDuration) * 100)}%`,
+                          ...(titleColorLabel ? { boxShadow: `inset 0 0 0 2px ${titleColorLabel}40, 0 0 0 1px ${titleColorLabel}` } : {}),
                         }}
                       >
-                        <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none pl-1">
-                          Title: "{script.title || 'Untitled'}"
-                        </span>
-                        <span className="text-[8px] font-mono-studio text-sky-300 font-bold pr-1">
+                        {/* Color Label Strip */}
+                        {titleColorLabel && (
+                          <div
+                            className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
+                            style={{ background: titleColorLabel }}
+                          />
+                        )}
+                        <div className="flex items-center gap-1.5 z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
+                          <Type className="w-3 h-3 text-sky-400 shrink-0" />
+                          <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
+                            Title: "{script.title || 'Untitled'}"
+                          </span>
+                        </div>
+                        <span className="text-[8px] font-mono-studio text-sky-300 font-bold pr-1 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
                           {formatTime(titleDuration)}
                         </span>
                       </div>
+                      {/* Title track right-click context menu */}
+                      <TimelineClipContextMenu
+                        x={titleContextMenu?.x ?? 0}
+                        y={titleContextMenu?.y ?? 0}
+                        trackType="title"
+                        isVisible={titleContextMenu !== null}
+                        onClose={() => setTitleContextMenu(null)}
+                        onDelete={handleTitleDelete}
+                        onSplit={handleSplitClip}
+                        onZoomToClip={handleTitleZoom}
+                        onColorLabel={(c) => setTitleColorLabel(c)}
+                        onCopyTimings={() => {
+                          const text = `Start: ${titleStart.toFixed(2)}s | Duration: ${titleDuration.toFixed(2)}s | Title: "${script.title || 'Untitled'}"`;
+                          navigator.clipboard.writeText(text).catch(() => {});
+                        }}
+                      />
                     </div>
                   ) : (
                     <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
@@ -955,7 +1229,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                         totalDuration={totalDuration}
                         selectedClip={selectedClip}
                         isMuted={voiceTrackMuted}
-                        label={`Voice: ${selectedVoice || 'Fenrir'} (24kHz Neural TTS Waves)`}
+                        label={voiceLabel}
                         onSelect={() => handleSelectClip({ track: 'voice' }, 'voice')}
                         onPointerDownMove={(e) => {
                           handleSelectClip({ track: 'voice' });
@@ -989,6 +1263,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origDuration: voiceDuration,
                           });
                         }}
+                        onDelete={handleVoiceDelete}
+                        onMute={() => setVoiceTrackMuted(!voiceTrackMuted)}
+                        onSplit={handleSplitClip}
+                        onZoomToClip={handleVoiceZoom}
                       />
                     </div>
                   ) : (
@@ -1007,8 +1285,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                         totalDuration={totalDuration}
                         selectedClip={selectedClip}
                         isMuted={musicTrackMuted}
-                        label={`Soundtrack: ${selectedMusic === 'm1' ? 'Ambient Motivation' : 'Selected Mix'} (Looping Bed Waves)`}
-                        subLabel="-14 dB Studio Mix"
+                        label={musicLabel}
+                        subLabel={musicSubLabel}
                         onSelect={() => handleSelectClip({ track: 'music' }, 'music')}
                         onPointerDownMove={(e) => {
                           handleSelectClip({ track: 'music' });
@@ -1042,6 +1320,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origDuration: musicDuration,
                           });
                         }}
+                        onDelete={handleMusicDelete}
+                        onMute={() => setMusicTrackMuted(!musicTrackMuted)}
+                        onSplit={handleSplitClip}
+                        onZoomToClip={handleMusicZoom}
                       />
                     </div>
                   ) : (
@@ -1059,7 +1341,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       totalDuration={totalDuration}
                       selectedClip={selectedClip}
                       isMuted={sfxTrackMuted}
-                      label="SFX: Cinematic Whoosh & Impact Burst"
+                      label="SFX: Cinematic Transition & Impact Burst"
                       onSelect={() => handleSelectClip({ track: 'sfx' }, 'music')}
                       onPointerDownMove={(e) => {
                         handleSelectClip({ track: 'sfx' });
@@ -1093,17 +1375,27 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           origDuration: sfxDuration,
                         });
                       }}
+                      onDelete={handleSfxDelete}
+                      onMute={() => setSfxTrackMuted(!sfxTrackMuted)}
+                      onSplit={handleSplitClip}
                     />
                   </div>
                 )}
 
                 {/* ── Draggable Electric Blue Playhead Indicator ────── */}
                 <div
-                  className="absolute top-0 bottom-0 w-px bg-[#3B82F6] z-30 pointer-events-none transition-all duration-75"
+                  className="absolute top-0 bottom-0 w-px bg-[#3B82F6] z-30 pointer-events-none"
                   style={{ left: `${progressPercent}%` }}
                 >
-                  {/* Playhead Handle Badge */}
-                  <div className="absolute top-0 -translate-x-1/2 w-3.5 h-3.5 bg-[#3B82F6] border-2 border-white rounded-full shadow-lg" />
+                  {/* Playhead Handle Badge - Interactive with drag handle */}
+                  <div
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      handleRulerPointerDown(e);
+                    }}
+                    className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-[#3B82F6] hover:bg-[#2563EB] border-2 border-white rounded-full shadow-xl pointer-events-auto cursor-ew-resize hover:scale-125 transition-transform select-none"
+                    title="Drag playhead to scrub timeline"
+                  />
                 </div>
               </div>
             </div>

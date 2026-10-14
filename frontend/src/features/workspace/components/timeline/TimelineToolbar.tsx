@@ -70,10 +70,12 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   onZoomIn,
   onZoomOut,
 }) => {
+  const hasSelection = Boolean(selectedClip);
+
   return (
-    <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#171717] border-b border-[#262626]">
+    <div className="flex flex-wrap items-center justify-between px-3.5 py-1.5 bg-[#171717] border-b border-[#262626] gap-2">
       {/* Left: Title, Track Indicators & Editing Tools */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -83,14 +85,111 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           {isCollapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 mr-1">
           <span className="text-xs font-bold text-white tracking-wider uppercase flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-[#3B82F6]" />
-            Studio Multi-Track Timeline
+            Timeline
           </span>
-          <span className="text-[10px] font-mono-studio text-[#60A5FA] bg-[#3B82F6]/15 px-1.5 py-0.2 rounded border border-[#3B82F6]/25">
-            {activeCompoundsCount} Moveable Compounds
+          <span className="hidden sm:inline-block text-[10px] font-mono-studio text-[#9CA3AF] bg-[#222222] px-1.5 py-0.5 rounded">
+            {activeCompoundsCount} Clips
           </span>
+        </div>
+
+        <div className="h-4 w-px bg-[#333333] mx-1" />
+
+        {/* ── Action Tools: Split, Duplicate, Delete ── */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onSplitClip}
+            disabled={!hasSelection}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+              hasSelection
+                ? 'text-[#E5E5E5] hover:text-white hover:bg-white/[0.04] border border-[#3A3A3A]'
+                : 'text-[#52525B] opacity-40 cursor-not-allowed border border-transparent'
+            }`}
+            title="Split selected clip at playhead position (S or Ctrl+B)"
+          >
+            <Scissors className="w-3 h-3 text-[#D4D4D8]" />
+            <span className="text-[11px] font-mono-studio">Split</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onDuplicateClip}
+            disabled={!hasSelection}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+              hasSelection
+                ? 'text-[#E5E5E5] hover:text-white hover:bg-white/[0.04] border border-[#3A3A3A]'
+                : 'text-[#52525B] opacity-40 cursor-not-allowed border border-transparent'
+            }`}
+            title="Duplicate selected clip (Ctrl+D)"
+          >
+            <Copy className="w-3 h-3 text-[#D4D4D8]" />
+            <span className="text-[11px] font-mono-studio">Duplicate</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onDeleteClip}
+            disabled={!hasSelection}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+              hasSelection
+                ? 'text-[#F5F5F5] hover:text-white hover:bg-[#2A1A1A] border border-[#4A2A2A]'
+                : 'text-[#52525B] opacity-40 cursor-not-allowed border border-transparent'
+            }`}
+            title="Delete selected clip (Delete or Backspace)"
+          >
+            <Trash2 className="w-3 h-3 text-[#F5A5A5]" />
+            <span className="text-[11px] font-mono-studio">Delete</span>
+          </button>
+        </div>
+
+        <div className="h-4 w-px bg-[#333333] mx-1" />
+
+        {/* ── Add Track & Add Subtitle Cue ── */}
+        <div className="flex items-center gap-1 relative">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={onToggleAddTrackMenu}
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#D4D4D8] hover:text-white hover:bg-white/[0.04] border border-[#3A3A3A] transition-colors cursor-pointer"
+              title="Add track from Left Panel categories"
+            >
+              <Plus className="w-3 h-3 text-[#D4D4D8]" />
+              <span className="text-[11px] font-mono-studio">Track</span>
+            </button>
+            <TimelineAddTrackMenu
+              isOpen={addTrackMenuOpen}
+              onClose={onCloseAddTrackMenu}
+              onEnableTrack={onEnableTrack}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={onAddCaption}
+            disabled={captionsTrackLocked}
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#D4D4D8] hover:text-white hover:bg-white/[0.04] border border-[#3A3A3A] transition-colors cursor-pointer disabled:opacity-40"
+            title="Add subtitle cue at current playhead (+)"
+          >
+            <Plus className="w-3 h-3 text-[#D4D4D8]" />
+            <span className="text-[11px] font-mono-studio">Cue</span>
+          </button>
+
+          {/* Magnetic Snapping Toggle */}
+          <button
+            type="button"
+            onClick={onToggleSnap}
+            className={`p-1 rounded transition-colors cursor-pointer ml-0.5 ${
+              snapEnabled
+                ? 'text-white bg-white/[0.05] border border-[#3A3A3A]'
+                : 'text-[#6B7280] hover:text-[#9CA3AF] hover:bg-white/[0.04] border border-transparent'
+            }`}
+            title={snapEnabled ? 'Magnetic snapping ON' : 'Magnetic snapping OFF'}
+          >
+            <Magnet className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 

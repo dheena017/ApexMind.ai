@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Film } from 'lucide-react';
 import { formatTime, SelectedClip } from './timelineTypes';
 import { FilmstripTrackBackground } from './FilmstripTrackBackground';
+import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
 export interface VideoTrackClipProps {
   videoStart: number;
@@ -15,6 +16,15 @@ export interface VideoTrackClipProps {
   onPointerDownMove: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPointerDownTrimLeft: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPointerDownTrimRight: (e: React.PointerEvent<HTMLDivElement>) => void;
+  // Context menu actions
+  onDelete?: () => void;
+  onDuplicate?: () => void;
+  onSplit?: () => void;
+  onHide?: () => void;
+  onZoomToClip?: () => void;
+  onColorLabel?: (color: string) => void;
+  onCopyTimings?: () => void;
+  onDetach?: () => void;
 }
 
 export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
@@ -29,27 +39,65 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
   onPointerDownMove,
   onPointerDownTrimLeft,
   onPointerDownTrimRight,
+  onDelete,
+  onDuplicate,
+  onSplit,
+  onHide,
+  onZoomToClip,
+  onColorLabel,
+  onCopyTimings,
+  onDetach,
 }) => {
   const isSelected = selectedClip?.track === 'video';
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [colorLabel, setColorLabel] = useState<string>('');
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  }, [onSelect]);
+
+  const handleColorLabel = useCallback((color: string) => {
+    setColorLabel(color);
+    onColorLabel?.(color);
+  }, [onColorLabel]);
+
+  const handleCopyTimings = useCallback(() => {
+    const text = `Start: ${videoStart.toFixed(2)}s | Duration: ${videoDuration.toFixed(2)}s | End: ${(videoStart + videoDuration).toFixed(2)}s`;
+    navigator.clipboard.writeText(text).catch(() => {});
+    onCopyTimings?.();
+  }, [videoStart, videoDuration, onCopyTimings]);
 
   return (
     <div className="h-10 border-b border-[#262626] p-1 relative flex items-center">
       <div
         onClick={onSelect}
         onPointerDown={onPointerDownMove}
+        onContextMenu={handleContextMenu}
         className={`h-full rounded-md px-2.5 flex items-center justify-between transition-colors border group select-none cursor-grab active:cursor-grabbing relative overflow-hidden ${
           isSelected
-            ? 'timeline-clip-selected-amber bg-amber-950/70 border-amber-500 text-amber-100 z-20 ring-2 ring-amber-500/80 shadow-lg'
+            ? 'bg-[#1A1A1A] border-[#3A3A3A] text-white z-20 outline outline-1 outline-[#3A3A3A]'
             : videoTrackVisible
-            ? 'bg-amber-950/40 border-amber-600/40 text-amber-200 hover:border-amber-500 z-10'
+            ? 'bg-[#1A1A1A]/80 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
             : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
         }`}
         style={{
           left: `${(videoStart / totalDuration) * 100}%`,
           width: `${Math.min(100, (videoDuration / totalDuration) * 100)}%`,
+          ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
         }}
-        title="Video Track: Drag to reposition video clip. Drag left/right handles to trim."
+        title="Video Track: Drag to reposition video clip. Drag left/right handles to trim. Right-click for options."
       >
+        {/* Color Label Strip (top edge) */}
+        {colorLabel && (
+          <div
+            className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
+            style={{ background: colorLabel }}
+          />
+        )}
+
         {/* Filmstrip Repeating Background with Sprockets */}
         <FilmstripTrackBackground imageUrl={mediaUrl} />
 
@@ -66,7 +114,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
         <div className="flex items-center gap-1.5 z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
           <Film className="w-3 h-3 text-amber-400 shrink-0" />
           <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
-            {backdropName || 'Dark Mountain Dawn'} (9:16 Video Filmstrip)
+            {backdropName ? `${backdropName} (Video Track)` : (mediaUrl ? 'Custom Video Clip' : 'Video Clip')}
           </span>
         </div>
 
@@ -83,6 +131,24 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
           <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
         </div>
       </div>
+
+      {/* Right-click Context Menu */}
+      <TimelineClipContextMenu
+        x={contextMenu?.x ?? 0}
+        y={contextMenu?.y ?? 0}
+        trackType="video"
+        isVisible={contextMenu !== null}
+        isHidden={!videoTrackVisible}
+        onClose={() => setContextMenu(null)}
+        onDelete={onDelete}
+        onDuplicate={onDuplicate}
+        onSplit={onSplit}
+        onHide={onHide}
+        onZoomToClip={onZoomToClip}
+        onColorLabel={handleColorLabel}
+        onCopyTimings={handleCopyTimings}
+        onDetach={onDetach}
+      />
     </div>
   );
 };

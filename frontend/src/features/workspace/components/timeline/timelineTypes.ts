@@ -1,4 +1,4 @@
-import { GeneratedScript, VisualBackdrop, ScriptSubtitle } from '../../types';
+import { GeneratedScript, VisualBackdrop, ScriptSubtitle, VoiceProfile, MusicTrack } from '../../types';
 
 export interface StudioTimelinePaneProps {
   currentTime: number;
@@ -19,6 +19,8 @@ export interface StudioTimelinePaneProps {
   customVideoUrl?: string;
   activeElementOverlay?: { id?: string; name?: string; type: string; value: string; label?: string } | null;
   onSelectCompound?: (compound: 'video' | 'text' | 'voice' | 'music' | 'overlay') => void;
+  voices?: VoiceProfile[];
+  musicTracks?: MusicTrack[];
 }
 
 export const formatTime = (seconds: number): string => {
