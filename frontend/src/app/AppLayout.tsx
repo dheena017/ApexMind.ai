@@ -133,13 +133,16 @@ export default function AppLayout({
     setSidebarOpen(false);
   };
 
+  const isWorkspace = activePage === 'workspace' || activePage.startsWith('workspace-');
+
   return (
     <div className="h-screen w-full bg-[#0A0A0A] text-[#E5E5E5] flex flex-col overflow-hidden font-sans-studio antialiased selection:bg-[#3B82F6]/30 selection:text-[#60A5FA] relative">
       {/* =========================================================================
-          Workspace Page: Dedicated Studio Header & Sidebar
+          Workspace Pages (/workspace, /workspace/canvas, /workspace/script, etc.):
+          Dedicated Studio Header & Sidebar (Main page header is hidden)
           Other Pages: Standard Application Header, Main Framing, and Slide Drawer
           ========================================================================= */}
-      {activePage === 'workspace' ? (
+      {isWorkspace ? (
         <>
           <WorkspaceHeader
             user={user}
