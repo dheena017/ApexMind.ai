@@ -14,6 +14,8 @@
  * - 36 AI Visual Prompt Starters
  */
 
+import { MASTER_TYPOGRAPHY_PRESETS } from './typographyPresetsData';
+
 // ============================================================================
 // 1. TYPOGRAPHY & SUBTITLE PRESETS
 // ============================================================================
@@ -32,7 +34,9 @@ export interface TypographyPresetItem {
   tags: string[];
 }
 
-export const TYPOGRAPHY_PRESETS: TypographyPresetItem[] = [
+export const TYPOGRAPHY_PRESETS: TypographyPresetItem[] = MASTER_TYPOGRAPHY_PRESETS;
+
+const _LEGACY_TYPOGRAPHY_PRESETS: TypographyPresetItem[] = [
   // --- SUBTITLES ---
   {
     id: 'sub-hormozi',

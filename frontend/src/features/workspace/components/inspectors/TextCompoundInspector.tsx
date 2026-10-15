@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Minus, Plus, Type,
   Sparkles, Bold, Italic, Underline, Strikethrough, LetterSpacing,
@@ -77,6 +77,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
   const [textSize, setTextSize] = useState(58);
   const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right' | 'justify'>('center');
   const [textTransform, setTextTransform] = useState<'none' | 'uppercase' | 'lowercase' | 'capitalize'>('none');
+  const [overridePreset, setOverridePreset] = useState(false);
 
   // Style flags
   const [isBold, setIsBold] = useState(true);
@@ -105,7 +106,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
   const [opacity, setOpacity] = useState(100);
 
   // Screen Position
-  const [posY, setPosY] = useState(50); // Vertical center default
+  const [posY, setPosY] = useState(78); // Lower third standard safe zone for reels
 
   // Animation & Timing
   const [activeAnimation, setActiveAnimation] = useState('pop');
@@ -130,12 +131,31 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     if (captionColor) setTextColor(captionColor);
   }, [captionColor]);
 
+  // Listen to manual position updates from canvas dragging
+  useEffect(() => {
+    const handlePosUpdate = (e: Event) => {
+      const detail = (e as CustomEvent<{ posX: number; posY: number }>).detail;
+      if (detail && typeof detail.posY === 'number') {
+        setPosY(detail.posY);
+      }
+    };
+    window.addEventListener('workspace:caption-position-update', handlePosUpdate);
+    return () => window.removeEventListener('workspace:caption-position-update', handlePosUpdate);
+  }, []);
+
+  const isInitialMount = useRef(true);
+
   // Broadcast caption style changes to canvas in real time
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     window.dispatchEvent(
       new CustomEvent('workspace:caption-style-change', {
         detail: {
           text: textContent,
+          overridePreset,
           color: textColor,
           fontFamily: textFont,
           fontWeight: textWeight,
@@ -168,7 +188,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
       })
     );
   }, [
-    textContent, textColor, textFont, textWeight, textSize, textAlign, textTransform,
+    textContent, overridePreset, textColor, textFont, textWeight, textSize, textAlign, textTransform,
     isBold, isItalic, isUnderline, isStrikethrough, strokeOutline, strokeColor, strokeWidth,
     dropShadow, shadowColor, shadowBlur, neonGlow, glowColor, letterSpacing, lineHeight,
     bgColor, bgRadius, bgPadding, opacity, posY, activeAnimation, animDuration, displayDuration,
@@ -186,6 +206,8 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     setTextColor(newCol);
     onCaptionColorChange?.(newCol);
   };
+
+  const activateCustomTextStyle = () => setOverridePreset(true);
 
   const applyStyleCombo = (combo: typeof TEXT_STYLE_COMBOS[0]) => {
     setTextColor(combo.color);
@@ -269,7 +291,11 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {/* Formatting & Alignment Buttons */}
-            <div className="p-2.5 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div
+              className="p-2.5 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2"
+              onClickCapture={activateCustomTextStyle}
+              onChangeCapture={activateCustomTextStyle}
+            >
               <div className="flex items-center gap-1.5 justify-between">
                 {/* Bold, Italic, Underline, Strikethrough */}
                 <div className="flex items-center gap-1">
@@ -345,7 +371,11 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {/* Font Size & Spacing Sliders */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5">
+            <div
+              className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5"
+              onClickCapture={activateCustomTextStyle}
+              onChangeCapture={activateCustomTextStyle}
+            >
               <div className="flex flex-col gap-1.5">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-[#A1A1AA] font-medium">Font Size</span>
@@ -408,7 +438,11 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {/* Color Chooser */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div
+              className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2"
+              onClickCapture={activateCustomTextStyle}
+              onChangeCapture={activateCustomTextStyle}
+            >
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#A1A1AA] font-medium">Text Color</span>
                 <span className="font-mono-studio text-white font-bold">{textColor}</span>
@@ -440,7 +474,11 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
         {/* ── STYLE TAB (Fonts & Presets) ── */}
         {activeSubTab === 'style' && (
-          <div className="flex flex-col gap-3.5 pt-0.5">
+          <div
+            className="flex flex-col gap-3.5 pt-0.5"
+            onClickCapture={activateCustomTextStyle}
+            onChangeCapture={activateCustomTextStyle}
+          >
             {/* Quick Combos */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Style Combos</span>

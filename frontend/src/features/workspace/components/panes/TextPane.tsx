@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Type,
   Search,
@@ -16,9 +16,15 @@ import {
   Zap,
   AlignLeft,
   Heading,
+  Wand2,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { TYPOGRAPHY_PRESETS, TypographyPresetItem } from '../../data/mediaCatalogData';
+import {
+  generateInfiniteStyles,
+  randomizeOneStyle,
+  InfiniteStyleMood,
+} from '../../data/infiniteStyleEngine';
 
 export interface TextPreset {
   id: string;
@@ -45,37 +51,44 @@ export interface TextPaneProps {
 }
 
 export const CATEGORY_SELECT_OPTIONS = [
-  { value: 'all', label: 'All Categories (70+ Presets)', badge: '70+' },
-  { value: 'subtitles', label: 'Subtitles (Viral Reels)', badge: 'Reels' },
-  { value: 'hooks', label: 'Viral Hooks & Openers', badge: 'Hooks' },
-  { value: 'quotes', label: 'Quotes & Wisdom', badge: 'Quotes' },
-  { value: 'lowerthirds', label: 'Lower Thirds & Badges', badge: 'Badges' },
-  { value: 'cta', label: 'Call To Action (CTA)', badge: 'CTA' },
-  { value: 'animations', label: 'Kinetic Animations', badge: 'FX' },
+  { value: 'all', label: 'All Categories (Curated & Infinite)', badge: '10M+' },
+  { value: 'subtitles', label: 'Subtitles & Captions (Viral Reels)', badge: 'Reels' },
+  { value: 'hooks', label: 'Viral Hooks & Attention Openers', badge: 'Hooks' },
+  { value: 'quotes', label: 'Quotes & Ancient Wisdom', badge: 'Quotes' },
+  { value: 'lowerthirds', label: 'Lower Thirds & Creator Badges', badge: 'Badges' },
+  { value: 'cta', label: 'Call To Action (CTA Enders)', badge: 'CTA' },
+  { value: 'animations', label: 'Kinetic Motion & Animations', badge: 'FX' },
 ] as const;
 
 export const CURATED_STYLE_PILLS = [
   { id: 'all', category: 'all', query: '', label: '🔥 All' },
   { id: 'hormozi', category: 'subtitles', query: 'hormozi', label: '⚡ Hormozi' },
   { id: 'mrbeast', category: 'subtitles', query: 'mrbeast', label: '🎯 MrBeast' },
+  { id: 'abdaal', category: 'subtitles', query: 'abdaal', label: '✍️ Ali Abdaal' },
   { id: 'karaoke', category: 'subtitles', query: 'karaoke', label: '🎤 Karaoke' },
   { id: 'luxury', category: 'subtitles', query: 'luxury', label: '✨ Luxury' },
   { id: 'cyber', category: 'subtitles', query: 'cyber', label: '🌃 Cyber' },
   { id: 'stoic', category: 'quotes', query: 'stoic', label: '🏛️ Stoic' },
-  { id: 'gym', category: 'hooks', query: 'gym', label: '💪 Gym' },
+  { id: 'gym', category: 'subtitles', query: 'goggins', label: '💪 Raw Grit' },
+  { id: 'cinema', category: 'subtitles', query: 'cinema', label: '🎬 Cinema' },
+  { id: 'y2k', category: 'subtitles', query: 'y2k', label: '🍭 Y2K Retro' },
   { id: 'minimal', category: 'subtitles', query: 'minimal', label: '🖤 Minimal' },
-  { id: 'hacker', category: 'subtitles', query: 'hacker', label: '💻 Terminal' },
+  { id: 'hacker', category: 'subtitles', query: 'terminal', label: '💻 Terminal' },
+  { id: 'cta', category: 'cta', query: 'cta', label: '🚀 CTAs' },
 ] as const;
 
 const FONT_OPTIONS = [
   { value: '', label: 'Preset Default Font' },
   { value: 'Impact, sans-serif', label: 'Impact (Viral Hormozi)', badge: 'Punchy' },
   { value: 'Anton, sans-serif', label: 'Anton (MrBeast Condensed)', badge: 'YouTube' },
+  { value: 'Bebas Neue, sans-serif', label: 'Bebas Neue (Blockbuster Title)', badge: 'Cinema' },
   { value: 'Montserrat, sans-serif', label: 'Montserrat (Modern Bold)', badge: 'Clean' },
   { value: 'Inter, sans-serif', label: 'Inter (Minimalist Aesthetic)', badge: 'Refined' },
   { value: 'Space Grotesk, sans-serif', label: 'Space Grotesk (Cyber Tech)', badge: 'Futuristic' },
-  { value: 'JetBrains Mono, monospace', label: 'JetBrains Mono (Terminal)', badge: 'Code' },
-  { value: 'Playfair Display, serif', label: 'Playfair Display (Vox Serif)', badge: 'Editorial' },
+  { value: 'JetBrains Mono, monospace', label: 'JetBrains Mono (Terminal Code)', badge: 'Hacker' },
+  { value: 'Cinzel, Georgia, serif', label: 'Cinzel (Stoic Roman Empire)', badge: 'Roman' },
+  { value: 'Playfair Display, serif', label: 'Playfair Display (Vogue Editorial)', badge: 'Luxury' },
+  { value: 'Syne, sans-serif', label: 'Syne (Avant-Garde Creative)', badge: 'Design' },
   { value: 'Georgia, serif', label: 'Georgia (Classic Wisdom)', badge: 'Serif' },
 ];
 
@@ -87,6 +100,7 @@ const SIZE_OPTIONS = [
   { value: '32', label: '32px — Bold Subtitle' },
   { value: '40', label: '40px — Large Hook' },
   { value: '48', label: '48px — Viral Title' },
+  { value: '56', label: '56px — Maximum Impact Headline' },
 ];
 
 const WEIGHT_OPTIONS = [
@@ -96,7 +110,7 @@ const WEIGHT_OPTIONS = [
   { value: '600', label: 'Semibold (600)' },
   { value: '700', label: 'Bold (700)' },
   { value: '800', label: 'Extra Bold (800)' },
-  { value: '900', label: 'Black (900 — Maximum Impact)' },
+  { value: '900', label: 'Black (900 — Maximum Punch)' },
 ];
 
 const CASE_OPTIONS = [
@@ -145,6 +159,14 @@ export const TextPane: React.FC<TextPaneProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedFeedback, setAppliedFeedback] = useState<string | null>(null);
 
+  // 10M+ Infinite Style Engine State
+  const [infiniteMood, setInfiniteMood] = useState<InfiniteStyleMood>('all');
+  const [infinitePage, setInfinitePage] = useState<number>(1);
+  const [infiniteStyles, setInfiniteStyles] = useState<TypographyPresetItem[]>(() =>
+    generateInfiniteStyles(24, 'all', 1)
+  );
+  const [isSynthesizing, setIsSynthesizing] = useState<boolean>(false);
+
   // Style Overrides State
   const [fontOverride, setFontOverride] = useState('');
   const [sizeOverride, setSizeOverride] = useState('');
@@ -172,6 +194,31 @@ export const TextPane: React.FC<TextPaneProps> = ({
     setTimeout(() => setAppliedFeedback(null), 2000);
   };
 
+  const handleSynthesizeStyles = useCallback((mood?: InfiniteStyleMood) => {
+    setIsSynthesizing(true);
+    const targetMood = mood !== undefined ? mood : infiniteMood;
+    setInfinitePage((prev) => {
+      const nextPage = prev + 1;
+      setTimeout(() => {
+        const generated = generateInfiniteStyles(24, targetMood, nextPage);
+        setInfiniteStyles(generated);
+        setIsSynthesizing(false);
+        triggerFeedback(`Synthesized 24 fresh styles (${targetMood.toUpperCase()})`);
+      }, 200);
+      return nextPage;
+    });
+  }, [infiniteMood]);
+
+  const handleLoadMoreInfinite = useCallback(() => {
+    setInfinitePage((prev) => {
+      const nextPage = prev + 1;
+      const more = generateInfiniteStyles(12, infiniteMood, nextPage);
+      setInfiniteStyles((curr) => [...curr, ...more]);
+      triggerFeedback('Generated 12 more infinite styles');
+      return nextPage;
+    });
+  }, [infiniteMood]);
+
   const handleApplyPreset = (preset: TypographyPresetItem) => {
     setSelectedPresetId(preset.id);
     const customizedPreset: TextPreset = {
@@ -192,9 +239,14 @@ export const TextPane: React.FC<TextPaneProps> = ({
     if (onApplyPreset) {
       onApplyPreset(customizedPreset);
     }
-    window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
     triggerFeedback(`Applied "${preset.name}"`);
   };
+
+  const handleRandomizeAndApply = useCallback(() => {
+    const freshStyle = randomizeOneStyle(infiniteMood);
+    handleApplyPreset(freshStyle);
+    triggerFeedback(`⚡ 1-Click Applied: ${freshStyle.name}`);
+  }, [infiniteMood]);
 
   const handleQuickInsert = (text: string, type: 'heading' | 'subheading' | 'body') => {
     if (onInsertText) {
@@ -270,9 +322,16 @@ export const TextPane: React.FC<TextPaneProps> = ({
     setSelectedCategory(newCat);
   };
 
+  // Merged Master Presets + Infinite Procedural Styles
+  const combinedPresets = useMemo(() => {
+    const existingIds = new Set(TYPOGRAPHY_PRESETS.map((p) => p.id));
+    const uniqueInfinite = infiniteStyles.filter((p) => !existingIds.has(p.id));
+    return [...TYPOGRAPHY_PRESETS, ...uniqueInfinite];
+  }, [infiniteStyles]);
+
   // Filtered presets
   const filteredPresets = useMemo(() => {
-    return TYPOGRAPHY_PRESETS.filter((p) => {
+    return combinedPresets.filter((p) => {
       const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
       const q = searchQuery.trim().toLowerCase();
       const matchesQ =
@@ -283,7 +342,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
         p.tags.some((t) => t.toLowerCase().includes(q));
       return matchesCat && matchesQ;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [combinedPresets, selectedCategory, searchQuery]);
 
   // Filtered hooks
   const filteredHooks = useMemo(() => {
@@ -301,10 +360,10 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
   const activePreset = useMemo(() => {
     return (
-      TYPOGRAPHY_PRESETS.find((p) => p.id === selectedPresetId) ||
-      TYPOGRAPHY_PRESETS[0]
+      combinedPresets.find((p) => p.id === selectedPresetId) ||
+      combinedPresets[0]
     );
-  }, [selectedPresetId]);
+  }, [combinedPresets, selectedPresetId]);
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-xl border border-[#26262B]">
@@ -317,9 +376,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold tracking-tight text-white">
               Typography &amp; Subtitles
-            </span>
-            <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
-              {TYPOGRAPHY_PRESETS.length} Presets
             </span>
           </div>
         </div>
@@ -336,13 +392,14 @@ export const TextPane: React.FC<TextPaneProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('presets')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'presets'
-              ? 'text-white border-blue-500'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          Preset Packs ({TYPOGRAPHY_PRESETS.length})
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span>Preset Packs</span>
         </button>
         <button
           type="button"
@@ -397,47 +454,29 @@ export const TextPane: React.FC<TextPaneProps> = ({
       {/* ── Unified Search, Dropdown & Mood Bar (Presets & Hooks) ── */}
       {(activeTab === 'presets' || activeTab === 'hooks') && (
         <div className="flex flex-col gap-2 border-b border-[#26262B] bg-[#141416] p-3 shrink-0">
-          {/* Search + CustomSelect Dropdown Row */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={
-                  activeTab === 'presets'
-                    ? 'Search 70+ typography styles (Hormozi, MrBeast, Vox)...'
-                    : 'Search viral hooks (stoic, fitness, wealth)...'
-                }
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Category CustomSelect Dropdown */}
-            <div className="shrink-0 w-44 sm:w-48">
-              <CustomSelect
-                options={CATEGORY_SELECT_OPTIONS.map((c) => ({
-                  value: c.value,
-                  label: c.label,
-                  badge: c.badge,
-                }))}
-                value={selectedCategory}
-                onChange={(val) => setSelectedCategory(val)}
-                variant="compact"
-                buttonClassName="!w-full !justify-between !bg-[#1A1A1E] !border-[#2E2E36] !text-[11px] !py-2 !px-3 font-semibold hover:!border-blue-500/60"
-                menuClassName="!w-64 !bg-[#16161A] !border-[#2E2E38] shadow-2xl"
-              />
-            </div>
+          {/* Search Row */}
+          <div className="relative w-full">
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                activeTab === 'presets'
+                  ? 'Search 10M+ typography styles (Hormozi, MrBeast, Vox, Minimal)...'
+                  : 'Search viral hooks (stoic, fitness, wealth)...'
+              }
+              className="w-full bg-[#1C1C20] border border-[#2A2A30] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Curated Style & Mood Pills */}
@@ -467,9 +506,31 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
-        {/* ── TAB 1: PRESET PACKS ── */}
+        {/* ── UNIFIED TAB: PRESET PACKS & 10M+ STYLES ── */}
         {activeTab === 'presets' && (
           <div className="flex flex-col gap-3">
+            {/* Quick AI Style Synthesizer Bar */}
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-[#18181D] border border-[#272730]">
+              <button
+                type="button"
+                onClick={() => handleSynthesizeStyles()}
+                disabled={isSynthesizing}
+                className="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSynthesizing ? 'animate-spin text-blue-200' : 'text-blue-200'}`} />
+                <span>{isSynthesizing ? 'Synthesizing...' : '🎲 Synthesize 10M+ Styles'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRandomizeAndApply}
+                className="py-1.5 px-3 rounded-lg bg-[#22222A] hover:bg-[#2B2B36] border border-[#333340] text-zinc-200 hover:text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <Wand2 className="w-3.5 h-3.5 text-blue-400" />
+                <span>⚡ 1-Click Apply</span>
+              </button>
+            </div>
+
+            {/* Presets & Generated Styles Grid */}
             {filteredPresets.length === 0 ? (
               <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 text-center text-xs text-[#A1A1AA] flex flex-col items-center gap-2">
                 <Search className="w-6 h-6 text-zinc-600" />
@@ -482,7 +543,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                   }}
                   className="mt-1 text-[11px] text-blue-400 hover:underline cursor-pointer"
                 >
-                  Reset filters to view all 70+ presets
+                  Reset filters to view all styles
                 </button>
               </div>
             ) : (
@@ -500,10 +561,20 @@ export const TextPane: React.FC<TextPaneProps> = ({
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <span className="text-xs font-bold text-white truncate">
                             {preset.name}
                           </span>
+                          {preset.tags?.includes('infinite') && (
+                            <span className="text-[9px] font-mono-studio text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1 rounded shrink-0">
+                              AI Synth
+                            </span>
+                          )}
+                          {preset.animationType && (
+                            <span className="text-[9px] font-mono-studio text-blue-400 bg-blue-950/60 px-1 rounded border border-blue-500/30 shrink-0">
+                              {preset.animationType}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -520,7 +591,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                         </div>
                       </div>
 
-                      <div className="bg-[#0C0C0F] border border-[#23232A] rounded-lg p-2 flex items-center justify-center text-center min-h-[42px] overflow-hidden">
+                      <div className="bg-[#0C0C0F] border border-[#23232A] rounded-lg p-2.5 flex items-center justify-center text-center min-h-[44px] overflow-hidden">
                         <span
                           className={`text-sm sm:text-base leading-tight select-none ${preset.className}`}
                           style={{
@@ -534,9 +605,34 @@ export const TextPane: React.FC<TextPaneProps> = ({
                           {preset.previewText}
                         </span>
                       </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5 px-0.5">
+                        <span className="truncate">{preset.styleDescription}</span>
+                        <span className="text-blue-400 font-semibold group-hover:underline shrink-0 ml-2">
+                          Apply style →
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
+
+                {/* Load More Pagination Container */}
+                <div className="pt-2 pb-2 flex flex-col items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleLoadMoreInfinite}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] hover:border-blue-500/50 text-xs font-semibold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
+                  >
+                    <Plus className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
+                    <span>Load More Styles</span>
+                    <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                      +12
+                    </span>
+                  </button>
+                  <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
+                    Showing {filteredPresets.length} styles • 10,000,000+ available
+                  </span>
+                </div>
               </div>
             )}
           </div>

@@ -16,10 +16,11 @@ import {
   RotateCcw,
   Activity,
   Search,
+  X,
   ExternalLink,
-  RefreshCw,
   Sliders,
   Download,
+  RefreshCw,
   Gauge,
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
@@ -244,33 +245,6 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     }
   };
 
-  const [isSearchingJamendo, setIsSearchingJamendo] = useState(false);
-
-  const handleSearchJamendo = async () => {
-    if (!searchQuery.trim()) return;
-    try {
-      setIsSearchingJamendo(true);
-      const res = await workspaceApi.searchOpenTracks(searchQuery, selectedGenre === 'all' ? '' : selectedGenre);
-      if (res?.items?.length) {
-        const liveTracks: SoundtrackItem[] = res.items.map((it: any) => ({
-          id: it.id,
-          title: it.title,
-          genre: it.genre || 'Royalty-Free',
-          duration: it.duration || '2:30',
-          bpm: it.bpm || 95,
-          mood: it.artist ? `By ${it.artist}` : 'Creative Commons',
-          audioUrl: it.audioUrl,
-        }));
-        setSoundtracks((prev) => {
-          const existing = new Set(prev.map((p) => p.audioUrl));
-          const newOnes = liveTracks.filter((it) => !existing.has(it.audioUrl));
-          return [...newOnes, ...prev];
-        });
-      }
-    } finally {
-      setIsSearchingJamendo(false);
-    }
-  };
 
   const downloadRecordedVoice = () => {
     if (!mediaBlobUrl) return;
@@ -346,13 +320,13 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
+      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141417]">
         <button
           type="button"
           onClick={() => setActiveTab('soundtracks')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'soundtracks'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -363,7 +337,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           onClick={() => setActiveTab('sfx')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'sfx'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -374,7 +348,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           onClick={() => setActiveTab('soundboard')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'soundboard'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -386,7 +360,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           onClick={() => setActiveTab('mixer')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'mixer'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -398,7 +372,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           onClick={() => setActiveTab('record')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'record'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -410,7 +384,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           onClick={() => setActiveTab('url')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'url'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -420,7 +394,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
       {/* ── Genre / Category Chips ── */}
       {activeTab === 'soundtracks' && (
-        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#26262B]/60 overflow-x-auto custom-scrollbar shrink-0 bg-[#141416]">
+        <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141416]">
           {[
             { id: 'all', label: 'All Vibes' },
             { id: 'cinematic', label: 'Cinematic' },
@@ -433,10 +407,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               key={cat.id}
               type="button"
               onClick={() => setSelectedGenre(cat.id)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+              className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
                 selectedGenre === cat.id
-                  ? 'bg-[#3B82F6] text-white shadow-sm'
-                  : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
+                  : 'bg-[#1C1C22] text-[#A1A1AA] hover:text-white hover:bg-[#26262E] border border-[#2A2A32]'
               }`}
             >
               {cat.label}
@@ -446,7 +420,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       )}
 
       {activeTab === 'sfx' && (
-        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#26262B]/60 overflow-x-auto custom-scrollbar shrink-0 bg-[#141416]">
+        <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141416]">
           {[
             { id: 'all', label: 'All SFX' },
             { id: 'Impact', label: '💥 Impacts' },
@@ -458,10 +432,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               key={cat.id}
               type="button"
               onClick={() => setSelectedSfxCategory(cat.id)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+              className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
                 selectedSfxCategory === cat.id
-                  ? 'bg-[#3B82F6] text-white shadow-sm'
-                  : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
+                  : 'bg-[#1C1C22] text-[#A1A1AA] hover:text-white hover:bg-[#26262E] border border-[#2A2A32]'
               }`}
             >
               {cat.label}
@@ -471,21 +445,17 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       )}
 
       {/* ── Main Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
-        {/* Search Bar for Soundtracks or SFX */}
-        {(activeTab === 'soundtracks' || activeTab === 'sfx') && (
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
+        {/* Search Bar for SFX only (Soundtracks has its dedicated Jamendo integrated search) */}
+        {activeTab === 'sfx' && (
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                activeTab === 'soundtracks'
-                  ? 'Search soundtracks by mood, tempo...'
-                  : 'Search sound effects (boom, whoosh, riser)...'
-              }
-              className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+              placeholder="Search sound effects (boom, whoosh, riser)..."
+              className="w-full bg-[#16161A] border border-[#27272F] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500/60 transition-colors"
             />
           </div>
         )}
@@ -585,103 +555,109 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         {/* ── Tab 1: Soundtracks ── */}
         {activeTab === 'soundtracks' && (
           <div className="flex flex-col gap-2.5">
-            {/* Search Input with Free Jamendo API Button */}
-            <div className="flex items-center gap-1.5">
-              <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search music vibes, phonk, lofi..."
-                  className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleSearchJamendo}
-                disabled={!searchQuery.trim() || isSearchingJamendo}
-                className="flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-[#1E2330] hover:bg-[#252D3F] disabled:opacity-50 border border-[#3B82F6]/40 text-[#60A5FA] text-[10px] font-bold transition-all cursor-pointer shrink-0"
-                title="Search live royalty-free music via Jamendo API"
-              >
-                {isSearchingJamendo ? (
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Search className="w-3 h-3" />
-                )}
-                <span>Free Jamendo</span>
-              </button>
+            {/* Search Input */}
+            <div className="relative w-full">
+              <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search vibes, phonk, lofi, BPM..."
+                className="w-full bg-[#16161A] border border-[#27272F] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {filteredSoundtracks.map((track) => {
-              const isSelected = selectedMusic === track.id;
-              const isPending = pendingMusicId === track.id;
-              const isPlaying = playingTrackId === track.id;
+            <div className="flex flex-col gap-2 pt-1">
+              {filteredSoundtracks.map((track) => {
+                const isSelected = selectedMusic === track.id;
+                const isPending = pendingMusicId === track.id;
+                const isPlaying = playingTrackId === track.id;
 
-              return (
-                <div
-                  key={track.id}
-                  onClick={() => setPendingMusicId(track.id)}
-                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                    isPending
-                      ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/30'
-                      : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <button
-                      type="button"
-                      onClick={(e) => togglePlayTrack(track, e)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                        isPlaying
-                          ? 'bg-[#3B82F6] text-white shadow-md shadow-[#3B82F6]/40'
-                          : 'bg-[#2A2A32] text-[#A1A1AA] hover:text-white hover:bg-[#34343E]'
-                      }`}
-                    >
-                      {isPlaying ? (
-                        <Pause className="w-3.5 h-3.5" fill="currentColor" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5 ml-0.5" fill="currentColor" />
-                      )}
-                    </button>
-
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-white truncate">
-                          {track.title}
-                        </p>
-                        {isSelected && (
-                          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-[#3B82F6]/20 text-[#60A5FA] border border-[#3B82F6]/40 font-bold shrink-0">
-                            ACTIVE
-                          </span>
+                return (
+                  <div
+                    key={track.id}
+                    onClick={() => setPendingMusicId(track.id)}
+                    className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-[#181D2A] border-blue-500/80 ring-1 ring-blue-500/40 shadow-sm'
+                        : isPending
+                        ? 'bg-[#1A1E29] border-blue-500/50'
+                        : 'bg-[#16161A] border-[#26262D] hover:border-[#3E3E4B] hover:bg-[#1A1A20]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => togglePlayTrack(track, e)}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                          isPlaying
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
+                            : 'bg-[#222228] text-zinc-300 hover:text-white hover:bg-blue-600'
+                        }`}
+                        title={isPlaying ? 'Pause preview' : 'Play preview'}
+                      >
+                        {isPlaying ? (
+                          <Pause className="w-4 h-4" fill="currentColor" />
+                        ) : (
+                          <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
                         )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[#A1A1AA]">
-                        <span>{track.genre}</span>
-                        <span>•</span>
-                        <span>{track.bpm} BPM</span>
-                        <span>•</span>
-                        <span>{track.duration}</span>
+                      </button>
+
+                      <div className="min-w-0 flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-semibold text-white truncate group-hover:text-blue-300 transition-colors">
+                            {track.title}
+                          </p>
+                          {isSelected && (
+                            <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 border border-blue-500/40 font-bold shrink-0">
+                              ACTIVE
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                          <span className="px-1.5 py-0.2 rounded bg-zinc-800/80 text-zinc-300 text-[9px] uppercase font-mono tracking-wider">
+                            {track.genre}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded bg-blue-950/40 text-blue-400 border border-blue-900/30 text-[9px] font-mono">
+                            {track.bpm} BPM
+                          </span>
+                          <span className="text-zinc-500 font-mono text-[10px]">
+                            {track.duration}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectSoundtrack(track.id);
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-[10px] font-bold text-white transition-colors disabled:opacity-50"
-                      disabled={isSelected}
-                    >
-                      {isSelected ? 'Applied' : 'Apply'}
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectSoundtrack(track.id);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                          isSelected
+                            ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30 ring-1 ring-blue-400'
+                            : 'bg-[#22222A] hover:bg-blue-600 text-zinc-300 hover:text-white border border-[#2E2E38] hover:border-blue-500'
+                        }`}
+                      >
+                        {isSelected ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                        <span>{isSelected ? 'Applied' : 'Apply'}</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
 

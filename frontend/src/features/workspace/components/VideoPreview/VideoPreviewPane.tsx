@@ -184,6 +184,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   onExportComplete,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasFrameRef = useRef<HTMLDivElement>(null);
+  const [canvasFrameSize, setCanvasFrameSize] = useState({ width: 0, height: 0 });
   const titleRef = useRef<HTMLDivElement>(null);
   const subtitleRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -203,12 +205,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const [videoTrackVolume, setVideoTrackVolume] = useState(0);
   const [captionStyle, setCaptionStyle] = useState({
     text: '',
+    overridePreset: false,
     color: '#FFFFFF',
     fontFamily: 'Roboto',
     fontWeight: 'Medium',
     fontSize: 60,
     textAlign: 'center' as 'left' | 'center' | 'right' | 'justify',
     textTransform: 'uppercase' as 'none' | 'uppercase' | 'lowercase' | 'capitalize',
+    isBold: true,
     isItalic: false,
     isUnderline: false,
     isStrikethrough: false,
@@ -226,7 +230,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     bgRadius: 8,
     bgPadding: 8,
     opacity: 100,
-    posY: 50,
+    posX: 50,
+    posY: 78,
+    customWidth: undefined as number | undefined,
     duration: 2.2,
   });
   const [overlayStyle, setOverlayStyle] = useState<{
@@ -255,6 +261,25 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   // ── Timeline state (live sync from StudioTimelinePane events) ─────────
   const [timelineState, setTimelineState] = useState<TimelineState>(DEFAULT_TIMELINE_STATE);
+
+  useEffect(() => {
+    const frame = canvasFrameRef.current;
+    if (!frame) return;
+
+    const updateFrameSize = () => {
+      const { width, height } = frame.getBoundingClientRect();
+      setCanvasFrameSize((current) =>
+        Math.abs(current.width - width) < 0.5 && Math.abs(current.height - height) < 0.5
+          ? current
+          : { width, height }
+      );
+    };
+
+    updateFrameSize();
+    const observer = new ResizeObserver(updateFrameSize);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!isExporting) return;
@@ -687,6 +712,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     ? currentTime <= captionStyle.duration ? captionStyle.text.trim() : ''
     : timedSubtitle.trim();
   const hasCaptionPreset = Boolean(captionPresetClass);
+  const useCaptionPreset = hasCaptionPreset && !captionStyle.overridePreset;
   const visibleSubtitle = currentSubtitle || (!isExporting && hasCaptionPreset ? captionPresetPreviewText || '' : '');
   const currentVideoStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
   const currentVideoDuration = activeVideoClip ? activeVideoClip.duration : timelineState.videoDuration;
@@ -765,6 +791,20 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     '21:9': 'aspect-[21/9]',
   }[canvasAspectRatio] || 'aspect-[9/16]';
 
+  const aspectRatio = {
+    '9:16': 9 / 16,
+    '16:9': 16 / 9,
+    '1:1': 1,
+    '4:5': 4 / 5,
+    '21:9': 21 / 9,
+  }[canvasAspectRatio] || 9 / 16;
+  const fittedCanvasWidth = canvasFrameSize.width > 0 && canvasFrameSize.height > 0
+    ? Math.min(canvasFrameSize.width, canvasFrameSize.height * aspectRatio)
+    : undefined;
+  const fittedCanvasHeight = fittedCanvasWidth !== undefined
+    ? fittedCanvasWidth / aspectRatio
+    : undefined;
+
   // For landscape ratios, constrain by width so the canvas reshapes short & wide.
   // For portrait/square ratios, constrain by height so the canvas stays tall & narrow.
   const isLandscape = canvasAspectRatio === '16:9' || canvasAspectRatio === '21:9';
@@ -775,7 +815,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 select-none font-sans-studio overflow-hidden px-0.5 py-0.5">
       {/* ── Dynamic Aspect Ratio Video Studio Canvas ────────────────── */}
-      <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden rounded-2xl">
+      <div ref={canvasFrameRef} className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden rounded-2xl">
         <div
           ref={canvasRef}
           onClick={(e) => {
@@ -786,10 +826,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             }
           }}
           id="apex-video-canvas-container"
-          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-all duration-300 cursor-pointer focus:outline-none`}
+          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-all duration-300 cursor-pointer focus:outline-none @container`}
           tabIndex={-1}
           style={{
             background: canvasBackground || '#050505',
+            width: fittedCanvasWidth,
+            height: fittedCanvasHeight,
+            containerType: 'inline-size',
           }}
           title="Canvas"
         >
@@ -999,14 +1042,19 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={subtitleRef}
             onClick={(e) => handleSelectLayer(e, 'subtitle')}
-            className="absolute left-1/2 -translate-x-1/2 z-20 w-fit max-w-[88%] flex flex-col items-center justify-center cursor-move select-none p-2 transition-opacity duration-150"
+            className="absolute z-20 flex items-center justify-center cursor-move select-none p-1 transition-opacity duration-150"
             style={{
-              top: `${captionStyle.posY}%`,
+              left: `${captionStyle.posX ?? 50}%`,
+              top: `${captionStyle.posY ?? 78}%`,
+              transform: 'translate(-50%, -50%)',
               opacity: captionStyle.opacity / 100,
+              width: captionStyle.customWidth ? `${captionStyle.customWidth}px` : undefined,
+              maxWidth: '92%',
+              minWidth: 'fit-content',
             }}
           >
             <div
-              className="pointer-events-none"
+              className="pointer-events-none w-max max-w-full flex items-center justify-center text-center"
               style={{
                 backgroundColor: hasCaptionPreset ? 'transparent' : captionStyle.background,
                 borderRadius: hasCaptionPreset ? undefined : `${captionStyle.bgRadius}px`,
@@ -1014,42 +1062,45 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               }}
             >
               <p
-                className={captionPresetClass || `font-black text-center ${captionSizeClass}`}
+                className={`${useCaptionPreset ? captionPresetClass : `font-black text-center ${captionSizeClass}`} inline-block text-center leading-snug`}
                 style={{
-                  color: hasCaptionPreset
+                  color: useCaptionPreset
                     ? captionPresetColor || captionStyle.color || captionColor
                     : captionStyle.color || captionColor,
-                  filter: hasCaptionPreset ? 'none' : undefined,
-                  fontFamily: hasCaptionPreset ? captionPresetFontFamily : captionStyle.fontFamily,
-                  fontSize: hasCaptionPreset
-                    ? captionPresetFontSize ? `${captionPresetFontSize}px` : undefined
+                  filter: useCaptionPreset ? 'none' : undefined,
+                  fontFamily: useCaptionPreset ? captionPresetFontFamily : captionStyle.fontFamily,
+                  fontSize: useCaptionPreset
+                    ? captionPresetFontSize ? `${captionPresetFontSize}px` : 'clamp(12px, 4.2cqi, 22px)'
                     : `${Math.round(captionStyle.fontSize * 0.25)}px`,
-                  fontWeight: hasCaptionPreset ? captionPresetFontWeight : captionStyle.fontWeight === 'Black' ? 900
+                  fontWeight: useCaptionPreset ? captionPresetFontWeight : !captionStyle.isBold ? 400 : captionStyle.fontWeight === 'Black' ? 900
                     : captionStyle.fontWeight === 'ExtraBold' ? 800
                       : captionStyle.fontWeight === 'Bold' ? 700
                         : captionStyle.fontWeight === 'SemiBold' ? 600
                           : captionStyle.fontWeight === 'Medium' ? 500 : 400,
-                  textAlign: hasCaptionPreset ? undefined : captionStyle.textAlign,
-                  textTransform: hasCaptionPreset ? captionPresetTextTransform : captionStyle.textTransform,
-                  fontStyle: hasCaptionPreset ? undefined : captionStyle.isItalic ? 'italic' : 'normal',
-                  textDecoration: hasCaptionPreset ? undefined : [
+                  textAlign: useCaptionPreset ? undefined : captionStyle.textAlign,
+                  textTransform: useCaptionPreset ? captionPresetTextTransform : captionStyle.textTransform,
+                  fontStyle: useCaptionPreset ? undefined : captionStyle.isItalic ? 'italic' : 'normal',
+                  textDecoration: useCaptionPreset ? undefined : [
                     captionStyle.isUnderline ? 'underline' : '',
                     captionStyle.isStrikethrough ? 'line-through' : '',
                   ].filter(Boolean).join(' ') || 'none',
-                  letterSpacing: hasCaptionPreset ? undefined : `${captionStyle.letterSpacing}em`,
-                  lineHeight: hasCaptionPreset ? undefined : captionStyle.lineHeight,
-                  textShadow: hasCaptionPreset
+                  letterSpacing: useCaptionPreset ? undefined : `${captionStyle.letterSpacing}em`,
+                  lineHeight: useCaptionPreset ? undefined : captionStyle.lineHeight,
+                  textShadow: useCaptionPreset
                     ? 'none'
                     : captionStyle.neonGlow
                     ? `0 0 10px ${captionStyle.glowColor}, 0 0 20px ${captionStyle.glowColor}`
                     : captionStyle.dropShadow
                       ? `0 2px ${captionStyle.shadowBlur}px ${captionStyle.shadowColor}`
                       : 'none',
-                  WebkitTextStroke: hasCaptionPreset
+                  WebkitTextStroke: useCaptionPreset
                     ? 'none'
                     : captionStyle.stroke
                     ? `${captionStyle.strokeWidth}px ${captionStyle.strokeColor}`
                     : 'none',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  boxSizing: 'border-box',
                 }}
               >
                 {visibleSubtitle}
@@ -1084,6 +1135,28 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             onDrag={({ target, transform }) => {
               target.style.transform = transform;
             }}
+            onDragEnd={({ target, isDrag }) => {
+              if (!isDrag || !canvasRef.current || !target) return;
+              const canvasRect = canvasRef.current.getBoundingClientRect();
+              const targetRect = (target as HTMLElement).getBoundingClientRect();
+              const centerX = targetRect.left + targetRect.width / 2 - canvasRect.left;
+              const centerY = targetRect.top + targetRect.height / 2 - canvasRect.top;
+              const posX = Math.round(Math.max(5, Math.min(95, (centerX / canvasRect.width) * 100)));
+              const posY = Math.round(Math.max(5, Math.min(95, (centerY / canvasRect.height) * 100)));
+
+              if (selectedLayer === 'subtitle') {
+                (target as HTMLElement).style.transform = 'translate(-50%, -50%)';
+                setCaptionStyle((prev) => ({ ...prev, posX, posY }));
+                window.dispatchEvent(
+                  new CustomEvent('workspace:caption-position-update', {
+                    detail: { posX, posY },
+                  })
+                );
+              } else if (selectedLayer === 'overlay') {
+                (target as HTMLElement).style.transform = 'translate(-50%, -50%)';
+                setOverlayStyle((prev) => ({ ...prev, posX, posY }));
+              }
+            }}
             onResizeStart={(e) => {
               e.setOrigin(['%', '%']);
               if (e.dragStart) {
@@ -1095,6 +1168,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               if (delta[1]) target.style.height = `${height}px`;
               if (drag && drag.transform) {
                 target.style.transform = drag.transform;
+              }
+            }}
+            onResizeEnd={({ lastEvent }) => {
+              if (lastEvent && lastEvent.width && selectedLayer === 'subtitle') {
+                setCaptionStyle((prev) => ({ ...prev, customWidth: Math.round(lastEvent.width) }));
               }
             }}
             onRotateStart={(e) => {

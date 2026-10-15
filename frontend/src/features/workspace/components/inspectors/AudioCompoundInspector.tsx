@@ -168,6 +168,27 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
     audio.onended = () => setPreviewingSfx(null);
   };
 
+  const buildSpectrumBars = (volume: number, muted: boolean) =>
+    Array.from({ length: 20 }, (_, index) => {
+      if (muted) return 4;
+
+      const baseWave = Math.sin((index + 1) * 0.9 + volume / 18) * 38;
+      const harmonic = Math.sin((index + 2) * 1.7 + volume / 28) * 18;
+      const patternBoost = (index % 5) * 5;
+      const volumeBoost = volume / 3;
+
+      return Math.max(8, Math.min(100, Math.round(28 + baseWave + harmonic + patternBoost + volumeBoost)));
+    });
+
+  const [spectrumBars, setSpectrumBars] = useState<number[]>(() => buildSpectrumBars(localVolume, isMuted));
+
+  useEffect(() => {
+    const tick = () => setSpectrumBars(buildSpectrumBars(localVolume, isMuted));
+    tick();
+    const interval = window.setInterval(tick, 140);
+    return () => window.clearInterval(interval);
+  }, [localVolume, isMuted]);
+
   const tabs = ['audio', 'eq', 'effects', 'sfx', 'time'] as const;
 
   return (
@@ -205,16 +226,22 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 </span>
                 <span className="text-emerald-400 font-bold">{isMuted ? 'Muted' : `${localVolume}%`}</span>
               </div>
-              <div className="h-10 flex items-end gap-1 px-1 bg-[#141418] rounded-lg p-1.5">
-                {[18, 35, 62, 85, 45, 92, 70, 48, 80, 60, 95, 40, 75, 55, 30, 65, 88, 42, 70, 35].map((h, i) => (
+              <div className="h-10 flex items-end gap-1 px-1 bg-[#141418] rounded-lg p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                {spectrumBars.map((h, i) => (
                   <div
                     key={i}
-                    className="flex-1 rounded-xs transition-all duration-150"
+                    className="flex-1 rounded-xs transition-[height,transform,box-shadow] duration-150 ease-out"
                     style={{
-                      height: isMuted ? '4%' : `${Math.max(6, Math.min(100, Math.round(h * (localVolume / 100))))}%`,
+                      height: `${Math.max(6, Math.min(100, h))}%`,
                       background: isMuted
-                        ? '#3F3F46'
-                        : i % 2 === 0 ? 'linear-gradient(180deg, #3B82F6, #1D4ED8)' : 'linear-gradient(180deg, #10B981, #059669)',
+                        ? 'linear-gradient(180deg, #3F3F46 0%, #27272B 100%)'
+                        : i % 2 === 0
+                          ? 'linear-gradient(180deg, #60A5FA 0%, #3B82F6 30%, #1D4ED8 100%)'
+                          : 'linear-gradient(180deg, #34D399 0%, #10B981 35%, #059669 100%)',
+                      boxShadow: isMuted
+                        ? 'inset 0 0 0 1px rgba(255,255,255,0.04)'
+                        : `0 0 ${i % 2 === 0 ? 10 : 8}px ${i % 2 === 0 ? 'rgba(59,130,246,0.38)' : 'rgba(16,185,129,0.32)'}`,
+                      transform: `translateY(${isMuted ? 0 : 2 + (i % 3) * 1.5}px) scaleY(${isMuted ? 0.5 : 1})`,
                     }}
                   />
                 ))}

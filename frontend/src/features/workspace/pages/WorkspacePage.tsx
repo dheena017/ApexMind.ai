@@ -1663,7 +1663,6 @@ export default function WorkspacePage({
                   setScript((prev) => ({ ...prev, quote }));
                 }}
                 onApplyPreset={(p) => {
-                  setActiveCompound('text');
                   setCaptionPreset({
                     className: p.className,
                     color: p.color,

@@ -113,7 +113,7 @@ export const workspaceApi = {
     voiceProfiles: VoiceProfile[];
   }> {
     const start = performance.now();
-    const res = await fetch(apiUrl('/api/media-library'));
+    const res = await fetch(apiUrl('/api/media-library'), { cache: 'no-store' });
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/media-library', res.status, duration);
     const data = await res.json();

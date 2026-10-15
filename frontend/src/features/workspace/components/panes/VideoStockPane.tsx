@@ -4,6 +4,7 @@ import {
   Play,
   Search,
   X,
+  Check,
   ExternalLink,
   Plus,
   Trash2,
@@ -213,13 +214,13 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
+      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141417]">
         <button
           type="button"
           onClick={() => setActiveTab('catalog')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'catalog'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -230,7 +231,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
           onClick={() => setActiveTab('settings')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'settings'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -242,7 +243,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
           onClick={() => setActiveTab('url')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'url'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -253,7 +254,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
           onClick={() => setActiveTab('saved')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'saved'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500 font-bold'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -264,47 +265,34 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
       {/* ── Category Filter Chips (In Catalog Mode) ── */}
       {activeTab === 'catalog' && (
-        <div className="flex flex-col gap-1.5 border-b border-[#26262B]/60 bg-[#141416] py-2 shrink-0">
-          <div className="flex items-center gap-1.5 px-4 overflow-x-auto custom-scrollbar">
-            {(
-              [
-                { id: 'all', label: 'All Loops' },
-                { id: 'clouds', label: 'Clouds & Sky' },
-                { id: 'gym', label: 'Gym & Iron' },
-                { id: 'city', label: 'Cyber City' },
-                { id: 'ocean', label: 'Storm Waves' },
-                { id: 'fire', label: 'Fire Embers' },
-                { id: 'abstract', label: 'Abstract Motion' },
-              ] as const
-            ).map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
-                  selectedCategory === cat.id
-                    ? 'bg-[#3B82F6] text-white shadow-sm'
-                    : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Quick Keyword Topics */}
-          <div className="flex items-center gap-1 px-4 overflow-x-auto custom-scrollbar pt-0.5">
-            {SEARCH_TOPICS.map((topic) => (
-              <button
-                key={topic}
-                type="button"
-                onClick={() => setSearchQuery(topic)}
-                className="text-[9px] px-2 py-0.5 rounded-full bg-[#1C1C22] text-zinc-400 hover:text-white border border-zinc-800 shrink-0 cursor-pointer transition-colors"
-              >
-                {topic}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
+          {(
+            [
+              { id: 'all', label: 'All Loops' },
+              { id: 'clouds', label: 'Clouds & Sky' },
+              { id: 'gym', label: 'Gym & Iron' },
+              { id: 'city', label: 'Cyber City' },
+              { id: 'ocean', label: 'Storm Waves' },
+              { id: 'fire', label: 'Fire Embers' },
+              { id: 'abstract', label: 'Abstract Motion' },
+            ] as const
+          ).map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => {
+                setSelectedCategory(cat.id);
+                setSearchQuery('');
+              }}
+              className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
+                selectedCategory === cat.id
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
+                  : 'bg-[#1C1C22] text-[#A1A1AA] hover:text-white hover:bg-[#26262E] border border-[#2A2A32]'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
         </div>
       )}
 
@@ -531,10 +519,10 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       }}
                       onMouseEnter={() => handleMouseEnter(vid.id)}
                       onMouseLeave={() => handleMouseLeave(vid.id)}
-                      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
+                      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#16161A] transition-all cursor-pointer text-left flex flex-col justify-between ${
                         isSelected
-                          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
-                          : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                          ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/10'
+                          : 'border-[#26262D] hover:border-[#3E3E4A] hover:shadow-md'
                       }`}
                     >
                       {/* Video element for hover preview */}
@@ -548,56 +536,69 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                         muted
                         playsInline
                         preload="metadata"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
 
-                      {/* Overlay Gradients */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+                      {/* Top Glass Badges */}
+                      <div className="relative z-10 p-2 flex items-center justify-between pointer-events-none">
+                        <span className="px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-semibold text-zinc-200 border border-white/10 uppercase tracking-wider">
+                          {vid.category}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-mono text-zinc-300 border border-white/10">
+                          {vid.duration}
+                        </span>
+                      </div>
 
-                      {/* Play indicator on hover */}
+                      {/* Center Play Indicator */}
                       {!isHovered && (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none">
-                          <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/20">
+                        <div className="absolute inset-0 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                          <div className="w-8 h-8 rounded-full bg-black/55 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-md">
                             <Play className="w-3.5 h-3.5 text-white ml-0.5" fill="white" />
                           </div>
                         </div>
                       )}
-
-                      {/* Video Info Bottom */}
-                      <div className="absolute bottom-2 left-2 right-16">
-                        <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
-                          {vid.title}
-                        </p>
-                        <p className="text-[9px] text-[#A1A1AA] truncate">{vid.duration}</p>
-                      </div>
-
-                      {/* Category Tag */}
-                      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[8px] font-mono-studio text-white/80 border border-white/10 uppercase">
-                        {vid.category}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleApply(vid);
-                        }}
-                        className="absolute bottom-2 right-2 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] px-2 py-1 text-[9px] font-bold text-white"
-                      >
-                        Apply
-                      </button>
 
                       {/* Delete button for Saved clips */}
                       {activeTab === 'saved' && (
                         <button
                           type="button"
                           onClick={(e) => handleDeleteSaved(vid.id, e)}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
+                          className="absolute top-2 right-2 z-20 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
                           title="Delete from Saved"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
                       )}
+
+                      {/* Bottom Info & Action Bar */}
+                      <div className="relative z-10 bg-gradient-to-t from-black via-black/80 to-transparent p-2.5 pt-8 flex flex-col gap-1.5 pointer-events-auto">
+                        <p className="text-[11px] font-semibold text-white leading-tight line-clamp-1 group-hover:text-blue-300 transition-colors drop-shadow-sm">
+                          {vid.title}
+                        </p>
+
+                        <div className="flex items-center justify-between gap-1 pt-0.5">
+                          <span className="text-[9px] text-zinc-400 font-mono flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+                            Loop
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleApply(vid);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                              isSelected
+                                ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30 ring-1 ring-blue-400'
+                                : 'bg-white/15 hover:bg-blue-600 text-white backdrop-blur-sm border border-white/20 hover:border-blue-500'
+                            }`}
+                          >
+                            {isSelected ? <Check className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
+                            <span>{isSelected ? 'Active' : 'Apply'}</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
