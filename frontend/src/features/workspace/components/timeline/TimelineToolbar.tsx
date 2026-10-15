@@ -43,7 +43,6 @@ export interface TimelineToolbarProps {
   onTogglePlay: () => void;
   currentTime: number;
   totalDuration: number;
-  dragTooltip: string | null;
   zoomLevel: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -74,7 +73,6 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   onTogglePlay,
   currentTime,
   totalDuration,
-  dragTooltip,
   zoomLevel,
   onZoomIn,
   onZoomOut,
@@ -325,12 +323,6 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           )}
         </div>
 
-        {/* Live Dragging Tooltip */}
-        {dragTooltip && (
-          <span className="text-[9px] font-mono-studio bg-amber-500 text-black font-bold px-1.5 py-0.5 rounded shadow-lg animate-pulse">
-            {dragTooltip}
-          </span>
-        )}
       </div>
 
       {/* Right: Zoom Level Controls */}

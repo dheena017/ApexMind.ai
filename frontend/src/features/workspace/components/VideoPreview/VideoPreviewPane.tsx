@@ -947,10 +947,18 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                   fontSize: `${Math.round(captionStyle.fontSize * 0.25)}px`,
                   fontWeight: captionStyle.fontWeight === 'Black' ? 900 : captionStyle.fontWeight === 'Bold' ? 700 : captionStyle.fontWeight === 'Medium' ? 500 : 400,
                   textAlign: captionStyle.textAlign,
-                  textShadow:
-                    captionStyle.dropShadow
+                  textShadow: captionPresetClass?.includes('custom-caption-style')
+                    ? captionPresetClass.includes('custom-caption-shadow')
+                      ? '0 2px 10px rgba(0,0,0,0.95), 0 4px 20px rgba(0,0,0,0.85)'
+                      : 'none'
+                    : captionStyle.dropShadow
                       ? '0 2px 10px rgba(0,0,0,0.95), 0 4px 20px rgba(0,0,0,0.85)'
                       : 'none',
+                  WebkitTextStroke: captionPresetClass?.includes('custom-caption-style')
+                    ? captionPresetClass.includes('custom-caption-outline')
+                      ? '1px #000000'
+                      : '0px transparent'
+                    : undefined,
                 }}
               >
                 {currentSubtitle}

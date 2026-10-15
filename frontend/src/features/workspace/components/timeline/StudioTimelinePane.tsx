@@ -197,7 +197,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const [editingText, setEditingText] = useState<string>('');
 
   const [activeDrag, setActiveDrag] = useState<DragAction>(null);
-  const [dragTooltip, setDragTooltip] = useState<string | null>(null);
+  const dragTooltipRef = useRef<string | null>(null);
+  const setDragTooltip = useCallback((tooltip: string | null) => {
+    dragTooltipRef.current = tooltip;
+  }, []);
 
   const tracksContainerRef = useRef<HTMLDivElement>(null);
   const tracksScrollRef = useRef<HTMLDivElement>(null);
@@ -285,73 +288,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const { lanes: sfxLanes, maxLane: sfxMaxLane } = computeClipLanes(sfxClips);
   const sfxTrackHeight = Math.max(40, (sfxMaxLane + 1) * (laneHeight + laneGap) + 4);
-
-  // Layer move handlers (manually nudge clips above or below)
-  const handleMoveImageClipAbove = (clipId: string) => {
-    setImageClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
-    );
-  };
-  const handleMoveImageClipBelow = (clipId: string) => {
-    setImageClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
-    );
-  };
-
-  const handleMoveVideoClipAbove = (clipId: string) => {
-    setVideoClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
-    );
-  };
-  const handleMoveVideoClipBelow = (clipId: string) => {
-    setVideoClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
-    );
-  };
-
-  const handleMoveOverlayClipAbove = (clipId: string) => {
-    setOverlayClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
-    );
-  };
-  const handleMoveOverlayClipBelow = (clipId: string) => {
-    setOverlayClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
-    );
-  };
-
-  const handleMoveVoiceClipAbove = (clipId: string) => {
-    setVoiceClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
-    );
-  };
-  const handleMoveVoiceClipBelow = (clipId: string) => {
-    setVoiceClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
-    );
-  };
-
-  const handleMoveMusicClipAbove = (clipId: string) => {
-    setMusicClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
-    );
-  };
-  const handleMoveMusicClipBelow = (clipId: string) => {
-    setMusicClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
-    );
-  };
-
-  const handleMoveSfxClipAbove = (clipId: string) => {
-    setSfxClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
-    );
-  };
-  const handleMoveSfxClipBelow = (clipId: string) => {
-    setSfxClips((prev) =>
-      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
-    );
-  };
 
   // Listen for newly added clips from Left Panes (Media, Image, Video, Audio, Elements)
   useEffect(() => {
@@ -1906,7 +1842,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         onTogglePlay={onTogglePlay}
         currentTime={currentTime}
         totalDuration={totalDuration}
-        dragTooltip={dragTooltip}
         zoomLevel={zoomLevel}
         onZoomIn={() => setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, zoomLevel + TIMELINE_ZOOM_STEP))}
         onZoomOut={() => setZoomLevel(Math.max(MIN_TIMELINE_ZOOM, zoomLevel - TIMELINE_ZOOM_STEP))}
@@ -2083,8 +2018,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       backdropName={activeBackdrop?.name || 'Video Clip'}
                       mediaUrl={customVideoUrl || activeBackdrop?.imageUrl}
                       onSelectClip={(clipId) => handleSelectClip({ track: 'video', clipId }, 'video')}
-                      onMoveClipAbove={handleMoveVideoClipAbove}
-                      onMoveClipBelow={handleMoveVideoClipBelow}
                       onPointerDownMoveClip={(e, clip) => {
                         handleSelectClip({ track: 'video', clipId: clip.id }, 'video');
                         setActiveDrag({
@@ -2196,8 +2129,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       imageUrl={customImageUrl || activeBackdrop?.imageUrl}
                       imageName={customImageUrl ? 'Custom Image Graphic' : `${activeBackdrop?.name || 'Image'}`}
                       onSelectClip={(clipId) => handleSelectClip({ track: 'image', clipId }, 'video')}
-                      onMoveClipAbove={handleMoveImageClipAbove}
-                      onMoveClipBelow={handleMoveImageClipBelow}
                       onPointerDownMoveClip={(e, clip) => {
                         handleSelectClip({ track: 'image', clipId: clip.id }, 'video');
                         setActiveDrag({
@@ -2307,8 +2238,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       selectedClip={selectedClip}
                       overlayTrackVisible={overlayTrackVisible}
                       label={activeElementOverlay?.label || activeElementOverlay?.name}
-                      onMoveClipAbove={handleMoveOverlayClipAbove}
-                      onMoveClipBelow={handleMoveOverlayClipBelow}
                       onPointerDownMoveClip={(e, clip) => {
                         handleSelectClip({ track: 'overlay', clipId: clip.id }, 'overlay');
                         setActiveDrag({
@@ -2529,7 +2458,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           setTitleContextMenu({ x: e.clientX, y: e.clientY });
                         }}
                         className={`h-full rounded-md px-2.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-colors relative overflow-hidden ${selectedClip?.track === 'title'
-                            ? 'bg-sky-950/70 border-sky-400 text-sky-100 z-20 ring-2 ring-sky-400/80'
+                            ? 'bg-sky-950/70 border-[#3A3A3A] text-sky-100 z-20'
                             : 'bg-sky-950/40 border-sky-500/30 text-sky-200 hover:border-sky-400 z-10'
                           }`}
                         style={{
@@ -2593,8 +2522,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       selectedClip={selectedClip}
                       isMuted={voiceTrackMuted}
                       label={voiceLabel}
-                      onMoveClipAbove={handleMoveVoiceClipAbove}
-                      onMoveClipBelow={handleMoveVoiceClipBelow}
                       onPointerDownMoveClip={(e, clip) => {
                         handleSelectClip({ track: 'voice', clipId: clip.id }, 'voice');
                         setActiveDrag({
@@ -2733,8 +2660,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       isMuted={musicTrackMuted}
                       label={musicLabel}
                       subLabel={musicSubLabel}
-                      onMoveClipAbove={handleMoveMusicClipAbove}
-                      onMoveClipBelow={handleMoveMusicClipBelow}
                       onPointerDownMoveClip={(e, clip) => {
                         handleSelectClip({ track: 'music', clipId: clip.id }, 'music');
                         setActiveDrag({
@@ -2871,8 +2796,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     selectedClip={selectedClip}
                     isMuted={sfxTrackMuted}
                     label={selectedSfx ? `SFX: ${selectedSfx.name}` : 'Sound FX'}
-                    onMoveClipAbove={handleMoveSfxClipAbove}
-                    onMoveClipBelow={handleMoveSfxClipBelow}
                     onPointerDownMoveClip={(e, clip) => {
                       handleSelectClip({ track: 'sfx', clipId: clip.id }, 'music');
                       setActiveDrag({

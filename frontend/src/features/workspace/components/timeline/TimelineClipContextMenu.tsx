@@ -14,8 +14,6 @@ import {
   AlignLeft,
   Pencil,
   ChevronRight,
-  ArrowUp,
-  ArrowDown,
 } from 'lucide-react';
 
 export type ContextMenuTrackType = 'video' | 'image' | 'overlay' | 'voice' | 'music' | 'sfx' | 'caption' | 'title';
@@ -44,8 +42,6 @@ export interface TimelineClipContextMenuProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   onSplit?: () => void;
-  onMoveAbove?: () => void;
-  onMoveBelow?: () => void;
   onMute?: () => void;
   onHide?: () => void;
   onLock?: () => void;
@@ -79,8 +75,6 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
   onDelete,
   onDuplicate,
   onSplit,
-  onMoveAbove,
-  onMoveBelow,
   onMute,
   onHide,
   onLock,
@@ -224,25 +218,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {/* ── Move Above / Below (Layer Stacking) ── */}
-        {onMoveAbove && (
-          <ContextMenuItem
-            icon={<ArrowUp className="w-3.5 h-3.5" />}
-            label="Move Above (Upper Layer)"
-            shortcut="Alt+↑"
-            onClick={() => handleAction(onMoveAbove)}
-          />
-        )}
-        {onMoveBelow && (
-          <ContextMenuItem
-            icon={<ArrowDown className="w-3.5 h-3.5" />}
-            label="Move Below (Lower Layer)"
-            shortcut="Alt+↓"
-            onClick={() => handleAction(onMoveBelow)}
-          />
-        )}
-
-        {(onRename || onDuplicate || onSplit || onMoveAbove || onMoveBelow || onCopyTimings) && (
+        {(onRename || onDuplicate || onSplit || onCopyTimings) && (
           <div className="my-1 border-t border-white/5" />
         )}
 

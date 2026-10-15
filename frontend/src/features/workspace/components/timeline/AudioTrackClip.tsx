@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Mic, Music, Sparkles, ArrowUp, ArrowDown } from 'lucide-react';
+import { Mic, Music, Sparkles } from 'lucide-react';
 import { formatTime, SelectedClip, TimelineAudioClip } from './timelineTypes';
 import { TimelineWaveform } from './TimelineWaveform';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
@@ -25,8 +25,6 @@ export interface AudioTrackClipProps {
   onDeleteClip?: (clipId: string) => void;
   onDuplicateClip?: (clipId: string) => void;
   onSplitClip?: (clipId: string) => void;
-  onMoveClipAbove?: (clipId: string) => void;
-  onMoveClipBelow?: (clipId: string) => void;
   // Legacy single-clip fallback handlers
   onSelect?: () => void;
   onPointerDownMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -61,8 +59,6 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
   onDeleteClip,
   onDuplicateClip,
   onSplitClip,
-  onMoveClipAbove,
-  onMoveClipBelow,
   onSelect,
   onPointerDownMove,
   onPointerDownTrimLeft,
@@ -97,7 +93,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
     voice: {
       color: 'bg-emerald-400',
       text: 'text-emerald-300',
-      selectedRing: 'bg-[#1E293B] border-emerald-400 text-white z-20 shadow-[0_0_12px_rgba(52,211,153,0.35)] ring-1 ring-emerald-400',
+      selectedRing: 'bg-[#1E293B] border-[#3A3A3A] text-white z-20',
       normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
       handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
       handlePip: 'bg-[#D1D5DB]',
@@ -106,7 +102,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
     music: {
       color: 'bg-purple-400',
       text: 'text-purple-300',
-      selectedRing: 'bg-[#1E293B] border-purple-400 text-white z-20 shadow-[0_0_12px_rgba(192,132,252,0.35)] ring-1 ring-purple-400',
+      selectedRing: 'bg-[#1E293B] border-[#3A3A3A] text-white z-20',
       normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
       handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
       handlePip: 'bg-[#D1D5DB]',
@@ -115,7 +111,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
     sfx: {
       color: 'bg-amber-400',
       text: 'text-amber-300',
-      selectedRing: 'bg-[#1E293B] border-amber-400 text-white z-20 shadow-[0_0_12px_rgba(251,191,36,0.35)] ring-1 ring-amber-400',
+      selectedRing: 'bg-[#1E293B] border-[#3A3A3A] text-white z-20',
       normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
       handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
       handlePip: 'bg-[#D1D5DB]',
@@ -212,36 +208,6 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
               </span>
             </div>
 
-            {/* Layer Shift Buttons on Hover */}
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-20 shrink-0">
-              {onMoveClipAbove && (
-                <button
-                  type="button"
-                  title="Move Above (Upper Layer)"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMoveClipAbove(clip.id);
-                  }}
-                  className="p-0.5 rounded bg-black/70 hover:bg-white/20 text-neutral-300 hover:text-white"
-                >
-                  <ArrowUp className="w-2.5 h-2.5" />
-                </button>
-              )}
-              {onMoveClipBelow && (
-                <button
-                  type="button"
-                  title="Move Below (Lower Layer)"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMoveClipBelow(clip.id);
-                  }}
-                  className="p-0.5 rounded bg-black/70 hover:bg-white/20 text-neutral-300 hover:text-white"
-                >
-                  <ArrowDown className="w-2.5 h-2.5" />
-                </button>
-              )}
-            </div>
-
             {/* Duration or Sublabel Readout */}
             <span className={`text-[9px] font-mono-studio ${theme.text} pointer-events-none pr-1 font-bold z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs shrink-0`}>
               {subLabel || formatTime(clip.duration)}
@@ -287,8 +253,6 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
             else onSplit?.();
             setContextMenu(null);
           }}
-          onMoveAbove={onMoveClipAbove ? () => onMoveClipAbove(contextMenu.clipId) : undefined}
-          onMoveBelow={onMoveClipBelow ? () => onMoveClipBelow(contextMenu.clipId) : undefined}
           onMute={onMute}
           onZoomToClip={onZoomToClip}
           onColorLabel={(c) => handleColorLabel(contextMenu.clipId, c)}

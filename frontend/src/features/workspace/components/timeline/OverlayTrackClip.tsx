@@ -22,8 +22,6 @@ export interface OverlayTrackClipProps {
   onDeleteClip?: (clipId: string) => void;
   onDuplicateClip?: (clipId: string) => void;
   onSplitClip?: (clipId: string) => void;
-  onMoveClipAbove?: (clipId: string) => void;
-  onMoveClipBelow?: (clipId: string) => void;
   // Legacy single-clip fallback handlers
   onSelect?: () => void;
   onPointerDownMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -56,8 +54,6 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
   onDeleteClip,
   onDuplicateClip,
   onSplitClip,
-  onMoveClipAbove,
-  onMoveClipBelow,
   onSelect,
   onPointerDownMove,
   onPointerDownTrimLeft,
@@ -218,8 +214,6 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
             else onSplit?.();
             setContextMenu(null);
           }}
-          onMoveAbove={onMoveClipAbove ? () => onMoveClipAbove(contextMenu.clipId) : undefined}
-          onMoveBelow={onMoveClipBelow ? () => onMoveClipBelow(contextMenu.clipId) : undefined}
           onHide={onHide}
           onZoomToClip={onZoomToClip}
           onColorLabel={(c) => handleColorLabel(contextMenu.clipId, c)}

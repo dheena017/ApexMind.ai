@@ -95,7 +95,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clip.duration || 3)}
             onContextMenu={(e) => handleContextMenu(e, index, clip.start)}
             className={`timeline-clip-card absolute rounded-md px-2 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden ${isSelected
-                ? 'bg-[#1A1A1A] border-[#3A3A3A] text-white z-20 outline outline-1 outline-[#3A3A3A]'
+                ? 'bg-[#1A1A1A] border-[#3A3A3A] text-white z-20'
                 : 'bg-[#1A1A1A]/80 hover:bg-[#1C1C1C] border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
               }`}
             style={{

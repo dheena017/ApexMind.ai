@@ -131,9 +131,11 @@ export const TextPane: React.FC<TextPaneProps> = ({
   };
 
   const handleApplyCustomizer = () => {
-    const customClassName = `font-black uppercase ${
-      hasShadow ? 'drop-shadow-[0_4px_12px_rgba(0,0,0,1)]' : ''
-    } ${hasOutline ? 'stroke-black stroke-2' : ''}`;
+    const customClassName = [
+      'font-black uppercase custom-caption-style',
+      hasShadow ? 'custom-caption-shadow' : '',
+      hasOutline ? 'custom-caption-outline' : '',
+    ].filter(Boolean).join(' ');
 
     if (onApplyPreset) {
       onApplyPreset({
@@ -378,8 +380,9 @@ export const TextPane: React.FC<TextPaneProps> = ({
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#26262B]">
                 <button
                   type="button"
+                  aria-pressed={hasShadow}
                   onClick={() => setHasShadow((s) => !s)}
-                  className={`p-2 rounded-lg text-xs font-semibold border transition-all ${
+                  className={`p-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                     hasShadow ? 'bg-[#1E2330] text-white border-[#3B82F6]' : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
                   }`}
                 >
@@ -387,8 +390,9 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 </button>
                 <button
                   type="button"
+                  aria-pressed={hasOutline}
                   onClick={() => setHasOutline((o) => !o)}
-                  className={`p-2 rounded-lg text-xs font-semibold border transition-all ${
+                  className={`p-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                     hasOutline ? 'bg-[#1E2330] text-white border-[#3B82F6]' : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
                   }`}
                 >
@@ -403,10 +407,10 @@ export const TextPane: React.FC<TextPaneProps> = ({
                     fontSize: `${fontSize}px`,
                     letterSpacing: `${letterSpacing}px`,
                     color: textColor,
+                    textShadow: hasShadow ? '0 4px 12px rgba(0, 0, 0, 1)' : 'none',
+                    WebkitTextStroke: hasOutline ? '2px #000000' : '0px transparent',
                   }}
-                  className={`font-black uppercase ${
-                    hasShadow ? 'drop-shadow-[0_4px_12px_rgba(0,0,0,1)]' : ''
-                  }`}
+                  className="font-black uppercase"
                 >
                   NO EXCUSES
                 </span>
