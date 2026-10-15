@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Moveable from 'react-moveable';
-import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { toCanvas } from 'html-to-image';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings } from '../../types';
+import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
 import { CanvasSafeZonesOverlay } from './CanvasSafeZonesOverlay';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -15,6 +15,7 @@ interface TimelineState {
   titleVisible: boolean;
   voiceMuted: boolean;
   musicMuted: boolean;
+  sfxMuted?: boolean;
   videoStart: number;
   videoDuration: number;
   videoEnabled: boolean;
@@ -24,6 +25,12 @@ interface TimelineState {
   titleDuration: number;
   imageStart?: number;
   imageDuration?: number;
+  videoClips?: TimelineMediaClip[];
+  imageClips?: TimelineMediaClip[];
+  voiceClips?: TimelineAudioClip[];
+  musicClips?: TimelineAudioClip[];
+  sfxClips?: TimelineAudioClip[];
+  overlayClips?: TimelineOverlayClip[];
 }
 
 const DEFAULT_TIMELINE_STATE: TimelineState = {
@@ -171,7 +178,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const [backdropFlipH, setBackdropFlipH] = useState(false);
   const [backdropFlipV, setBackdropFlipV] = useState(false);
-  const [, setBackdropRotation] = useState(0);
+  const [backdropRotation, setBackdropRotation] = useState(0);
+  const [backdropScale, setBackdropScale] = useState(100);
+  const [backdropPosX, setBackdropPosX] = useState(50);
+  const [backdropPosY, setBackdropPosY] = useState(50);
   const [backdropFitMode, setBackdropFitMode] = useState<'fill' | 'fit' | 'crop'>('fill');
   const [backdropAnimation, setBackdropAnimation] = useState('none');
   const [videoTrackVolume, setVideoTrackVolume] = useState(0);
@@ -334,24 +344,51 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     return () => window.removeEventListener('workspace:timeline-state', handleTimelineState);
   }, []);
 
+  const isCustomImage = Boolean(customImageUrl);
+  const isCustomVideo = Boolean(customVideoUrl);
+
+  // Active clip resolution based on currentTime (top layer takes precedence when overlapping)
+  const activeVideoClip = (timelineState.videoClips || [])
+    .filter((c) => currentTime >= c.start && currentTime <= c.start + c.duration)
+    .slice(-1)[0];
+  const activeImageClip = (timelineState.imageClips || [])
+    .filter((c) => currentTime >= c.start && currentTime <= c.start + c.duration)
+    .slice(-1)[0];
+  const activeOverlayClip = (timelineState.overlayClips || [])
+    .filter((c) => currentTime >= c.start && currentTime <= c.start + c.duration)
+    .slice(-1)[0];
+
+  const effectiveOverlay = activeOverlayClip
+    ? {
+        type: activeOverlayClip.type,
+        value: activeOverlayClip.value,
+        label: activeOverlayClip.label,
+        name: activeOverlayClip.name,
+      }
+    : activeElementOverlay;
+
   // ── Frame-Accurate Playhead Sync: Check which clip is active under currentTime ──
-  const isVideoTimeActive = currentTime >= timelineState.videoStart &&
-    currentTime <= (timelineState.videoStart + timelineState.videoDuration);
+  const isVideoTimeActive = Boolean(activeVideoClip) || (!timelineState.videoClips?.length && (
+    isCustomVideo || (currentTime >= timelineState.videoStart && currentTime <= (timelineState.videoStart + (timelineState.videoDuration || 30)))
+  ));
 
   const imageStart = timelineState.imageStart ?? 0;
-  const imageDuration = timelineState.imageDuration ?? 8.0;
-  const isImageTimeActive = currentTime >= imageStart &&
-    currentTime <= (imageStart + imageDuration);
+  const imageDuration = timelineState.imageDuration ?? 30;
+  const isImageTimeActive = Boolean(activeImageClip) || (!timelineState.imageClips?.length && (
+    isCustomImage || (currentTime >= imageStart && currentTime <= (imageStart + imageDuration))
+  ));
 
-  const isOverlayTimeActive = currentTime >= timelineState.overlayStart &&
-    currentTime <= (timelineState.overlayStart + Math.min(timelineState.overlayDuration, overlayStyle.duration));
+  const isOverlayTimeActive = Boolean(activeOverlayClip) || (
+    currentTime >= timelineState.overlayStart &&
+    currentTime <= (timelineState.overlayStart + Math.min(timelineState.overlayDuration, overlayStyle.duration))
+  );
 
   const isTitleTimeActive = currentTime >= timelineState.titleStart &&
     currentTime <= (timelineState.titleStart + timelineState.titleDuration);
 
   // Track enabled & visible states
-  const videoEnabled = timelineState.videoVisible !== false;
-  const imageEnabled = timelineState.imageVisible !== false;
+  const videoEnabled = timelineState.videoVisible !== false || isCustomVideo;
+  const imageEnabled = timelineState.imageVisible !== false || isCustomImage;
   const overlayEnabled = timelineState.overlayVisible !== false;
   const titleEnabled = timelineState.titleVisible !== false;
   const captionsEnabled = timelineState.captionsVisible !== false;
@@ -442,8 +479,12 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     contrast: 100,
     saturate: 100,
     vignette: 0,
+    hue: 0,
+    blur: 0,
     grain: false,
     activeOverlay: 'none',
+    lut: 'none',
+    lutIntensity: 80,
   });
 
   // Listen for backdrop transform and filter changes from inspectors
@@ -454,6 +495,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         flipH?: boolean;
         flipV?: boolean;
         rotation?: number;
+        scale?: number;
+        posX?: number;
+        posY?: number;
         reset?: boolean;
       }>;
       const detail = customEvent.detail;
@@ -466,12 +510,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       }
       if (detail.flipH !== undefined) setBackdropFlipH(detail.flipH);
       if (detail.flipV !== undefined) setBackdropFlipV(detail.flipV);
-      if (detail.rotation !== undefined) {
-        setBackdropRotation(detail.rotation);
-        if (backdropRef.current) {
-          backdropRef.current.style.transform = `rotate(${detail.rotation}deg)`;
-        }
-      }
+      if (detail.rotation !== undefined) setBackdropRotation(detail.rotation);
+      if (detail.scale !== undefined) setBackdropScale(detail.scale);
+      if (detail.posX !== undefined) setBackdropPosX(detail.posX);
+      if (detail.posY !== undefined) setBackdropPosY(detail.posY);
       if (detail.fitMode) setBackdropFitMode(detail.fitMode);
     };
 
@@ -515,12 +557,39 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   }, []);
 
   const theme = (activeBackdrop?.id && BACKDROP_THEMES[activeBackdrop.id]) || null;
-  const activeVideo = customVideoUrl || activeBackdrop?.videoUrl || (activeBackdrop?.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined);
-  const activeImage = customImageUrl || filterSettings.customImageUrl || (activeBackdrop?.imageUrl || theme?.imageUrl || undefined);
+  const activeVideo = activeVideoClip
+    ? activeVideoClip.url
+    : (timelineState.videoClips && timelineState.videoClips.length > 0
+        ? undefined
+        : (isCustomVideo
+            ? customVideoUrl
+            : (!isCustomImage
+                ? (activeBackdrop?.videoUrl || (activeBackdrop?.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined))
+                : undefined)));
+
+  const activeImage = activeImageClip
+    ? activeImageClip.url
+    : (timelineState.imageClips && timelineState.imageClips.length > 0
+        ? undefined
+        : (isCustomImage
+            ? customImageUrl
+            : (!isCustomVideo
+                ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || theme?.imageUrl || undefined)
+                : undefined)));
 
   // Determine whether video or image layer is shown under the current playhead
-  const showVideoLayer = Boolean(activeVideo) && videoEnabled && isVideoTimeActive;
-  const showImageLayer = Boolean(activeImage) && imageEnabled && isImageTimeActive;
+  const showVideoLayer = Boolean(activeVideo) && (videoEnabled || isCustomVideo) && isVideoTimeActive;
+  const showImageLayer = Boolean(activeImage) && (imageEnabled || isCustomImage) && isImageTimeActive;
+
+  // Auto-reload video element when source changes
+  useEffect(() => {
+    const video = videoElementRef.current;
+    if (!video) return;
+    if (activeVideo && video.src !== activeVideo) {
+      video.src = activeVideo;
+      video.load();
+    }
+  }, [activeVideo]);
 
   // Sync video element time and play/pause state with timeline currentTime
   useEffect(() => {
@@ -531,7 +600,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     video.playbackRate = playbackRate;
 
     if (showVideoLayer) {
-      const offset = Math.max(0, currentTime - timelineState.videoStart);
+      const clipStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
+      const offset = Math.max(0, currentTime - clipStart);
       if (Math.abs(video.currentTime - offset) > 0.25) {
         video.currentTime = offset;
       }
@@ -543,7 +613,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     } else {
       video.pause();
     }
-  }, [currentTime, isPlaying, playbackRate, showVideoLayer, timelineState.videoStart, videoTrackVolume]);
+  }, [currentTime, isPlaying, playbackRate, showVideoLayer, activeVideoClip, timelineState.videoStart, videoTrackVolume]);
 
   // Active subtitle text matching current playhead position
   const timedSubtitle = (() => {
@@ -561,8 +631,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const currentSubtitle = captionStyle.text.trim()
     ? currentTime <= captionStyle.duration ? captionStyle.text.trim() : ''
     : timedSubtitle.trim();
+  const currentVideoStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
+  const currentVideoDuration = activeVideoClip ? activeVideoClip.duration : timelineState.videoDuration;
   const backdropProgress = Math.min(1, Math.max(0,
-    (currentTime - timelineState.videoStart) / Math.max(0.1, timelineState.videoDuration)
+    (currentTime - currentVideoStart) / Math.max(0.1, currentVideoDuration)
   ));
   const animationTransform = backdropAnimation === 'zoom'
     ? `scale(${1.02 + backdropProgress * 0.12})`
@@ -574,11 +646,35 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           ? `translateX(${Math.sin(currentTime * 24) * 2}px)`
           : '';
   const animationOpacity = backdropAnimation === 'fade' ? Math.min(1, backdropProgress * 4) : 1;
+
   const backdropTransform = [
+    (backdropPosX !== 50 || backdropPosY !== 50) ? `translate(${(backdropPosX - 50) * 0.8}%, ${(backdropPosY - 50) * 0.8}%)` : '',
+    backdropRotation ? `rotate(${backdropRotation}deg)` : '',
+    (backdropScale !== 100 && backdropScale > 0) ? `scale(${backdropScale / 100})` : '',
     backdropFlipH ? 'scaleX(-1)' : '',
     backdropFlipV ? 'scaleY(-1)' : '',
     animationTransform,
   ].filter(Boolean).join(' ') || undefined;
+
+  const computedBackdropFilter = (() => {
+    const parts: string[] = [];
+    if (filterSettings.brightness !== 100) parts.push(`brightness(${filterSettings.brightness}%)`);
+    if (filterSettings.contrast !== 100) parts.push(`contrast(${filterSettings.contrast}%)`);
+    if (filterSettings.saturate !== 100) parts.push(`saturate(${filterSettings.saturate}%)`);
+    if (filterSettings.hue && filterSettings.hue !== 0) parts.push(`hue-rotate(${filterSettings.hue}deg)`);
+    if (filterSettings.blur && filterSettings.blur !== 0) parts.push(`blur(${filterSettings.blur}px)`);
+    if (filterSettings.lut && filterSettings.lut !== 'none') {
+      const intensity = (filterSettings.lutIntensity ?? 80) / 100;
+      if (filterSettings.lut === 'fuji-eterna') parts.push(`sepia(${20 * intensity}%) hue-rotate(${-10 * intensity}deg)`);
+      else if (filterSettings.lut === 'kodak-vision') parts.push(`contrast(${100 + 15 * intensity}%) saturate(${100 + 20 * intensity}%)`);
+      else if (filterSettings.lut === 'matrix-green') parts.push(`hue-rotate(${85 * intensity}deg) saturate(${100 + 30 * intensity}%)`);
+      else if (filterSettings.lut === 'sepia-classic') parts.push(`sepia(${75 * intensity}%) contrast(${100 - 10 * intensity}%)`);
+      else if (filterSettings.lut === 'tokyo-drift') parts.push(`hue-rotate(${180 * intensity}deg) saturate(${100 + 40 * intensity}%)`);
+      else if (filterSettings.lut === 'alexa-logc') parts.push(`contrast(${100 - 15 * intensity}%) brightness(${100 + 5 * intensity}%)`);
+      else if (filterSettings.lut === 'red-dragon') parts.push(`saturate(${100 + 30 * intensity}%) contrast(${100 + 10 * intensity}%) hue-rotate(${10 * intensity}deg)`);
+    }
+    return parts.length > 0 ? parts.join(' ') : undefined;
+  })();
   const overlayTransform = [
     overlayStyle.flipH ? 'scaleX(-1)' : '',
     overlayStyle.flipV ? 'scaleY(-1)' : '',
@@ -591,13 +687,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     left: `${overlayStyle.posX ?? 50}%`,
     top: `${overlayStyle.posY ?? 78}%`,
     transform: `translate(-50%, -50%) ${overlayTransform}`,
-  };
-  const controlDuration = playbackDuration ?? (duration > 0 ? duration : 30);
-  const formatPlaybackTime = (time: number) => {
-    const wholeSeconds = Math.max(0, Math.floor(time));
-    const minutes = Math.floor(wholeSeconds / 60).toString().padStart(2, '0');
-    const seconds = (wholeSeconds % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
   };
 
   // Caption font size styling map
@@ -679,9 +768,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               } object-center opacity-100`}
               style={{
                 transform: backdropTransform,
-                filter: filterSettings.brightness !== 100 || filterSettings.contrast !== 100 || filterSettings.saturate !== 100
-                  ? `brightness(${filterSettings.brightness}%) contrast(${filterSettings.contrast}%) saturate(${filterSettings.saturate}%)`
-                  : undefined,
+                filter: computedBackdropFilter,
               }}
             />
             {/* Vignette Depth */}
@@ -690,6 +777,16 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 className="absolute inset-0 pointer-events-none transition-opacity"
                 style={{
                   background: `radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,${filterSettings.vignette / 100}) 100%)`,
+                }}
+              />
+            )}
+            {/* Film Grain Texture */}
+            {Boolean(filterSettings.grain) && (
+              <div
+                className="absolute inset-0 pointer-events-none opacity-25 mix-blend-overlay"
+                style={{
+                  backgroundImage: `radial-gradient(circle, #fff 10%, transparent 12%)`,
+                  backgroundSize: '3px 3px',
                 }}
               />
             )}
@@ -719,9 +816,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               } object-center opacity-100`}
               style={{
                 transform: backdropTransform,
-                filter: filterSettings.brightness !== 100 || filterSettings.contrast !== 100 || filterSettings.saturate !== 100
-                  ? `brightness(${filterSettings.brightness}%) contrast(${filterSettings.contrast}%) saturate(${filterSettings.saturate}%)`
-                  : undefined,
+                filter: computedBackdropFilter,
               }}
               loading="eager"
             />
@@ -734,11 +829,21 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 }}
               />
             )}
+            {/* Film Grain Texture */}
+            {Boolean(filterSettings.grain) && (
+              <div
+                className="absolute inset-0 pointer-events-none opacity-25 mix-blend-overlay"
+                style={{
+                  backgroundImage: `radial-gradient(circle, #fff 10%, transparent 12%)`,
+                  backgroundSize: '3px 3px',
+                }}
+              />
+            )}
           </div>
         )}
 
         {/* Dynamic Canvas Progress Bar Overlay */}
-        {activeElementOverlay?.type === 'progress' && (
+        {effectiveOverlay?.type === 'progress' && (
           <div className="absolute top-0 inset-x-0 h-1.5 bg-[#262626] z-30 overflow-hidden pointer-events-none" style={{ opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0 }}>
             <div
               className="h-full transition-all duration-200"
@@ -772,7 +877,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         )}
 
         {/* Dynamic Motivational Badge Overlay */}
-        {activeElementOverlay?.type === 'badge' && (
+        {effectiveOverlay?.type === 'badge' && (
           <div
             className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-200"
             style={{ opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0 }}
@@ -784,14 +889,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               style={overlayPositionStyle}
             >
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-white shadow-lg border border-white/20 tracking-wider pointer-events-none" style={{ backgroundColor: overlayStyle.accentColor }}>
-                {activeElementOverlay.value}
+                {effectiveOverlay.value}
               </span>
             </div>
           </div>
         )}
 
         {/* Dynamic Motivational Sticker Overlay */}
-        {activeElementOverlay?.type === 'sticker' && (
+        {effectiveOverlay?.type === 'sticker' && (
           <div
             ref={overlayRef}
             onClick={(e) => handleSelectLayer(e, 'overlay')}
@@ -801,7 +906,22 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0,
             }}
           >
-            {activeElementOverlay.value}
+            {effectiveOverlay.value}
+          </div>
+        )}
+
+        {/* Dynamic Shape / Generic Graphic Overlay */}
+        {effectiveOverlay && effectiveOverlay.type !== 'progress' && effectiveOverlay.type !== 'badge' && effectiveOverlay.type !== 'sticker' && (
+          <div
+            ref={overlayRef}
+            onClick={(e) => handleSelectLayer(e, 'overlay')}
+            className="absolute z-20 px-3 py-1.5 rounded-xl border border-white/20 bg-black/70 backdrop-blur-md text-white text-xs font-bold cursor-move select-none shadow-xl transition-opacity duration-200"
+            style={{
+              ...overlayPositionStyle,
+              opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0,
+            }}
+          >
+            {effectiveOverlay.value || effectiveOverlay.label || effectiveOverlay.name}
           </div>
         )}
 
@@ -891,47 +1011,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <CanvasSafeZonesOverlay isVisible={showSafeZones && !isExporting} platform="shorts" />
         </div>
       </div>
-
-      {!isExporting && (
-        <div className="flex items-center gap-2 w-full max-w-[520px] h-9 shrink-0 rounded-lg border border-[#29292F] bg-[#151518] px-2">
-          <button
-            type="button"
-            onClick={onTogglePlay}
-            className="w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-white hover:bg-white/10 cursor-pointer"
-            title={isPlaying ? 'Pause preview' : 'Play preview'}
-            aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-          >
-            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-          </button>
-          <span className="w-9 shrink-0 text-center text-[9px] font-mono-studio tabular-nums text-[#A1A1AA]">
-            {formatPlaybackTime(currentTime)}
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={controlDuration}
-            step={0.1}
-            value={Math.min(currentTime, controlDuration)}
-            onChange={(event) => onSeek(Number(event.target.value))}
-            className="min-w-0 flex-1 h-1 accent-[#3B82F6] cursor-pointer"
-            aria-label="Seek video preview"
-          />
-          <span className="w-9 shrink-0 text-center text-[9px] font-mono-studio tabular-nums text-[#71717A]">
-            {formatPlaybackTime(controlDuration)}
-          </span>
-          <button
-            type="button"
-            onClick={onToggleMute}
-            className="w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-[#A1A1AA] hover:bg-white/10 hover:text-white cursor-pointer"
-            title={isMuted ? 'Unmute preview' : 'Mute preview'}
-            aria-label={isMuted ? 'Unmute preview' : 'Mute preview'}
-          >
-            {isMuted || volume === 0
-              ? <VolumeX className="w-3.5 h-3.5" />
-              : <Volume2 className="w-3.5 h-3.5" />}
-          </button>
-        </div>
-      )}
     </div>
   );
 };

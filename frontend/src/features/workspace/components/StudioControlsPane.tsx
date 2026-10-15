@@ -108,6 +108,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   onSelectCompound,
 }) => {
   const effectiveDuration = duration || timelineDuration || 15;
+  const readinessDuration = duration && duration > 0 ? duration : timelineDuration ?? 0;
   const effectiveCategory = category || (script?.tags?.[0]) || 'General';
   // Current active compound page (defaults to home, reacts to timeline / canvas clicks)
   const [activeCompound, setActiveCompound] = useState<CompoundType>(propCompound || 'home');
@@ -253,7 +254,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             canPublish={canPublish}
             publishedSuccess={publishedSuccess}
             script={script}
-            duration={effectiveDuration}
+            duration={readinessDuration}
             category={effectiveCategory}
             canvasAspectRatio={canvasAspectRatio}
             onCanvasAspectRatioChange={onCanvasAspectRatioChange}

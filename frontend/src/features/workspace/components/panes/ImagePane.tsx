@@ -253,7 +253,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   }, []);
 
   const handleApply = (img: StockImageItem) => {
-    setSelectedId(img.id);
+    setSelectedId(null);
     onSelectImage(img.url);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
 
@@ -267,6 +267,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       return updated;
     });
   };
+
+  const handleStageImage = (img: StockImageItem) => setSelectedId(img.id);
 
   const [isSearchingOpenverse, setIsSearchingOpenverse] = useState(false);
 
@@ -811,15 +813,22 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               /* Image Grid */
               <div className="grid grid-cols-2 gap-2.5">
                 {filteredImages.map((img) => {
-                  const isSelected = activeImageUrl === img.url || selectedId === img.id;
+                  const isSelected = selectedId === img.id || (!selectedId && activeImageUrl === img.url);
                   return (
-                    <button
+                    <div
                       key={img.id}
-                      type="button"
-                      onClick={() => handleApply(img)}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleStageImage(img)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handleStageImage(img);
+                        }
+                      }}
                       className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
                         isSelected
-                          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg'
+                          ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/40'
                           : 'border-[#2A2A30] hover:border-[#3A3A42]'
                       }`}
                     >
@@ -832,7 +841,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
 
-                      <div className="absolute bottom-2 left-2 right-2">
+                      <div className="absolute bottom-2 left-2 right-16">
                         <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
                           {img.title}
                         </p>
@@ -844,24 +853,32 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                         {img.category}
                       </div>
 
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleApply(img);
+                        }}
+                        className="absolute bottom-2 right-2 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] px-2 py-1 text-[9px] font-bold text-white"
+                      >
+                        Apply
+                      </button>
 
                       {/* Delete button for Saved images */}
                       {activeTab === 'saved' && (
                         <button
                           type="button"
-                          onClick={(e) => handleDeleteSaved(img.id, e)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSaved(img.id, e);
+                          }}
                           className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
                           title="Delete from Saved"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>

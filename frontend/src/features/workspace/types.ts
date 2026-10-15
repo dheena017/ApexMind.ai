@@ -83,10 +83,14 @@ export interface BackdropFilterSettings {
   contrast: number;
   saturate: number;
   vignette: number;
-  customImageUrl?: string;
-  customVideoUrl?: string;
+  hue?: number;
+  blur?: number;
   grain: boolean;
   activeOverlay?: 'none' | 'equalizer' | 'particles' | 'badge';
+  lut?: string;
+  lutIntensity?: number;
+  customImageUrl?: string;
+  customVideoUrl?: string;
 }
 
 export type WorkspaceNotificationType = 'info' | 'success' | 'warning' | 'error' | 'render' | 'ai';

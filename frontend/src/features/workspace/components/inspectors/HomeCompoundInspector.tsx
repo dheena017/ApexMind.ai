@@ -25,8 +25,6 @@ import {
   Cpu,
   Radio,
   Clock,
-  Eye,
-  ThumbsUp,
   Download,
   RefreshCw,
   Target,
@@ -59,16 +57,76 @@ export interface HomeCompoundInspectorProps {
   ) => void;
 }
 
-const computeViralScore = (script?: GeneratedScript, duration?: number): number => {
-  let score = 30;
-  if (script?.title && script.title.length >= 10 && script.title.length <= 80) score += 15;
-  if (script?.hook && script.hook.length >= 15) score += 20;
-  if (script?.quote && script.quote.length >= 25) score += 15;
-  if (script?.hashtags && script.hashtags.length >= 3) score += 10;
-  if (script?.cta && script.cta.length >= 5) score += 10;
-  const dur = duration || 15;
-  if (dur >= 10 && dur <= 60) score += 10;
-  return Math.min(score, 100);
+const normalizeText = (value?: string): string => (value ?? '').replace(/[#@]/g, ' ').replace(/\s+/g, ' ').trim();
+
+const countWords = (value?: string): number => normalizeText(value).split(' ').filter(Boolean).length;
+
+const normalizeHashtags = (hashtags: string[]): string[] => Array.from(new Set(
+  hashtags
+    .map((tag) => tag.trim().replace(/^#+/, '').toLowerCase())
+    .filter(Boolean)
+    .map((tag) => `#${tag}`),
+));
+
+const computeContentReadiness = (
+  script: GeneratedScript | undefined,
+  duration: number,
+  title: string,
+  hook: string,
+  cta: string,
+  hashtags: string[],
+  aspectRatio: string,
+): number | null => {
+  const cleanTitle = normalizeText(title);
+  const cleanHook = normalizeText(hook);
+  const cleanQuote = normalizeText(script?.quote);
+  const cleanCta = normalizeText(cta);
+  const cleanHashtags = normalizeHashtags(hashtags);
+  const subtitleCount = script?.subtitles?.length ?? 0;
+  const spokenWords = countWords(`${cleanHook} ${cleanQuote} ${cleanCta}`);
+
+  if (
+    !cleanTitle &&
+    !spokenWords &&
+    cleanHashtags.length === 0 &&
+    !(script?.tags?.some((tag) => tag.trim()) ?? false) &&
+    subtitleCount === 0
+  ) {
+    return null;
+  }
+
+  let score = 0;
+
+  const titleWords = countWords(cleanTitle);
+  if (cleanTitle) {
+    score += titleWords >= 4 && titleWords <= 12 ? 13 : titleWords > 0 ? 6 : 0;
+    if (cleanTitle.length >= 18 && cleanTitle.length <= 70) score += 5;
+  }
+
+  const hookWords = countWords(cleanHook);
+  if (cleanHook) {
+    score += hookWords >= 5 && hookWords <= 20 ? 15 : hookWords > 0 ? 7 : 0;
+    if (/[.!?]/.test(cleanHook)) score += 5;
+  }
+
+  if (spokenWords > 0 && duration > 0) {
+    const wordsPerMinute = (spokenWords / duration) * 60;
+    score += Math.round(25 * Math.max(0, 1 - Math.abs(wordsPerMinute - 145) / 145));
+  }
+
+  const ctaWords = countWords(cleanCta);
+  if (cleanCta) score += ctaWords >= 2 && ctaWords <= 10 ? 10 : 5;
+
+  if (cleanHashtags.length >= 3 && cleanHashtags.length <= 8) score += 8;
+  else if (cleanHashtags.length > 0) score += Math.min(6, cleanHashtags.length * 2);
+  if (script?.tags?.some((tag) => tag.trim())) score += 4;
+
+  if (subtitleCount >= 4) score += 10;
+  else if (subtitleCount > 0) score += 5;
+
+  if (aspectRatio === '9:16') score += 5;
+
+  return Math.min(100, Math.max(0, score));
 };
 
 export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
@@ -77,7 +135,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   canPublish,
   publishedSuccess,
   script,
-  duration = 15,
+  duration = 0,
   category = '',
   canvasAspectRatio = '9:16',
   onCanvasAspectRatioChange,
@@ -87,7 +145,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'seo' | 'audit' | 'distribute' | 'codec'>('overview');
   const [copiedMetadata, setCopiedMetadata] = useState(false);
   const [copiedHashtags, setCopiedHashtags] = useState(false);
-  const [viralScore, setViralScore] = useState(0);
   const [platform, setPlatform] = useState<'youtube' | 'instagram' | 'tiktok' | 'twitter'>('youtube');
   const [savedDraft, setSavedDraft] = useState(false);
 
@@ -106,10 +163,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   const [editingCta, setEditingCta] = useState(script?.cta || '');
   const [newHashtag, setNewHashtag] = useState('');
   const [currentHashtags, setCurrentHashtags] = useState<string[]>(script?.hashtags || []);
-
-  useEffect(() => {
-    setViralScore(computeViralScore(script, duration));
-  }, [script, duration]);
+  const uniqueHashtags = normalizeHashtags(currentHashtags);
 
   useEffect(() => {
     setEditingTitle(script?.title || '');
@@ -185,10 +239,24 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
     { id: 'overlay' as const, label: 'Stickers & Graphic Badges', icon: Layers, color: 'text-indigo-400', bg: 'bg-indigo-400/10', badge: 'Overlays' },
   ];
 
-  const scoreColor = viralScore >= 75 ? 'text-emerald-400' : viralScore >= 50 ? 'text-amber-400' : 'text-red-400';
-  const scoreBg = viralScore >= 75 ? 'bg-emerald-400/10 border-emerald-400/30' : viralScore >= 50 ? 'bg-amber-400/10 border-amber-400/30' : 'bg-red-400/10 border-red-400/30';
-
   const displayCategory = category || (script?.tags?.[0]) || 'General Creator';
+  const readinessScore = computeContentReadiness(
+    script,
+    duration,
+    editingTitle,
+    editingHook,
+    editingCta,
+    currentHashtags,
+    canvasAspectRatio,
+  );
+  const scoreColor = readinessScore === null
+    ? 'text-[#A1A1AA]'
+    : readinessScore >= 75 ? 'text-emerald-400' : readinessScore >= 50 ? 'text-amber-400' : 'text-red-400';
+  const scoreBg = readinessScore === null
+    ? 'bg-white/5 border-white/10'
+    : readinessScore >= 75 ? 'bg-emerald-400/10 border-emerald-400/30' : readinessScore >= 50 ? 'bg-amber-400/10 border-amber-400/30' : 'bg-red-400/10 border-red-400/30';
+  const spokenWordCount = countWords(`${editingHook} ${script?.quote ?? ''} ${editingCta}`);
+  const spokenWordsPerMinute = duration > 0 ? Math.round((spokenWordCount / duration) * 60) : 0;
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
@@ -216,22 +284,25 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
         {/* ─────── OVERVIEW TAB ─────── */}
         {activeSubTab === 'overview' && (
           <div className="flex flex-col gap-3 pt-0.5">
-            {/* Viral Score Card */}
+            {/* Content readiness score */}
             <div className={`p-3 rounded-xl border ${scoreBg} flex items-center justify-between`}>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                   <TrendingUp className={`w-4 h-4 ${scoreColor}`} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-[#71717A] uppercase tracking-wider font-bold">Viral Readiness</p>
+                  <p className="text-[10px] text-[#71717A] uppercase tracking-wider font-bold" title="A checklist score for script and format completeness; it cannot predict views or virality.">Content Readiness</p>
                   <p className={`text-xl font-black leading-tight ${scoreColor}`}>
-                    {viralScore}<span className="text-xs font-medium ml-0.5 text-[#A1A1AA]">/100</span>
+                    {readinessScore ?? '—'}<span className="text-xs font-medium ml-0.5 text-[#A1A1AA]">/100</span>
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-[#A1A1AA] font-semibold truncate max-w-[130px]">{displayCategory}</p>
-                <p className="text-[10px] text-[#71717A] font-mono-studio">{duration > 0 ? duration.toFixed(1) : '15.0'}s total</p>
+                <p className="text-[10px] text-[#71717A] font-mono-studio">
+                  {readinessScore === null ? 'Add content to score' : readinessScore >= 75 ? 'Ready' : readinessScore >= 50 ? 'In progress' : 'Needs work'}
+                </p>
+                <p className="text-[10px] text-[#71717A] font-mono-studio">{duration > 0 ? `${duration.toFixed(1)}s total` : 'Duration not set'}</p>
               </div>
             </div>
 
@@ -485,11 +556,11 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
             <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-1.5">
               <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">SEO Audit Checklist</span>
               {[
-                { label: 'Title length is optimal (10–80 chars)', pass: editingTitle.length >= 10 && editingTitle.length <= 80 },
-                { label: 'Attention hook present in script', pass: editingHook.length > 5 },
-                { label: 'Clear Call-To-Action (CTA)', pass: editingCta.length > 3 },
-                { label: '3+ relevant hashtags included', pass: currentHashtags.length >= 3 },
-                { label: 'Duration in optimal zone (15–58s)', pass: duration >= 15 && duration <= 58 },
+                { label: 'Title is 10–80 characters', pass: editingTitle.trim().length >= 10 && editingTitle.trim().length <= 80 },
+                { label: 'Opening hook added', pass: normalizeText(editingHook).length > 0 },
+                { label: 'Call-to-action added', pass: normalizeText(editingCta).length > 0 },
+                { label: '3–8 unique hashtags added', pass: uniqueHashtags.length >= 3 && uniqueHashtags.length <= 8 },
+                { label: 'Short-form target duration set (15–58s)', pass: duration >= 15 && duration <= 58 },
                 { label: 'Vertical aspect ratio configured', pass: canvasAspectRatio === '9:16' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -532,34 +603,38 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
             {/* Platform Requirements */}
             <div className="p-3 rounded-xl bg-[#1C1C20] border border-[#2A2A30] flex flex-col gap-2">
               <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
-                {platform === 'youtube' ? 'YouTube Shorts' : platform === 'instagram' ? 'Instagram Reels' : platform === 'tiktok' ? 'TikTok' : 'Twitter / X'} Specs
+                {platform === 'youtube' ? 'YouTube Shorts' : platform === 'instagram' ? 'Instagram Reels' : platform === 'tiktok' ? 'TikTok' : 'X'} Checks
               </span>
               {[
                 {
-                  label: `Aspect Ratio: ${canvasAspectRatio} ${canvasAspectRatio === '9:16' ? '(Optimal)' : '(Non-standard)'}`,
+                  label: `Vertical format: ${canvasAspectRatio}`,
                   pass: canvasAspectRatio === '9:16',
                 },
                 {
-                  label: `Duration: ${duration.toFixed(1)}s (Target: <60s)`,
-                  pass: duration <= 60,
+                  label: `Short-form duration: ${duration > 0 ? `${duration.toFixed(1)}s` : 'not set'} (target ≤60s)`,
+                  pass: duration > 0 && duration <= 60,
                 },
                 {
-                  label: 'Opening Hook in first 3s',
-                  pass: editingHook.length > 5,
+                  label: 'Opening hook added',
+                  pass: normalizeText(editingHook).length > 0,
                 },
                 {
-                  label: 'Closing CTA prompt',
-                  pass: editingCta.length > 3,
+                  label: 'Call-to-action added',
+                  pass: normalizeText(editingCta).length > 0,
+                },
+                {
+                  label: `Export: ${selectedContainer.toUpperCase()} / ${selectedCodec.toUpperCase()}`,
+                  pass: selectedContainer === 'mp4' && selectedCodec === 'h264',
                 },
                 ...(platform === 'youtube' ? [
-                  { label: 'Title ≤ 100 characters', pass: editingTitle.length > 0 && editingTitle.length <= 100 },
-                  { label: '#Shorts hashtag present', pass: currentHashtags.some(h => h.toLowerCase() === '#shorts') },
+                  { label: `Video title: ${editingTitle.trim().length}/100 characters`, pass: editingTitle.trim().length > 0 && editingTitle.trim().length <= 100 },
                 ] : platform === 'instagram' ? [
-                  { label: '3–10 hashtags recommended', pass: currentHashtags.length >= 3 && currentHashtags.length <= 10 },
-                  { label: 'Full 1080×1920 HD resolution', pass: selectedResolution === '1080x1920' },
+                  { label: `Unique hashtags: ${uniqueHashtags.length} (suggested 3–10)`, pass: uniqueHashtags.length >= 3 && uniqueHashtags.length <= 10 },
+                  { label: `Resolution: ${selectedResolution} (1080×1920 target)`, pass: selectedResolution === '1080x1920' },
+                ] : platform === 'tiktok' ? [
+                  { label: `Resolution: ${selectedResolution} (1080×1920 target)`, pass: selectedResolution === '1080x1920' },
                 ] : [
-                  { label: 'Trending visual style active', pass: true },
-                  { label: 'Seamless loop enabled', pass: true },
+                  { label: 'Post text available', pass: Boolean(normalizeText(`${editingTitle} ${script?.quote ?? ''}`)) },
                 ]),
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -569,16 +644,43 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                   <span className={`text-[11px] ${item.pass ? 'text-[#D4D4D8]' : 'text-amber-300'}`}>{item.label}</span>
                 </div>
               ))}
+              <p className="text-[9px] leading-relaxed text-[#71717A] border-t border-[#25252A] pt-2">
+                Checks use current project settings and are guidance, not a guarantee of platform acceptance.
+              </p>
             </div>
 
-            {/* Engagement Forecast */}
+            {/* Measurable readiness signals */}
             <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">Performance Forecast</span>
+              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">Readiness Signals</span>
               {[
-                { label: 'Est. Completion Rate', icon: Clock, value: `${Math.min(95, Math.max(35, Math.round(100 - duration * 0.8)))}%`, color: 'text-blue-400' },
-                { label: 'Audience Retention', icon: Eye, value: `${viralScore >= 75 ? '72-85' : viralScore >= 50 ? '50-68' : '30-48'}%`, color: 'text-amber-400' },
-                { label: 'Algorithm Discovery', icon: TrendingUp, value: viralScore >= 75 ? 'High (FYP/Shorts)' : viralScore >= 50 ? 'Moderate' : 'Low', color: scoreColor },
-                { label: 'Engagement Rate', icon: ThumbsUp, value: `${(viralScore * 0.06).toFixed(1)}% – ${(viralScore * 0.09).toFixed(1)}%`, color: 'text-emerald-400' },
+                {
+                  label: 'Spoken pace',
+                  icon: Clock,
+                  value: !spokenWordCount ? 'Add spoken script' : duration > 0 ? `${spokenWordsPerMinute} words/min` : 'Set duration',
+                  color: 'text-blue-400',
+                  pass: spokenWordsPerMinute >= 110 && spokenWordsPerMinute <= 175,
+                },
+                {
+                  label: 'Opening hook',
+                  icon: Zap,
+                  value: editingHook ? `${countWords(editingHook)} words` : 'Missing',
+                  color: 'text-amber-400',
+                  pass: countWords(editingHook) >= 5 && countWords(editingHook) <= 20,
+                },
+                {
+                  label: 'Captions',
+                  icon: Type,
+                  value: script?.subtitles?.length ? `${script.subtitles.length} lines` : 'Not added',
+                  color: 'text-sky-400',
+                  pass: (script?.subtitles?.length ?? 0) > 0,
+                },
+                {
+                  label: 'Short-form format',
+                  icon: Smartphone,
+                  value: canvasAspectRatio === '9:16' ? '9:16 · vertical' : `${canvasAspectRatio} · not vertical`,
+                  color: 'text-emerald-400',
+                  pass: canvasAspectRatio === '9:16',
+                },
               ].map((item, i) => {
                 const Icon = item.icon;
                 return (
@@ -587,10 +689,13 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       <Icon className={`w-3 h-3 ${item.color}`} />
                       <span className="text-[11px] text-[#A1A1AA]">{item.label}</span>
                     </div>
-                    <span className={`text-[11px] font-bold ${item.color}`}>{item.value}</span>
+                    <span className={`text-[11px] font-bold ${item.pass ? item.color : 'text-amber-400'}`}>{item.value}</span>
                   </div>
                 );
               })}
+              <p className="text-[9px] leading-relaxed text-[#71717A] border-t border-[#25252A] pt-2">
+                Checklist guidance only; actual reach depends on audience response and platform distribution.
+              </p>
             </div>
           </div>
         )}

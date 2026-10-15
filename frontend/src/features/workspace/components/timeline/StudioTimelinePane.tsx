@@ -1,13 +1,17 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Type } from 'lucide-react';
 import { ScriptSubtitle } from '../../types';
 import {
   StudioTimelinePaneProps,
   formatTime,
   computeCaptionLanes,
+  computeClipLanes,
   SelectedClip,
   DragAction,
   EnabledTracks,
+  TimelineMediaClip,
+  TimelineAudioClip,
+  TimelineOverlayClip,
   MIN_TIMELINE_ZOOM,
   MAX_TIMELINE_ZOOM,
   TIMELINE_ZOOM_STEP,
@@ -43,11 +47,92 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   onSelectCompound,
   voices = [],
   musicTracks = [],
+  timelineDuration = 30,
+  timelineHeight,
+  onTimelineHeightChange,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isTimelineExpandedLocal, setIsTimelineExpandedLocal] = useState(false);
+  const isTimelineExpanded = timelineHeight !== undefined ? timelineHeight > 220 : isTimelineExpandedLocal;
+  const timelineViewportHeight = isTimelineExpanded ? 'max-h-[600px]' : 'max-h-[170px]';
+
+  const DEFAULT_TRACK_HEADERS_WIDTH = 192;
+  const [trackHeadersWidth, setTrackHeadersWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('apexmind:timeline-track-width');
+      return saved ? Math.max(130, Math.min(360, Number(saved))) : DEFAULT_TRACK_HEADERS_WIDTH;
+    } catch {
+      return DEFAULT_TRACK_HEADERS_WIDTH;
+    }
+  });
+  const [isResizingTrackHeaders, setIsResizingTrackHeaders] = useState(false);
+  const trackResizeStartXRef = useRef(0);
+  const trackResizeStartWidthRef = useRef(DEFAULT_TRACK_HEADERS_WIDTH);
+
+  const handleTrackHeadersResizeStart = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {}
+      trackResizeStartXRef.current = e.clientX;
+      trackResizeStartWidthRef.current = trackHeadersWidth;
+      setIsResizingTrackHeaders(true);
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+
+      const handlePointerMove = (ev: PointerEvent) => {
+        const delta = ev.clientX - trackResizeStartXRef.current;
+        const newWidth = Math.max(130, Math.min(360, Math.round(trackResizeStartWidthRef.current + delta)));
+        setTrackHeadersWidth(newWidth);
+      };
+
+      const handlePointerUp = () => {
+        setIsResizingTrackHeaders(false);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', handlePointerUp);
+        try {
+          localStorage.setItem('apexmind:timeline-track-width', String(trackHeadersWidth));
+        } catch {}
+      };
+
+      window.addEventListener('pointermove', handlePointerMove, { passive: true });
+      window.addEventListener('pointerup', handlePointerUp, { once: true });
+    },
+    [trackHeadersWidth]
+  );
+
+  const handleToggleExpandedHeight = useCallback(() => {
+    if (onTimelineHeightChange && timelineHeight !== undefined) {
+      if (timelineHeight > 220) {
+        onTimelineHeightChange(180);
+      } else {
+        onTimelineHeightChange(360);
+      }
+    } else {
+      setIsTimelineExpandedLocal((prev) => !prev);
+    }
+  }, [onTimelineHeightChange, timelineHeight]);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [rulerViewportWidth, setRulerViewportWidth] = useState(0);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [snapGuideTime, setSnapGuideTime] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isCollapsed) return;
+    const rulerViewport = rulerScrollRef.current;
+    if (!rulerViewport) return;
+
+    const updateWidth = () => setRulerViewportWidth(rulerViewport.clientWidth);
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(rulerViewport);
+    return () => observer.disconnect();
+  }, [isCollapsed]);
 
   // Available tracks corresponding to Left-Panel categories
   const [enabledTracks, setEnabledTracks] = useState<EnabledTracks>({
@@ -76,7 +161,15 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   // Active clip selection across any compound track
   const [selectedClip, setSelectedClip] = useState<SelectedClip | null>(null);
 
-  // Moveable / trimmable timing states for all tracks
+  // Multi-clip state for all tracks
+  const [videoClips, setVideoClips] = useState<TimelineMediaClip[]>([]);
+  const [imageClips, setImageClips] = useState<TimelineMediaClip[]>([]);
+  const [voiceClips, setVoiceClips] = useState<TimelineAudioClip[]>([]);
+  const [musicClips, setMusicClips] = useState<TimelineAudioClip[]>([]);
+  const [sfxClips, setSfxClips] = useState<TimelineAudioClip[]>([]);
+  const [overlayClips, setOverlayClips] = useState<TimelineOverlayClip[]>([]);
+
+  // Moveable / trimmable timing states for fallback non-multi-clip tracks
   const [videoStart, setVideoStart] = useState<number>(0);
   const [videoDuration, setVideoDuration] = useState<number>(12.1);
 
@@ -107,23 +200,40 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const [dragTooltip, setDragTooltip] = useState<string | null>(null);
 
   const tracksContainerRef = useRef<HTMLDivElement>(null);
+  const tracksScrollRef = useRef<HTMLDivElement>(null);
+  const rulerScrollRef = useRef<HTMLDivElement>(null);
+  const rulerContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingPlayhead = useRef<boolean>(false);
 
+  const handleTracksScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (rulerScrollRef.current) {
+      rulerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
+  const maxVideoEnd = videoClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
+  const maxImageEnd = imageClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
+  const maxVoiceEnd = voiceClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
+  const maxMusicEnd = musicClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
+  const maxSfxEnd = sfxClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
+  const maxOverlayEnd = overlayClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
+
   const contentEnd = Math.max(
-    enabledTracks.video && (customVideoUrl || activeBackdrop?.id) ? videoStart + videoDuration : 0,
-    enabledTracks.image && (customImageUrl || activeBackdrop?.imageUrl) ? imageStart + imageDuration : 0,
-    enabledTracks.overlay && activeElementOverlay ? overlayStart + overlayDuration : 0,
+    enabledTracks.video ? Math.max(maxVideoEnd, (customVideoUrl || (!customImageUrl && activeBackdrop?.id)) ? videoStart + videoDuration : 0) : 0,
+    enabledTracks.image ? Math.max(maxImageEnd, (customImageUrl || (!customVideoUrl && activeBackdrop?.imageUrl)) ? imageStart + imageDuration : 0) : 0,
+    enabledTracks.overlay ? Math.max(maxOverlayEnd, activeElementOverlay ? overlayStart + overlayDuration : 0) : 0,
     enabledTracks.captions
       ? localClips.reduce((end, clip) => Math.max(end, clip.start + (clip.duration || 3)), 0)
       : 0,
     enabledTracks.title && script.title ? titleStart + titleDuration : 0,
-    enabledTracks.voice && audioUrl ? voiceStart + voiceDuration : 0,
-    enabledTracks.music && selectedMusic ? musicStart + musicDuration : 0,
-    enabledTracks.sfx && selectedSfx ? sfxStart + sfxDuration : 0
+    enabledTracks.voice ? Math.max(maxVoiceEnd, audioUrl ? voiceStart + voiceDuration : 0) : 0,
+    enabledTracks.music ? Math.max(maxMusicEnd, selectedMusic ? musicStart + musicDuration : 0) : 0,
+    enabledTracks.sfx ? Math.max(maxSfxEnd, selectedSfx ? sfxStart + sfxDuration : 0) : 0
   );
-  const projectDuration = Math.max(0.1, duration > 0 ? duration : 30, contentEnd);
-  const totalDuration = projectDuration / Math.min(zoomLevel, 1);
+  const projectDuration = Math.max(0.1, duration > 0 ? duration : timelineDuration, contentEnd);
+  const totalDuration = projectDuration;
   const progressPercent = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
+  const timelineScale = Math.max(1, zoomLevel);
 
   useEffect(() => {
     onTimelineDurationChange?.(projectDuration);
@@ -131,6 +241,20 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   useEffect(() => {
     if (!selectedSfx) return;
+    setSfxClips((prev) => {
+      if (prev.some((c) => c.name === selectedSfx.name && Math.abs(c.start - selectedSfx.start) < 0.1)) return prev;
+      return [
+        ...prev,
+        {
+          id: `sfx-${Date.now()}`,
+          type: 'sfx',
+          url: selectedSfx.audioUrl,
+          name: selectedSfx.name,
+          start: selectedSfx.start,
+          duration: selectedSfx.duration || 2.0,
+        },
+      ];
+    });
     setSfxStart(selectedSfx.start);
     setSfxDuration(selectedSfx.duration);
     setEnabledTracks((previous) => ({ ...previous, sfx: true }));
@@ -143,18 +267,348 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const laneGap = 4;
   const captionTrackHeight = Math.max(40, (captionMaxLane + 1) * (laneHeight + laneGap) + 4);
 
-  // Auto-enable Image track if customImageUrl is chosen
+  // Dynamic Lane Stacking for Media & Audio Tracks (overlapping clips automatically move above & below!)
+  const { lanes: videoLanes, maxLane: videoMaxLane } = computeClipLanes(videoClips);
+  const videoTrackHeight = Math.max(40, (videoMaxLane + 1) * (laneHeight + laneGap) + 4);
+
+  const { lanes: imageLanes, maxLane: imageMaxLane } = computeClipLanes(imageClips);
+  const imageTrackHeight = Math.max(40, (imageMaxLane + 1) * (laneHeight + laneGap) + 4);
+
+  const { lanes: overlayLanes, maxLane: overlayMaxLane } = computeClipLanes(overlayClips);
+  const overlayTrackHeight = Math.max(40, (overlayMaxLane + 1) * (laneHeight + laneGap) + 4);
+
+  const { lanes: voiceLanes, maxLane: voiceMaxLane } = computeClipLanes(voiceClips);
+  const voiceTrackHeight = Math.max(40, (voiceMaxLane + 1) * (laneHeight + laneGap) + 4);
+
+  const { lanes: musicLanes, maxLane: musicMaxLane } = computeClipLanes(musicClips);
+  const musicTrackHeight = Math.max(40, (musicMaxLane + 1) * (laneHeight + laneGap) + 4);
+
+  const { lanes: sfxLanes, maxLane: sfxMaxLane } = computeClipLanes(sfxClips);
+  const sfxTrackHeight = Math.max(40, (sfxMaxLane + 1) * (laneHeight + laneGap) + 4);
+
+  // Layer move handlers (manually nudge clips above or below)
+  const handleMoveImageClipAbove = (clipId: string) => {
+    setImageClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
+    );
+  };
+  const handleMoveImageClipBelow = (clipId: string) => {
+    setImageClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
+    );
+  };
+
+  const handleMoveVideoClipAbove = (clipId: string) => {
+    setVideoClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
+    );
+  };
+  const handleMoveVideoClipBelow = (clipId: string) => {
+    setVideoClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
+    );
+  };
+
+  const handleMoveOverlayClipAbove = (clipId: string) => {
+    setOverlayClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
+    );
+  };
+  const handleMoveOverlayClipBelow = (clipId: string) => {
+    setOverlayClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
+    );
+  };
+
+  const handleMoveVoiceClipAbove = (clipId: string) => {
+    setVoiceClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
+    );
+  };
+  const handleMoveVoiceClipBelow = (clipId: string) => {
+    setVoiceClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
+    );
+  };
+
+  const handleMoveMusicClipAbove = (clipId: string) => {
+    setMusicClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
+    );
+  };
+  const handleMoveMusicClipBelow = (clipId: string) => {
+    setMusicClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
+    );
+  };
+
+  const handleMoveSfxClipAbove = (clipId: string) => {
+    setSfxClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.max(-5, (c.laneOffset || 0) - 1) } : c))
+    );
+  };
+  const handleMoveSfxClipBelow = (clipId: string) => {
+    setSfxClips((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, laneOffset: Math.min(5, (c.laneOffset || 0) + 1) } : c))
+    );
+  };
+
+  // Listen for newly added clips from Left Panes (Media, Image, Video, Audio, Elements)
+  useEffect(() => {
+    const handleAddTimelineClip = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        type: 'video' | 'image' | 'voice' | 'music' | 'sfx' | 'overlay';
+        url?: string;
+        name?: string;
+        duration?: number;
+        start?: number;
+        value?: string;
+        label?: string;
+        elementType?: 'sticker' | 'badge' | 'progress' | 'shape';
+      }>).detail;
+      if (!detail) return;
+
+      const clipStart = detail.start !== undefined ? detail.start : parseFloat(currentTime.toFixed(2));
+      const clipId = `${detail.type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+      if (detail.type === 'video' && detail.url) {
+        const clipDuration = detail.duration || 10;
+        const newClip: TimelineMediaClip = {
+          id: clipId,
+          type: 'video',
+          url: detail.url,
+          name: detail.name || 'Video Clip',
+          start: clipStart,
+          duration: clipDuration,
+        };
+        setVideoClips((prev) => [...prev, newClip]);
+        setEnabledTracks((prev) => ({ ...prev, video: true }));
+        setVideoTrackVisible(true);
+        setSelectedClip({ track: 'video', clipId });
+        onSelectCompound?.('video');
+      } else if (detail.type === 'image' && detail.url) {
+        const clipDuration = detail.duration || 8;
+        const newClip: TimelineMediaClip = {
+          id: clipId,
+          type: 'image',
+          url: detail.url,
+          name: detail.name || 'Image Graphic',
+          start: clipStart,
+          duration: clipDuration,
+        };
+        setImageClips((prev) => [...prev, newClip]);
+        setEnabledTracks((prev) => ({ ...prev, image: true }));
+        setImageTrackVisible(true);
+        setSelectedClip({ track: 'image', clipId });
+        onSelectCompound?.('video');
+      } else if (detail.type === 'voice') {
+        const clipDuration = detail.duration || (duration > 0 ? duration : 12.1);
+        const newClip: TimelineAudioClip = {
+          id: clipId,
+          type: 'voice',
+          url: detail.url || audioUrl || '',
+          name: detail.name || 'Voiceover Track',
+          start: clipStart,
+          duration: clipDuration,
+        };
+        setVoiceClips((prev) => [...prev, newClip]);
+        setEnabledTracks((prev) => ({ ...prev, voice: true }));
+        setVoiceTrackMuted(false);
+        setSelectedClip({ track: 'voice', clipId });
+        onSelectCompound?.('voice');
+      } else if (detail.type === 'music') {
+        const clipDuration = detail.duration || 15.0;
+        const newClip: TimelineAudioClip = {
+          id: clipId,
+          type: 'music',
+          url: detail.url || '',
+          name: detail.name || 'Music Soundtrack',
+          start: clipStart,
+          duration: clipDuration,
+        };
+        setMusicClips((prev) => [...prev, newClip]);
+        setEnabledTracks((prev) => ({ ...prev, music: true }));
+        setMusicTrackMuted(false);
+        setSelectedClip({ track: 'music', clipId });
+        onSelectCompound?.('music');
+      } else if (detail.type === 'sfx') {
+        const clipDuration = detail.duration || 2.0;
+        const newClip: TimelineAudioClip = {
+          id: clipId,
+          type: 'sfx',
+          url: detail.url || '',
+          name: detail.name || 'Sound Effect',
+          start: clipStart,
+          duration: clipDuration,
+        };
+        setSfxClips((prev) => [...prev, newClip]);
+        setEnabledTracks((prev) => ({ ...prev, sfx: true }));
+        setSfxTrackMuted(false);
+        setSelectedClip({ track: 'sfx', clipId });
+        onSelectCompound?.('music');
+      } else if (detail.type === 'overlay') {
+        const clipDuration = detail.duration || 4.5;
+        const newClip: TimelineOverlayClip = {
+          id: clipId,
+          type: detail.elementType || 'shape',
+          value: detail.value || detail.url || '',
+          label: detail.label || detail.name || 'Visual Element',
+          name: detail.name || 'Overlay Element',
+          start: clipStart,
+          duration: clipDuration,
+        };
+        setOverlayClips((prev) => [...prev, newClip]);
+        setEnabledTracks((prev) => ({ ...prev, overlay: true }));
+        setOverlayTrackVisible(true);
+        setSelectedClip({ track: 'overlay', clipId });
+        onSelectCompound?.('overlay');
+      }
+    };
+
+    window.addEventListener('workspace:add-timeline-clip', handleAddTimelineClip);
+    return () => window.removeEventListener('workspace:add-timeline-clip', handleAddTimelineClip);
+  }, [currentTime, duration, audioUrl, onSelectCompound]);
+
+  // Auto-enable Image track and sync if customImageUrl is chosen
   useEffect(() => {
     if (customImageUrl) {
+      setImageClips((prev) => {
+        if (prev.some((c) => c.url === customImageUrl)) return prev;
+        return [
+          ...prev,
+          {
+            id: `img-${Date.now()}`,
+            type: 'image',
+            url: customImageUrl,
+            name: 'Image Graphic',
+            start: 0,
+            duration: 8.0,
+          },
+        ];
+      });
       setEnabledTracks((prev) => ({ ...prev, image: true }));
       setImageTrackVisible(true);
+      setSelectedClip({ track: 'image' });
     }
   }, [customImageUrl]);
+
+  // Auto-enable Video track and sync if customVideoUrl is chosen
+  useEffect(() => {
+    if (customVideoUrl) {
+      setVideoClips((prev) => {
+        if (prev.some((c) => c.url === customVideoUrl)) return prev;
+        return [
+          ...prev,
+          {
+            id: `vid-${Date.now()}`,
+            type: 'video',
+            url: customVideoUrl,
+            name: 'Video Clip',
+            start: 0,
+            duration: duration > 0 ? duration : 12.1,
+          },
+        ];
+      });
+      setEnabledTracks((prev) => ({ ...prev, video: true }));
+      setVideoTrackVisible(true);
+      setSelectedClip({ track: 'video' });
+    }
+  }, [customVideoUrl, duration]);
+
+  // Default backdrop initialization
+  useEffect(() => {
+    if (activeBackdrop?.id && !customVideoUrl && !customImageUrl && videoClips.length === 0 && imageClips.length === 0) {
+      const videoUrl = activeBackdrop.videoUrl || (activeBackdrop.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined);
+      if (videoUrl) {
+        setVideoClips([{
+          id: `vid-${activeBackdrop.id}`,
+          type: 'video',
+          url: videoUrl,
+          name: activeBackdrop.name || 'Video Clip',
+          start: 0,
+          duration: duration > 0 ? duration : 12.1,
+        }]);
+        setEnabledTracks((prev) => ({ ...prev, video: true }));
+      } else if (activeBackdrop.imageUrl) {
+        setImageClips([{
+          id: `img-${activeBackdrop.id}`,
+          type: 'image',
+          url: activeBackdrop.imageUrl,
+          name: activeBackdrop.name || 'Image Graphic',
+          start: 0,
+          duration: 8.0,
+        }]);
+        setEnabledTracks((prev) => ({ ...prev, image: true }));
+      }
+    }
+  }, [activeBackdrop, customVideoUrl, customImageUrl, duration, videoClips.length, imageClips.length]);
+
+  // Auto-enable Music track and select clip if selectedMusic is chosen
+  useEffect(() => {
+    if (selectedMusic) {
+      const trackObj = musicTracks.find((m) => m.id === selectedMusic);
+      setMusicClips((prev) => {
+        if (prev.length > 0) return prev;
+        return [
+          {
+            id: `mus-${Date.now()}`,
+            type: 'music',
+            url: trackObj?.audioUrl || '',
+            name: trackObj ? trackObj.title : 'Soundtrack',
+            start: 0,
+            duration: 15.0,
+          },
+        ];
+      });
+      setEnabledTracks((prev) => ({ ...prev, music: true }));
+      setMusicTrackMuted(false);
+      setSelectedClip({ track: 'music' });
+    }
+  }, [selectedMusic, musicTracks]);
+
+  // Auto-enable Voice track and select clip if audioUrl is chosen
+  useEffect(() => {
+    if (audioUrl) {
+      setVoiceClips((prev) => {
+        if (prev.some((c) => c.url === audioUrl)) return prev;
+        return [
+          ...prev,
+          {
+            id: `vox-${Date.now()}`,
+            type: 'voice',
+            url: audioUrl,
+            name: selectedVoice ? `Voice: ${selectedVoice}` : 'Voiceover',
+            start: 0,
+            duration: duration > 0 ? duration : 12.1,
+          },
+        ];
+      });
+      setEnabledTracks((prev) => ({ ...prev, voice: true }));
+      setVoiceTrackMuted(false);
+      setSelectedClip({ track: 'voice' });
+    }
+  }, [audioUrl, duration, selectedVoice]);
 
   // Auto-enable Overlay track if activeElementOverlay is selected
   useEffect(() => {
     if (activeElementOverlay) {
+      setOverlayClips((prev) => {
+        if (prev.some((c) => c.value === activeElementOverlay.value)) return prev;
+        return [
+          ...prev,
+          {
+            id: `ovl-${Date.now()}`,
+            type: (activeElementOverlay.type as any) || 'badge',
+            value: activeElementOverlay.value,
+            label: activeElementOverlay.label || activeElementOverlay.name || 'Visual Element',
+            name: activeElementOverlay.name || 'Overlay Element',
+            start: 1.5,
+            duration: 6.0,
+          },
+        ];
+      });
       setEnabledTracks((prev) => ({ ...prev, overlay: true }));
+      setSelectedClip({ track: 'overlay' });
     }
   }, [activeElementOverlay]);
 
@@ -191,14 +645,22 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           // Mute
           voiceMuted: voiceTrackMuted || !enabledTracks.voice,
           musicMuted: musicTrackMuted || !enabledTracks.music,
-          // Clip timing (for trim offset playback)
-          videoStart,
-          videoDuration,
+          sfxMuted: sfxTrackMuted || !enabledTracks.sfx,
+          // Multi-clip arrays
+          videoClips,
+          imageClips,
+          voiceClips,
+          musicClips,
+          sfxClips,
+          overlayClips,
+          // Clip timing (for legacy fallback)
+          videoStart: videoClips[0]?.start ?? videoStart,
+          videoDuration: videoClips[0]?.duration ?? videoDuration,
           videoEnabled: enabledTracks.video,
-          imageStart,
-          imageDuration,
-          overlayStart,
-          overlayDuration,
+          imageStart: imageClips[0]?.start ?? imageStart,
+          imageDuration: imageClips[0]?.duration ?? imageDuration,
+          overlayStart: overlayClips[0]?.start ?? overlayStart,
+          overlayDuration: overlayClips[0]?.duration ?? overlayDuration,
           titleStart,
           titleDuration,
           // Track enabled flags
@@ -213,6 +675,13 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     overlayTrackVisible,
     voiceTrackMuted,
     musicTrackMuted,
+    sfxTrackMuted,
+    videoClips,
+    imageClips,
+    voiceClips,
+    musicClips,
+    sfxClips,
+    overlayClips,
     videoStart,
     videoDuration,
     imageStart,
@@ -239,15 +708,32 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     return { value: targetTime, snapped: false };
   };
 
-  // Playhead scrub drag handler
+  // Playhead scrub drag handler on ruler
   const handleRulerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     isDraggingPlayhead.current = true;
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+    updateTimeFromPointer(e);
+  };
+
+  // Playhead scrub handler directly on tracks area
+  const handleTracksPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('.timeline-clip-card') || target.closest('button') || target.closest('[data-clip-action]')) {
+      return;
+    }
+    isDraggingPlayhead.current = true;
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
     updateTimeFromPointer(e);
   };
 
   const updateTimeFromPointer = (e: React.PointerEvent<HTMLDivElement> | PointerEvent) => {
-    if (!tracksContainerRef.current) return;
-    const rect = tracksContainerRef.current.getBoundingClientRect();
+    const target = rulerContainerRef.current || tracksContainerRef.current;
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     onSeek(ratio * totalDuration);
   };
@@ -336,6 +822,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       const snapPoints = [
         0,
         currentTime,
+        ...videoClips.flatMap((c) => [c.start, c.start + c.duration]),
+        ...imageClips.flatMap((c) => [c.start, c.start + c.duration]),
+        ...voiceClips.flatMap((c) => [c.start, c.start + c.duration]),
+        ...musicClips.flatMap((c) => [c.start, c.start + c.duration]),
+        ...sfxClips.flatMap((c) => [c.start, c.start + c.duration]),
+        ...overlayClips.flatMap((c) => [c.start, c.start + c.duration]),
         videoStart,
         videoStart + videoDuration,
         imageStart,
@@ -344,6 +836,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         overlayStart + overlayDuration,
         ...localClips.flatMap((c) => [c.start, c.start + (c.duration || 3)]),
       ];
+
+      const maxTimelineBound = Math.max(totalDuration + 60, 300);
 
       if (activeDrag.kind === 'subtitle') {
         const { index, mode, origStart, origDuration } = activeDrag;
@@ -354,12 +848,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           if (mode === 'move') {
             const rawStart = origStart + deltaSec;
             const snapRes = calculateSnap(rawStart, snapPoints);
-            const nextStart = Math.max(0, Math.min(totalDuration - target.duration, snapRes.value));
+            const nextStart = Math.max(0, Math.min(maxTimelineBound - target.duration, snapRes.value));
             target.start = parseFloat(nextStart.toFixed(2));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
             setDragTooltip(
-              `▶ Captions [${index + 1}] • Start: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${
-                snapRes.snapped ? ' 🧲 Snapped' : ''
+              `▶ Captions [${index + 1}] • Start: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
               }`
             );
           } else if (mode === 'trim-left') {
@@ -371,19 +864,17 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             target.duration = parseFloat(Math.max(0.3, nextDuration).toFixed(2));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
             setDragTooltip(
-              `◀ Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${
-                snapRes.snapped ? ' 🧲 Snapped' : ''
+              `◀ Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
               }`
             );
           } else if (mode === 'trim-right') {
             const rawEnd = origStart + origDuration + deltaSec;
             const snapRes = calculateSnap(rawEnd, snapPoints);
-            const nextEnd = Math.max(target.start + 0.3, Math.min(totalDuration, snapRes.value));
+            const nextEnd = Math.max(target.start + 0.3, Math.min(maxTimelineBound, snapRes.value));
             target.duration = parseFloat((nextEnd - target.start).toFixed(2));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
             setDragTooltip(
-              `▶ Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${
-                snapRes.snapped ? ' 🧲 Snapped' : ''
+              `▶ Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
               }`
             );
           }
@@ -392,136 +883,311 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           return updated;
         });
       } else if (activeDrag.kind === 'video') {
-        if (activeDrag.mode === 'move') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const snapRes = calculateSnap(rawStart, snapPoints);
-          const nextStart = Math.max(0, Math.min(totalDuration - videoDuration, snapRes.value));
-          setVideoStart(parseFloat(nextStart.toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(
-            `▶ V1 Video • Start: ${nextStart.toFixed(1)}s • Dur: ${videoDuration.toFixed(1)}s${
-              snapRes.snapped ? ' 🧲 Snapped' : ''
-            }`
-          );
-        } else if (activeDrag.mode === 'trim-left') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const snapRes = calculateSnap(rawStart, snapPoints);
-          const nextStart = Math.max(0, Math.min(activeDrag.origStart + activeDrag.origDuration - 0.5, snapRes.value));
-          const nextDuration = activeDrag.origDuration - (nextStart - activeDrag.origStart);
-          setVideoStart(parseFloat(nextStart.toFixed(2)));
-          setVideoDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`◀ V1 Trim In: ${nextStart.toFixed(1)}s • Dur: ${nextDuration.toFixed(1)}s`);
-        } else if (activeDrag.mode === 'trim-right') {
-          const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
-          const snapRes = calculateSnap(rawEnd, snapPoints);
-          const nextEnd = Math.max(videoStart + 0.5, Math.min(totalDuration, snapRes.value));
-          const nextDuration = nextEnd - videoStart;
-          setVideoDuration(parseFloat(nextDuration.toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`▶ V1 Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${nextDuration.toFixed(1)}s`);
-        }
+        const { clipId, mode, origStart, origDuration } = activeDrag;
+        setVideoClips((prev) =>
+          prev.map((c) => {
+            if (c.id !== clipId) return c;
+            const target = { ...c };
+            if (mode === 'move') {
+              const rawStart = origStart + deltaSec;
+              const snapRes = calculateSnap(rawStart, snapPoints);
+              const nextStart = Math.max(0, Math.min(maxTimelineBound - target.duration, snapRes.value));
+              target.start = parseFloat(nextStart.toFixed(2));
+              setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+              setDragTooltip(
+                `▶ Video "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
+                }`
+              );
+            } else if (mode === 'trim-left') {
+              const rawStart = origStart + deltaSec;
+              const snapRes = calculateSnap(rawStart, snapPoints);
+              const nextStart = Math.max(0, Math.min(origStart + origDuration - 0.5, snapRes.value));
+              const nextDuration = origDuration - (nextStart - origStart);
+              target.start = parseFloat(nextStart.toFixed(2));
+              target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
+              setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+              setDragTooltip(`◀ Video Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+            } else if (mode === 'trim-right') {
+              const rawEnd = origStart + origDuration + deltaSec;
+              const snapRes = calculateSnap(rawEnd, snapPoints);
+              const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
+              target.duration = parseFloat((nextEnd - target.start).toFixed(2));
+              setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+              setDragTooltip(`▶ Video Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+            }
+            return target;
+          })
+        );
       } else if (activeDrag.kind === 'image') {
-        if (activeDrag.mode === 'move') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const snapRes = calculateSnap(rawStart, snapPoints);
-          const nextStart = Math.max(0, Math.min(totalDuration - imageDuration, snapRes.value));
-          setImageStart(parseFloat(nextStart.toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`▶ V2 Image • Start: ${nextStart.toFixed(1)}s`);
-        } else if (activeDrag.mode === 'trim-left') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const nextStart = Math.max(0, Math.min(activeDrag.origStart + activeDrag.origDuration - 0.5, rawStart));
-          const nextDuration = activeDrag.origDuration - (nextStart - activeDrag.origStart);
-          setImageStart(parseFloat(nextStart.toFixed(2)));
-          setImageDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
-        } else if (activeDrag.mode === 'trim-right') {
-          const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
-          const nextEnd = Math.max(imageStart + 0.5, Math.min(totalDuration, rawEnd));
-          setImageDuration(parseFloat((nextEnd - imageStart).toFixed(2)));
-        }
+        const { clipId, mode, origStart, origDuration } = activeDrag;
+        setImageClips((prev) =>
+          prev.map((c) => {
+            if (c.id !== clipId) return c;
+            const target = { ...c };
+            if (mode === 'move') {
+              const rawStart = origStart + deltaSec;
+              const snapRes = calculateSnap(rawStart, snapPoints);
+              const nextStart = Math.max(0, Math.min(maxTimelineBound - target.duration, snapRes.value));
+              target.start = parseFloat(nextStart.toFixed(2));
+              setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+              setDragTooltip(
+                `▶ Image "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
+                }`
+              );
+            } else if (mode === 'trim-left') {
+              const rawStart = origStart + deltaSec;
+              const snapRes = calculateSnap(rawStart, snapPoints);
+              const nextStart = Math.max(0, Math.min(origStart + origDuration - 0.5, snapRes.value));
+              const nextDuration = origDuration - (nextStart - origStart);
+              target.start = parseFloat(nextStart.toFixed(2));
+              target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
+              setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+              setDragTooltip(`◀ Image Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+            } else if (mode === 'trim-right') {
+              const rawEnd = origStart + origDuration + deltaSec;
+              const snapRes = calculateSnap(rawEnd, snapPoints);
+              const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
+              target.duration = parseFloat((nextEnd - target.start).toFixed(2));
+              setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+              setDragTooltip(`▶ Image Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+            }
+            return target;
+          })
+        );
       } else if (activeDrag.kind === 'overlay') {
-        if (activeDrag.mode === 'move') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const snapRes = calculateSnap(rawStart, snapPoints);
-          const nextStart = Math.max(0, Math.min(totalDuration - overlayDuration, snapRes.value));
-          setOverlayStart(parseFloat(nextStart.toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`▶ O1 Overlay • Start: ${nextStart.toFixed(1)}s`);
-        } else if (activeDrag.mode === 'trim-left') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const nextStart = Math.max(0, Math.min(activeDrag.origStart + activeDrag.origDuration - 0.5, rawStart));
-          const nextDuration = activeDrag.origDuration - (nextStart - activeDrag.origStart);
-          setOverlayStart(parseFloat(nextStart.toFixed(2)));
-          setOverlayDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
-        } else if (activeDrag.mode === 'trim-right') {
-          const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
-          const nextEnd = Math.max(overlayStart + 0.5, Math.min(totalDuration, rawEnd));
-          setOverlayDuration(parseFloat((nextEnd - overlayStart).toFixed(2)));
+        const { clipId, mode, origStart, origDuration } = activeDrag;
+        if (clipId) {
+          setOverlayClips((prev) =>
+            prev.map((c) => {
+              if (c.id !== clipId) return c;
+              const target = { ...c };
+              if (mode === 'move') {
+                const rawStart = origStart + deltaSec;
+                const snapRes = calculateSnap(rawStart, snapPoints);
+                const nextStart = Math.max(0, Math.min(maxTimelineBound - target.duration, snapRes.value));
+                target.start = parseFloat(nextStart.toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(
+                  `▶ Overlay "${target.label || target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
+                  }`
+                );
+              } else if (mode === 'trim-left') {
+                const rawStart = origStart + deltaSec;
+                const snapRes = calculateSnap(rawStart, snapPoints);
+                const nextStart = Math.max(0, Math.min(origStart + origDuration - 0.5, snapRes.value));
+                const nextDuration = origDuration - (nextStart - origStart);
+                target.start = parseFloat(nextStart.toFixed(2));
+                target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(`◀ Overlay Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+              } else if (mode === 'trim-right') {
+                const rawEnd = origStart + origDuration + deltaSec;
+                const snapRes = calculateSnap(rawEnd, snapPoints);
+                const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
+                target.duration = parseFloat((nextEnd - target.start).toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(`▶ Overlay Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+              }
+              return target;
+            })
+          );
+        } else {
+          if (activeDrag.mode === 'move') {
+            const rawStart = activeDrag.origStart + deltaSec;
+            const snapRes = calculateSnap(rawStart, snapPoints);
+            const nextStart = Math.max(0, Math.min(maxTimelineBound - overlayDuration, snapRes.value));
+            setOverlayStart(parseFloat(nextStart.toFixed(2)));
+            setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+            setDragTooltip(`▶ O1 Overlay • Start: ${nextStart.toFixed(1)}s`);
+          } else if (activeDrag.mode === 'trim-left') {
+            const rawStart = activeDrag.origStart + deltaSec;
+            const nextStart = Math.max(0, Math.min(activeDrag.origStart + activeDrag.origDuration - 0.5, rawStart));
+            const nextDuration = activeDrag.origDuration - (nextStart - activeDrag.origStart);
+            setOverlayStart(parseFloat(nextStart.toFixed(2)));
+            setOverlayDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
+          } else if (activeDrag.mode === 'trim-right') {
+            const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
+            const nextEnd = Math.max(overlayStart + 0.5, Math.min(maxTimelineBound, rawEnd));
+            setOverlayDuration(parseFloat((nextEnd - overlayStart).toFixed(2)));
+          }
         }
       } else if (activeDrag.kind === 'title') {
         if (activeDrag.mode === 'move') {
           const rawStart = activeDrag.origStart + deltaSec;
-          const nextStart = Math.max(0, Math.min(totalDuration - titleDuration, rawStart));
+          const nextStart = Math.max(0, Math.min(maxTimelineBound - titleDuration, rawStart));
           setTitleStart(parseFloat(nextStart.toFixed(2)));
         } else if (activeDrag.mode === 'trim-right') {
           const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
-          const nextEnd = Math.max(titleStart + 0.5, Math.min(totalDuration, rawEnd));
+          const nextEnd = Math.max(titleStart + 0.5, Math.min(maxTimelineBound, rawEnd));
           setTitleDuration(parseFloat((nextEnd - titleStart).toFixed(2)));
         }
       } else if (activeDrag.kind === 'voice') {
-        if (activeDrag.mode === 'move') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const snapRes = calculateSnap(rawStart, snapPoints);
-          const nextStart = Math.max(0, Math.min(totalDuration - 0.5, snapRes.value));
-          setVoiceStart(parseFloat(nextStart.toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`▶ A1 Voice Delay: ${nextStart.toFixed(1)}s`);
-        } else if (activeDrag.mode === 'trim-left') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const snapRes = calculateSnap(rawStart, snapPoints);
-          const nextStart = Math.max(0, Math.min(activeDrag.origStart + activeDrag.origDuration - 0.5, snapRes.value));
-          const nextDuration = activeDrag.origDuration - (nextStart - activeDrag.origStart);
-          setVoiceStart(parseFloat(nextStart.toFixed(2)));
-          setVoiceDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`◀ A1 Voice Trim In: ${nextStart.toFixed(1)}s`);
-        } else if (activeDrag.mode === 'trim-right') {
-          const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
-          const snapRes = calculateSnap(rawEnd, snapPoints);
-          const nextEnd = Math.max(voiceStart + 0.5, Math.min(totalDuration, snapRes.value));
-          setVoiceDuration(parseFloat((nextEnd - voiceStart).toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`▶ A1 Voice Trim Out: ${nextEnd.toFixed(1)}s`);
+        const { clipId, mode, origStart, origDuration } = activeDrag;
+        if (clipId) {
+          setVoiceClips((prev) =>
+            prev.map((c) => {
+              if (c.id !== clipId) return c;
+              const target = { ...c };
+              if (mode === 'move') {
+                const rawStart = origStart + deltaSec;
+                const snapRes = calculateSnap(rawStart, snapPoints);
+                const nextStart = Math.max(0, Math.min(maxTimelineBound - target.duration, snapRes.value));
+                target.start = parseFloat(nextStart.toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(
+                  `▶ Voice "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
+                  }`
+                );
+              } else if (mode === 'trim-left') {
+                const rawStart = origStart + deltaSec;
+                const snapRes = calculateSnap(rawStart, snapPoints);
+                const nextStart = Math.max(0, Math.min(origStart + origDuration - 0.5, snapRes.value));
+                const nextDuration = origDuration - (nextStart - origStart);
+                target.start = parseFloat(nextStart.toFixed(2));
+                target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(`◀ Voice Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+              } else if (mode === 'trim-right') {
+                const rawEnd = origStart + origDuration + deltaSec;
+                const snapRes = calculateSnap(rawEnd, snapPoints);
+                const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
+                target.duration = parseFloat((nextEnd - target.start).toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(`▶ Voice Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+              }
+              return target;
+            })
+          );
+        } else {
+          if (activeDrag.mode === 'move') {
+            const rawStart = activeDrag.origStart + deltaSec;
+            const snapRes = calculateSnap(rawStart, snapPoints);
+            const nextStart = Math.max(0, Math.min(maxTimelineBound - 0.5, snapRes.value));
+            setVoiceStart(parseFloat(nextStart.toFixed(2)));
+            setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+            setDragTooltip(`▶ A1 Voice Delay: ${nextStart.toFixed(1)}s`);
+          } else if (activeDrag.mode === 'trim-left') {
+            const rawStart = activeDrag.origStart + deltaSec;
+            const snapRes = calculateSnap(rawStart, snapPoints);
+            const nextStart = Math.max(0, Math.min(activeDrag.origStart + activeDrag.origDuration - 0.5, snapRes.value));
+            const nextDuration = activeDrag.origDuration - (nextStart - activeDrag.origStart);
+            setVoiceStart(parseFloat(nextStart.toFixed(2)));
+            setVoiceDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
+            setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+            setDragTooltip(`◀ A1 Voice Trim In: ${nextStart.toFixed(1)}s`);
+          } else if (activeDrag.mode === 'trim-right') {
+            const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
+            const snapRes = calculateSnap(rawEnd, snapPoints);
+            const nextEnd = Math.max(voiceStart + 0.5, Math.min(maxTimelineBound, snapRes.value));
+            setVoiceDuration(parseFloat((nextEnd - voiceStart).toFixed(2)));
+            setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+            setDragTooltip(`▶ A1 Voice Trim Out: ${nextEnd.toFixed(1)}s`);
+          }
         }
       } else if (activeDrag.kind === 'music') {
-        if (activeDrag.mode === 'move') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const snapRes = calculateSnap(rawStart, snapPoints);
-          const nextStart = Math.max(0, Math.min(totalDuration - 0.5, snapRes.value));
-          setMusicStart(parseFloat(nextStart.toFixed(2)));
-          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`▶ A2 Music Beat Alignment: ${nextStart.toFixed(1)}s`);
-        } else if (activeDrag.mode === 'trim-left') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const nextStart = Math.max(0, Math.min(activeDrag.origStart + activeDrag.origDuration - 0.5, rawStart));
-          const nextDuration = activeDrag.origDuration - (nextStart - activeDrag.origStart);
-          setMusicStart(parseFloat(nextStart.toFixed(2)));
-          setMusicDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
-        } else if (activeDrag.mode === 'trim-right') {
-          const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
-          const nextEnd = Math.max(musicStart + 0.5, Math.min(totalDuration, rawEnd));
-          setMusicDuration(parseFloat((nextEnd - musicStart).toFixed(2)));
+        const { clipId, mode, origStart, origDuration } = activeDrag;
+        if (clipId) {
+          setMusicClips((prev) =>
+            prev.map((c) => {
+              if (c.id !== clipId) return c;
+              const target = { ...c };
+              if (mode === 'move') {
+                const rawStart = origStart + deltaSec;
+                const snapRes = calculateSnap(rawStart, snapPoints);
+                const nextStart = Math.max(0, Math.min(maxTimelineBound - target.duration, snapRes.value));
+                target.start = parseFloat(nextStart.toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(
+                  `▶ Music "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
+                  }`
+                );
+              } else if (mode === 'trim-left') {
+                const rawStart = origStart + deltaSec;
+                const snapRes = calculateSnap(rawStart, snapPoints);
+                const nextStart = Math.max(0, Math.min(origStart + origDuration - 0.5, rawStart));
+                const nextDuration = origDuration - (nextStart - origStart);
+                target.start = parseFloat(nextStart.toFixed(2));
+                target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(`◀ Music Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+              } else if (mode === 'trim-right') {
+                const rawEnd = origStart + origDuration + deltaSec;
+                const snapRes = calculateSnap(rawEnd, snapPoints);
+                const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, rawEnd));
+                target.duration = parseFloat((nextEnd - target.start).toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(`▶ Music Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+              }
+              return target;
+            })
+          );
+        } else {
+          if (activeDrag.mode === 'move') {
+            const rawStart = activeDrag.origStart + deltaSec;
+            const snapRes = calculateSnap(rawStart, snapPoints);
+            const nextStart = Math.max(0, Math.min(maxTimelineBound - 0.5, snapRes.value));
+            setMusicStart(parseFloat(nextStart.toFixed(2)));
+            setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+            setDragTooltip(`▶ A2 Music Beat Alignment: ${nextStart.toFixed(1)}s`);
+          } else if (activeDrag.mode === 'trim-left') {
+            const rawStart = activeDrag.origStart + deltaSec;
+            const nextStart = Math.max(0, Math.min(activeDrag.origStart + activeDrag.origDuration - 0.5, rawStart));
+            const nextDuration = activeDrag.origDuration - (nextStart - activeDrag.origStart);
+            setMusicStart(parseFloat(nextStart.toFixed(2)));
+            setMusicDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
+          } else if (activeDrag.mode === 'trim-right') {
+            const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
+            const nextEnd = Math.max(musicStart + 0.5, Math.min(maxTimelineBound, rawEnd));
+            setMusicDuration(parseFloat((nextEnd - musicStart).toFixed(2)));
+          }
         }
       } else if (activeDrag.kind === 'sfx') {
-        if (activeDrag.mode === 'move') {
-          const rawStart = activeDrag.origStart + deltaSec;
-          const nextStart = Math.max(0, Math.min(totalDuration - sfxDuration, rawStart));
-          setSfxStart(parseFloat(nextStart.toFixed(2)));
-        } else if (activeDrag.mode === 'trim-right') {
-          const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
-          const nextEnd = Math.max(sfxStart + 0.3, Math.min(totalDuration, rawEnd));
-          setSfxDuration(parseFloat((nextEnd - sfxStart).toFixed(2)));
+        const { clipId, mode, origStart, origDuration } = activeDrag;
+        if (clipId) {
+          setSfxClips((prev) =>
+            prev.map((c) => {
+              if (c.id !== clipId) return c;
+              const target = { ...c };
+              if (mode === 'move') {
+                const rawStart = origStart + deltaSec;
+                const snapRes = calculateSnap(rawStart, snapPoints);
+                const nextStart = Math.max(0, Math.min(maxTimelineBound - target.duration, snapRes.value));
+                target.start = parseFloat(nextStart.toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(
+                  `▶ SFX "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''
+                  }`
+                );
+              } else if (mode === 'trim-left') {
+                const rawStart = origStart + deltaSec;
+                const snapRes = calculateSnap(rawStart, snapPoints);
+                const nextStart = Math.max(0, Math.min(origStart + origDuration - 0.3, snapRes.value));
+                const nextDuration = origDuration - (nextStart - origStart);
+                target.start = parseFloat(nextStart.toFixed(2));
+                target.duration = parseFloat(Math.max(0.3, nextDuration).toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(`◀ SFX Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+              } else if (mode === 'trim-right') {
+                const rawEnd = origStart + origDuration + deltaSec;
+                const snapRes = calculateSnap(rawEnd, snapPoints);
+                const nextEnd = Math.max(target.start + 0.3, Math.min(maxTimelineBound, rawEnd));
+                target.duration = parseFloat((nextEnd - target.start).toFixed(2));
+                setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+                setDragTooltip(`▶ SFX Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s`);
+              }
+              return target;
+            })
+          );
+        } else {
+          if (activeDrag.mode === 'move') {
+            const rawStart = activeDrag.origStart + deltaSec;
+            const nextStart = Math.max(0, Math.min(maxTimelineBound - sfxDuration, rawStart));
+            setSfxStart(parseFloat(nextStart.toFixed(2)));
+          } else if (activeDrag.mode === 'trim-right') {
+            const rawEnd = activeDrag.origStart + activeDrag.origDuration + deltaSec;
+            const nextEnd = Math.max(sfxStart + 0.3, Math.min(maxTimelineBound, rawEnd));
+            setSfxDuration(parseFloat((nextEnd - sfxStart).toFixed(2)));
+          }
         }
       }
     };
@@ -550,6 +1216,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     activeDrag,
     totalDuration,
     currentTime,
+    videoClips,
+    imageClips,
     videoStart,
     videoDuration,
     imageStart,
@@ -598,25 +1266,17 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         setSelectedClip({ track: 'caption', index: selectedClip.index + 1 });
       }
     } else if (selectedClip.track === 'video') {
-      if (currentTime > videoStart + 0.5 && currentTime < videoStart + videoDuration - 0.5) {
-        setVideoDuration(parseFloat((currentTime - videoStart).toFixed(2)));
-      }
+      handleSplitVideoClip(selectedClip.clipId);
     } else if (selectedClip.track === 'image') {
-      if (currentTime > imageStart + 0.5 && currentTime < imageStart + imageDuration - 0.5) {
-        setImageDuration(parseFloat((currentTime - imageStart).toFixed(2)));
-      }
+      handleSplitImageClip(selectedClip.clipId);
     } else if (selectedClip.track === 'overlay') {
-      if (currentTime > overlayStart + 0.5 && currentTime < overlayStart + overlayDuration - 0.5) {
-        setOverlayDuration(parseFloat((currentTime - overlayStart).toFixed(2)));
-      }
+      handleSplitOverlayClip(selectedClip.clipId);
     } else if (selectedClip.track === 'voice') {
-      if (currentTime > voiceStart + 0.5 && currentTime < voiceStart + voiceDuration - 0.5) {
-        setVoiceDuration(parseFloat((currentTime - voiceStart).toFixed(2)));
-      }
+      handleSplitVoiceClip(selectedClip.clipId);
     } else if (selectedClip.track === 'music') {
-      if (currentTime > musicStart + 0.5 && currentTime < musicStart + musicDuration - 0.5) {
-        setMusicDuration(parseFloat((currentTime - musicStart).toFixed(2)));
-      }
+      handleSplitMusicClip(selectedClip.clipId);
+    } else if (selectedClip.track === 'sfx') {
+      handleSplitSfxClip(selectedClip.clipId);
     }
   };
 
@@ -638,11 +1298,17 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       onUpdateSubtitles?.(updated);
       setSelectedClip({ track: 'caption', index: updated.indexOf(duplicated) });
     } else if (selectedClip.track === 'video') {
-      handleVideoDuplicate();
+      handleDuplicateVideoClip(selectedClip.clipId);
     } else if (selectedClip.track === 'image') {
-      handleImageDuplicate();
+      handleDuplicateImageClip(selectedClip.clipId);
     } else if (selectedClip.track === 'overlay') {
-      handleOverlayDuplicate();
+      handleDuplicateOverlayClip(selectedClip.clipId);
+    } else if (selectedClip.track === 'voice') {
+      handleDuplicateVoiceClip(selectedClip.clipId);
+    } else if (selectedClip.track === 'music') {
+      handleDuplicateMusicClip(selectedClip.clipId);
+    } else if (selectedClip.track === 'sfx') {
+      handleDuplicateSfxClip(selectedClip.clipId);
     }
   };
 
@@ -672,87 +1338,434 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       setSelectedClip(null);
       setEditingClipIndex(null);
     } else if (selectedClip.track === 'video') {
-      handleVideoDelete();
+      handleDeleteVideoClip(selectedClip.clipId);
     } else if (selectedClip.track === 'image') {
-      handleImageDelete();
+      handleDeleteImageClip(selectedClip.clipId);
     } else if (selectedClip.track === 'overlay') {
-      handleOverlayDelete();
+      handleDeleteOverlayClip(selectedClip.clipId);
     } else if (selectedClip.track === 'voice') {
-      handleVoiceDelete();
+      handleDeleteVoiceClip(selectedClip.clipId);
     } else if (selectedClip.track === 'music') {
-      handleMusicDelete();
+      handleDeleteMusicClip(selectedClip.clipId);
     } else if (selectedClip.track === 'title') {
       handleTitleDelete();
     } else if (selectedClip.track === 'sfx') {
-      handleSfxDelete();
+      handleDeleteSfxClip(selectedClip.clipId);
     }
   };
 
-  // ── Context menu handlers for non-caption tracks ──────────────────
+  // ── Context menu & clip manipulation handlers for Video & Image tracks ──
 
   // Video track
-  const handleVideoDelete = () => {
-    setEnabledTracks((p) => ({ ...p, video: false }));
+  const handleDeleteVideoClip = (clipId?: string) => {
+    if (videoClips.length > 0) {
+      setVideoClips((prev) => {
+        const targetId = clipId || prev[0]?.id;
+        const remaining = prev.filter((c) => c.id !== targetId);
+        if (remaining.length === 0) {
+          setEnabledTracks((p) => ({ ...p, video: false }));
+        }
+        return remaining;
+      });
+    } else {
+      setEnabledTracks((p) => ({ ...p, video: false }));
+    }
     setSelectedClip(null);
   };
-  const handleVideoDuplicate = () => {
-    // Offset duplicate slightly for visual distinction
-    setVideoStart((s) => Math.min(totalDuration - videoDuration, s + 0.5));
+
+  const handleDuplicateVideoClip = (clipId?: string) => {
+    if (videoClips.length > 0) {
+      setVideoClips((prev) => {
+        const target = clipId ? prev.find((c) => c.id === clipId) : prev[0];
+        if (!target) return prev;
+        const newClip: TimelineMediaClip = {
+          ...target,
+          id: `vid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `${target.name} (Copy)`,
+          start: parseFloat((target.start + target.duration + 0.1).toFixed(2)),
+        };
+        return [...prev, newClip];
+      });
+    } else {
+      setVideoStart((s) => Math.min(totalDuration - videoDuration, s + 0.5));
+    }
   };
+
+  const handleSplitVideoClip = (clipId?: string) => {
+    if (videoClips.length > 0) {
+      setVideoClips((prev) => {
+        const target = clipId
+          ? prev.find((c) => c.id === clipId)
+          : (prev.find((c) => currentTime > c.start + 0.3 && currentTime < c.start + c.duration - 0.3) || prev[0]);
+        if (!target) return prev;
+        const clipEnd = target.start + target.duration;
+        if (currentTime > target.start + 0.3 && currentTime < clipEnd - 0.3) {
+          const leftDuration = parseFloat((currentTime - target.start).toFixed(2));
+          const rightDuration = parseFloat((clipEnd - currentTime).toFixed(2));
+          const updatedLeft = { ...target, duration: leftDuration };
+          const splitRight: TimelineMediaClip = {
+            ...target,
+            id: `vid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: `${target.name} (Part 2)`,
+            start: parseFloat(currentTime.toFixed(2)),
+            duration: rightDuration,
+          };
+          return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
+        }
+        return prev;
+      });
+    } else {
+      if (currentTime > videoStart + 0.5 && currentTime < videoStart + videoDuration - 0.5) {
+        setVideoDuration(parseFloat((currentTime - videoStart).toFixed(2)));
+      }
+    }
+  };
+
   const handleVideoZoom = () => {
     const ratio = (videoDuration / projectDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // Overlay track
-  const handleOverlayDelete = () => {
-    setEnabledTracks((p) => ({ ...p, overlay: false }));
+  const handleDeleteOverlayClip = (clipId?: string) => {
+    if (overlayClips.length > 0) {
+      setOverlayClips((prev) => {
+        const targetId = clipId || prev[0]?.id;
+        const remaining = prev.filter((c) => c.id !== targetId);
+        if (remaining.length === 0) {
+          setEnabledTracks((p) => ({ ...p, overlay: false }));
+        }
+        return remaining;
+      });
+    } else {
+      setEnabledTracks((p) => ({ ...p, overlay: false }));
+    }
     setSelectedClip(null);
   };
-  const handleOverlayDuplicate = () => {
-    setOverlayStart((s) => Math.min(totalDuration - overlayDuration, s + 0.5));
+
+  const handleDuplicateOverlayClip = (clipId?: string) => {
+    if (overlayClips.length > 0) {
+      setOverlayClips((prev) => {
+        const target = clipId ? prev.find((c) => c.id === clipId) : prev[0];
+        if (!target) return prev;
+        const newClip: TimelineOverlayClip = {
+          ...target,
+          id: `ovl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `${target.name || target.label} (Copy)`,
+          start: parseFloat((target.start + target.duration + 0.1).toFixed(2)),
+        };
+        return [...prev, newClip];
+      });
+    } else {
+      setOverlayStart((s) => Math.min(totalDuration - overlayDuration, s + 0.5));
+    }
   };
+
+  const handleSplitOverlayClip = (clipId?: string) => {
+    if (overlayClips.length > 0) {
+      setOverlayClips((prev) => {
+        const target = clipId
+          ? prev.find((c) => c.id === clipId)
+          : (prev.find((c) => currentTime > c.start + 0.3 && currentTime < c.start + c.duration - 0.3) || prev[0]);
+        if (!target) return prev;
+        const clipEnd = target.start + target.duration;
+        if (currentTime > target.start + 0.3 && currentTime < clipEnd - 0.3) {
+          const leftDuration = parseFloat((currentTime - target.start).toFixed(2));
+          const rightDuration = parseFloat((clipEnd - currentTime).toFixed(2));
+          const updatedLeft = { ...target, duration: leftDuration };
+          const splitRight: TimelineOverlayClip = {
+            ...target,
+            id: `ovl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: `${target.name || target.label} (Part 2)`,
+            start: parseFloat(currentTime.toFixed(2)),
+            duration: rightDuration,
+          };
+          return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
+        }
+        return prev;
+      });
+    } else {
+      if (currentTime > overlayStart + 0.5 && currentTime < overlayStart + overlayDuration - 0.5) {
+        setOverlayDuration(parseFloat((currentTime - overlayStart).toFixed(2)));
+      }
+    }
+  };
+
   const handleOverlayZoom = () => {
     const ratio = (overlayDuration / projectDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // Voice track
-  const handleVoiceDelete = () => {
-    setEnabledTracks((p) => ({ ...p, voice: false }));
+  const handleDeleteVoiceClip = (clipId?: string) => {
+    if (voiceClips.length > 0) {
+      setVoiceClips((prev) => {
+        const targetId = clipId || prev[0]?.id;
+        const remaining = prev.filter((c) => c.id !== targetId);
+        if (remaining.length === 0) {
+          setEnabledTracks((p) => ({ ...p, voice: false }));
+        }
+        return remaining;
+      });
+    } else {
+      setEnabledTracks((p) => ({ ...p, voice: false }));
+    }
     setSelectedClip(null);
   };
+
+  const handleDuplicateVoiceClip = (clipId?: string) => {
+    if (voiceClips.length > 0) {
+      setVoiceClips((prev) => {
+        const target = clipId ? prev.find((c) => c.id === clipId) : prev[0];
+        if (!target) return prev;
+        const newClip: TimelineAudioClip = {
+          ...target,
+          id: `vox-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `${target.name} (Copy)`,
+          start: parseFloat((target.start + target.duration + 0.1).toFixed(2)),
+        };
+        return [...prev, newClip];
+      });
+    } else {
+      setVoiceStart((s) => Math.min(totalDuration - voiceDuration, s + 0.5));
+    }
+  };
+
+  const handleSplitVoiceClip = (clipId?: string) => {
+    if (voiceClips.length > 0) {
+      setVoiceClips((prev) => {
+        const target = clipId
+          ? prev.find((c) => c.id === clipId)
+          : (prev.find((c) => currentTime > c.start + 0.3 && currentTime < c.start + c.duration - 0.3) || prev[0]);
+        if (!target) return prev;
+        const clipEnd = target.start + target.duration;
+        if (currentTime > target.start + 0.3 && currentTime < clipEnd - 0.3) {
+          const leftDuration = parseFloat((currentTime - target.start).toFixed(2));
+          const rightDuration = parseFloat((clipEnd - currentTime).toFixed(2));
+          const updatedLeft = { ...target, duration: leftDuration };
+          const splitRight: TimelineAudioClip = {
+            ...target,
+            id: `vox-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: `${target.name} (Part 2)`,
+            start: parseFloat(currentTime.toFixed(2)),
+            duration: rightDuration,
+          };
+          return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
+        }
+        return prev;
+      });
+    } else {
+      if (currentTime > voiceStart + 0.5 && currentTime < voiceStart + voiceDuration - 0.5) {
+        setVoiceDuration(parseFloat((currentTime - voiceStart).toFixed(2)));
+      }
+    }
+  };
+
   const handleVoiceZoom = () => {
     const ratio = (voiceDuration / projectDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // Music track
-  const handleMusicDelete = () => {
-    setEnabledTracks((p) => ({ ...p, music: false }));
+  const handleDeleteMusicClip = (clipId?: string) => {
+    if (musicClips.length > 0) {
+      setMusicClips((prev) => {
+        const targetId = clipId || prev[0]?.id;
+        const remaining = prev.filter((c) => c.id !== targetId);
+        if (remaining.length === 0) {
+          setEnabledTracks((p) => ({ ...p, music: false }));
+        }
+        return remaining;
+      });
+    } else {
+      setEnabledTracks((p) => ({ ...p, music: false }));
+    }
     setSelectedClip(null);
   };
+
+  const handleDuplicateMusicClip = (clipId?: string) => {
+    if (musicClips.length > 0) {
+      setMusicClips((prev) => {
+        const target = clipId ? prev.find((c) => c.id === clipId) : prev[0];
+        if (!target) return prev;
+        const newClip: TimelineAudioClip = {
+          ...target,
+          id: `mus-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `${target.name} (Copy)`,
+          start: parseFloat((target.start + target.duration + 0.1).toFixed(2)),
+        };
+        return [...prev, newClip];
+      });
+    } else {
+      setMusicStart((s) => Math.min(totalDuration - musicDuration, s + 0.5));
+    }
+  };
+
+  const handleSplitMusicClip = (clipId?: string) => {
+    if (musicClips.length > 0) {
+      setMusicClips((prev) => {
+        const target = clipId
+          ? prev.find((c) => c.id === clipId)
+          : (prev.find((c) => currentTime > c.start + 0.3 && currentTime < c.start + c.duration - 0.3) || prev[0]);
+        if (!target) return prev;
+        const clipEnd = target.start + target.duration;
+        if (currentTime > target.start + 0.3 && currentTime < clipEnd - 0.3) {
+          const leftDuration = parseFloat((currentTime - target.start).toFixed(2));
+          const rightDuration = parseFloat((clipEnd - currentTime).toFixed(2));
+          const updatedLeft = { ...target, duration: leftDuration };
+          const splitRight: TimelineAudioClip = {
+            ...target,
+            id: `mus-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: `${target.name} (Part 2)`,
+            start: parseFloat(currentTime.toFixed(2)),
+            duration: rightDuration,
+          };
+          return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
+        }
+        return prev;
+      });
+    } else {
+      if (currentTime > musicStart + 0.5 && currentTime < musicStart + musicDuration - 0.5) {
+        setMusicDuration(parseFloat((currentTime - musicStart).toFixed(2)));
+      }
+    }
+  };
+
   const handleMusicZoom = () => {
     const ratio = (musicDuration / projectDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
   // SFX track
-  const handleSfxDelete = () => {
-    setEnabledTracks((p) => ({ ...p, sfx: false }));
+  const handleDeleteSfxClip = (clipId?: string) => {
+    if (sfxClips.length > 0) {
+      setSfxClips((prev) => {
+        const targetId = clipId || prev[0]?.id;
+        const remaining = prev.filter((c) => c.id !== targetId);
+        if (remaining.length === 0) {
+          setEnabledTracks((p) => ({ ...p, sfx: false }));
+          setSfxDuration(0);
+          onRemoveSfx?.();
+        }
+        return remaining;
+      });
+    } else {
+      setEnabledTracks((p) => ({ ...p, sfx: false }));
+      setSfxDuration(0);
+      onRemoveSfx?.();
+    }
     setSelectedClip(null);
-    setSfxDuration(0);
-    onRemoveSfx?.();
+  };
+
+  const handleDuplicateSfxClip = (clipId?: string) => {
+    if (sfxClips.length > 0) {
+      setSfxClips((prev) => {
+        const target = clipId ? prev.find((c) => c.id === clipId) : prev[0];
+        if (!target) return prev;
+        const newClip: TimelineAudioClip = {
+          ...target,
+          id: `sfx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `${target.name} (Copy)`,
+          start: parseFloat((target.start + target.duration + 0.1).toFixed(2)),
+        };
+        return [...prev, newClip];
+      });
+    } else {
+      setSfxStart((s) => Math.min(totalDuration - sfxDuration, s + 0.5));
+    }
+  };
+
+  const handleSplitSfxClip = (clipId?: string) => {
+    if (sfxClips.length > 0) {
+      setSfxClips((prev) => {
+        const target = clipId
+          ? prev.find((c) => c.id === clipId)
+          : (prev.find((c) => currentTime > c.start + 0.2 && currentTime < c.start + c.duration - 0.2) || prev[0]);
+        if (!target) return prev;
+        const clipEnd = target.start + target.duration;
+        if (currentTime > target.start + 0.2 && currentTime < clipEnd - 0.2) {
+          const leftDuration = parseFloat((currentTime - target.start).toFixed(2));
+          const rightDuration = parseFloat((clipEnd - currentTime).toFixed(2));
+          const updatedLeft = { ...target, duration: leftDuration };
+          const splitRight: TimelineAudioClip = {
+            ...target,
+            id: `sfx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: `${target.name} (Part 2)`,
+            start: parseFloat(currentTime.toFixed(2)),
+            duration: rightDuration,
+          };
+          return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
+        }
+        return prev;
+      });
+    }
   };
 
   // Image track
-  const handleImageDelete = () => {
-    setEnabledTracks((p) => ({ ...p, image: false }));
+  const handleDeleteImageClip = (clipId?: string) => {
+    if (imageClips.length > 0) {
+      setImageClips((prev) => {
+        const targetId = clipId || prev[0]?.id;
+        const remaining = prev.filter((c) => c.id !== targetId);
+        if (remaining.length === 0) {
+          setEnabledTracks((p) => ({ ...p, image: false }));
+        }
+        return remaining;
+      });
+    } else {
+      setEnabledTracks((p) => ({ ...p, image: false }));
+    }
     setSelectedClip(null);
   };
-  const handleImageDuplicate = () => {
-    setImageStart((s) => Math.min(totalDuration - imageDuration, s + 0.5));
+
+  const handleDuplicateImageClip = (clipId?: string) => {
+    if (imageClips.length > 0) {
+      setImageClips((prev) => {
+        const target = clipId ? prev.find((c) => c.id === clipId) : prev[0];
+        if (!target) return prev;
+        const newClip: TimelineMediaClip = {
+          ...target,
+          id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `${target.name} (Copy)`,
+          start: parseFloat((target.start + target.duration + 0.1).toFixed(2)),
+        };
+        return [...prev, newClip];
+      });
+    } else {
+      setImageStart((s) => Math.min(totalDuration - imageDuration, s + 0.5));
+    }
   };
+
+  const handleSplitImageClip = (clipId?: string) => {
+    if (imageClips.length > 0) {
+      setImageClips((prev) => {
+        const target = clipId
+          ? prev.find((c) => c.id === clipId)
+          : (prev.find((c) => currentTime > c.start + 0.3 && currentTime < c.start + c.duration - 0.3) || prev[0]);
+        if (!target) return prev;
+        const clipEnd = target.start + target.duration;
+        if (currentTime > target.start + 0.3 && currentTime < clipEnd - 0.3) {
+          const leftDuration = parseFloat((currentTime - target.start).toFixed(2));
+          const rightDuration = parseFloat((clipEnd - currentTime).toFixed(2));
+          const updatedLeft = { ...target, duration: leftDuration };
+          const splitRight: TimelineMediaClip = {
+            ...target,
+            id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: `${target.name} (Part 2)`,
+            start: parseFloat(currentTime.toFixed(2)),
+            duration: rightDuration,
+          };
+          return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
+        }
+        return prev;
+      });
+    } else {
+      if (currentTime > imageStart + 0.5 && currentTime < imageStart + imageDuration - 0.5) {
+        setImageDuration(parseFloat((currentTime - imageStart).toFixed(2)));
+      }
+    }
+  };
+
   const handleImageZoom = () => {
     const ratio = (imageDuration / projectDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
@@ -818,11 +1831,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
 
   // Media presence flags for pristine empty workspace states
-  const hasVideo = Boolean(customVideoUrl || (activeBackdrop && activeBackdrop.id));
-  const hasImage = Boolean(customImageUrl || (activeBackdrop && activeBackdrop.imageUrl && activeBackdrop.id));
-  const hasOverlay = Boolean(activeElementOverlay);
-  const hasVoice = Boolean(audioUrl);
-  const hasMusic = Boolean(selectedMusic);
+  const hasVideo = Boolean(videoClips.length > 0 || customVideoUrl || (!customImageUrl && activeBackdrop && activeBackdrop.id));
+  const hasImage = Boolean(imageClips.length > 0 || customImageUrl || (!customVideoUrl && activeBackdrop && activeBackdrop.imageUrl && activeBackdrop.id));
+  const hasOverlay = Boolean(overlayClips.length > 0 || activeElementOverlay);
+  const hasVoice = Boolean(voiceClips.length > 0 || audioUrl);
+  const hasMusic = Boolean(musicClips.length > 0 || selectedMusic);
+  const hasSfx = Boolean(sfxClips.length > 0 || selectedSfx);
   const hasTitle = Boolean(script.title);
 
   // Dynamic voice profile resolution from loaded voices
@@ -836,8 +1850,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const musicLabel = activeMusicObj
     ? `Soundtrack: ${activeMusicObj.title} (${activeMusicObj.genre || 'Score'})`
     : selectedMusic
-    ? 'Soundtrack: Selected Mix (Looping Bed)'
-    : 'Ambient Motivation (Soundtrack)';
+      ? 'Soundtrack: Selected Mix (Looping Bed)'
+      : 'Ambient Motivation (Soundtrack)';
   const musicSubLabel = activeMusicObj?.duration
     ? `${activeMusicObj.duration} • -14 dB Studio Mix`
     : '-14 dB Studio Mix';
@@ -851,27 +1865,29 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     hasTitle && enabledTracks.title,
     hasVoice && enabledTracks.voice,
     hasMusic && enabledTracks.music,
-    selectedSfx && enabledTracks.sfx,
+    hasSfx && enabledTracks.sfx,
   ].filter(Boolean).length;
 
-  // Ruler tick markers
-  const targetTickInterval = 2 / zoomLevel;
+  // Keep major labels comfortably separated at every zoom and viewport size.
+  const targetTickInterval =
+    (56 * totalDuration) / (Math.max(1, rulerViewportWidth || 720) * timelineScale);
   const tickMagnitude = 10 ** Math.floor(Math.log10(targetTickInterval));
   const tickInterval =
-    [1, 2, 5, 10].map((scale) => scale * tickMagnitude).find((interval) => interval >= targetTickInterval) ??
+    [1, 2, 2.5, 5, 10].map((scale) => scale * tickMagnitude).find((interval) => interval >= targetTickInterval) ??
     10 * tickMagnitude;
   const ticks = Array.from(
-    { length: Math.floor(totalDuration / tickInterval) + 1 },
+    { length: Math.floor(totalDuration / tickInterval + 1e-9) + 1 },
     (_, index) => index * tickInterval
   );
-  if (totalDuration - (ticks[ticks.length - 1] || 0) > 0.01) ticks.push(totalDuration);
 
   return (
-    <div className="w-full bg-[#121212] border border-[#3A3A3A] rounded-2xl overflow-hidden shadow-2xl transition-all font-sans-studio select-none">
+    <div className="w-full bg-[#121212] border border-[#3A3A3A] rounded-2xl overflow-hidden shadow-2xl transition-all font-sans-studio select-none relative group/timeline-card">
       {/* ── Top Header Bar / Timeline Toolbar ──────────────────────── */}
       <TimelineToolbar
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        isExpandedHeight={isTimelineExpanded}
+        onToggleExpandedHeight={handleToggleExpandedHeight}
         activeTracksCount={activeTracksCount}
         selectedClip={selectedClip}
         captionsTrackLocked={captionsTrackLocked}
@@ -895,43 +1911,152 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         onZoomIn={() => setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, zoomLevel + TIMELINE_ZOOM_STEP))}
         onZoomOut={() => setZoomLevel(Math.max(MIN_TIMELINE_ZOOM, zoomLevel - TIMELINE_ZOOM_STEP))}
         onZoomFit={() => setZoomLevel(1)}
+        onDurationChange={onTimelineDurationChange}
       />
 
       {/* ── Collapsible Tracks Body ───────────────────────────────── */}
       {!isCollapsed && (
         <div className="flex flex-col bg-[#0D0D0D]">
-          <div className="flex">
-            {/* ── Track Header Column (Fixed Left) ─────────────────── */}
-            <TimelineTrackHeaders
-              enabledTracks={enabledTracks}
-              selectedClip={selectedClip}
-              onSelectClip={handleSelectClip}
-              videoTrackVisible={videoTrackVisible}
-              onToggleVideoTrackVisible={() => setVideoTrackVisible(!videoTrackVisible)}
-              imageTrackVisible={imageTrackVisible}
-              onToggleImageTrackVisible={() => setImageTrackVisible(!imageTrackVisible)}
-              overlayTrackVisible={overlayTrackVisible}
-              onToggleOverlayTrackVisible={() => setOverlayTrackVisible(!overlayTrackVisible)}
-              captionsTrackLocked={captionsTrackLocked}
-              onToggleCaptionsTrackLocked={() => setCaptionsTrackLocked(!captionsTrackLocked)}
-              captionTrackHeight={captionTrackHeight}
-              captionMaxLane={captionMaxLane}
-              titleTrackLocked={titleTrackLocked}
-              onToggleTitleTrackLocked={() => setTitleTrackLocked(!titleTrackLocked)}
-              voiceTrackMuted={voiceTrackMuted}
-              onToggleVoiceTrackMuted={() => setVoiceTrackMuted(!voiceTrackMuted)}
-              musicTrackMuted={musicTrackMuted}
-              onToggleMusicTrackMuted={() => setMusicTrackMuted(!musicTrackMuted)}
-              sfxTrackMuted={sfxTrackMuted}
-              onToggleSfxTrackMuted={() => setSfxTrackMuted(!sfxTrackMuted)}
-            />
+          {/* ── Time Ruler Row (Placed Above Scrollable Tracks Area) ── */}
+          <div className="flex border-b border-[#262626] bg-[#111111] select-none shrink-0 z-20">
+            {/* Corner Track Labels Header */}
+            <div
+              style={{ width: `${trackHeadersWidth}px` }}
+              className="shrink-0 h-6 border-r border-[#262626] flex items-center justify-between px-2.5 text-[9px] font-mono-studio text-[#737373] uppercase tracking-wider relative group/corner-header select-none"
+            >
+              <span className="truncate">Track Labels</span>
+              <div
+                onPointerDown={handleTrackHeadersResizeStart}
+                onDoubleClick={() => {
+                  setTrackHeadersWidth(DEFAULT_TRACK_HEADERS_WIDTH);
+                  try {
+                    localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
+                  } catch {}
+                }}
+                className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[#3B82F6]/40 z-30"
+                title="Drag left/right to adjust track labels width"
+              />
+            </div>
 
-            {/* ── Timeline Tracks Area (Scrollable / Zoomable) ───── */}
-            <div className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar relative">
+            {/* Time Ruler (synced with horizontal scroll of tracks) */}
+            <div
+              ref={rulerScrollRef}
+              className="flex-1 min-w-0 overflow-hidden relative h-6"
+            >
+              <div
+                ref={rulerContainerRef}
+                className="relative min-w-full h-full"
+                style={{ width: `${100 * timelineScale}%` }}
+              >
+                <TimelineRuler
+                  ticks={ticks}
+                  totalDuration={totalDuration}
+                  onRulerPointerDown={handleRulerPointerDown}
+                />
+                {/* Modern Studio Playhead Needle on ruler */}
+                <div
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    handleRulerPointerDown(e);
+                  }}
+                  className="absolute top-0 -translate-x-1/2 flex flex-col items-center pointer-events-auto cursor-ew-resize group/playhead z-40 select-none"
+                  style={{ left: `${progressPercent}%` }}
+                  title={`Playhead: ${formatTime(currentTime)} (Drag to scrub)`}
+                >
+                  <div className="w-3 h-2.5 bg-[#3B82F6] rounded-t-sm flex items-center justify-center group-hover/playhead:bg-[#60A5FA] transition-colors">
+                    <div className="w-1 h-1 bg-white rounded-full" />
+                  </div>
+                  <div className="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[3px] border-t-[#3B82F6] -mt-px" />
+                </div>
+              </div>
+            </div>
+
+            {/* Spacer matching vertical scrollbar width so ruler aligns with tracks */}
+            <div className="w-[7px] shrink-0 bg-[#141414]" />
+          </div>
+
+          {/* ── Scrollable Tracks Area (Begins strictly BELOW the Time Ruler) ── */}
+          <div
+            ref={tracksScrollRef}
+            onScroll={handleTracksScroll}
+            style={timelineHeight ? { height: `${timelineHeight}px`, maxHeight: `${timelineHeight}px` } : undefined}
+            className={`min-w-0 w-full overflow-x-auto overflow-y-auto custom-scrollbar relative ${timelineHeight ? '' : timelineViewportHeight}`}
+          >
+            <div
+              className="flex min-w-full"
+              style={{
+                width: `calc(${100 * timelineScale}% - ${trackHeadersWidth * timelineScale}px + ${trackHeadersWidth + 4}px)`,
+              }}
+            >
+              {/* ── Track Header Column ── */}
+              <TimelineTrackHeaders
+                width={trackHeadersWidth}
+                showCornerHeader={false}
+                enabledTracks={enabledTracks}
+                selectedClip={selectedClip}
+                onSelectClip={handleSelectClip}
+                videoTrackVisible={videoTrackVisible}
+                onToggleVideoTrackVisible={() => setVideoTrackVisible(!videoTrackVisible)}
+                videoTrackHeight={videoTrackHeight}
+                videoMaxLane={videoMaxLane}
+                imageTrackVisible={imageTrackVisible}
+                onToggleImageTrackVisible={() => setImageTrackVisible(!imageTrackVisible)}
+                imageTrackHeight={imageTrackHeight}
+                imageMaxLane={imageMaxLane}
+                overlayTrackVisible={overlayTrackVisible}
+                onToggleOverlayTrackVisible={() => setOverlayTrackVisible(!overlayTrackVisible)}
+                overlayTrackHeight={overlayTrackHeight}
+                overlayMaxLane={overlayMaxLane}
+                captionsTrackLocked={captionsTrackLocked}
+                onToggleCaptionsTrackLocked={() => setCaptionsTrackLocked(!captionsTrackLocked)}
+                captionTrackHeight={captionTrackHeight}
+                captionMaxLane={captionMaxLane}
+                titleTrackLocked={titleTrackLocked}
+                onToggleTitleTrackLocked={() => setTitleTrackLocked(!titleTrackLocked)}
+                voiceTrackMuted={voiceTrackMuted}
+                onToggleVoiceTrackMuted={() => setVoiceTrackMuted(!voiceTrackMuted)}
+                voiceTrackHeight={voiceTrackHeight}
+                voiceMaxLane={voiceMaxLane}
+                musicTrackMuted={musicTrackMuted}
+                onToggleMusicTrackMuted={() => setMusicTrackMuted(!musicTrackMuted)}
+                musicTrackHeight={musicTrackHeight}
+                musicMaxLane={musicMaxLane}
+                sfxTrackMuted={sfxTrackMuted}
+                onToggleSfxTrackMuted={() => setSfxTrackMuted(!sfxTrackMuted)}
+                sfxTrackHeight={sfxTrackHeight}
+                sfxMaxLane={sfxMaxLane}
+              />
+
+              {/* ── Resizable Splitter (Track Labels Width) ── */}
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                onPointerDown={handleTrackHeadersResizeStart}
+                onDoubleClick={() => {
+                  setTrackHeadersWidth(DEFAULT_TRACK_HEADERS_WIDTH);
+                  try {
+                    localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
+                  } catch {}
+                }}
+                className={`w-2 -ml-1 shrink-0 z-30 cursor-col-resize group/col-resize relative flex items-center justify-center hover:bg-[#3B82F6]/25 select-none transition-colors ${
+                  isResizingTrackHeaders ? 'bg-[#3B82F6]/30' : ''
+                }`}
+                title="Drag left/right to adjust track labels width (double-click to reset)"
+              >
+                <div
+                  className={`w-[2px] h-full transition-colors ${
+                    isResizingTrackHeaders
+                      ? 'bg-[#3B82F6] shadow-[0_0_8px_rgba(59,130,246,0.9)]'
+                      : 'bg-transparent group-hover/col-resize:bg-[#60A5FA]'
+                  }`}
+                />
+              </div>
+
+              {/* ── Timeline Tracks Area (Scrollable & Zoomable) ───── */}
               <div
                 ref={tracksContainerRef}
-                className="relative overflow-hidden"
-                style={{ width: `${100 * Math.max(1, zoomLevel)}%` }}
+                onPointerDown={handleTracksPointerDown}
+                className="relative flex-1 min-w-0 cursor-crosshair select-none"
               >
                 {/* ── Magnetic Snapping Guideline (Laser Line) ──────── */}
                 {snapGuideTime !== null && (
@@ -941,60 +2066,111 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   />
                 )}
 
-                {/* ── Time Ruler Strip ─────────────────────────────── */}
-                <TimelineRuler
-                  ticks={ticks}
-                  totalDuration={totalDuration}
-                  onRulerPointerDown={handleRulerPointerDown}
-                />
-
                 {/* ── Track 1: Video Backdrop Clip Block (Moveable & Trimmable) ───── */}
                 {enabledTracks.video && (
                   hasVideo ? (
                     <VideoTrackClip
-                      videoStart={videoStart}
-                      videoDuration={videoDuration}
+                      clips={videoLanes}
+                      trackHeight={videoTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={videoMaxLane}
+                      videoStart={videoClips[0]?.start ?? videoStart}
+                      videoDuration={videoClips[0]?.duration ?? videoDuration}
                       totalDuration={totalDuration}
                       selectedClip={selectedClip}
                       videoTrackVisible={videoTrackVisible}
                       backdropName={activeBackdrop?.name || 'Video Clip'}
                       mediaUrl={customVideoUrl || activeBackdrop?.imageUrl}
-                      onSelect={() => handleSelectClip({ track: 'video' }, 'video')}
-                      onPointerDownMove={(e) => {
-                        handleSelectClip({ track: 'video' });
+                      onSelectClip={(clipId) => handleSelectClip({ track: 'video', clipId }, 'video')}
+                      onMoveClipAbove={handleMoveVideoClipAbove}
+                      onMoveClipBelow={handleMoveVideoClipBelow}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'video', clipId: clip.id }, 'video');
                         setActiveDrag({
                           kind: 'video',
+                          clipId: clip.id,
                           mode: 'move',
                           startX: e.clientX,
-                          origStart: videoStart,
-                          origDuration: videoDuration,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
                         });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'video', clipId: clip.id }, 'video');
+                        setActiveDrag({
+                          kind: 'video',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'video', clipId: clip.id }, 'video');
+                        setActiveDrag({
+                          kind: 'video',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteVideoClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateVideoClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitVideoClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'video' }, 'video')}
+                      onPointerDownMove={(e) => {
+                        const first = videoClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'video',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
                       }}
                       onPointerDownTrimLeft={(e) => {
                         e.stopPropagation();
-                        handleSelectClip({ track: 'video' });
-                        setActiveDrag({
-                          kind: 'video',
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: videoStart,
-                          origDuration: videoDuration,
-                        });
+                        const first = videoClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'video',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
                       }}
                       onPointerDownTrimRight={(e) => {
                         e.stopPropagation();
-                        handleSelectClip({ track: 'video' });
-                        setActiveDrag({
-                          kind: 'video',
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: videoStart,
-                          origDuration: videoDuration,
-                        });
+                        const first = videoClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'video',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
                       }}
-                      onDelete={handleVideoDelete}
-                      onDuplicate={handleVideoDuplicate}
-                      onSplit={handleSplitClip}
+                      onDelete={() => handleDeleteVideoClip()}
+                      onDuplicate={() => handleDuplicateVideoClip()}
+                      onSplit={() => handleSplitVideoClip()}
                       onHide={() => setVideoTrackVisible(!videoTrackVisible)}
                       onZoomToClip={handleVideoZoom}
                     />
@@ -1007,49 +2183,107 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 {enabledTracks.image && (
                   hasImage ? (
                     <ImageTrackClip
-                      imageStart={imageStart}
-                      imageDuration={imageDuration}
+                      clips={imageLanes}
+                      trackHeight={imageTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={imageMaxLane}
+                      imageStart={imageClips[0]?.start ?? imageStart}
+                      imageDuration={imageClips[0]?.duration ?? imageDuration}
                       totalDuration={totalDuration}
                       selectedClip={selectedClip}
                       imageTrackVisible={imageTrackVisible}
                       imageUrl={customImageUrl || activeBackdrop?.imageUrl}
                       imageName={customImageUrl ? 'Custom Image Graphic' : `${activeBackdrop?.name || 'Image'}`}
-                      onSelect={() => handleSelectClip({ track: 'image' }, 'video')}
-                      onPointerDownMove={(e) => {
-                        handleSelectClip({ track: 'image' });
+                      onSelectClip={(clipId) => handleSelectClip({ track: 'image', clipId }, 'video')}
+                      onMoveClipAbove={handleMoveImageClipAbove}
+                      onMoveClipBelow={handleMoveImageClipBelow}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'image', clipId: clip.id }, 'video');
                         setActiveDrag({
                           kind: 'image',
+                          clipId: clip.id,
                           mode: 'move',
                           startX: e.clientX,
-                          origStart: imageStart,
-                          origDuration: imageDuration,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
                         });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'image', clipId: clip.id }, 'video');
+                        setActiveDrag({
+                          kind: 'image',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'image', clipId: clip.id }, 'video');
+                        setActiveDrag({
+                          kind: 'image',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteImageClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateImageClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitImageClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'image' }, 'video')}
+                      onPointerDownMove={(e) => {
+                        const first = imageClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'image',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
                       }}
                       onPointerDownTrimLeft={(e) => {
                         e.stopPropagation();
-                        handleSelectClip({ track: 'image' });
-                        setActiveDrag({
-                          kind: 'image',
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: imageStart,
-                          origDuration: imageDuration,
-                        });
+                        const first = imageClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'image',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
                       }}
                       onPointerDownTrimRight={(e) => {
                         e.stopPropagation();
-                        handleSelectClip({ track: 'image' });
-                        setActiveDrag({
-                          kind: 'image',
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: imageStart,
-                          origDuration: imageDuration,
-                        });
+                        const first = imageClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'image',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
                       }}
-                      onDelete={handleImageDelete}
-                      onDuplicate={handleImageDuplicate}
-                      onSplit={handleSplitClip}
+                      onDelete={() => handleDeleteImageClip()}
+                      onDuplicate={() => handleDuplicateImageClip()}
+                      onSplit={() => handleSplitImageClip()}
                       onHide={() => setImageTrackVisible(!imageTrackVisible)}
                       onZoomToClip={handleImageZoom}
                     />
@@ -1062,48 +2296,132 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 {enabledTracks.overlay && (
                   hasOverlay ? (
                     <OverlayTrackClip
+                      clips={overlayLanes}
+                      trackHeight={overlayTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={overlayMaxLane}
                       overlayStart={overlayStart}
                       overlayDuration={overlayDuration}
                       totalDuration={totalDuration}
                       selectedClip={selectedClip}
                       overlayTrackVisible={overlayTrackVisible}
                       label={activeElementOverlay?.label || activeElementOverlay?.name}
-                      onSelect={() => handleSelectClip({ track: 'overlay' }, 'overlay')}
-                      onPointerDownMove={(e) => {
-                        handleSelectClip({ track: 'overlay' });
+                      onMoveClipAbove={handleMoveOverlayClipAbove}
+                      onMoveClipBelow={handleMoveOverlayClipBelow}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'overlay', clipId: clip.id }, 'overlay');
                         setActiveDrag({
                           kind: 'overlay',
+                          clipId: clip.id,
                           mode: 'move',
                           startX: e.clientX,
-                          origStart: overlayStart,
-                          origDuration: overlayDuration,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
                         });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'overlay', clipId: clip.id }, 'overlay');
+                        setActiveDrag({
+                          kind: 'overlay',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'overlay', clipId: clip.id }, 'overlay');
+                        setActiveDrag({
+                          kind: 'overlay',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteOverlayClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateOverlayClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitOverlayClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'overlay' }, 'overlay')}
+                      onPointerDownMove={(e) => {
+                        const first = overlayClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'overlay' }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: overlayStart,
+                            origDuration: overlayDuration,
+                          });
+                        }
                       }}
                       onPointerDownTrimLeft={(e) => {
                         e.stopPropagation();
-                        handleSelectClip({ track: 'overlay' });
-                        setActiveDrag({
-                          kind: 'overlay',
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: overlayStart,
-                          origDuration: overlayDuration,
-                        });
+                        const first = overlayClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'overlay' }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: overlayStart,
+                            origDuration: overlayDuration,
+                          });
+                        }
                       }}
                       onPointerDownTrimRight={(e) => {
                         e.stopPropagation();
-                        handleSelectClip({ track: 'overlay' });
-                        setActiveDrag({
-                          kind: 'overlay',
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: overlayStart,
-                          origDuration: overlayDuration,
-                        });
+                        const first = overlayClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'overlay' }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: overlayStart,
+                            origDuration: overlayDuration,
+                          });
+                        }
                       }}
-                      onDelete={handleOverlayDelete}
-                      onDuplicate={handleOverlayDuplicate}
-                      onSplit={handleSplitClip}
+                      onDelete={() => handleDeleteOverlayClip()}
+                      onDuplicate={() => handleDuplicateOverlayClip()}
+                      onSplit={() => handleSplitOverlayClip()}
                       onHide={() => setOverlayTrackVisible(!overlayTrackVisible)}
                       onZoomToClip={handleOverlayZoom}
                     />
@@ -1210,11 +2528,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           handleSelectClip({ track: 'title' });
                           setTitleContextMenu({ x: e.clientX, y: e.clientY });
                         }}
-                        className={`h-full rounded-md px-2.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-colors relative overflow-hidden ${
-                          selectedClip?.track === 'title'
+                        className={`h-full rounded-md px-2.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-colors relative overflow-hidden ${selectedClip?.track === 'title'
                             ? 'bg-sky-950/70 border-sky-400 text-sky-100 z-20 ring-2 ring-sky-400/80'
                             : 'bg-sky-950/40 border-sky-500/30 text-sky-200 hover:border-sky-400 z-10'
-                        }`}
+                          }`}
                         style={{
                           left: `${(titleStart / totalDuration) * 100}%`,
                           width: `${Math.min(100, (titleDuration / totalDuration) * 100)}%`,
@@ -1251,7 +2568,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                         onColorLabel={(c) => setTitleColorLabel(c)}
                         onCopyTimings={() => {
                           const text = `Start: ${titleStart.toFixed(2)}s | Duration: ${titleDuration.toFixed(2)}s | Title: "${script.title || 'Untitled'}"`;
-                          navigator.clipboard.writeText(text).catch(() => {});
+                          navigator.clipboard.writeText(text).catch(() => { });
                         }}
                       />
                     </div>
@@ -1263,18 +2580,74 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 {/* ── Track 6: Voiceover Audio (With Full-Width Dynamic Audio Waves) ───── */}
                 {enabledTracks.voice && (
                   hasVoice ? (
-                    <div className="h-10 border-b border-[#262626] p-1 relative flex items-center">
-                      <AudioTrackClip
-                        type="voice"
-                        start={voiceStart}
-                        duration={voiceDuration}
-                        totalDuration={totalDuration}
-                        selectedClip={selectedClip}
-                        isMuted={voiceTrackMuted}
-                        label={voiceLabel}
-                        onSelect={() => handleSelectClip({ track: 'voice' }, 'voice')}
-                        onPointerDownMove={(e) => {
-                          handleSelectClip({ track: 'voice' });
+                    <AudioTrackClip
+                      type="voice"
+                      clips={voiceLanes}
+                      trackHeight={voiceTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={voiceMaxLane}
+                      start={voiceStart}
+                      duration={voiceDuration}
+                      totalDuration={totalDuration}
+                      selectedClip={selectedClip}
+                      isMuted={voiceTrackMuted}
+                      label={voiceLabel}
+                      onMoveClipAbove={handleMoveVoiceClipAbove}
+                      onMoveClipBelow={handleMoveVoiceClipBelow}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'voice', clipId: clip.id }, 'voice');
+                        setActiveDrag({
+                          kind: 'voice',
+                          clipId: clip.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'voice', clipId: clip.id }, 'voice');
+                        setActiveDrag({
+                          kind: 'voice',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'voice', clipId: clip.id }, 'voice');
+                        setActiveDrag({
+                          kind: 'voice',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteVoiceClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateVoiceClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitVoiceClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'voice' }, 'voice')}
+                      onPointerDownMove={(e) => {
+                        const first = voiceClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'voice' }, 'voice');
                           setActiveDrag({
                             kind: 'voice',
                             mode: 'move',
@@ -1282,10 +2655,23 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origStart: voiceStart,
                             origDuration: voiceDuration,
                           });
-                        }}
-                        onPointerDownTrimLeft={(e) => {
-                          e.stopPropagation();
-                          handleSelectClip({ track: 'voice' });
+                        }
+                      }}
+                      onPointerDownTrimLeft={(e) => {
+                        e.stopPropagation();
+                        const first = voiceClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'voice' }, 'voice');
                           setActiveDrag({
                             kind: 'voice',
                             mode: 'trim-left',
@@ -1293,10 +2679,23 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origStart: voiceStart,
                             origDuration: voiceDuration,
                           });
-                        }}
-                        onPointerDownTrimRight={(e) => {
-                          e.stopPropagation();
-                          handleSelectClip({ track: 'voice' });
+                        }
+                      }}
+                      onPointerDownTrimRight={(e) => {
+                        e.stopPropagation();
+                        const first = voiceClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'voice' }, 'voice');
                           setActiveDrag({
                             kind: 'voice',
                             mode: 'trim-right',
@@ -1304,13 +2703,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origStart: voiceStart,
                             origDuration: voiceDuration,
                           });
-                        }}
-                        onDelete={handleVoiceDelete}
-                        onMute={() => setVoiceTrackMuted(!voiceTrackMuted)}
-                        onSplit={handleSplitClip}
-                        onZoomToClip={handleVoiceZoom}
-                      />
-                    </div>
+                        }
+                      }}
+                      onDelete={() => handleDeleteVoiceClip()}
+                      onDuplicate={() => handleDuplicateVoiceClip()}
+                      onMute={() => setVoiceTrackMuted(!voiceTrackMuted)}
+                      onSplit={() => handleSplitVoiceClip()}
+                      onZoomToClip={handleVoiceZoom}
+                    />
                   ) : (
                     <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
                   )
@@ -1319,19 +2719,75 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 {/* ── Track 7: Background Music Soundtrack (With Full-Width Dynamic Music Waves) ───── */}
                 {enabledTracks.music && (
                   hasMusic ? (
-                    <div className={`h-10 ${enabledTracks.sfx ? 'border-b border-[#262626]' : ''} p-1 relative flex items-center`}>
-                      <AudioTrackClip
-                        type="music"
-                        start={musicStart}
-                        duration={musicDuration}
-                        totalDuration={totalDuration}
-                        selectedClip={selectedClip}
-                        isMuted={musicTrackMuted}
-                        label={musicLabel}
-                        subLabel={musicSubLabel}
-                        onSelect={() => handleSelectClip({ track: 'music' }, 'music')}
-                        onPointerDownMove={(e) => {
-                          handleSelectClip({ track: 'music' });
+                    <AudioTrackClip
+                      type="music"
+                      clips={musicLanes}
+                      trackHeight={musicTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={musicMaxLane}
+                      start={musicStart}
+                      duration={musicDuration}
+                      totalDuration={totalDuration}
+                      selectedClip={selectedClip}
+                      isMuted={musicTrackMuted}
+                      label={musicLabel}
+                      subLabel={musicSubLabel}
+                      onMoveClipAbove={handleMoveMusicClipAbove}
+                      onMoveClipBelow={handleMoveMusicClipBelow}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'music', clipId: clip.id }, 'music');
+                        setActiveDrag({
+                          kind: 'music',
+                          clipId: clip.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'music', clipId: clip.id }, 'music');
+                        setActiveDrag({
+                          kind: 'music',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'music', clipId: clip.id }, 'music');
+                        setActiveDrag({
+                          kind: 'music',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteMusicClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateMusicClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitMusicClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'music' }, 'music')}
+                      onPointerDownMove={(e) => {
+                        const first = musicClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'music' }, 'music');
                           setActiveDrag({
                             kind: 'music',
                             mode: 'move',
@@ -1339,10 +2795,23 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origStart: musicStart,
                             origDuration: musicDuration,
                           });
-                        }}
-                        onPointerDownTrimLeft={(e) => {
-                          e.stopPropagation();
-                          handleSelectClip({ track: 'music' });
+                        }
+                      }}
+                      onPointerDownTrimLeft={(e) => {
+                        e.stopPropagation();
+                        const first = musicClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'music' }, 'music');
                           setActiveDrag({
                             kind: 'music',
                             mode: 'trim-left',
@@ -1350,10 +2819,23 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origStart: musicStart,
                             origDuration: musicDuration,
                           });
-                        }}
-                        onPointerDownTrimRight={(e) => {
-                          e.stopPropagation();
-                          handleSelectClip({ track: 'music' });
+                        }
+                      }}
+                      onPointerDownTrimRight={(e) => {
+                        e.stopPropagation();
+                        const first = musicClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'music' }, 'music');
                           setActiveDrag({
                             kind: 'music',
                             mode: 'trim-right',
@@ -1361,83 +2843,164 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                             origStart: musicStart,
                             origDuration: musicDuration,
                           });
-                        }}
-                        onDelete={handleMusicDelete}
-                        onMute={() => setMusicTrackMuted(!musicTrackMuted)}
-                        onSplit={handleSplitClip}
-                        onZoomToClip={handleMusicZoom}
-                      />
-                    </div>
+                        }
+                      }}
+                      onDelete={() => handleDeleteMusicClip()}
+                      onDuplicate={() => handleDuplicateMusicClip()}
+                      onMute={() => setMusicTrackMuted(!musicTrackMuted)}
+                      onSplit={() => handleSplitMusicClip()}
+                      onZoomToClip={handleMusicZoom}
+                    />
                   ) : (
                     <div className={`h-10 ${enabledTracks.sfx ? 'border-b border-[#262626]' : ''} p-1 relative flex items-center`} />
                   )
                 )}
 
                 {/* ── Track 8: Sound FX Track ──────────────────────────────── */}
-                {enabledTracks.sfx && selectedSfx && (
-                  <div className="h-10 p-1 relative flex items-center">
-                    <AudioTrackClip
-                      type="sfx"
-                      start={sfxStart}
-                      duration={sfxDuration}
-                      totalDuration={totalDuration}
-                      selectedClip={selectedClip}
-                      isMuted={sfxTrackMuted}
-                      label={`SFX: ${selectedSfx.name}`}
-                      onSelect={() => handleSelectClip({ track: 'sfx' }, 'music')}
-                      onPointerDownMove={(e) => {
-                        handleSelectClip({ track: 'sfx' });
+                {enabledTracks.sfx && hasSfx && (
+                  <AudioTrackClip
+                    type="sfx"
+                    clips={sfxLanes}
+                    trackHeight={sfxTrackHeight}
+                    laneHeight={laneHeight}
+                    laneGap={laneGap}
+                    maxLane={sfxMaxLane}
+                    start={sfxStart}
+                    duration={sfxDuration}
+                    totalDuration={totalDuration}
+                    selectedClip={selectedClip}
+                    isMuted={sfxTrackMuted}
+                    label={selectedSfx ? `SFX: ${selectedSfx.name}` : 'Sound FX'}
+                    onMoveClipAbove={handleMoveSfxClipAbove}
+                    onMoveClipBelow={handleMoveSfxClipBelow}
+                    onPointerDownMoveClip={(e, clip) => {
+                      handleSelectClip({ track: 'sfx', clipId: clip.id }, 'music');
+                      setActiveDrag({
+                        kind: 'sfx',
+                        clipId: clip.id,
+                        mode: 'move',
+                        startX: e.clientX,
+                        origStart: clip.start,
+                        origDuration: clip.duration,
+                      });
+                    }}
+                    onPointerDownTrimLeftClip={(e, clip) => {
+                      e.stopPropagation();
+                      handleSelectClip({ track: 'sfx', clipId: clip.id }, 'music');
+                      setActiveDrag({
+                        kind: 'sfx',
+                        clipId: clip.id,
+                        mode: 'trim-left',
+                        startX: e.clientX,
+                        origStart: clip.start,
+                        origDuration: clip.duration,
+                      });
+                    }}
+                    onPointerDownTrimRightClip={(e, clip) => {
+                      e.stopPropagation();
+                      handleSelectClip({ track: 'sfx', clipId: clip.id }, 'music');
+                      setActiveDrag({
+                        kind: 'sfx',
+                        clipId: clip.id,
+                        mode: 'trim-right',
+                        startX: e.clientX,
+                        origStart: clip.start,
+                        origDuration: clip.duration,
+                      });
+                    }}
+                    onDeleteClip={(clipId) => handleDeleteSfxClip(clipId)}
+                    onDuplicateClip={(clipId) => handleDuplicateSfxClip(clipId)}
+                    onSplitClip={(clipId) => handleSplitSfxClip(clipId)}
+                    onSelect={() => handleSelectClip({ track: 'sfx' }, 'music')}
+                    onPointerDownMove={(e) => {
+                      const first = sfxClips[0];
+                      if (first) {
+                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
                         setActiveDrag({
                           kind: 'sfx',
+                          clipId: first.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: first.start,
+                          origDuration: first.duration,
+                        });
+                      } else {
+                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: 'sfx-default',
                           mode: 'move',
                           startX: e.clientX,
                           origStart: sfxStart,
                           origDuration: sfxDuration,
                         });
-                      }}
-                      onPointerDownTrimLeft={(e) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'sfx' });
+                      }
+                    }}
+                    onPointerDownTrimLeft={(e) => {
+                      e.stopPropagation();
+                      const first = sfxClips[0];
+                      if (first) {
+                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
                         setActiveDrag({
                           kind: 'sfx',
+                          clipId: first.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: first.start,
+                          origDuration: first.duration,
+                        });
+                      } else {
+                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: 'sfx-default',
                           mode: 'trim-left',
                           startX: e.clientX,
                           origStart: sfxStart,
                           origDuration: sfxDuration,
                         });
-                      }}
-                      onPointerDownTrimRight={(e) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'sfx' });
+                      }
+                    }}
+                    onPointerDownTrimRight={(e) => {
+                      e.stopPropagation();
+                      const first = sfxClips[0];
+                      if (first) {
+                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
                         setActiveDrag({
                           kind: 'sfx',
+                          clipId: first.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: first.start,
+                          origDuration: first.duration,
+                        });
+                      } else {
+                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: 'sfx-default',
                           mode: 'trim-right',
                           startX: e.clientX,
                           origStart: sfxStart,
                           origDuration: sfxDuration,
                         });
-                      }}
-                      onDelete={handleSfxDelete}
-                      onMute={() => setSfxTrackMuted(!sfxTrackMuted)}
-                      onSplit={handleSplitClip}
-                    />
-                  </div>
+                      }
+                    }}
+                    onDelete={() => handleDeleteSfxClip()}
+                    onDuplicate={() => handleDuplicateSfxClip()}
+                    onMute={() => setSfxTrackMuted(!sfxTrackMuted)}
+                    onSplit={() => handleSplitSfxClip()}
+                  />
                 )}
 
-                {/* ── Draggable Electric Blue Playhead Indicator ────── */}
+                {/* ── Playhead indicator line across all tracks ────── */}
                 <div
-                  className="absolute top-0 bottom-0 w-px bg-[#3B82F6] z-30 pointer-events-none"
+                  className="absolute top-0 bottom-0 pointer-events-none z-30 select-none"
                   style={{ left: `${progressPercent}%` }}
                 >
-                  {/* Playhead Handle Badge - Interactive with drag handle */}
-                  <div
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      handleRulerPointerDown(e);
-                    }}
-                    className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-[#3B82F6] hover:bg-[#2563EB] border-2 border-white rounded-full shadow-xl pointer-events-auto cursor-ew-resize hover:scale-125 transition-transform select-none"
-                    title="Drag playhead to scrub timeline"
-                  />
+                  <div className="w-px h-full bg-[#3B82F6] -translate-x-1/2 relative">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rotate-45 bg-[#3B82F6]" />
+                  </div>
                 </div>
               </div>
             </div>

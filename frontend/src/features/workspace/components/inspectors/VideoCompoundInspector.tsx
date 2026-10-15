@@ -112,6 +112,18 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<VideoInspectorTab>(initialSubTab);
 
+  useEffect(() => {
+    if (initialSubTab) setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
+
+  const isImageMode = Boolean(customImageUrl && !customVideoUrl);
+
+  useEffect(() => {
+    if (isImageMode && (activeSubTab === 'speed' || activeSubTab === 'audio')) {
+      setActiveSubTab('transform');
+    }
+  }, [isImageMode, activeSubTab]);
+
   // Transform states (user configurable)
   const [fitMode, setFitMode] = useState<'fill' | 'fit' | 'crop'>('fill');
   const [flipH, setFlipH] = useState(false);
@@ -221,7 +233,9 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     setActiveStyle(preset.label);
   };
 
-  const tabs: VideoInspectorTab[] = ['transform', 'style', 'adjust', 'animations', 'lut', 'speed', 'audio', 'time'];
+  const tabs: VideoInspectorTab[] = isImageMode
+    ? ['transform', 'style', 'adjust', 'animations', 'lut', 'time']
+    : ['transform', 'style', 'adjust', 'animations', 'lut', 'speed', 'audio', 'time'];
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">

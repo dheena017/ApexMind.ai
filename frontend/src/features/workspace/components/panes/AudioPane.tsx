@@ -84,6 +84,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const [soundtracks, setSoundtracks] = useState<SoundtrackItem[]>(CURATED_SOUNDTRACKS);
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [selectedSfxCategory, setSelectedSfxCategory] = useState<string>('all');
+  const [pendingMusicId, setPendingMusicId] = useState(selectedMusic || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
   const [playingSfxId, setPlayingSfxId] = useState<string | null>(null);
@@ -222,6 +223,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
     }
   };
+
+  useEffect(() => {
+    setPendingMusicId(selectedMusic || '');
+  }, [selectedMusic]);
 
   const handleApplyCustomAudio = () => {
     if (!customAudioUrl.trim()) return;
@@ -610,15 +615,16 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
             {filteredSoundtracks.map((track) => {
               const isSelected = selectedMusic === track.id;
+              const isPending = pendingMusicId === track.id;
               const isPlaying = playingTrackId === track.id;
 
               return (
                 <div
                   key={track.id}
-                  onClick={() => handleSelectSoundtrack(track.id)}
+                  onClick={() => setPendingMusicId(track.id)}
                   className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                    isSelected
-                      ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
+                    isPending
+                      ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/30'
                       : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
                   }`}
                 >
@@ -661,22 +667,17 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {isSelected ? (
-                      <div className="p-1.5 rounded-full bg-[#3B82F6] text-white">
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectSoundtrack(track.id);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-[#26262E] hover:bg-[#32323C] text-[10px] font-semibold text-white transition-colors border border-[#34343E]"
-                      >
-                        Apply
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectSoundtrack(track.id);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-[10px] font-bold text-white transition-colors disabled:opacity-50"
+                      disabled={isSelected}
+                    >
+                      {isSelected ? 'Applied' : 'Apply'}
+                    </button>
                   </div>
                 </div>
               );

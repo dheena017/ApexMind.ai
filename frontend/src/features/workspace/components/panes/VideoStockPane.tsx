@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Film,
   Play,
-  Check,
   Search,
   X,
   ExternalLink,
@@ -214,10 +213,12 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   };
 
   const handleApply = (vid: StockVideoItem) => {
-    setSelectedId(vid.id);
+    setSelectedId(null);
     onSelectVideo(vid.videoUrl);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
   };
+
+  const handleStageVideo = (vid: StockVideoItem) => setSelectedId(vid.id);
 
   const handleAddCustomUrl = (saveToFavorites = false) => {
     if (!customUrlInput.trim()) return;
@@ -582,13 +583,20 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
               <div className="grid grid-cols-2 gap-2.5">
                 {filteredVideos.map((vid) => {
                   const isHovered = hoveredId === vid.id;
-                  const isSelected = activeVideoUrl === vid.videoUrl || selectedId === vid.id;
+                  const isSelected = selectedId === vid.id || (!selectedId && activeVideoUrl === vid.videoUrl);
 
                   return (
-                    <button
+                    <div
                       key={vid.id}
-                      type="button"
-                      onClick={() => handleApply(vid)}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleStageVideo(vid)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handleStageVideo(vid);
+                        }
+                      }}
                       onMouseEnter={() => handleMouseEnter(vid.id)}
                       onMouseLeave={() => handleMouseLeave(vid.id)}
                       className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
@@ -624,7 +632,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       )}
 
                       {/* Video Info Bottom */}
-                      <div className="absolute bottom-2 left-2 right-2">
+                      <div className="absolute bottom-2 left-2 right-16">
                         <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
                           {vid.title}
                         </p>
@@ -636,11 +644,16 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                         {vid.category}
                       </div>
 
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleApply(vid);
+                        }}
+                        className="absolute bottom-2 right-2 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] px-2 py-1 text-[9px] font-bold text-white"
+                      >
+                        Apply
+                      </button>
 
                       {/* Delete button for Saved clips */}
                       {activeTab === 'saved' && (
@@ -653,7 +666,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                           <Trash2 className="w-3 h-3" />
                         </button>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>

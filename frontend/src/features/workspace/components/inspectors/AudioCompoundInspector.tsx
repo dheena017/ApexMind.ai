@@ -596,6 +596,20 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                       <Play className="w-3 h-3" />
                       {previewingSfx === sfx.id ? 'Playing' : 'Preview'}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.dispatchEvent(
+                          new CustomEvent('workspace:add-sfx-timeline', {
+                            detail: { id: sfx.id, name: sfx.name, audioUrl: sfx.audioUrl, duration: 0.6 },
+                          })
+                        );
+                      }}
+                      className="px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 bg-[#3B82F6]/20 hover:bg-[#3B82F6] text-sky-400 hover:text-white border border-[#3B82F6]/40 cursor-pointer transition-colors"
+                      title="Place SFX on multi-track timeline"
+                    >
+                      <span>+ Track</span>
+                    </button>
                   </div>
                 </div>
               ))}

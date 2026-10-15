@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Play,
   Pause,
@@ -23,6 +23,8 @@ import { TimelineAddTrackMenu } from './TimelineAddTrackMenu';
 export interface TimelineToolbarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  isExpandedHeight?: boolean;
+  onToggleExpandedHeight?: () => void;
   activeTracksCount?: number;
   selectedClip?: SelectedClip | null;
   captionsTrackLocked: boolean;
@@ -46,11 +48,14 @@ export interface TimelineToolbarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomFit: () => void;
+  onDurationChange?: (duration: number) => void;
 }
 
 export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   isCollapsed,
   onToggleCollapse,
+  isExpandedHeight = false,
+  onToggleExpandedHeight,
   activeTracksCount = 0,
   selectedClip,
   captionsTrackLocked,
@@ -74,7 +79,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   onZoomIn,
   onZoomOut,
   onZoomFit,
+  onDurationChange,
 }) => {
+  const [isEditingDuration, setIsEditingDuration] = useState(false);
+  const [customDurationInput, setCustomDurationInput] = useState(String(Math.round(totalDuration)));
   const hasSelection = Boolean(selectedClip);
   const addTrackAnchorRef = useRef<HTMLDivElement>(null);
 
@@ -114,11 +122,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onSplitClip}
             disabled={!hasSelection}
-            className={`h-4 w-4 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#60A5FA] ${
-              hasSelection
+            className={`h-4 w-4 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#60A5FA] ${hasSelection
                 ? 'text-[#B8B8C0] hover:text-white hover:bg-white/8'
                 : 'text-[#52525B] opacity-40 cursor-not-allowed'
-            }`}
+              }`}
             title={hasSelection ? 'Split selected clip at playhead position (S or Ctrl+B)' : 'Select a clip to split'}
             aria-label="Split selected clip at playhead"
           >
@@ -129,11 +136,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onDuplicateClip}
             disabled={!hasSelection}
-            className={`h-4 w-4 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#60A5FA] ${
-              hasSelection
+            className={`h-4 w-4 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#60A5FA] ${hasSelection
                 ? 'text-[#B8B8C0] hover:text-white hover:bg-white/8'
                 : 'text-[#52525B] opacity-40 cursor-not-allowed'
-            }`}
+              }`}
             title={hasSelection ? 'Duplicate selected clip (Ctrl+D)' : 'Select a clip to duplicate'}
             aria-label="Duplicate selected clip"
           >
@@ -144,11 +150,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onDeleteClip}
             disabled={!hasSelection}
-            className={`h-4 w-4 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-400 ${
-              hasSelection
+            className={`h-4 w-4 inline-flex items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-400 ${hasSelection
                 ? 'text-[#D28A8A] hover:text-red-200 hover:bg-red-950/40'
                 : 'text-[#52525B] opacity-40 cursor-not-allowed'
-            }`}
+              }`}
             title={hasSelection ? 'Delete selected clip (Delete or Backspace)' : 'Select a clip to delete'}
             aria-label="Delete selected clip"
           >
@@ -196,11 +201,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           <button
             type="button"
             onClick={onToggleSnap}
-            className={`p-0.5 rounded transition-colors cursor-pointer ml-0.5 ${
-              snapEnabled
+            className={`p-0.5 rounded transition-colors cursor-pointer ml-0.5 ${snapEnabled
                 ? 'text-white bg-white/[0.05] border border-[#3A3A3A]'
                 : 'text-[#6B7280] hover:text-[#9CA3AF] hover:bg-white/[0.04] border border-transparent'
-            }`}
+              }`}
             title={snapEnabled ? 'Magnetic snapping ON' : 'Magnetic snapping OFF'}
             aria-label={snapEnabled ? 'Disable magnetic snapping' : 'Enable magnetic snapping'}
             aria-pressed={snapEnabled}
@@ -246,11 +250,79 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           <SkipForward className="w-2.5 h-2.5" />
         </button>
 
-        {/* Time Readout */}
-        <div className="whitespace-nowrap tabular-nums px-1.5 py-0.5 rounded-md bg-[#0F0F0F] border border-[#2F2F2F] text-[9px] font-mono-studio text-white" aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(totalDuration)}`}>
-          <span className="text-[#60A5FA] font-bold">{formatTime(currentTime)}</span>
-          <span className="text-[#6B7280] mx-1">/</span>
-          <span className="text-[#9CA3AF]">{formatTime(totalDuration)}</span>
+        {/* Time Readout with Editable Duration & Quick Presets */}
+        <div className="flex items-center gap-1">
+          <div
+            className="whitespace-nowrap tabular-nums px-1.5 py-0.5 rounded-md bg-[#0F0F0F] border border-[#2F2F2F] text-[9px] font-mono-studio text-white flex items-center gap-1 shadow-inner"
+            aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(totalDuration)}`}
+          >
+            <span className="text-[#60A5FA] font-bold" title="Current Playhead Time">{formatTime(currentTime)}</span>
+            <span className="text-[#6B7280]">/</span>
+            {isEditingDuration ? (
+              <input
+                type="number"
+                min={5}
+                max={300}
+                value={customDurationInput}
+                autoFocus
+                onChange={(e) => setCustomDurationInput(e.target.value)}
+                onBlur={() => {
+                  const val = parseFloat(customDurationInput);
+                  if (Number.isFinite(val) && val >= 5) {
+                    onDurationChange?.(val);
+                  }
+                  setIsEditingDuration(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const val = parseFloat(customDurationInput);
+                    if (Number.isFinite(val) && val >= 5) {
+                      onDurationChange?.(val);
+                    }
+                    setIsEditingDuration(false);
+                  } else if (e.key === 'Escape') {
+                    setIsEditingDuration(false);
+                  }
+                }}
+                className="w-11 bg-black text-[#60A5FA] px-1 py-0 text-[9px] rounded border border-[#3B82F6] outline-none"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDurationChange) {
+                    setCustomDurationInput(String(Math.round(totalDuration)));
+                    setIsEditingDuration(true);
+                  }
+                }}
+                className="text-[#9CA3AF] hover:text-[#60A5FA] hover:underline cursor-pointer transition-colors"
+                title="Click to edit project duration in seconds"
+              >
+                {formatTime(totalDuration)}
+              </button>
+            )}
+          </div>
+
+          {/* Quick Duration Preset Selector */}
+          {onDurationChange && (
+            <div className="hidden md:flex items-center gap-0.5 text-[8px] font-mono-studio">
+              {[15, 30, 60].map((sec) => (
+                <button
+                  key={sec}
+                  type="button"
+                  onClick={() => onDurationChange(sec)}
+                  className={`px-1 py-0.5 rounded transition-all cursor-pointer ${
+                    Math.abs(totalDuration - sec) < 0.5
+                      ? 'bg-[#3B82F6]/25 text-[#60A5FA] border border-[#3B82F6]/50 font-bold'
+                      : 'text-[#6B7280] hover:text-white hover:bg-white/5'
+                  }`}
+                  title={`Set timeline duration to ${sec}s`}
+                >
+                  {sec}s
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Live Dragging Tooltip */}

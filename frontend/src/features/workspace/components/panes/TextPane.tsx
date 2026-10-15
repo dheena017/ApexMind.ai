@@ -87,7 +87,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
   onUpdateQuote,
 }) => {
   const [activeTab, setActiveTab] = useState<'presets' | 'customizer' | 'hooks' | 'custom'>('presets');
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('impact-bold');
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [selectedAnimation, setSelectedAnimation] = useState<string>('karaoke');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -504,10 +504,10 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 return (
                   <div
                     key={preset.id}
-                    onClick={() => handleApplyPreset(preset)}
+                    onClick={() => setSelectedPresetId(preset.id)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 text-left ${
                       isSelected
-                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg'
+                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/30'
                         : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
                     }`}
                   >
@@ -520,11 +520,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
                           className="w-3 h-3 rounded-full border border-white/20 shadow-sm"
                           style={{ backgroundColor: preset.color }}
                         />
-                        {isSelected && (
-                          <div className="p-1 rounded-full bg-[#3B82F6] text-white">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </div>
-                        )}
                       </div>
                     </div>
 
@@ -538,6 +533,16 @@ export const TextPane: React.FC<TextPaneProps> = ({
                     <p className="text-[10px] text-[#A1A1AA] leading-relaxed">
                       {preset.styleDescription}
                     </p>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleApplyPreset(preset);
+                      }}
+                      className="w-full rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] px-2.5 py-1.5 text-[10px] font-bold text-white transition-colors"
+                    >
+                      Apply
+                    </button>
                   </div>
                 );
               })}

@@ -1,22 +1,36 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Film } from 'lucide-react';
-import { formatTime, SelectedClip } from './timelineTypes';
+import { formatTime, SelectedClip, TimelineMediaClip } from './timelineTypes';
 import { FilmstripTrackBackground } from './FilmstripTrackBackground';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
 export interface VideoTrackClipProps {
-  videoStart: number;
-  videoDuration: number;
+  clips?: (TimelineMediaClip & { lane?: number })[];
+  trackHeight?: number;
+  laneHeight?: number;
+  laneGap?: number;
+  maxLane?: number;
+  videoStart?: number;
+  videoDuration?: number;
   totalDuration: number;
   selectedClip?: SelectedClip | null;
   videoTrackVisible: boolean;
   backdropName: string;
   mediaUrl?: string;
-  onSelect: () => void;
-  onPointerDownMove: (e: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerDownTrimLeft: (e: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerDownTrimRight: (e: React.PointerEvent<HTMLDivElement>) => void;
-  // Context menu actions
+  onSelectClip?: (clipId: string) => void;
+  onPointerDownMoveClip?: (e: React.PointerEvent<HTMLDivElement>, clip: TimelineMediaClip) => void;
+  onPointerDownTrimLeftClip?: (e: React.PointerEvent<HTMLDivElement>, clip: TimelineMediaClip) => void;
+  onPointerDownTrimRightClip?: (e: React.PointerEvent<HTMLDivElement>, clip: TimelineMediaClip) => void;
+  onDeleteClip?: (clipId: string) => void;
+  onDuplicateClip?: (clipId: string) => void;
+  onSplitClip?: (clipId: string) => void;
+  onMoveClipAbove?: (clipId: string) => void;
+  onMoveClipBelow?: (clipId: string) => void;
+  // Legacy single-clip fallback handlers
+  onSelect?: () => void;
+  onPointerDownMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerDownTrimLeft?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerDownTrimRight?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
   onSplit?: () => void;
@@ -28,13 +42,26 @@ export interface VideoTrackClipProps {
 }
 
 export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
-  videoStart,
-  videoDuration,
+  clips,
+  trackHeight,
+  laneHeight = 32,
+  laneGap = 4,
+  videoStart = 0,
+  videoDuration = 10,
   totalDuration,
   selectedClip,
   videoTrackVisible,
   backdropName,
   mediaUrl,
+  onSelectClip,
+  onPointerDownMoveClip,
+  onPointerDownTrimLeftClip,
+  onPointerDownTrimRightClip,
+  onDeleteClip,
+  onDuplicateClip,
+  onSplitClip,
+  onMoveClipAbove,
+  onMoveClipBelow,
   onSelect,
   onPointerDownMove,
   onPointerDownTrimLeft,
@@ -48,107 +75,164 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
   onCopyTimings,
   onDetach,
 }) => {
-  const isSelected = selectedClip?.track === 'video';
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-  const [colorLabel, setColorLabel] = useState<string>('');
+  const effectiveClips: (TimelineMediaClip & { lane?: number })[] = (clips && clips.length > 0)
+    ? clips
+    : (mediaUrl || backdropName ? [{
+        id: 'vid-default',
+        type: 'video',
+        url: mediaUrl || '',
+        name: backdropName || 'Video Clip',
+        start: videoStart,
+        duration: videoDuration,
+        lane: 0,
+      }] : []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onSelect();
-    setContextMenu({ x: e.clientX, y: e.clientY });
-  }, [onSelect]);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
+  const [colorLabels, setColorLabels] = useState<Record<string, string>>({});
 
-  const handleColorLabel = useCallback((color: string) => {
-    setColorLabel(color);
-    onColorLabel?.(color);
-  }, [onColorLabel]);
-
-  const handleCopyTimings = useCallback(() => {
-    const text = `Start: ${videoStart.toFixed(2)}s | Duration: ${videoDuration.toFixed(2)}s | End: ${(videoStart + videoDuration).toFixed(2)}s`;
-    navigator.clipboard.writeText(text).catch(() => {});
-    onCopyTimings?.();
-  }, [videoStart, videoDuration, onCopyTimings]);
+  const actualTrackHeight = trackHeight ?? 40;
 
   return (
-    <div className="h-10 border-b border-[#262626] p-1 relative flex items-center">
-      <div
-        onClick={onSelect}
-        onPointerDown={onPointerDownMove}
-        onContextMenu={handleContextMenu}
-        className={`h-full rounded-md px-2.5 flex items-center justify-between transition-colors border group select-none cursor-grab active:cursor-grabbing relative overflow-hidden ${
-          isSelected
-            ? 'bg-[#1A1A1A] border-[#3A3A3A] text-white z-20 outline outline-1 outline-[#3A3A3A]'
-            : videoTrackVisible
-            ? 'bg-[#1A1A1A]/80 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
-            : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
-        }`}
-        style={{
-          left: `${(videoStart / totalDuration) * 100}%`,
-          width: `${Math.min(100, (videoDuration / totalDuration) * 100)}%`,
-          ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
-        }}
-        title="Video Track: Drag to reposition video clip. Drag left/right handles to trim. Right-click for options."
-      >
-        {/* Color Label Strip (top edge) */}
-        {colorLabel && (
+    <div
+      className="border-b border-[#262626] p-1 relative flex items-center w-full transition-all"
+      style={{ height: `${actualTrackHeight}px` }}
+    >
+      {effectiveClips.map((clip) => {
+        const isSelected = selectedClip?.track === 'video' && (!selectedClip.clipId || selectedClip.clipId === clip.id);
+        const colorLabel = colorLabels[clip.id] || '';
+        const clipLane = clip.lane ?? 0;
+        const topPos = 4 + clipLane * (laneHeight + laneGap);
+
+        return (
           <div
-            className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
-            style={{ background: colorLabel }}
-          />
-        )}
+            key={clip.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onSelectClip) onSelectClip(clip.id);
+              else onSelect?.();
+            }}
+            onPointerDown={(e) => {
+              if (onPointerDownMoveClip) onPointerDownMoveClip(e, clip);
+              else onPointerDownMove?.(e);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onSelectClip) onSelectClip(clip.id);
+              else onSelect?.();
+              setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
+            }}
+            className={`timeline-clip-card rounded-md px-2.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
+              isSelected
+                ? 'bg-[#1E293B] border-[#3A3A3A] text-white z-20'
+                : videoTrackVisible
+                ? 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
+                : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
+            }`}
+            style={{
+              left: `${(clip.start / totalDuration) * 100}%`,
+              width: `${Math.max(1.5, Math.min(100, (clip.duration / totalDuration) * 100))}%`,
+              top: `${topPos}px`,
+              height: `${laneHeight}px`,
+              ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
+            }}
+            title={`Video Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${clip.start.toFixed(1)}s, Dur: ${clip.duration.toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
+          >
+            {/* Color Label Strip (top edge) */}
+            {colorLabel && (
+              <div
+                className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
+                style={{ background: colorLabel }}
+              />
+            )}
 
-        {/* Filmstrip Repeating Background with Sprockets */}
-        <FilmstripTrackBackground imageUrl={mediaUrl} />
+            {/* Filmstrip Repeating Background with Sprockets */}
+            <FilmstripTrackBackground imageUrl={clip.url || mediaUrl} />
 
-        {/* Left Trim Handle */}
-        <div
-          onPointerDown={onPointerDownTrimLeft}
-          className="timeline-trim-handle-left bg-amber-500/40 hover:bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-          title="Drag to trim video start point"
-        >
-          <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
-        </div>
+            {/* Left Trim Handle */}
+            <div
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                if (onPointerDownTrimLeftClip) onPointerDownTrimLeftClip(e, clip);
+                else onPointerDownTrimLeft?.(e);
+              }}
+              className="timeline-trim-handle-left bg-amber-500/40 hover:bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              title="Drag to trim video start point"
+            >
+              <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
+            </div>
 
-        {/* Video Clip Label Overlay */}
-        <div className="flex items-center gap-1.5 z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
-          <Film className="w-3 h-3 text-amber-400 shrink-0" />
-          <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
-            {backdropName ? `${backdropName} (Video Track)` : (mediaUrl ? 'Custom Video Clip' : 'Video Clip')}
-          </span>
-        </div>
+            {/* Video Clip Label Overlay */}
+            <div className="flex items-center gap-1.5 z-10 bg-black/75 px-1.5 py-0.5 rounded backdrop-blur-xs max-w-[70%]">
+              <Film className="w-3 h-3 text-amber-400 shrink-0" />
+              <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
+                {clip.name || 'Video Clip'}
+              </span>
+            </div>
 
-        <span className="text-[9px] font-mono-studio text-amber-300 pointer-events-none pr-1.5 font-bold z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
-          {formatTime(videoDuration)}
-        </span>
+            <span className="text-[9px] font-mono-studio text-amber-300 pointer-events-none pr-1.5 font-bold z-10 bg-black/75 px-1.5 py-0.5 rounded backdrop-blur-xs shrink-0">
+              {formatTime(clip.duration)}
+            </span>
 
-        {/* Right Trim Handle */}
-        <div
-          onPointerDown={onPointerDownTrimRight}
-          className="timeline-trim-handle-right bg-amber-500/40 hover:bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-          title="Drag to trim video end point"
-        >
-          <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
-        </div>
-      </div>
+            {/* Right Trim Handle */}
+            <div
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                if (onPointerDownTrimRightClip) onPointerDownTrimRightClip(e, clip);
+                else onPointerDownTrimRight?.(e);
+              }}
+              className="timeline-trim-handle-right bg-amber-500/40 hover:bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              title="Drag to trim video end point"
+            >
+              <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
+            </div>
+          </div>
+        );
+      })}
 
       {/* Right-click Context Menu */}
-      <TimelineClipContextMenu
-        x={contextMenu?.x ?? 0}
-        y={contextMenu?.y ?? 0}
-        trackType="video"
-        isVisible={contextMenu !== null}
-        isHidden={!videoTrackVisible}
-        onClose={() => setContextMenu(null)}
-        onDelete={onDelete}
-        onDuplicate={onDuplicate}
-        onSplit={onSplit}
-        onHide={onHide}
-        onZoomToClip={onZoomToClip}
-        onColorLabel={handleColorLabel}
-        onCopyTimings={handleCopyTimings}
-        onDetach={onDetach}
-      />
+      {contextMenu && (
+        <TimelineClipContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          trackType="video"
+          isVisible={true}
+          isHidden={!videoTrackVisible}
+          onClose={() => setContextMenu(null)}
+          onDelete={() => {
+            if (onDeleteClip) onDeleteClip(contextMenu.clipId);
+            else onDelete?.();
+            setContextMenu(null);
+          }}
+          onDuplicate={() => {
+            if (onDuplicateClip) onDuplicateClip(contextMenu.clipId);
+            else onDuplicate?.();
+            setContextMenu(null);
+          }}
+          onSplit={() => {
+            if (onSplitClip) onSplitClip(contextMenu.clipId);
+            else onSplit?.();
+            setContextMenu(null);
+          }}
+          onMoveAbove={onMoveClipAbove ? () => onMoveClipAbove(contextMenu.clipId) : undefined}
+          onMoveBelow={onMoveClipBelow ? () => onMoveClipBelow(contextMenu.clipId) : undefined}
+          onHide={onHide}
+          onZoomToClip={onZoomToClip}
+          onColorLabel={(color) => {
+            setColorLabels((prev) => ({ ...prev, [contextMenu.clipId]: color }));
+            onColorLabel?.(color);
+          }}
+          onCopyTimings={() => {
+            const clip = effectiveClips.find((c) => c.id === contextMenu.clipId);
+            if (clip) {
+              const text = `Start: ${clip.start.toFixed(2)}s | Duration: ${clip.duration.toFixed(2)}s | End: ${(clip.start + clip.duration).toFixed(2)}s`;
+              navigator.clipboard.writeText(text).catch(() => {});
+            }
+            onCopyTimings?.();
+          }}
+          onDetach={onDetach}
+        />
+      )}
     </div>
   );
 };

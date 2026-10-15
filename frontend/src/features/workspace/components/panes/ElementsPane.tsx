@@ -9,7 +9,6 @@ import {
   Flame,
   Crown,
   Target,
-  Check,
   Layers,
   ArrowRight,
   Sparkles,
@@ -24,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export interface ElementsPaneProps {
-  onInsertElement?: (element: { id: string; name: string; type: string; value: string }) => void;
+  onInsertElement?: (element: { id: string; name: string; type: string; value: string; label?: string }) => void;
   onToggleVignette?: () => void;
   onToggleGrain?: () => void;
 }
@@ -84,6 +83,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'badges' | 'fx' | 'social' | 'shapes' | 'progress' | 'custom'>('badges');
   const [appliedItem, setAppliedItem] = useState<string | null>(null);
+  const [pendingElement, setPendingElement] = useState<{ id: string; name: string; type: string; value: string } | null>(null);
 
   // Visual FX State
   const [grainIntensity, setGrainIntensity] = useState<number>(30);
@@ -94,19 +94,26 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
   const [customBadgeText, setCustomBadgeText] = useState('');
   const [customBadgeGradient, setCustomBadgeGradient] = useState('from-amber-500 to-orange-600');
 
-  const handleSelect = (id: string, name: string, type: string, value: string) => {
+  const handleApply = (id: string, name: string, type: string, value: string) => {
     setAppliedItem(id);
+    setPendingElement(null);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'overlay' }));
     if (onInsertElement) {
-      onInsertElement({ id, name, type, value });
+      onInsertElement({ id, name, type, value, label: name });
     }
     setTimeout(() => setAppliedItem(null), 1800);
+  };
+
+  const handleApplyPending = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    if (!pendingElement) return;
+    handleApply(pendingElement.id, pendingElement.name, pendingElement.type, pendingElement.value);
   };
 
   const handleCreateCustomBadge = () => {
     if (!customBadgeText.trim()) return;
     const text = customBadgeText.trim().toUpperCase();
-    handleSelect(`custom-badge-${Date.now()}`, text, 'badge', text);
+    handleApply(`custom-badge-${Date.now()}`, text, 'badge', text);
     setCustomBadgeText('');
   };
 
@@ -221,29 +228,29 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
             {/* Retro Overlays */}
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleSelect('fx-crt', 'CRT Scanlines', 'shape', 'shape-scanlines')}
-                className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] text-left flex flex-col gap-1 cursor-pointer"
+              <div
+                onClick={() => setPendingElement({ id: 'fx-crt', name: 'CRT Scanlines', type: 'shape', value: 'shape-scanlines' })}
+                className={`p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3A3A42] text-left flex flex-col gap-2 cursor-pointer ${pendingElement?.id === 'fx-crt' ? 'border-[#3B82F6]' : 'border-[#2A2A30]'}`}
               >
                 <div className="flex items-center gap-1.5 text-[#60A5FA]">
                   <Tv className="w-3.5 h-3.5" />
                   <span className="text-xs font-bold text-white">CRT Scanlines</span>
                 </div>
                 <span className="text-[10px] text-[#A1A1AA]">Retro monitor lines</span>
-              </button>
+                <button type="button" onClick={handleApplyPending} disabled={pendingElement?.id !== 'fx-crt'} className="rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] disabled:bg-[#27272A] disabled:text-[#71717A] px-2.5 py-1 text-[10px] font-bold text-white">Apply</button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => handleSelect('fx-spotlight', 'Center Spotlight', 'shape', 'shape-spotlight')}
-                className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] text-left flex flex-col gap-1 cursor-pointer"
+              <div
+                onClick={() => setPendingElement({ id: 'fx-spotlight', name: 'Center Spotlight', type: 'shape', value: 'shape-spotlight' })}
+                className={`p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3A3A42] text-left flex flex-col gap-2 cursor-pointer ${pendingElement?.id === 'fx-spotlight' ? 'border-[#3B82F6]' : 'border-[#2A2A30]'}`}
               >
                 <div className="flex items-center gap-1.5 text-amber-400">
                   <Circle className="w-3.5 h-3.5" />
                   <span className="text-xs font-bold text-white">Center Spotlight</span>
                 </div>
                 <span className="text-[10px] text-[#A1A1AA]">Subject radial focus</span>
-              </button>
+                <button type="button" onClick={handleApplyPending} disabled={pendingElement?.id !== 'fx-spotlight'} className="rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] disabled:bg-[#27272A] disabled:text-[#71717A] px-2.5 py-1 text-[10px] font-bold text-white">Apply</button>
+              </div>
             </div>
           </div>
         )}
@@ -256,7 +263,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
               return (
                 <div
                   key={tag.id}
-                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] flex items-center justify-between gap-3"
+                  onClick={() => setPendingElement({ id: tag.id, name: tag.name, type: 'badge', value: tag.defaultVal })}
+                  className={`p-3 rounded-xl border bg-[#1C1C20] flex items-center justify-between gap-3 cursor-pointer ${pendingElement?.id === tag.id ? 'border-[#3B82F6]' : 'border-[#2A2A30]'}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-lg bg-[#2A2A32] flex items-center justify-center text-[#60A5FA] shrink-0">
@@ -270,10 +278,14 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => handleSelect(tag.id, tag.name, 'badge', tag.defaultVal)}
-                    className="px-2.5 py-1 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-bold transition-colors cursor-pointer shrink-0"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleApply(tag.id, tag.name, 'badge', tag.defaultVal);
+                    }}
+                    disabled={pendingElement?.id !== tag.id}
+                    className="px-2.5 py-1 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] disabled:bg-[#27272A] disabled:text-[#71717A] text-white text-[10px] font-bold transition-colors cursor-pointer shrink-0"
                   >
-                    Insert
+                    Apply
                   </button>
                 </div>
               );
@@ -287,11 +299,10 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
             {BADGES.map((b) => {
               const Icon = b.icon;
               return (
-                <button
+                <div
                   key={b.id}
-                  type="button"
-                  onClick={() => handleSelect(b.id, b.label, 'badge', b.label)}
-                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+                  onClick={() => setPendingElement({ id: b.id, name: b.label, type: 'badge', value: b.label })}
+                  className={`p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer ${pendingElement?.id === b.id ? 'border-[#3B82F6]' : 'border-[#2A2A30]'}`}
                 >
                   <div
                     className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white bg-gradient-to-r ${b.color} shadow-md flex items-center gap-1`}
@@ -300,7 +311,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                     <span>{b.label}</span>
                   </div>
                   <span className="text-[10px] text-[#A1A1AA]">{b.desc}</span>
-                </button>
+                  <button type="button" onClick={handleApplyPending} disabled={pendingElement?.id !== b.id} className="w-full rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] disabled:bg-[#27272A] disabled:text-[#71717A] px-2.5 py-1 text-[10px] font-bold text-white">Apply</button>
+                </div>
               );
             })}
           </div>
@@ -312,11 +324,10 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
             {SHAPES.map((s) => {
               const Icon = s.icon;
               return (
-                <button
+                <div
                   key={s.id}
-                  type="button"
-                  onClick={() => handleSelect(s.id, s.name, 'shape', s.id)}
-                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex items-center gap-3 text-left cursor-pointer"
+                  onClick={() => setPendingElement({ id: s.id, name: s.name, type: 'shape', value: s.id })}
+                  className={`p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex items-center gap-3 text-left cursor-pointer ${pendingElement?.id === s.id ? 'border-[#3B82F6]' : 'border-[#2A2A30]'}`}
                 >
                   <div className="w-8 h-8 rounded-lg bg-[#2A2A32] flex items-center justify-center text-[#60A5FA] shrink-0">
                     <Icon className="w-4 h-4" />
@@ -325,7 +336,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                     <p className="text-xs font-bold text-white">{s.name}</p>
                     <p className="text-[10px] text-[#A1A1AA] truncate">{s.desc}</p>
                   </div>
-                </button>
+                  <button type="button" onClick={handleApplyPending} disabled={pendingElement?.id !== s.id} className="ml-auto shrink-0 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] disabled:bg-[#27272A] disabled:text-[#71717A] px-2.5 py-1 text-[10px] font-bold text-white">Apply</button>
+                </div>
               );
             })}
           </div>
@@ -335,11 +347,10 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         {activeTab === 'progress' && (
           <div className="flex flex-col gap-2">
             {PROGRESS_BARS.map((p) => (
-              <button
+              <div
                 key={p.id}
-                type="button"
-                onClick={() => handleSelect(p.id, p.name, 'progress', p.id)}
-                className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col gap-1.5 text-left cursor-pointer"
+                onClick={() => setPendingElement({ id: p.id, name: p.name, type: 'progress', value: p.id })}
+                className={`p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col gap-1.5 text-left cursor-pointer ${pendingElement?.id === p.id ? 'border-[#3B82F6]' : 'border-[#2A2A30]'}`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white">{p.name}</span>
@@ -351,7 +362,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                 <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden mt-1">
                   <div className="w-2/3 h-full bg-[#3B82F6] rounded-full" />
                 </div>
-              </button>
+                <button type="button" onClick={handleApplyPending} disabled={pendingElement?.id !== p.id} className="w-full rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] disabled:bg-[#27272A] disabled:text-[#71717A] px-2.5 py-1 text-[10px] font-bold text-white">Apply</button>
+              </div>
             ))}
           </div>
         )}

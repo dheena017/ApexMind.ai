@@ -1,8 +1,8 @@
 import { GeneratedScript, VisualBackdrop, ScriptSubtitle, VoiceProfile, MusicTrack } from '../../types';
 
-export const MIN_TIMELINE_ZOOM = 0.25;
-export const MAX_TIMELINE_ZOOM = 3;
-export const TIMELINE_ZOOM_STEP = 0.25;
+export const MIN_TIMELINE_ZOOM = 1;
+export const MAX_TIMELINE_ZOOM = 4;
+export const TIMELINE_ZOOM_STEP = 0.5;
 
 export interface TimelineSoundEffect {
   id: string;
@@ -36,6 +36,9 @@ export interface StudioTimelinePaneProps {
   onSelectCompound?: (compound: 'video' | 'text' | 'voice' | 'music' | 'overlay') => void;
   voices?: VoiceProfile[];
   musicTracks?: MusicTrack[];
+  timelineDuration?: number;
+  timelineHeight?: number;
+  onTimelineHeightChange?: (height: number) => void;
 }
 
 export const formatTime = (seconds: number): string => {
@@ -91,26 +94,106 @@ export const computeCaptionLanes = (clips: ScriptSubtitle[]): { lanes: LaneSubti
   };
 };
 
+export type LaneClip<T> = T & { origIndex: number; lane: number };
+
+export function computeClipLanes<T extends { id?: string; start: number; duration?: number; laneOffset?: number }>(
+  clips: T[]
+): { lanes: LaneClip<T>[]; maxLane: number } {
+  if (!clips || clips.length === 0) return { lanes: [], maxLane: 0 };
+  const indexed = clips.map((c, i) => ({ ...c, origIndex: i, lane: 0 }));
+  const sorted = [...indexed].sort((a, b) => a.start - b.start);
+
+  const laneEndTimes: number[] = [];
+  const result: LaneClip<T>[] = [];
+
+  for (const item of sorted) {
+    const itemEnd = item.start + (item.duration || 3);
+    let assignedLane = -1;
+
+    for (let l = 0; l < laneEndTimes.length; l++) {
+      if (item.start >= laneEndTimes[l] - 0.05) {
+        assignedLane = l;
+        laneEndTimes[l] = itemEnd;
+        break;
+      }
+    }
+
+    if (assignedLane === -1) {
+      assignedLane = laneEndTimes.length;
+      laneEndTimes.push(itemEnd);
+    }
+
+    if (typeof item.laneOffset === 'number' && item.laneOffset !== 0) {
+      assignedLane = Math.max(0, assignedLane + item.laneOffset);
+    }
+
+    result.push({ ...item, lane: assignedLane });
+  }
+
+  const byOrigIndex: LaneClip<T>[] = [];
+  let highestLane = 0;
+  for (const r of result) {
+    byOrigIndex[r.origIndex] = r;
+    if (r.lane > highestLane) highestLane = r.lane;
+  }
+
+  return {
+    lanes: byOrigIndex,
+    maxLane: highestLane,
+  };
+}
+
+export interface TimelineMediaClip {
+  id: string;
+  type: 'image' | 'video';
+  url: string;
+  name: string;
+  start: number;
+  duration: number;
+  laneOffset?: number;
+}
+
+export interface TimelineAudioClip {
+  id: string;
+  type: 'voice' | 'music' | 'sfx';
+  url: string;
+  name: string;
+  start: number;
+  duration: number;
+  laneOffset?: number;
+}
+
+export interface TimelineOverlayClip {
+  id: string;
+  type: string;
+  value: string;
+  label?: string;
+  name: string;
+  start: number;
+  duration: number;
+  laneOffset?: number;
+}
+
 export type SelectedClip =
-  | { track: 'video' }
-  | { track: 'image' }
+  | { track: 'video'; clipId?: string }
+  | { track: 'image'; clipId?: string }
   | { track: 'caption'; index: number }
   | { track: 'title' }
-  | { track: 'overlay' }
-  | { track: 'voice' }
-  | { track: 'music' }
-  | { track: 'sfx' }
+  | { track: 'overlay'; clipId?: string }
+  | { track: 'voice'; clipId?: string }
+  | { track: 'music'; clipId?: string }
+  | { track: 'sfx'; clipId?: string }
   | null;
 
 export type DragAction =
   | { kind: 'subtitle'; index: number; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
-  | { kind: 'video'; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
-  | { kind: 'image'; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
-  | { kind: 'overlay'; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
+  | { kind: 'video'; clipId?: string; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
+  | { kind: 'image'; clipId?: string; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
+  | { kind: 'overlay'; clipId?: string; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
   | { kind: 'title'; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
-  | { kind: 'voice'; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
-  | { kind: 'music'; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
-  | { kind: 'sfx'; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
+  | { kind: 'voice'; clipId?: string; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
+  | { kind: 'music'; clipId?: string; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
+  | { kind: 'sfx'; clipId?: string; mode: 'move' | 'trim-left' | 'trim-right'; startX: number; origStart: number; origDuration: number }
   | null;
 
 export interface EnabledTracks {

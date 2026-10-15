@@ -34,7 +34,7 @@ export interface UploadedMediaItem {
 }
 
 export interface MediaPaneProps {
-  onApplyBackdrop: (url: string, isVideo: boolean) => void;
+  onApplyBackdrop: (url: string, isVideo: boolean, name?: string) => void;
   onApplyAudio?: (url: string) => void;
   onCaptureCanvasSnapshot?: () => Promise<string | null>;
   activeMediaUrl?: string;
@@ -62,6 +62,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   const [importUrl, setImportUrl] = useState('');
   const [importName, setImportName] = useState('');
   const [importType, setImportType] = useState<'image' | 'video'>('image');
+  const [importUse, setImportUse] = useState<'backdrop' | 'asset'>('backdrop');
 
   // Load from localStorage on mount (default is empty, never auto-populate starter items)
   useEffect(() => {
@@ -140,10 +141,10 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   const handleApplyItem = (item: UploadedMediaItem) => {
     setAppliedId(item.id);
     if (item.type === 'image') {
-      onApplyBackdrop(item.url, false);
+      onApplyBackdrop(item.url, false, item.name);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
     } else if (item.type === 'video') {
-      onApplyBackdrop(item.url, true);
+      onApplyBackdrop(item.url, true, item.name);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
     }
     setTimeout(() => setAppliedId(null), 2000);
@@ -185,11 +186,14 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
     const updated = [newItem, ...mediaItems];
     persistItems(updated);
 
-    if (importType === 'image') onApplyBackdrop(url, false);
-    if (importType === 'video') onApplyBackdrop(url, true);
+    if (importUse === 'backdrop') {
+      if (importType === 'image') onApplyBackdrop(url, false, importName || 'Imported Image');
+      if (importType === 'video') onApplyBackdrop(url, true, importName || 'Imported Video');
+    }
 
     setImportUrl('');
     setImportName('');
+    setImportUse('backdrop');
     setActiveTab('library');
   };
 
@@ -402,6 +406,29 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Use As</label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { id: 'backdrop', label: 'Backdrop' },
+                  { id: 'asset', label: 'Library Asset' },
+                ] as const).map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setImportUse(option.id)}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                      importUse === option.id
+                        ? 'bg-[#1E293B] text-[#BFDBFE] border-[#3B82F6]'
+                        : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30] hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
               <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Direct Web URL</label>
               <input
                 type="url"
@@ -412,15 +439,24 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
               />
             </div>
 
-            <button
-              type="button"
-              onClick={handleAddFromUrl}
-              disabled={!importUrl.trim()}
-              className="mt-2 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add to Project Uploads
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setImportUrl('')}
+                className="flex-1 bg-[#141417] hover:bg-[#1B1B21] text-[#D4D4D8] border border-[#2A2A30] rounded-xl py-2 text-xs font-bold transition-all"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={handleAddFromUrl}
+                disabled={!importUrl.trim()}
+                className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {importUse === 'backdrop' ? 'Apply' : 'Add'}
+              </button>
+            </div>
           </div>
         ) : mediaItems.length === 0 ? (
           /* Empty State - Prominent Hero Dropzone */

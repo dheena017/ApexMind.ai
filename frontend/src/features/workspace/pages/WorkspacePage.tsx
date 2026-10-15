@@ -404,17 +404,19 @@ export default function WorkspacePage({
     };
 
     const handleEnded = () => {
-      if (isLooping) {
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-        setIsPlaying(true);
-      } else if (isExporting) {
-        const exportEnd = Math.max(duration > 0 ? duration : 30, timelineDuration);
-        setCurrentTime(audio.currentTime);
-        setIsPlaying(audio.currentTime < exportEnd - 0.05);
+      const exportEnd = Math.max(duration > 0 ? duration : 30, timelineDuration);
+      if (currentTime >= exportEnd - 0.2) {
+        if (isLooping) {
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+          setIsPlaying(true);
+        } else {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        }
       } else {
-        setIsPlaying(false);
-        setCurrentTime(0);
+        // Voice audio clip ended, but timeline visuals and music continue until exportEnd!
+        audio.pause();
       }
     };
 
@@ -725,12 +727,9 @@ export default function WorkspacePage({
     }
   };
 
-  // Universal Studio Playback Engine
+  // Universal Studio Playback Engine (Smooth 60fps RAF Master Clock)
   useEffect(() => {
     if (!isPlaying) return;
-    // If audio is actively playing, audio event listener handles time updates
-    const audio = audioRef.current;
-    if (audio && audioUrl && !audio.paused && !isExporting) return;
 
     const maxTime = Math.max(duration > 0 ? duration : 30, timelineDuration);
     let lastTs = performance.now();
@@ -740,31 +739,38 @@ export default function WorkspacePage({
       const deltaSec = ((now - lastTs) / 1000) * playbackRate;
       lastTs = now;
 
-      if (isExporting && audio && audioUrl && !audio.paused) {
+      const audio = audioRef.current;
+      if (audio && audioUrl && !audio.paused && !audio.ended && Number.isFinite(audio.duration) && audio.currentTime < audio.duration - 0.05) {
         setCurrentTime(audio.currentTime);
-        animId = requestAnimationFrame(tick);
-        return;
-      }
-
-      setCurrentTime((prev) => {
-        const next = prev + deltaSec;
-        if (next >= maxTime) {
-          if (isLooping) {
-            return 0;
-          } else {
-            setIsPlaying(false);
-            return maxTime;
+      } else {
+        setCurrentTime((prev) => {
+          const next = prev + deltaSec;
+          if (next >= maxTime) {
+            if (isLooping) {
+              if (audio && audioUrl) {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+              }
+              if (musicAudioRef.current && selectedMusic) {
+                musicAudioRef.current.currentTime = 0;
+                musicAudioRef.current.play().catch(() => {});
+              }
+              return 0;
+            } else {
+              setIsPlaying(false);
+              return maxTime;
+            }
           }
-        }
-        return next;
-      });
+          return next;
+        });
+      }
 
       animId = requestAnimationFrame(tick);
     };
 
     animId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animId);
-  }, [isPlaying, duration, timelineDuration, playbackRate, isLooping, audioUrl, isExporting]);
+  }, [isPlaying, duration, timelineDuration, playbackRate, isLooping, audioUrl, isExporting, selectedMusic]);
 
   // Play / Pause Audio & Timeline Playhead
   const togglePlay = () => {
@@ -773,14 +779,28 @@ export default function WorkspacePage({
       if (audioRef.current && !audioRef.current.paused) {
         audioRef.current.pause();
       }
+      if (musicAudioRef.current && !musicAudioRef.current.paused) {
+        musicAudioRef.current.pause();
+      }
     } else {
       const maxTime = Math.max(duration > 0 ? duration : 30, timelineDuration);
+      let startTime = currentTime;
       if (currentTime >= maxTime - 0.1) {
-        handleSeek(0);
+        startTime = 0;
+        setCurrentTime(0);
       }
       setIsPlaying(true);
       if (audioRef.current && audioUrl) {
-        audioRef.current.play().catch(() => {});
+        const audioDur = audioRef.current.duration;
+        if (Number.isFinite(audioDur) && startTime < audioDur) {
+          audioRef.current.currentTime = startTime;
+          audioRef.current.play().catch(() => {});
+        } else {
+          audioRef.current.pause();
+        }
+      }
+      if (musicAudioRef.current && selectedMusic) {
+        musicAudioRef.current.play().catch(() => {});
       }
     }
   };
@@ -790,10 +810,21 @@ export default function WorkspacePage({
     const maxTime = Math.max(duration > 0 ? duration : 30, timelineDuration);
     const clamped = Math.max(0, Math.min(maxTime, parseFloat(newTime.toFixed(2))));
     setCurrentTime(clamped);
-    if (audioRef.current && duration > 0 && !Number.isNaN(audioRef.current.duration) && clamped <= duration) {
-      audioRef.current.currentTime = clamped;
-    } else if (audioRef.current && clamped > duration) {
-      audioRef.current.pause();
+    if (audioRef.current && audioUrl) {
+      const audioDur = audioRef.current.duration;
+      if (Number.isFinite(audioDur) && audioDur > 0 && clamped < audioDur) {
+        audioRef.current.currentTime = clamped;
+        if (isPlaying) audioRef.current.play().catch(() => {});
+      } else {
+        audioRef.current.pause();
+      }
+    }
+    if (musicAudioRef.current && selectedMusic) {
+      const musicDur = musicAudioRef.current.duration;
+      if (Number.isFinite(musicDur) && musicDur > 0) {
+        musicAudioRef.current.currentTime = clamped % musicDur;
+        if (isPlaying) musicAudioRef.current.play().catch(() => {});
+      }
     }
   };
 
@@ -933,6 +964,136 @@ export default function WorkspacePage({
   const [showTimeline, setShowTimeline] = useState(true);
   const [showRightPane, setShowRightPane] = useState(true);
 
+  // ── Resizable Layout Panel Dimensions ──────────────────────────────
+  const DEFAULT_LEFT_WIDTH = 380;
+  const DEFAULT_RIGHT_WIDTH = 380;
+  const DEFAULT_TIMELINE_HEIGHT = 180;
+
+  const [leftPaneWidth, setLeftPaneWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('apexmind:left-pane-width');
+      return saved ? Math.max(260, Math.min(window.innerWidth * 0.45, Number(saved))) : DEFAULT_LEFT_WIDTH;
+    } catch {
+      return DEFAULT_LEFT_WIDTH;
+    }
+  });
+
+  const [rightPaneWidth, setRightPaneWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('apexmind:right-pane-width');
+      return saved ? Math.max(260, Math.min(window.innerWidth * 0.45, Number(saved))) : DEFAULT_RIGHT_WIDTH;
+    } catch {
+      return DEFAULT_RIGHT_WIDTH;
+    }
+  });
+
+  const [timelineHeight, setTimelineHeight] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('apexmind:timeline-height');
+      return saved ? Math.max(110, Math.min(window.innerHeight * 0.6, Number(saved))) : DEFAULT_TIMELINE_HEIGHT;
+    } catch {
+      return DEFAULT_TIMELINE_HEIGHT;
+    }
+  });
+
+  const [activeResize, setActiveResize] = useState<'left' | 'right' | 'timeline' | null>(null);
+  const resizeStartPos = useRef<{ x: number; y: number; startDim: number }>({ x: 0, y: 0, startDim: 0 });
+  const dimsRef = useRef<{ left: number; right: number; timeline: number }>({
+    left: leftPaneWidth,
+    right: rightPaneWidth,
+    timeline: timelineHeight,
+  });
+
+  useEffect(() => {
+    dimsRef.current = {
+      left: leftPaneWidth,
+      right: rightPaneWidth,
+      timeline: timelineHeight,
+    };
+  }, [leftPaneWidth, rightPaneWidth, timelineHeight]);
+
+  useEffect(() => {
+    if (!activeResize) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (activeResize === 'left') {
+        const delta = e.clientX - resizeStartPos.current.x;
+        const newWidth = Math.max(260, Math.min(window.innerWidth * 0.45, Math.round(resizeStartPos.current.startDim + delta)));
+        dimsRef.current.left = newWidth;
+        setLeftPaneWidth(newWidth);
+      } else if (activeResize === 'right') {
+        const delta = resizeStartPos.current.x - e.clientX;
+        const newWidth = Math.max(260, Math.min(window.innerWidth * 0.45, Math.round(resizeStartPos.current.startDim + delta)));
+        dimsRef.current.right = newWidth;
+        setRightPaneWidth(newWidth);
+      } else if (activeResize === 'timeline') {
+        const delta = resizeStartPos.current.y - e.clientY;
+        const minHeight = 90;
+        const maxHeight = Math.max(minHeight, Math.floor(window.innerHeight * 0.65));
+        const newHeight = Math.max(minHeight, Math.min(maxHeight, Math.round(resizeStartPos.current.startDim + delta)));
+        dimsRef.current.timeline = newHeight;
+        setTimelineHeight(newHeight);
+      }
+    };
+
+    const handlePointerUp = () => {
+      try {
+        if (activeResize === 'left') {
+          localStorage.setItem('apexmind:left-pane-width', String(dimsRef.current.left));
+        } else if (activeResize === 'right') {
+          localStorage.setItem('apexmind:right-pane-width', String(dimsRef.current.right));
+        } else if (activeResize === 'timeline') {
+          localStorage.setItem('apexmind:timeline-height', String(dimsRef.current.timeline));
+        }
+      } catch {}
+      setActiveResize(null);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }, [activeResize]);
+
+  const handleLeftResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+    resizeStartPos.current = { x: e.clientX, y: e.clientY, startDim: dimsRef.current.left };
+    setActiveResize('left');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+  };
+
+  const handleRightResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+    resizeStartPos.current = { x: e.clientX, y: e.clientY, startDim: dimsRef.current.right };
+    setActiveResize('right');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+  };
+
+  const handleTimelineResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+    resizeStartPos.current = { x: e.clientX, y: e.clientY, startDim: dimsRef.current.timeline };
+    setActiveResize('timeline');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'row-resize';
+  };
+
   // Synchronize publish state and actions with WorkspaceHeader
   useEffect(() => {
     window.dispatchEvent(
@@ -981,6 +1142,20 @@ export default function WorkspacePage({
       consoleLogger.warn('Studio', 'Could not restore the local workspace draft:', error);
     }
   }, [user?.id]);
+
+  // Synchronize targetLength preset with timelineDuration when no recorded audio duration is active
+  useEffect(() => {
+    if (!targetLength) return;
+    const match = targetLength.match(/(\d+)\s*(second|sec|minute|min)/i);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      const isMin = match[2].toLowerCase().startsWith('min');
+      const sec = isMin ? val * 60 : val;
+      if (sec > 0 && (!duration || duration <= 0)) {
+        setTimelineDuration(sec);
+      }
+    }
+  }, [targetLength, duration]);
 
   useEffect(() => {
     const handleSaveDraft = () => {
@@ -1110,6 +1285,34 @@ export default function WorkspacePage({
     return () => window.removeEventListener('workspace:aspect-ratio-change', handleAspectRatio);
   }, []);
 
+  useEffect(() => {
+    const handleAddSfx = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: string; name: string; audioUrl: string; duration?: number }>;
+      if (customEvent.detail) {
+        setSelectedSfx({
+          id: customEvent.detail.id,
+          name: customEvent.detail.name,
+          audioUrl: customEvent.detail.audioUrl,
+          duration: customEvent.detail.duration || 0.6,
+          start: currentTime,
+        });
+        setShowTimeline(true);
+        setShowRightPane(true);
+        setActiveCompound('music');
+        addWorkspaceNotification({
+          title: `SFX Placed: ${customEvent.detail.name}`,
+          message: 'Sound effect attached to multi-track timeline.',
+          category: 'voice',
+          type: 'info',
+          targetPane: 'audio',
+          actionLabel: 'Audio Settings',
+        });
+      }
+    };
+    window.addEventListener('workspace:add-sfx-timeline', handleAddSfx);
+    return () => window.removeEventListener('workspace:add-sfx-timeline', handleAddSfx);
+  }, [currentTime]);
+
   // Synchronize script title with header
   useEffect(() => {
     window.dispatchEvent(
@@ -1188,24 +1391,20 @@ export default function WorkspacePage({
     return () => window.removeEventListener('workspace:save-to-library', handleSave);
   }, [canPublish, handleSaveToLibrary]);
 
-  const centerColSpan =
-    showLeftPane && showRightPane
-      ? 'lg:col-span-4'
-      : !showLeftPane && !showRightPane
-      ? 'lg:col-span-12'
-      : 'lg:col-span-8';
-
   return (
-    <div className="w-full h-auto lg:h-full flex flex-col min-h-0 font-sans-studio select-none gap-2">
+    <div className="w-full h-auto lg:h-full flex flex-col min-h-0 font-sans-studio select-none gap-1">
       {/* Hidden Audio Element */}
       <audio ref={audioRef} className="hidden" preload="auto" />
       <audio ref={musicAudioRef} className="hidden" preload="auto" crossOrigin="anonymous" loop />
 
       {/* ── Tri-Pane Studio Layout (Left: AI Prompt/Script, Center: Video Preview, Right: Inspiration Studio) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-1 h-auto min-h-0 flex-1 lg:h-full overflow-hidden">
-        {/* Left Pane: Dynamic Active Studio Panel (col-span-4) */}
+      <div className="flex flex-col lg:flex-row gap-0 h-auto min-h-0 flex-1 overflow-hidden relative">
+        {/* Left Pane: Dynamic Active Studio Panel */}
         {showLeftPane && (
-          <div className="lg:col-span-4 min-h-130 lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
+          <div
+            style={{ width: `${leftPaneWidth}px` }}
+            className="w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden"
+          >
             {activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
               <ScriptEditorPane
                 script={script}
@@ -1325,19 +1524,30 @@ export default function WorkspacePage({
               />
             ) : activePane === 'media' ? (
               <MediaPane
-                onApplyBackdrop={(url, isVideo) => {
+                onApplyBackdrop={(url, isVideo, name) => {
                   setShowRightPane(true);
+                  setShowTimeline(true);
                   setActiveCompound('video');
                   if (isVideo) {
                     setCustomBackdropVideo(url);
-                    setCustomBackdropImage(undefined);
                   } else {
                     setCustomBackdropImage(url);
-                    setCustomBackdropVideo(undefined);
                   }
+                  window.dispatchEvent(
+                    new CustomEvent('workspace:add-timeline-clip', {
+                      detail: {
+                        type: isVideo ? 'video' : 'image',
+                        url,
+                        name: name || (isVideo ? 'Uploaded Video' : 'Uploaded Image'),
+                        duration: isVideo ? 10 : 8,
+                        start: currentTime,
+                      },
+                    })
+                  );
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
                   addWorkspaceNotification({
-                    title: isVideo ? 'Dynamic Video Backdrop Applied' : 'Custom Image Backdrop Applied',
-                    message: 'Backdrop mapped to active 9:16 viewport layer.',
+                    title: isVideo ? 'Video Added to Timeline' : 'Image Added to Timeline',
+                    message: 'Media placed at playhead. Drag freely along the timeline.',
                     category: 'media',
                     type: 'info',
                     targetPane: 'canvas',
@@ -1346,6 +1556,7 @@ export default function WorkspacePage({
                 }}
                 onApplyAudio={(url) => {
                   setShowRightPane(true);
+                  setShowTimeline(true);
                   setActiveCompound('music');
                   setAudioUrl(url);
                   if (audioRef.current) {
@@ -1353,9 +1564,21 @@ export default function WorkspacePage({
                     audioRef.current.play().catch(() => {});
                     setIsPlaying(true);
                   }
+                  window.dispatchEvent(
+                    new CustomEvent('workspace:add-timeline-clip', {
+                      detail: {
+                        type: 'music',
+                        url,
+                        name: 'Imported Audio',
+                        duration: 15,
+                        start: currentTime,
+                      },
+                    })
+                  );
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
                   addWorkspaceNotification({
-                    title: 'Custom Audio Loaded',
-                    message: 'Audio asset attached to active timeline soundtrack.',
+                    title: 'Audio Added to Timeline',
+                    message: 'Soundtrack clip placed at playhead. Add more audio tracks or trim freely.',
                     category: 'voice',
                     type: 'info',
                     targetPane: 'audio',
@@ -1399,14 +1622,30 @@ export default function WorkspacePage({
               <ElementsPane
                 onInsertElement={(el) => {
                   setShowRightPane(true);
+                  setShowTimeline(true);
                   setActiveCompound('overlay');
                   setActiveElementOverlay({ ...el, label: el.name });
                   if (el.type === 'badge') {
                     setScript((prev) => ({ ...prev, title: prev.title ? `${el.value}: ${prev.title}` : el.value }));
                   }
+                  window.dispatchEvent(
+                    new CustomEvent('workspace:add-timeline-clip', {
+                      detail: {
+                        type: 'overlay',
+                        url: el.value || '',
+                        elementType: el.type,
+                        value: el.value,
+                        name: el.name || 'Overlay Element',
+                        label: el.label || el.name,
+                        duration: 4.5,
+                        start: currentTime,
+                      },
+                    })
+                  );
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'overlay' }));
                   addWorkspaceNotification({
                     title: `Overlay Added: ${el.name || el.type}`,
-                    message: 'Visual element attached to timeline canvas.',
+                    message: 'Visual element attached to timeline at playhead.',
                     category: 'media',
                     type: 'info',
                     targetPane: 'elements',
@@ -1418,12 +1657,31 @@ export default function WorkspacePage({
               <AudioPane
                 onSelectMusic={(mId) => {
                   setShowRightPane(true);
+                  setShowTimeline(true);
                   setActiveCompound('music');
                   setSelectedMusic(mId);
                   const track = musicTracks.find((t) => t.id === mId);
+                  const sourceUrl = track?.audioUrl || DEFAULT_SOUNDTRACK_AUDIO_URL;
+                  if (musicAudioRef.current) {
+                    musicAudioRef.current.src = sourceUrl;
+                    musicAudioRef.current.play().catch(() => {});
+                    setIsPlaying(true);
+                  }
+                  window.dispatchEvent(
+                    new CustomEvent('workspace:add-timeline-clip', {
+                      detail: {
+                        type: 'music',
+                        url: sourceUrl,
+                        name: track ? track.title : 'Soundtrack',
+                        duration: 15.0,
+                        start: currentTime,
+                      },
+                    })
+                  );
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
                   addWorkspaceNotification({
-                    title: 'Soundtrack Selected',
-                    message: track ? `Loaded "${track.title}" (${track.genre}, ${track.bpm} BPM).` : 'Soundtrack updated.',
+                    title: 'Soundtrack Added to Timeline',
+                    message: track ? `Loaded "${track.title}" at playhead.` : 'Soundtrack clip added.',
                     category: 'voice',
                     type: 'info',
                     targetPane: 'audio',
@@ -1433,14 +1691,29 @@ export default function WorkspacePage({
                 selectedMusic={selectedMusic}
                 onAddSfxToTimeline={(sfx) => {
                   const durationSeconds = Number.parseFloat(sfx.duration);
+                  const sfxDur = Number.isFinite(durationSeconds) ? durationSeconds : 2.0;
                   setSelectedSfx({
                     id: sfx.id,
                     name: sfx.name,
                     audioUrl: sfx.audioUrl,
-                    duration: Number.isFinite(durationSeconds) ? durationSeconds : 0.5,
+                    duration: sfxDur,
                     start: currentTime,
                   });
                   setShowTimeline(true);
+                  setShowRightPane(true);
+                  setActiveCompound('music');
+                  window.dispatchEvent(
+                    new CustomEvent('workspace:add-timeline-clip', {
+                      detail: {
+                        type: 'sfx',
+                        url: sfx.audioUrl,
+                        name: sfx.name,
+                        duration: sfxDur,
+                        start: currentTime,
+                      },
+                    })
+                  );
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
                   const formattedCurrentTime = `${Math.floor(currentTime / 60).toString().padStart(2, '0')}:${Math.floor(currentTime % 60).toString().padStart(2, '0')}`;
                   addWorkspaceNotification({
                     title: `SFX Cue: ${sfx.name}`,
@@ -1453,6 +1726,7 @@ export default function WorkspacePage({
                 }}
                 onApplyRecordedVoice={(recordedUrl) => {
                   setShowRightPane(true);
+                  setShowTimeline(true);
                   setActiveCompound('voice');
                   setAudioUrl(recordedUrl);
                   if (audioRef.current) {
@@ -1460,9 +1734,21 @@ export default function WorkspacePage({
                     audioRef.current.play().catch(() => {});
                     setIsPlaying(true);
                   }
+                  window.dispatchEvent(
+                    new CustomEvent('workspace:add-timeline-clip', {
+                      detail: {
+                        type: 'voice',
+                        url: recordedUrl,
+                        name: 'Recorded Voice',
+                        duration: duration > 0 ? duration : 12.1,
+                        start: currentTime,
+                      },
+                    })
+                  );
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'voice' }));
                   addWorkspaceNotification({
-                    title: 'Voice Recording Attached',
-                    message: 'Live voice recording synchronized with timeline.',
+                    title: 'Voice Recording Added to Timeline',
+                    message: 'Live voice recording placed at playhead.',
                     category: 'voice',
                     type: 'success',
                     targetPane: 'audio',
@@ -1474,9 +1760,29 @@ export default function WorkspacePage({
               <ImagePane
                 onSelectImage={(url) => {
                   setShowRightPane(true);
+                  setShowTimeline(true);
                   setActiveCompound('video');
                   setCustomBackdropImage(url);
-                  setCustomBackdropVideo(undefined);
+                  window.dispatchEvent(
+                    new CustomEvent('workspace:add-timeline-clip', {
+                      detail: {
+                        type: 'image',
+                        url,
+                        name: 'Stock Photo',
+                        duration: 8,
+                        start: currentTime,
+                      },
+                    })
+                  );
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+                  addWorkspaceNotification({
+                    title: 'Stock Photo Added',
+                    message: 'Image added to timeline at playhead. Drag freely anywhere on the timeline.',
+                    category: 'media',
+                    type: 'info',
+                    targetPane: 'image',
+                    actionLabel: 'Preview',
+                  });
                 }}
                 activeImageUrl={customBackdropImage}
               />
@@ -1484,9 +1790,29 @@ export default function WorkspacePage({
               <VideoStockPane
                 onSelectVideo={(url) => {
                   setShowRightPane(true);
+                  setShowTimeline(true);
                   setActiveCompound('video');
                   setCustomBackdropVideo(url);
-                  setCustomBackdropImage(undefined);
+                  window.dispatchEvent(
+                    new CustomEvent('workspace:add-timeline-clip', {
+                      detail: {
+                        type: 'video',
+                        url,
+                        name: 'Stock Video',
+                        duration: 10,
+                        start: currentTime,
+                      },
+                    })
+                  );
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+                  addWorkspaceNotification({
+                    title: 'Stock Video Added',
+                    message: 'Video added to timeline at playhead. Drag freely anywhere on the timeline.',
+                    category: 'media',
+                    type: 'info',
+                    targetPane: 'video',
+                    actionLabel: 'Preview',
+                  });
                 }}
                 activeVideoUrl={customBackdropVideo}
               />
@@ -1494,9 +1820,53 @@ export default function WorkspacePage({
           </div>
         )}
 
+        {/* Left-to-Center Vertical Splitter Handle */}
+        {showLeftPane && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize left workspace panel"
+            aria-valuenow={leftPaneWidth}
+            aria-valuemin={260}
+            aria-valuemax={Math.max(260, Math.round(window.innerWidth * 0.45))}
+            aria-valuetext={`${leftPaneWidth} pixels wide`}
+            tabIndex={0}
+            onPointerDown={handleLeftResizeStart}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                const direction = e.key === 'ArrowRight' ? 1 : -1;
+                setLeftPaneWidth((width) => {
+                  const nextWidth = Math.max(260, Math.min(window.innerWidth * 0.45, width + direction * (e.shiftKey ? 40 : 16)));
+                  try { localStorage.setItem('apexmind:left-pane-width', String(nextWidth)); } catch {}
+                  return nextWidth;
+                });
+              } else if (e.key === 'Home') {
+                e.preventDefault();
+                setLeftPaneWidth(260);
+                try { localStorage.setItem('apexmind:left-pane-width', '260'); } catch {}
+              } else if (e.key === 'End') {
+                e.preventDefault();
+                const maxWidth = Math.round(window.innerWidth * 0.45);
+                setLeftPaneWidth(maxWidth);
+                try { localStorage.setItem('apexmind:left-pane-width', String(maxWidth)); } catch {}
+              }
+            }}
+            className="hidden lg:flex w-6 -mx-2 z-30 cursor-col-resize items-center justify-center group select-none shrink-0 touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#60A5FA]"
+            title="Drag to resize. Use arrow keys; Shift + arrow resizes faster. Home/End sets the minimum/maximum. Double-click resets."
+            onDoubleClick={() => {
+              setLeftPaneWidth(DEFAULT_LEFT_WIDTH);
+              try { localStorage.setItem('apexmind:left-pane-width', String(DEFAULT_LEFT_WIDTH)); } catch {}
+            }}
+          >
+            <div className="relative flex h-8 w-2 items-center justify-center">
+              <div className={`h-4 w-0.5 rounded-full transition-all duration-150 group-hover:h-5 group-focus-visible:h-5 ${activeResize === 'left' ? 'bg-[#60A5FA]' : 'bg-white/35 group-hover:bg-[#60A5FA] group-focus-visible:bg-[#60A5FA]'}`} />
+            </div>
+          </div>
+        )}
 
         {/* Center Pane: Video Preview Canvas */}
-        <div className={`${centerColSpan} min-h-130 lg:h-full lg:min-h-0 flex flex-col items-center justify-center transition-all duration-200`}>
+        <div className="flex-1 min-w-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col items-center justify-center overflow-hidden">
           <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
             <VideoPreviewPane
               canvasAspectRatio={canvasAspectRatio}
@@ -1561,9 +1931,57 @@ export default function WorkspacePage({
           </div>
         </div>
 
+        {/* Center-to-Right Vertical Splitter Handle */}
+        {showRightPane && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize right workspace panel"
+            aria-valuenow={rightPaneWidth}
+            aria-valuemin={260}
+            aria-valuemax={Math.max(260, Math.round(window.innerWidth * 0.45))}
+            aria-valuetext={`${rightPaneWidth} pixels wide`}
+            tabIndex={0}
+            onPointerDown={handleRightResizeStart}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                const direction = e.key === 'ArrowLeft' ? 1 : -1;
+                setRightPaneWidth((width) => {
+                  const nextWidth = Math.max(260, Math.min(window.innerWidth * 0.45, width + direction * (e.shiftKey ? 40 : 16)));
+                  try { localStorage.setItem('apexmind:right-pane-width', String(nextWidth)); } catch {}
+                  return nextWidth;
+                });
+              } else if (e.key === 'Home') {
+                e.preventDefault();
+                setRightPaneWidth(260);
+                try { localStorage.setItem('apexmind:right-pane-width', '260'); } catch {}
+              } else if (e.key === 'End') {
+                e.preventDefault();
+                const maxWidth = Math.round(window.innerWidth * 0.45);
+                setRightPaneWidth(maxWidth);
+                try { localStorage.setItem('apexmind:right-pane-width', String(maxWidth)); } catch {}
+              }
+            }}
+            className="hidden lg:flex w-6 -mx-2 z-30 cursor-col-resize items-center justify-center group select-none shrink-0 touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#60A5FA]"
+            title="Drag to resize. Use arrow keys; Shift + arrow resizes faster. Home/End sets the minimum/maximum. Double-click resets."
+            onDoubleClick={() => {
+              setRightPaneWidth(DEFAULT_RIGHT_WIDTH);
+              try { localStorage.setItem('apexmind:right-pane-width', String(DEFAULT_RIGHT_WIDTH)); } catch {}
+            }}
+          >
+            <div className="relative flex h-8 w-2 items-center justify-center">
+              <div className={`h-4 w-0.5 rounded-full transition-all duration-150 group-hover:h-5 group-focus-visible:h-5 ${activeResize === 'right' ? 'bg-[#60A5FA]' : 'bg-white/35 group-hover:bg-[#60A5FA] group-focus-visible:bg-[#60A5FA]'}`} />
+            </div>
+          </div>
+        )}
+
         {/* Right Pane: Inspiration Studio Panel */}
         {showRightPane && (
-          <div className="lg:col-span-4 min-h-130 lg:h-full lg:min-h-0 flex flex-col transition-all duration-200">
+          <div
+            style={{ width: `${rightPaneWidth}px` }}
+            className="w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden"
+          >
             <StudioControlsPane
               voices={voices}
               selectedVoice={selectedVoice}
@@ -1616,12 +2034,71 @@ export default function WorkspacePage({
         )}
       </div>
 
+      {/* Horizontal Splitter Handle (Top Tri-Pane <-> Bottom Timeline) */}
+      {showTimeline && (
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize timeline panel"
+          aria-valuenow={timelineHeight}
+          aria-valuemin={90}
+          aria-valuemax={Math.max(90, Math.floor(window.innerHeight * 0.65))}
+          aria-valuetext={`${timelineHeight} pixels high`}
+          tabIndex={0}
+          onPointerDown={handleTimelineResizeStart}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              const direction = e.key === 'ArrowUp' ? 1 : -1;
+              setTimelineHeight((height) => {
+                const minHeight = 90;
+                const maxHeight = Math.max(minHeight, Math.floor(window.innerHeight * 0.65));
+                const nextHeight = Math.max(minHeight, Math.min(maxHeight, height + direction * (e.shiftKey ? 60 : 20)));
+                try { localStorage.setItem('apexmind:timeline-height', String(nextHeight)); } catch {}
+                return nextHeight;
+              });
+            } else if (e.key === 'Home') {
+              e.preventDefault();
+              setTimelineHeight(90);
+              try { localStorage.setItem('apexmind:timeline-height', '90'); } catch {}
+            } else if (e.key === 'End') {
+              e.preventDefault();
+              const maxHeight = Math.max(90, Math.floor(window.innerHeight * 0.65));
+              setTimelineHeight(maxHeight);
+              try { localStorage.setItem('apexmind:timeline-height', String(maxHeight)); } catch {}
+            }
+          }}
+          className="w-full h-5 -my-1 z-30 cursor-row-resize flex items-center justify-center group select-none shrink-0 touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#60A5FA]"
+          title="Drag to resize timeline. Use arrow keys; Shift + arrow resizes faster. Home/End sets the minimum/maximum. Double-click resets."
+          onDoubleClick={() => {
+            setTimelineHeight(DEFAULT_TIMELINE_HEIGHT);
+            try {
+              localStorage.setItem('apexmind:timeline-height', String(DEFAULT_TIMELINE_HEIGHT));
+            } catch {}
+          }}
+        >
+          <div className="flex items-center gap-1.5 pointer-events-none">
+            <div
+              className={`h-1 rounded-full transition-all duration-150 ${
+                activeResize === 'timeline'
+                  ? 'w-8 bg-[#60A5FA]'
+                  : 'w-6 bg-white/35 group-hover:bg-[#60A5FA] group-focus-visible:bg-[#60A5FA]'
+              }`}
+            />
+          </div>
+          <span className="sr-only">Timeline height: {timelineHeight} pixels. Use up and down arrow keys to resize.</span>
+        </div>
+      )}
+
       {/* ── Studio Multi-Track Timeline Panel (Bottom Studio Area) ── */}
       {showTimeline && (
-        <div className="mt-2 shrink-0 transition-all duration-200">
+        <div className="shrink-0">
           <StudioTimelinePane
+            timelineHeight={timelineHeight}
+            onTimelineHeightChange={setTimelineHeight}
             currentTime={currentTime}
             duration={duration}
+            timelineDuration={timelineDuration}
             isPlaying={isPlaying}
             onTogglePlay={togglePlay}
             onSeek={handleSeek}

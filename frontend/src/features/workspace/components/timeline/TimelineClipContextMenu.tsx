@@ -14,6 +14,8 @@ import {
   AlignLeft,
   Pencil,
   ChevronRight,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 
 export type ContextMenuTrackType = 'video' | 'image' | 'overlay' | 'voice' | 'music' | 'sfx' | 'caption' | 'title';
@@ -42,6 +44,8 @@ export interface TimelineClipContextMenuProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   onSplit?: () => void;
+  onMoveAbove?: () => void;
+  onMoveBelow?: () => void;
   onMute?: () => void;
   onHide?: () => void;
   onLock?: () => void;
@@ -75,6 +79,8 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
   onDelete,
   onDuplicate,
   onSplit,
+  onMoveAbove,
+  onMoveBelow,
   onMute,
   onHide,
   onLock,
@@ -161,13 +167,13 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           style={{
             background:
               trackType === 'video' ? '#F59E0B'
-              : trackType === 'image' ? '#10B981'
-              : trackType === 'overlay' ? '#6366F1'
-              : trackType === 'voice' ? '#22C55E'
-              : trackType === 'music' ? '#A855F7'
-              : trackType === 'sfx' ? '#F59E0B'
-              : trackType === 'caption' ? '#3B82F6'
-              : '#6366F1',
+                : trackType === 'image' ? '#10B981'
+                  : trackType === 'overlay' ? '#6366F1'
+                    : trackType === 'voice' ? '#22C55E'
+                      : trackType === 'music' ? '#A855F7'
+                        : trackType === 'sfx' ? '#F59E0B'
+                          : trackType === 'caption' ? '#3B82F6'
+                            : '#6366F1',
           }}
         />
         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest select-none">
@@ -218,7 +224,25 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {(onRename || onDuplicate || onSplit || onCopyTimings) && (
+        {/* ── Move Above / Below (Layer Stacking) ── */}
+        {onMoveAbove && (
+          <ContextMenuItem
+            icon={<ArrowUp className="w-3.5 h-3.5" />}
+            label="Move Above (Upper Layer)"
+            shortcut="Alt+↑"
+            onClick={() => handleAction(onMoveAbove)}
+          />
+        )}
+        {onMoveBelow && (
+          <ContextMenuItem
+            icon={<ArrowDown className="w-3.5 h-3.5" />}
+            label="Move Below (Lower Layer)"
+            shortcut="Alt+↓"
+            onClick={() => handleAction(onMoveBelow)}
+          />
+        )}
+
+        {(onRename || onDuplicate || onSplit || onMoveAbove || onMoveBelow || onCopyTimings) && (
           <div className="my-1 border-t border-white/5" />
         )}
 

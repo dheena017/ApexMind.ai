@@ -69,7 +69,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
 
   const handleCopyTimings = useCallback((clip: LaneSubtitle) => {
     const text = `Start: ${clip.start.toFixed(2)}s | Duration: ${(clip.duration || 3).toFixed(2)}s | End: ${(clip.start + (clip.duration || 3)).toFixed(2)}s | Text: "${clip.text}"`;
-    navigator.clipboard.writeText(text).catch(() => {});
+    navigator.clipboard.writeText(text).catch(() => { });
   }, []);
 
   return (
@@ -94,11 +94,10 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             onDoubleClick={() => onDoubleClickClip(index, clip.text)}
             onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clip.duration || 3)}
             onContextMenu={(e) => handleContextMenu(e, index, clip.start)}
-            className={`absolute rounded-md px-2 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden ${
-              isSelected
+            className={`timeline-clip-card absolute rounded-md px-2 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden ${isSelected
                 ? 'bg-[#1A1A1A] border-[#3A3A3A] text-white z-20 outline outline-1 outline-[#3A3A3A]'
                 : 'bg-[#1A1A1A]/80 hover:bg-[#1C1C1C] border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
-            }`}
+              }`}
             style={{
               left: `${startPct}%`,
               width: `${widthPct}%`,
