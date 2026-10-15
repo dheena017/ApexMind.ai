@@ -26,6 +26,7 @@ class GenerateScriptRequest(BaseModel):
     motionStyle: Optional[str] = Field(default=None, description="Camera movement and transitions")
     outputFormat: Optional[str] = Field(default=None, description="Output video format")
     creativeContext: Optional[dict] = Field(default=None, description="Full current workspace creative state for automatic agent reasoning")
+    availableAssets: Optional[dict] = Field(default=None, description="Catalog of images, videos, text styles, music, and sfx from the website")
 
 class GenerateVoiceoverRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Script text to synthesize")
@@ -38,6 +39,29 @@ class SubtitleItem(BaseModel):
     text: str
     start: float
     duration: float
+    textStyleId: Optional[str] = None
+    captionPresetClass: Optional[str] = None
+    captionPresetColor: Optional[str] = None
+
+class StoryboardSceneItem(BaseModel):
+    sceneNumber: int = 1
+    beat: str = "hook"
+    start: float = 0.0
+    duration: float = 3.0
+    mediaType: str = "video"  # "video" or "image"
+    mediaId: Optional[str] = None
+    mediaUrl: Optional[str] = None
+    mediaName: Optional[str] = None
+    textStyleId: Optional[str] = None
+    textStyleName: Optional[str] = None
+    captionPresetClass: Optional[str] = None
+    captionPresetColor: Optional[str] = None
+    captionPresetFontFamily: Optional[str] = None
+    transition: Optional[str] = None
+    cameraMotion: Optional[str] = None
+    sfx: Optional[str] = None
+    sfxUrl: Optional[str] = None
+    subtitleText: Optional[str] = None
 
 class GeneratedScriptData(BaseModel):
     title: str
@@ -65,6 +89,7 @@ class GeneratedScriptData(BaseModel):
     tags: List[str] = []
     hashtags: List[str] = []
     subtitles: List[SubtitleItem] = []
+    storyboard: List[StoryboardSceneItem] = []
 
 class GenerateScriptResponse(BaseModel):
     success: bool

@@ -917,3 +917,141 @@ def search_open_quotes(query: str = "", category: str = "all", limit: int = 30) 
         "total": len(quotes),
         "items": quotes[:limit],
     }
+
+
+def fetch_dynamic_internet_media_for_prompt(
+    topic: str,
+    category: str = "all",
+    limit_videos: int = 6,
+    limit_images: int = 8,
+) -> Dict[str, Any]:
+    """
+    Dynamically fetches real, live videos and photos from the internet matching the given prompt & topic.
+    Extracts high-intent keywords and queries live open media endpoints across Wikimedia, Flickr, Pexels, and Pixabay.
+    """
+    import re
+    tokens = re.findall(r'[a-zA-Z]{3,}', f'{topic} {category}'.lower())
+    stop = {'the', 'and', 'for', 'with', 'that', 'this', 'from', 'your', 'about', 'over', 'into', 'what', 'how', 'when', 'will', 'need'}
+    clean_kws = [t for t in tokens if t not in stop]
+
+    videos: List[Dict[str, Any]] = []
+    seen_video_urls = set()
+
+    search_candidates = clean_kws[:4] if clean_kws else ["nature", "cinematic"]
+    if category and category != "all" and category.lower() not in search_candidates:
+        search_candidates.append(category.lower())
+
+    for kw in search_candidates:
+        if len(videos) >= limit_videos:
+            break
+        try:
+            res = search_open_videos(query=kw, page_size=limit_videos)
+            for it in res.get("items", []):
+                v_url = it.get("videoUrl")
+                if v_url and v_url not in seen_video_urls:
+                    seen_video_urls.add(v_url)
+                    videos.append({
+                        "id": it.get("id", f"net_vid_{len(videos)+1}"),
+                        "name": it.get("title", f"{kw.title()} Video Loop"),
+                        "title": it.get("title", f"{kw.title()} Video Loop"),
+                        "videoUrl": v_url,
+                        "posterUrl": it.get("posterUrl") or "",
+                        "source": it.get("source", "internet"),
+                    })
+                    if len(videos) >= limit_videos:
+                        break
+        except Exception as e:
+            logger.debug(f"Dynamic video fetch error for {kw}: {e}")
+
+    images: List[Dict[str, Any]] = []
+    seen_image_urls = set()
+
+    for kw in search_candidates:
+        if len(images) >= limit_images:
+            break
+        try:
+            res = search_open_images(query=kw, page_size=limit_images)
+            for it in res.get("items", []):
+                i_url = it.get("url")
+                if i_url and i_url not in seen_image_urls:
+                    seen_image_urls.add(i_url)
+                    images.append({
+                        "id": it.get("id", f"net_img_{len(images)+1}"),
+                        "name": it.get("title", f"{kw.title()} Backdrop"),
+                        "category": category if category != "all" else "curated",
+                        "imageUrl": i_url,
+                        "videoUrl": "",
+                        "source": it.get("source", "internet"),
+                    })
+                    if len(images) >= limit_images:
+                        break
+        except Exception as e:
+            logger.debug(f"Dynamic image fetch error for {kw}: {e}")
+
+    return {
+        "videos": videos,
+        "images": images,
+    }
+
+
+def resolve_scene_media_from_internet(
+    media_type: str,
+    visual_query: str,
+    fallback_topic: str = "",
+) -> Optional[Dict[str, Any]]:
+    """
+    Queries live internet media APIs for a specific storyboard scene's visual cue or search query.
+    Returns the top live internet match with real URL.
+    """
+    import re
+    queries_to_try = []
+    if visual_query and visual_query.strip():
+        # First try the clean visual query, then individual significant words
+        clean_vq = visual_query.strip()
+        queries_to_try.append(clean_vq)
+        words = [w for w in re.findall(r'[a-zA-Z]{3,}', clean_vq.lower()) if w not in {'the', 'and', 'with', 'from', 'into', 'shot', 'view'}]
+        if words:
+            queries_to_try.append(words[0])
+            if len(words) > 1:
+                queries_to_try.append(f"{words[0]} {words[1]}")
+
+    if fallback_topic and fallback_topic.strip():
+        fallback_words = [w for w in re.findall(r'[a-zA-Z]{3,}', fallback_topic.lower()) if w not in {'the', 'and', 'for', 'with', 'your'}]
+        if fallback_words:
+            queries_to_try.append(fallback_words[0])
+
+    if not queries_to_try:
+        queries_to_try = ["cinematic", "nature"]
+
+    if media_type == "video":
+        for q in queries_to_try:
+            try:
+                res = search_open_videos(query=q, page_size=3)
+                items = res.get("items", [])
+                if items and items[0].get("videoUrl"):
+                    return {
+                        "id": items[0].get("id"),
+                        "title": items[0].get("title"),
+                        "videoUrl": items[0].get("videoUrl"),
+                        "posterUrl": items[0].get("posterUrl", ""),
+                        "source": items[0].get("source", "internet"),
+                    }
+            except Exception as e:
+                logger.debug(f"Scene video search error for '{q}': {e}")
+    else:
+        for q in queries_to_try:
+            try:
+                res = search_open_images(query=q, page_size=3)
+                items = res.get("items", [])
+                if items and items[0].get("url"):
+                    return {
+                        "id": items[0].get("id"),
+                        "title": items[0].get("title"),
+                        "url": items[0].get("url"),
+                        "thumbnail": items[0].get("thumbnail", ""),
+                        "source": items[0].get("source", "internet"),
+                    }
+            except Exception as e:
+                logger.debug(f"Scene image search error for '{q}': {e}")
+
+    return None

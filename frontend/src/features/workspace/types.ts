@@ -2,6 +2,30 @@ export interface ScriptSubtitle {
   text: string;
   start: number;
   duration: number;
+  textStyleId?: string;
+  captionPresetClass?: string;
+  captionPresetColor?: string;
+}
+
+export interface StoryboardScene {
+  sceneNumber: number;
+  beat: 'hook' | 'escalation' | 'quote' | 'cta' | string;
+  start: number;
+  duration: number;
+  mediaType: 'video' | 'image';
+  mediaId: string;
+  mediaUrl?: string;
+  mediaName?: string;
+  textStyleId?: string;
+  textStyleName?: string;
+  captionPresetClass?: string;
+  captionPresetColor?: string;
+  captionPresetFontFamily?: string;
+  transition?: string;
+  cameraMotion?: string;
+  sfx?: string;
+  sfxUrl?: string;
+  subtitleText?: string;
 }
 
 export interface GeneratedScript {
@@ -16,6 +40,7 @@ export interface GeneratedScript {
   tags: string[];
   hashtags: string[];
   subtitles: ScriptSubtitle[];
+  storyboard?: StoryboardScene[];
   audioMood?: string;
   backgroundStyle?: string;
   textStyle?: string;

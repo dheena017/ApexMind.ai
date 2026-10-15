@@ -50,6 +50,7 @@ def post_generate_script(payload: GenerateScriptRequest):
             motion_style=payload.motionStyle,
             output_format=payload.outputFormat,
             creative_context=payload.creativeContext,
+            available_assets=payload.availableAssets,
         )
     except Exception as e:
         logger.error(f"Error in script generation: {e}")

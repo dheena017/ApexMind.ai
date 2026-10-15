@@ -18,6 +18,7 @@ import {
   ImagePane,
   VideoStockPane,
 } from '../components/panes';
+import { TYPOGRAPHY_PRESETS } from '../data/mediaCatalogData';
 import { Toaster, toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { WorkspaceCommandPalette } from '../components/WorkspaceCommandPalette';
@@ -659,16 +660,95 @@ export default function WorkspacePage({
         ...(creativeBrief.motionStyle ? { motionStyle: creativeBrief.motionStyle } : {}),
         ...(creativeBrief.outputFormat ? { outputFormat: creativeBrief.outputFormat } : {}),
         creativeContext,
+        availableAssets: {
+          visualBackdrops: backdrops.map((b) => ({
+            id: b.id,
+            name: b.name,
+            category: b.category,
+            imageUrl: b.imageUrl,
+            videoUrl: b.videoUrl,
+            previewColor: b.previewColor,
+          })),
+          textStyles: TYPOGRAPHY_PRESETS.slice(0, 20).map((t) => ({
+            id: t.id,
+            name: t.name,
+            className: t.className,
+            color: t.color,
+            fontFamily: t.fontFamily,
+            styleDescription: t.styleDescription,
+          })),
+          musicTracks: musicTracks.map((m) => ({
+            id: m.id,
+            title: m.title,
+            genre: m.genre,
+            bpm: m.bpm,
+            audioUrl: m.audioUrl,
+          })),
+          voices: voices.map((v) => ({
+            id: v.id,
+            name: v.name,
+            gender: v.gender,
+            style: v.style,
+          })),
+        },
       });
 
       setScript({ ...generated, recommendedVoice: selectedVoice || generated.recommendedVoice });
-      if (generated.visualTheme) {
+
+      // If AI planned a multi-scene storyboard with multiple videos and images:
+      if (generated.storyboard && generated.storyboard.length > 0) {
+        const firstScene = generated.storyboard[0];
+        if (firstScene.mediaType === 'video' && firstScene.mediaUrl) {
+          setCustomBackdropVideo(firstScene.mediaUrl);
+          setCustomBackdropImage(undefined);
+        } else if (firstScene.mediaUrl) {
+          setCustomBackdropImage(firstScene.mediaUrl);
+          setCustomBackdropVideo(undefined);
+        }
+
+        if (firstScene.captionPresetClass) {
+          setCaptionPreset({
+            className: firstScene.captionPresetClass,
+            color: firstScene.captionPresetColor || '#FACC15',
+            fontFamily: firstScene.captionPresetFontFamily || 'Impact, sans-serif',
+          });
+        }
+
+        // Dispatch multi-scene storyboard to timeline
+        window.dispatchEvent(
+          new CustomEvent('workspace:set-timeline-storyboard', {
+            detail: {
+              storyboard: generated.storyboard,
+              musicTrack: generated.musicTrack,
+            },
+          })
+        );
+        setShowTimeline(true);
+
+        addWorkspaceNotification({
+          title: 'Multi-Scene Storyboard Planned',
+          message: `AI directed ${generated.storyboard.length} dynamic scene cuts with synchronized visuals & typography.`,
+          category: 'timeline',
+          type: 'ai',
+          targetPane: 'canvas',
+          actionLabel: 'Preview Video',
+        });
+      } else if (generated.visualTheme) {
         const generatedBackdrop = backdrops.find(
           (backdrop) =>
             backdrop.id === generated.visualTheme ||
             backdrop.name.toLowerCase() === generated.visualTheme?.trim().toLowerCase()
         );
         if (generatedBackdrop) setSelectedBackdrop(generatedBackdrop.id);
+      }
+
+      if (generated.musicTrack) {
+        const matchedMusic = musicTracks.find(
+          (m) =>
+            m.id === generated.musicTrack ||
+            m.title.toLowerCase().includes(generated.musicTrack?.toLowerCase() || '')
+        );
+        if (matchedMusic) setSelectedMusic(matchedMusic.id);
       }
 
       const mem = await workspaceApi.getQuoteMemory();

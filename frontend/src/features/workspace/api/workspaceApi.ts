@@ -23,6 +23,7 @@ export const workspaceApi = {
     motionStyle?: string;
     outputFormat?: string;
     creativeContext?: Record<string, unknown>;
+    availableAssets?: Record<string, unknown>;
   }): Promise<GeneratedScript> {
     const topicText = params.userPrompt || params.topic || params.category;
     consoleLogger.info('Gemini', `Generating AI script with model: "${params.model || 'gemini-2.5-flash'}" for topic: "${topicText}"...`);
@@ -56,6 +57,10 @@ export const workspaceApi = {
 
     if (params.creativeContext && Object.keys(params.creativeContext).length > 0) {
       payload.creativeContext = params.creativeContext;
+    }
+
+    if (params.availableAssets && Object.keys(params.availableAssets).length > 0) {
+      payload.availableAssets = params.availableAssets;
     }
 
     const res = await fetch(apiUrl('/api/generate-script'), {

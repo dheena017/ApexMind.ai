@@ -708,10 +708,30 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   })();
 
   const currentTitle = script.title?.trim() || '';
-  const currentSubtitle = captionStyle.text.trim()
-    ? currentTime <= captionStyle.duration ? captionStyle.text.trim() : ''
-    : timedSubtitle.trim();
-  const hasCaptionPreset = Boolean(captionPresetClass);
+  const currentSubtitle = (timedSubtitle || script.quote || '').trim();
+
+  const activeSubtitleObj = (script.subtitles || []).find(
+    (s) => currentTime >= s.start && currentTime <= s.start + (s.duration || 3)
+  );
+  const activeStoryboardScene = (script.storyboard || []).find(
+    (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3)
+  );
+
+  const activeCaptionPresetClass =
+    activeSubtitleObj?.captionPresetClass ||
+    activeStoryboardScene?.captionPresetClass ||
+    captionPresetClass;
+
+  const activeCaptionPresetColor =
+    activeSubtitleObj?.captionPresetColor ||
+    activeStoryboardScene?.captionPresetColor ||
+    captionPresetColor;
+
+  const activeCaptionPresetFontFamily =
+    activeStoryboardScene?.captionPresetFontFamily ||
+    captionPresetFontFamily;
+
+  const hasCaptionPreset = Boolean(activeCaptionPresetClass);
   const useCaptionPreset = hasCaptionPreset && !captionStyle.overridePreset;
   const visibleSubtitle = currentSubtitle || (!isExporting && hasCaptionPreset ? captionPresetPreviewText || '' : '');
   const currentVideoStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
@@ -1062,13 +1082,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               }}
             >
               <p
-                className={`${useCaptionPreset ? captionPresetClass : `font-black text-center ${captionSizeClass}`} inline-block text-center leading-snug`}
+                className={`${useCaptionPreset ? activeCaptionPresetClass : `font-black text-center ${captionSizeClass}`} inline-block text-center leading-snug`}
                 style={{
                   color: useCaptionPreset
-                    ? captionPresetColor || captionStyle.color || captionColor
+                    ? activeCaptionPresetColor || captionStyle.color || captionColor
                     : captionStyle.color || captionColor,
                   filter: useCaptionPreset ? 'none' : undefined,
-                  fontFamily: useCaptionPreset ? captionPresetFontFamily : captionStyle.fontFamily,
+                  fontFamily: useCaptionPreset ? activeCaptionPresetFontFamily : captionStyle.fontFamily,
                   fontSize: useCaptionPreset
                     ? captionPresetFontSize ? `${captionPresetFontSize}px` : 'clamp(12px, 4.2cqi, 22px)'
                     : `${Math.round(captionStyle.fontSize * 0.25)}px`,

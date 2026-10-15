@@ -35,8 +35,24 @@ def generate_script(
     motion_style: str | None = None,
     output_format: str | None = None,
     creative_context: dict | None = None,
+    available_assets: dict | None = None,
 ) -> Dict[str, Any]:
     memory = fetch_quote_memory(limit=20)
+    
+    # Dynamically fetch real videos and photos from the internet matching topic and category
+    from .open_media_service import fetch_dynamic_internet_media_for_prompt
+    dynamic_media = fetch_dynamic_internet_media_for_prompt(
+        topic=topic,
+        category=category,
+        limit_videos=8,
+        limit_images=12
+    )
+    merged_assets = dict(available_assets or {})
+    if dynamic_media.get("videos"):
+        merged_assets["stockVideos"] = dynamic_media["videos"] + merged_assets.get("stockVideos", [])
+    if dynamic_media.get("images"):
+        merged_assets["backdrops"] = dynamic_media["images"] + merged_assets.get("backdrops", [])
+
     data = generate_gemini_script(
         category=category,
         topic=topic,
@@ -56,6 +72,7 @@ def generate_script(
         motion_style=motion_style,
         output_format=output_format,
         creative_context=creative_context,
+        available_assets=merged_assets,
     )
     if data.get("title") and data.get("quote"):
         save_quote(

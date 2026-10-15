@@ -401,8 +401,75 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       }
     };
 
+    const handleSetStoryboard = (e: Event) => {
+      const detail = (e as CustomEvent<{ storyboard?: any[]; musicTrack?: string }>).detail;
+      if (!detail || !detail.storyboard || !detail.storyboard.length) return;
+
+      const newVideoClips: TimelineMediaClip[] = [];
+      const newImageClips: TimelineMediaClip[] = [];
+      const newSfxClips: TimelineAudioClip[] = [];
+
+      detail.storyboard.forEach((scene: any, idx: number) => {
+        const clipId = `sb-${scene.sceneNumber || idx + 1}-${Date.now()}`;
+        const clipName = scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`;
+        const clipStart = typeof scene.start === 'number' ? scene.start : idx * 3.0;
+        const clipDuration = typeof scene.duration === 'number' ? scene.duration : 3.0;
+
+        if (scene.mediaType === 'video' && scene.mediaUrl) {
+          newVideoClips.push({
+            id: clipId,
+            type: 'video',
+            url: scene.mediaUrl,
+            name: clipName,
+            start: clipStart,
+            duration: clipDuration,
+          });
+        } else if (scene.mediaUrl) {
+          newImageClips.push({
+            id: clipId,
+            type: 'image',
+            url: scene.mediaUrl,
+            name: clipName,
+            start: clipStart,
+            duration: clipDuration,
+          });
+        }
+
+        if (scene.sfxUrl) {
+          newSfxClips.push({
+            id: `sfx-${scene.sceneNumber || idx + 1}-${Date.now()}`,
+            type: 'sfx',
+            url: scene.sfxUrl,
+            name: scene.sfx || 'Impact Whoosh',
+            start: clipStart,
+            duration: 1.5,
+          });
+        }
+      });
+
+      if (newVideoClips.length > 0) {
+        setVideoClips(newVideoClips);
+        setEnabledTracks((prev) => ({ ...prev, video: true }));
+        setVideoTrackVisible(true);
+      }
+      if (newImageClips.length > 0) {
+        setImageClips(newImageClips);
+        setEnabledTracks((prev) => ({ ...prev, image: true }));
+        setImageTrackVisible(true);
+      }
+      if (newSfxClips.length > 0) {
+        setSfxClips(newSfxClips);
+        setEnabledTracks((prev) => ({ ...prev, sfx: true }));
+        setSfxTrackMuted(false);
+      }
+    };
+
     window.addEventListener('workspace:add-timeline-clip', handleAddTimelineClip);
-    return () => window.removeEventListener('workspace:add-timeline-clip', handleAddTimelineClip);
+    window.addEventListener('workspace:set-timeline-storyboard', handleSetStoryboard);
+    return () => {
+      window.removeEventListener('workspace:add-timeline-clip', handleAddTimelineClip);
+      window.removeEventListener('workspace:set-timeline-storyboard', handleSetStoryboard);
+    };
   }, [currentTime, duration, audioUrl, onSelectCompound]);
 
   // Auto-enable Image track and sync if customImageUrl is chosen
