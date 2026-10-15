@@ -849,3 +849,71 @@ def search_open_sfx(query: str = "whoosh", limit: int = 20) -> Dict[str, Any]:
         "total": len(items),
         "items": items[:limit],
     }
+
+
+def search_open_quotes(query: str = "", category: str = "all", limit: int = 30) -> Dict[str, Any]:
+    """
+    Live query open-source public quotes & viral hooks APIs (ZenQuotes & DummyJSON Quotes).
+    100% free, zero API keys required, zero hardcoded text.
+    """
+    quotes: List[Dict[str, Any]] = []
+
+    # 1. Query ZenQuotes API (50 real inspirational/stoic quotes)
+    try:
+        url = "https://zenquotes.io/api/quotes"
+        req = urllib.request.Request(url, headers={"User-Agent": "ApexMindStudio/2.0"})
+        with urllib.request.urlopen(req, timeout=5) as res:
+            if res.status == 200:
+                data = json.loads(res.read().decode("utf-8"))
+                for idx, z in enumerate(data):
+                    q_text = z.get("q", "").strip()
+                    if q_text:
+                        quotes.append({
+                            "id": f"zq_{idx}_{abs(hash(q_text))}",
+                            "quote": q_text,
+                            "author": z.get("a", "Stoic Wisdom"),
+                            "category": "Stoic & Philosophy",
+                            "source": "zenquotes",
+                        })
+    except Exception as e:
+        logger.debug(f"ZenQuotes API note: {e}")
+
+    # 2. Query DummyJSON Quotes (100 curated quotes)
+    try:
+        url = "https://dummyjson.com/quotes?limit=100"
+        req = urllib.request.Request(url, headers={"User-Agent": "ApexMindStudio/2.0"})
+        with urllib.request.urlopen(req, timeout=5) as res:
+            if res.status == 200:
+                data = json.loads(res.read().decode("utf-8"))
+                for q in data.get("quotes", []):
+                    q_text = q.get("quote", "").strip()
+                    if q_text:
+                        quotes.append({
+                            "id": f"dj_{q.get('id')}",
+                            "quote": q_text,
+                            "author": q.get("author", "Wisdom"),
+                            "category": "Wisdom & Success",
+                            "source": "dummyjson",
+                        })
+    except Exception as e:
+        logger.debug(f"DummyJSON Quotes note: {e}")
+
+    # Filter by search term
+    clean_q = (query or "").strip().lower()
+    if clean_q:
+        quotes = [
+            q for q in quotes
+            if clean_q in q["quote"].lower()
+            or clean_q in q["author"].lower()
+            or clean_q in q["category"].lower()
+        ]
+
+    # Filter by category
+    if category != "all":
+        quotes = [q for q in quotes if category.lower() in q["category"].lower()]
+
+    return {
+        "success": True,
+        "total": len(quotes),
+        "items": quotes[:limit],
+    }

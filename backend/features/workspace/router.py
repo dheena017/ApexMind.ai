@@ -186,3 +186,13 @@ async def get_open_sfx_route(q: str = "whoosh", limit: int = 20):
     from .open_media_service import search_open_sfx
     return search_open_sfx(query=q, limit=limit)
 
+
+@router.get(
+    "/api/workspace/open-media/quotes",
+    summary="Search real viral hooks & quotes from open-source APIs",
+    description="Query ZenQuotes and DummyJSON open APIs dynamically with zero API keys."
+)
+async def get_open_quotes_route(q: str = "", category: str = "all", limit: int = 30):
+    from .open_media_service import search_open_quotes
+    return search_open_quotes(query=q, category=category, limit=limit)
+

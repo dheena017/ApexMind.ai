@@ -265,5 +265,20 @@ export const workspaceApi = {
     }
     return { success: false, items: [] };
   },
+
+  // Search live open-source quotes & viral hooks via ZenQuotes / DummyJSON
+  async searchOpenQuotes(query: string = '', category: string = 'all', limit: number = 30): Promise<any> {
+    try {
+      const res = await fetch(
+        apiUrl(`/api/workspace/open-media/quotes?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&limit=${limit}`)
+      );
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.warn('OpenMedia', `Quotes fetch error: ${e}`);
+    }
+    return { success: false, items: [] };
+  },
 };
 

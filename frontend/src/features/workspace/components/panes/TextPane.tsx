@@ -493,23 +493,17 @@ export const TextPane: React.FC<TextPaneProps> = ({
                     <div
                       key={preset.id}
                       onClick={() => handleApplyPreset(preset)}
-                      className={`group relative rounded-xl border p-3 bg-[#18181C] hover:bg-[#1D1D22] transition-all cursor-pointer flex flex-col gap-2.5 ${
+                      className={`group relative rounded-xl border p-2 bg-[#18181C] hover:bg-[#1D1D22] transition-all cursor-pointer flex flex-col gap-1.5 ${
                         isSelected
                           ? 'border-blue-500 ring-1 ring-blue-500/50 shadow-lg shadow-blue-500/10'
                           : 'border-[#26262B] hover:border-[#383842]'
                       }`}
                     >
-                      {/* Top Header of Card */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-xs font-bold text-white truncate">
                             {preset.name}
                           </span>
-                          {preset.animationType && (
-                            <span className="text-[9px] font-mono-studio uppercase px-1.5 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-blue-400 font-semibold shrink-0">
-                              {preset.animationType}
-                            </span>
-                          )}
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -526,8 +520,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                         </div>
                       </div>
 
-                      {/* Visual Stylized Preview Box */}
-                      <div className="bg-[#0C0C0F] border border-[#23232A] rounded-xl p-3 flex items-center justify-center text-center min-h-[58px] overflow-hidden">
+                      <div className="bg-[#0C0C0F] border border-[#23232A] rounded-lg p-2 flex items-center justify-center text-center min-h-[42px] overflow-hidden">
                         <span
                           className={`text-sm sm:text-base leading-tight select-none ${preset.className}`}
                           style={{
@@ -540,29 +533,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
                         >
                           {preset.previewText}
                         </span>
-                      </div>
-
-                      {/* Card Bottom: Description & Apply Button */}
-                      <div className="flex items-center justify-between gap-2 pt-0.5">
-                        <p className="text-[10px] text-zinc-400 line-clamp-1 flex-1">
-                          {preset.styleDescription}
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleApplyPreset(preset);
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer ${
-                            isSelected
-                              ? 'bg-blue-600 text-white shadow-sm'
-                              : 'bg-[#24242A] hover:bg-blue-600 text-zinc-200 hover:text-white border border-[#32323A]'
-                          }`}
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          <span>{isSelected ? 'Active Style' : 'Apply Style'}</span>
-                        </button>
                       </div>
                     </div>
                   );
