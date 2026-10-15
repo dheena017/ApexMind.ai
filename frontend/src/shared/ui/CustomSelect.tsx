@@ -89,6 +89,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     if (!isOpen) return;
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (event.defaultPrevented) return;
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
@@ -126,17 +127,17 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   // Variant & size classes
   const triggerBase = isCompact
-    ? `inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121212] border border-[#2F2F2F] text-xs font-semibold text-[#E5E5E5] hover:border-[#3B82F6]/50 hover:text-white hover:bg-[#1E1E1E] transition-all cursor-pointer shadow-xs select-none ${
-        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/30 text-white bg-[#1E1E1E]' : ''
+    ? `inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#141417] border border-[#2B2B32] text-xs font-semibold text-[#E5E5E5] hover:border-[#3B82F6]/60 hover:text-white hover:bg-[#1E1E24] transition-all cursor-pointer shadow-xs select-none ${
+        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/40 text-white bg-[#1E1E24]' : ''
       }`
-    : `w-full flex items-center justify-between gap-2 rounded-xl bg-[#121212] border border-[#2F2F2F] px-3.5 py-2.5 text-xs text-[#E5E5E5] hover:border-[#4A4A4A] focus:outline-none transition-all cursor-pointer select-none ${
-        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/30 text-white' : ''
+    : `w-full flex items-center justify-between gap-2 rounded-xl bg-[#141417] border border-[#2B2B32] px-3.5 py-2.5 text-xs text-[#E5E5E5] hover:border-[#4A4A54] focus:outline-none transition-all cursor-pointer select-none ${
+        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/40 text-white' : ''
       }`;
 
   return (
     <div
       ref={containerRef}
-      className={`relative ${isOpen ? 'z-30' : ''} ${isCompact ? 'inline-block' : 'w-full'} ${className}`}
+      className={`relative ${isOpen ? 'z-50' : 'z-10'} ${isCompact ? 'inline-block' : 'w-full'} ${className}`}
     >
       {label && !isCompact && (
         <label
@@ -152,7 +153,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         id={selectId}
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!disabled) setIsOpen((prev) => !prev);
+        }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         title={title}
@@ -177,11 +182,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         <div
           role="listbox"
           tabIndex={-1}
-          className={`absolute z-50 mt-1.5 p-1.5 rounded-xl bg-[#121212] border border-[#2F2F2F] shadow-2xl shadow-black/80 custom-scrollbar max-h-64 overflow-y-auto ${
+          className={`absolute z-50 mt-1.5 p-1.5 rounded-xl bg-[#16161A] border border-[#2D2D36] shadow-2xl shadow-black/90 custom-scrollbar max-h-72 overflow-y-auto ${
             isCompact
               ? align === 'right'
-                ? 'right-0 min-w-[240px] max-w-[320px]'
-                : 'left-0 min-w-[240px] max-w-[320px]'
+                ? 'right-0 min-w-[210px]'
+                : 'left-0 min-w-[210px]'
               : 'left-0 right-0 w-full'
           } ${menuClassName}`}
         >
@@ -194,14 +199,30 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                 <div
                   key={opt.value}
                   role="option"
+                  tabIndex={0}
                   aria-selected={isSelected}
-                  onClick={() => handleSelect(opt.value, opt.disabled)}
-                  className={`flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-colors text-xs ${
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelect(opt.value, opt.disabled);
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelect(opt.value, opt.disabled);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelect(opt.value, opt.disabled);
+                    }
+                  }}
+                  className={`flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-colors text-xs select-none ${
                     opt.disabled
                       ? 'opacity-40 cursor-not-allowed text-[#6B7280]'
                       : isSelected
-                      ? 'bg-[#3B82F6]/15 text-[#60A5FA] font-semibold border border-[#3B82F6]/30'
-                      : 'text-[#9CA3AF] hover:bg-[#1E1E1E] hover:text-[#E5E5E5]'
+                      ? 'bg-[#3B82F6]/20 text-[#60A5FA] font-bold border border-[#3B82F6]/40 shadow-xs'
+                      : 'text-[#D4D4D8] hover:bg-[#222228] hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0 truncate">
@@ -216,7 +237,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
                   <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     {opt.badge && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#60A5FA] font-semibold">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                        isSelected
+                          ? 'bg-[#3B82F6]/25 border border-[#3B82F6]/50 text-[#93C5FD]'
+                          : 'bg-[#27272E] border border-[#363640] text-[#A1A1AA]'
+                      }`}>
                         {opt.badge}
                       </span>
                     )}

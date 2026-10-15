@@ -89,6 +89,7 @@ export interface BackdropFilterSettings {
   activeOverlay?: 'none' | 'equalizer' | 'particles' | 'badge';
   lut?: string;
   lutIntensity?: number;
+  presetFilter?: string;
   customImageUrl?: string;
   customVideoUrl?: string;
 }
@@ -108,4 +109,3 @@ export interface WorkspaceNotification {
   actionLabel?: string;
   progress?: number;
 }
-

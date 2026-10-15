@@ -45,6 +45,11 @@ interface WorkspaceDraftSnapshot {
   customBackdropImage?: string;
   customBackdropVideo?: string;
   canvasAspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+  canvasOutputSize?: {
+    aspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+    width: number;
+    height: number;
+  };
   canvasBackground: string;
   timelineDuration: number;
   playbackRate: number;
@@ -53,8 +58,30 @@ interface WorkspaceDraftSnapshot {
   musicVolume: number;
   activeElementOverlay: { id?: string; name?: string; type: string; value: string; label?: string } | null;
   selectedSfx: { id: string; name: string; audioUrl: string; duration: number; start: number } | null;
-  captionPreset: { className?: string; color?: string } | null;
+  captionPreset: {
+    className?: string;
+    color?: string;
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: number;
+    textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    previewText?: string;
+  } | null;
 }
+
+type CanvasAspectRatio = WorkspaceDraftSnapshot['canvasAspectRatio'];
+type CanvasOutputSize = NonNullable<WorkspaceDraftSnapshot['canvasOutputSize']>;
+
+const getDefaultCanvasOutputSize = (aspectRatio: CanvasAspectRatio): CanvasOutputSize => {
+  const dimensions: Record<CanvasAspectRatio, { width: number; height: number }> = {
+    '9:16': { width: 1080, height: 1920 },
+    '16:9': { width: 1920, height: 1080 },
+    '1:1': { width: 1080, height: 1080 },
+    '4:5': { width: 1080, height: 1350 },
+    '21:9': { width: 1920, height: 824 },
+  };
+  return { aspectRatio, ...dimensions[aspectRatio] };
+};
 
 const getWorkspaceDraftKey = (userId?: string) => `apexmind_workspace_draft_v1:${userId || 'guest'}`;
 
@@ -84,12 +111,18 @@ export default function WorkspacePage({
   const [activeElementOverlay, setActiveElementOverlay] = useState<{ id?: string; name?: string; type: string; value: string; label?: string } | null>(null);
   const [activeCompound, setActiveCompound] = useState<CompoundType>('home');
   const [canvasAspectRatio, setCanvasAspectRatio] = useState<'9:16' | '16:9' | '1:1' | '4:5' | '21:9'>('9:16');
+  const [canvasOutputSize, setCanvasOutputSize] = useState<CanvasOutputSize>(() => getDefaultCanvasOutputSize('9:16'));
   const [canvasBackground, setCanvasBackground] = useState<string>('#050505');
-  const [captionPreset, setCaptionPreset] = useState<{ className?: string; color?: string } | null>(null);
+  const [captionPreset, setCaptionPreset] = useState<WorkspaceDraftSnapshot['captionPreset']>(null);
   const [scriptSubPane, setScriptSubPane] = useState<'prompt' | 'editor'>(
     activePane === 'editor' ? 'editor' : 'prompt'
   );
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  const handleCanvasAspectRatioChange = (ratio: CanvasAspectRatio) => {
+    setCanvasAspectRatio(ratio);
+    setCanvasOutputSize(getDefaultCanvasOutputSize(ratio));
+  };
 
   // Script State (Live dynamic data with initial studio preview)
   const [script, setScript] = useState<GeneratedScript>({
@@ -539,7 +572,15 @@ export default function WorkspacePage({
           customBackdropImage: customBackdropImage || null,
           customBackdropVideo: customBackdropVideo || null,
           captionPreset: captionPreset
-            ? { className: captionPreset.className || null, color: captionPreset.color || null }
+            ? {
+                className: captionPreset.className || null,
+                color: captionPreset.color || null,
+                fontFamily: captionPreset.fontFamily || null,
+                fontSize: captionPreset.fontSize || null,
+                fontWeight: captionPreset.fontWeight || null,
+                textTransform: captionPreset.textTransform || null,
+                previewText: captionPreset.previewText || null,
+              }
             : null,
           overlay: activeElementOverlay
             ? {
@@ -1128,7 +1169,23 @@ export default function WorkspacePage({
       setSelectedBackdrop(draft.selectedBackdrop || '');
       setCustomBackdropImage(draft.customBackdropImage);
       setCustomBackdropVideo(draft.customBackdropVideo);
-      setCanvasAspectRatio(draft.canvasAspectRatio || '9:16');
+      const restoredAspectRatio = draft.canvasAspectRatio || '9:16';
+      setCanvasAspectRatio(restoredAspectRatio);
+      const restoredOutputSize = draft.canvasOutputSize;
+      setCanvasOutputSize(
+        restoredOutputSize?.aspectRatio === restoredAspectRatio &&
+          Number.isInteger(restoredOutputSize.width) &&
+          Number.isInteger(restoredOutputSize.height) &&
+          restoredOutputSize.width >= 2 &&
+          restoredOutputSize.height >= 2 &&
+          restoredOutputSize.width % 2 === 0 &&
+          restoredOutputSize.height % 2 === 0 &&
+          Math.max(restoredOutputSize.width, restoredOutputSize.height) >= 1080 &&
+          restoredOutputSize.width <= 8192 &&
+          restoredOutputSize.height <= 8192
+          ? restoredOutputSize
+          : getDefaultCanvasOutputSize(restoredAspectRatio),
+      );
       setCanvasBackground(draft.canvasBackground || '#050505');
       setTimelineDuration(draft.timelineDuration || 30);
       setPlaybackRate(draft.playbackRate || 1);
@@ -1180,6 +1237,7 @@ export default function WorkspacePage({
         customBackdropImage: persistableUrl(customBackdropImage),
         customBackdropVideo: persistableUrl(customBackdropVideo),
         canvasAspectRatio,
+        canvasOutputSize,
         canvasBackground,
         timelineDuration,
         playbackRate,
@@ -1210,6 +1268,7 @@ export default function WorkspacePage({
     activeElementOverlay,
     agentPrompt,
     canvasAspectRatio,
+    canvasOutputSize,
     canvasBackground,
     captionPreset,
     category,
@@ -1261,14 +1320,16 @@ export default function WorkspacePage({
     return () => window.removeEventListener('workspace:toggle-panel', handleToggle);
   }, []);
 
-  // Listen to global compound selection events: ALWAYS open and show right inspector pane
+  // Left-pane selections update the active inspector without changing panel visibility.
   useEffect(() => {
     const handleCompoundSelect = (e: Event) => {
-      const customEvent = e as CustomEvent<CompoundType>;
-      if (customEvent.detail) {
-        setShowRightPane(true);
-        setActiveCompound(customEvent.detail);
-      }
+      const detail = (e as CustomEvent<
+        CompoundType | { compound: CompoundType; openInspector?: boolean }
+      >).detail;
+      const compound = typeof detail === 'string' ? detail : detail?.compound;
+      if (!compound) return;
+      if (typeof detail !== 'string' && detail.openInspector) setShowRightPane(true);
+      setActiveCompound(compound);
     };
     window.addEventListener('workspace:select-compound', handleCompoundSelect);
     return () => window.removeEventListener('workspace:select-compound', handleCompoundSelect);
@@ -1278,7 +1339,7 @@ export default function WorkspacePage({
     const handleAspectRatio = (e: Event) => {
       const customEvent = e as CustomEvent<{ aspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9' }>;
       if (customEvent.detail?.aspectRatio) {
-        setCanvasAspectRatio(customEvent.detail.aspectRatio);
+        handleCanvasAspectRatioChange(customEvent.detail.aspectRatio);
       }
     };
     window.addEventListener('workspace:aspect-ratio-change', handleAspectRatio);
@@ -1297,7 +1358,6 @@ export default function WorkspacePage({
           start: currentTime,
         });
         setShowTimeline(true);
-        setShowRightPane(true);
         setActiveCompound('music');
         addWorkspaceNotification({
           title: `SFX Placed: ${customEvent.detail.name}`,
@@ -1369,9 +1429,12 @@ export default function WorkspacePage({
       window.dispatchEvent(new CustomEvent('workspace:export-state', {
         detail: { exporting: true, message: 'Rendering final video...' },
       }));
+      const renderSize = canvasOutputSize.aspectRatio === canvasAspectRatio
+        ? canvasOutputSize
+        : getDefaultCanvasOutputSize(canvasAspectRatio);
       addWorkspaceNotification({
         title: 'Export Render Started',
-        message: `Rendering 1080p short (${canvasAspectRatio}) with timeline audio...`,
+        message: `Rendering ${renderSize.width} × ${renderSize.height} MP4 (${canvasAspectRatio}) with timeline audio...`,
         category: 'export',
         type: 'render',
         targetPane: 'canvas',
@@ -1380,7 +1443,7 @@ export default function WorkspacePage({
     };
     window.addEventListener('workspace:export-video', handleExportRequest);
     return () => window.removeEventListener('workspace:export-video', handleExportRequest);
-  }, [audioUrl, isLooping]);
+  }, [audioUrl, canvasAspectRatio, canvasOutputSize, isLooping]);
 
   // Listen for save-to-library event from header
   useEffect(() => {
@@ -1502,9 +1565,10 @@ export default function WorkspacePage({
             ) : activePane === 'canvas' ? (
               <CanvasPane
                 aspectRatio={canvasAspectRatio}
+                outputSize={canvasOutputSize}
+                onOutputSizeChange={setCanvasOutputSize}
                 onAspectRatioChange={(r) => {
-                  setCanvasAspectRatio(r);
-                  setShowRightPane(true);
+                  handleCanvasAspectRatioChange(r);
                   setActiveCompound('video');
                   addWorkspaceNotification({
                     title: `Canvas Aspect Ratio: ${r}`,
@@ -1518,14 +1582,12 @@ export default function WorkspacePage({
                 background={canvasBackground}
                 onBackgroundChange={(bg) => {
                   setCanvasBackground(bg);
-                  setShowRightPane(true);
                   setActiveCompound('video');
                 }}
               />
             ) : activePane === 'media' ? (
               <MediaPane
                 onApplyBackdrop={(url, isVideo, name) => {
-                  setShowRightPane(true);
                   setShowTimeline(true);
                   setActiveCompound('video');
                   if (isVideo) {
@@ -1555,7 +1617,6 @@ export default function WorkspacePage({
                   });
                 }}
                 onApplyAudio={(url) => {
-                  setShowRightPane(true);
                   setShowTimeline(true);
                   setActiveCompound('music');
                   setAudioUrl(url);
@@ -1590,24 +1651,28 @@ export default function WorkspacePage({
             ) : activePane === 'text' ? (
               <TextPane
                 onUpdateTitle={(title) => {
-                  setShowRightPane(true);
                   setActiveCompound('text');
                   setScript((prev) => ({ ...prev, title }));
                 }}
                 onUpdateHook={(hook) => {
-                  setShowRightPane(true);
                   setActiveCompound('text');
                   setScript((prev) => ({ ...prev, hook }));
                 }}
                 onUpdateQuote={(quote) => {
-                  setShowRightPane(true);
                   setActiveCompound('text');
                   setScript((prev) => ({ ...prev, quote }));
                 }}
                 onApplyPreset={(p) => {
-                  setShowRightPane(true);
                   setActiveCompound('text');
-                  setCaptionPreset({ className: p.className, color: p.color });
+                  setCaptionPreset({
+                    className: p.className,
+                    color: p.color,
+                    fontFamily: p.fontFamily,
+                    fontSize: p.fontSize,
+                    fontWeight: p.fontWeight,
+                    textTransform: p.textTransform,
+                    previewText: p.previewText,
+                  });
                   addWorkspaceNotification({
                     title: `Subtitle Preset Applied`,
                     message: `Kinetic typography styling updated for subtitle cue cards.`,
@@ -1621,7 +1686,6 @@ export default function WorkspacePage({
             ) : activePane === 'elements' ? (
               <ElementsPane
                 onInsertElement={(el) => {
-                  setShowRightPane(true);
                   setShowTimeline(true);
                   setActiveCompound('overlay');
                   setActiveElementOverlay({ ...el, label: el.name });
@@ -1656,7 +1720,6 @@ export default function WorkspacePage({
             ) : activePane === 'audio' ? (
               <AudioPane
                 onSelectMusic={(mId) => {
-                  setShowRightPane(true);
                   setShowTimeline(true);
                   setActiveCompound('music');
                   setSelectedMusic(mId);
@@ -1700,7 +1763,6 @@ export default function WorkspacePage({
                     start: currentTime,
                   });
                   setShowTimeline(true);
-                  setShowRightPane(true);
                   setActiveCompound('music');
                   window.dispatchEvent(
                     new CustomEvent('workspace:add-timeline-clip', {
@@ -1725,7 +1787,6 @@ export default function WorkspacePage({
                   });
                 }}
                 onApplyRecordedVoice={(recordedUrl) => {
-                  setShowRightPane(true);
                   setShowTimeline(true);
                   setActiveCompound('voice');
                   setAudioUrl(recordedUrl);
@@ -1759,7 +1820,6 @@ export default function WorkspacePage({
             ) : activePane === 'image' ? (
               <ImagePane
                 onSelectImage={(url) => {
-                  setShowRightPane(true);
                   setShowTimeline(true);
                   setActiveCompound('video');
                   setCustomBackdropImage(url);
@@ -1790,7 +1850,6 @@ export default function WorkspacePage({
             ) : activePane === 'video' ? (
               <VideoStockPane
                 onSelectVideo={(url) => {
-                  setShowRightPane(true);
                   setShowTimeline(true);
                   setActiveCompound('video');
                   setCustomBackdropVideo(url);
@@ -1872,6 +1931,7 @@ export default function WorkspacePage({
           <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
             <VideoPreviewPane
               canvasAspectRatio={canvasAspectRatio}
+              canvasOutputSize={canvasOutputSize}
               canvasBackground={canvasBackground}
               script={script}
               activeBackdrop={activeBackdropObj}
@@ -1880,6 +1940,11 @@ export default function WorkspacePage({
               activeElementOverlay={activeElementOverlay}
               captionPresetClass={captionPreset?.className}
               captionPresetColor={captionPreset?.color}
+              captionPresetFontFamily={captionPreset?.fontFamily}
+              captionPresetFontSize={captionPreset?.fontSize}
+              captionPresetFontWeight={captionPreset?.fontWeight}
+              captionPresetTextTransform={captionPreset?.textTransform}
+              captionPresetPreviewText={captionPreset?.previewText}
               isPlaying={isPlaying}
               isMuted={isMuted}
               volume={volume}
@@ -2028,7 +2093,7 @@ export default function WorkspacePage({
               canvasBackground={canvasBackground}
               onCanvasBackgroundChange={setCanvasBackground}
               canvasAspectRatio={canvasAspectRatio}
-              onCanvasAspectRatioChange={setCanvasAspectRatio}
+              onCanvasAspectRatioChange={handleCanvasAspectRatioChange}
               activeCompound={activeCompound}
               onSelectCompound={setActiveCompound}
             />

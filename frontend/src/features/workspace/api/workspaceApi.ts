@@ -180,19 +180,60 @@ export const workspaceApi = {
     return data.video;
   },
 
-  // Search free open-source images via Openverse API & curated fallback
-  async searchOpenImages(query: string, page: number = 1, pageSize: number = 24): Promise<any> {
+  // Search free open-source videos via Pexels, Pixabay, or CC0 open stock loops
+  async searchOpenVideos(query: string = '', category: string = 'all', page: number = 1, pageSize: number = 20): Promise<any> {
     try {
       const res = await fetch(
-        apiUrl(`/api/workspace/open-media/images?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`)
+        apiUrl(`/api/workspace/open-media/videos?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&page=${page}&pageSize=${pageSize}`)
       );
       if (res.ok) {
         return await res.json();
       }
     } catch (e) {
-      consoleLogger.warn('OpenMedia', `Openverse search error: ${e}`);
+      consoleLogger.warn('OpenMedia', `Open video search error: ${e}`);
     }
     return { success: false, items: [] };
+  },
+
+  // Search 100M+ stock photos across Pexels, Pixabay, Unsplash & Wikimedia
+  async searchOpenImages(
+    query: string = '',
+    provider: string = 'all',
+    category: string = 'all',
+    page: number = 1,
+    pageSize: number = 24,
+    orientation: string = 'portrait'
+  ): Promise<any> {
+    try {
+      const params = new URLSearchParams({
+        q: query,
+        provider,
+        category,
+        page: String(page),
+        pageSize: String(pageSize),
+        orientation,
+      });
+      const res = await fetch(apiUrl(`/api/workspace/open-media/images?${params.toString()}`));
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.warn('OpenMedia', `Stock photo search error: ${e}`);
+    }
+    return { success: false, items: [], providers: {} };
+  },
+
+  // Check active status of stock media providers (Pexels, Pixabay, Unsplash)
+  async getMediaProvidersStatus(): Promise<{ pexels: boolean; pixabay: boolean; unsplash: boolean; jamendo: boolean }> {
+    try {
+      const res = await fetch(apiUrl('/api/workspace/open-media/providers'));
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.warn('OpenMedia', `Provider status fetch error: ${e}`);
+    }
+    return { pexels: false, pixabay: false, unsplash: false, jamendo: false };
   },
 
   // Search free royalty-free tracks via Jamendo API
@@ -223,12 +264,6 @@ export const workspaceApi = {
       consoleLogger.warn('OpenMedia', `SFX search error: ${e}`);
     }
     return { success: false, items: [] };
-  },
-
-  // Generate 100% free instant AI visual via Pollinations (No API key needed)
-  getFreeAiImageUrl(prompt: string, width: number = 1080, height: number = 1920): string {
-    const encoded = encodeURIComponent(prompt.trim());
-    return `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&nologo=true`;
   },
 };
 

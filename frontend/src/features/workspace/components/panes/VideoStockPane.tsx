@@ -34,91 +34,6 @@ export interface VideoStockPaneProps {
   activeVideoUrl?: string;
 }
 
-import { CURATED_STOCK_VIDEOS as EXPANDED_VIDEOS } from '../../data/mediaCatalogData';
-
-const CURATED_STOCK_VIDEOS: StockVideoItem[] = [
-  ...EXPANDED_VIDEOS.map((v) => ({
-    id: v.id,
-    title: v.title,
-    category: (v.category === 'atmospheric' ? 'clouds' : v.category === 'urban' ? 'city' : v.category === 'abstract' ? 'abstract' : 'gym') as any,
-    videoUrl: v.videoUrl,
-    posterUrl: v.posterUrl,
-    duration: v.duration,
-    resolution: v.resolution,
-    tags: v.tags,
-  })),
-  {
-    id: 'vid-2',
-    title: 'Heavy Barbell Gym Deadlift Grit',
-    category: 'gym',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80',
-    duration: '20s Loop',
-    resolution: '1080x1920',
-    tags: ['gym', 'deadlift', 'weights', 'power'],
-  },
-  {
-    id: 'vid-3',
-    title: 'Cyberpunk Neon Traffic Lights',
-    category: 'city',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=400&q=80',
-    duration: '12s Loop',
-    resolution: '1080x1920',
-    tags: ['neon', 'city', 'night', 'cyberpunk'],
-  },
-  {
-    id: 'vid-4',
-    title: 'Deep Oceanic Storm Mist Waves',
-    category: 'ocean',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=400&q=80',
-    duration: '18s Loop',
-    resolution: '1080x1920',
-    tags: ['ocean', 'waves', 'water', 'storm'],
-  },
-  {
-    id: 'vid-5',
-    title: 'Glowing Fire Sparks & Embers',
-    category: 'fire',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=400&q=80',
-    duration: '10s Loop',
-    resolution: '1080x1920',
-    tags: ['fire', 'embers', 'sparks', 'flame'],
-  },
-  {
-    id: 'vid-6',
-    title: 'Thunderstorm Lightning Cloudscape',
-    category: 'clouds',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=400&q=80',
-    duration: '14s Loop',
-    resolution: '1080x1920',
-    tags: ['lightning', 'thunder', 'rain', 'dark'],
-  },
-  {
-    id: 'vid-7',
-    title: 'Tunnel Speed Neon Blur Rush',
-    category: 'abstract',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80',
-    duration: '16s Loop',
-    resolution: '1080x1920',
-    tags: ['speed', 'tunnel', 'blur', 'abstract'],
-  },
-  {
-    id: 'vid-8',
-    title: 'Night Skyline Time-lapse Stars',
-    category: 'city',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
-    duration: '22s Loop',
-    resolution: '1080x1920',
-    tags: ['stars', 'night', 'timelapse', 'skyline'],
-  },
-];
-
 const SEARCH_TOPICS = ['#clouds', '#gym', '#city', '#ocean', '#fire', '#drone', '#night', '#lightning', '#abstract'];
 
 const LOCAL_STORAGE_VIDEOS_KEY = 'apexmind_custom_videos';
@@ -132,7 +47,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [videos, setVideos] = useState<StockVideoItem[]>(CURATED_STOCK_VIDEOS);
+  const [videos, setVideos] = useState<StockVideoItem[]>([]);
   const [savedVideos, setSavedVideos] = useState<StockVideoItem[]>([]);
   const [customUrlInput, setCustomUrlInput] = useState('');
   const [customTitleInput, setCustomTitleInput] = useState('');
@@ -154,45 +69,46 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     } catch {}
   }, []);
 
-  // Fetch backend media library video backdrops
+  // Fetch live stock videos from open media APIs (Wikimedia, Pexels, Pixabay)
   useEffect(() => {
+    if (activeTab !== 'catalog') return;
     let isMounted = true;
-    const fetchBackendVideos = async () => {
-      try {
-        setIsLoadingBackend(true);
-        const data = await workspaceApi.getMediaLibrary();
-        if (isMounted && data?.visualBackdrops?.length) {
-          const apiVideos: StockVideoItem[] = data.visualBackdrops
-            .filter((b) => Boolean(b.videoUrl))
-            .map((b) => ({
-              id: `api-vid-${b.id}`,
-              title: b.name,
-              category: (b.category?.toLowerCase() || 'abstract') as any,
-              videoUrl: b.videoUrl!,
-              posterUrl: b.imageUrl || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80',
-              duration: '15s Loop',
-              resolution: '1080x1920 HD',
-            }));
+    setIsLoadingBackend(true);
 
-          if (apiVideos.length > 0) {
-            setVideos((prev) => {
-              const existingUrls = new Set(prev.map((v) => v.videoUrl));
-              const newItems = apiVideos.filter((v) => !existingUrls.has(v.videoUrl));
-              return [...newItems, ...prev];
-            });
+    const timer = setTimeout(async () => {
+      try {
+        const cleanQ = searchQuery.trim().replace(/^#/, '');
+        const res = await workspaceApi.searchOpenVideos(cleanQ, selectedCategory, 1, 30);
+        if (isMounted) {
+          if (res && res.items && res.items.length > 0) {
+            setVideos(
+              res.items.map((it: any) => ({
+                id: it.id || `live-vid-${Date.now()}-${Math.random()}`,
+                title: it.title || 'Stock Video Loop',
+                category: it.category || selectedCategory,
+                videoUrl: it.videoUrl,
+                posterUrl: it.posterUrl || '',
+                duration: it.duration || 'Loop',
+                resolution: it.resolution || '1080x1920 HD',
+                tags: it.tags || [],
+              }))
+            );
+          } else {
+            setVideos([]);
           }
         }
       } catch {
-        // Fallback
+        if (isMounted) setVideos([]);
       } finally {
         if (isMounted) setIsLoadingBackend(false);
       }
-    };
-    fetchBackendVideos();
+    }, 350);
+
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
-  }, []);
+  }, [searchQuery, selectedCategory, activeTab]);
 
   const handleMouseEnter = (id: string) => {
     setHoveredId(id);
@@ -262,15 +178,18 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
   const sourceList = activeTab === 'saved' ? savedVideos : videos;
 
-  const filteredVideos = sourceList.filter((vid) => {
-    const matchesCategory = selectedCategory === 'all' || vid.category === selectedCategory;
-    const cleanQuery = searchQuery.trim().replace(/^#/, '').toLowerCase();
-    const matchesQuery =
-      cleanQuery === '' ||
-      vid.title.toLowerCase().includes(cleanQuery) ||
-      (vid.tags && vid.tags.some((t) => t.toLowerCase().includes(cleanQuery)));
-    return matchesCategory && matchesQuery;
-  });
+  const filteredVideos =
+    activeTab === 'saved'
+      ? sourceList.filter((vid) => {
+          const matchesCategory = selectedCategory === 'all' || vid.category === selectedCategory;
+          const cleanQuery = searchQuery.trim().replace(/^#/, '').toLowerCase();
+          const matchesQuery =
+            cleanQuery === '' ||
+            vid.title.toLowerCase().includes(cleanQuery) ||
+            (vid.tags && vid.tags.some((t) => t.toLowerCase().includes(cleanQuery)));
+          return matchesCategory && matchesQuery;
+        })
+      : videos;
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
@@ -573,6 +492,19 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 >
                   Import Video URL
                 </button>
+              </div>
+            ) : filteredVideos.length === 0 && isLoadingBackend ? (
+              <div className="grid grid-cols-2 gap-2.5">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div
+                    key={`vskel-${idx}`}
+                    className="rounded-xl border border-[#2A2A30] aspect-[9/16] bg-[#1A1A1E] animate-pulse flex flex-col justify-end p-2.5"
+                  >
+                    <div className="h-3 w-3/4 bg-zinc-800 rounded mb-1" />
+                    <div className="h-2.5 w-1/2 bg-zinc-800/60 rounded mb-2" />
+                    <div className="h-6 w-full bg-zinc-800/80 rounded-lg" />
+                  </div>
+                ))}
               </div>
             ) : filteredVideos.length === 0 ? (
               <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 text-center text-xs text-[#A1A1AA]">

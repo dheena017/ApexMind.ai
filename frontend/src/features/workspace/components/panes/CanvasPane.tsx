@@ -10,30 +10,37 @@ import {
   RotateCcw,
   Sliders,
   Maximize2,
-  Grid3X3,
-  Smartphone,
-  Eye,
+  Search,
 } from 'lucide-react';
 
 export interface CanvasPaneProps {
   aspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
   onAspectRatioChange: (ratio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => void;
+  outputSize: {
+    aspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+    width: number;
+    height: number;
+  };
+  onOutputSizeChange: (size: CanvasPaneProps['outputSize']) => void;
   background: string;
   onBackgroundChange: (bg: string) => void;
 }
 
 const PLATFORM_PRESETS: Array<{
   id: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+  aspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
   platform: string;
   label: string;
   resolution: string;
+  width: number;
+  height: number;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
-  { id: '9:16', platform: 'Shorts & Reels', label: 'Vertical Video (9:16)', resolution: '1080 × 1920 HD', icon: RectangleVertical },
-  { id: '16:9', platform: 'YouTube Standard', label: 'Widescreen (16:9)', resolution: '1920 × 1080 HD', icon: RectangleHorizontal },
-  { id: '1:1', platform: 'Instagram Feed', label: 'Square Post (1:1)', resolution: '1080 × 1080 SQ', icon: Square },
-  { id: '4:5', platform: 'IG & FB Feed', label: 'Portrait Feed (4:5)', resolution: '1080 × 1350 PT', icon: RectangleVertical },
-  { id: '21:9', platform: 'Cinematic Cinema', label: 'Ultrawide Film (21:9)', resolution: '2560 × 1080 UW', icon: RectangleHorizontal },
+  { id: '9:16', aspectRatio: '9:16', platform: 'Shorts & Reels', label: 'Vertical Video (9:16)', resolution: '1080 × 1920 HD', width: 1080, height: 1920, icon: RectangleVertical },
+  { id: '16:9', aspectRatio: '16:9', platform: 'YouTube Standard', label: 'Widescreen (16:9)', resolution: '1920 × 1080 HD', width: 1920, height: 1080, icon: RectangleHorizontal },
+  { id: '1:1', aspectRatio: '1:1', platform: 'Instagram Feed', label: 'Square Post (1:1)', resolution: '1080 × 1080 SQ', width: 1080, height: 1080, icon: Square },
+  { id: '4:5', aspectRatio: '4:5', platform: 'IG & FB Feed', label: 'Portrait Feed (4:5)', resolution: '1080 × 1350 PT', width: 1080, height: 1350, icon: RectangleVertical },
+  { id: '21:9', aspectRatio: '21:9', platform: 'Cinematic Cinema', label: 'Ultrawide Film (21:9)', resolution: '2560 × 1080 UW', width: 2560, height: 1080, icon: RectangleHorizontal },
 ];
 
 const STUDIO_SOLIDS = [
@@ -53,7 +60,7 @@ const STUDIO_SOLIDS = [
   { id: 'zinc', value: '#27272A', name: 'Deep Zinc' },
 ];
 
-const STUDIO_GRADIENTS = [
+const FEATURED_STUDIO_GRADIENTS = [
   { id: 'grad-cyber', value: 'linear-gradient(135deg, #09090b 0%, #1e1b4b 50%, #312e81 100%)', name: 'Midnight Cyber' },
   { id: 'grad-sunset', value: 'linear-gradient(135deg, #4c0519 0%, #831843 50%, #ea580c 100%)', name: 'Blood Sunset' },
   { id: 'grad-gold', value: 'linear-gradient(135deg, #1c1917 0%, #451a03 50%, #b45309 100%)', name: 'Golden Vault' },
@@ -64,16 +71,92 @@ const STUDIO_GRADIENTS = [
   { id: 'grad-fire', value: 'linear-gradient(135deg, #991b1b 0%, #b91c1c 50%, #f97316 100%)', name: 'Inferno Forge' },
 ];
 
-import { COLOR_LUTS, ColorLUTItem, PLATFORM_SAFE_ZONES } from '../../data/mediaCatalogData';
+const GRADIENT_COLOR_PALETTE = [
+  { name: 'Obsidian', value: '#09090B' },
+  { name: 'Slate', value: '#334155' },
+  { name: 'Silver', value: '#A1A1AA' },
+  { name: 'Cloud', value: '#E2E8F0' },
+  { name: 'Ruby', value: '#BE123C' },
+  { name: 'Crimson', value: '#EF4444' },
+  { name: 'Coral', value: '#FB7185' },
+  { name: 'Tangerine', value: '#F97316' },
+  { name: 'Amber', value: '#F59E0B' },
+  { name: 'Gold', value: '#FACC15' },
+  { name: 'Lime', value: '#84CC16' },
+  { name: 'Jade', value: '#10B981' },
+  { name: 'Emerald', value: '#047857' },
+  { name: 'Teal', value: '#0D9488' },
+  { name: 'Aqua', value: '#06B6D4' },
+  { name: 'Ice', value: '#67E8F9' },
+  { name: 'Sky', value: '#38BDF8' },
+  { name: 'Sapphire', value: '#2563EB' },
+  { name: 'Cobalt', value: '#1D4ED8' },
+  { name: 'Indigo', value: '#4F46E5' },
+  { name: 'Violet', value: '#7C3AED' },
+  { name: 'Amethyst', value: '#A855F7' },
+  { name: 'Fuchsia', value: '#D946EF' },
+  { name: 'Rose', value: '#F43F5E' },
+  { name: 'Sand', value: '#D6A77A' },
+  { name: 'Mocha', value: '#78350F' },
+  { name: 'Copper', value: '#B45309' },
+  { name: 'Forest', value: '#14532D' },
+  { name: 'Pine', value: '#064E3B' },
+  { name: 'Ocean', value: '#164E63' },
+  { name: 'Midnight', value: '#172554' },
+  { name: 'Plum', value: '#581C87' },
+];
+
+const GENERATED_GRADIENT_COUNT = 10_000;
+const GENERATED_STUDIO_GRADIENTS: Array<{ id: string; value: string; name: string }> = [];
+
+for (
+  let first = 0;
+  first < GRADIENT_COLOR_PALETTE.length && GENERATED_STUDIO_GRADIENTS.length < GENERATED_GRADIENT_COUNT;
+  first += 1
+) {
+  for (
+    let second = 0;
+    second < GRADIENT_COLOR_PALETTE.length && GENERATED_STUDIO_GRADIENTS.length < GENERATED_GRADIENT_COUNT;
+    second += 1
+  ) {
+    if (second === first) continue;
+    for (
+      let third = 0;
+      third < GRADIENT_COLOR_PALETTE.length && GENERATED_STUDIO_GRADIENTS.length < GENERATED_GRADIENT_COUNT;
+      third += 1
+    ) {
+      if (third === first || third === second) continue;
+      const gradientIndex = GENERATED_STUDIO_GRADIENTS.length;
+      const start = GRADIENT_COLOR_PALETTE[first];
+      const middle = GRADIENT_COLOR_PALETTE[second];
+      const end = GRADIENT_COLOR_PALETTE[third];
+      const angle = (gradientIndex * 37) % 360;
+
+      GENERATED_STUDIO_GRADIENTS.push({
+        id: `generated-grad-${gradientIndex + 1}`,
+        name: `${start.name} · ${middle.name} · ${end.name}`,
+        value: `linear-gradient(${angle}deg, ${start.value} 0%, ${middle.value} 50%, ${end.value} 100%)`,
+      });
+    }
+  }
+}
+
+const STUDIO_GRADIENTS = [...FEATURED_STUDIO_GRADIENTS, ...GENERATED_STUDIO_GRADIENTS];
+
+import { COLOR_LUTS, ColorLUTItem } from '../../data/mediaCatalogData';
 
 export const CanvasPane: React.FC<CanvasPaneProps> = ({
   aspectRatio,
   onAspectRatioChange,
+  outputSize,
+  onOutputSizeChange,
   background,
   onBackgroundChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'ratio' | 'solid' | 'gradient' | 'luts' | 'builder' | 'guides'>('ratio');
+  const [activeTab, setActiveTab] = useState<'ratio' | 'solid' | 'gradient' | 'luts' | 'builder'>('ratio');
   const [activeLutId, setActiveLutId] = useState<string>('lut-natural');
+  const [gradientSearch, setGradientSearch] = useState('');
+  const [visibleGradientCount, setVisibleGradientCount] = useState(24);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Custom Gradient Builder
@@ -81,10 +164,6 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   const [gradColor2, setGradColor2] = useState('#1e1b4b');
   const [gradAngle, setGradAngle] = useState(135);
   const [gradType, setGradType] = useState<'linear' | 'radial'>('linear');
-
-  // Safe Zone Simulation
-  const [showTikTokGuide, setShowTikTokGuide] = useState(false);
-  const [showGrid3x3, setShowGrid3x3] = useState(false);
 
   const handleSelectBg = (val: string) => {
     onBackgroundChange(val);
@@ -94,6 +173,15 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   const handleSelectRatio = (ratioId: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => {
     onAspectRatioChange(ratioId);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+  };
+
+  const handleSelectOutputPreset = (preset: (typeof PLATFORM_PRESETS)[number]) => {
+    handleSelectRatio(preset.aspectRatio);
+    onOutputSizeChange({
+      aspectRatio: preset.aspectRatio,
+      width: preset.width,
+      height: preset.height,
+    });
   };
 
   const applyCustomGradient = () => {
@@ -134,7 +222,6 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
           { id: 'solid', label: 'Solid Color' },
           { id: 'gradient', label: 'Gradients' },
           { id: 'builder', label: 'Builder' },
-          { id: 'guides', label: 'Safe Zones' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -176,8 +263,8 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     onClick={() => {
                       setActiveLutId(lut.id);
                       window.dispatchEvent(
-                        new CustomEvent('workspace:set-backdrop-filter', {
-                          detail: { lutId: lut.id, filter: lut.cssFilter },
+                        new CustomEvent('workspace:backdrop-filter', {
+                          detail: { presetFilter: lut.cssFilter },
                         })
                       );
                     }}
@@ -208,57 +295,6 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab: Safe Zone Guides ── */}
-        {activeTab === 'guides' && (
-          <div className="flex flex-col gap-3">
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Smartphone className="w-3.5 h-3.5 text-[#60A5FA]" />
-                Platform Safe Zone Guidelines
-              </span>
-              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
-                Check whether your captions and quote badges sit inside the visible screen bounds without being obscured by TikTok, Reels, or Shorts UI controls.
-              </p>
-
-              <div className="flex flex-col gap-2 pt-1 border-t border-[#26262B]">
-                <div className="flex items-center justify-between p-2 rounded-lg bg-[#141417]">
-                  <span className="text-xs text-white">TikTok &amp; Reels UI Margins</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowTikTokGuide((g) => !g)}
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                      showTikTokGuide ? 'bg-[#3B82F6]' : 'bg-zinc-700'
-                    }`}
-                  >
-                    <div
-                      className={`w-3.5 h-3.5 rounded-full bg-white transition-transform absolute top-0.5 ${
-                        showTikTokGuide ? 'right-0.5' : 'left-0.5'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-2 rounded-lg bg-[#141417]">
-                  <span className="text-xs text-white">Rule of Thirds 3×3 Grid</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowGrid3x3((g) => !g)}
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                      showGrid3x3 ? 'bg-[#3B82F6]' : 'bg-zinc-700'
-                    }`}
-                  >
-                    <div
-                      className={`w-3.5 h-3.5 rounded-full bg-white transition-transform absolute top-0.5 ${
-                        showGrid3x3 ? 'right-0.5' : 'left-0.5'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* ── Tab 1: Platform Aspect Ratios ── */}
         {activeTab === 'ratio' && (
           <div className="flex flex-col gap-2.5">
@@ -269,13 +305,17 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
             <div className="flex flex-col gap-2">
               {PLATFORM_PRESETS.map((p) => {
                 const Icon = p.icon;
-                const isSelected = aspectRatio === p.id;
+                const isSelected =
+                  aspectRatio === p.id &&
+                  outputSize.aspectRatio === p.id &&
+                  outputSize.width === p.width &&
+                  outputSize.height === p.height;
 
                 return (
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => handleSelectRatio(p.id)}
+                    onClick={() => handleSelectOutputPreset(p)}
                     className={`p-3 rounded-xl border transition-all flex items-center justify-between text-left cursor-pointer ${
                       isSelected
                         ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-md'
@@ -369,12 +409,34 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         {/* ── Tab 3: Studio Gradients ── */}
         {activeTab === 'gradient' && (
           <div className="flex flex-col gap-2.5">
-            <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
-              Cinematic Multi-Stop Gradients
-            </span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
+                Cinematic Multi-Stop Gradients
+              </span>
+              <span className="text-[9px] font-mono-studio text-[#71717A] shrink-0">
+                {STUDIO_GRADIENTS.length.toLocaleString()}+
+              </span>
+            </div>
+
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="search"
+                value={gradientSearch}
+                onChange={(event) => {
+                  setGradientSearch(event.target.value);
+                  setVisibleGradientCount(24);
+                }}
+                placeholder="Search gradients or colors..."
+                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-              {STUDIO_GRADIENTS.map((g) => {
+              {STUDIO_GRADIENTS
+                .filter((gradient) => gradient.name.toLowerCase().includes(gradientSearch.trim().toLowerCase()))
+                .slice(0, visibleGradientCount)
+                .map((g) => {
                 const isActive = background === g.value;
                 return (
                   <button
@@ -401,6 +463,17 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                 );
               })}
             </div>
+            {STUDIO_GRADIENTS.filter((gradient) =>
+              gradient.name.toLowerCase().includes(gradientSearch.trim().toLowerCase())
+            ).length > visibleGradientCount && (
+              <button
+                type="button"
+                onClick={() => setVisibleGradientCount((count) => count + 24)}
+                className="w-full py-2 rounded-lg border border-[#2A2A30] bg-[#1C1C20] hover:bg-[#222228] text-[10px] font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+              >
+                Show more gradients
+              </button>
+            )}
           </div>
         )}
 

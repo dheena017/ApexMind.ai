@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Image as ImageIcon,
   Search,
@@ -11,24 +11,27 @@ import {
   Bookmark,
   RefreshCw,
   Sliders,
-  Eye,
   RotateCcw,
   Sun,
   Contrast,
   Droplets,
-  Layers,
   History,
+  Key,
+  ChevronDown,
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
+import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
 export interface StockImageItem {
   id: string;
   title: string;
-  category: 'stoic' | 'gym' | 'cyber' | 'nature' | 'minimal' | 'architecture';
+  category: 'stoic' | 'gym' | 'cyber' | 'nature' | 'minimal' | 'architecture' | string;
   url: string;
   thumbnail: string;
   author: string;
+  authorUrl?: string;
   resolution: string;
+  source?: 'pexels' | 'pixabay' | 'unsplash' | 'wikimedia' | 'curated' | string;
   tags?: string[];
 }
 
@@ -37,144 +40,30 @@ export interface ImagePaneProps {
   activeImageUrl?: string;
 }
 
-import { CURATED_STOCK_IMAGES as EXPANDED_IMAGES } from '../../data/mediaCatalogData';
+export const PROVIDER_OPTIONS = [
+  { value: 'all', label: 'All (100M+ Stock)' },
+  { value: 'flickr', label: 'Flickr HD (Free)' },
+  { value: 'wikimedia', label: 'Wikimedia (Free)' },
+  { value: 'pixabay', label: 'Pixabay' },
+  { value: 'unsplash', label: 'Unsplash' },
+  { value: 'pexels', label: 'Pexels' },
+] as const;
 
-const CURATED_STOCK_IMAGES: StockImageItem[] = [
-  ...EXPANDED_IMAGES.map((img) => ({
-    id: img.id,
-    title: img.title,
-    category: (img.category === 'stoic' ? 'stoic' : img.category === 'gym' ? 'gym' : img.category === 'cyber' ? 'cyber' : img.category === 'luxury' ? 'architecture' : img.category === 'cosmos' ? 'nature' : 'minimal') as any,
-    url: img.url,
-    thumbnail: img.thumbnail,
-    author: img.author,
-    resolution: img.resolution,
-    tags: img.tags,
-  })),
-  {
-    id: 'img-2',
-    title: 'Cyberpunk Neon Tokyo Corridor',
-    category: 'cyber',
-    url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=400&q=80',
-    author: 'Lorenzo Herrera',
-    resolution: '1080x1920 HD',
-    tags: ['neon', 'cyberpunk', 'city', 'night'],
-  },
-  {
-    id: 'img-3',
-    title: 'Heavy Barbell Chalked Hands',
-    category: 'gym',
-    url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80',
-    author: 'Sven Mieke',
-    resolution: '1080x1920 HD',
-    tags: ['gym', 'grit', 'iron', 'workout'],
-  },
-  {
-    id: 'img-4',
-    title: 'Deep Oceanic Storm Waves',
-    category: 'nature',
-    url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=400&q=80',
-    author: 'Silas Baisch',
-    resolution: '1080x1920 HD',
-    tags: ['ocean', 'storm', 'power', 'nature'],
-  },
-  {
-    id: 'img-5',
-    title: 'Marcus Aurelius Roman Marble Statue',
-    category: 'stoic',
-    url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=400&q=80',
-    author: 'Birmingham Museums',
-    resolution: '1080x1920 HD',
-    tags: ['statue', 'stoic', 'marble', 'rome'],
-  },
-  {
-    id: 'img-6',
-    title: 'Solitary Figure in Dense Fog',
-    category: 'stoic',
-    url: 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=400&q=80',
-    author: 'Mitchell Luo',
-    resolution: '1080x1920 HD',
-    tags: ['solitary', 'fog', 'mystery', 'lone'],
-  },
-  {
-    id: 'img-7',
-    title: 'Atmospheric Rainy City Night',
-    category: 'minimal',
-    url: 'https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=400&q=80',
-    author: 'Maxime Baud',
-    resolution: '1080x1920 HD',
-    tags: ['rain', 'night', 'moody', 'dark'],
-  },
-  {
-    id: 'img-8',
-    title: 'Golden Hour Mountain Silhouette',
-    category: 'nature',
-    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
-    author: 'Bailey Zindel',
-    resolution: '1080x1920 HD',
-    tags: ['golden-hour', 'silhouette', 'horizon'],
-  },
-  {
-    id: 'img-9',
-    title: 'Ancient Greek Temple Columns',
-    category: 'architecture',
-    url: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=400&q=80',
-    author: 'Sorin Gheorghita',
-    resolution: '1080x1920 HD',
-    tags: ['greece', 'columns', 'temple', 'ancient'],
-  },
-  {
-    id: 'img-10',
-    title: 'Athletic Runner Concrete Grit',
-    category: 'gym',
-    url: 'https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=400&q=80',
-    author: 'Chander R',
-    resolution: '1080x1920 HD',
-    tags: ['running', 'sprint', 'discipline', 'athlete'],
-  },
-  {
-    id: 'img-11',
-    title: 'Moody Obsidian Stone Texture',
-    category: 'minimal',
-    url: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=400&q=80',
-    author: 'Mourad Saadi',
-    resolution: '1080x1920 HD',
-    tags: ['stone', 'black', 'texture', 'minimal'],
-  },
-  {
-    id: 'img-12',
-    title: 'Electric Violet Cyber Highway',
-    category: 'cyber',
-    url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1080&q=85',
-    thumbnail: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80',
-    author: 'Florian Olivo',
-    resolution: '1080x1920 HD',
-    tags: ['highway', 'speed', 'violet', 'future'],
-  },
-];
+export type ProviderType = (typeof PROVIDER_OPTIONS)[number]['value'];
 
-const SEARCH_TOPIC_CHIPS = [
-  '#stoic',
-  '#statue',
-  '#gym',
-  '#discipline',
-  '#fog',
-  '#rain',
-  '#neon',
-  '#cyberpunk',
-  '#mountains',
-  '#night',
-  '#minimal',
-];
+export const CURATED_MOOD_PILLS = [
+  { id: 'all', query: '', category: 'all', label: '✨ All' },
+  { id: 'rain', query: 'rain', category: 'all', label: '🌧️ Rain' },
+  { id: 'stoic', query: 'stoic', category: 'stoic', label: '🏛️ Stoic' },
+  { id: 'gym', query: 'gym', category: 'gym', label: '💪 Gym' },
+  { id: 'cyber', query: 'cyberpunk', category: 'cyber', label: '🌃 Cyber' },
+  { id: 'nature', query: 'nature', category: 'nature', label: '⛰️ Nature' },
+  { id: 'dark', query: 'dark', category: 'minimal', label: '🖤 Dark' },
+  { id: 'space', query: 'space', category: 'all', label: '🌌 Space' },
+  { id: 'ocean', query: 'ocean', category: 'all', label: '🌊 Ocean' },
+  { id: 'fire', query: 'fire', category: 'all', label: '🔥 Fire' },
+  { id: 'luxury', query: 'luxury', category: 'architecture', label: '✨ Luxury' },
+] as const;
 
 const LOCAL_STORAGE_KEY = 'apexmind_custom_images';
 const RECENT_IMAGES_KEY = 'apexmind_recent_images';
@@ -186,14 +75,34 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'filters' | 'saved'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedProvider, setSelectedProvider] = useState<ProviderType>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [images, setImages] = useState<StockImageItem[]>(CURATED_STOCK_IMAGES);
+
+  // Images state
+  const [images, setImages] = useState<StockImageItem[]>([]);
   const [savedImages, setSavedImages] = useState<StockImageItem[]>([]);
   const [recentImages, setRecentImages] = useState<StockImageItem[]>([]);
+
+  // Pagination & Loading
+  const [page, setPage] = useState<number>(1);
+  const [isLoadingLive, setIsLoadingLive] = useState<boolean>(false);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [totalFound, setTotalFound] = useState<number>(0);
+
+  // Provider Status & Modal
+  const [providerStatus, setProviderStatus] = useState<{
+    pexels: boolean;
+    pixabay: boolean;
+    unsplash: boolean;
+    jamendo?: boolean;
+  }>({ pexels: false, pixabay: false, unsplash: false });
+  const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
+
+  // Custom URL inputs
   const [customUrlInput, setCustomUrlInput] = useState('');
   const [customTitleInput, setCustomTitleInput] = useState('');
   const [urlPreviewValid, setUrlPreviewValid] = useState<boolean | null>(null);
-  const [isLoadingBackend, setIsLoadingBackend] = useState(false);
 
   // Backdrop Image Filter Settings
   const [brightness, setBrightness] = useState<number>(100);
@@ -212,45 +121,167 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     } catch {}
   }, []);
 
-  // Fetch live media from backend media-library API
+  // Fetch provider active key status
   useEffect(() => {
-    let isMounted = true;
-    const fetchBackendMedia = async () => {
-      try {
-        setIsLoadingBackend(true);
-        const data = await workspaceApi.getMediaLibrary();
-        if (isMounted && data?.visualBackdrops?.length) {
-          const apiImages: StockImageItem[] = data.visualBackdrops
-            .filter((b) => Boolean(b.imageUrl))
-            .map((b) => ({
-              id: `api-img-${b.id}`,
-              title: b.name,
-              category: (b.category?.toLowerCase() || 'stoic') as any,
-              url: b.imageUrl!,
-              thumbnail: b.imageUrl!,
-              author: 'Apex Media Engine',
-              resolution: '1080x1920 HD',
-            }));
+    workspaceApi.getMediaProvidersStatus().then((status) => {
+      if (status) setProviderStatus(status);
+    });
+  }, []);
 
-          if (apiImages.length > 0) {
+  // Live stock photos search runner
+  const fetchLiveStockImages = useCallback(
+    async (
+      query: string,
+      provider: ProviderType,
+      category: string,
+      pageNum: number,
+      isAppending: boolean = false
+    ) => {
+      try {
+        if (isAppending) {
+          setIsLoadingMore(true);
+        } else {
+          setIsLoadingLive(true);
+        }
+
+        const cleanQuery = query.trim().replace(/^#/, '');
+        const res = await workspaceApi.searchOpenImages(
+          cleanQuery,
+          provider,
+          category,
+          pageNum,
+          36,
+          'portrait'
+        );
+
+        if (res && res.items) {
+          const formatted: StockImageItem[] = res.items.map((it: any) => ({
+            id: it.id || `live-${Date.now()}-${Math.random()}`,
+            title: it.title || 'Stock Backdrop',
+            category: it.category || (category !== 'all' ? category : 'cinematic'),
+            url: it.url,
+            thumbnail: it.thumbnail || it.url,
+            author: it.author || 'Stock Creator',
+            authorUrl: it.authorUrl,
+            resolution: it.resolution || '1080x1920 HD',
+            source: it.source || provider,
+            tags: it.tags || [],
+          }));
+
+          if (res.providers) {
+            setProviderStatus(res.providers);
+          }
+
+          setTotalFound(res.total || formatted.length);
+          setHasMore(formatted.length >= 12);
+
+          if (isAppending) {
             setImages((prev) => {
-              const existingIds = new Set(prev.map((i) => i.url));
-              const newItems = apiImages.filter((i) => !existingIds.has(i.url));
-              return [...newItems, ...prev];
+              const existingUrls = new Set(prev.map((p) => p.url));
+              const newItems = formatted.filter((f) => !existingUrls.has(f.url));
+              return [...prev, ...newItems];
             });
+          } else {
+            setImages(formatted);
           }
         }
       } catch {
-        // Fallback
+        if (!isAppending) {
+          setImages([]);
+        }
       } finally {
-        if (isMounted) setIsLoadingBackend(false);
+        setIsLoadingLive(false);
+        setIsLoadingMore(false);
+      }
+    },
+    []
+  );
+
+  // Provider Select Options with real-time status badges
+  const providerSelectOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All (100M+ Stock)', badge: '100M+' },
+      { value: 'flickr', label: 'Flickr HD (Free)', badge: 'Free HD' },
+      { value: 'wikimedia', label: 'Wikimedia (Free)', badge: 'Free CC0' },
+      {
+        value: 'pexels',
+        label: 'Pexels',
+        badge: providerStatus.pexels ? 'Connected' : 'Key Req',
+      },
+      {
+        value: 'pixabay',
+        label: 'Pixabay',
+        badge: providerStatus.pixabay ? 'Connected' : 'Key Req',
+      },
+      {
+        value: 'unsplash',
+        label: 'Unsplash',
+        badge: providerStatus.unsplash ? 'Connected' : 'Key Req',
+      },
+    ],
+    [providerStatus]
+  );
+
+  // Debounce search when user types in the search input
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Instant provider selection handler
+  const handleProviderSelect = (val: string) => {
+    const prov = val as ProviderType;
+    setSelectedProvider(prov);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    setPage(1);
+    setIsLoadingLive(true);
+    fetchLiveStockImages(searchQuery, prov, selectedCategory, 1, false);
+  };
+
+  // Instant mood pill select handler
+  const handleMoodPillSelect = (pill: (typeof CURATED_MOOD_PILLS)[number]) => {
+    const isActive =
+      (pill.query === '' && !searchQuery) ||
+      (pill.query !== '' && searchQuery.toLowerCase() === pill.query);
+    const newQuery = isActive && pill.query !== '' ? '' : pill.query;
+    const newCat = isActive && pill.query !== '' ? 'all' : pill.category;
+
+    setSearchQuery(newQuery);
+    setSelectedCategory(newCat);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    setPage(1);
+    setIsLoadingLive(true);
+    fetchLiveStockImages(newQuery, selectedProvider, newCat, 1, false);
+  };
+
+  // Debounce keyboard search query changes
+  useEffect(() => {
+    if (activeTab !== 'catalog') return;
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    setPage(1);
+
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchLiveStockImages(searchQuery, selectedProvider, selectedCategory, 1, false);
+    }, 350);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
     };
-    fetchBackendMedia();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  }, [searchQuery, activeTab, fetchLiveStockImages]);
+
+  // Load next page
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchLiveStockImages(searchQuery, selectedProvider, selectedCategory, nextPage, true);
+  };
 
   const handleApply = (img: StockImageItem) => {
     setSelectedId(null);
@@ -270,52 +301,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
   const handleStageImage = (img: StockImageItem) => setSelectedId(img.id);
 
-  const [isSearchingOpenverse, setIsSearchingOpenverse] = useState(false);
-
-  const handleSearchOpenverse = async () => {
-    if (!searchQuery.trim()) return;
-    try {
-      setIsSearchingOpenverse(true);
-      const res = await workspaceApi.searchOpenImages(searchQuery);
-      if (res?.items?.length) {
-        const liveItems: StockImageItem[] = res.items.map((it: any) => ({
-          id: it.id || `ov-${Date.now()}-${Math.random()}`,
-          title: it.title || searchQuery,
-          category: 'nature',
-          url: it.url,
-          thumbnail: it.thumbnail || it.url,
-          author: it.author || 'Openverse CC0',
-          resolution: it.resolution || '1080x1920 HD',
-          tags: it.tags || [searchQuery],
-        }));
-        setImages((prev) => {
-          const existing = new Set(prev.map((p) => p.url));
-          const newOnes = liveItems.filter((it) => !existing.has(it.url));
-          return [...newOnes, ...prev];
-        });
-      }
-    } finally {
-      setIsSearchingOpenverse(false);
-    }
-  };
-
-  const handleGeneratePollinationsAi = () => {
-    const prompt = searchQuery.trim() || 'Cinematic dark moody luxury vertical photography';
-    const aiUrl = workspaceApi.getFreeAiImageUrl(prompt);
-    const aiItem: StockImageItem = {
-      id: `ai-pollinations-${Date.now()}`,
-      title: `AI: ${prompt}`,
-      category: 'cyber',
-      url: aiUrl,
-      thumbnail: aiUrl,
-      author: 'Pollinations AI (Free)',
-      resolution: '1080x1920 4K',
-      tags: ['ai', 'generated', 'free'],
-    };
-    setImages((prev) => [aiItem, ...prev]);
-    handleApply(aiItem);
-  };
-
   const handleAddCustomUrl = (saveToFavorites = false) => {
     if (!customUrlInput.trim()) return;
     const url = customUrlInput.trim();
@@ -329,6 +314,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       thumbnail: url,
       author: 'Imported Asset',
       resolution: 'Custom URL',
+      source: 'curated',
     };
 
     handleApply(newItem);
@@ -365,35 +351,90 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
   const sourceList = activeTab === 'saved' ? savedImages : images;
 
-  const filteredImages = sourceList.filter((img) => {
-    const matchesCategory =
-      selectedCategory === 'all' || img.category === selectedCategory;
-    const cleanQuery = searchQuery.trim().replace(/^#/, '').toLowerCase();
-    const matchesQuery =
-      cleanQuery === '' ||
-      img.title.toLowerCase().includes(cleanQuery) ||
-      img.author.toLowerCase().includes(cleanQuery) ||
-      (img.tags && img.tags.some((t) => t.toLowerCase().includes(cleanQuery)));
-    return matchesCategory && matchesQuery;
-  });
+  // Render provider badge
+  const renderSourceBadge = (source?: string) => {
+    switch (source) {
+      case 'pexels':
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-[8px] font-mono font-bold text-emerald-400">
+            Pexels
+          </span>
+        );
+      case 'pixabay':
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-sky-950/80 border border-sky-500/40 text-[8px] font-mono font-bold text-sky-400">
+            Pixabay
+          </span>
+        );
+      case 'unsplash':
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-[8px] font-mono font-bold text-amber-400">
+            Unsplash
+          </span>
+        );
+      case 'wikimedia':
+      case 'wikimedia_commons':
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-500/40 text-[8px] font-mono font-bold text-indigo-400">
+            Wikimedia
+          </span>
+        );
+      case 'flickr':
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-pink-950/80 border border-pink-500/40 text-[8px] font-mono font-bold text-pink-400">
+            Flickr HD
+          </span>
+        );
+      case 'open_commons_library':
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-teal-950/80 border border-teal-500/40 text-[8px] font-mono font-bold text-teal-400">
+            Open Stock
+          </span>
+        );
+      default:
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-zinc-900/80 border border-zinc-700/60 text-[8px] font-mono font-bold text-zinc-300">
+            Studio HD
+          </span>
+        );
+    }
+  };
+
+  const activeKeyCount = [providerStatus.pexels, providerStatus.pixabay, providerStatus.unsplash].filter(Boolean).length;
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <ImageIcon className="w-4 h-4 shrink-0 text-indigo-400" />
+          <ImageIcon className="w-4 h-4 shrink-0 text-blue-400" />
           <span className="text-xs font-bold text-white truncate">
-            Backdrop Photos
+            Stock Photos (100M+ Library)
           </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {isLoadingBackend && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isLoadingLive && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
+
+          {/* Provider API Key Status Pill */}
+          <button
+            type="button"
+            onClick={() => setShowKeyModal(true)}
+            className={`text-[9px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-pointer transition-colors ${
+              activeKeyCount > 0
+                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40 hover:bg-emerald-900/50'
+                : 'bg-[#222226] text-zinc-400 border-[#2F2F36] hover:text-white hover:border-zinc-500'
+            }`}
+            title="Configure Pexels, Pixabay, & Unsplash API keys"
+          >
+            <Key className="w-2.5 h-2.5" />
+            <span>{activeKeyCount > 0 ? `${activeKeyCount} APIs Active` : 'API Keys'}</span>
+          </button>
+
           <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
-            {filteredImages.length} Photos
+            {totalFound} Photos
           </span>
         </div>
       </div>
@@ -405,7 +446,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           onClick={() => setActiveTab('catalog')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'catalog'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -416,7 +457,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           onClick={() => setActiveTab('filters')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'filters'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -428,7 +469,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           onClick={() => setActiveTab('url')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'url'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -439,7 +480,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           onClick={() => setActiveTab('saved')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'saved'
-              ? 'text-white border-white'
+              ? 'text-white border-blue-500'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
@@ -448,54 +489,77 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         </button>
       </div>
 
-      {/* ── Category Chips Filter ── */}
+      {/* ── Search & Provider Bar (When in Catalog) ── */}
       {activeTab === 'catalog' && (
-        <div className="flex flex-col gap-1.5 border-b border-[#26262B]/60 bg-[#141416] py-2 shrink-0">
-          <div className="flex items-center gap-1.5 px-4 overflow-x-auto custom-scrollbar">
-            {(
-              [
-                { id: 'all', label: 'All Photos' },
-                { id: 'stoic', label: 'Stoic Statues' },
-                { id: 'gym', label: 'Iron Gym' },
-                { id: 'cyber', label: 'Cyberpunk' },
-                { id: 'nature', label: 'Dramatic Nature' },
-                { id: 'architecture', label: 'Temple & Arch' },
-                { id: 'minimal', label: 'Minimalist' },
-              ] as const
-            ).map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
-                  selectedCategory === cat.id
-                    ? 'bg-[#3B82F6] text-white shadow-sm'
-                    : 'bg-[#1C1C20] text-[#A1A1AA] hover:text-white hover:bg-[#26262C] border border-[#2A2A30]'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+        <div className="flex flex-col gap-2 border-b border-[#26262B] bg-[#141416] p-3 shrink-0">
+          {/* Unified Search Input + Provider Select */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSelectedCategory('all');
+                }}
+                placeholder="Search 100M+ stock photos (e.g. rain, gym, stoic, neon)..."
+                className="w-full bg-[#1C1C20] border border-[#2A2A30] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('all');
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Provider Dropdown */}
+            <div className="shrink-0 w-44 sm:w-48">
+              <CustomSelect
+                options={providerSelectOptions}
+                value={selectedProvider}
+                onChange={handleProviderSelect}
+                variant="compact"
+                buttonClassName="!w-full !justify-between !bg-[#1A1A1E] !border-[#2E2E36] !text-[11px] !py-2 !px-3 font-semibold hover:!border-blue-500/60"
+                menuClassName="!w-64 !bg-[#16161A] !border-[#2E2E38] shadow-2xl"
+              />
+            </div>
           </div>
 
-          {/* Quick Keyword Search Chips */}
-          <div className="flex items-center gap-1 px-4 overflow-x-auto custom-scrollbar pt-0.5">
-            {SEARCH_TOPIC_CHIPS.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => setSearchQuery(chip)}
-                className="text-[9px] px-2 py-0.5 rounded-full bg-[#1C1C22] text-zinc-400 hover:text-white border border-zinc-800 shrink-0 cursor-pointer transition-colors"
-              >
-                {chip}
-              </button>
-            ))}
+          {/* Curated Mood / Theme Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pt-0.5 pb-0.5">
+            {CURATED_MOOD_PILLS.map((pill) => {
+              const isActive =
+                (pill.query === '' && !searchQuery) ||
+                (pill.query !== '' && searchQuery.toLowerCase() === pill.query);
+              return (
+                <button
+                  key={pill.id}
+                  type="button"
+                  onClick={() => handleMoodPillSelect(pill)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
+                    isActive
+                      ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                      : 'bg-[#1C1C20] text-zinc-400 hover:text-white hover:bg-[#25252A] border-[#2A2A30]'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* ── Main Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3.5">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
         {/* ── Tab 2: Color Filters & Backdrop Tuning ── */}
         {activeTab === 'filters' ? (
           <div className="flex flex-col gap-4">
@@ -715,54 +779,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         ) : (
           /* Catalog or Saved Images Grid */
           <>
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search stock photos or #tags..."
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Free Open-Source API Action Bar */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleSearchOpenverse}
-                disabled={!searchQuery.trim() || isSearchingOpenverse}
-                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-[#1E2330] hover:bg-[#252D3F] disabled:opacity-50 border border-[#3B82F6]/30 text-[#60A5FA] text-[10px] font-bold transition-all cursor-pointer shadow-sm"
-              >
-                {isSearchingOpenverse ? (
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Search className="w-3 h-3" />
-                )}
-                <span>Search Openverse (Free CC0)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleGeneratePollinationsAi}
-                className="flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg bg-[#2A2438] hover:bg-[#352D47] border border-purple-500/30 text-purple-300 text-[10px] font-bold transition-all cursor-pointer shadow-sm shrink-0"
-                title="Generate instant 4K visual via Pollinations AI (100% Free)"
-              >
-                <Sparkles className="w-3 h-3 text-purple-400" />
-                <span>Free AI</span>
-              </button>
-            </div>
-
             {/* Recently Used Carousel */}
             {activeTab === 'catalog' && recentImages.length > 0 && !searchQuery && (
               <div className="flex flex-col gap-1.5">
@@ -775,7 +791,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       key={rec.id}
                       type="button"
                       onClick={() => handleApply(rec)}
-                      className="w-16 h-20 rounded-lg overflow-hidden border border-[#2A2A30] hover:border-[#3B82F6] shrink-0 relative group"
+                      className="w-16 h-20 rounded-lg overflow-hidden border border-[#2A2A30] hover:border-[#3B82F6] shrink-0 relative group cursor-pointer"
                     >
                       <img src={rec.thumbnail} alt={rec.title} className="w-full h-full object-cover" />
                       {activeImageUrl === rec.url && (
@@ -800,92 +816,342 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('url')}
-                  className="mt-2 bg-[#3B82F6] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#2563EB] transition-colors"
+                  className="mt-2 bg-[#3B82F6] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#2563EB] transition-colors cursor-pointer"
                 >
                   Import an Image
                 </button>
               </div>
-            ) : filteredImages.length === 0 ? (
-              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 text-center text-xs text-[#A1A1AA]">
-                No images matching &ldquo;{searchQuery}&rdquo;
+            ) : sourceList.length === 0 && isLoadingLive ? (
+              <div className="grid grid-cols-2 gap-2.5">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div
+                    key={`skel-${idx}`}
+                    className="rounded-xl border border-[#2A2A30] aspect-[9/16] bg-[#1A1A1E] animate-pulse flex flex-col justify-end p-2.5"
+                  >
+                    <div className="h-3 w-3/4 bg-zinc-800 rounded mb-1" />
+                    <div className="h-2.5 w-1/2 bg-zinc-800/60 rounded mb-2" />
+                    <div className="h-6 w-full bg-zinc-800/80 rounded-lg" />
+                  </div>
+                ))}
+              </div>
+            ) : sourceList.length === 0 && !isLoadingLive ? (
+              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-6 text-center text-xs text-[#A1A1AA] flex flex-col items-center gap-2.5">
+                {selectedProvider !== 'all' &&
+                selectedProvider !== 'flickr' &&
+                selectedProvider !== 'wikimedia' &&
+                !providerStatus[selectedProvider as keyof typeof providerStatus] ? (
+                  <>
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                      <Key className="w-5 h-5" />
+                    </div>
+                    <p className="font-bold text-white text-xs capitalize">
+                      {selectedProvider} API Key Not Connected
+                    </p>
+                    <p className="text-[11px] text-[#A1A1AA] max-w-xs leading-relaxed">
+                      {selectedProvider} requires an API key in <code className="text-zinc-300">.env</code>. You can switch to our free high-resolution libraries with zero setup:
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleProviderSelect('flickr')}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px] cursor-pointer transition-colors shadow-xs"
+                      >
+                        Browse Flickr HD (Free)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleProviderSelect('wikimedia')}
+                        className="px-3 py-1.5 rounded-lg bg-[#27272E] hover:bg-[#34343E] text-zinc-200 border border-[#3A3A46] font-semibold text-[11px] cursor-pointer transition-colors"
+                      >
+                        Browse Wikimedia (Free)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleProviderSelect('all')}
+                        className="px-3 py-1.5 rounded-lg bg-[#1E1E24] hover:bg-[#282830] text-zinc-400 hover:text-white text-[11px] cursor-pointer transition-colors"
+                      >
+                        Back to All
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-6 h-6 text-zinc-600" />
+                    <p>No photos found{searchQuery ? ` matching "${searchQuery}"` : ''} on {selectedProvider.toUpperCase()}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        handleProviderSelect('all');
+                      }}
+                      className="mt-1 text-[11px] text-blue-400 hover:underline cursor-pointer"
+                    >
+                      Reset filters to browse all photos
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               /* Image Grid */
-              <div className="grid grid-cols-2 gap-2.5">
-                {filteredImages.map((img) => {
-                  const isSelected = selectedId === img.id || (!selectedId && activeImageUrl === img.url);
-                  return (
-                    <div
-                      key={img.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleStageImage(img)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          handleStageImage(img);
-                        }
-                      }}
-                      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#1C1C20] transition-all cursor-pointer text-left ${
-                        isSelected
-                          ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/40'
-                          : 'border-[#2A2A30] hover:border-[#3A3A42]'
-                      }`}
-                    >
-                      <img
-                        src={img.thumbnail}
-                        alt={img.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                      />
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
+                  {sourceList.map((img) => {
+                    const isSelected = selectedId === img.id || (!selectedId && activeImageUrl === img.url);
+                    return (
+                      <div
+                        key={img.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleStageImage(img)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            handleStageImage(img);
+                          }
+                        }}
+                        className={`group relative rounded-xl border overflow-hidden aspect-[9/16] bg-[#1C1C20] transition-all cursor-pointer text-left ${
+                          isSelected
+                            ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg shadow-blue-500/10'
+                            : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                        }`}
+                      >
+                        <img
+                          src={img.thumbnail}
+                          alt={img.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+                        {/* Top Provider & Theme Badges */}
+                        <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
+                          {renderSourceBadge(img.source)}
+                        </div>
 
-                      <div className="absolute bottom-2 left-2 right-16">
-                        <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
-                          {img.title}
-                        </p>
-                        <p className="text-[9px] text-[#A1A1AA] truncate">by {img.author}</p>
+                        {/* Selected Indicator */}
+                        {activeImageUrl === img.url && (
+                          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center z-10 shadow-md">
+                            <Check className="w-3 h-3 text-white stroke-[3]" />
+                          </div>
+                        )}
+
+                        {/* Delete button for Saved images */}
+                        {activeTab === 'saved' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSaved(img.id, e);
+                            }}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors z-10 cursor-pointer"
+                            title="Delete from Saved"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-85 group-hover:opacity-100 transition-opacity" />
+
+                        {/* Bottom Info & Full-Width Apply Button */}
+                        <div className="absolute inset-x-0 bottom-0 p-2.5 flex flex-col gap-1.5 z-10">
+                          <div className="flex flex-col min-w-0">
+                            <p className="text-[11px] font-bold text-white truncate drop-shadow-md leading-tight" title={img.title}>
+                              {img.title}
+                            </p>
+                            <p className="text-[9px] text-zinc-400 truncate">
+                              {img.authorUrl ? (
+                                <a
+                                  href={img.authorUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="hover:underline text-zinc-400 hover:text-white"
+                                >
+                                  {img.author}
+                                </a>
+                              ) : (
+                                `by ${img.author}`
+                              )}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleApply(img);
+                            }}
+                            className="w-full py-1.5 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-bold shadow-md flex items-center justify-center gap-1 cursor-pointer transition-all"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            <span>Apply Backdrop</span>
+                          </button>
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
 
-                      {/* Resolution Tag */}
-                      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[8px] font-mono-studio text-white/80 border border-white/10 uppercase">
-                        {img.category}
-                      </div>
-
+                {/* Load More Pagination (Infinite browsing over 100M+ assets) */}
+                {activeTab === 'catalog' && (
+                  <div className="pt-2 pb-1 flex flex-col items-center gap-1.5">
+                    {hasMore && (
                       <button
                         type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleApply(img);
-                        }}
-                        className="absolute bottom-2 right-2 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] px-2 py-1 text-[9px] font-bold text-white"
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        className="w-full py-2 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] hover:border-blue-500/40 text-xs font-semibold text-zinc-300 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
                       >
-                        Apply
+                        {isLoadingMore ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                            <span>Loading Next 36 Photos...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Load More Photos (Page {page + 1})</span>
+                          </>
+                        )}
                       </button>
-
-                      {/* Delete button for Saved images */}
-                      {activeTab === 'saved' && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteSaved(img.id, e);
-                          }}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
-                          title="Delete from Saved"
+                    )}
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      Showing {sourceList.length} photos • {totalFound} total indexed
+                    </span>
+                    {(selectedProvider === 'pexels' || selectedProvider === 'all') && (
+                      <div className="flex items-center justify-center gap-1 text-[9px] text-zinc-500">
+                        <span>Photos provided by</span>
+                        <a
+                          href="https://www.pexels.com"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-zinc-400 hover:text-white underline font-semibold flex items-center gap-0.5"
                         >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                          Pexels
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </>
         )}
       </div>
+
+      {/* ── API Keys Configuration Modal ── */}
+      {showKeyModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#18181C] border border-[#2D2D35] rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-4 text-left">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-blue-400" />
+                <h3 className="text-sm font-bold text-white">Stock Media API Configuration</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowKeyModal(false)}
+                className="text-zinc-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              ApexMind searches <strong>100,000,000+ photos</strong> across Pexels, Pixabay, Unsplash, and Wikimedia Commons.
+              Adding free developer keys unlocks unlimited high-resolution commercial photography:
+            </p>
+
+            <div className="flex flex-col gap-2.5">
+              {/* Pixabay (Recommended: 100% Instant, Never Paused) */}
+              <div className="p-2.5 rounded-xl bg-[#121214] border border-blue-500/30 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Pixabay API</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-500/40">Instant &bull; 10 Seconds</span>
+                    {providerStatus.pixabay ? (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600/40">Active</span>
+                    ) : (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">Keyless</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">4.5M+ high-resolution photos &bull; 5,000 req/hr free</p>
+                </div>
+                <a
+                  href="https://pixabay.com/api/docs/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] font-semibold text-blue-400 hover:underline flex items-center gap-1 shrink-0"
+                >
+                  Get Key <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+
+              {/* Unsplash */}
+              <div className="p-2.5 rounded-xl bg-[#121214] border border-zinc-800 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Unsplash API</span>
+                    {providerStatus.unsplash ? (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600/40">Active</span>
+                    ) : (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">Keyless</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">5M+ studio-grade vertical photography</p>
+                </div>
+                <a
+                  href="https://unsplash.com/developers"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] font-semibold text-blue-400 hover:underline flex items-center gap-1 shrink-0"
+                >
+                  Get Key <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+
+              {/* Pexels (Registration currently paused by Pexels) */}
+              <div className="p-2.5 rounded-xl bg-[#121214] border border-zinc-800 flex items-center justify-between opacity-80">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Pexels API</span>
+                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-600/30">Signups Paused by Pexels</span>
+                    {providerStatus.pexels && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600/40">Active</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">If you already have an existing Pexels key, it will still work</p>
+                </div>
+                <a
+                  href="https://www.pexels.com/api/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1 shrink-0"
+                >
+                  Status <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-300">
+              Paste keys directly in your <span className="text-blue-400 font-bold">.env</span> file:
+              <pre className="mt-1 text-zinc-400">
+{`PEXELS_API_KEY="your_key"
+PIXABAY_API_KEY="your_key"
+UNSPLASH_ACCESS_KEY="your_key"`}
+              </pre>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowKeyModal(false)}
+              className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

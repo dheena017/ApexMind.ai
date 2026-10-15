@@ -99,6 +99,35 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
   showCornerHeader = true,
   width,
 }) => {
+  const renderVisibilityToggle = (
+    isVisible: boolean,
+    onToggle: () => void,
+    label: string,
+    accentClass: string,
+  ) => (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      aria-label={isVisible ? `Hide ${label} track` : `Show ${label} track`}
+      aria-pressed={isVisible}
+      title={isVisible ? `Hide ${label} track` : `Show ${label} track`}
+      className={[
+        'relative flex h-7 w-7 items-center justify-center rounded-md border transition-all duration-200 ease-out',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414]',
+        isVisible
+          ? `border-emerald-500/40 bg-emerald-500/12 text-emerald-300 hover:bg-emerald-500/18 hover:text-emerald-200 ${accentClass}`
+          : 'border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/16 hover:text-red-200',
+      ].join(' ')}
+    >
+      <span className="sr-only">{isVisible ? `Hide ${label} track` : `Show ${label} track`}</span>
+      {isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+    </button>
+  );
+
   return (
     <div
       ref={scrollRef}
@@ -131,17 +160,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleVideoTrackVisible();
-            }}
-            className="p-1 text-[#9CA3AF] hover:text-white cursor-pointer"
-            title={videoTrackVisible ? 'Hide video track' : 'Show video track'}
-          >
-            {videoTrackVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3 text-red-400" />}
-          </button>
+          {renderVisibilityToggle(videoTrackVisible, onToggleVideoTrackVisible, 'video', 'shadow-[0_0_0_1px_rgba(16,185,129,0.18)]')}
         </div>
       )}
 
@@ -162,17 +181,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleImageTrackVisible();
-            }}
-            className="p-1 text-[#9CA3AF] hover:text-white cursor-pointer"
-            title={imageTrackVisible ? 'Hide image track' : 'Show image track'}
-          >
-            {imageTrackVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3 text-red-400" />}
-          </button>
+          {renderVisibilityToggle(imageTrackVisible, onToggleImageTrackVisible, 'image', 'shadow-[0_0_0_1px_rgba(244,114,182,0.12)]')}
         </div>
       )}
 
@@ -193,17 +202,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleOverlayTrackVisible();
-            }}
-            className="p-1 text-[#9CA3AF] hover:text-white cursor-pointer"
-            title={overlayTrackVisible ? 'Hide overlay track' : 'Show overlay track'}
-          >
-            {overlayTrackVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3 text-red-400" />}
-          </button>
+          {renderVisibilityToggle(overlayTrackVisible, onToggleOverlayTrackVisible, 'overlay', 'shadow-[0_0_0_1px_rgba(99,102,241,0.18)]')}
         </div>
       )}
 

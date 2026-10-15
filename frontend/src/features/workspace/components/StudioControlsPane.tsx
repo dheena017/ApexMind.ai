@@ -125,11 +125,13 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   // Listen to global compound selection events
   useEffect(() => {
     const handleCompoundSelect = (e: Event) => {
-      const custom = e as CustomEvent<CompoundType>;
-      if (custom.detail) {
-        setActiveCompound(custom.detail);
-        onSelectCompound?.(custom.detail);
-      }
+      const detail = (e as CustomEvent<
+        CompoundType | { compound: CompoundType; openInspector?: boolean }
+      >).detail;
+      const compound = typeof detail === 'string' ? detail : detail?.compound;
+      if (!compound) return;
+      setActiveCompound(compound);
+      onSelectCompound?.(compound);
     };
     window.addEventListener('workspace:select-compound', handleCompoundSelect);
     return () => window.removeEventListener('workspace:select-compound', handleCompoundSelect);

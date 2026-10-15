@@ -128,13 +128,45 @@ async def get_media_library_route():
     return get_media_library()
 
 @router.get(
-    "/api/workspace/open-media/images",
-    summary="Search open-source images",
-    description="Query Openverse and curated public-domain photography."
+    "/api/workspace/open-media/videos",
+    summary="Search open-source & royalty-free videos",
+    description="Query Pexels, Pixabay, or keyless open stock video loops."
 )
-async def get_open_images_route(q: str = "", page: int = 1, pageSize: int = 24):
+async def get_open_videos_route(q: str = "", category: str = "all", page: int = 1, pageSize: int = 20):
+    from .open_media_service import search_open_videos
+    return search_open_videos(query=q, category=category, page=page, page_size=pageSize)
+
+@router.get(
+    "/api/workspace/open-media/images",
+    summary="Search 100M+ stock photos",
+    description="Query Pexels, Pixabay, Unsplash, or Wikimedia Commons photography."
+)
+async def get_open_images_route(
+    q: str = "",
+    provider: str = "all",
+    category: str = "all",
+    page: int = 1,
+    pageSize: int = 24,
+    orientation: str = "portrait"
+):
     from .open_media_service import search_open_images
-    return search_open_images(query=q, page=page, page_size=pageSize)
+    return search_open_images(
+        query=q,
+        category=category,
+        page=page,
+        page_size=pageSize,
+        provider=provider,
+        orientation=orientation
+    )
+
+@router.get(
+    "/api/workspace/open-media/providers",
+    summary="Get media provider API connection status",
+    description="Check whether Pexels, Pixabay, and Unsplash API keys are active."
+)
+async def get_open_media_providers_route():
+    from .open_media_service import get_media_providers_status
+    return get_media_providers_status()
 
 @router.get(
     "/api/workspace/open-media/tracks",

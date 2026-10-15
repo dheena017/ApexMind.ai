@@ -3,7 +3,6 @@ import Moveable from 'react-moveable';
 import { toCanvas } from 'html-to-image';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
-import { CanvasSafeZonesOverlay } from './CanvasSafeZonesOverlay';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
 // Timeline state broadcast from StudioTimelinePane
@@ -86,7 +85,17 @@ interface VideoPreviewPaneProps {
   activeElementOverlay?: { type: string; value: string; label?: string; id?: string; name?: string } | null;
   captionPresetClass?: string;
   captionPresetColor?: string;
+  captionPresetFontFamily?: string;
+  captionPresetFontSize?: number;
+  captionPresetFontWeight?: number;
+  captionPresetTextTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  captionPresetPreviewText?: string;
   canvasAspectRatio?: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+  canvasOutputSize?: {
+    aspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+    width: number;
+    height: number;
+  };
   canvasBackground?: string;
   playbackDuration?: number;
   isExporting?: boolean;
@@ -158,7 +167,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   activeElementOverlay,
   captionPresetClass,
   captionPresetColor,
+  captionPresetFontFamily,
+  captionPresetFontSize,
+  captionPresetFontWeight,
+  captionPresetTextTransform,
+  captionPresetPreviewText,
   canvasAspectRatio = '9:16',
+  canvasOutputSize,
   canvasBackground,
   playbackDuration,
   isExporting = false,
@@ -258,13 +273,27 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         const h264MimeType = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
         const mimeType = MediaRecorder.isTypeSupported(h264MimeType) ? h264MimeType : 'video/mp4';
 
-        const dimensions = {
+        const defaultDimensions = {
           '9:16': { width: 1080, height: 1920 },
           '16:9': { width: 1920, height: 1080 },
           '1:1': { width: 1080, height: 1080 },
           '4:5': { width: 1080, height: 1350 },
           '21:9': { width: 1920, height: 823 },
         }[canvasAspectRatio];
+        const hasValidOutputSize =
+          canvasOutputSize?.aspectRatio === canvasAspectRatio &&
+          Number.isInteger(canvasOutputSize.width) &&
+          Number.isInteger(canvasOutputSize.height) &&
+          canvasOutputSize.width >= 2 &&
+          canvasOutputSize.height >= 2 &&
+          canvasOutputSize.width % 2 === 0 &&
+          canvasOutputSize.height % 2 === 0 &&
+          Math.max(canvasOutputSize.width, canvasOutputSize.height) >= 1080 &&
+          canvasOutputSize.width <= 8192 &&
+          canvasOutputSize.height <= 8192;
+        const dimensions = hasValidOutputSize
+          ? { width: canvasOutputSize.width, height: canvasOutputSize.height }
+          : defaultDimensions;
         const outputCanvas = document.createElement('canvas');
         outputCanvas.width = dimensions.width;
         outputCanvas.height = dimensions.height;
@@ -348,7 +377,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       if (recorder?.state === 'recording') recorder.stop();
       outputStream?.getTracks().forEach((track) => track.stop());
     };
-  }, [audioElement, audioOutputStream, canvasAspectRatio, exportDuration, exportFileName, isExporting, onExportComplete]);
+  }, [audioElement, audioOutputStream, canvasAspectRatio, canvasOutputSize, exportDuration, exportFileName, isExporting, onExportComplete]);
 
   useEffect(() => {
     const handleTimelineState = (e: Event) => {
@@ -416,19 +445,27 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     setSelectedLayer(layer);
     if (layer === 'backdrop') {
       setTargetElement(backdropRef.current);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+      window.dispatchEvent(new CustomEvent('workspace:select-compound', {
+        detail: { compound: 'video', openInspector: true },
+      }));
     }
     if (layer === 'subtitle') {
       setTargetElement(subtitleRef.current);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
+      window.dispatchEvent(new CustomEvent('workspace:select-compound', {
+        detail: { compound: 'text', openInspector: true },
+      }));
     }
     if (layer === 'title') {
       setTargetElement(titleRef.current);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
+      window.dispatchEvent(new CustomEvent('workspace:select-compound', {
+        detail: { compound: 'text', openInspector: true },
+      }));
     }
     if (layer === 'overlay') {
       setTargetElement(overlayRef.current);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'overlay' }));
+      window.dispatchEvent(new CustomEvent('workspace:select-compound', {
+        detail: { compound: 'overlay', openInspector: true },
+      }));
     }
   };
 
@@ -485,7 +522,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     };
   }, []);
 
-  const [showSafeZones, setShowSafeZones] = useState(false);
 
   const [captionColor] = useState<string>('#FFFFFF');
   const [captionSize] = useState<'sm' | 'base' | 'lg' | 'xl'>('lg');
@@ -501,6 +537,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     activeOverlay: 'none',
     lut: 'none',
     lutIntensity: 80,
+    presetFilter: 'none',
   });
 
   // Listen for backdrop transform and filter changes from inspectors
@@ -650,6 +687,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     ? currentTime <= captionStyle.duration ? captionStyle.text.trim() : ''
     : timedSubtitle.trim();
   const hasCaptionPreset = Boolean(captionPresetClass);
+  const visibleSubtitle = currentSubtitle || (!isExporting && hasCaptionPreset ? captionPresetPreviewText || '' : '');
   const currentVideoStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
   const currentVideoDuration = activeVideoClip ? activeVideoClip.duration : timelineState.videoDuration;
   const backdropProgress = Math.min(1, Math.max(0,
@@ -677,6 +715,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const computedBackdropFilter = (() => {
     const parts: string[] = [];
+    if (filterSettings.presetFilter && filterSettings.presetFilter !== 'none') {
+      parts.push(filterSettings.presetFilter);
+    }
     if (filterSettings.brightness !== 100) parts.push(`brightness(${filterSettings.brightness}%)`);
     if (filterSettings.contrast !== 100) parts.push(`contrast(${filterSettings.contrast}%)`);
     if (filterSettings.saturate !== 100) parts.push(`saturate(${filterSettings.saturate}%)`);
@@ -756,7 +797,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         <div
           data-canvas-bg="true"
           className="absolute inset-0 z-0 transition-all duration-700 cursor-pointer"
-          style={{ background: canvasBackground || (theme ? theme.gradient : '#050505') }}
+          style={{
+            background: canvasBackground || (theme ? theme.gradient : '#050505'),
+            filter: computedBackdropFilter,
+          }}
           onClick={() => {
             setSelectedLayer(null);
             setTargetElement(null);
@@ -951,7 +995,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         )}
 
         {/* ── Subtitle / Quote Dynamic Stage ─────────────────────────── */}
-        {Boolean(currentSubtitle) && captionsEnabled && (
+        {Boolean(visibleSubtitle) && captionsEnabled && (
           <div
             ref={subtitleRef}
             onClick={(e) => handleSelectLayer(e, 'subtitle')}
@@ -975,15 +1019,18 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                   color: hasCaptionPreset
                     ? captionPresetColor || captionStyle.color || captionColor
                     : captionStyle.color || captionColor,
-                  fontFamily: hasCaptionPreset ? undefined : captionStyle.fontFamily,
-                  fontSize: hasCaptionPreset ? undefined : `${Math.round(captionStyle.fontSize * 0.25)}px`,
-                  fontWeight: hasCaptionPreset ? undefined : captionStyle.fontWeight === 'Black' ? 900
+                  filter: hasCaptionPreset ? 'none' : undefined,
+                  fontFamily: hasCaptionPreset ? captionPresetFontFamily : captionStyle.fontFamily,
+                  fontSize: hasCaptionPreset
+                    ? captionPresetFontSize ? `${captionPresetFontSize}px` : undefined
+                    : `${Math.round(captionStyle.fontSize * 0.25)}px`,
+                  fontWeight: hasCaptionPreset ? captionPresetFontWeight : captionStyle.fontWeight === 'Black' ? 900
                     : captionStyle.fontWeight === 'ExtraBold' ? 800
                       : captionStyle.fontWeight === 'Bold' ? 700
                         : captionStyle.fontWeight === 'SemiBold' ? 600
                           : captionStyle.fontWeight === 'Medium' ? 500 : 400,
                   textAlign: hasCaptionPreset ? undefined : captionStyle.textAlign,
-                  textTransform: hasCaptionPreset ? undefined : captionStyle.textTransform,
+                  textTransform: hasCaptionPreset ? captionPresetTextTransform : captionStyle.textTransform,
                   fontStyle: hasCaptionPreset ? undefined : captionStyle.isItalic ? 'italic' : 'normal',
                   textDecoration: hasCaptionPreset ? undefined : [
                     captionStyle.isUnderline ? 'underline' : '',
@@ -992,20 +1039,20 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                   letterSpacing: hasCaptionPreset ? undefined : `${captionStyle.letterSpacing}em`,
                   lineHeight: hasCaptionPreset ? undefined : captionStyle.lineHeight,
                   textShadow: hasCaptionPreset
-                    ? undefined
+                    ? 'none'
                     : captionStyle.neonGlow
                     ? `0 0 10px ${captionStyle.glowColor}, 0 0 20px ${captionStyle.glowColor}`
                     : captionStyle.dropShadow
                       ? `0 2px ${captionStyle.shadowBlur}px ${captionStyle.shadowColor}`
                       : 'none',
                   WebkitTextStroke: hasCaptionPreset
-                    ? undefined
+                    ? 'none'
                     : captionStyle.stroke
                     ? `${captionStyle.strokeWidth}px ${captionStyle.strokeColor}`
                     : 'none',
                 }}
               >
-                {currentSubtitle}
+                {visibleSubtitle}
               </p>
             </div>
           </div>
@@ -1059,8 +1106,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           />
         )}
 
-        {/* Layer: Shorts / Reels Safe Zones Overlay */}
-          <CanvasSafeZonesOverlay isVisible={showSafeZones && !isExporting} platform="shorts" />
         </div>
       </div>
     </div>

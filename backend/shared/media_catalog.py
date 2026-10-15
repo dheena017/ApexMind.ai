@@ -154,89 +154,6 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
     },
 ]
 
-CURATED_STOCK_IMAGES: List[Dict[str, Any]] = [
-    {
-        "id": "img-stoic-1",
-        "title": "Dark Misty Mountain Solitude",
-        "category": "stoic",
-        "url": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85",
-        "thumbnail": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80",
-        "author": "Kalen Emsley",
-        "resolution": "1080x1920 HD",
-        "tags": ["mountain", "fog", "solitude", "stoic"],
-    },
-    {
-        "id": "img-stoic-2",
-        "title": "Lone Figure in Rain-Slicked Street",
-        "category": "stoic",
-        "url": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1080&q=85",
-        "thumbnail": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80",
-        "author": "Austin Neill",
-        "resolution": "1080x1920 HD",
-        "tags": ["rain", "solitude", "night", "street"],
-    },
-    {
-        "id": "img-lux-1",
-        "title": "Penthouse Balcony Midnight Metropolis",
-        "category": "luxury",
-        "url": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1080&q=85",
-        "thumbnail": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=400&q=80",
-        "author": "Alexandre Chambon",
-        "resolution": "1080x1920 HD",
-        "tags": ["penthouse", "city", "night", "wealth"],
-    },
-    {
-        "id": "img-gym-1",
-        "title": "Chalked Hands Gripping Heavy Barbell",
-        "category": "gym",
-        "url": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1080&q=85",
-        "thumbnail": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80",
-        "author": "Sven Mieke",
-        "resolution": "1080x1920 HD",
-        "tags": ["chalk", "barbell", "weights", "gym"],
-    },
-    {
-        "id": "img-cyber-1",
-        "title": "Cyberpunk Neon Corridor Tokyo",
-        "category": "cyber",
-        "url": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1080&q=85",
-        "thumbnail": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=400&q=80",
-        "author": "Lorenzo Herrera",
-        "resolution": "1080x1920 HD",
-        "tags": ["cyberpunk", "neon", "tokyo", "tech"],
-    },
-]
-
-CURATED_STOCK_VIDEOS: List[Dict[str, Any]] = [
-    {
-        "id": "vid-clouds-drone",
-        "title": "Cinematic Clouds & Mountain Drone",
-        "category": "atmospheric",
-        "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-        "posterUrl": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80",
-        "duration": "15s Loop",
-        "resolution": "1080x1920",
-    },
-    {
-        "id": "vid-gym-deadlift",
-        "title": "Heavy Barbell Gym Deadlift Grit",
-        "category": "grit",
-        "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
-        "posterUrl": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80",
-        "duration": "20s Loop",
-        "resolution": "1080x1920",
-    },
-    {
-        "id": "vid-night-highway",
-        "title": "Neon Highway Light Trails Timelapse",
-        "category": "urban",
-        "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-        "posterUrl": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=400&q=80",
-        "duration": "15s Loop",
-        "resolution": "1080x1920",
-    },
-]
-
 CURATED_SFX: List[Dict[str, Any]] = [
     {
         "id": "sfx-whoosh-fast",
@@ -273,7 +190,5 @@ def get_static_media_catalog() -> Dict[str, Any]:
         "musicTracks": MEDIA_TRACKS,
         "visualBackdrops": VISUAL_BACKDROPS,
         "voiceProfiles": VOICE_PROFILES,
-        "stockImages": CURATED_STOCK_IMAGES,
-        "stockVideos": CURATED_STOCK_VIDEOS,
         "soundEffects": CURATED_SFX,
     }
