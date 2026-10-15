@@ -325,24 +325,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
-                <CustomSelect
-                  label="Soundtrack Music Track"
-                  labelClassName="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1 block"
-                  value={selectedMusic}
-                  onChange={(trackId) => onSelectMusic(trackId)}
-                  options={musicTracks.map((m) => ({
-                    value: m.id,
-                    label: `${m.title} (${m.genre})`,
-                    description: m.genre,
-                    badge: `${m.bpm} BPM`,
-                  }))}
-                  icon={<Music className="w-3.5 h-3.5 text-purple-400" />}
-                  placeholder="Choose background track..."
-                  buttonClassName="bg-[#1C1C20] border-[#2A2A30] hover:border-purple-500/50"
-                  menuClassName="bg-[#1C1C20] border-[#2A2A30]"
-                />
-              </div>
+              <div className="flex flex-col gap-2" />
             )}
 
             {/* Speaking Rate / Speed Multiplier */}
