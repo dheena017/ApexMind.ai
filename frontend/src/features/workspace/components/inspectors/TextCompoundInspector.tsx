@@ -227,46 +227,6 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         {/* ── TEXT TAB ── */}
         {activeSubTab === 'text' && (
           <div className="flex flex-col gap-3 pt-0.5">
-            {/* Live Interactive Caption Preview Card */}
-            <div className="w-full rounded-xl bg-[#0D0D10] border border-[#2A2A30] overflow-hidden">
-              <div className="px-2.5 py-1.5 border-b border-[#2A2A30] flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[#3B82F6] animate-pulse" />
-                  <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
-                    Interactive Preview
-                  </span>
-                </div>
-                <span className="text-[9px] font-mono-studio text-[#A1A1AA]">{textFont} • {textSize}px</span>
-              </div>
-              <div
-                className="min-h-[72px] flex items-center justify-center p-4 text-center transition-all"
-                style={{
-                  color: textColor,
-                  fontFamily: textFont,
-                  fontSize: `${Math.round(textSize * 0.22)}px`,
-                  fontWeight: textWeight === 'Black' ? 900 : textWeight === 'ExtraBold' ? 800 : textWeight === 'Bold' ? 700 : textWeight === 'SemiBold' ? 600 : textWeight === 'Medium' ? 500 : 400,
-                  textAlign,
-                  textTransform,
-                  opacity: opacity / 100,
-                  textShadow: neonGlow
-                    ? `0 0 10px ${glowColor}, 0 0 20px ${glowColor}`
-                    : dropShadow
-                    ? `0 2px ${shadowBlur}px ${shadowColor}`
-                    : 'none',
-                  letterSpacing: `${letterSpacing}em`,
-                  lineHeight,
-                  WebkitTextStroke: strokeOutline ? `${strokeWidth}px ${strokeColor}` : 'none',
-                  fontStyle: isItalic ? 'italic' : 'normal',
-                  textDecoration: [isUnderline ? 'underline' : '', isStrikethrough ? 'line-through' : ''].filter(Boolean).join(' ') || 'none',
-                  background: bgColor !== 'transparent' ? bgColor : 'transparent',
-                  borderRadius: bgColor !== 'transparent' ? `${bgRadius}px` : 0,
-                  padding: bgColor !== 'transparent' ? `${bgPadding}px` : undefined,
-                }}
-              >
-                {textContent || <span className="text-[#4B4B55] italic text-xs">Caption text appears here...</span>}
-              </div>
-            </div>
-
             {/* Target Layer Selector */}
             <div className="flex flex-col gap-1">
               <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Select Layer To Edit</span>

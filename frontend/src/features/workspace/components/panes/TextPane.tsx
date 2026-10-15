@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   Type,
   AlignLeft,
-  Check,
   Plus,
   Zap,
   Bookmark,
   Trash2,
   Copy,
-  Sliders,
   Sparkles,
   Search,
   Wand2,
@@ -47,13 +45,6 @@ const VIRAL_TYPOGRAPHY_PRESETS: TextPreset[] = TYPOGRAPHY_PRESETS.map((p) => ({
   fontFamily: p.fontFamily,
 }));
 
-const CAPTION_ANIMATIONS = [
-  { id: 'karaoke', name: 'Karaoke Active Word', desc: 'Active word highlighted in radiant yellow/cyan' },
-  { id: 'pop', name: 'Pop Scale Zoom', desc: 'Each word punches onto screen with scale bounce' },
-  { id: 'typewriter', name: 'Typewriter Cursor', desc: 'Terminal character typing motion' },
-  { id: 'fade-rise', name: 'Cinematic Fade & Rise', desc: 'Documentary smooth vertical fade' },
-];
-
 const INITIAL_VIRAL_HOOKS = [
   { category: 'Stoic Discipline', hook: 'Nobody is coming to save you.' },
   { category: 'Stoic Discipline', hook: 'Rule #1: Never explain your goals.' },
@@ -86,20 +77,11 @@ export const TextPane: React.FC<TextPaneProps> = ({
   onUpdateHook,
   onUpdateQuote,
 }) => {
-  const [activeTab, setActiveTab] = useState<'presets' | 'customizer' | 'hooks' | 'custom'>('presets');
+  const [activeTab, setActiveTab] = useState<'presets' | 'hooks' | 'custom'>('presets');
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
-  const [selectedAnimation, setSelectedAnimation] = useState<string>('karaoke');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedFeedback, setAppliedFeedback] = useState<string | null>(null);
-
-  // Customizer styling state
-  const [fontSize, setFontSize] = useState<number>(36);
-  const [letterSpacing, setLetterSpacing] = useState<number>(0);
-  const [textColor, setTextColor] = useState<string>('#FFFFFF');
-  const [hasOutline, setHasOutline] = useState<boolean>(true);
-  const [hasShadow, setHasShadow] = useState<boolean>(true);
-  const [boxBackground, setBoxBackground] = useState<'none' | 'blur' | 'solid' | 'gold'>('none');
 
   // Custom Snippets
   const [savedSnippets, setSavedSnippets] = useState<string[]>([]);
@@ -128,27 +110,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
     }
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
     triggerFeedback(`Applied "${preset.name}" preset`);
-  };
-
-  const handleApplyCustomizer = () => {
-    const customClassName = [
-      'font-black uppercase custom-caption-style',
-      hasShadow ? 'custom-caption-shadow' : '',
-      hasOutline ? 'custom-caption-outline' : '',
-    ].filter(Boolean).join(' ');
-
-    if (onApplyPreset) {
-      onApplyPreset({
-        id: `custom-style-${Date.now()}`,
-        name: 'Custom Styled Captions',
-        previewText: 'CUSTOM STYLE',
-        color: textColor,
-        className: customClassName,
-        styleDescription: `Size: ${fontSize}px, Tracking: ${letterSpacing}px`,
-      });
-    }
-    window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'text' }));
-    triggerFeedback('Applied custom typography style');
   };
 
   const handleInsertHook = (hookText: string) => {
@@ -240,18 +201,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab('customizer')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'customizer'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
-          <span>Customizer</span>
-        </button>
-        <button
-          type="button"
           onClick={() => setActiveTab('hooks')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'hooks'
@@ -315,144 +264,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3.5">
-        {/* ── Tab 2: Live Customizer ── */}
-        {activeTab === 'customizer' && (
-          <div className="flex flex-col gap-3.5">
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
-                Fine-Tune Caption Typography
-              </span>
-
-              {/* Font Size */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                  <span className="text-[#71717A]">FONT SIZE</span>
-                  <span className="text-[#60A5FA] font-bold">{fontSize}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="20"
-                  max="64"
-                  value={fontSize}
-                  onChange={(e) => setFontSize(Number(e.target.value))}
-                  className="w-full accent-[#3B82F6]"
-                />
-              </div>
-
-              {/* Letter Spacing / Tracking */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                  <span className="text-[#71717A]">LETTER SPACING / TRACKING</span>
-                  <span className="text-[#60A5FA] font-bold">{letterSpacing}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="-2"
-                  max="12"
-                  value={letterSpacing}
-                  onChange={(e) => setLetterSpacing(Number(e.target.value))}
-                  className="w-full accent-[#3B82F6]"
-                />
-              </div>
-
-              {/* Text Color Swatches */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] uppercase font-mono-studio text-[#71717A]">
-                  Caption Color
-                </span>
-                <div className="flex items-center gap-2">
-                  {['#FFFFFF', '#FACC15', '#06B6D4', '#10B981', '#EF4444', '#F43F5E', '#A855F7'].map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setTextColor(c)}
-                      className={`w-6 h-6 rounded-full border transition-transform ${
-                        textColor === c ? 'scale-125 border-white ring-2 ring-white/40' : 'border-zinc-700'
-                      }`}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Toggles */}
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#26262B]">
-                <button
-                  type="button"
-                  aria-pressed={hasShadow}
-                  onClick={() => setHasShadow((s) => !s)}
-                  className={`p-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                    hasShadow ? 'bg-[#1E2330] text-white border-[#3B82F6]' : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
-                  }`}
-                >
-                  {hasShadow ? '✓ Deep Shadow ON' : 'Shadow OFF'}
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={hasOutline}
-                  onClick={() => setHasOutline((o) => !o)}
-                  className={`p-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                    hasOutline ? 'bg-[#1E2330] text-white border-[#3B82F6]' : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
-                  }`}
-                >
-                  {hasOutline ? '✓ High Contrast Outline' : 'Outline OFF'}
-                </button>
-              </div>
-
-              {/* Live Preview Box */}
-              <div className="mt-1 bg-[#121214] border border-[#2A2A30] rounded-xl p-4 flex items-center justify-center text-center">
-                <span
-                  style={{
-                    fontSize: `${fontSize}px`,
-                    letterSpacing: `${letterSpacing}px`,
-                    color: textColor,
-                    textShadow: hasShadow ? '0 4px 12px rgba(0, 0, 0, 1)' : 'none',
-                    WebkitTextStroke: hasOutline ? '2px #000000' : '0px transparent',
-                  }}
-                  className="font-black uppercase"
-                >
-                  NO EXCUSES
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleApplyCustomizer}
-                className="mt-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 text-xs font-bold transition-all shadow-lg shadow-[#3B82F6]/20 cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <Check className="w-3.5 h-3.5" />
-                Apply to Active Captions
-              </button>
-            </div>
-
-            {/* Word-by-Word Caption Animations */}
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-2.5">
-              <span className="text-xs font-bold text-white">Reel Caption Animation Sync</span>
-              <div className="flex flex-col gap-2">
-                {CAPTION_ANIMATIONS.map((anim) => (
-                  <button
-                    key={anim.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedAnimation(anim.id);
-                      triggerFeedback(`Set "${anim.name}" animation`);
-                    }}
-                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                      selectedAnimation === anim.id
-                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
-                        : 'bg-[#141417] border-[#2A2A30] hover:bg-[#202026]'
-                    }`}
-                  >
-                    <p className="text-xs font-bold text-white">{anim.name}</p>
-                    <p className="text-[10px] text-[#A1A1AA]">{anim.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* ── Tab 1: Typography Packs ── */}
         {activeTab === 'presets' && (
           <div className="flex flex-col gap-2.5">
@@ -569,18 +380,20 @@ export const TextPane: React.FC<TextPaneProps> = ({
               />
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 gap-2.5">
               {filteredHooks.map((item, idx) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] transition-all flex flex-col gap-2"
+                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all flex flex-col gap-2"
                 >
-                  <p className="text-xs font-bold text-white tracking-wide leading-relaxed">
-                    &ldquo;{item.hook}&rdquo;
-                  </p>
+                  <div className="bg-[#121214] border border-[#26262C] rounded-lg p-3 flex items-center justify-center text-center min-h-14">
+                    <p className="text-xs font-bold text-white tracking-wide leading-relaxed">
+                      &ldquo;{item.hook}&rdquo;
+                    </p>
+                  </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-[#26262B]">
-                    <span className="text-[9px] font-mono-studio text-[#60A5FA]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2 py-1 rounded-md border border-[#3B82F6]/20 bg-[#3B82F6]/10 text-[9px] font-mono-studio text-[#60A5FA]">
                       {item.category}
                     </span>
 
@@ -588,14 +401,14 @@ export const TextPane: React.FC<TextPaneProps> = ({
                       <button
                         type="button"
                         onClick={() => handleInsertHook(item.hook)}
-                        className="px-2.5 py-1 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-bold transition-colors cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-bold transition-colors cursor-pointer"
                       >
                         Set as Hook
                       </button>
                       <button
                         type="button"
                         onClick={() => handleInsertQuote(item.hook)}
-                        className="px-2 py-1 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-white text-[10px] font-semibold transition-colors cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg border border-[#2F2F38] bg-[#25252C] hover:bg-[#34343E] text-white text-[10px] font-semibold transition-colors cursor-pointer"
                       >
                         Set Quote
                       </button>
@@ -639,31 +452,33 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 {savedSnippets.map((snippet, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] flex flex-col gap-2"
+                    className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] transition-colors flex flex-col gap-2"
                   >
-                    <p className="text-xs text-white leading-relaxed">&ldquo;{snippet}&rdquo;</p>
-                    <div className="flex items-center justify-between pt-1 border-t border-[#26262B]">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleInsertHook(snippet)}
-                          className="px-2 py-0.5 rounded bg-[#3B82F6] text-white text-[10px] font-bold"
-                        >
-                          Hook
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleInsertQuote(snippet)}
-                          className="px-2 py-0.5 rounded bg-[#2A2A32] text-white text-[10px] font-semibold"
-                        >
-                          Quote
-                        </button>
+                      <div className="bg-[#121214] border border-[#26262C] rounded-lg p-3 flex items-center min-h-14">
+                        <p className="text-xs font-medium text-white leading-relaxed">&ldquo;{snippet}&rdquo;</p>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleInsertHook(snippet)}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-bold transition-colors cursor-pointer"
+                          >
+                            Set as Hook
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleInsertQuote(snippet)}
+                            className="px-2.5 py-1.5 rounded-lg border border-[#2F2F38] bg-[#25252C] hover:bg-[#34343E] text-white text-[10px] font-semibold transition-colors cursor-pointer"
+                          >
+                            Set Quote
+                          </button>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteSnippet(idx)}
-                        className="p-1 text-zinc-500 hover:text-rose-400 transition-colors"
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

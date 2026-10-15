@@ -31,6 +31,7 @@ interface TimelineState {
   musicClips?: TimelineAudioClip[];
   sfxClips?: TimelineAudioClip[];
   overlayClips?: TimelineOverlayClip[];
+  selectedTrack?: string;
 }
 
 const DEFAULT_TIMELINE_STATE: TimelineState = {
@@ -191,10 +192,26 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     fontFamily: 'Roboto',
     fontWeight: 'Medium',
     fontSize: 60,
-    textAlign: 'center' as const,
+    textAlign: 'center' as 'left' | 'center' | 'right' | 'justify',
+    textTransform: 'uppercase' as 'none' | 'uppercase' | 'lowercase' | 'capitalize',
+    isItalic: false,
+    isUnderline: false,
+    isStrikethrough: false,
+    stroke: false,
+    strokeColor: '#000000',
+    strokeWidth: 2,
     dropShadow: true,
+    shadowColor: '#000000',
+    shadowBlur: 12,
+    neonGlow: false,
+    glowColor: '#3B82F6',
+    letterSpacing: 0,
+    lineHeight: 1.2,
     background: 'transparent',
+    bgRadius: 8,
+    bgPadding: 8,
     opacity: 100,
+    posY: 50,
     duration: 2.2,
   });
   const [overlayStyle, setOverlayStyle] = useState<{
@@ -470,7 +487,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const [showSafeZones, setShowSafeZones] = useState(false);
 
-  const [subtitleYPercent] = useState<number>(50); // Center: 50%
   const [captionColor] = useState<string>('#FFFFFF');
   const [captionSize] = useState<'sm' | 'base' | 'lg' | 'xl'>('lg');
 
@@ -588,6 +604,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     if (activeVideo && video.src !== activeVideo) {
       video.src = activeVideo;
       video.load();
+      const clipStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
+      video.currentTime = Math.max(0, currentTime - clipStart);
     }
   }, [activeVideo]);
 
@@ -631,6 +649,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const currentSubtitle = captionStyle.text.trim()
     ? currentTime <= captionStyle.duration ? captionStyle.text.trim() : ''
     : timedSubtitle.trim();
+  const hasCaptionPreset = Boolean(captionPresetClass);
   const currentVideoStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
   const currentVideoDuration = activeVideoClip ? activeVideoClip.duration : timelineState.videoDuration;
   const backdropProgress = Math.min(1, Math.max(0,
@@ -750,7 +769,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             ref={backdropRef}
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
             onDoubleClick={handleResetBackdrop}
-            className="absolute inset-0 z-10 overflow-hidden cursor-move select-none transition-opacity duration-150"
+            className={`absolute inset-0 overflow-hidden cursor-move select-none transition-opacity duration-150 ${
+              timelineState.selectedTrack === 'image' ? 'z-10' : 'z-20'
+            }`}
             style={{
               opacity: showVideoLayer ? animationOpacity : 0,
               pointerEvents: showVideoLayer ? 'auto' : 'none',
@@ -760,9 +781,12 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             <video
               ref={videoElementRef}
               src={activeVideo}
+              autoPlay
               loop
               muted={videoTrackVolume === 0}
               playsInline
+              crossOrigin="anonymous"
+              preload="auto"
               className={`w-full h-full pointer-events-none transition-all duration-300 ${
                 backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
               } object-center opacity-100`}
@@ -796,10 +820,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         {/* Layer 1c: Image Layer (V2) - strictly visible when playhead is in image clip */}
         {activeImage && (
           <div
-            ref={backdropRef}
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
             onDoubleClick={handleResetBackdrop}
-            className="absolute inset-0 z-10 overflow-hidden cursor-move select-none transition-opacity duration-150"
+            className={`absolute inset-0 overflow-hidden cursor-move select-none transition-opacity duration-150 ${
+              timelineState.selectedTrack === 'image' ? 'z-20' : 'z-10'
+            }`}
             style={{
               opacity: showImageLayer ? animationOpacity : 0,
               pointerEvents: showImageLayer ? 'auto' : 'none',
@@ -932,33 +957,52 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             onClick={(e) => handleSelectLayer(e, 'subtitle')}
             className="absolute left-1/2 -translate-x-1/2 z-20 w-fit max-w-[88%] flex flex-col items-center justify-center cursor-move select-none p-2 transition-opacity duration-150"
             style={{
-              top: `${subtitleYPercent}%`,
+              top: `${captionStyle.posY}%`,
               opacity: captionStyle.opacity / 100,
             }}
           >
-            <div className="pointer-events-none rounded-md px-2 py-1" style={{ backgroundColor: captionStyle.background }}>
+            <div
+              className="pointer-events-none"
+              style={{
+                backgroundColor: hasCaptionPreset ? 'transparent' : captionStyle.background,
+                borderRadius: hasCaptionPreset ? undefined : `${captionStyle.bgRadius}px`,
+                padding: hasCaptionPreset ? undefined : `${captionStyle.bgPadding}px`,
+              }}
+            >
               <p
-                className={`font-black uppercase text-center leading-tight ${
-                  captionPresetClass || captionSizeClass
-                }`}
+                className={captionPresetClass || `font-black text-center ${captionSizeClass}`}
                 style={{
-                  color: captionStyle.color || captionPresetColor || captionColor,
-                  fontFamily: captionStyle.fontFamily,
-                  fontSize: `${Math.round(captionStyle.fontSize * 0.25)}px`,
-                  fontWeight: captionStyle.fontWeight === 'Black' ? 900 : captionStyle.fontWeight === 'Bold' ? 700 : captionStyle.fontWeight === 'Medium' ? 500 : 400,
-                  textAlign: captionStyle.textAlign,
-                  textShadow: captionPresetClass?.includes('custom-caption-style')
-                    ? captionPresetClass.includes('custom-caption-shadow')
-                      ? '0 2px 10px rgba(0,0,0,0.95), 0 4px 20px rgba(0,0,0,0.85)'
-                      : 'none'
+                  color: hasCaptionPreset
+                    ? captionPresetColor || captionStyle.color || captionColor
+                    : captionStyle.color || captionColor,
+                  fontFamily: hasCaptionPreset ? undefined : captionStyle.fontFamily,
+                  fontSize: hasCaptionPreset ? undefined : `${Math.round(captionStyle.fontSize * 0.25)}px`,
+                  fontWeight: hasCaptionPreset ? undefined : captionStyle.fontWeight === 'Black' ? 900
+                    : captionStyle.fontWeight === 'ExtraBold' ? 800
+                      : captionStyle.fontWeight === 'Bold' ? 700
+                        : captionStyle.fontWeight === 'SemiBold' ? 600
+                          : captionStyle.fontWeight === 'Medium' ? 500 : 400,
+                  textAlign: hasCaptionPreset ? undefined : captionStyle.textAlign,
+                  textTransform: hasCaptionPreset ? undefined : captionStyle.textTransform,
+                  fontStyle: hasCaptionPreset ? undefined : captionStyle.isItalic ? 'italic' : 'normal',
+                  textDecoration: hasCaptionPreset ? undefined : [
+                    captionStyle.isUnderline ? 'underline' : '',
+                    captionStyle.isStrikethrough ? 'line-through' : '',
+                  ].filter(Boolean).join(' ') || 'none',
+                  letterSpacing: hasCaptionPreset ? undefined : `${captionStyle.letterSpacing}em`,
+                  lineHeight: hasCaptionPreset ? undefined : captionStyle.lineHeight,
+                  textShadow: hasCaptionPreset
+                    ? undefined
+                    : captionStyle.neonGlow
+                    ? `0 0 10px ${captionStyle.glowColor}, 0 0 20px ${captionStyle.glowColor}`
                     : captionStyle.dropShadow
-                      ? '0 2px 10px rgba(0,0,0,0.95), 0 4px 20px rgba(0,0,0,0.85)'
+                      ? `0 2px ${captionStyle.shadowBlur}px ${captionStyle.shadowColor}`
                       : 'none',
-                  WebkitTextStroke: captionPresetClass?.includes('custom-caption-style')
-                    ? captionPresetClass.includes('custom-caption-outline')
-                      ? '1px #000000'
-                      : '0px transparent'
-                    : undefined,
+                  WebkitTextStroke: hasCaptionPreset
+                    ? undefined
+                    : captionStyle.stroke
+                    ? `${captionStyle.strokeWidth}px ${captionStyle.strokeColor}`
+                    : 'none',
                 }}
               >
                 {currentSubtitle}

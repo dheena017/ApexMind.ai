@@ -572,6 +572,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     window.dispatchEvent(
       new CustomEvent('workspace:timeline-state', {
         detail: {
+          selectedTrack: selectedClip?.track,
           // Visibility / enabled
           videoVisible: enabledTracks.video && videoTrackVisible,
           imageVisible: enabledTracks.image && imageTrackVisible,

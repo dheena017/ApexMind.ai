@@ -1763,6 +1763,7 @@ export default function WorkspacePage({
                   setShowTimeline(true);
                   setActiveCompound('video');
                   setCustomBackdropImage(url);
+                  setCustomBackdropVideo('');
                   window.dispatchEvent(
                     new CustomEvent('workspace:add-timeline-clip', {
                       detail: {
@@ -1793,6 +1794,7 @@ export default function WorkspacePage({
                   setShowTimeline(true);
                   setActiveCompound('video');
                   setCustomBackdropVideo(url);
+                  setCustomBackdropImage('');
                   window.dispatchEvent(
                     new CustomEvent('workspace:add-timeline-clip', {
                       detail: {
