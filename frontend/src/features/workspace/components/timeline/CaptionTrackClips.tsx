@@ -68,7 +68,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
   }, []);
 
   const handleCopyTimings = useCallback((clip: LaneSubtitle) => {
-    const text = `Start: ${clip.start.toFixed(2)}s | Duration: ${(clip.duration || 3).toFixed(2)}s | End: ${(clip.start + (clip.duration || 3)).toFixed(2)}s | Text: "${clip.text}"`;
+    const text = `Start: ${(Number(clip.start) || 0).toFixed(2)}s | Duration: ${(Number(clip.duration) || 3).toFixed(2)}s | End: {((Number(clip.start) || 0) + (Number(clip.duration) || 3)).toFixed(2)}s | Text: "${clip.text}"`;
     navigator.clipboard.writeText(text).catch(() => { });
   }, []);
 

@@ -160,7 +160,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
         <div className="h-4 w-px bg-[#262630] mx-0.5" />
 
         {/* ── Playback Controls: Jump to Start, Hero Play/Pause Pill, Jump to End & Timecode ── */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => onSeek(0)}

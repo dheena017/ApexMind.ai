@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Moveable from 'react-moveable';
 import { toCanvas } from 'html-to-image';
+import { Play, Pause, RotateCcw, SkipForward, Volume2, VolumeX, Repeat } from 'lucide-react';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
-import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
+import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip, formatTime } from '../timeline/timelineTypes';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
 // Timeline state broadcast from StudioTimelinePane
@@ -768,21 +769,71 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const hasCaptionPreset = Boolean(activeCaptionPresetClass);
   const useCaptionPreset = hasCaptionPreset && !captionStyle.overridePreset;
   const visibleSubtitle = currentSubtitle;
+  const effectiveDuration = Math.max(1, Number.isFinite(playbackDuration) && (playbackDuration ?? 0) > 0 ? playbackDuration! : (Number.isFinite(duration) && duration > 0 ? duration : 30));
+
   const currentVideoStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
   const currentVideoDuration = activeVideoClip ? activeVideoClip.duration : timelineState.videoDuration;
+
+  // Track active scene and cut boundary for dynamic animation
+  const activeStoryboardIndex = (script.storyboard || []).findIndex(
+    (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3)
+  );
+  const currentScene = activeStoryboardScene || (script.storyboard ? script.storyboard[0] : undefined);
+  const sceneStart = currentScene ? (Number(currentScene.start) || 0) : (Number(currentVideoStart) || 0);
+  const sceneDuration = currentScene ? (Number(currentScene.duration) || 3) : Math.max(0.1, Number(currentVideoDuration) || 3);
+  const sceneProgress = Math.min(1, Math.max(0, (currentTime - sceneStart) / Math.max(0.1, sceneDuration)));
+  const sceneElapsed = Math.max(0, currentTime - sceneStart);
+
+  // Camera motion directed by AI storyboard or dynamic alternating flow
+  const sceneCameraMotion = currentScene?.cameraMotion;
+  const sceneTransition = currentScene?.transition;
+
+  // Cut transition impact
+  const isTransitionCut = sceneElapsed < 0.38 && currentTime > 0.05;
+  const cutProgress = 1 - Math.min(1, sceneElapsed / 0.38);
+
+  const cutImpactScale = isTransitionCut
+    ? (sceneTransition === 'zoom' ? 1 + cutProgress * 0.08 : 1 + cutProgress * 0.04)
+    : 1;
+  const cutImpactBrightness = isTransitionCut ? 100 + cutProgress * 22 : 100;
+  const cutGlitchX = isTransitionCut && sceneTransition === 'glitch' ? Math.sin(currentTime * 36) * 4 * cutProgress : 0;
+  const cutSlideY = isTransitionCut && sceneTransition === 'slide' ? cutProgress * 6 : 0;
+
   const backdropProgress = Math.min(1, Math.max(0,
     (currentTime - currentVideoStart) / Math.max(0.1, currentVideoDuration)
   ));
+
+  // Scene motion
+  let sceneMotionTransform = '';
+  if (sceneCameraMotion === 'push-in') {
+    sceneMotionTransform = `scale(${1.02 * cutImpactScale + sceneProgress * 0.12})`;
+  } else if (sceneCameraMotion === 'slow-zoom') {
+    sceneMotionTransform = `scale(${1.0 * cutImpactScale + sceneProgress * 0.08})`;
+  } else if (sceneCameraMotion === 'pan-right') {
+    sceneMotionTransform = `scale(${1.08 * cutImpactScale}) translate(${sceneProgress * 3 - 1.5}%, 0%)`;
+  } else if (sceneCameraMotion === 'handheld') {
+    sceneMotionTransform = `scale(${1.04 * cutImpactScale}) translate(${Math.sin(currentTime * 3.5) * 0.4}%, ${Math.cos(currentTime * 4.2) * 0.4}%)`;
+  } else {
+    // Dynamic cinematic motion tailored to scene cuts
+    const isEvenScene = (activeStoryboardIndex >= 0 ? activeStoryboardIndex : 0) % 2 === 0;
+    sceneMotionTransform = isEvenScene
+      ? `scale(${1.02 * cutImpactScale + sceneProgress * 0.08}) translate(${sceneProgress * 0.8 - 0.4}%, ${-sceneProgress * 0.6 + 0.3}%)`
+      : `scale(${1.08 * cutImpactScale - sceneProgress * 0.06}) translate(${-sceneProgress * 0.8 + 0.4}%, ${sceneProgress * 0.6 - 0.3}%)`;
+  }
+
   const animationTransform = backdropAnimation === 'zoom'
-    ? `scale(${1.02 + backdropProgress * 0.12})`
+    ? `scale(${1.02 * cutImpactScale + backdropProgress * 0.12})`
     : backdropAnimation === 'kenburns'
-      ? `scale(${1.1 + backdropProgress * 0.15}) translate(${-2 + backdropProgress * 4}%, ${2 - backdropProgress * 4}%)`
+      ? `scale(${1.1 * cutImpactScale + backdropProgress * 0.15}) translate(${-2 + backdropProgress * 4}%, ${2 - backdropProgress * 4}%)`
       : backdropAnimation === 'slide'
         ? `translateY(${(1 - backdropProgress) * 8}%)`
         : backdropAnimation === 'glitch'
           ? `translateX(${Math.sin(currentTime * 24) * 2}px)`
-          : '';
-  const animationOpacity = backdropAnimation === 'fade' ? Math.min(1, backdropProgress * 4) : 1;
+          : `${sceneMotionTransform} ${cutGlitchX ? `translateX(${cutGlitchX}px)` : ''} ${cutSlideY ? `translateY(${cutSlideY}%)` : ''}`.trim();
+
+  const animationOpacity = backdropAnimation === 'fade'
+    ? Math.min(1, backdropProgress * 4)
+    : (isTransitionCut && sceneTransition === 'fade' ? Math.max(0.2, 1 - cutProgress * 0.75) : 1);
 
   const backdropTransform = [
     (backdropPosX !== 50 || backdropPosY !== 50) ? `translate(${(backdropPosX - 50) * 0.8}%, ${(backdropPosY - 50) * 0.8}%)` : '',
@@ -798,7 +849,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     if (filterSettings.presetFilter && filterSettings.presetFilter !== 'none') {
       parts.push(filterSettings.presetFilter);
     }
-    if (filterSettings.brightness !== 100) parts.push(`brightness(${filterSettings.brightness}%)`);
+    const effectiveBrightness = Math.round((filterSettings.brightness / 100) * cutImpactBrightness);
+    if (effectiveBrightness !== 100) parts.push(`brightness(${effectiveBrightness}%)`);
     if (filterSettings.contrast !== 100) parts.push(`contrast(${filterSettings.contrast}%)`);
     if (filterSettings.saturate !== 100) parts.push(`saturate(${filterSettings.saturate}%)`);
     if (filterSettings.hue && filterSettings.hue !== 0) parts.push(`hue-rotate(${filterSettings.hue}deg)`);
@@ -1103,21 +1155,27 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         )}
 
         {/* ── Subtitle / Quote Dynamic Stage ─────────────────────────── */}
-        {Boolean(visibleSubtitle) && captionsEnabled && (
-          <div
-            ref={subtitleRef}
-            onClick={(e) => handleSelectLayer(e, 'subtitle')}
-            className="absolute z-20 flex items-center justify-center cursor-move select-none px-3 py-1 transition-opacity duration-150"
-            style={{
-              left: `${captionStyle.posX ?? 50}%`,
-              top: `${captionStyle.posY && captionStyle.posY !== 78 ? captionStyle.posY : (canvasAspectRatio === '9:16' ? 64 : 72)}%`,
-              transform: 'translate(-50%, -50%)',
-              opacity: captionStyle.opacity / 100,
-              width: captionStyle.customWidth ? `${captionStyle.customWidth}px` : undefined,
-              maxWidth: '88%',
-              boxSizing: 'border-box',
-            }}
-          >
+        {Boolean(visibleSubtitle) && captionsEnabled && (() => {
+          const activeSubStart = activeSubtitleObj?.start ?? (activeStoryboardScene?.start ?? 0);
+          const subElapsed = Math.max(0, currentTime - activeSubStart);
+          const subPopProgress = Math.min(1, subElapsed / 0.22);
+          const subScale = 0.94 + Math.sin(subPopProgress * Math.PI * 0.5) * 0.06;
+
+          return (
+            <div
+              ref={subtitleRef}
+              onClick={(e) => handleSelectLayer(e, 'subtitle')}
+              className="absolute z-20 flex items-center justify-center cursor-move select-none px-3 py-1 transition-all duration-100"
+              style={{
+                left: `${captionStyle.posX ?? 50}%`,
+                top: `${captionStyle.posY && captionStyle.posY !== 78 ? captionStyle.posY : (canvasAspectRatio === '9:16' ? 64 : 72)}%`,
+                transform: `translate(-50%, -50%) scale(${subScale})`,
+                opacity: captionStyle.opacity / 100,
+                width: captionStyle.customWidth ? `${captionStyle.customWidth}px` : undefined,
+                maxWidth: '88%',
+                boxSizing: 'border-box',
+              }}
+            >
             <div
               className="pointer-events-none w-full max-w-full flex items-center justify-center text-center px-1"
               style={{
@@ -1172,7 +1230,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               </p>
             </div>
           </div>
-        )}
+        );
+      })()}
 
         {/* Bottom Spacing Anchor */}
         <div className="h-6 pointer-events-none" />
@@ -1249,6 +1308,104 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           />
         )}
 
+        </div>
+      </div>
+
+      {/* ── Sleek Studio Video Player Transport Bar (Directly Under Video Canvas) ── */}
+      <div className="w-full max-w-2xl px-3 py-1.5 flex items-center justify-between gap-3 bg-[#111115]/95 border border-[#272730] backdrop-blur-md rounded-xl shrink-0 shadow-xl z-20">
+        {/* Left: Jump to Start, Hero Play/Pause Pill Button, Jump to End & Timecode */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => onSeek(0)}
+            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
+            title="Jump to Start (00:00)"
+            aria-label="Jump to start"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Primary Hero Play / Pause Pill Button */}
+          <button
+            type="button"
+            onClick={onTogglePlay}
+            className="h-7 px-4 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95 shrink-0 border border-[#60A5FA]/40"
+            title={isPlaying ? 'Pause Video (Space)' : 'Play Video (Space)'}
+            aria-label={isPlaying ? 'Pause video' : 'Play video'}
+          >
+            {isPlaying ? (
+              <>
+                <Pause className="w-3.5 h-3.5 fill-white shrink-0" />
+                <span className="text-[10.5px] font-bold font-sans-studio tracking-wider uppercase">Pause</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 fill-white ml-0.5 shrink-0" />
+                <span className="text-[10.5px] font-bold font-sans-studio tracking-wider uppercase">Play</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onSeek(effectiveDuration)}
+            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
+            title="Jump to End"
+            aria-label="Jump to end"
+          >
+            <SkipForward className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Time Readout: Clean Non-Editable Display */}
+          <div
+            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#08080A] border border-[#262630] text-[10px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
+            aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(effectiveDuration)}`}
+          >
+            <span className="text-[#60A5FA] font-bold" title="Current Playhead Time">{formatTime(currentTime)}</span>
+            <span className="text-[#52525B]">/</span>
+            <span className="text-[#A1A1AA]" title="Total Duration">{formatTime(effectiveDuration)}</span>
+          </div>
+        </div>
+
+        {/* Center: Live Scrubber Progress Bar */}
+        <div className="flex-1 min-w-[70px] flex items-center px-1">
+          <input
+            type="range"
+            min={0}
+            max={effectiveDuration}
+            step={0.05}
+            value={Math.min(effectiveDuration, Math.max(0, currentTime))}
+            onChange={(e) => onSeek(parseFloat(e.target.value))}
+            className="w-full h-1.5 bg-[#252530] rounded-lg appearance-none cursor-pointer accent-[#3B82F6] hover:bg-[#303040] transition-colors"
+            title="Scrub preview playhead"
+          />
+        </div>
+
+        {/* Right: Audio Mute/Volume & Aspect Badge */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onToggleMute}
+            className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5 text-[#9CA3AF]" />}
+          </button>
+          {onToggleLoop && (
+            <button
+              type="button"
+              onClick={onToggleLoop}
+              className={`p-1 rounded text-[10px] transition-colors cursor-pointer ${
+                isLooping ? 'text-[#60A5FA] bg-blue-500/15' : 'text-[#71717A] hover:text-white'
+              }`}
+              title={isLooping ? 'Looping enabled' : 'Looping disabled'}
+            >
+              <Repeat className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <span className="text-[9.5px] font-mono-studio px-2 py-0.5 rounded bg-[#1C1C24] border border-[#2B2B36] text-[#A1A1AA]">
+            {canvasAspectRatio}
+          </span>
         </div>
       </div>
     </div>

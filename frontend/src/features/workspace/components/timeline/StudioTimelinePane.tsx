@@ -214,33 +214,38 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   };
 
-  const maxVideoEnd = videoClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
-  const maxImageEnd = imageClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
-  const maxVoiceEnd = voiceClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
-  const maxMusicEnd = musicClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
-  const maxSfxEnd = sfxClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
-  const maxOverlayEnd = overlayClips.reduce((max, c) => Math.max(max, c.start + c.duration), 0);
+  const maxVideoEnd = videoClips.reduce((max, c) => Math.max(max, (Number(c.start) || 0) + (Number(c.duration) || 0)), 0);
+  const maxImageEnd = imageClips.reduce((max, c) => Math.max(max, (Number(c.start) || 0) + (Number(c.duration) || 0)), 0);
+  const maxVoiceEnd = voiceClips.reduce((max, c) => Math.max(max, (Number(c.start) || 0) + (Number(c.duration) || 0)), 0);
+  const maxMusicEnd = musicClips.reduce((max, c) => Math.max(max, (Number(c.start) || 0) + (Number(c.duration) || 0)), 0);
+  const maxSfxEnd = sfxClips.reduce((max, c) => Math.max(max, (Number(c.start) || 0) + (Number(c.duration) || 0)), 0);
+  const maxOverlayEnd = overlayClips.reduce((max, c) => Math.max(max, (Number(c.start) || 0) + (Number(c.duration) || 0)), 0);
 
   const contentEnd = Math.max(
-    enabledTracks.video ? Math.max(maxVideoEnd, (customVideoUrl || (!customImageUrl && activeBackdrop?.id)) ? videoStart + videoDuration : 0) : 0,
-    enabledTracks.image ? Math.max(maxImageEnd, (customImageUrl || (!customVideoUrl && activeBackdrop?.imageUrl)) ? imageStart + imageDuration : 0) : 0,
-    enabledTracks.overlay ? Math.max(maxOverlayEnd, activeElementOverlay ? overlayStart + overlayDuration : 0) : 0,
+    0,
+    enabledTracks.video ? Math.max(maxVideoEnd, (customVideoUrl || (!customImageUrl && activeBackdrop?.id)) ? (Number(videoStart) || 0) + (Number(videoDuration) || 0) : 0) : 0,
+    enabledTracks.image ? Math.max(maxImageEnd, (customImageUrl || (!customVideoUrl && activeBackdrop?.imageUrl)) ? (Number(imageStart) || 0) + (Number(imageDuration) || 0) : 0) : 0,
+    enabledTracks.overlay ? Math.max(maxOverlayEnd, activeElementOverlay ? (Number(overlayStart) || 0) + (Number(overlayDuration) || 0) : 0) : 0,
     enabledTracks.captions
-      ? localClips.reduce((end, clip) => Math.max(end, clip.start + (clip.duration || 3)), 0)
+      ? localClips.reduce((end, clip) => Math.max(end, (Number(clip.start) || 0) + (Number(clip.duration) || 3)), 0)
       : 0,
-    enabledTracks.title && script.title ? titleStart + titleDuration : 0,
-    enabledTracks.voice ? Math.max(maxVoiceEnd, audioUrl ? voiceStart + voiceDuration : 0) : 0,
-    enabledTracks.music ? Math.max(maxMusicEnd, selectedMusic ? musicStart + musicDuration : 0) : 0,
-    enabledTracks.sfx ? Math.max(maxSfxEnd, selectedSfx ? sfxStart + sfxDuration : 0) : 0
+    enabledTracks.title && script.title ? (Number(titleStart) || 0) + (Number(titleDuration) || 0) : 0,
+    enabledTracks.voice ? Math.max(maxVoiceEnd, audioUrl ? (Number(voiceStart) || 0) + (Number(voiceDuration) || 0) : 0) : 0,
+    enabledTracks.music ? Math.max(maxMusicEnd, selectedMusic ? (Number(musicStart) || 0) + (Number(musicDuration) || 0) : 0) : 0,
+    enabledTracks.sfx ? Math.max(maxSfxEnd, selectedSfx ? (Number(sfxStart) || 0) + (Number(sfxDuration) || 0) : 0) : 0
   );
-  const projectDuration = Math.max(0.1, duration > 0 ? duration : timelineDuration, contentEnd);
-  const totalDuration = projectDuration;
+  const rawProjectDuration = Math.max(
+    0.1,
+    Number.isFinite(duration) && duration > 0 ? duration : (Number(timelineDuration) || 30),
+    Number.isFinite(contentEnd) ? contentEnd : 0
+  );
+  const totalDuration = Number.isFinite(rawProjectDuration) && rawProjectDuration > 0 ? rawProjectDuration : 30;
   const progressPercent = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
-  const timelineScale = Math.max(1, zoomLevel);
+  const timelineScale = Math.max(1, Number.isFinite(zoomLevel) ? zoomLevel : 1);
 
   useEffect(() => {
-    onTimelineDurationChange?.(projectDuration);
-  }, [onTimelineDurationChange, projectDuration]);
+    onTimelineDurationChange?.(totalDuration);
+  }, [onTimelineDurationChange, totalDuration]);
 
   useEffect(() => {
     if (!selectedSfx) return;
@@ -415,8 +420,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       detail.storyboard.forEach((scene: any, idx: number) => {
         const clipId = `sb-${scene.sceneNumber || idx + 1}-${Date.now()}`;
         const clipName = scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`;
-        const clipStart = typeof scene.start === 'number' ? scene.start : idx * 3.0;
-        const clipDuration = typeof scene.duration === 'number' ? scene.duration : 3.0;
+        const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
+        const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
+        const clipStart = Number.isFinite(parsedStart) && parsedStart >= 0 ? parsedStart : idx * 3.0;
+        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 3.0;
 
         // Enforce 100% pure video cuts on the timeline
         if (scene.mediaUrl) {
@@ -448,6 +455,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         setEnabledTracks((prev) => ({ ...prev, video: true, image: false }));
         setVideoTrackVisible(true);
         setImageTrackVisible(false);
+        setIsCollapsed(false);
       }
       if (newSfxClips.length > 0) {
         setSfxClips(newSfxClips);
@@ -560,12 +568,13 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       });
       setEnabledTracks((prev) => ({ ...prev, video: true }));
     } else if (activeBackdrop.imageUrl) {
+      const imageUrl = activeBackdrop.imageUrl;
       setImageClips((prev) => {
         if (prev.length <= 1) {
           return [{
             id: `img-${activeBackdrop.id}`,
             type: 'image',
-            url: activeBackdrop.imageUrl,
+            url: imageUrl,
             name: activeBackdrop.name || 'Image Graphic',
             start: prev[0]?.start ?? 0,
             duration: prev[0]?.duration ?? 8.0,
@@ -1513,7 +1522,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
 
   const handleVideoZoom = () => {
-    const ratio = (videoDuration / projectDuration) * 3;
+    const ratio = (videoDuration / totalDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
@@ -1583,7 +1592,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
 
   const handleOverlayZoom = () => {
-    const ratio = (overlayDuration / projectDuration) * 3;
+    const ratio = (overlayDuration / totalDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
@@ -1653,7 +1662,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
 
   const handleVoiceZoom = () => {
-    const ratio = (voiceDuration / projectDuration) * 3;
+    const ratio = (voiceDuration / totalDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
@@ -1723,7 +1732,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
 
   const handleMusicZoom = () => {
-    const ratio = (musicDuration / projectDuration) * 3;
+    const ratio = (musicDuration / totalDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
@@ -1858,7 +1867,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
 
   const handleImageZoom = () => {
-    const ratio = (imageDuration / projectDuration) * 3;
+    const ratio = (imageDuration / totalDuration) * 3;
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
@@ -1870,7 +1879,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setSelectedClip(null);
   };
   const handleTitleZoom = () => {
-    const ratio = (titleDuration / projectDuration) * 3;
+    const ratio = (titleDuration / totalDuration) * 3;
     setZoomLevel(Math.min(3, Math.max(1, 1 / ratio)));
   };
 
@@ -1962,14 +1971,20 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const activeTracksCount = enabledTracksCount;
 
   // Keep major labels comfortably separated at every zoom and viewport size.
-  const targetTickInterval =
-    (56 * totalDuration) / (Math.max(1, rulerViewportWidth || 720) * timelineScale);
+  const safeTotalDuration = Math.max(0.1, Number.isFinite(totalDuration) ? totalDuration : 30);
+  const safeViewportWidth = Math.max(300, Number(rulerViewportWidth) || 720);
+  const safeScale = Math.max(1, Number.isFinite(timelineScale) ? timelineScale : 1);
+  const targetTickInterval = Math.max(0.1, (56 * safeTotalDuration) / (safeViewportWidth * safeScale));
   const tickMagnitude = 10 ** Math.floor(Math.log10(targetTickInterval));
-  const tickInterval =
+  const tickInterval = Math.max(
+    0.1,
     [1, 2, 2.5, 5, 10].map((scale) => scale * tickMagnitude).find((interval) => interval >= targetTickInterval) ??
-    10 * tickMagnitude;
+      10 * tickMagnitude
+  );
+  const rawTickCount = Math.floor(safeTotalDuration / tickInterval + 1e-9) + 1;
+  const safeTickCount = Math.min(250, Math.max(1, Number.isFinite(rawTickCount) ? rawTickCount : 1));
   const ticks = Array.from(
-    { length: Math.floor(totalDuration / tickInterval + 1e-9) + 1 },
+    { length: safeTickCount },
     (_, index) => index * tickInterval
   );
 

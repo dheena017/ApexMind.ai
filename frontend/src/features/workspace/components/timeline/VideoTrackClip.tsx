@@ -129,7 +129,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               height: `${laneHeight}px`,
               ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
             }}
-            title={`Video Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${clip.start.toFixed(1)}s, Dur: ${clip.duration.toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
+            title={`Video Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
             {/* Color Label Strip (top edge) */}
             {colorLabel && (
@@ -197,7 +197,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               TIMELINE PREVIEW
             </div>
             <div className="absolute bottom-1 right-1 bg-black/80 px-1 py-0.2 rounded text-[8px] font-mono-studio text-white/90">
-              {hoveredClip.clip.duration.toFixed(1)}s
+              {(Number(hoveredClip.clip.duration) || 0).toFixed(1)}s
             </div>
           </div>
           <div className="flex flex-col px-0.5">
@@ -245,7 +245,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
           onCopyTimings={() => {
             const clip = effectiveClips.find((c) => c.id === contextMenu.clipId);
             if (clip) {
-              const text = `Start: ${clip.start.toFixed(2)}s | Duration: ${clip.duration.toFixed(2)}s | End: ${(clip.start + clip.duration).toFixed(2)}s`;
+              const text = `Start: ${(Number(clip.start) || 0).toFixed(2)}s | Duration: ${(Number(clip.duration) || 0).toFixed(2)}s | End: {((Number(clip.start) || 0) + (Number(clip.duration) || 0)).toFixed(2)}s`;
               navigator.clipboard.writeText(text).catch(() => {});
             }
             onCopyTimings?.();

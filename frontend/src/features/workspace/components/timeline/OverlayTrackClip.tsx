@@ -139,7 +139,7 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
               height: `${laneHeight}px`,
               ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
             }}
-            title={`Overlay Clip: "${clip.name || clip.label}" • Layer: ${clipLane + 1} • Start: ${clip.start.toFixed(1)}s, Dur: ${clip.duration.toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
+            title={`Overlay Clip: "${clip.name || clip.label}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
             {/* Color Label Strip */}
             {colorLabel && (

@@ -2256,7 +2256,7 @@ export default function WorkspacePage({
 
       {/* ── Studio Multi-Track Timeline Panel (Bottom Studio Area) ── */}
       {showTimeline && (
-        <div className="shrink-0">
+        <div className="shrink-0 min-h-[44px]">
           <StudioTimelinePane
             timelineHeight={timelineHeight}
             onTimelineHeightChange={setTimelineHeight}

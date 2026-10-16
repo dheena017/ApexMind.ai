@@ -127,7 +127,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               height: `${laneHeight}px`,
               ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
             }}
-            title={`Image Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${clip.start.toFixed(1)}s, Dur: ${clip.duration.toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
+            title={`Image Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
             {/* Color Label Strip */}
             {colorLabel && (
@@ -239,7 +239,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
           onCopyTimings={() => {
             const clip = effectiveClips.find((c) => c.id === contextMenu.clipId);
             if (clip) {
-              const text = `Start: ${clip.start.toFixed(2)}s | Duration: ${clip.duration.toFixed(2)}s | End: ${(clip.start + clip.duration).toFixed(2)}s`;
+              const text = `Start: ${(Number(clip.start) || 0).toFixed(2)}s | Duration: ${(Number(clip.duration) || 0).toFixed(2)}s | End: {((Number(clip.start) || 0) + (Number(clip.duration) || 0)).toFixed(2)}s`;
               navigator.clipboard.writeText(text).catch(() => {});
             }
             onCopyTimings?.();
