@@ -29,35 +29,15 @@ export default defineConfig(({mode}) => {
     originalError(msg, options);
   };
 
-  const startTimeMap = new WeakMap<any, number>();
-
   const apiProxy = {
     '/api': {
       target: backendUrl,
       changeOrigin: true,
       configure: (proxy: any) => {
-        proxy.on('proxyReq', (_proxyReq: any, req: any) => {
-          startTimeMap.set(req, Date.now());
-          const method = (req.method || 'GET').toUpperCase();
-          const url = req.url || '';
-          console.log(`[APEX_LOG] INFO|HTTP|--> ${method.padEnd(6)} ${url} (from 127.0.0.1)`);
-        });
-
-        proxy.on('proxyRes', (proxyRes: any, req: any) => {
-          const startTime = startTimeMap.get(req) || Date.now();
-          const duration = Date.now() - startTime;
-          const status = proxyRes.statusCode || 200;
-          const method = (req.method || 'GET').toUpperCase();
-          const url = req.url || '';
-          const statusText = status < 300 ? `${status} OK` : status < 400 ? `${status} REDIR` : status < 500 ? `${status} CLIENT ERR` : `${status} SERVER ERR`;
-          const level = status < 400 ? 'INFO' : status < 500 ? 'WARN' : 'ERROR';
-          console.log(`[APEX_LOG] ${level}|HTTP|<-- ${statusText} ${method.padEnd(6)} ${url} | Duration: ${duration.toFixed(1)}ms`);
-        });
-
         proxy.on('error', (_err: any, req: any, res: any) => {
           const method = (req?.method || 'GET').toUpperCase();
           const url = req?.url || '';
-          console.log(`[APEX_LOG] ERROR|HTTP|<!- PROXY ERROR ${method.padEnd(6)} ${url} | Backend unreachable at ${backendUrl}`);
+          console.log(`[APEX_LOG] WARN|Frontend|Backend proxy error on ${method} ${url} | Backend unreachable at ${backendUrl}`);
           if (res && 'writeHead' in res && !res.headersSent) {
             res.writeHead(503, {'Content-Type': 'application/json'});
             res.end(

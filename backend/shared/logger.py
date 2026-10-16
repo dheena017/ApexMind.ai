@@ -71,6 +71,83 @@ class UvicornNoiseFilter(logging.Filter):
         return not any(phrase in msg for phrase in self.NOISE_PHRASES)
 
 
+def colorize_backend_info(msg: str) -> str:
+    """Intelligently syntax-highlight backend INFO log messages."""
+    if "\033[" in msg:
+        return msg
+
+    clean = msg
+
+    if "Features active:" in clean:
+        parts = clean.split("Features active:", 1)
+        feat_str = parts[1]
+        formatted_features = (
+            feat_str.replace("Workspace", f"{Colors.BRIGHT_BLUE}Workspace{Colors.RESET}")
+            .replace("YouTube", f"{Colors.BRIGHT_RED}YouTube{Colors.RESET}")
+            .replace("Notifications", f"{Colors.BRIGHT_YELLOW}Notifications{Colors.RESET}")
+            .replace("Dashboard", f"{Colors.BRIGHT_CYAN}Dashboard{Colors.RESET}")
+            .replace("Auth", f"{Colors.BRIGHT_GREEN}Auth{Colors.RESET}")
+            .replace("•", f"{Colors.GRAY}•{Colors.RESET}")
+        )
+        return f"{Colors.WHITE}Features active:{Colors.RESET}{formatted_features}"
+
+    if "Schema verified" in clean or "Presets verified" in clean:
+        return re.sub(r"\(([^)]+)\)", rf"({Colors.BRIGHT_CYAN}\1{Colors.RESET})", clean)
+
+    if "SQLite DB connected:" in clean:
+        return re.sub(r"(connected:\s*)(.+)", rf"\1{Colors.BRIGHT_CYAN}\2{Colors.RESET}", clean)
+
+    # Style pipe delimiters and arrows
+    clean = clean.replace(" | ", f" {Colors.GRAY}|{Colors.RESET} ")
+    clean = clean.replace(" -> ", f" {Colors.GRAY}➔{Colors.RESET} ")
+    clean = clean.replace(" --> ", f" {Colors.GRAY}➔{Colors.RESET} ")
+
+    # Highlight URLs
+    clean = re.sub(
+        r"(https?://[^\s\)]+)",
+        rf"{Colors.BRIGHT_CYAN}{Colors.UNDERLINE}\1{Colors.RESET}",
+        clean,
+    )
+
+    # Highlight AI Models
+    clean = re.sub(
+        r"\b(gemini-[\w\.\-]+|gTTS|TTS)\b",
+        rf"{Colors.BRIGHT_MAGENTA}{Colors.BOLD}\1{Colors.RESET}",
+        clean,
+    )
+
+    # Highlight quoted strings
+    clean = re.sub(
+        r"'([^']+)'",
+        rf"'{Colors.BRIGHT_WHITE}{Colors.BOLD}\1{Colors.RESET}'",
+        clean,
+    )
+
+    # Highlight bracketed tags
+    clean = re.sub(
+        r"\[([^\]]+)\]",
+        rf"[{Colors.BRIGHT_YELLOW}\1{Colors.RESET}]",
+        clean,
+    )
+
+    # Highlight metrics and sizes
+    clean = re.sub(
+        r"\b(\d+\.?\d*\s*(?:ms|s|seconds|bytes|KB|MB|GB|px|views|quotes|channels|videos|items|records|scenes))\b",
+        rf"{Colors.BRIGHT_GREEN}\1{Colors.RESET}",
+        clean,
+        flags=re.IGNORECASE,
+    )
+
+    # Highlight ID tags
+    clean = re.sub(
+        r"\b(ID:\s*[\w\-]+|Unread:\s*\d+|limit:\s*\d+|count:\s*\d+)\b",
+        rf"{Colors.CYAN}\1{Colors.RESET}",
+        clean,
+    )
+
+    return f"{Colors.WHITE}{clean}{Colors.RESET}"
+
+
 class ColoredFormatter(logging.Formatter):
     """Custom log formatter rendering colorful badges, module tags, and timestamps."""
 
@@ -110,21 +187,32 @@ class ColoredFormatter(logging.Formatter):
         # 2. Level Badge with High Contrast
         badge = self.LEVEL_BADGES.get(record.levelno, f"[{record.levelname}]")
 
-        # 3. Determine Module Tag & Color (Map uvicorn/watchfiles cleanly)
-        raw_name = record.name.replace("ApexMind.", "")
-        if "uvicorn" in raw_name.lower():
+        # 3. Determine Module Tag & Color (Map cleanly to standard 10-char width)
+        raw_name = record.name.replace("ApexMind.", "").lower()
+        if "uvicorn" in raw_name or "server" in raw_name:
             mod_name = "Server"
-        elif "watchfiles" in raw_name.lower():
+        elif "watchfiles" in raw_name or "watcher" in raw_name:
             mod_name = "Watcher"
+        elif "youtube" in raw_name:
+            mod_name = "YouTube"
+        elif "notification" in raw_name:
+            mod_name = "Notifications"
+        elif "workspace" in raw_name:
+            mod_name = "Workspace"
+        elif "dashboard" in raw_name:
+            mod_name = "Dashboard"
+        elif "auth" in raw_name:
+            mod_name = "Auth"
+        elif "database" in raw_name:
+            mod_name = "Database"
+        elif "gemini" in raw_name:
+            mod_name = "Gemini"
+        elif "http" in raw_name:
+            mod_name = "HTTP"
         else:
-            mod_name = raw_name
+            mod_name = record.name.split(".")[-1].capitalize()[:10]
 
-        tag_color = Colors.CYAN
-        for mod, col in self.MODULE_COLORS.items():
-            if mod.lower() in mod_name.lower():
-                tag_color = col
-                break
-
+        tag_color = self.MODULE_COLORS.get(mod_name, Colors.CYAN)
         tag = f"{tag_color}{Colors.BOLD}[{mod_name:<10}]{Colors.RESET}"
 
         # 4. Message Coloring and cleaning
@@ -136,28 +224,11 @@ class ColoredFormatter(logging.Formatter):
             msg_colored = f"{Colors.BRIGHT_RED}{msg}{Colors.RESET}"
         elif record.levelno == logging.WARNING:
             msg_colored = f"{Colors.BRIGHT_YELLOW}{msg}{Colors.RESET}"
-        elif "Features active:" in msg:
-            parts = msg.split("Features active:", 1)
-            feat_str = parts[1]
-            formatted_features = (
-                feat_str.replace("Workspace", f"{Colors.BRIGHT_BLUE}Workspace{Colors.RESET}")
-                .replace("YouTube", f"{Colors.BRIGHT_RED}YouTube{Colors.RESET}")
-                .replace("Notifications", f"{Colors.BRIGHT_YELLOW}Notifications{Colors.RESET}")
-                .replace("Dashboard", f"{Colors.BRIGHT_CYAN}Dashboard{Colors.RESET}")
-                .replace("Auth", f"{Colors.BRIGHT_GREEN}Auth{Colors.RESET}")
-                .replace("•", f"{Colors.GRAY}•{Colors.RESET}")
-            )
-            msg_colored = f"{Colors.WHITE}Features active:{Colors.RESET}{formatted_features}"
-        elif "Schema verified" in msg or "Presets verified" in msg:
-            clean = re.sub(r"\(([^)]+)\)", rf"({Colors.BRIGHT_CYAN}\1{Colors.RESET})", msg)
-            msg_colored = f"{Colors.WHITE}{clean}{Colors.RESET}"
-        elif "SQLite DB connected:" in msg:
-            clean = re.sub(r"(connected:\s*)(.+)", rf"\1{Colors.BRIGHT_CYAN}\2{Colors.RESET}", msg)
-            msg_colored = f"{Colors.WHITE}{clean}{Colors.RESET}"
         else:
-            msg_colored = f"{Colors.WHITE}{msg}{Colors.RESET}"
+            msg_colored = colorize_backend_info(msg)
 
-        formatted = f"{timestamp} {badge} {tag} {msg_colored}"
+        scope = f"{Colors.BRIGHT_GREEN}[Backend]{Colors.RESET}"
+        formatted = f"{timestamp} {scope} {badge} {tag} {msg_colored}"
         if not self.use_color:
             return re.sub(r"\033\[[0-?]*[ -/]*[@-~]", "", formatted)
         return formatted

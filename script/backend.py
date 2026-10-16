@@ -595,8 +595,9 @@ def main() -> int:
         if raw_extra:
             uvicorn_extra_args = shlex.split(raw_extra)
 
+        mode_str = f"{ansi.BRIGHT_GREEN}Auto-Reload Active (Watching backend/){ansi.RESET}" if reload_enabled else f"{ansi.YELLOW}Auto-Reload Disabled{ansi.RESET}"
         print(f"\n{ansi.GREEN}{ansi.BOLD}[ApexMind OK]{ansi.RESET} Backend ready at http://{display_host}:{port}/api/docs")
-        print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Starting FastAPI app on http://{display_host}:{port}")
+        print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Starting FastAPI app on http://{display_host}:{port} ({mode_str})")
 
         # Hook Uvicorn exit handlers so stop message prints immediately on Ctrl+C
         orig_handle_exit = uvicorn.server.Server.handle_exit
@@ -628,6 +629,7 @@ def main() -> int:
             log_config=get_uvicorn_log_config(use_color=use_color),
             log_level=log_level,
             workers=args.workers if not reload_enabled else 1,
+            access_log=False,
         )
         return 0
     except KeyboardInterrupt:

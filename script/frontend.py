@@ -510,28 +510,36 @@ def colorize_info_message(msg: str, a: Ansi) -> str:
         )
         return f"{a.WHITE}{clean}{a.RESET}"
 
-    # 6. HTTP request/response line
-    if "-->" in text or "<--" in text:
+    # 6. Navigation router line
+    if "Navigated:" in text:
+        clean = text.replace("➔", f"{a.GRAY}➔{a.RESET}").replace("->", f"{a.GRAY}➔{a.RESET}")
         clean = re.sub(
-            r"\b(GET|POST|PUT|DELETE|PATCH)\b",
-            rf"{a.BRIGHT_CYAN}\1{a.RESET}",
-            text,
-        )
-        clean = re.sub(
-            r"\b(20\d\s+OK)\b",
-            rf"{a.BRIGHT_GREEN}\1{a.RESET}",
-            clean,
-        )
-        clean = re.sub(
-            r"(\d+\.?\d*\s*ms)",
-            rf"{a.BRIGHT_GREEN}\1{a.RESET}",
+            r"\b([a-zA-Z0-9_\-]+)\s*(➔)\s*([a-zA-Z0-9_\-]+)\b",
+            rf"{a.BRIGHT_YELLOW}\1{a.RESET} \2 {a.BRIGHT_GREEN}\3{a.RESET}",
             clean,
         )
         return f"{a.WHITE}{clean}{a.RESET}"
 
-    # General fallback: highlight bracketed tags, URLs, and timing
-    clean = re.sub(r"(https?://[^\s]+)", rf"{a.BRIGHT_CYAN}\1{a.RESET}", text)
-    clean = re.sub(r"\[([a-zA-Z0-9_\-]+)\]", rf"[{a.BRIGHT_YELLOW}\1{a.RESET}]", clean)
+    # 7. HMR file update line
+    if "hmr update" in text.lower():
+        clean = re.sub(
+            r"(/src/[^\s,]+)",
+            rf"{a.BRIGHT_CYAN}\1{a.RESET}",
+            text,
+        )
+        return f"{a.WHITE}{clean}{a.RESET}"
+
+    # General fallback: highlight bracketed tags, URLs, timing, and quoted strings
+    clean = re.sub(r"(https?://[^\s\)]+)", rf"{a.BRIGHT_CYAN}{a.UNDERLINE}\1{a.RESET}", text)
+    clean = re.sub(r"\[([a-zA-Z0-9_\-:]+)\]", rf"[{a.BRIGHT_YELLOW}\1{a.RESET}]", clean)
+    clean = re.sub(r'\"([^\"]+)\"', rf'"{a.BRIGHT_WHITE}{a.BOLD}\1{a.RESET}"', clean)
+    clean = re.sub(r"'([^']+)'", rf"'{a.BRIGHT_WHITE}{a.BOLD}\1{a.RESET}'", clean)
+    clean = re.sub(
+        r"\b(\d+\.?\d*\s*(?:ms|s|seconds|tracks|backdrops|scenes|videos|channels|words))\b",
+        rf"{a.BRIGHT_GREEN}\1{a.RESET}",
+        clean,
+        flags=re.IGNORECASE,
+    )
     return f"{a.WHITE}{clean}{a.RESET}"
 
 
@@ -580,7 +588,8 @@ def format_log(mod_name: str, message: str, level: str = "INFO", ansi: Ansi | No
         "HMR": a.BRIGHT_GREEN,
         "Plugins": a.BRIGHT_YELLOW,
     }
-    col = module_colors.get(mod_name, a.CYAN)
+    clean_mod = mod_name.replace("UI:", "")
+    col = module_colors.get(clean_mod, module_colors.get(mod_name, a.CYAN))
     tag = f"{col}{a.BOLD}[{mod_name:<10}]{a.RESET}"
 
     if lvl in ("ERROR", "FATAL"):
@@ -594,7 +603,8 @@ def format_log(mod_name: str, message: str, level: str = "INFO", ansi: Ansi | No
     else:
         msg_colored = colorize_info_message(message, a)
 
-    return f"{timestamp} {badge} {tag} {msg_colored}"
+    scope = f"{a.BRIGHT_CYAN}[Frontend]{a.RESET}"
+    return f"{timestamp} {scope} {badge} {tag} {msg_colored}"
 
 
 def print_frontend_banner(display_host: str, port: int, node_version: str, with_backend: bool, ansi: Ansi) -> None:
@@ -963,7 +973,7 @@ def main() -> int:
             backend_host,
             "--port",
             str(backend_port),
-            "--no-reload",
+            "--reload",
         ]
 
         try:

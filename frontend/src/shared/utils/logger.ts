@@ -33,9 +33,14 @@ const TEXT_STYLES: Record<string, string> = {
 function sendToTerminal(level: string, module: string, message: string) {
   if (typeof window === 'undefined') return;
 
+  // STRICT SEPARATION: Only forward frontend UI/client events to terminal.
+  // Backend services (HTTP, Gemini, Database, API responses) are logged exclusively in the backend server console.
+  const BACKEND_SERVICES = new Set(['HTTP', 'Gemini', 'Database', 'Notifications', 'Dashboard', 'StudioVideos']);
+  if (BACKEND_SERVICES.has(module)) return;
+
   const payload = {
     level,
-    module,
+    module: module === 'App' || module === 'Router' || module === 'Vite' || module === 'HMR' ? module : `UI:${module}`,
     message: typeof message === 'string' ? message : JSON.stringify(message),
   };
 
