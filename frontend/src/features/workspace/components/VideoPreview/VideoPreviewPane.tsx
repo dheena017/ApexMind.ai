@@ -635,15 +635,21 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   }, []);
 
   const theme = (activeBackdrop?.id && BACKDROP_THEMES[activeBackdrop.id]) || null;
+  const activeStoryboardVideo = (script.storyboard || []).find(
+    (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3) && sc.mediaType === 'video' && sc.mediaUrl
+  )?.mediaUrl || (script.storyboard && script.storyboard[0]?.mediaType === 'video' ? script.storyboard[0]?.mediaUrl : undefined);
+
   const activeVideo = activeVideoClip
     ? activeVideoClip.url
     : (timelineState.videoClips && timelineState.videoClips.length > 0
         ? undefined
-        : (isCustomVideo
-            ? customVideoUrl
-            : (!isCustomImage
-                ? (activeBackdrop?.videoUrl || (activeBackdrop?.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined))
-                : undefined)));
+        : (activeStoryboardVideo
+            ? activeStoryboardVideo
+            : (isCustomVideo
+                ? customVideoUrl
+                : (!isCustomImage
+                    ? (activeBackdrop?.videoUrl || (activeBackdrop?.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined))
+                    : undefined))));
 
   const activeImage = activeImageClip
     ? activeImageClip.url
