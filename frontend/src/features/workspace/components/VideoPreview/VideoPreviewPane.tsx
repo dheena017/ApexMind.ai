@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Moveable from 'react-moveable';
 import { toCanvas } from 'html-to-image';
-import { Play, Pause, RotateCcw, SkipForward, Volume2, VolumeX, Repeat } from 'lucide-react';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
-import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip, formatTime } from '../timeline/timelineTypes';
+import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
 // Timeline state broadcast from StudioTimelinePane
@@ -1308,104 +1307,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           />
         )}
 
-        </div>
-      </div>
-
-      {/* ── Sleek Studio Video Player Transport Bar (Directly Under Video Canvas) ── */}
-      <div className="w-full max-w-2xl px-3 py-1.5 flex items-center justify-between gap-3 bg-[#111115]/95 border border-[#272730] backdrop-blur-md rounded-xl shrink-0 shadow-xl z-20">
-        {/* Left: Jump to Start, Hero Play/Pause Pill Button, Jump to End & Timecode */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => onSeek(0)}
-            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
-            title="Jump to Start (00:00)"
-            aria-label="Jump to start"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Primary Hero Play / Pause Pill Button */}
-          <button
-            type="button"
-            onClick={onTogglePlay}
-            className="h-7 px-4 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95 shrink-0 border border-[#60A5FA]/40"
-            title={isPlaying ? 'Pause Video (Space)' : 'Play Video (Space)'}
-            aria-label={isPlaying ? 'Pause video' : 'Play video'}
-          >
-            {isPlaying ? (
-              <>
-                <Pause className="w-3.5 h-3.5 fill-white shrink-0" />
-                <span className="text-[10.5px] font-bold font-sans-studio tracking-wider uppercase">Pause</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 fill-white ml-0.5 shrink-0" />
-                <span className="text-[10.5px] font-bold font-sans-studio tracking-wider uppercase">Play</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onSeek(effectiveDuration)}
-            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
-            title="Jump to End"
-            aria-label="Jump to end"
-          >
-            <SkipForward className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Time Readout: Clean Non-Editable Display */}
-          <div
-            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#08080A] border border-[#262630] text-[10px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
-            aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(effectiveDuration)}`}
-          >
-            <span className="text-[#60A5FA] font-bold" title="Current Playhead Time">{formatTime(currentTime)}</span>
-            <span className="text-[#52525B]">/</span>
-            <span className="text-[#A1A1AA]" title="Total Duration">{formatTime(effectiveDuration)}</span>
-          </div>
-        </div>
-
-        {/* Center: Live Scrubber Progress Bar */}
-        <div className="flex-1 min-w-[70px] flex items-center px-1">
-          <input
-            type="range"
-            min={0}
-            max={effectiveDuration}
-            step={0.05}
-            value={Math.min(effectiveDuration, Math.max(0, currentTime))}
-            onChange={(e) => onSeek(parseFloat(e.target.value))}
-            className="w-full h-1.5 bg-[#252530] rounded-lg appearance-none cursor-pointer accent-[#3B82F6] hover:bg-[#303040] transition-colors"
-            title="Scrub preview playhead"
-          />
-        </div>
-
-        {/* Right: Audio Mute/Volume & Aspect Badge */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onToggleMute}
-            className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
-            title={isMuted ? 'Unmute' : 'Mute'}
-          >
-            {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5 text-[#9CA3AF]" />}
-          </button>
-          {onToggleLoop && (
-            <button
-              type="button"
-              onClick={onToggleLoop}
-              className={`p-1 rounded text-[10px] transition-colors cursor-pointer ${
-                isLooping ? 'text-[#60A5FA] bg-blue-500/15' : 'text-[#71717A] hover:text-white'
-              }`}
-              title={isLooping ? 'Looping enabled' : 'Looping disabled'}
-            >
-              <Repeat className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <span className="text-[9.5px] font-mono-studio px-2 py-0.5 rounded bg-[#1C1C24] border border-[#2B2B36] text-[#A1A1AA]">
-            {canvasAspectRatio}
-          </span>
         </div>
       </div>
     </div>
