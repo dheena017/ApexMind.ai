@@ -209,6 +209,20 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const rulerScrollRef = useRef<HTMLDivElement>(null);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingPlayhead = useRef<boolean>(false);
+  const [scrollbarWidth, setScrollbarWidth] = useState<number>(0);
+
+  useEffect(() => {
+    const el = tracksScrollRef.current;
+    if (!el) return;
+    const checkScrollbar = () => {
+      const sbWidth = el.offsetWidth - el.clientWidth;
+      setScrollbarWidth(Math.max(0, sbWidth));
+    };
+    checkScrollbar();
+    const ro = new ResizeObserver(checkScrollbar);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const handleTracksScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (rulerScrollRef.current) {
@@ -2091,7 +2105,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     e.stopPropagation();
                     handleRulerPointerDown(e);
                   }}
-                  className="absolute top-0 -translate-x-1/2 h-6 flex flex-col items-center pointer-events-auto cursor-ew-resize group/playhead z-40 select-none"
+                  className="absolute top-0 w-0 flex justify-center h-6 pointer-events-auto cursor-ew-resize group/playhead z-40 select-none"
                   style={{ left: `${progressPercent}%` }}
                   title={`Playhead: ${formatTime(currentTime)} (Drag to scrub)`}
                 >
@@ -2099,7 +2113,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     width="14"
                     height="24"
                     viewBox="0 0 14 24"
-                    className="overflow-visible"
+                    className="overflow-visible shrink-0"
                   >
                     <path
                       d="M 2 0.5 L 12 0.5 C 13.1 0.5 14 1.4 14 2.5 L 14 13.5 L 7 24 L 0 13.5 L 0 2.5 C 0 1.4 0.9 0.5 2 0.5 Z"
@@ -2112,7 +2126,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             </div>
 
             {/* Spacer matching vertical scrollbar width so ruler aligns with tracks */}
-            <div className="w-[7px] shrink-0 bg-[#141414]" />
+            {scrollbarWidth > 0 && (
+              <div style={{ width: `${scrollbarWidth}px` }} className="shrink-0 bg-[#141414]" />
+            )}
           </div>
 
           {/* ── Scrollable Tracks Area (Begins strictly BELOW the Time Ruler) ── */}
@@ -2125,71 +2141,76 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             <div
               className="flex min-w-full"
               style={{
-                width: `calc(${100 * timelineScale}% - ${trackHeadersWidth * timelineScale}px + ${trackHeadersWidth + 4}px)`,
+                width: `calc(${100 * timelineScale}% - ${trackHeadersWidth * timelineScale}px + ${trackHeadersWidth}px)`,
               }}
             >
-              {/* ── Track Header Column ── */}
-              <TimelineTrackHeaders
-                width={trackHeadersWidth}
-                showCornerHeader={false}
-                enabledTracks={enabledTracks}
-                selectedClip={selectedClip}
-                onSelectClip={handleSelectClip}
-                videoTrackVisible={videoTrackVisible}
-                onToggleVideoTrackVisible={() => setVideoTrackVisible(!videoTrackVisible)}
-                videoTrackHeight={videoTrackHeight}
-                videoMaxLane={videoMaxLane}
-                imageTrackVisible={imageTrackVisible}
-                onToggleImageTrackVisible={() => setImageTrackVisible(!imageTrackVisible)}
-                imageTrackHeight={imageTrackHeight}
-                imageMaxLane={imageMaxLane}
-                overlayTrackVisible={overlayTrackVisible}
-                onToggleOverlayTrackVisible={() => setOverlayTrackVisible(!overlayTrackVisible)}
-                overlayTrackHeight={overlayTrackHeight}
-                overlayMaxLane={overlayMaxLane}
-                captionsTrackLocked={captionsTrackLocked}
-                onToggleCaptionsTrackLocked={() => setCaptionsTrackLocked(!captionsTrackLocked)}
-                captionTrackHeight={captionTrackHeight}
-                captionMaxLane={captionMaxLane}
-                titleTrackLocked={titleTrackLocked}
-                onToggleTitleTrackLocked={() => setTitleTrackLocked(!titleTrackLocked)}
-                voiceTrackMuted={voiceTrackMuted}
-                onToggleVoiceTrackMuted={() => setVoiceTrackMuted(!voiceTrackMuted)}
-                voiceTrackHeight={voiceTrackHeight}
-                voiceMaxLane={voiceMaxLane}
-                musicTrackMuted={musicTrackMuted}
-                onToggleMusicTrackMuted={() => setMusicTrackMuted(!musicTrackMuted)}
-                musicTrackHeight={musicTrackHeight}
-                musicMaxLane={musicMaxLane}
-                sfxTrackMuted={sfxTrackMuted}
-                onToggleSfxTrackMuted={() => setSfxTrackMuted(!sfxTrackMuted)}
-                sfxTrackHeight={sfxTrackHeight}
-                sfxMaxLane={sfxMaxLane}
-              />
-
-              {/* ── Resizable Splitter (Track Labels Width) ── */}
+              {/* ── Track Header Column with Overlaid Zero-Flow Splitter ── */}
               <div
-                role="separator"
-                aria-orientation="vertical"
-                onPointerDown={handleTrackHeadersResizeStart}
-                onDoubleClick={() => {
-                  setTrackHeadersWidth(DEFAULT_TRACK_HEADERS_WIDTH);
-                  try {
-                    localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
-                  } catch {}
-                }}
-                className={`w-2 -ml-1 shrink-0 z-30 cursor-col-resize group/col-resize relative flex items-center justify-center hover:bg-white/10 select-none transition-colors ${
-                  isResizingTrackHeaders ? 'bg-white/20' : ''
-                }`}
-                title="Drag left/right to adjust track labels width (double-click to reset)"
+                style={{ width: `${trackHeadersWidth}px` }}
+                className="relative shrink-0 flex flex-col"
               >
-                <div
-                  className={`w-[2px] h-full transition-colors ${
-                    isResizingTrackHeaders
-                      ? 'bg-white'
-                      : 'bg-transparent group-hover/col-resize:bg-white/70'
-                  }`}
+                <TimelineTrackHeaders
+                  width={trackHeadersWidth}
+                  showCornerHeader={false}
+                  enabledTracks={enabledTracks}
+                  selectedClip={selectedClip}
+                  onSelectClip={handleSelectClip}
+                  videoTrackVisible={videoTrackVisible}
+                  onToggleVideoTrackVisible={() => setVideoTrackVisible(!videoTrackVisible)}
+                  videoTrackHeight={videoTrackHeight}
+                  videoMaxLane={videoMaxLane}
+                  imageTrackVisible={imageTrackVisible}
+                  onToggleImageTrackVisible={() => setImageTrackVisible(!imageTrackVisible)}
+                  imageTrackHeight={imageTrackHeight}
+                  imageMaxLane={imageMaxLane}
+                  overlayTrackVisible={overlayTrackVisible}
+                  onToggleOverlayTrackVisible={() => setOverlayTrackVisible(!overlayTrackVisible)}
+                  overlayTrackHeight={overlayTrackHeight}
+                  overlayMaxLane={overlayMaxLane}
+                  captionsTrackLocked={captionsTrackLocked}
+                  onToggleCaptionsTrackLocked={() => setCaptionsTrackLocked(!captionsTrackLocked)}
+                  captionTrackHeight={captionTrackHeight}
+                  captionMaxLane={captionMaxLane}
+                  titleTrackLocked={titleTrackLocked}
+                  onToggleTitleTrackLocked={() => setTitleTrackLocked(!titleTrackLocked)}
+                  voiceTrackMuted={voiceTrackMuted}
+                  onToggleVoiceTrackMuted={() => setVoiceTrackMuted(!voiceTrackMuted)}
+                  voiceTrackHeight={voiceTrackHeight}
+                  voiceMaxLane={voiceMaxLane}
+                  musicTrackMuted={musicTrackMuted}
+                  onToggleMusicTrackMuted={() => setMusicTrackMuted(!musicTrackMuted)}
+                  musicTrackHeight={musicTrackHeight}
+                  musicMaxLane={musicMaxLane}
+                  sfxTrackMuted={sfxTrackMuted}
+                  onToggleSfxTrackMuted={() => setSfxTrackMuted(!sfxTrackMuted)}
+                  sfxTrackHeight={sfxTrackHeight}
+                  sfxMaxLane={sfxMaxLane}
                 />
+
+                {/* ── Resizable Splitter (Overlaid on right border - ZERO layout flow width) ── */}
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  onPointerDown={handleTrackHeadersResizeStart}
+                  onDoubleClick={() => {
+                    setTrackHeadersWidth(DEFAULT_TRACK_HEADERS_WIDTH);
+                    try {
+                      localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
+                    } catch {}
+                  }}
+                  className={`absolute right-0 top-0 bottom-0 w-2 translate-x-1/2 z-30 cursor-col-resize group/col-resize flex items-center justify-center hover:bg-white/10 select-none transition-colors ${
+                    isResizingTrackHeaders ? 'bg-white/20' : ''
+                  }`}
+                  title="Drag left/right to adjust track labels width (double-click to reset)"
+                >
+                  <div
+                    className={`w-[2px] h-full transition-colors ${
+                      isResizingTrackHeaders
+                        ? 'bg-white'
+                        : 'bg-transparent group-hover/col-resize:bg-white/70'
+                    }`}
+                  />
+                </div>
               </div>
 
               {/* ── Timeline Tracks Area (Scrollable & Zoomable) ───── */}
@@ -3123,10 +3144,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
                 {/* ── Playhead indicator line across all tracks ────── */}
                 <div
-                  className="absolute top-0 bottom-0 pointer-events-none z-30 select-none"
+                  className="absolute top-0 bottom-0 pointer-events-none z-30 select-none w-0 flex justify-center"
                   style={{ left: `${progressPercent}%` }}
                 >
-                  <div className="w-px h-full bg-white -translate-x-1/2 relative" />
+                  <div className="w-[1.5px] h-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)] shrink-0" />
                 </div>
               </div>
             </div>
