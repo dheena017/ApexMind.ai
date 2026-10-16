@@ -122,7 +122,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
                   e.stopPropagation();
                   onPointerDownTrimLeft(e, index, clip.start, clip.duration || 3);
                 }}
-                className="timeline-trim-handle-left bg-blue-400/40 hover:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="timeline-trim-handle-left bg-teal-400/40 hover:bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Drag to trim start time"
               >
                 <div className="w-0.5 h-3 bg-white rounded-full" />
@@ -145,7 +145,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
                     if (e.key === 'Escape') onCancelInlineEdit();
                   }}
                   onBlur={() => onSaveInlineText(index)}
-                  className="w-full bg-black/80 border border-blue-400 rounded px-1.5 py-0.5 text-[10px] text-white font-mono-studio outline-none"
+                  className="w-full bg-black/80 border border-teal-400 rounded px-1.5 py-0.5 text-[10px] text-white font-mono-studio outline-none"
                 />
                 <button
                   type="button"
@@ -157,11 +157,11 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
               </div>
             ) : (
               <>
-                <Move className="w-2.5 h-2.5 text-blue-300/60 shrink-0 ml-1" title="Move & drag caption" />
+                <Move className="w-2.5 h-2.5 text-teal-300/60 shrink-0 ml-1" title="Move & drag caption" />
                 <span className="text-[10px] font-mono-studio truncate leading-tight pointer-events-none pl-0.5">
                   "{clip.text}"
                 </span>
-                <span className="text-[8px] font-mono-studio text-blue-200/90 shrink-0 ml-1 pointer-events-none pr-1 font-bold">
+                <span className="text-[8px] font-mono-studio text-teal-200/90 shrink-0 ml-1 pointer-events-none pr-1 font-bold">
                   {(clip.duration || 3).toFixed(1)}s
                 </span>
               </>
@@ -174,7 +174,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
                   e.stopPropagation();
                   onPointerDownTrimRight(e, index, clip.start, clip.duration || 3);
                 }}
-                className="timeline-trim-handle-right bg-blue-400/40 hover:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="timeline-trim-handle-right bg-teal-400/40 hover:bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Drag to trim duration"
               >
                 <div className="w-0.5 h-3 bg-white rounded-full" />

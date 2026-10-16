@@ -106,9 +106,9 @@ export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
           onEnableTrack('captions', { track: 'caption', index: 0 }, 'text');
           onClose();
         }}
-        className="flex items-center gap-2 px-2 py-1 rounded text-xs text-left text-blue-200 hover:bg-blue-950/40 cursor-pointer"
+        className="flex items-center gap-2 px-2 py-1 rounded text-xs text-left text-teal-200 hover:bg-teal-950/40 cursor-pointer"
       >
-        <Type className="w-3.5 h-3.5 text-blue-400" />
+        <Type className="w-3.5 h-3.5 text-teal-400" />
         <span>Captions Track (T1)</span>
       </button>
       <button

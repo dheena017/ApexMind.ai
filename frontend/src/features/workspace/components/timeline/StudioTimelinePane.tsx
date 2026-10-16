@@ -2040,7 +2040,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
                   } catch {}
                 }}
-                className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[#3B82F6]/40 z-30"
+                className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/20 z-30"
                 title="Drag left/right to adjust track labels width"
               />
             </div>
@@ -2078,9 +2078,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   >
                     <path
                       d="M 2 0.5 L 12 0.5 C 13.1 0.5 14 1.4 14 2.5 L 14 13.5 L 7 24 L 0 13.5 L 0 2.5 C 0 1.4 0.9 0.5 2 0.5 Z"
-                      className="fill-[#3B82F6] group-hover/playhead:fill-[#60A5FA] transition-colors"
+                      className="fill-white group-hover/playhead:fill-[#E4E4E7] transition-colors"
                     />
-                    <circle cx="7" cy="7" r="1.5" fill="#FFFFFF" />
+                    <circle cx="7" cy="7" r="1.5" fill="#18181B" />
                   </svg>
                 </div>
               </div>
@@ -2153,16 +2153,16 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
                   } catch {}
                 }}
-                className={`w-2 -ml-1 shrink-0 z-30 cursor-col-resize group/col-resize relative flex items-center justify-center hover:bg-[#3B82F6]/25 select-none transition-colors ${
-                  isResizingTrackHeaders ? 'bg-[#3B82F6]/30' : ''
+                className={`w-2 -ml-1 shrink-0 z-30 cursor-col-resize group/col-resize relative flex items-center justify-center hover:bg-white/10 select-none transition-colors ${
+                  isResizingTrackHeaders ? 'bg-white/20' : ''
                 }`}
                 title="Drag left/right to adjust track labels width (double-click to reset)"
               >
                 <div
                   className={`w-[2px] h-full transition-colors ${
                     isResizingTrackHeaders
-                      ? 'bg-[#3B82F6] shadow-[0_0_8px_rgba(59,130,246,0.9)]'
-                      : 'bg-transparent group-hover/col-resize:bg-[#60A5FA]'
+                      ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+                      : 'bg-transparent group-hover/col-resize:bg-white/70'
                   }`}
                 />
               </div>
@@ -3101,7 +3101,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   className="absolute top-0 bottom-0 pointer-events-none z-30 select-none"
                   style={{ left: `${progressPercent}%` }}
                 >
-                  <div className="w-px h-full bg-[#3B82F6] -translate-x-1/2 relative shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <div className="w-px h-full bg-white -translate-x-1/2 relative shadow-[0_0_8px_rgba(255,255,255,0.6)]" />
                 </div>
               </div>
             </div>
