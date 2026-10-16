@@ -35,6 +35,43 @@ class GenerateVoiceoverRequest(BaseModel):
 
 # ── 2. Response DTOs ──────────────────────────────────────────────────────────
 
+class HookOptionItem(BaseModel):
+    id: str
+    angle: str  # e.g. "Brutal Truth / Negative", "Curiosity Gap", "Direct Challenge"
+    text: str
+    viralityScore: int = 90
+    spokenDuration: Optional[float] = 2.5
+
+class WordTimestampItem(BaseModel):
+    word: str
+    start: float
+    end: float
+    emphasis: bool = False
+    highlightColor: Optional[str] = None
+
+class AudioDuckingProfile(BaseModel):
+    active: bool = True
+    voiceActiveVolume: float = 0.18
+    pauseSwellVolume: float = 0.72
+    attackMs: int = 150
+    releaseMs: int = 300
+
+class SfxEventItem(BaseModel):
+    time: float
+    sfxId: str
+    label: str
+    sfxUrl: Optional[str] = None
+
+class SoundDesignData(BaseModel):
+    soundtrackTrackId: Optional[str] = None
+    soundtrackTitle: Optional[str] = None
+    genre: Optional[str] = None
+    bpm: Optional[int] = None
+    audioUrl: Optional[str] = None
+    ducking: Optional[AudioDuckingProfile] = None
+    ambientBed: Optional[dict] = None
+    sfxEvents: List[SfxEventItem] = []
+
 class SubtitleItem(BaseModel):
     text: str
     start: float
@@ -42,6 +79,7 @@ class SubtitleItem(BaseModel):
     textStyleId: Optional[str] = None
     captionPresetClass: Optional[str] = None
     captionPresetColor: Optional[str] = None
+    words: Optional[List[WordTimestampItem]] = None
 
 class StoryboardSceneItem(BaseModel):
     sceneNumber: int = 1
@@ -63,12 +101,21 @@ class StoryboardSceneItem(BaseModel):
     sfxUrl: Optional[str] = None
     subtitleText: Optional[str] = None
     aspectRatio: Optional[str] = None
+    googleSearchQuery: Optional[str] = None
+    visualQuery: Optional[str] = None
+    fallbackQueries: Optional[List[str]] = None
+    negativeTerms: Optional[List[str]] = None
+    words: Optional[List[WordTimestampItem]] = None
 
 class GeneratedScriptData(BaseModel):
     title: str
     hook: str
     quote: str
     cta: str
+    hooks: Optional[List[HookOptionItem]] = None
+    soundDesign: Optional[SoundDesignData] = None
+    retentionStrategy: Optional[dict] = None
+    socialSEO: Optional[dict] = None
     speechStyle: Optional[str] = None
     visualTheme: Optional[str] = None
     recommendedVoice: Optional[str] = None

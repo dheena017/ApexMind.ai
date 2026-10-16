@@ -1235,7 +1235,35 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                   boxSizing: 'border-box',
                 }}
               >
-                {visibleSubtitle}
+                {activeSubtitleObj?.words && activeSubtitleObj.words.length > 0 ? (
+                  activeSubtitleObj.words.map((w, wIdx) => {
+                    const isWordActive = currentTime >= w.start && currentTime <= w.end;
+                    const isPast = currentTime > w.end;
+                    return (
+                      <span
+                        key={wIdx}
+                        className={`inline-block transition-all duration-75 mr-[0.22em] ${
+                          isWordActive ? 'scale-110 font-black' : ''
+                        }`}
+                        style={{
+                          color: isWordActive
+                            ? (w.highlightColor || '#FACC15')
+                            : isPast
+                            ? (useCaptionPreset ? activeCaptionPresetColor || captionStyle.color : captionStyle.color)
+                            : undefined,
+                          textShadow: isWordActive
+                            ? '0 0 14px rgba(250, 204, 21, 0.9), 0 2px 4px rgba(0,0,0,1)'
+                            : undefined,
+                          opacity: isPast ? 0.95 : isWordActive ? 1 : 0.72,
+                        }}
+                      >
+                        {w.word}
+                      </span>
+                    );
+                  })
+                ) : (
+                  visibleSubtitle
+                )}
               </p>
             </div>
           </div>

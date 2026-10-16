@@ -406,6 +406,51 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                   </button>
                 </div>
               </div>
+
+              {/* AI Multi-Hook Variation Selector */}
+              {script.hooks && script.hooks.length > 0 && (
+                <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-[#141418] border border-amber-500/20 mb-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                      ⚡ AI Viral Hook Angles ({script.hooks.length})
+                    </span>
+                    <span className="text-zinc-500 text-[9px]">Click to apply</span>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {script.hooks.map((h, hIdx) => {
+                      const isSelected = script.hook?.trim() === h.text?.trim();
+                      return (
+                        <button
+                          key={h.id || hIdx}
+                          type="button"
+                          onClick={() => {
+                            updateField('hook', h.text);
+                            if (script.subtitles && script.subtitles.length > 0) {
+                              const updatedSubs = [...script.subtitles];
+                              updatedSubs[0] = { ...updatedSubs[0], text: h.text };
+                              onUpdateScript({ hook: h.text, subtitles: updatedSubs });
+                            }
+                          }}
+                          className={`text-left p-2 rounded-lg text-xs transition-all flex flex-col gap-0.5 border ${
+                            isSelected
+                              ? 'bg-amber-500/15 border-amber-500/50 text-amber-200 shadow-sm'
+                              : 'bg-[#1C1C22] border-[#2A2A32] text-zinc-300 hover:border-zinc-500'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[9px] font-mono-studio">
+                            <span className="text-amber-400 font-semibold">{h.angle}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
+                              Virality: {h.viralityScore}%
+                            </span>
+                          </div>
+                          <span className="line-clamp-2 text-[11px] leading-snug">{h.text}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <textarea
                 ref={hookRef}
                 value={script.hook || ''}

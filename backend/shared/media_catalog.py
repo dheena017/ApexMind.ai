@@ -364,6 +364,17 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "frequencyData": [40, 60, 70, 80, 90, 95, 80, 70, 85, 90, 100, 85, 70, 60, 30],
     },
     {
+        "id": "track-phonk-tokyo",
+        "title": "Tokyo Night Drift Phonk",
+        "genre": "phonk",
+        "duration": "02:08",
+        "bpm": 145,
+        "copyrightFree": True,
+        "license": "Creative Commons CC0 / Free Commercial",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2023/04/18/audio_106756cbe0.mp3?filename=phonk-147321.mp3",
+        "frequencyData": [45, 70, 85, 95, 100, 90, 75, 85, 95, 100, 90, 75, 65, 50, 35],
+    },
+    {
         "id": "track-cine-apex",
         "title": "Ascent to Greatness",
         "genre": "cinematic",
@@ -373,6 +384,17 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "license": "Creative Commons CC0 / Free Commercial",
         "audioUrl": "https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=epic-cinematic-trailer-113981.mp3",
         "frequencyData": [20, 35, 50, 75, 90, 60, 45, 80, 95, 70, 40, 60, 85, 90, 50],
+    },
+    {
+        "id": "track-cine-valkyrie",
+        "title": "Valkyrie War Anthem",
+        "genre": "cinematic",
+        "duration": "02:35",
+        "bpm": 110,
+        "copyrightFree": True,
+        "license": "Creative Commons CC0 / Free Commercial",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_b722cf1180.mp3?filename=epic-hollywood-trailer-9489.mp3",
+        "frequencyData": [25, 45, 70, 90, 95, 80, 65, 85, 95, 90, 65, 75, 85, 70, 45],
     },
     {
         "id": "track-lofi-midnight",
@@ -386,6 +408,17 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "frequencyData": [15, 25, 40, 55, 60, 50, 45, 65, 70, 55, 40, 50, 60, 40, 20],
     },
     {
+        "id": "track-lofi-discipline",
+        "title": "Quiet Stoic Discipline",
+        "genre": "lofi",
+        "duration": "02:15",
+        "bpm": 85,
+        "copyrightFree": True,
+        "license": "Creative Commons CC0 / Free Commercial",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cinematic-time-lapse-115672.mp3",
+        "frequencyData": [20, 30, 45, 60, 70, 60, 50, 65, 75, 60, 45, 55, 65, 50, 25],
+    },
+    {
         "id": "track-synth-horizon",
         "title": "Neon Grid Horizon",
         "genre": "synthwave",
@@ -395,6 +428,17 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "license": "Creative Commons CC0 / Free Commercial",
         "audioUrl": "https://cdn.pixabay.com/download/audio/2021/09/06/audio_9a65646ff5.mp3?filename=synthwave-80s-9564.mp3",
         "frequencyData": [35, 50, 65, 85, 90, 80, 70, 85, 90, 95, 80, 70, 65, 50, 30],
+    },
+    {
+        "id": "track-synth-cyber",
+        "title": "Cyberpunk Overdrive",
+        "genre": "synthwave",
+        "duration": "02:18",
+        "bpm": 124,
+        "copyrightFree": True,
+        "license": "Creative Commons CC0 / Free Commercial",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_c350699279.mp3?filename=cyberpunk-2099-10701.mp3",
+        "frequencyData": [40, 60, 75, 90, 95, 85, 75, 90, 95, 100, 85, 75, 70, 55, 35],
     },
     {
         "id": "track-ambient-deep",
@@ -407,9 +451,21 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/24/audio_34b3f3b97b.mp3?filename=meditation-ambient-110823.mp3",
         "frequencyData": [10, 15, 25, 35, 40, 45, 40, 35, 40, 50, 45, 30, 25, 20, 10],
     },
+    {
+        "id": "track-ambient-zen",
+        "title": "Zen Mountain Dawn",
+        "genre": "ambient",
+        "duration": "03:00",
+        "bpm": 60,
+        "copyrightFree": True,
+        "license": "Creative Commons CC0 / Free Commercial",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3?filename=deep-meditation-116345.mp3",
+        "frequencyData": [10, 12, 20, 30, 35, 40, 35, 30, 38, 45, 40, 28, 22, 18, 8],
+    },
 ]
 
 CURATED_SFX: List[Dict[str, Any]] = [
+    # ── 1. Fast Transition Whooshes ──
     {
         "id": "sfx-whoosh-fast",
         "name": "Fast Cinematic Whoosh",
@@ -418,12 +474,86 @@ CURATED_SFX: List[Dict[str, Any]] = [
         "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_27529fa22a.mp3?filename=fast-whoosh-10901.mp3",
     },
     {
+        "id": "sfx-whoosh-swish",
+        "name": "High-Velocity Swish Pan",
+        "category": "whoosh",
+        "duration": "0.5s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_51a2d48c8b.mp3?filename=swish-whoosh-10702.mp3",
+    },
+    {
+        "id": "sfx-whoosh-heavy",
+        "name": "Deep Sub Bass Whoosh Pass",
+        "category": "whoosh",
+        "duration": "1.2s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_2c9497e872.mp3?filename=heavy-whoosh-9488.mp3",
+    },
+    # ── 2. Cinematic Impact Drops & Booms ──
+    {
         "id": "sfx-impact-subdrop",
-        "name": "Cinematic Sub Bass Drop",
+        "name": "Cinematic Sub Bass Drop 808",
         "category": "impact",
         "duration": "2.5s",
         "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_40df037703.mp3?filename=bass-drop-10902.mp3",
     },
+    {
+        "id": "sfx-impact-boom",
+        "name": "Trailer Cinematic Boom Hit",
+        "category": "impact",
+        "duration": "2.0s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d086f685f4.mp3?filename=cinematic-boom-hit-9487.mp3",
+    },
+    {
+        "id": "sfx-impact-metal",
+        "name": "Heavy Steel Iron Clang",
+        "category": "impact",
+        "duration": "1.4s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3?filename=metal-hit-6304.mp3",
+    },
+    {
+        "id": "sfx-impact-glitch",
+        "name": "Digital Cyber Glitch Snap",
+        "category": "impact",
+        "duration": "0.6s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_145d2919aa.mp3?filename=glitch-distortion-10903.mp3",
+    },
+    # ── 3. Tension Risers & Sweeps ──
+    {
+        "id": "sfx-riser-cinematic",
+        "name": "Cinematic Tension Riser",
+        "category": "riser",
+        "duration": "3.2s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_82cba9a613.mp3?filename=cinematic-riser-10904.mp3",
+    },
+    {
+        "id": "sfx-riser-pitch",
+        "name": "Dark Synth Pitch Riser",
+        "category": "riser",
+        "duration": "2.8s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_f551b8c199.mp3?filename=synth-riser-sweep-9486.mp3",
+    },
+    # ── 4. Atmospheric Foley & Environmental Beds ──
+    {
+        "id": "sfx-foley-thunder",
+        "name": "Distant Thunder Storm Rumble",
+        "category": "foley",
+        "duration": "4.5s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/05/16/audio_2d0d08a4bb.mp3?filename=thunder-rumble-113980.mp3",
+    },
+    {
+        "id": "sfx-foley-rain",
+        "name": "Cinematic Night City Rain",
+        "category": "foley",
+        "duration": "5.0s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/09/06/audio_34b223405c.mp3?filename=rain-night-street-9563.mp3",
+    },
+    {
+        "id": "sfx-heartbeat-thump",
+        "name": "Intense Adrenaline Heartbeat",
+        "category": "foley",
+        "duration": "3.0s",
+        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/08/04/audio_51bf64c57b.mp3?filename=heartbeat-thump-6303.mp3",
+    },
+    # ── 5. UI, Punctuation & Conversion Clicks ──
     {
         "id": "sfx-notif-cash",
         "name": "Cash Register Cha-Ching",

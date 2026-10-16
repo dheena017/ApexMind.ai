@@ -1,3 +1,49 @@
+export interface WordTimestamp {
+  word: string;
+  start: number;
+  end: number;
+  emphasis?: boolean;
+  highlightColor?: string;
+}
+
+export interface HookOption {
+  id: string;
+  angle: string;
+  text: string;
+  viralityScore: number;
+  spokenDuration?: number;
+}
+
+export interface AudioDuckingProfile {
+  active: boolean;
+  voiceActiveVolume: number;
+  pauseSwellVolume: number;
+  attackMs: number;
+  releaseMs: number;
+}
+
+export interface SfxEvent {
+  time: number;
+  sfxId: string;
+  label: string;
+  sfxUrl?: string;
+}
+
+export interface SoundDesign {
+  soundtrackTrackId?: string;
+  soundtrackTitle?: string;
+  genre?: string;
+  bpm?: number;
+  audioUrl?: string;
+  ducking?: AudioDuckingProfile;
+  ambientBed?: {
+    foleyId?: string;
+    volume?: number;
+    loop?: boolean;
+  };
+  sfxEvents?: SfxEvent[];
+}
+
 export interface ScriptSubtitle {
   text: string;
   start: number;
@@ -5,6 +51,7 @@ export interface ScriptSubtitle {
   textStyleId?: string;
   captionPresetClass?: string;
   captionPresetColor?: string;
+  words?: WordTimestamp[];
 }
 
 export interface StoryboardScene {
@@ -27,6 +74,11 @@ export interface StoryboardScene {
   sfxUrl?: string;
   subtitleText?: string;
   aspectRatio?: string;
+  googleSearchQuery?: string;
+  visualQuery?: string;
+  fallbackQueries?: string[];
+  negativeTerms?: string[];
+  words?: WordTimestamp[];
 }
 
 export interface GeneratedScript {
@@ -42,6 +94,8 @@ export interface GeneratedScript {
   hashtags: string[];
   subtitles: ScriptSubtitle[];
   storyboard?: StoryboardScene[];
+  hooks?: HookOption[];
+  soundDesign?: SoundDesign;
   audioMood?: string;
   backgroundStyle?: string;
   textStyle?: string;

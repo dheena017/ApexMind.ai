@@ -234,6 +234,82 @@ def search_pixabay_videos(
     return []
 
 
+def search_google_videos(
+    query: str,
+    page: int = 1,
+    limit: int = 10,
+    aspect_ratio: str = "9:16",
+) -> List[Dict[str, Any]]:
+    """Live search for genuine vertical/cinematic stock videos via Google Custom Search Engine (CSE)."""
+    api_key = os.getenv("GOOGLE_SEARCH_API_KEY") or os.getenv("GEMINI_API_KEY")
+    cse_id = os.getenv("GOOGLE_CSE_ID")
+    if not api_key or not cse_id:
+        return []
+
+    try:
+        clean_q = (query or "").strip().replace("#", "").strip()
+        if not clean_q:
+            clean_q = "cinematic motivational background loop"
+        
+        orient_tag = "vertical 9:16" if aspect_ratio in ["9:16", "4:5"] else "cinematic 16:9"
+        search_query = f'{clean_q} {orient_tag} (site:pexels.com/video OR site:pixabay.com/videos OR site:coverr.co OR site:mixkit.co)'
+        start_idx = max(1, (page - 1) * limit + 1)
+        
+        params = {
+            "key": api_key,
+            "cx": cse_id,
+            "q": search_query,
+            "num": str(min(limit, 10)),
+            "start": str(start_idx),
+            "safe": "active",
+        }
+        url = f"https://www.googleapis.com/customsearch/v1?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={"User-Agent": "ApexMindStudio/2.0"})
+        with urllib.request.urlopen(req, timeout=6) as res:
+            if res.status == 200:
+                data = json.loads(res.read().decode("utf-8"))
+                items = data.get("items", [])
+                videos = []
+                for idx, it in enumerate(items):
+                    title = it.get("title", f"{clean_q.title()} Video")
+                    pagemap = it.get("pagemap", {})
+                    video_objs = pagemap.get("videoobject", []) or pagemap.get("video", [])
+                    meta_tags = pagemap.get("metatags", [{}])[0] if pagemap.get("metatags") else {}
+                    cse_images = pagemap.get("cse_image", [{}])[0] if pagemap.get("cse_image") else {}
+                    
+                    direct_video = (
+                        (video_objs[0].get("contenturl") if video_objs else None)
+                        or meta_tags.get("og:video")
+                        or meta_tags.get("og:video:url")
+                        or meta_tags.get("twitter:player:stream")
+                    )
+                    poster_url = (
+                        (video_objs[0].get("thumbnailurl") if video_objs else None)
+                        or meta_tags.get("og:image")
+                        or cse_images.get("src")
+                        or ""
+                    )
+                    
+                    if direct_video and direct_video.startswith("http"):
+                        videos.append({
+                            "id": f"g_vid_{page}_{idx+1}",
+                            "title": title[:50],
+                            "category": "cinematic",
+                            "videoUrl": direct_video,
+                            "posterUrl": poster_url,
+                            "duration": "Loop",
+                            "resolution": "1080x1920 HD" if aspect_ratio in ["9:16", "4:5"] else "1920x1080 HD",
+                            "author": it.get("displayLink", "Google Search Engine"),
+                            "license": "Royalty-Free Open Media",
+                            "source": "google_search_engine",
+                            "tags": [t.lower() for t in clean_q.split() if len(t) > 2],
+                        })
+                return videos
+    except Exception as e:
+        logger.debug(f"Google Search Engine Video error: {e}")
+    return []
+
+
 def search_open_videos(
     query: str = "",
     category: str = "all",
@@ -242,12 +318,24 @@ def search_open_videos(
     aspect_ratio: str = "9:16",
 ) -> Dict[str, Any]:
     """
-    Search real stock videos across open APIs (Pexels, Pixabay, Wikimedia Commons).
+    Search real stock videos across open APIs (Google Search Engine, Pexels, Pixabay, Wikimedia Commons).
     Enforces the target aspect ratio across queries.
     """
     q = (query or "").strip().lower()
 
-    # 1. Try Pexels API
+    # 1. Try Google Search Engine Video Discovery (if GOOGLE_CSE_ID is set)
+    google_vids = search_google_videos(query=q, page=page, limit=page_size, aspect_ratio=aspect_ratio)
+    if google_vids:
+        return {
+            "success": True,
+            "source": "google_search_engine",
+            "page": page,
+            "pageSize": page_size,
+            "total": len(google_vids),
+            "items": google_vids,
+        }
+
+    # 2. Try Pexels API
     if os.getenv("PEXELS_API_KEY"):
         pex_results = search_pexels_videos(q, page=page, page_size=page_size, aspect_ratio=aspect_ratio)
         if pex_results:
@@ -260,7 +348,7 @@ def search_open_videos(
                 "items": pex_results,
             }
 
-    # 2. Try Pixabay API
+    # 3. Try Pixabay API
     if os.getenv("PIXABAY_API_KEY"):
         pix_results = search_pixabay_videos(q, page=page, page_size=page_size, aspect_ratio=aspect_ratio)
         if pix_results:
@@ -273,7 +361,7 @@ def search_open_videos(
                 "items": pix_results,
             }
 
-    # 3. Dynamic Keyless Wikimedia Commons Videos
+    # 4. Dynamic Keyless Wikimedia Commons Videos
     wm_videos = search_wikimedia_videos(query=q, category=category, page=page, limit=page_size, aspect_ratio=aspect_ratio)
     if wm_videos:
         return {

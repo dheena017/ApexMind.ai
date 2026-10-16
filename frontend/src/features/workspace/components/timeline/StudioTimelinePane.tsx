@@ -451,6 +451,21 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         }
       });
 
+      // Layered Sound Design: Add standalone SFX events (transitions, climax drops, risers)
+      const soundDesignEvents = (detail as any).soundDesign?.sfxEvents || [];
+      soundDesignEvents.forEach((evt: any, i: number) => {
+        if (evt.sfxUrl && !newSfxClips.some((c) => Math.abs(c.start - evt.time) < 0.2)) {
+          newSfxClips.push({
+            id: `sfx-evt-${i}-${Date.now()}`,
+            type: 'sfx',
+            url: evt.sfxUrl,
+            name: evt.label || 'SFX Event',
+            start: typeof evt.time === 'number' && Number.isFinite(evt.time) ? evt.time : i * 2.5,
+            duration: 1.8,
+          });
+        }
+      });
+
       if (newVideoClips.length > 0) {
         setVideoClips(newVideoClips);
         setImageClips([]); // 100% pure video cuts

@@ -352,7 +352,22 @@ export default function WorkspacePage({
     const fadeOutGain = musicFadeSettings.fadeOut > 0
       ? Math.min(1, Math.max(0, (totalDuration - currentTime) / musicFadeSettings.fadeOut))
       : 1;
-    const effectiveMusicGain = (isMuted || musicTrackMuted) ? 0 : musicVolume * Math.min(fadeInGain, fadeOutGain);
+
+    // Automated AI Audio Ducking: dynamically duck background music when voiceover is actively speaking
+    const isVoicePlaying = Boolean(
+      audioUrl &&
+      audioRef.current &&
+      !audioRef.current.paused &&
+      currentTime < (audioRef.current.duration || 30)
+    );
+    const duckLevel = isVoicePlaying
+      ? (script.soundDesign?.ducking?.voiceActiveVolume ?? 0.2)
+      : (script.soundDesign?.ducking?.pauseSwellVolume ?? 1.0);
+
+    const effectiveMusicGain = (isMuted || musicTrackMuted)
+      ? 0
+      : musicVolume * Math.min(fadeInGain, fadeOutGain) * duckLevel;
+
     const graph = audioProcessingGraphRef.current;
     if (graph?.musicSource) {
       musicAudio.volume = 1;
@@ -368,7 +383,7 @@ export default function WorkspacePage({
     }
     if (isPlaying && musicAudio.paused) musicAudio.play().catch(() => {});
     if (!isPlaying && !musicAudio.paused) musicAudio.pause();
-  }, [currentTime, duration, isMuted, isPlaying, musicFadeSettings, musicTrackMuted, musicVolume, playbackRate, selectedMusic, timelineDuration]);
+  }, [audioUrl, currentTime, duration, isMuted, isPlaying, musicFadeSettings, musicTrackMuted, musicVolume, playbackRate, script.soundDesign, selectedMusic, timelineDuration]);
 
   useEffect(() => () => {
     const graph = audioProcessingGraphRef.current;
@@ -747,12 +762,14 @@ export default function WorkspacePage({
           });
         }
 
-        // Dispatch multi-scene storyboard to timeline
+        // Dispatch multi-scene storyboard & sound design to timeline
         window.dispatchEvent(
           new CustomEvent('workspace:set-timeline-storyboard', {
             detail: {
               storyboard: generated.storyboard,
-              musicTrack: generated.musicTrack,
+              musicTrack: generated.soundDesign?.soundtrackTrackId || generated.musicTrack,
+              soundDesign: generated.soundDesign,
+              hooks: generated.hooks,
             },
           })
         );
@@ -760,7 +777,7 @@ export default function WorkspacePage({
 
         addWorkspaceNotification({
           title: 'Multi-Scene Storyboard Planned',
-          message: `AI directed ${generated.storyboard.length} dynamic scene cuts with synchronized visuals & typography.`,
+          message: `AI directed ${generated.storyboard.length} dynamic scene cuts with synchronized visuals & sound design.`,
           category: 'timeline',
           type: 'ai',
           targetPane: 'canvas',
@@ -775,11 +792,12 @@ export default function WorkspacePage({
         if (generatedBackdrop) setSelectedBackdrop(generatedBackdrop.id);
       }
 
-      if (generated.musicTrack) {
+      const chosenMusicId = generated.soundDesign?.soundtrackTrackId || generated.musicTrack;
+      if (chosenMusicId) {
         const matchedMusic = musicTracks.find(
           (m) =>
-            m.id === generated.musicTrack ||
-            m.title.toLowerCase().includes(generated.musicTrack?.toLowerCase() || '')
+            m.id === chosenMusicId ||
+            m.title.toLowerCase().includes(chosenMusicId?.toLowerCase() || '')
         );
         if (matchedMusic) setSelectedMusic(matchedMusic.id);
       }

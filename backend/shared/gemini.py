@@ -164,6 +164,9 @@ def generate_gemini_script(
         for q in memory_quotes[-15:]
     ]) if memory_quotes else "No previous quotes recorded yet."
 
+    # Ensure aspectRatio defaults to 9:16 if not specified
+    target_aspect_ratio = aspect_ratio if aspect_ratio in ["9:16", "16:9", "1:1", "4:5", "21:9"] else (aspect_ratio or "9:16")
+
     catalog = available_assets or (creative_context.get("availableAssets") if creative_context else None) or get_static_media_catalog()
     
     # Strictly genuine internet stock videos only — zero mock sample fallbacks
@@ -179,43 +182,40 @@ def generate_gemini_script(
     if avail_videos:
         video_summary = "\n".join([
             f"- ID: {v.get('id')} | Title: '{v.get('title')}' | Category: {v.get('category')} | VideoUrl: {v.get('videoUrl')}"
-            for v in avail_videos[:10]
+            for v in avail_videos
         ])
     else:
-        video_summary = f"- [No pre-cached videos for {target_aspect_ratio}]. Videos will be dynamically retrieved per scene based on visualQuery."
+        video_summary = f"- [No pre-cached videos for {target_aspect_ratio}]. Videos will be dynamically retrieved per scene via Google Video Search & stock APIs based on googleSearchQuery & visualQuery."
 
     avail_backdrops = catalog.get("visualBackdrops") or catalog.get("imageBackdrops") or VISUAL_BACKDROPS
     backdrop_summary = "\n".join([
         f"- ID: {b.get('id')} | Name: '{b.get('name')}' | Category: {b.get('category')} | ImageUrl: {b.get('imageUrl') or ''} | VideoUrl: {b.get('videoUrl') or ''}"
-        for b in avail_backdrops[:12]
+        for b in avail_backdrops
     ])
 
     avail_text = catalog.get("textPresets") or catalog.get("textStyles") or CURATED_TEXT_PRESETS
     text_summary = "\n".join([
         f"- ID: {t.get('id')} | Name: '{t.get('name')}' | Class: '{t.get('className')}' | Color: '{t.get('color')}' | Font: '{t.get('fontFamily', '')}' | Desc: {t.get('styleDescription', '')}"
-        for t in avail_text[:12]
+        for t in avail_text
     ])
 
     avail_music = catalog.get("musicTracks") or MEDIA_TRACKS
     music_summary = "\n".join([
         f"- ID: {m.get('id')} | Title: '{m.get('title')}' | Genre: {m.get('genre')} | BPM: {m.get('bpm')} | AudioUrl: {m.get('audioUrl')}"
-        for m in avail_music[:8]
+        for m in avail_music
     ])
 
     avail_sfx = catalog.get("soundEffects") or catalog.get("sfxList") or CURATED_SFX
     sfx_summary = "\n".join([
-        f"- ID: {s.get('id')} | Name: '{s.get('name')}' | Duration: {s.get('duration')} | AudioUrl: {s.get('audioUrl')}"
-        for s in avail_sfx[:6]
+        f"- ID: {s.get('id')} | Name: '{s.get('name')}' | Category: {s.get('category', 'sfx')} | Duration: {s.get('duration')} | AudioUrl: {s.get('audioUrl')}"
+        for s in avail_sfx
     ])
 
     avail_voices = catalog.get("voiceProfiles") or VOICE_PROFILES
     voice_summary = "\n".join([
         f"- ID: {v.get('id')} | Name: '{v.get('name')}' | Gender: {v.get('gender')} | Style: {v.get('style')}"
-        for v in avail_voices[:6]
+        for v in avail_voices
     ])
-
-    # Ensure aspectRatio defaults to 9:16 if not specified
-    target_aspect_ratio = aspect_ratio if aspect_ratio in ["9:16", "16:9", "1:1", "4:5", "21:9"] else (aspect_ratio or "9:16")
 
     selected_context = []
     for label, value in [
@@ -243,19 +243,18 @@ def generate_gemini_script(
 
     context_block = "\n".join(selected_context) if selected_context else "No specific creative preferences were selected. Let the strongest concept emerge naturally from the prompt."
 
-    prompt = f"""You are an elite YouTube Shorts motivational director, writer, and virality strategist.
-Produce an inspiring, punchy, retention-optimized motivational video plan with full script and multi-scene storyboard.
+    prompt = f"""You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer for viral YouTube Shorts, Instagram Reels, and TikTok.
+Produce an inspiring, punchy, retention-optimized motivational video plan with full script, 3 viral hook variations, 5-layer sound design, and a multi-scene video storyboard with word-level karaoke timing.
 
 TARGET ASPECT RATIO: {target_aspect_ratio}
 ASPECT RATIO & COMPOSITION RULES:
 - The video will be rendered strictly in {target_aspect_ratio} format.
-- All scene footage, visual queries, framing, and compositions MUST match {target_aspect_ratio}.
+- All scene footage, visual queries, Google search expressions, framing, and compositions MUST match {target_aspect_ratio}.
 - For vertical (9:16 / 4:5): portrait orientation, subject centered in vertical safe-zone.
 - For widescreen (16:9 / 21:9): cinematic landscape orientation, wide field of view.
-- For square (1:1): balanced center-weighted square composition.
 - Subtitle Safety: In {target_aspect_ratio} (especially 9:16 vertical shorts), the bottom 25% of the screen is blocked by social media UI (creator name, audio ticker, comment & like buttons).
-- Therefore, each subtitle line MUST be short and punchy (strictly 3 to 7 words per scene cut). NEVER output long continuous paragraph blocks in one subtitle cut!
-- Break longer sentences into sequential 2.0s - 4.0s scene subtitle cuts matching the exact video beats so subtitles are clearly readable in the safe zone and NEVER get hidden or clipped.
+- Each subtitle line MUST be short and punchy (strictly 3 to 7 words per scene cut). NEVER output long continuous paragraph blocks!
+- Break longer sentences into sequential 2.0s - 3.5s scene subtitle cuts matching the exact video beats.
 
 THEME: {category or 'Stoic Discipline & Relentless Focus'}
 TOPIC: {topic or 'Winning quiet battles, silence over excuses, compounding grit'}
@@ -264,13 +263,13 @@ CURRENT CREATIVE CONTEXT:
 {context_block}
 
 ================================================================================
-WEBSITE MEDIA & STYLE ASSET CATALOG (SELECT FROM THESE REAL WEBSITE ASSETS):
+WEBSITE MEDIA & STYLE ASSET CATALOG (CHOOSE FREELY FROM THESE COMPLETE ASSETS):
 ================================================================================
 
 1. AVAILABLE STOCK VIDEOS (FOR VIDEO SCENES):
 {video_summary}
 
-2. AVAILABLE SCENIC IMAGE BACKDROPS (FOR IMAGE SCENES):
+2. AVAILABLE SCENIC IMAGE BACKDROPS:
 {backdrop_summary}
 
 3. AVAILABLE TEXT STYLES & TYPOGRAPHY PRESETS:
@@ -279,50 +278,35 @@ WEBSITE MEDIA & STYLE ASSET CATALOG (SELECT FROM THESE REAL WEBSITE ASSETS):
 4. AVAILABLE SOUNDTRACKS:
 {music_summary}
 
-5. AVAILABLE SOUND EFFECTS (SFX):
+5. AVAILABLE SOUND EFFECTS (SFX & FOLEY):
 {sfx_summary}
 
 6. AVAILABLE VOICE PROFILES:
 {voice_summary}
 
 ================================================================================
-MANDATORY 100% PURE VIDEO DIRECTIVE (NO STATIC IMAGES & NO DUPLICATE VIDEOS):
+MANDATORY 100% PURE VIDEO & SOUND DESIGN DIRECTIVES:
 ================================================================================
 - Do NOT use static images or photos! Every single scene MUST be a moving, cinematic VIDEO ("mediaType": "video").
-- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of multiple SHORT, high-energy video clips (minimum 4-6 distinct scenes/shots across the timeline).
-- SHORT CLIP DURATION: Each video clip must be short and punchy (2.0s to 4.0s duration each) for fast-paced viral YouTube Shorts retention.
-- ZERO DUPLICATE VIDEOS: Every scene MUST use a DIFFERENT, UNIQUE high-quality video clip. Never repeat the same video clip or video URL across the video!
-- For EACH scene in the 'storyboard':
-  1. "sceneNumber": 1, 2, 3...
-  2. "beat": "hook" | "escalation" | "quote" | "climax" | "cta"
-  3. "start": start time in seconds (float, e.g. 0.0)
-  4. "duration": short duration in seconds (float, between 2.0 and 4.0)
-  5. "mediaType": "video" (ALWAYS "video", NEVER "image")
-  6. "mediaId": unique ID from AVAILABLE STOCK VIDEOS
-  7. "mediaUrl": exact videoUrl of that video
-  8. "mediaName": exact name/title of that video
-  9. "textStyleId": exact ID from AVAILABLE TEXT STYLES (e.g. "sub-hormozi", "sub-mrbeast", "quote-stoic-roman", "cta-save-reel")
-  10. "textStyleName": exact name of the text style
-  11. "captionPresetClass": CSS classes of that text style
-  12. "captionPresetColor": color of that text style
-  13. "captionPresetFontFamily": font family of that text style
-  14. "transition": "glitch" | "match-cut" | "zoom" | "fade" | "slide"
-  15. "cameraMotion": "push-in" | "slow-zoom" | "pan-right" | "handheld" | "static"
-  16. "sfx": optional SFX name (e.g. "Fast Cinematic Whoosh" or "Cinematic Sub Bass Drop")
-  17. "sfxUrl": audioUrl of the SFX
-  18. "subtitleText": the spoken line or subtitle for this scene beat
-  19. "visualQuery": 2 to 4 word targeted visual search term for real high-impact cinematic footage matching {target_aspect_ratio} (e.g. "heavy gym barbell deadlift", "athlete running sprint", "dark thunderstorm lightning", "fighter shadow boxing", "molten fire sparks", "mountain peak clouds"). NEVER use DIY, tutorial, or domestic terms.
-- Choose "recommendedVoice" from the AVAILABLE VOICE PROFILES.
-- Choose "musicTrack" from the AVAILABLE SOUNDTRACKS.
+- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of multiple SHORT, high-energy video clips (minimum 4 to 6 distinct scenes/shots across the timeline).
+- SHORT CLIP DURATION: Each video clip must be short and punchy (2.0s to 3.5s duration each) for fast-paced viral retention.
+- ZERO DUPLICATE VIDEOS: Every scene MUST use a DIFFERENT, UNIQUE high-quality video clip.
+- MULTI-HOOK VARIATION: Provide 3 distinct hook variations in "hooks" with different psychological angles (e.g. Brutal Truth/Negative, Curiosity Gap, Direct Challenge) and a virality score (85-99).
+- SOUND DESIGN:
+  - Select "soundtrackTrackId" from the AVAILABLE SOUNDTRACKS.
+  - Define "ducking" (voiceActiveVolume ~0.18, pauseSwellVolume ~0.72).
+  - Add layered "sfxEvents" matching scene transitions and climax drops (using IDs from AVAILABLE SOUND EFFECTS, e.g. "sfx-whoosh-fast", "sfx-impact-subdrop", "sfx-riser-cinematic", "sfx-notif-cash").
+- SEARCH ENGINE OPTIMIZATION: For every scene, provide a "googleSearchQuery" (e.g. 'boxer shadow boxing gym dark moody 9:16') and "fallbackQueries" for Google Video Search / Pexels / Pixabay.
+- KARAOKE WORD TIMING: For every scene, provide a "words" array breaking the scene's subtitle line into individual words with exact relative timestamps ("start", "end") and mark power words with "emphasis": true and "highlightColor" (e.g. "#FACC15" or "#38BDF8").
 
 CRITICAL MEMORY & UNIQUENESS CONSTRAINT:
 Your script MUST NOT repeat, paraphrase, or borrow metaphors from any of these previously saved quotes:
 {memory_snippets}
 
-Output MUST be a single raw JSON object with only these essential keys:
+Output MUST be a single raw JSON object matching this exact schema:
 {{
   "title": "A viral Shorts title with punch under 60 chars",
-  "hook": "Unforgettable 3 to 5 word opening line spoken in first 2 seconds",
+  "hook": "Unforgettable opening hook spoken in first 2 seconds",
   "quote": "A powerful 2-3 sentence motivational monologue",
   "cta": "A sharp 1-sentence closing call-to-action",
   "aspectRatio": "{target_aspect_ratio}",
@@ -330,6 +314,48 @@ Output MUST be a single raw JSON object with only these essential keys:
   "musicTrack": "Best soundtrack title or ID from catalog",
   "captionStyle": "Best caption style",
   "tags": ["#Shorts", "#Motivation", "#Discipline"],
+  "hooks": [
+    {{
+      "id": "hook_1",
+      "angle": "Brutal Truth / Negative",
+      "text": "Stop waiting for the mood to strike you.",
+      "viralityScore": 96,
+      "spokenDuration": 2.2
+    }},
+    {{
+      "id": "hook_2",
+      "angle": "Curiosity Gap",
+      "text": "The one rule Marcus Aurelius never broke.",
+      "viralityScore": 92,
+      "spokenDuration": 2.4
+    }},
+    {{
+      "id": "hook_3",
+      "angle": "Direct Challenge",
+      "text": "Can you handle 24 hours of pure focus?",
+      "viralityScore": 89,
+      "spokenDuration": 2.1
+    }}
+  ],
+  "soundDesign": {{
+    "soundtrackTrackId": "track-phonk-titan",
+    "soundtrackTitle": "Titan Momentum Phonk",
+    "genre": "phonk",
+    "bpm": 140,
+    "ducking": {{
+      "active": true,
+      "voiceActiveVolume": 0.18,
+      "pauseSwellVolume": 0.72,
+      "attackMs": 150,
+      "releaseMs": 300
+    }},
+    "sfxEvents": [
+      {{ "time": 0.0, "sfxId": "sfx-impact-subdrop", "label": "Opening Hook Boom" }},
+      {{ "time": 2.5, "sfxId": "sfx-whoosh-fast", "label": "Scene 1 to 2 Swish" }},
+      {{ "time": 5.5, "sfxId": "sfx-whoosh-swish", "label": "Scene 2 to 3 Swish" }},
+      {{ "time": 9.0, "sfxId": "sfx-notif-cash", "label": "Closing CTA Ding" }}
+    ]
+  }},
   "storyboard": [
     {{
       "sceneNumber": 1,
@@ -339,7 +365,7 @@ Output MUST be a single raw JSON object with only these essential keys:
       "mediaType": "video",
       "mediaId": "",
       "mediaUrl": "",
-      "mediaName": "Atmospheric Storm & Clouds",
+      "mediaName": "Atmospheric Storm & Lightning",
       "textStyleId": "sub-hormozi",
       "textStyleName": "Hormozi Viral Yellow",
       "captionPresetClass": "font-black tracking-tight text-yellow-400 uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)] bg-black/85 px-3 py-1 rounded-md border border-yellow-400/30",
@@ -349,8 +375,17 @@ Output MUST be a single raw JSON object with only these essential keys:
       "cameraMotion": "push-in",
       "sfx": "Fast Cinematic Whoosh",
       "sfxUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_27529fa22a.mp3?filename=fast-whoosh-10901.mp3",
+      "googleSearchQuery": "dark storm lightning sky vertical 9:16",
       "visualQuery": "dark storm lightning sky",
-      "subtitleText": "Opening hook phrase"
+      "fallbackQueries": ["night clouds lightning storm", "dark moody rain city"],
+      "negativeTerms": ["cartoon", "daylight", "sunny", "smiling"],
+      "subtitleText": "Stop waiting for motivation.",
+      "words": [
+        {{ "word": "STOP", "start": 0.0, "end": 0.4, "emphasis": true, "highlightColor": "#EF4444" }},
+        {{ "word": "WAITING", "start": 0.4, "end": 1.1, "emphasis": false }},
+        {{ "word": "FOR", "start": 1.1, "end": 1.4, "emphasis": false }},
+        {{ "word": "MOTIVATION.", "start": 1.4, "end": 2.3, "emphasis": true, "highlightColor": "#FACC15" }}
+      ]
     }},
     {{
       "sceneNumber": 2,
@@ -370,8 +405,19 @@ Output MUST be a single raw JSON object with only these essential keys:
       "cameraMotion": "pan-right",
       "sfx": null,
       "sfxUrl": null,
-      "visualQuery": "neon digital speed stream",
-      "subtitleText": "First quote sentence"
+      "googleSearchQuery": "athlete running night sprint vertical 9:16",
+      "visualQuery": "athlete running sprint dark",
+      "fallbackQueries": ["boxer punching shadow gym", "heavy workout athlete"],
+      "negativeTerms": ["smiling", "tutorial", "home gym"],
+      "subtitleText": "Action creates the energy you need.",
+      "words": [
+        {{ "word": "ACTION", "start": 2.5, "end": 3.1, "emphasis": true, "highlightColor": "#38BDF8" }},
+        {{ "word": "CREATES", "start": 3.1, "end": 3.7, "emphasis": false }},
+        {{ "word": "THE", "start": 3.7, "end": 3.9, "emphasis": false }},
+        {{ "word": "ENERGY", "start": 3.9, "end": 4.6, "emphasis": true, "highlightColor": "#38BDF8" }},
+        {{ "word": "YOU", "start": 4.6, "end": 4.9, "emphasis": false }},
+        {{ "word": "NEED.", "start": 4.9, "end": 5.4, "emphasis": true, "highlightColor": "#FACC15" }}
+      ]
     }},
     {{
       "sceneNumber": 3,
@@ -391,8 +437,20 @@ Output MUST be a single raw JSON object with only these essential keys:
       "cameraMotion": "slow-zoom",
       "sfx": null,
       "sfxUrl": null,
+      "googleSearchQuery": "heavy deadlift chalk barbell dark gym 9:16",
       "visualQuery": "athlete barbell deadlift focus",
-      "subtitleText": "Second quote sentence"
+      "fallbackQueries": ["weightlifter chalk explosion", "gym iron weights intense"],
+      "negativeTerms": ["smiling", "casual", "cardio"],
+      "subtitleText": "Build your discipline in the quiet moments.",
+      "words": [
+        {{ "word": "BUILD", "start": 5.5, "end": 6.0, "emphasis": true, "highlightColor": "#FACC15" }},
+        {{ "word": "YOUR", "start": 6.0, "end": 6.3, "emphasis": false }},
+        {{ "word": "DISCIPLINE", "start": 6.3, "end": 7.2, "emphasis": true, "highlightColor": "#F5F5F4" }},
+        {{ "word": "IN", "start": 7.2, "end": 7.4, "emphasis": false }},
+        {{ "word": "THE", "start": 7.4, "end": 7.6, "emphasis": false }},
+        {{ "word": "QUIET", "start": 7.6, "end": 8.2, "emphasis": true, "highlightColor": "#38BDF8" }},
+        {{ "word": "MOMENTS.", "start": 8.2, "end": 8.9, "emphasis": false }}
+      ]
     }},
     {{
       "sceneNumber": 4,
@@ -412,8 +470,19 @@ Output MUST be a single raw JSON object with only these essential keys:
       "cameraMotion": "static",
       "sfx": "Cash Register Cha-Ching",
       "sfxUrl": "https://cdn.pixabay.com/download/audio/2021/08/09/audio_732a101292.mp3?filename=cash-register-98214.mp3",
+      "googleSearchQuery": "deep galaxy stars velocity hyperjump 9:16",
       "visualQuery": "deep galaxy stars velocity",
-      "subtitleText": "Final call to action"
+      "fallbackQueries": ["nebula stars warp speed", "astronomy cosmic dark"],
+      "negativeTerms": ["cartoon", "planet earth 2d"],
+      "subtitleText": "Save this reel and start now.",
+      "words": [
+        {{ "word": "SAVE", "start": 9.0, "end": 9.5, "emphasis": true, "highlightColor": "#38BDF8" }},
+        {{ "word": "THIS", "start": 9.5, "end": 9.8, "emphasis": false }},
+        {{ "word": "REEL", "start": 9.8, "end": 10.3, "emphasis": true, "highlightColor": "#FACC15" }},
+        {{ "word": "AND", "start": 10.3, "end": 10.6, "emphasis": false }},
+        {{ "word": "START", "start": 10.6, "end": 11.2, "emphasis": true, "highlightColor": "#EF4444" }},
+        {{ "word": "NOW.", "start": 11.2, "end": 11.8, "emphasis": true, "highlightColor": "#38BDF8" }}
+      ]
     }}
   ]
 }}
@@ -488,11 +557,13 @@ Output MUST be a single raw JSON object with only these essential keys:
         for sc in storyboard:
             # Force 100% video cuts (no static images)
             sc["mediaType"] = "video"
-            # Keep duration punchy and short for YouTube Shorts (2.0s to 4.0s)
+            # Keep duration punchy and short for YouTube Shorts (2.0s to 3.5s)
             if "duration" in sc:
-                sc["duration"] = min(4.0, max(2.0, float(sc.get("duration", 3.0))))
+                sc["duration"] = min(3.5, max(2.0, float(sc.get("duration", 2.8))))
 
-            v_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
+            # Primary search query: prioritize Google Video Search expression if provided
+            primary_query = sc.get("googleSearchQuery") or sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
+            fallback_list = sc.get("fallbackQueries") or []
             curr_url = str(sc.get("mediaUrl") or "").strip()
             
             is_mock_sample = any(bad in curr_url.lower() for bad in [
@@ -530,22 +601,29 @@ Output MUST be a single raw JSON object with only these essential keys:
                     sc["mediaName"] = matched_v.get("title") or matched_v.get("name") or "Internet Video Cut"
                     sc["mediaId"] = matched_v.get("id", f"scene_vid_{sc.get('sceneNumber', 1)}")
                 else:
-                    # 2. Dynamically search live internet video APIs for this specific scene query in target aspect ratio
-                    live_resolved = resolve_scene_media_from_internet(
-                        media_type="video",
-                        visual_query=v_query,
-                        fallback_topic=f"{topic} {category}",
-                        exclude_urls=seen_video_urls,
-                        aspect_ratio=target_aspect_ratio,
-                    )
-                    if live_resolved and live_resolved.get("videoUrl"):
-                        sc["mediaUrl"] = live_resolved["videoUrl"]
-                        sc["mediaName"] = live_resolved.get("title") or sc.get("mediaName") or "Internet Stock Video Cut"
-                        sc["mediaId"] = live_resolved.get("id") or sc.get("mediaId")
+                    # 2. Dynamically search live internet video APIs (Google Search Engine, Pexels, Pixabay, Wikimedia)
+                    resolved_clip = None
+                    search_candidates = [primary_query] + [q for q in fallback_list if q]
+                    for candidate_q in search_candidates:
+                        live_resolved = resolve_scene_media_from_internet(
+                            media_type="video",
+                            visual_query=candidate_q,
+                            fallback_topic=f"{topic} {category}",
+                            exclude_urls=seen_video_urls,
+                            aspect_ratio=target_aspect_ratio,
+                        )
+                        if live_resolved and live_resolved.get("videoUrl"):
+                            resolved_clip = live_resolved
+                            break
+
+                    if resolved_clip and resolved_clip.get("videoUrl"):
+                        sc["mediaUrl"] = resolved_clip["videoUrl"]
+                        sc["mediaName"] = resolved_clip.get("title") or sc.get("mediaName") or "Internet Stock Video Cut"
+                        sc["mediaId"] = resolved_clip.get("id") or sc.get("mediaId")
                     else:
                         raise ValueError(
-                            f"No stock video found matching '{v_query}' in {target_aspect_ratio} aspect ratio. "
-                            f"Zero fallbacks allowed. Please configure PEXELS_API_KEY or PIXABAY_API_KEY in backend/.env, or refine your prompt keywords."
+                            f"No stock video found matching '{primary_query}' in {target_aspect_ratio} aspect ratio. "
+                            f"Zero fallbacks allowed. Please configure GOOGLE_SEARCH_API_KEY + GOOGLE_CSE_ID, PEXELS_API_KEY, or PIXABAY_API_KEY in backend/.env, or refine prompt keywords."
                         )
 
             curr_check = str(sc.get("mediaUrl") or "").strip()
@@ -560,24 +638,115 @@ Output MUST be a single raw JSON object with only these essential keys:
             )
             if is_bad_final:
                 raise ValueError(
-                    f"No genuine video footage available for Scene {sc.get('sceneNumber', 1)} ('{v_query}') in {target_aspect_ratio}. "
-                    f"Zero fallbacks allowed. Please configure PEXELS_API_KEY or PIXABAY_API_KEY in backend/.env or refine your prompt."
+                    f"No genuine video footage available for Scene {sc.get('sceneNumber', 1)} ('{primary_query}') in {target_aspect_ratio}. "
+                    f"Zero fallbacks allowed. Please configure GOOGLE_SEARCH_API_KEY + GOOGLE_CSE_ID, PEXELS_API_KEY, or PIXABAY_API_KEY in backend/.env."
                 )
 
             sc["aspectRatio"] = target_aspect_ratio
             seen_video_urls.add(sc["mediaUrl"])
 
-        # Ensure subtitles match storyboard scenes 1:1 with exact timing and text
+        # ── Multi-Hook Resolution (Ensure 3 distinct angles are available) ──
+        hooks_data = result.get("hooks") or []
+        if not hooks_data:
+            base_hook = result.get("hook") or "Discipline beats motivation every single time."
+            hooks_data = [
+                {
+                    "id": "hook_1",
+                    "angle": "Brutal Truth / Negative",
+                    "text": base_hook,
+                    "viralityScore": 95,
+                    "spokenDuration": 2.2,
+                },
+                {
+                    "id": "hook_2",
+                    "angle": "Curiosity Gap",
+                    "text": f"The hidden secret to {topic.lower() or 'success'}.",
+                    "viralityScore": 91,
+                    "spokenDuration": 2.4,
+                },
+                {
+                    "id": "hook_3",
+                    "angle": "Direct Challenge",
+                    "text": f"Can you maintain focus on {topic.lower() or 'your goal'} today?",
+                    "viralityScore": 88,
+                    "spokenDuration": 2.1,
+                },
+            ]
+        result["hooks"] = hooks_data
+
+        # ── Sound Design & Multi-Track SFX Resolution ──
+        sound_design = result.get("soundDesign") or {}
+        st_id = sound_design.get("soundtrackTrackId") or result.get("musicTrack") or "track-phonk-titan"
+        matched_track = next((m for m in MEDIA_TRACKS if m["id"] == st_id or m["title"].lower() in str(st_id).lower()), MEDIA_TRACKS[0])
+        sound_design["soundtrackTrackId"] = matched_track["id"]
+        sound_design["soundtrackTitle"] = matched_track["title"]
+        sound_design["genre"] = matched_track.get("genre", "phonk")
+        sound_design["bpm"] = matched_track.get("bpm", 140)
+        sound_design["audioUrl"] = matched_track.get("audioUrl")
+        if not sound_design.get("ducking"):
+            sound_design["ducking"] = {
+                "active": True,
+                "voiceActiveVolume": 0.18,
+                "pauseSwellVolume": 0.72,
+                "attackMs": 150,
+                "releaseMs": 300,
+            }
+
+        # Resolve SFX event URLs from CURATED_SFX catalog
+        sfx_events = sound_design.get("sfxEvents") or []
+        for evt in sfx_events:
+            s_id = evt.get("sfxId")
+            matched_sfx = next((s for s in CURATED_SFX if s["id"] == s_id or s["name"].lower() in str(evt.get("label", "")).lower()), None)
+            if matched_sfx:
+                evt["sfxUrl"] = matched_sfx.get("audioUrl")
+            elif not evt.get("sfxUrl"):
+                evt["sfxUrl"] = CURATED_SFX[0].get("audioUrl")
+        sound_design["sfxEvents"] = sfx_events
+        result["soundDesign"] = sound_design
+
+        # ── Word-Level Dynamic Karaoke Subtitles Synchronization ──
         synced_subtitles = []
         for sc in storyboard:
             txt = sc.get("subtitleText") or ""
+            sc_start = float(sc.get("start", 0.0))
+            sc_dur = float(sc.get("duration", 2.8))
+            
+            # Use model-provided word timestamps or compute proportional karaoke timing
+            words_data = sc.get("words")
+            if not words_data or not isinstance(words_data, list):
+                raw_words = [w for w in txt.split() if w.strip()]
+                words_data = []
+                if raw_words:
+                    word_duration = sc_dur / len(raw_words)
+                    for w_idx, w_str in enumerate(raw_words):
+                        w_start = round(sc_start + (w_idx * word_duration), 2)
+                        w_end = round(w_start + word_duration, 2)
+                        is_emphasis = len(w_str) > 4 or w_str.isupper() or any(char in "!?:;" for char in w_str)
+                        words_data.append({
+                            "word": w_str,
+                            "start": w_start,
+                            "end": w_end,
+                            "emphasis": is_emphasis,
+                            "highlightColor": "#FACC15" if is_emphasis else None,
+                        })
+            else:
+                # Validate relative vs absolute word timing
+                for w in words_data:
+                    if w.get("start", 0.0) < sc_start:
+                        w["start"] = round(sc_start + float(w.get("start", 0.0)), 2)
+                    if w.get("end", 0.0) < sc_start:
+                        w["end"] = round(sc_start + float(w.get("end", 0.0)), 2)
+
+            sc["words"] = words_data
+
             synced_subtitles.append({
                 "text": txt,
-                "start": sc.get("start", 0.0),
-                "duration": sc.get("duration", 3.0),
+                "start": sc_start,
+                "duration": sc_dur,
                 "textStyleId": sc.get("textStyleId"),
                 "captionPresetClass": sc.get("captionPresetClass"),
                 "captionPresetColor": sc.get("captionPresetColor"),
+                "words": words_data,
             })
 
         result["storyboard"] = storyboard
@@ -588,7 +757,7 @@ Output MUST be a single raw JSON object with only these essential keys:
 
         logger.info(
             f"AI Model '{target_model}' generated multi-scene video plan in {elapsed:.2f}s | "
-            f"Title: '{result.get('title')}' | Scenes: {len(storyboard)} | Subtitles: {len(subtitles)}"
+            f"Title: '{result.get('title')}' | Scenes: {len(storyboard)} | Subtitles: {len(synced_subtitles)} | Hooks: {len(result.get('hooks', []))}"
         )
         return result
     except Exception as e:  # noqa: BLE001
