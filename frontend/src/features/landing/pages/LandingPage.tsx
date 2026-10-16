@@ -1,21 +1,39 @@
-import React from 'react';
-import { Sparkles, Youtube, Play, Zap, Shield, Wand2, Volume2, ArrowRight, CheckCircle2, Captions, CalendarClock, CircleHelp, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Sparkles,
+  Youtube,
+  Play,
+  Zap,
+  Shield,
+  Wand2,
+  Volume2,
+  ArrowRight,
+  CheckCircle2,
+  Captions,
+  CalendarClock,
+  CircleHelp,
+  FileText,
+  Menu,
+  X,
+} from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import LandingFooter from '../components/LandingFooter';
 import { isSessionValid } from '@/src/features/auth/context/AuthContext';
 
 export default function LandingPage({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
     if (isSessionValid()) {
       onNavigate('dashboard');
     }
   }, [onNavigate]);
+
   return (
     <div className="w-full h-screen flex flex-col bg-[#0A0A0A] text-[#E5E5E5] overflow-hidden">
       {/* Fixed Top Bar - Sits above the scrollable area */}
       <header className="h-16 shrink-0 z-40 w-full bg-[#0A0A0A]/95 backdrop-blur-md border-b border-[#2F2F2F]/80 transition-colors">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-8 px-6 h-full">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 px-4 sm:px-6 h-full">
           <a href="#hero" className="text-xl font-bold tracking-tight flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity">
             <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-black/40 border border-[#60A5FA]/30">
               <Sparkles className="w-5 h-5" />
@@ -37,7 +55,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
             </button>
           </nav>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="hidden sm:flex items-center gap-3 shrink-0">
             <Button variant="secondary" size="sm" onClick={() => onNavigate('login')}>
               Sign In
             </Button>
@@ -45,41 +63,110 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
               Launch Studio
             </Button>
           </div>
+
+          {/* Mobile Menu Hamburger Toggle */}
+          <div className="flex sm:hidden items-center gap-2">
+            <Button variant="primary" size="sm" onClick={() => onNavigate('workspace')}>
+              Studio
+            </Button>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-xl border border-[#2F2F2F] bg-[#141414] text-[#9CA3AF] hover:text-white cursor-pointer"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5 text-[#60A5FA]" /> : <Menu className="w-5 h-5 text-[#60A5FA]" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Navigation Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-b border-[#2F2F2F] bg-[#0E0E0E]/98 backdrop-blur-2xl px-5 py-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex flex-col space-y-2 text-sm font-semibold">
+              <a
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1A1A1A] transition-colors"
+              >
+                Features
+              </a>
+              <a
+                href="#workflow"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1A1A1A] transition-colors"
+              >
+                AI Workflow
+              </a>
+              <a
+                href="#creator-use-cases"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1A1A1A] transition-colors"
+              >
+                For Creators
+              </a>
+              <a
+                href="#faq"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1A1A1A] transition-colors"
+              >
+                FAQ
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onNavigate('terms');
+                }}
+                className="px-3 py-2 rounded-lg text-left text-[#9CA3AF] hover:text-white hover:bg-[#1A1A1A] transition-colors cursor-pointer"
+              >
+                Legal Terms
+              </button>
+            </div>
+            <div className="pt-2 border-t border-[#262626] flex gap-2">
+              <Button variant="secondary" className="w-full text-xs" onClick={() => onNavigate('login')}>
+                Sign In
+              </Button>
+              <Button variant="primary" className="w-full text-xs" onClick={() => onNavigate('workspace')}>
+                Launch Studio
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Scrollable Content - Scrollbar is confined strictly below the header */}
       <div className="flex-1 w-full overflow-y-auto overflow-x-hidden scroll-smooth">
 
       {/* Hero Section */}
-      <section id="hero" className="relative max-w-7xl mx-auto px-6 py-20 lg:py-28 overflow-hidden">
+      <section id="hero" className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-28 overflow-hidden">
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           <div className="lg:col-span-7 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#60A5FA] text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5 text-[#3B82F6]" />
               <span>Next-Gen YouTube Shorts Automation Engine</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1] text-wrap-balance">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1] text-wrap-balance">
               Create & Publish <span className="text-gradient-brand">AI Motivational Shorts</span> Automatically
             </h1>
 
-            <p className="text-lg text-[#9CA3AF] max-w-2xl leading-relaxed">
+            <p className="text-base sm:text-lg text-[#9CA3AF] max-w-2xl leading-relaxed">
               Turn your ideas into editable motivational scripts, voiceovers, and short-form videos, then review your work before publishing to YouTube.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Button size="lg" icon={<Sparkles className="w-5 h-5" />} onClick={() => onNavigate('workspace')}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-2">
+              <Button size="lg" className="w-full sm:w-auto" icon={<Sparkles className="w-5 h-5" />} onClick={() => onNavigate('workspace')}>
                 Start Video Automation
               </Button>
-              <Button variant="outline" size="lg" icon={<Youtube className="w-5 h-5 text-red-500" />} onClick={() => onNavigate('youtube')}>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto" icon={<Youtube className="w-5 h-5 text-red-500" />} onClick={() => onNavigate('youtube')}>
                 Connect YouTube Channel
               </Button>
             </div>
 
             {/* Product benefit strip */}
-            <div className="pt-8 border-t border-[#2F2F2F] grid grid-cols-3 gap-6 text-left">
+            <div className="pt-8 border-t border-[#2F2F2F] grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left">
               <div>
                 <div className="flex items-center gap-2 text-sm font-bold text-white"><Wand2 className="w-4 h-4 text-[#60A5FA]" />Start with an idea</div>
                 <div className="text-xs text-[#9CA3AF] mt-1">Shape a script around your topic</div>

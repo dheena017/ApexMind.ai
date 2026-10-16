@@ -141,8 +141,11 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           <LayoutDashboard className="w-3.5 h-3.5" />
         </button>
 
-        <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap">
+        <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap hidden min-[440px]:inline">
           ApexMind Studio
+        </span>
+        <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap min-[440px]:hidden">
+          ApexMind
         </span>
       </div>
 
@@ -191,7 +194,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         </button>
 
         {/* Panel Layout Toggles (Left, Bottom, Right) */}
-        <div className="flex items-center gap-0.5 bg-[#161616] p-0.5 rounded-lg border border-[#262626]">
+        <div className="hidden sm:flex items-center gap-0.5 bg-[#161616] p-0.5 rounded-lg border border-[#262626]">
           <button
             type="button"
             onClick={() => handleTogglePanel('left')}
@@ -295,8 +298,11 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           ) : (
             <Play className="w-3 h-3 fill-white" />
           )}
-          <span className="tracking-wide">
+          <span className="tracking-wide hidden sm:inline">
             {publishing ? 'Publishing...' : publishedSuccess ? 'Published!' : 'PUBLISH TO YOUTUBE'}
+          </span>
+          <span className="tracking-wide sm:hidden">
+            {publishing ? 'Pub...' : publishedSuccess ? 'Done' : 'PUBLISH'}
           </span>
         </button>
 

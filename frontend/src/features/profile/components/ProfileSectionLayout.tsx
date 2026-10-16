@@ -59,11 +59,11 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
   ].filter((link) => link.value && link.value.trim());
 
   return (
-    <div className="flex h-full w-full flex-col gap-6 overflow-y-auto p-4 sm:p-6 lg:p-8 font-sans-studio text-[#E5E5E5]">
+    <div className="flex h-full w-full flex-col gap-6 overflow-y-auto p-2 sm:p-6 lg:p-8 font-sans-studio text-[#E5E5E5]">
       {/* ── 1. Unified Creator Profile Header & Account Info (Single Border Container) ── */}
       <section className="rounded-2xl border border-[#2F2F2F] bg-[#141414] overflow-hidden divide-y divide-[#2F2F2F]">
         {/* Creator Hub Header */}
-        <header className="relative p-5 sm:p-6 overflow-hidden">
+        <header className="relative p-4 sm:p-6 overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
@@ -130,9 +130,9 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
         </header>
 
         {/* Common Creator Profile Identity Section */}
-        <div className="p-5 sm:p-6 bg-[#141414]">
+        <div className="p-4 sm:p-6 bg-[#141414]">
           <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex min-w-0 items-center gap-4">
+            <div className="flex min-w-0 flex-col sm:flex-row items-start sm:items-center gap-4">
               {profile.avatarUrl || user?.avatarUrl ? (
                 <img
                   src={profile.avatarUrl || user?.avatarUrl}

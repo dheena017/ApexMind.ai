@@ -77,7 +77,7 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Button variant="secondary" size="sm" icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />} onClick={loadData}>
             Refresh Stats
           </Button>
@@ -187,7 +187,7 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (page: strin
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <Badge variant={ch.isAutoUploadEnabled ? 'blue' : 'gray'}>
                       {ch.isAutoUploadEnabled ? `${ch.scheduleCron || 'Daily Schedule'} Active` : 'Auto-Upload Paused'}
                     </Badge>

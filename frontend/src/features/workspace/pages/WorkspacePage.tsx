@@ -1211,6 +1211,14 @@ export default function WorkspacePage({
     }
   });
 
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleWindowResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleWindowResize);
+    return () => window.removeEventListener('resize', handleWindowResize);
+  }, []);
+
   const [activeResize, setActiveResize] = useState<'left' | 'right' | 'timeline' | null>(null);
   const resizeStartPos = useRef<{ x: number; y: number; startDim: number }>({ x: 0, y: 0, startDim: 0 });
   const dimsRef = useRef<{ left: number; right: number; timeline: number }>({
@@ -1639,8 +1647,8 @@ export default function WorkspacePage({
         {/* Left Pane: Dynamic Active Studio Panel */}
         {showLeftPane && (
           <div
-            style={{ width: `${leftPaneWidth}px` }}
-            className="w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden"
+            style={isDesktop ? { width: `${leftPaneWidth}px` } : undefined}
+            className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden"
           >
             {activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
               <ScriptEditorPane
@@ -2055,7 +2063,7 @@ export default function WorkspacePage({
         )}
 
         {/* Center Pane: Video Preview Canvas */}
-        <div className="flex-1 min-w-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col items-center justify-center overflow-hidden">
+        <div className="flex-1 min-w-0 w-full max-w-full min-h-130 lg:h-full lg:min-h-0 flex flex-col items-center justify-center overflow-hidden">
           <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
             <VideoPreviewPane
               canvasAspectRatio={canvasAspectRatio}
@@ -2174,8 +2182,8 @@ export default function WorkspacePage({
         {/* Right Pane: Inspiration Studio Panel */}
         {showRightPane && (
           <div
-            style={{ width: `${rightPaneWidth}px` }}
-            className="w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden"
+            style={isDesktop ? { width: `${rightPaneWidth}px` } : undefined}
+            className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden"
           >
             <StudioControlsPane
               voices={voices}

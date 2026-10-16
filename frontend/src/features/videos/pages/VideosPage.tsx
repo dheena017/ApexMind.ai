@@ -139,7 +139,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
       <VideoMetricsBar videos={videos} />
 
       {/* ── Toolbar: Search + Category Filter + View Mode ── */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
         {/* Search */}
         <div className="relative flex-1 min-w-0 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666] pointer-events-none" />
@@ -160,14 +160,14 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Category Chip Filter */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 min-w-0">
+          {/* Category Chip Filter (Horizontally swipeable on mobile) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 min-w-0">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setFilter((f) => ({ ...f, category: cat }))}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap border ${
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap border shrink-0 ${
                   filter.category === cat
                     ? 'bg-[#3B82F6]/20 text-[#60A5FA] border-[#3B82F6]/50'
                     : 'bg-[#161616] text-[#9CA3AF] border-[#2A2A2A] hover:text-white hover:border-[#3A3A3A]'
@@ -177,6 +177,8 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
               </button>
             ))}
           </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
 
           {/* Sort Dropdown */}
           <div className="relative">
@@ -237,6 +239,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
           </div>
         </div>
       </div>
+    </div>
 
       {/* ── Video Grid / List ── */}
       {loading ? (

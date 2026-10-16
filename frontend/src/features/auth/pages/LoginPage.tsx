@@ -303,7 +303,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           </div>
         </section>
 
-        <section className="relative flex flex-col justify-center p-8 sm:p-10 lg:p-12">
+        <section className="relative flex flex-col justify-center p-5 sm:p-10 lg:p-12">
           <div className="mb-6 flex items-center justify-between lg:hidden">
             <div className="flex items-center gap-2.5">
               <div className="rounded-xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-2 text-white shadow-lg shadow-black/40">
