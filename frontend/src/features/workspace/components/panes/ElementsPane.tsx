@@ -28,6 +28,8 @@ export interface ElementsPaneProps {
   onToggleGrain?: () => void;
 }
 
+import { toast } from 'sonner';
+import { addWorkspaceNotification } from '../../utils/workspaceNotificationManager';
 import { VISUAL_ELEMENTS, VisualElementItem } from '../../data/mediaCatalogData';
 
 const BADGES = VISUAL_ELEMENTS.filter((e) => e.category === 'badges').map((e) => ({
@@ -82,7 +84,6 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
   onToggleGrain,
 }) => {
   const [activeTab, setActiveTab] = useState<'badges' | 'fx' | 'social' | 'shapes' | 'progress' | 'custom'>('badges');
-  const [appliedItem, setAppliedItem] = useState<string | null>(null);
   const [pendingElement, setPendingElement] = useState<{ id: string; name: string; type: string; value: string } | null>(null);
 
   // Visual FX State
@@ -95,13 +96,20 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
   const [customBadgeGradient, setCustomBadgeGradient] = useState('from-amber-500 to-orange-600');
 
   const handleApply = (id: string, name: string, type: string, value: string) => {
-    setAppliedItem(id);
     setPendingElement(null);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'overlay' }));
     if (onInsertElement) {
       onInsertElement({ id, name, type, value, label: name });
     }
-    setTimeout(() => setAppliedItem(null), 1800);
+    toast.success(`Applied "${name}"`);
+    addWorkspaceNotification({
+      title: 'Element Applied',
+      message: `Applied ${name} (${type}) to video canvas.`,
+      category: 'media',
+      type: 'info',
+      targetPane: 'elements',
+      actionLabel: 'Canvas',
+    });
   };
 
   const handleApplyPending = (event?: React.MouseEvent) => {
@@ -127,12 +135,6 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
             Studio Elements &amp; Overlays
           </span>
         </div>
-
-        {appliedItem && (
-          <span className="text-[10px] font-mono-studio px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            ✓ Applied
-          </span>
-        )}
       </div>
 
       {/* ── Subtabs Header Bar ── */}

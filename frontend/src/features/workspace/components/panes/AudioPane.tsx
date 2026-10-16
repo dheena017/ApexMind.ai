@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
 import { DEFAULT_SOUNDTRACK_AUDIO_URL } from '../../types';
+import { toast } from 'sonner';
+import { addWorkspaceNotification } from '../../utils/workspaceNotificationManager';
 
 export interface SoundtrackItem {
   id: string;
@@ -222,6 +224,17 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     if (onSelectMusic) {
       onSelectMusic(trackId);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
+      const track = soundtracks.find((t) => t.id === trackId);
+      const name = track?.title || 'Soundtrack';
+      toast.success(`Applied "${name}"`);
+      addWorkspaceNotification({
+        title: 'Soundtrack Applied',
+        message: `Applied audio "${name}" to music track A2.`,
+        category: 'voice',
+        type: 'info',
+        targetPane: 'audio',
+        actionLabel: 'Audio Settings',
+      });
     }
   };
 
@@ -236,12 +249,30 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       onApplyRecordedVoice(url);
     }
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
+    toast.success('Custom audio applied to timeline');
+    addWorkspaceNotification({
+      title: 'Custom Audio Applied',
+      message: 'Custom web audio URL loaded on soundtrack track.',
+      category: 'voice',
+      type: 'info',
+      targetPane: 'audio',
+      actionLabel: 'Audio Settings',
+    });
   };
 
   const handleApplyRecordedVoice = () => {
     if (mediaBlobUrl && onApplyRecordedVoice) {
       onApplyRecordedVoice(mediaBlobUrl);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'voice' }));
+      toast.success('Recorded voiceover applied to timeline');
+      addWorkspaceNotification({
+        title: 'Voiceover Applied',
+        message: 'Microphone recording placed on voice track A1.',
+        category: 'voice',
+        type: 'success',
+        targetPane: 'audio',
+        actionLabel: 'Audio Settings',
+      });
     }
   };
 

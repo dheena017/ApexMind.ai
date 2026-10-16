@@ -19,6 +19,8 @@ import {
   Wand2,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
+import { toast } from 'sonner';
+import { addWorkspaceNotification } from '../../utils/workspaceNotificationManager';
 import { TYPOGRAPHY_PRESETS, TypographyPresetItem } from '../../data/mediaCatalogData';
 import {
   generateInfiniteStyles,
@@ -157,7 +159,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>('sub-hormozi');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [appliedFeedback, setAppliedFeedback] = useState<string | null>(null);
 
   // 10M+ Infinite Style Engine State
   const [infiniteMood, setInfiniteMood] = useState<InfiniteStyleMood>('all');
@@ -190,8 +191,15 @@ export const TextPane: React.FC<TextPaneProps> = ({
   }, []);
 
   const triggerFeedback = (msg: string) => {
-    setAppliedFeedback(msg);
-    setTimeout(() => setAppliedFeedback(null), 2000);
+    toast.success(msg);
+    addWorkspaceNotification({
+      title: 'Typography Applied',
+      message: msg,
+      category: 'script',
+      type: 'success',
+      targetPane: 'text',
+      actionLabel: 'Text Styling',
+    });
   };
 
   const handleSynthesizeStyles = useCallback((mood?: InfiniteStyleMood) => {
@@ -370,7 +378,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
       {/* ── Header Title Bar ── */}
       <div className="relative h-12 px-3.5 bg-[#141416] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-500/10 border border-blue-500/20 text-[#60A5FA]">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#222226] border border-[#33333A] text-white">
             <Type className="w-3.5 h-3.5" />
           </div>
           <div className="flex items-center gap-2">
@@ -379,12 +387,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
             </span>
           </div>
         </div>
-
-        {appliedFeedback && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-[#60A5FA] border border-blue-500/30 animate-pulse">
-            ✓ {appliedFeedback}
-          </span>
-        )}
       </div>
 
       {/* ── Subtabs Navigation Bar ── */}

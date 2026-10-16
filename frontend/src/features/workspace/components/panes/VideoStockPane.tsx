@@ -18,6 +18,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
+import { toast } from 'sonner';
 
 export interface StockVideoItem {
   id: string;
@@ -133,6 +134,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     setSelectedId(null);
     onSelectVideo(vid.videoUrl);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+    toast.success(`Applied "${vid.title}"`);
   };
 
   const handleStageVideo = (vid: StockVideoItem) => setSelectedId(vid.id);

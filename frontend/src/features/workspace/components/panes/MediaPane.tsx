@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import * as htmlToImage from 'html-to-image';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { toast } from 'sonner';
 import {
   Upload,
   UploadCloud,
@@ -147,6 +148,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
       onApplyBackdrop(item.url, true, item.name);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
     }
+    toast.success(`Applied ${item.name}`);
     setTimeout(() => setAppliedId(null), 2000);
   };
 

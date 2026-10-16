@@ -65,12 +65,12 @@ const getRelativeTime = (isoString: string) => {
 
 const getCategoryIcon = (category: WorkspaceNotificationCategory, type: string) => {
   if (type === 'error') return <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />;
-  if (type === 'ai' || category === 'script') return <Sparkles className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />;
-  if (category === 'voice') return <Mic className="w-3.5 h-3.5 text-sky-400 shrink-0" />;
+  if (type === 'ai' || category === 'script') return <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />;
+  if (category === 'voice') return <Mic className="w-3.5 h-3.5 text-[#E5E5E5] shrink-0" />;
   if (category === 'media') return <Film className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
   if (category === 'autosave') return <HardDrive className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
-  if (category === 'export') return <Layers className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />;
-  return <Info className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />;
+  if (category === 'export') return <Layers className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
+  return <Info className="w-3.5 h-3.5 text-[#9CA3AF] shrink-0" />;
 };
 
 export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
@@ -180,7 +180,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
               <button
                 type="button"
                 onClick={() => onWorkspacePaneChange?.(activeWorkspacePane)}
-                className="hidden sm:inline-flex items-center gap-1 truncate text-[#E5E5E5] hover:text-[#60A5FA] transition-colors cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1 truncate text-[#E5E5E5] hover:text-white transition-colors cursor-pointer"
                 title="Current active workspace pane"
               >
                 <span>{paneLabels[activeWorkspacePane] || 'Workspace Studio'}</span>
@@ -197,7 +197,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                 </span>
               )}
               {workspaceStatus.captionCount > 0 && (
-                <span className="hidden lg:inline text-[#60A5FA] font-medium" title={`${workspaceStatus.captionCount} subtitle cue cards`}>
+                <span className="hidden lg:inline text-teal-400 font-medium" title={`${workspaceStatus.captionCount} subtitle cue cards`}>
                   T1 {workspaceStatus.captionCount}
                 </span>
               )}
@@ -205,8 +205,8 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
           ) : (
             /* Studio Status Across Other Pages */
             <div className="flex items-center gap-2 min-w-0">
-              <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30 font-semibold tracking-wide">
-                <Radio className="w-2.5 h-2.5 text-[#60A5FA]" />
+              <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-[#1E1E1E] text-[#E5E5E5] border border-[#2F2F2F] font-semibold tracking-wide">
+                <Radio className="w-2.5 h-2.5 text-[#A1A1AA]" />
                 AI Studio Live
               </span>
               <span className="hidden md:inline text-[#4A4A4A]">|</span>
@@ -216,7 +216,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('workspace')}
-                className="hidden sm:inline-flex items-center gap-1 text-[#60A5FA] hover:text-[#93C5FD] font-semibold hover:underline cursor-pointer ml-1"
+                className="hidden sm:inline-flex items-center gap-1 text-[#E5E5E5] hover:text-white font-semibold hover:underline cursor-pointer ml-1"
               >
                 <span>Open Studio</span>
                 <ChevronRight className="w-2.5 h-2.5" />
@@ -241,7 +241,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
           <span
             className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md ${
               workspaceStatus.isExporting
-                ? 'text-[#60A5FA] bg-[#3B82F6]/15 border border-[#3B82F6]/30'
+                ? 'text-[#E5E5E5] bg-[#1E1E1E] border border-[#2F2F2F]'
                 : workspaceStatus.isPlaying
                 ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30'
                 : 'text-[#9CA3AF]'
@@ -263,21 +263,21 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
             onClick={() => setIsOpen((prev) => !prev)}
             className={`relative flex items-center gap-1.5 px-2 py-0.5 rounded-md cursor-pointer transition-colors border ${
               isOpen
-                ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50'
+                ? 'bg-[#2A2A2A] text-white border-[#4A4A4A]'
                 : unreadCount > 0
-                ? 'bg-[#3B82F6]/15 text-[#60A5FA] border-[#3B82F6]/40 hover:bg-[#3B82F6]/25'
+                ? 'bg-[#1E1E1E] text-[#E5E5E5] border-[#3A3A3A] hover:bg-[#2A2A2A]'
                 : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] border-transparent hover:border-[#2F2F2F]'
             }`}
             title="Open Workspace Production Notifications"
             aria-label="Workspace Notifications"
             aria-expanded={isOpen}
           >
-            <Bell className={`w-3 h-3 ${unreadCount > 0 ? 'text-[#60A5FA]' : 'text-[#9CA3AF]'}`} />
+            <Bell className={`w-3 h-3 ${unreadCount > 0 ? 'text-white' : 'text-[#9CA3AF]'}`} />
             <span className="hidden sm:inline font-semibold">Workspace</span>
 
             {/* Unread Pill Count */}
             {unreadCount > 0 ? (
-              <span className="flex items-center justify-center px-1 py-0.2 min-w-3.5 h-3.5 text-[8px] font-bold rounded-full bg-[#3B82F6] text-white">
+              <span className="flex items-center justify-center px-1 py-0.2 min-w-3.5 h-3.5 text-[8px] font-bold rounded-full bg-white text-black">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             ) : (
@@ -300,14 +300,14 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
           {/* Popover Header */}
           <div className="p-3.5 px-4 border-b border-[#2F2F2F] bg-[#181818] flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center text-[#60A5FA]">
+              <div className="w-7 h-7 rounded-lg bg-[#242424] border border-[#3A3A3A] flex items-center justify-center text-white">
                 <Bell className="w-3.5 h-3.5" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-xs font-bold text-[#E5E5E5] tracking-wide">Workspace Production Alerts</h3>
                   {unreadCount > 0 && (
-                    <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
+                    <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-white text-black">
                       {unreadCount} unread
                     </span>
                   )}
@@ -398,7 +398,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                 onClick={() => setFilter(tab.id)}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
                   filter === tab.id
-                    ? 'bg-[#3B82F6] text-white font-semibold'
+                    ? 'bg-white text-black font-semibold'
                     : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
                 }`}
               >
@@ -429,7 +429,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                   className={`p-3 rounded-xl border transition-all text-left flex gap-2.5 group relative ${
                     item.read
                       ? 'bg-[#121212] border-[#2F2F2F] text-[#9CA3AF] hover:border-[#3D3D3D]'
-                      : 'bg-[#161C26] border-[#3B82F6]/30 text-[#E5E5E5]'
+                      : 'bg-[#181818] border-[#3D3D3D] text-[#E5E5E5]'
                   }`}
                 >
                   {/* Category Indicator Icon */}
@@ -456,7 +456,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                     {item.progress !== undefined && (
                       <div className="mt-1.5 w-full bg-[#1E1E1E] h-1.5 rounded-full overflow-hidden border border-[#2F2F2F]">
                         <div
-                          className="bg-[#3B82F6] h-full transition-all duration-300"
+                          className="bg-white h-full transition-all duration-300"
                           style={{ width: `${item.progress}%` }}
                         />
                       </div>
@@ -471,7 +471,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                             e.stopPropagation();
                             handleActionClick(item);
                           }}
-                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#60A5FA] hover:text-[#93C5FD] hover:underline cursor-pointer"
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#E5E5E5] hover:text-white hover:underline cursor-pointer"
                         >
                           <span>{item.actionLabel || `Open ${paneLabels[item.targetPane] || 'Pane'}`}</span>
                           <ExternalLink className="w-2.5 h-2.5" />
@@ -494,7 +494,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
 
                   {/* Unread Dot Indicator */}
                   {!item.read && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] shrink-0 self-center" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0 self-center" />
                   )}
                 </div>
               ))
@@ -520,7 +520,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                     actionLabel: 'Audio Settings',
                   });
                 }}
-                className="text-[#9CA3AF] hover:text-[#60A5FA] hover:underline cursor-pointer"
+                className="text-[#9CA3AF] hover:text-white hover:underline cursor-pointer"
               >
                 + Voice
               </button>
@@ -537,7 +537,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                     actionLabel: 'Preview',
                   });
                 }}
-                className="text-[#9CA3AF] hover:text-[#60A5FA] hover:underline cursor-pointer"
+                className="text-[#9CA3AF] hover:text-white hover:underline cursor-pointer"
               >
                 + Render
               </button>
@@ -554,7 +554,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                     actionLabel: 'Canvas',
                   });
                 }}
-                className="text-[#9CA3AF] hover:text-[#60A5FA] hover:underline cursor-pointer"
+                className="text-[#9CA3AF] hover:text-white hover:underline cursor-pointer"
               >
                 + Layout
               </button>

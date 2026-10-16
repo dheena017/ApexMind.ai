@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
+import { toast } from 'sonner';
 
 export interface StockImageItem {
   id: string;
@@ -287,6 +288,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     setSelectedId(null);
     onSelectImage(img.url);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+    toast.success(`Applied "${img.title}"`);
 
     // Add to recent images
     setRecentImages((prev) => {
