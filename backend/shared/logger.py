@@ -83,10 +83,12 @@ def colorize_backend_info(msg: str) -> str:
         feat_str = parts[1]
         formatted_features = (
             feat_str.replace("Workspace", f"{Colors.BRIGHT_BLUE}Workspace{Colors.RESET}")
+            .replace("Videos", f"{Colors.BRIGHT_MAGENTA}Videos{Colors.RESET}")
             .replace("YouTube", f"{Colors.BRIGHT_RED}YouTube{Colors.RESET}")
             .replace("Notifications", f"{Colors.BRIGHT_YELLOW}Notifications{Colors.RESET}")
             .replace("Dashboard", f"{Colors.BRIGHT_CYAN}Dashboard{Colors.RESET}")
             .replace("Auth", f"{Colors.BRIGHT_GREEN}Auth{Colors.RESET}")
+            .replace("Settings", f"{Colors.GRAY}Settings{Colors.RESET}")
             .replace("•", f"{Colors.GRAY}•{Colors.RESET}")
         )
         return f"{Colors.WHITE}Features active:{Colors.RESET}{formatted_features}"
@@ -116,7 +118,14 @@ def colorize_backend_info(msg: str) -> str:
         clean,
     )
 
-    # Highlight quoted strings
+    # Highlight double-quoted strings
+    clean = re.sub(
+        r'\"([^\"]+)\"',
+        rf'"{Colors.BRIGHT_WHITE}{Colors.BOLD}\1{Colors.RESET}"',
+        clean,
+    )
+
+    # Highlight single-quoted strings
     clean = re.sub(
         r"'([^']+)'",
         rf"'{Colors.BRIGHT_WHITE}{Colors.BOLD}\1{Colors.RESET}'",
@@ -132,16 +141,24 @@ def colorize_backend_info(msg: str) -> str:
 
     # Highlight metrics and sizes
     clean = re.sub(
-        r"\b(\d+\.?\d*\s*(?:ms|s|seconds|bytes|KB|MB|GB|px|views|quotes|channels|videos|items|records|scenes))\b",
+        r"\b(\d+\.?\d*\s*(?:ms|s|seconds|bytes|KB|MB|GB|px|views|likes|subs|subscribers|quotes|channels|videos|shorts|playlists|comments|photos|tracks|items|records|scenes|jobs))\b",
         rf"{Colors.BRIGHT_GREEN}\1{Colors.RESET}",
         clean,
         flags=re.IGNORECASE,
     )
 
-    # Highlight ID tags
+    # Highlight parameters, filters, IDs and parenthesis metadata
     clean = re.sub(
-        r"\b(ID:\s*[\w\-]+|Unread:\s*\d+|limit:\s*\d+|count:\s*\d+)\b",
+        r"\b(ID:\s*[\w\-]+|Unread:\s*\d+|limit:\s*\d+|count:\s*\d+|Subs:\s*[\d,]+|Videos:\s*\d+|Total Views:\s*[\d,]+)\b",
         rf"{Colors.CYAN}\1{Colors.RESET}",
+        clean,
+        flags=re.IGNORECASE,
+    )
+
+    # Highlight email addresses
+    clean = re.sub(
+        r"\b([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)\b",
+        rf"{Colors.BRIGHT_CYAN}\1{Colors.RESET}",
         clean,
     )
 
@@ -177,6 +194,9 @@ class ColoredFormatter(logging.Formatter):
         "Watcher": Colors.BRIGHT_YELLOW,
         "App": Colors.BRIGHT_CYAN,
         "Auth": Colors.BRIGHT_GREEN,
+        "Videos": Colors.BRIGHT_MAGENTA,
+        "OpenMedia": Colors.BRIGHT_BLUE,
+        "Settings": Colors.GRAY,
     }
 
     def format(self, record: logging.LogRecord) -> str:
@@ -187,7 +207,7 @@ class ColoredFormatter(logging.Formatter):
         # 2. Level Badge with High Contrast
         badge = self.LEVEL_BADGES.get(record.levelno, f"[{record.levelname}]")
 
-        # 3. Determine Module Tag & Color (Map cleanly to standard 10-char width)
+        # 3. Determine Module Tag & Color (Map cleanly to standard 13-char width)
         raw_name = record.name.replace("ApexMind.", "").lower()
         if "uvicorn" in raw_name or "server" in raw_name:
             mod_name = "Server"
@@ -199,6 +219,10 @@ class ColoredFormatter(logging.Formatter):
             mod_name = "Notifications"
         elif "workspace" in raw_name:
             mod_name = "Workspace"
+        elif "openmedia" in raw_name or "media" in raw_name:
+            mod_name = "OpenMedia"
+        elif "video" in raw_name:
+            mod_name = "Videos"
         elif "dashboard" in raw_name:
             mod_name = "Dashboard"
         elif "auth" in raw_name:
@@ -209,11 +233,15 @@ class ColoredFormatter(logging.Formatter):
             mod_name = "Gemini"
         elif "http" in raw_name:
             mod_name = "HTTP"
+        elif "setting" in raw_name:
+            mod_name = "Settings"
+        elif "app" in raw_name:
+            mod_name = "App"
         else:
-            mod_name = record.name.split(".")[-1].capitalize()[:10]
+            mod_name = record.name.split(".")[-1].capitalize()[:13]
 
         tag_color = self.MODULE_COLORS.get(mod_name, Colors.CYAN)
-        tag = f"{tag_color}{Colors.BOLD}[{mod_name:<10}]{Colors.RESET}"
+        tag = f"{tag_color}{Colors.BOLD}[{mod_name:<13}]{Colors.RESET}"
 
         # 4. Message Coloring and cleaning
         msg = record.getMessage()
@@ -227,7 +255,7 @@ class ColoredFormatter(logging.Formatter):
         else:
             msg_colored = colorize_backend_info(msg)
 
-        scope = f"{Colors.BRIGHT_GREEN}[Backend]{Colors.RESET}"
+        scope = f"{Colors.BRIGHT_GREEN}[Backend ]{Colors.RESET}"
         formatted = f"{timestamp} {scope} {badge} {tag} {msg_colored}"
         if not self.use_color:
             return re.sub(r"\033\[[0-?]*[ -/]*[@-~]", "", formatted)
@@ -316,12 +344,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         m_color = method_colors.get(method, Colors.WHITE)
 
         client_host = request.client.host if request.client else "unknown"
-        logger.info(
-            f"{Colors.GRAY}-->{Colors.RESET} "
-            f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
-            f"{path_color}{path}{Colors.RESET} "
-            f"{Colors.GRAY}(from {client_host}){Colors.RESET}"
-        )
+        is_poll = path in ("/api/notifications/unread-count",)
+
+        if not is_poll:
+            logger.info(
+                f"{Colors.GRAY}-->{Colors.RESET} "
+                f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
+                f"{path_color}{path}{Colors.RESET} "
+                f"{Colors.GRAY}(from {client_host}){Colors.RESET}"
+            )
 
         try:
             response: Response = await call_next(request)
@@ -346,12 +377,16 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             else:
                 duration_str = f"{Colors.RED}{duration_ms:.1f}ms{Colors.RESET}"
 
-            logger.info(
+            log_msg = (
                 f"{Colors.GRAY}<--{Colors.RESET} {code_str} "
                 f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
                 f"{path_color}{path}{Colors.RESET} "
                 f"{Colors.GRAY}| Duration: {Colors.RESET}{duration_str}"
             )
+            if is_poll:
+                logger.debug(log_msg)
+            else:
+                logger.info(log_msg)
             return response
         except Exception as exc:
             duration_ms = (time.perf_counter() - start_time) * 1000

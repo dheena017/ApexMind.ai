@@ -22,16 +22,20 @@ logger = logging.getLogger("ApexMind.YouTube")
 
 
 def list_channels_and_videos() -> Dict[str, Any]:
+    channels = fetch_channels()
+    videos = fetch_videos()
+    logger.info(f"Loaded {len(channels)} YouTube channels and {len(videos)} published videos")
     return {
         "success": True,
-        "channels": fetch_channels(),
-        "videos": fetch_videos(),
+        "channels": channels,
+        "videos": videos,
     }
 
 
 def lookup_youtube_channel(query: str) -> Dict[str, Any]:
     """Resolves and verifies channel details live from YouTube."""
     data = lookup_channel(query)
+    logger.info(f"Looked up YouTube channel query '{query}' ➔ Found '{data.get('name')}' ({data.get('handle')}) [Subs: {data.get('subscribers')}]")
     return {
         "success": True,
         "channel": data,
@@ -77,6 +81,7 @@ def connect_youtube_channel(
         videos_uploaded=videos_uploaded or 0,
         banner_url=banner_url,
     )
+    logger.info(f"Connected YouTube channel: '{final_name}' ({final_handle}) [Subs: {subscribers}, Niche: '{niche}'] (ID: {channel.get('id')})")
     try:
         add_notification(
             title="YouTube Channel Connected",
@@ -100,6 +105,7 @@ def sync_or_correct_channel(channel_id: str, new_query: Optional[str] = None) ->
     Syncs or corrects an existing connected channel with live YouTube stats.
     """
     result = correct_and_sync_channel(channel_id, new_handle_or_query=new_query)
+    logger.info(f"Synced channel stats with live YouTube API for '{result['channel'].get('name', channel_id)}' (ID: {channel_id})")
     try:
         add_notification(
             title="YouTube Channel Synced",
@@ -130,6 +136,7 @@ def get_channel_shorts(channel_id: str, limit: int = 15) -> Dict[str, Any]:
         }
 
     shorts = fetch_channel_shorts(channel_id, channel_handle=channel.get("handle"), max_results=limit)
+    logger.info(f"Retrieved {len(shorts)} YouTube Shorts for channel '{channel.get('name', channel_id)}' (ID: {channel_id})")
     return {
         "success": True,
         "channel": channel,
@@ -140,6 +147,7 @@ def get_channel_shorts(channel_id: str, limit: int = 15) -> Dict[str, Any]:
 
 def update_channel(channel_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
     updated = update_channel_data(channel_id, data)
+    logger.info(f"Updated YouTube channel configuration for (ID: {channel_id})")
     return {
         "success": True,
         "channel": updated,
@@ -148,6 +156,7 @@ def update_channel(channel_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
 
 def disconnect_channel(channel_id: str) -> Dict[str, Any]:
     remove_channel(channel_id)
+    logger.info(f"Disconnected YouTube channel (ID: {channel_id})")
     return {
         "success": True,
         "channelId": channel_id,
@@ -166,6 +175,7 @@ def toggle_automation(job_id: str) -> Dict[str, Any]:
     updated_jobs = toggle_automation_job(job_id)
     job = next((j for j in updated_jobs if j.get("id") == job_id), None)
     status_str = "Enabled" if job and job.get("active") else "Paused"
+    logger.info(f"Toggled autonomous Shorts scheduler '{job.get('theme', job_id) if job else job_id}' ➔ Status: {status_str}")
     try:
         add_notification(
             title="Automation Schedule Updated",

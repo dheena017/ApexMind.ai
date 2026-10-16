@@ -42,6 +42,7 @@ async def list_website_videos(
 ):
     try:
         videos = get_website_videos(category=category, search=search)
+        logger.info(f"Retrieved {len(videos)} studio videos (Category: {category or 'all'}, Search: '{search or ''}')")
         return {
             "success": True,
             "videos": videos,
@@ -72,6 +73,7 @@ async def create_website_video_endpoint(payload: CreateWebsiteVideoRequest):
     try:
         data = payload.dict(exclude_unset=True)
         video = add_website_video(data)
+        logger.info(f"Saved studio video: '{video.get('title')}' [{video.get('category')}] (ID: {video.get('id')})")
         return video
     except Exception as e:
         logger.error(f"Error saving website video: {e}")
@@ -93,6 +95,7 @@ async def get_website_video_endpoint(video_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Video '{video_id}' not found."
         )
+    logger.info(f"Retrieved studio video details: '{video.get('title')}' (ID: {video_id})")
     return video
 
 
@@ -109,6 +112,7 @@ async def update_website_video_endpoint(video_id: str, payload: UpdateWebsiteVid
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Video '{video_id}' not found."
         )
+    logger.info(f"Updated studio video: '{video.get('title')}' (ID: {video_id})")
     return video
 
 
@@ -123,6 +127,7 @@ async def delete_website_video_endpoint(video_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Video '{video_id}' not found or already deleted."
         )
+    logger.info(f"Deleted studio video (ID: {video_id})")
     return {
         "success": True,
         "message": f"Video '{video_id}' deleted successfully."

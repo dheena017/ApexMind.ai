@@ -38,6 +38,7 @@ def generate_script(
     available_assets: dict | None = None,
 ) -> Dict[str, Any]:
     aspect_ratio = aspect_ratio or "9:16"
+    logger.info(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
     memory = fetch_quote_memory(limit=20)
     
     # Dynamically fetch real videos and photos from the internet matching topic and category
@@ -90,6 +91,7 @@ def generate_script(
             quote=data.get("quote"),
             category=category or "General Motivation",
         )
+        logger.info(f"Generated AI script: '{data.get('title')}' ({len(data.get('scenes', []))} scenes, {data.get('estimatedDuration', '30s')})")
         try:
             add_notification(
                 title="AI Script Crafted",
@@ -110,12 +112,15 @@ def generate_script(
 
 def clear_memory() -> Dict[str, Any]:
     deleted = delete_all_quotes()
+    logger.info(f"Cleared {deleted} quotes from workspace memory store.")
     return {"success": True, "message": f"Cleared {deleted} quotes from memory."}
 
 def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = None) -> Dict[str, Any]:
     if not voice_name or not str(voice_name).strip():
         raise ValueError("Voice name is required. Please select a workspace voice before generating audio.")
+    logger.info(f"Synthesizing voiceover audio for voice '{voice_name}' | Length: {len(text)} characters | Model: {model or 'gemini'}")
     result = generate_gemini_voiceover(text=text, voice_name=voice_name, model=model)
+    logger.info(f"Voiceover audio ready: voice '{voice_name}' | Duration: {result.get('duration', '0s')}")
     try:
         add_notification(
             title="Voiceover Synthesized",
@@ -130,5 +135,6 @@ def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = 
 
 def get_media_library() -> Dict[str, Any]:
     catalog = fetch_media_library()
+    logger.info(f"Retrieved media library catalog: {len(catalog.get('audioTracks', []))} tracks | {len(catalog.get('backdrops', []))} backdrops | {len(catalog.get('voices', []))} voice presets")
     return {"success": True, "data": catalog}
 

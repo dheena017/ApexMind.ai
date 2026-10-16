@@ -118,6 +118,7 @@ async def get_live_channel_details(handle: Optional[str] = None, channel_id: Opt
     target = _resolve_target(query, channel, channel_id, handle)
     try:
         data = resolve_channel_metadata(target)
+        logger.info(f"Resolved channel metadata for '{target}' ➔ '{data.get('name')}' [Subs: {data.get('subscribers')}] (ID: {data.get('id')})")
         return {"success": True, "source": "youtube-official-live", "channel": data}
     except Exception as e:
         logger.error(f"Error resolving channel details for '{target}': {e}")
@@ -149,6 +150,7 @@ async def get_live_channel_videos(handle: Optional[str] = None, channel_id: Opti
     target = _resolve_target(query, channel_id=channel_id, handle=handle)
     try:
         videos = fetch_channel_videos(target, limit=limit)
+        logger.info(f"Retrieved {len(videos)} videos for channel '{target}' (Limit: {limit})")
         return {"success": True, "source": "youtube-official-live", "total": len(videos), "videos": videos}
     except Exception as e:
         logger.error(f"Error fetching videos for '{target}': {e}")
@@ -165,6 +167,7 @@ async def get_live_channel_videos_sorted(handle: Optional[str] = None, channel_i
     target = _resolve_target(channel_id=channel_id, handle=handle)
     try:
         videos = fetch_channel_videos_sorted(target, sort=sort, limit=limit)
+        logger.info(f"Retrieved {len(videos)} sorted videos for channel '{target}' [Sort: {sort}]")
         return {"success": True, "source": "youtube-official-live", "total": len(videos), "videos": videos}
     except Exception as e:
         logger.error(f"Error sorting videos for '{target}': {e}")
@@ -181,6 +184,7 @@ async def get_live_channel_shorts_route(handle: Optional[str] = None, channel_id
     target = _resolve_target(query, channel_id=channel_id, handle=handle)
     try:
         shorts = fetch_channel_shorts(target, limit=limit)
+        logger.info(f"Retrieved {len(shorts)} YouTube Shorts for channel '{target}' (Limit: {limit})")
         return {"success": True, "source": "youtube-official-live", "total": len(shorts), "shorts": shorts}
     except Exception as e:
         logger.error(f"Error fetching shorts for '{target}': {e}")
@@ -206,6 +210,7 @@ async def get_live_channel_feed_route(handle: Optional[str] = None, channel_id: 
             {"id": v["id"], "title": v["title"], "views": v.get("views", ""), "duration": v.get("duration", ""), "thumbnailUrl": v["thumbnailUrl"], "videoUrl": v["videoUrl"], "isShort": False}
             for v in videos[:2]
         ]
+        logger.info(f"Retrieved live feed for channel '{target}' ➔ {len(videos)} videos, {len(shorts)} shorts")
         return {
             "success": True,
             "source": "youtube-official-live",
@@ -229,6 +234,7 @@ async def get_live_channel_playlists_route(handle: Optional[str] = None, channel
     target = _resolve_target(query, channel, channel_id, handle)
     try:
         playlists = fetch_channel_playlists(target, limit=limit)
+        logger.info(f"Retrieved {len(playlists)} playlists for channel '{target}'")
         return {"success": True, "source": "youtube-official-live", "playlists": playlists}
     except Exception as e:
         logger.error(f"Error fetching playlists for '{target}': {e}")
@@ -245,6 +251,7 @@ async def get_live_channel_analytics_route(handle: Optional[str] = None, channel
     target = _resolve_target(query, channel, channel_id, handle)
     try:
         analytics = compute_live_channel_analytics(target)
+        logger.info(f"Retrieved real-time analytics for channel '{target}' ➔ Total Views: {analytics.get('totalViews', 0)}, Subs: {analytics.get('subscribers', 0)}")
         return {"success": True, "source": "youtube-official-live", "analytics": analytics}
     except Exception as e:
         logger.error(f"Error computing analytics for '{target}': {e}")

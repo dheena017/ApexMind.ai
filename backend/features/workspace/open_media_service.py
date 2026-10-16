@@ -364,6 +364,7 @@ def search_open_videos(
     # 4. Dynamic Keyless Wikimedia Commons Videos
     wm_videos = search_wikimedia_videos(query=q, category=category, page=page, limit=page_size, aspect_ratio=aspect_ratio)
     if wm_videos:
+        logger.info(f"Queried open video stock for '{q or category}' [Ratio: {aspect_ratio}] ➔ Found {len(wm_videos)} videos")
         return {
             "success": True,
             "source": "wikimedia_commons",
@@ -373,6 +374,7 @@ def search_open_videos(
             "items": wm_videos,
         }
 
+    logger.info(f"Queried open video stock for '{q or category}' [Ratio: {aspect_ratio}] ➔ Found 0 videos")
     return {
         "success": True,
         "source": "empty",
@@ -861,6 +863,7 @@ def search_open_images(
                     interleaved.append(pool[i])
 
     if interleaved:
+        logger.info(f"Queried open photo catalog for '{query or category}' [Provider: {provider}, Ratio: {orientation}] ➔ Found {len(interleaved[:page_size])} photos")
         return {
             "success": True,
             "source": "aggregated_all",
@@ -871,6 +874,7 @@ def search_open_images(
             "providers": providers_status,
         }
 
+    logger.info(f"Queried open photo catalog for '{query or category}' [Provider: {provider}, Ratio: {orientation}] ➔ Found 0 photos")
     return {
         "success": True,
         "source": "empty",
@@ -940,6 +944,7 @@ def search_open_tracks(query: str = "", genre: str = "", limit: int = 20) -> Dic
     # 1. Live Jamendo API query
     jam_tracks = search_jamendo_tracks(query=query, genre=genre, limit=limit)
     if jam_tracks:
+        logger.info(f"Queried open music soundtracks for '{query or genre}' [Genre: {genre or 'all'}] ➔ Found {len(jam_tracks)} tracks")
         return {
             "success": True,
             "source": "jamendo_api",
@@ -955,6 +960,7 @@ def search_open_tracks(query: str = "", genre: str = "", limit: int = 20) -> Dic
         if not q or q in t.get("title", "").lower() or q in t.get("genre", "").lower()
     ]
     tracks = filtered if filtered else MEDIA_TRACKS
+    logger.info(f"Queried open music soundtracks for '{query or genre}' [Genre: {genre or 'all'}] ➔ Found {len(tracks[:limit])} tracks")
     return {
         "success": True,
         "source": "curated_catalog",
@@ -972,6 +978,7 @@ def search_open_sfx(query: str = "whoosh", limit: int = 20) -> Dict[str, Any]:
         if not q or q in sfx.get("name", "").lower() or q in sfx.get("category", "").lower()
     ]
     items = filtered if filtered else CURATED_SFX
+    logger.info(f"Queried open sound effects library for '{query}' ➔ Found {len(items[:limit])} audio effects")
     return {
         "success": True,
         "source": "curated_sfx",
@@ -1041,6 +1048,7 @@ def search_open_quotes(query: str = "", category: str = "all", limit: int = 30) 
     if category != "all":
         quotes = [q for q in quotes if category.lower() in q["category"].lower()]
 
+    logger.info(f"Queried open quotes catalog for '{query or category}' [Category: {category}] ➔ Found {len(quotes[:limit])} quotes")
     return {
         "success": True,
         "total": len(quotes),

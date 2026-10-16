@@ -39,6 +39,7 @@ async def post_google_auth(payload: GoogleAuthRequest):
             access_token=payload.accessToken,
             channel=payload.channel,
         )
+        logger.info(f"Google authenticated user: '{data['user']['name']}' ({data['user']['email']}) [Provider: {data['user'].get('provider', 'google')}]")
         return data
     except Exception as e:
         logger.error(f"Google authentication failed: {e}")
@@ -56,6 +57,7 @@ async def post_google_auth(payload: GoogleAuthRequest):
 async def post_email_login(payload: EmailLoginRequest):
     try:
         data = authenticate_email_user(email=payload.email, password=payload.password)
+        logger.info(f"Email login successful for: '{data['user']['email']}'")
         return data
     except Exception as e:
         logger.error(f"Email login failed: {e}")
@@ -78,6 +80,7 @@ async def get_me(authorization: Optional[str] = Header(None)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="No authenticated creator session found."
             )
+        logger.info(f"Loaded creator session profile: '{user.name}' ({user.email})")
         return user
     except HTTPException:
         raise
@@ -94,6 +97,7 @@ async def get_me(authorization: Optional[str] = Header(None)):
     description="Terminates current session."
 )
 async def post_logout():
+    logger.info("Creator session logged out successfully.")
     return {
         "success": True,
         "message": "Signed out successfully.",

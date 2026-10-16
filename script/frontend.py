@@ -590,7 +590,7 @@ def format_log(mod_name: str, message: str, level: str = "INFO", ansi: Ansi | No
     }
     clean_mod = mod_name.replace("UI:", "")
     col = module_colors.get(clean_mod, module_colors.get(mod_name, a.CYAN))
-    tag = f"{col}{a.BOLD}[{mod_name:<10}]{a.RESET}"
+    tag = f"{col}{a.BOLD}[{mod_name:<13}]{a.RESET}"
 
     if lvl in ("ERROR", "FATAL"):
         msg_colored = f"{a.RED}{sanitize_utf8_terminal(message)}{a.RESET}"
