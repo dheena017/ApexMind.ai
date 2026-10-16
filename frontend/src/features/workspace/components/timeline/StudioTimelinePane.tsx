@@ -2074,7 +2074,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     width="14"
                     height="24"
                     viewBox="0 0 14 24"
-                    className="overflow-visible filter drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
+                    className="overflow-visible"
                   >
                     <path
                       d="M 2 0.5 L 12 0.5 C 13.1 0.5 14 1.4 14 2.5 L 14 13.5 L 7 24 L 0 13.5 L 0 2.5 C 0 1.4 0.9 0.5 2 0.5 Z"
@@ -2161,7 +2161,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 <div
                   className={`w-[2px] h-full transition-colors ${
                     isResizingTrackHeaders
-                      ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+                      ? 'bg-white'
                       : 'bg-transparent group-hover/col-resize:bg-white/70'
                   }`}
                 />
@@ -3101,7 +3101,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   className="absolute top-0 bottom-0 pointer-events-none z-30 select-none"
                   style={{ left: `${progressPercent}%` }}
                 >
-                  <div className="w-px h-full bg-white -translate-x-1/2 relative shadow-[0_0_8px_rgba(255,255,255,0.6)]" />
+                  <div className="w-px h-full bg-white -translate-x-1/2 relative" />
                 </div>
               </div>
             </div>

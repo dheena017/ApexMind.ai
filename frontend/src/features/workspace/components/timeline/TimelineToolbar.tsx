@@ -175,7 +175,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           <button
             type="button"
             onClick={onTogglePlay}
-            className="h-7 px-4 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95 shrink-0 border border-[#60A5FA]/40"
+            className="h-7 px-4 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0 border border-[#60A5FA]/40"
             title={isPlaying ? 'Pause Timeline (Space)' : 'Play Timeline (Space)'}
             aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
           >
@@ -255,7 +255,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onToggleSnap}
             className={`h-7 px-2 inline-flex items-center gap-1.5 rounded-lg border transition-all cursor-pointer select-none ${snapEnabled
-                ? 'border-white/30 bg-white/10 text-white shadow-sm font-semibold'
+                ? 'border-white/30 bg-white/10 text-white font-semibold'
                 : 'border-[#2D2D38] bg-[#16161E] text-[#71717A] hover:text-[#D4D4D8] hover:border-[#3E3E4C]'
               }`}
             title={snapEnabled ? 'Magnetic Snapping: ON (Press N to toggle) — Clips and playhead snap to cuts' : 'Magnetic Snapping: OFF (Press N to toggle)'}

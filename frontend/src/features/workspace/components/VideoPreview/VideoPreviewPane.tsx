@@ -794,7 +794,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const cutImpactScale = isTransitionCut
     ? (sceneTransition === 'zoom' ? 1 + cutProgress * 0.08 : 1 + cutProgress * 0.04)
     : 1;
-  const cutImpactBrightness = isTransitionCut ? 100 + cutProgress * 22 : 100;
+  const cutImpactBrightness = 100;
   const cutGlitchX = isTransitionCut && sceneTransition === 'glitch' ? Math.sin(currentTime * 36) * 4 * cutProgress : 0;
   const cutSlideY = isTransitionCut && sceneTransition === 'slide' ? cutProgress * 6 : 0;
 
