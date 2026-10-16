@@ -33,7 +33,8 @@ def search_wikimedia_videos(
     query: str = "",
     category: str = "all",
     page: int = 1,
-    limit: int = 20
+    limit: int = 20,
+    aspect_ratio: str = "9:16",
 ) -> List[Dict[str, Any]]:
     """Live search Wikimedia Commons for open videos (Zero API keys needed, 100% dynamic)."""
     try:
@@ -110,8 +111,13 @@ def search_wikimedia_videos(
     return []
 
 
-def search_pexels_videos(query: str, page: int = 1, page_size: int = 20) -> List[Dict[str, Any]]:
-    """Live search Pexels Free Video API if PEXELS_API_KEY is configured in .env."""
+def search_pexels_videos(
+    query: str,
+    page: int = 1,
+    page_size: int = 20,
+    aspect_ratio: str = "9:16",
+) -> List[Dict[str, Any]]:
+    """Live search Pexels Free Video API with aspect-ratio awareness if PEXELS_API_KEY is configured in .env."""
     api_key = os.getenv("PEXELS_API_KEY")
     if not api_key:
         return []
@@ -119,13 +125,21 @@ def search_pexels_videos(query: str, page: int = 1, page_size: int = 20) -> List
     try:
         clean_q = (query or "").strip().replace("#", "").strip()
         per_page = min(page_size, 30)
+        orientation = "portrait"
+        if aspect_ratio in ["16:9", "21:9"]:
+            orientation = "landscape"
+        elif aspect_ratio == "1:1":
+            orientation = "square"
+        elif aspect_ratio in ["9:16", "4:5"]:
+            orientation = "portrait"
+
         if clean_q:
             url = (
                 f"https://api.pexels.com/v1/videos/search?"
-                f"query={urllib.parse.quote(clean_q)}&per_page={per_page}&page={page}&orientation=portrait"
+                f"query={urllib.parse.quote(clean_q)}&per_page={per_page}&page={page}&orientation={orientation}"
             )
         else:
-            url = f"https://api.pexels.com/v1/videos/popular?per_page={per_page}&page={page}"
+            url = f"https://api.pexels.com/v1/videos/popular?per_page={per_page}&page={page}&orientation={orientation}"
 
         req = urllib.request.Request(
             url,
@@ -166,17 +180,28 @@ def search_pexels_videos(query: str, page: int = 1, page_size: int = 20) -> List
     return []
 
 
-def search_pixabay_videos(query: str, page: int = 1, page_size: int = 20) -> List[Dict[str, Any]]:
-    """Live search Pixabay Free Video API if PIXABAY_API_KEY is configured in .env."""
+def search_pixabay_videos(
+    query: str,
+    page: int = 1,
+    page_size: int = 20,
+    aspect_ratio: str = "9:16",
+) -> List[Dict[str, Any]]:
+    """Live search Pixabay Free Video API with aspect-ratio awareness if PIXABAY_API_KEY is configured in .env."""
     api_key = os.getenv("PIXABAY_API_KEY")
     if not api_key:
         return []
 
     try:
         search_term = query or "nature"
+        orientation_param = ""
+        if aspect_ratio in ["16:9", "21:9"]:
+            orientation_param = "&orientation=horizontal"
+        elif aspect_ratio in ["9:16", "4:5"]:
+            orientation_param = "&orientation=vertical"
+
         url = (
             f"https://pixabay.com/api/videos/?"
-            f"key={api_key}&q={urllib.parse.quote(search_term)}&per_page={min(page_size, 30)}&page={page}&video_type=film"
+            f"key={api_key}&q={urllib.parse.quote(search_term)}&per_page={min(page_size, 30)}&page={page}&video_type=film{orientation_param}"
         )
         req = urllib.request.Request(url, headers={"User-Agent": "ApexMindStudio/2.0"})
         with urllib.request.urlopen(req, timeout=5) as res:
@@ -213,17 +238,18 @@ def search_open_videos(
     query: str = "",
     category: str = "all",
     page: int = 1,
-    page_size: int = 20
+    page_size: int = 20,
+    aspect_ratio: str = "9:16",
 ) -> Dict[str, Any]:
     """
     Search real stock videos across open APIs (Pexels, Pixabay, Wikimedia Commons).
-    No hardcoded mock videos.
+    Enforces the target aspect ratio across queries.
     """
     q = (query or "").strip().lower()
 
     # 1. Try Pexels API
     if os.getenv("PEXELS_API_KEY"):
-        pex_results = search_pexels_videos(q, page=page, page_size=page_size)
+        pex_results = search_pexels_videos(q, page=page, page_size=page_size, aspect_ratio=aspect_ratio)
         if pex_results:
             return {
                 "success": True,
@@ -236,7 +262,7 @@ def search_open_videos(
 
     # 2. Try Pixabay API
     if os.getenv("PIXABAY_API_KEY"):
-        pix_results = search_pixabay_videos(q, page=page, page_size=page_size)
+        pix_results = search_pixabay_videos(q, page=page, page_size=page_size, aspect_ratio=aspect_ratio)
         if pix_results:
             return {
                 "success": True,
@@ -248,7 +274,7 @@ def search_open_videos(
             }
 
     # 3. Dynamic Keyless Wikimedia Commons Videos
-    wm_videos = search_wikimedia_videos(query=q, category=category, page=page, limit=page_size)
+    wm_videos = search_wikimedia_videos(query=q, category=category, page=page, limit=page_size, aspect_ratio=aspect_ratio)
     if wm_videos:
         return {
             "success": True,
@@ -939,6 +965,7 @@ def fetch_dynamic_internet_media_for_prompt(
     category: str = "all",
     limit_videos: int = 6,
     limit_images: int = 8,
+    aspect_ratio: str = "9:16",
 ) -> Dict[str, Any]:
     """
     Dynamically fetches real, live videos and photos from the internet matching the given prompt & topic.
@@ -960,7 +987,7 @@ def fetch_dynamic_internet_media_for_prompt(
         if len(videos) >= limit_videos:
             break
         try:
-            res = search_open_videos(query=kw, page_size=limit_videos)
+            res = search_open_videos(query=kw, page_size=limit_videos, aspect_ratio=aspect_ratio)
             for it in res.get("items", []):
                 v_url = it.get("videoUrl")
                 if v_url and v_url not in seen_video_urls:
@@ -1014,10 +1041,12 @@ def resolve_scene_media_from_internet(
     visual_query: str,
     fallback_topic: str = "",
     exclude_urls: set | None = None,
+    aspect_ratio: str = "9:16",
 ) -> Optional[Dict[str, Any]]:
     """
     Queries live internet media APIs for a specific storyboard scene's visual cue or search query.
     Enforces uniqueness: skips any video/media URL present in exclude_urls to prevent duplicate footage.
+    Enforces aspect ratio compliance so 16:9 videos are used for horizontal and 9:16 for vertical shorts.
     """
     import re
     exclude = set(exclude_urls or set())
@@ -1047,7 +1076,7 @@ def resolve_scene_media_from_internet(
 
         for q in queries_to_try:
             try:
-                res = search_open_videos(query=q, page_size=10)
+                res = search_open_videos(query=q, page_size=10, aspect_ratio=aspect_ratio)
                 items = res.get("items", [])
                 for item in items:
                     v_url = item.get("videoUrl")
@@ -1058,44 +1087,13 @@ def resolve_scene_media_from_internet(
                             "videoUrl": v_url,
                             "posterUrl": item.get("posterUrl", ""),
                             "source": item.get("source", "internet"),
+                            "aspectRatio": aspect_ratio,
                         }
             except Exception as e:
                 logger.debug(f"Scene video search error for '{q}': {e}")
 
-        # High-retention cinematic fallback clips if live queries return zero unused unique videos
-        curated_fallbacks = [
-            {
-                "id": "vid_heavy_iron_lift",
-                "title": "Heavy Gym Iron Barbell Lift",
-                "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-                "posterUrl": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=720&q=80",
-                "source": "curated_cinematic",
-            },
-            {
-                "id": "vid_storm_dark_ocean",
-                "title": "Thunderstorm Clouds & Ocean Horizon",
-                "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-                "posterUrl": "https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=720&q=80",
-                "source": "curated_cinematic",
-            },
-            {
-                "id": "vid_deep_space_acceleration",
-                "title": "Cosmic Stars & Deep Nebula Stream",
-                "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
-                "posterUrl": "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=720&q=80",
-                "source": "curated_cinematic",
-            },
-            {
-                "id": "vid_molten_fire_sparks",
-                "title": "Molten Fire Sparks & Anvil Iron",
-                "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
-                "posterUrl": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=720&q=80",
-                "source": "curated_cinematic",
-            },
-        ]
-        for fb in curated_fallbacks:
-            if fb["videoUrl"] not in exclude:
-                return fb
+        # No fallback to hardcoded mock videos: return None so the system reports the failure directly
+        return None
     else:
         for q in queries_to_try:
             try:

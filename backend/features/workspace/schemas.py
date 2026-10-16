@@ -62,6 +62,7 @@ class StoryboardSceneItem(BaseModel):
     sfx: Optional[str] = None
     sfxUrl: Optional[str] = None
     subtitleText: Optional[str] = None
+    aspectRatio: Optional[str] = None
 
 class GeneratedScriptData(BaseModel):
     title: str

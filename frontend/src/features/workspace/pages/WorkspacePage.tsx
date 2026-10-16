@@ -100,6 +100,7 @@ export default function WorkspacePage({
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
   const [targetLength, setTargetLength] = useState('30 seconds');
   const [loadingAgent, setLoadingAgent] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [testingVoiceId, setTestingVoiceId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -531,8 +532,9 @@ export default function WorkspacePage({
   };
 
   // Run AI Script Generation
-  const handleRunAIAgent = async () => {
+  const handleRunAIAgent = async (): Promise<boolean> => {
     setLoadingAgent(true);
+    setAgentError(null);
     consoleLogger.info('Studio', `Generating script for category: ${category}`);
     try {
       const creativeBrief = getActiveCreativeBrief();
@@ -671,7 +673,7 @@ export default function WorkspacePage({
         ...(creativeBrief.textStyle ? { textStyle: creativeBrief.textStyle } : {}),
         ...(creativeBrief.videoStyle ? { videoStyle: creativeBrief.videoStyle } : {}),
         ...(creativeBrief.voiceName ? { voiceName: creativeBrief.voiceName } : {}),
-        ...(creativeBrief.aspectRatio ? { aspectRatio: creativeBrief.aspectRatio } : {}),
+        aspectRatio: creativeBrief.aspectRatio || canvasAspectRatio || '9:16',
         ...(creativeBrief.musicTrack ? { musicTrack: creativeBrief.musicTrack } : {}),
         ...(creativeBrief.captionStyle ? { captionStyle: creativeBrief.captionStyle } : {}),
         ...(creativeBrief.visualTheme ? { visualTheme: creativeBrief.visualTheme } : {}),
@@ -712,6 +714,10 @@ export default function WorkspacePage({
       });
 
       setScript({ ...generated, recommendedVoice: selectedVoice || generated.recommendedVoice });
+
+      if (generated.aspectRatio && generated.aspectRatio !== canvasAspectRatio) {
+        handleCanvasAspectRatioChange(generated.aspectRatio as CanvasAspectRatio);
+      }
 
       // If AI planned a multi-scene storyboard with multiple videos and images:
       if (generated.storyboard && generated.storyboard.length > 0) {
@@ -783,19 +789,25 @@ export default function WorkspacePage({
 
       // Automatically synthesize 24kHz voiceover with updated script
       handleSynthesizeVoice(generated, selectedVoice || generated.recommendedVoice || 'Fenrir');
+      return true;
     } catch (err) {
       consoleLogger.error('Studio', 'Error generating script:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Please check connection or API keys.';
+      setAgentError(errorMessage);
+      setScriptSubPane('prompt');
+      onPaneChange('prompt');
       toast.error('Script generation failed', {
-        description: err instanceof Error ? err.message : 'Please check connection',
+        description: errorMessage,
       });
       addWorkspaceNotification({
         title: 'Script Generation Failed',
-        message: err instanceof Error ? err.message : 'Please check API key or prompt parameters.',
+        message: errorMessage,
         category: 'script',
         type: 'error',
         targetPane: 'script',
         actionLabel: 'Retry Prompt',
       });
+      return false;
     } finally {
       setLoadingAgent(false);
     }
@@ -1612,11 +1624,18 @@ export default function WorkspacePage({
             ) : activePane === 'prompt' || (activePane === 'script' && scriptSubPane === 'prompt') ? (
               <AIAgentCreatorPane
                 agentPrompt={agentPrompt}
-                onPromptChange={setAgentPrompt}
+                onPromptChange={(val) => {
+                  setAgentPrompt(val);
+                  if (agentError) setAgentError(null);
+                }}
                 category={category}
                 onCategoryChange={setCategory}
                 targetLength={targetLength}
                 onTargetLengthChange={setTargetLength}
+                aspectRatio={canvasAspectRatio}
+                onAspectRatioChange={handleCanvasAspectRatioChange}
+                agentError={agentError}
+                onClearError={() => setAgentError(null)}
                 selectedVoice={selectedVoice}
                 onVoiceChange={(vId) => {
                   setSelectedVoice(vId);
@@ -1629,9 +1648,11 @@ export default function WorkspacePage({
                 onModelChange={setSelectedModel}
                 loadingAgent={loadingAgent}
                 onRunAgent={async () => {
-                  await handleRunAIAgent();
-                  setScriptSubPane('editor');
-                  onPaneChange('editor');
+                  const success = await handleRunAIAgent();
+                  if (success) {
+                    setScriptSubPane('editor');
+                    onPaneChange('editor');
+                  }
                 }}
                 onSwitchToEditor={() => {
                   setScriptSubPane('editor');

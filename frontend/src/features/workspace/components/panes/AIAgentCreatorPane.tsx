@@ -22,6 +22,11 @@ import {
   Hash,
   Gauge,
   Smartphone,
+  Monitor,
+  Square,
+  Maximize2,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -35,6 +40,10 @@ export interface AIAgentCreatorPaneProps {
   onCategoryChange: (cat: string) => void;
   targetLength: string;
   onTargetLengthChange: (length: string) => void;
+  aspectRatio?: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
+  onAspectRatioChange?: (ratio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => void;
+  agentError?: string | null;
+  onClearError?: () => void;
   selectedVoice?: string;
   onVoiceChange?: (voiceId: string) => void;
   voices?: VoiceProfile[];
@@ -47,6 +56,14 @@ export interface AIAgentCreatorPaneProps {
   selectedModel?: string;
   onModelChange?: (model: string) => void;
 }
+
+export const ASPECT_RATIO_OPTIONS = [
+  { value: '9:16', label: '9:16 Vertical (Shorts, Reels, TikTok)' },
+  { value: '16:9', label: '16:9 Landscape (YouTube, Full HD)' },
+  { value: '1:1', label: '1:1 Square (Instagram Feed & Posts)' },
+  { value: '4:5', label: '4:5 Portrait (Instagram Feed Portrait)' },
+  { value: '21:9', label: '21:9 Ultrawide (Cinematic Film)' },
+];
 
 const DEFAULT_FALLBACK_VOICES: VoiceProfile[] = [
   { id: 'Fenrir', name: 'Fenrir', gender: 'Male', style: 'Deep, Powerful, Stoic Leader', speed: '1.0x' },
@@ -126,6 +143,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   onCategoryChange,
   targetLength,
   onTargetLengthChange,
+  aspectRatio = '9:16',
+  onAspectRatioChange,
+  agentError,
+  onClearError,
   selectedVoice = 'Fenrir',
   onVoiceChange,
   voices = DEFAULT_FALLBACK_VOICES,
@@ -307,8 +328,30 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         </button>
       </div>
 
+      {/* ── Prominent Error Banner (Always Pinned) ── */}
+      {agentError && (
+        <div className="mx-3.5 mt-2.5 p-3.5 rounded-xl bg-red-950/90 border border-red-500/60 text-red-200 text-xs flex items-start gap-2.5 shadow-xl shadow-red-950/70 shrink-0 animate-in fade-in slide-in-from-top-1">
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-red-300 text-xs">Generation Error &mdash; Zero Fallbacks</p>
+            <p className="text-[11px] text-red-200/90 mt-0.5 leading-relaxed break-words">{agentError}</p>
+          </div>
+          {onClearError && (
+            <button
+              type="button"
+              onClick={onClearError}
+              className="text-red-400 hover:text-white p-1 rounded-md transition-colors cursor-pointer shrink-0"
+              title="Dismiss error"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+
         {/* ── Tab: SEO & Trending Hashtags ── */}
         {activeTab === 'seo' && (
           <div className="flex flex-col gap-3">
@@ -376,6 +419,60 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 onChange={onCategoryChange}
                 className="w-full text-xs"
               />
+            </div>
+
+            {/* Video Aspect Ratio Dropdown & Presets */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <label className="uppercase text-[#71717A] flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-[#38BDF8]" />
+                  Video Aspect Ratio (AI Video Target)
+                </label>
+                <span className="text-[#38BDF8] font-bold">
+                  {aspectRatio === '9:16'
+                    ? '9:16 • 1080×1920 (Shorts/Reels)'
+                    : aspectRatio === '16:9'
+                    ? '16:9 • 1920×1080 (YouTube/HD)'
+                    : aspectRatio === '1:1'
+                    ? '1:1 • 1080×1080 (Square Feed)'
+                    : aspectRatio === '4:5'
+                    ? '4:5 • 1080×1350 (IG Portrait)'
+                    : '21:9 • 2560×1080 (Cinematic)'}
+                </span>
+              </div>
+              <CustomSelect
+                options={ASPECT_RATIO_OPTIONS}
+                value={aspectRatio}
+                onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
+                className="w-full text-xs"
+              />
+              <div className="grid grid-cols-4 gap-1.5 mt-0.5">
+                {[
+                  { id: '9:16' as const, label: '9:16', desc: 'Shorts/TikTok', icon: Smartphone },
+                  { id: '16:9' as const, label: '16:9', desc: 'Landscape', icon: Monitor },
+                  { id: '1:1' as const, label: '1:1', desc: 'Square', icon: Square },
+                  { id: '4:5' as const, label: '4:5', desc: 'Portrait', icon: Maximize2 },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isSelected = aspectRatio === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onAspectRatioChange?.(item.id)}
+                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#1E293B] border-[#38BDF8] text-[#38BDF8] shadow-sm shadow-[#38BDF8]/20'
+                          : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-[#D4D4D8] hover:border-[#3A3A42]'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 mb-1" />
+                      <span className="text-[10px] font-bold leading-none">{item.label}</span>
+                      <span className="text-[8px] opacity-70 mt-0.5">{item.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Prompt Textarea */}
@@ -465,6 +562,23 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 options={AI_MODELS}
                 value={currentModel}
                 onChange={(val) => onModelChange?.(val)}
+                className="w-full text-xs"
+              />
+            </div>
+
+            {/* Video Aspect Ratio */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <label className="uppercase text-[#71717A] flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-[#38BDF8]" />
+                  Video Aspect Ratio
+                </label>
+                <span className="text-[#38BDF8] font-bold">{aspectRatio}</span>
+              </div>
+              <CustomSelect
+                options={ASPECT_RATIO_OPTIONS}
+                value={aspectRatio}
+                onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
                 className="w-full text-xs"
               />
             </div>

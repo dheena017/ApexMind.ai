@@ -52,11 +52,17 @@ def post_generate_script(payload: GenerateScriptRequest):
             creative_context=payload.creativeContext,
             available_assets=payload.availableAssets,
         )
+    except ValueError as ve:
+        logger.warning(f"Validation error in script generation: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
     except Exception as e:
         logger.error(f"Error in script generation: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate script: {e}"
+            detail=str(e)
         )
 
 @router.post(
@@ -133,9 +139,9 @@ async def get_media_library_route():
     summary="Search open-source & royalty-free videos",
     description="Query Pexels, Pixabay, or keyless open stock video loops."
 )
-async def get_open_videos_route(q: str = "", category: str = "all", page: int = 1, pageSize: int = 20):
+async def get_open_videos_route(q: str = "", category: str = "all", page: int = 1, pageSize: int = 20, aspectRatio: str = "9:16"):
     from .open_media_service import search_open_videos
-    return search_open_videos(query=q, category=category, page=page, page_size=pageSize)
+    return search_open_videos(query=q, category=category, page=page, page_size=pageSize, aspect_ratio=aspectRatio)
 
 @router.get(
     "/api/workspace/open-media/images",

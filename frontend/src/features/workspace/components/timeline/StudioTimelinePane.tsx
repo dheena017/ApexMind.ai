@@ -2051,14 +2051,22 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     e.stopPropagation();
                     handleRulerPointerDown(e);
                   }}
-                  className="absolute top-0 -translate-x-1/2 flex flex-col items-center pointer-events-auto cursor-ew-resize group/playhead z-40 select-none"
+                  className="absolute top-0 -translate-x-1/2 h-6 flex flex-col items-center pointer-events-auto cursor-ew-resize group/playhead z-40 select-none"
                   style={{ left: `${progressPercent}%` }}
                   title={`Playhead: ${formatTime(currentTime)} (Drag to scrub)`}
                 >
-                  <div className="w-3 h-2.5 bg-[#3B82F6] rounded-t-sm flex items-center justify-center group-hover/playhead:bg-[#60A5FA] transition-colors">
-                    <div className="w-1 h-1 bg-white rounded-full" />
-                  </div>
-                  <div className="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[3px] border-t-[#3B82F6] -mt-px" />
+                  <svg
+                    width="14"
+                    height="24"
+                    viewBox="0 0 14 24"
+                    className="overflow-visible filter drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
+                  >
+                    <path
+                      d="M 2 0.5 L 12 0.5 C 13.1 0.5 14 1.4 14 2.5 L 14 13.5 L 7 24 L 0 13.5 L 0 2.5 C 0 1.4 0.9 0.5 2 0.5 Z"
+                      className="fill-[#3B82F6] group-hover/playhead:fill-[#60A5FA] transition-colors"
+                    />
+                    <circle cx="7" cy="7" r="1.5" fill="#FFFFFF" />
+                  </svg>
                 </div>
               </div>
             </div>
@@ -3078,9 +3086,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   className="absolute top-0 bottom-0 pointer-events-none z-30 select-none"
                   style={{ left: `${progressPercent}%` }}
                 >
-                  <div className="w-px h-full bg-[#3B82F6] -translate-x-1/2 relative">
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rotate-45 bg-[#3B82F6]" />
-                  </div>
+                  <div className="w-px h-full bg-[#3B82F6] -translate-x-1/2 relative shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                 </div>
               </div>
             </div>

@@ -46,11 +46,19 @@ def generate_script(
         topic=topic,
         category=category,
         limit_videos=8,
-        limit_images=12
+        limit_images=12,
+        aspect_ratio=aspect_ratio,
     )
     merged_assets = dict(available_assets or {})
+    clean_existing_videos = [
+        v for v in merged_assets.get("stockVideos", [])
+        if "commondatastorage" not in str(v.get("videoUrl", "")).lower()
+        and not any(bad in str(v.get("videoUrl", "")).lower() for bad in ["sample", "forbigger", "sintel", "subaru", "tearsofsteel", "bullrun"])
+    ]
     if dynamic_media.get("videos"):
-        merged_assets["stockVideos"] = dynamic_media["videos"] + merged_assets.get("stockVideos", [])
+        merged_assets["stockVideos"] = dynamic_media["videos"] + clean_existing_videos
+    else:
+        merged_assets["stockVideos"] = clean_existing_videos
     if dynamic_media.get("images"):
         merged_assets["backdrops"] = dynamic_media["images"] + merged_assets.get("backdrops", [])
 

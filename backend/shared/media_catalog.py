@@ -444,7 +444,7 @@ def get_static_media_catalog() -> Dict[str, Any]:
     return {
         "musicTracks": MEDIA_TRACKS,
         "visualBackdrops": VISUAL_BACKDROPS,
-        "stockVideos": CURATED_STOCK_VIDEOS,
+        "stockVideos": [],
         "textPresets": CURATED_TEXT_PRESETS,
         "voiceProfiles": VOICE_PROFILES,
         "soundEffects": CURATED_SFX,

@@ -26,6 +26,7 @@ export interface StoryboardScene {
   sfx?: string;
   sfxUrl?: string;
   subtitleText?: string;
+  aspectRatio?: string;
 }
 
 export interface GeneratedScript {

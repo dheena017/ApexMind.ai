@@ -70,7 +70,14 @@ export const workspaceApi = {
     });
     const duration = performance.now() - start;
     consoleLogger.api('POST', '/api/generate-script', res.status, duration);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const errorMsg = data.detail || data.message || `Failed to generate script (${res.status}: ${res.statusText})`;
+      consoleLogger.error('Studio', 'Script generation error:', errorMsg);
+      throw new Error(errorMsg);
+    }
+
     consoleLogger.success('Studio', `Script generated: "${data.data?.title}"`, data.data);
     return data.data;
   },

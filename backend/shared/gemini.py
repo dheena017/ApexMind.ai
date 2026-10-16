@@ -11,7 +11,6 @@ from google.genai import types
 from .config import settings
 from .media_catalog import (
     VISUAL_BACKDROPS,
-    CURATED_STOCK_VIDEOS,
     CURATED_TEXT_PRESETS,
     MEDIA_TRACKS,
     VOICE_PROFILES,
@@ -167,11 +166,23 @@ def generate_gemini_script(
 
     catalog = available_assets or (creative_context.get("availableAssets") if creative_context else None) or get_static_media_catalog()
     
-    avail_videos = catalog.get("stockVideos") or catalog.get("videoClips") or CURATED_STOCK_VIDEOS
-    video_summary = "\n".join([
-        f"- ID: {v.get('id')} | Title: '{v.get('title')}' | Category: {v.get('category')} | VideoUrl: {v.get('videoUrl')}"
-        for v in avail_videos[:10]
-    ])
+    # Strictly genuine internet stock videos only — zero mock sample fallbacks
+    raw_stock = catalog.get("stockVideos") or catalog.get("videoClips") or []
+    avail_videos = [
+        v for v in raw_stock
+        if v.get("videoUrl")
+        and not any(bad in str(v.get("videoUrl", "")).lower() for bad in [
+            "commondatastorage", "sample", "forbigger", "sintel", "subaru", 
+            "tearsofsteel", "bullrun", "bunny", "placeholder"
+        ])
+    ]
+    if avail_videos:
+        video_summary = "\n".join([
+            f"- ID: {v.get('id')} | Title: '{v.get('title')}' | Category: {v.get('category')} | VideoUrl: {v.get('videoUrl')}"
+            for v in avail_videos[:10]
+        ])
+    else:
+        video_summary = f"- [No pre-cached videos for {target_aspect_ratio}]. Videos will be dynamically retrieved per scene based on visualQuery."
 
     avail_backdrops = catalog.get("visualBackdrops") or catalog.get("imageBackdrops") or VISUAL_BACKDROPS
     backdrop_summary = "\n".join([
@@ -236,11 +247,15 @@ def generate_gemini_script(
 Produce an inspiring, punchy, retention-optimized motivational video plan with full script and multi-scene storyboard.
 
 TARGET ASPECT RATIO: {target_aspect_ratio}
-ASPECT RATIO & SUBTITLE SAFE ZONE RULES:
-- The video will be rendered in {target_aspect_ratio} format.
+ASPECT RATIO & COMPOSITION RULES:
+- The video will be rendered strictly in {target_aspect_ratio} format.
+- All scene footage, visual queries, framing, and compositions MUST match {target_aspect_ratio}.
+- For vertical (9:16 / 4:5): portrait orientation, subject centered in vertical safe-zone.
+- For widescreen (16:9 / 21:9): cinematic landscape orientation, wide field of view.
+- For square (1:1): balanced center-weighted square composition.
 - Subtitle Safety: In {target_aspect_ratio} (especially 9:16 vertical shorts), the bottom 25% of the screen is blocked by social media UI (creator name, audio ticker, comment & like buttons).
 - Therefore, each subtitle line MUST be short and punchy (strictly 3 to 7 words per scene cut). NEVER output long continuous paragraph blocks in one subtitle cut!
-- Break longer sentences into sequential 2.0s - 4.0s scene subtitle cuts matching the exact video beats so subtitles are clearly readable in the vertical safe zone and NEVER get hidden or clipped.
+- Break longer sentences into sequential 2.0s - 4.0s scene subtitle cuts matching the exact video beats so subtitles are clearly readable in the safe zone and NEVER get hidden or clipped.
 
 THEME: {category or 'Stoic Discipline & Relentless Focus'}
 TOPIC: {topic or 'Winning quiet battles, silence over excuses, compounding grit'}
@@ -296,7 +311,7 @@ MANDATORY 100% PURE VIDEO DIRECTIVE (NO STATIC IMAGES & NO DUPLICATE VIDEOS):
   16. "sfx": optional SFX name (e.g. "Fast Cinematic Whoosh" or "Cinematic Sub Bass Drop")
   17. "sfxUrl": audioUrl of the SFX
   18. "subtitleText": the spoken line or subtitle for this scene beat
-  19. "visualQuery": 2 to 4 word targeted visual search term for real high-impact cinematic footage (e.g. "heavy gym barbell deadlift", "athlete running sprint", "dark thunderstorm lightning", "fighter shadow boxing", "molten fire sparks", "mountain peak clouds"). NEVER use DIY, tutorial, or domestic terms.
+  19. "visualQuery": 2 to 4 word targeted visual search term for real high-impact cinematic footage matching {target_aspect_ratio} (e.g. "heavy gym barbell deadlift", "athlete running sprint", "dark thunderstorm lightning", "fighter shadow boxing", "molten fire sparks", "mountain peak clouds"). NEVER use DIY, tutorial, or domestic terms.
 - Choose "recommendedVoice" from the AVAILABLE VOICE PROFILES.
 - Choose "musicTrack" from the AVAILABLE SOUNDTRACKS.
 
@@ -310,7 +325,7 @@ Output MUST be a single raw JSON object with only these essential keys:
   "hook": "Unforgettable 3 to 5 word opening line spoken in first 2 seconds",
   "quote": "A powerful 2-3 sentence motivational monologue",
   "cta": "A sharp 1-sentence closing call-to-action",
-  "aspectRatio": "9:16",
+  "aspectRatio": "{target_aspect_ratio}",
   "recommendedVoice": "Best voice matching the tone from the catalog",
   "musicTrack": "Best soundtrack title or ID from catalog",
   "captionStyle": "Best caption style",
@@ -322,8 +337,8 @@ Output MUST be a single raw JSON object with only these essential keys:
       "start": 0.0,
       "duration": 2.5,
       "mediaType": "video",
-      "mediaId": "vid-storm",
-      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "mediaId": "",
+      "mediaUrl": "",
       "mediaName": "Atmospheric Storm & Clouds",
       "textStyleId": "sub-hormozi",
       "textStyleName": "Hormozi Viral Yellow",
@@ -334,6 +349,7 @@ Output MUST be a single raw JSON object with only these essential keys:
       "cameraMotion": "push-in",
       "sfx": "Fast Cinematic Whoosh",
       "sfxUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_27529fa22a.mp3?filename=fast-whoosh-10901.mp3",
+      "visualQuery": "dark storm lightning sky",
       "subtitleText": "Opening hook phrase"
     }},
     {{
@@ -342,8 +358,8 @@ Output MUST be a single raw JSON object with only these essential keys:
       "start": 2.5,
       "duration": 3.0,
       "mediaType": "video",
-      "mediaId": "vid-matrix",
-      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
+      "mediaId": "",
+      "mediaUrl": "",
       "mediaName": "Neon Cyber Matrix Stream",
       "textStyleId": "sub-mrbeast",
       "textStyleName": "MrBeast Pop Bold",
@@ -354,7 +370,7 @@ Output MUST be a single raw JSON object with only these essential keys:
       "cameraMotion": "pan-right",
       "sfx": null,
       "sfxUrl": null,
-      "visualQuery": "neon stream digital cyberpunk",
+      "visualQuery": "neon digital speed stream",
       "subtitleText": "First quote sentence"
     }},
     {{
@@ -363,8 +379,8 @@ Output MUST be a single raw JSON object with only these essential keys:
       "start": 5.5,
       "duration": 3.5,
       "mediaType": "video",
-      "mediaId": "vid-gym",
-      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "mediaId": "",
+      "mediaUrl": "",
       "mediaName": "Raw Iron Gym Power",
       "textStyleId": "quote-stoic-roman",
       "textStyleName": "Stoic Roman Empire",
@@ -375,7 +391,7 @@ Output MUST be a single raw JSON object with only these essential keys:
       "cameraMotion": "slow-zoom",
       "sfx": null,
       "sfxUrl": null,
-      "visualQuery": "gym power deadlift focus",
+      "visualQuery": "athlete barbell deadlift focus",
       "subtitleText": "Second quote sentence"
     }},
     {{
@@ -384,8 +400,8 @@ Output MUST be a single raw JSON object with only these essential keys:
       "start": 9.0,
       "duration": 3.0,
       "mediaType": "video",
-      "mediaId": "vid-galaxy",
-      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+      "mediaId": "",
+      "mediaUrl": "",
       "mediaName": "Cosmic Stars Acceleration",
       "textStyleId": "cta-save-reel",
       "textStyleName": "Save Reel Bookmark CTA",
@@ -396,7 +412,7 @@ Output MUST be a single raw JSON object with only these essential keys:
       "cameraMotion": "static",
       "sfx": "Cash Register Cha-Ching",
       "sfxUrl": "https://cdn.pixabay.com/download/audio/2021/08/09/audio_732a101292.mp3?filename=cash-register-98214.mp3",
-      "visualQuery": "deep galaxy stars speed",
+      "visualQuery": "deep galaxy stars velocity",
       "subtitleText": "Final call to action"
     }}
   ]
@@ -454,61 +470,16 @@ Output MUST be a single raw JSON object with only these essential keys:
         result = json.loads(raw)
         elapsed = time.perf_counter() - start_t
 
-        # ── Resilient Storyboard Normalization ────────────────────────────────
+        # ── Multi-Scene Storyboard Validation (Zero Fake Fallbacks) ───────────
         subtitles = result.get("subtitles") or []
         storyboard = result.get("storyboard") or []
 
-        # If storyboard is empty or missing, synthesize an intelligent multi-scene plan
-        if not storyboard and subtitles:
-            logger.info("Synthesizing multi-scene storyboard fallback from subtitles and catalog...")
-            sample_videos = avail_videos or CURATED_STOCK_VIDEOS
-            sample_backdrops = avail_backdrops or VISUAL_BACKDROPS
-            sample_texts = avail_text or CURATED_TEXT_PRESETS
-
-            storyboard = []
-            seen_fallback_urls = set()
-            for idx, sub in enumerate(subtitles):
-                # Always video - no static images
-                v_item = None
-                for candidate in (sample_videos or []):
-                    c_url = candidate.get("videoUrl")
-                    if c_url and c_url not in seen_fallback_urls:
-                        v_item = candidate
-                        seen_fallback_urls.add(c_url)
-                        break
-
-                if not v_item and sample_videos:
-                    v_item = sample_videos[idx % len(sample_videos)]
-
-                media_id = v_item.get("id") if v_item else f"vid-cut-{idx+1}"
-                media_url = v_item.get("videoUrl") if v_item else ""
-                media_name = v_item.get("title") or v_item.get("name") if v_item else f"Scene {idx+1} Video Cut"
-
-                t_item = sample_texts[idx % len(sample_texts)]
-                beat_name = "hook" if idx == 0 else ("cta" if idx == len(subtitles) - 1 else ("climax" if idx == len(subtitles) - 2 else "quote"))
-                sfx_item = avail_sfx[0] if (idx == 0 and avail_sfx) else None
-                clip_dur = min(4.0, max(2.0, float(sub.get("duration", 3.0))))
-
-                storyboard.append({
-                    "sceneNumber": idx + 1,
-                    "beat": beat_name,
-                    "start": float(sub.get("start", idx * 3.0)),
-                    "duration": clip_dur,
-                    "mediaType": "video",
-                    "mediaId": str(media_id),
-                    "mediaUrl": str(media_url),
-                    "mediaName": str(media_name),
-                    "textStyleId": t_item.get("id"),
-                    "textStyleName": t_item.get("name"),
-                    "captionPresetClass": t_item.get("className"),
-                    "captionPresetColor": t_item.get("color"),
-                    "captionPresetFontFamily": t_item.get("fontFamily"),
-                    "transition": "glitch" if idx == 0 else "match-cut",
-                    "cameraMotion": "push-in" if idx % 2 == 0 else "slow-zoom",
-                    "sfx": sfx_item.get("name") if sfx_item else None,
-                    "sfxUrl": sfx_item.get("audioUrl") if sfx_item else None,
-                    "subtitleText": sub.get("text", ""),
-                })
+        # If storyboard is empty or missing, raise error directly instead of synthesizing mock fallbacks
+        if not storyboard:
+            raise ValueError(
+                "Gemini AI did not return a valid multi-scene storyboard. "
+                "Please retry with a more descriptive prompt or verify your GEMINI_API_KEY."
+            )
 
         # ── Dynamic Internet Media Resolution for All Scenes (100% Video, Zero Duplicates) ──
         from backend.features.workspace.open_media_service import resolve_scene_media_from_internet
@@ -522,25 +493,34 @@ Output MUST be a single raw JSON object with only these essential keys:
                 sc["duration"] = min(4.0, max(2.0, float(sc.get("duration", 3.0))))
 
             v_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
-            curr_url = str(sc.get("mediaUrl") or "")
+            curr_url = str(sc.get("mediaUrl") or "").strip()
+            
+            is_mock_sample = any(bad in curr_url.lower() for bad in [
+                "commondatastorage", "sample", "forbigger", "sintel", "subaru", 
+                "tearsofsteel", "bullrun", "bunny", "example.com", "placeholder", "blob:"
+            ])
             is_duplicate = curr_url in seen_video_urls
             title_lower = (sc.get("mediaName") or "").lower()
             junk_check = ["paint", "pebble", "how to", "tutorial", "repair", "drone", "broadwater", "arnis", "demo", "renovation", "president", "trump", "biden", "protest", "campaign", "election", "rally", "politic", "activist", "grave", "cemetery", "gravel", "demolition"]
             has_junk_name = any(j in title_lower for j in junk_check)
             is_placeholder = (
                 not curr_url
+                or not curr_url.startswith("http")
+                or is_mock_sample
                 or is_duplicate
                 or has_junk_name
-                or any(ph in curr_url for ph in ["ForBiggerBlazes", "ForBiggerEscapes", "v1", "v2", "v3", "v4", "v5", "v6", "vid-"])
+                or any(ph in curr_url for ph in ["v1", "v2", "v3", "v4", "v5", "v6", "vid-"])
             )
 
             if is_placeholder:
-                # 1. Try finding an unused video from available dynamic internet assets with clean cinematic title
+                # 1. Try finding an unused video from available dynamic internet assets (strictly non-mock)
                 matched_v = next(
                     (v for v in avail_videos
                      if v.get("videoUrl")
                      and v["videoUrl"] not in seen_video_urls
-                     and "commondatastorage" not in v.get("videoUrl", "")
+                     and not any(bad in str(v.get("videoUrl", "")).lower() for bad in [
+                         "commondatastorage", "sample", "forbigger", "sintel", "subaru", "tearsofsteel", "bullrun", "bunny"
+                     ])
                      and not any(j in (v.get("title") or "").lower() for j in junk_check)
                     ),
                     None
@@ -548,22 +528,44 @@ Output MUST be a single raw JSON object with only these essential keys:
                 if matched_v:
                     sc["mediaUrl"] = matched_v["videoUrl"]
                     sc["mediaName"] = matched_v.get("title") or matched_v.get("name") or "Internet Video Cut"
-                    sc["mediaId"] = matched_v["id"]
+                    sc["mediaId"] = matched_v.get("id", f"scene_vid_{sc.get('sceneNumber', 1)}")
                 else:
-                    # 2. Dynamically search live internet video APIs for this specific scene query, excluding all seen URLs
+                    # 2. Dynamically search live internet video APIs for this specific scene query in target aspect ratio
                     live_resolved = resolve_scene_media_from_internet(
                         media_type="video",
                         visual_query=v_query,
                         fallback_topic=f"{topic} {category}",
                         exclude_urls=seen_video_urls,
+                        aspect_ratio=target_aspect_ratio,
                     )
                     if live_resolved and live_resolved.get("videoUrl"):
                         sc["mediaUrl"] = live_resolved["videoUrl"]
                         sc["mediaName"] = live_resolved.get("title") or sc.get("mediaName") or "Internet Stock Video Cut"
                         sc["mediaId"] = live_resolved.get("id") or sc.get("mediaId")
+                    else:
+                        raise ValueError(
+                            f"No stock video found matching '{v_query}' in {target_aspect_ratio} aspect ratio. "
+                            f"Zero fallbacks allowed. Please configure PEXELS_API_KEY or PIXABAY_API_KEY in backend/.env, or refine your prompt keywords."
+                        )
 
-            if sc.get("mediaUrl"):
-                seen_video_urls.add(sc["mediaUrl"])
+            curr_check = str(sc.get("mediaUrl") or "").strip()
+            is_bad_final = (
+                not curr_check
+                or not curr_check.startswith("http")
+                or any(bad in curr_check.lower() for bad in [
+                    "commondatastorage", "sample", "forbigger", "sintel", "subaru", 
+                    "tearsofsteel", "bullrun", "bunny", "example.com", "placeholder"
+                ])
+                or any(ph in curr_check for ph in ["v1", "v2", "v3", "v4", "v5", "v6", "vid-"])
+            )
+            if is_bad_final:
+                raise ValueError(
+                    f"No genuine video footage available for Scene {sc.get('sceneNumber', 1)} ('{v_query}') in {target_aspect_ratio}. "
+                    f"Zero fallbacks allowed. Please configure PEXELS_API_KEY or PIXABAY_API_KEY in backend/.env or refine your prompt."
+                )
+
+            sc["aspectRatio"] = target_aspect_ratio
+            seen_video_urls.add(sc["mediaUrl"])
 
         # Ensure subtitles match storyboard scenes 1:1 with exact timing and text
         synced_subtitles = []
