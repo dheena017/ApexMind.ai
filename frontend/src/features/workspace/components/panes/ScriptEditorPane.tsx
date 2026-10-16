@@ -13,8 +13,8 @@ import {
   Copy,
   Check,
   FileText,
-  ChevronDown,
   Download,
+  ArrowLeftRight,
   Clock,
   Sparkles,
   Type,
@@ -40,7 +40,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'content' | 'subtitles' | 'ai-tools' | 'export'>('content');
   const [copyState, setCopyState] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const hookRef = useRef<HTMLTextAreaElement | null>(null);
   const quoteRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -208,49 +207,20 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             </button>
           )}
 
-          {/* Switcher Dropdown */}
-          <div className="relative">
+          {/* Studio Mode Switcher Button */}
+          {onSwitchToAgent && (
             <button
               type="button"
-              onClick={() => setMenuOpen((prev) => !prev)}
-              className="h-7 flex items-center gap-1.5 px-2.5 rounded-md bg-[#26262B] hover:bg-[#303036] text-[11px] font-semibold text-white transition-colors cursor-pointer border border-[#36363D]"
+              onClick={onSwitchToAgent}
+              className="h-7 flex items-center gap-1.5 px-2.5 rounded-md bg-[#26262B] hover:bg-[#303036] hover:border-[#42424A] text-[11px] font-semibold text-white transition-all cursor-pointer border border-[#36363D] shadow-xs group"
+              title="Click to switch to AI Prompt Studio"
             >
+              <FileText className="w-3.5 h-3.5 text-emerald-400" />
               <span className="truncate">Script Editor</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#A1A1AA]" />
+              <ArrowLeftRight className="w-3 h-3 text-[#A1A1AA] group-hover:text-white transition-colors" />
             </button>
+          )}
 
-            {menuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-30"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-full mt-1 w-44 rounded-xl bg-[#1C1C20] border border-[#2A2A30] shadow-xl p-1 z-40 flex flex-col gap-0.5">
-                  {onSwitchToAgent && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onSwitchToAgent();
-                      }}
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#A1A1AA] hover:text-white hover:bg-[#26262B] transition-colors"
-                    >
-                      <Wand2 className="w-3.5 h-3.5" />
-                      AI Prompt
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-400 bg-emerald-500/15"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    Script &amp; Subtitles
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
         </div>
       </div>
 

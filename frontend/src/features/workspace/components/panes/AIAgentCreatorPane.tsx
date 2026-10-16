@@ -17,8 +17,8 @@ import {
   Shield,
   Coins,
   Brain,
-  ChevronDown,
   RefreshCw,
+  ArrowLeftRight,
   Hash,
   Gauge,
   Smartphone,
@@ -165,7 +165,6 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   const [speechTone, setSpeechTone] = useState<'authoritative' | 'aggressive' | 'calm' | 'cinematic'>('authoritative');
   const [voicePitch, setVoicePitch] = useState<number>(0);
   const [targetPlatform, setTargetPlatform] = useState<'tiktok' | 'reels' | 'shorts'>('tiktok');
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Sync or fetch voices from media library
   useEffect(() => {
@@ -231,51 +230,20 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             </button>
           )}
 
-          {/* Switcher Dropdown */}
-          <div className="relative">
+          {/* Studio Mode Switcher Button */}
+          {onSwitchToEditor && (
             <button
               type="button"
-              onClick={() => setMenuOpen((prev) => !prev)}
-              className="h-7 flex items-center gap-1.5 px-2.5 rounded-md bg-[#26262B] hover:bg-[#303036] text-[11px] font-semibold text-white transition-colors cursor-pointer border border-[#36363D]"
+              onClick={onSwitchToEditor}
+              className="h-7 flex items-center gap-1.5 px-2.5 rounded-md bg-[#26262B] hover:bg-[#303036] hover:border-[#42424A] text-[11px] font-semibold text-white transition-all cursor-pointer border border-[#36363D] shadow-xs group"
+              title="Click to switch to Script Editor"
             >
+              <Wand2 className="w-3.5 h-3.5 text-[#60A5FA]" />
               <span className="truncate">AI Prompt</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#A1A1AA]" />
+              <ArrowLeftRight className="w-3 h-3 text-[#A1A1AA] group-hover:text-white transition-colors" />
             </button>
+          )}
 
-            {menuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-30"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-full mt-1 w-44 rounded-xl bg-[#1C1C20] border border-[#2A2A30] shadow-xl p-1 z-40 flex flex-col gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                    }}
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#60A5FA] bg-[#3B82F6]/15"
-                  >
-                    <Wand2 className="w-3.5 h-3.5" />
-                    AI Prompt
-                  </button>
-                  {onSwitchToEditor && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onSwitchToEditor();
-                      }}
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#A1A1AA] hover:text-white hover:bg-[#26262B] transition-colors"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      Script &amp; Subtitles
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
         </div>
       </div>
 

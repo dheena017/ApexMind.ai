@@ -153,6 +153,8 @@ export interface TimelineMediaClip {
   start: number;
   duration: number;
   laneOffset?: number;
+  posterUrl?: string;
+  thumbnailUrl?: string;
 }
 
 export interface TimelineAudioClip {

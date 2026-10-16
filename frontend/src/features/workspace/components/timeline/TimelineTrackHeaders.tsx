@@ -256,7 +256,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onWheel={onWheel}
       onScroll={onScroll}
       style={{ width: width ? `${width}px` : undefined }}
-      className={`${width ? '' : 'w-48'} shrink-0 border-r border-[#262626] bg-[#141416] flex flex-col z-20 select-none`}
+      className={`${width ? '' : 'w-48'} w-full h-full min-h-full shrink-0 border-r border-[#262626] bg-[#141416] flex flex-col z-20 select-none`}
     >
       {/* ── Ruler Corner Header - Sticky at top ────────────────────── */}
       {showCornerHeader && (

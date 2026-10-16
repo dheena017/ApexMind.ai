@@ -63,6 +63,7 @@ export interface StoryboardScene {
   mediaId: string;
   mediaUrl?: string;
   mediaName?: string;
+  posterUrl?: string;
   textStyleId?: string;
   textStyleName?: string;
   captionPresetClass?: string;

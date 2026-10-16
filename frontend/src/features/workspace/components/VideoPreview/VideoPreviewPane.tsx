@@ -555,6 +555,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   }, []);
 
 
+  const [isVideoBuffering, setIsVideoBuffering] = useState<boolean>(false);
   const [captionColor] = useState<string>('#FFFFFF');
   const [captionSize] = useState<'sm' | 'base' | 'lg' | 'xl'>('lg');
 
@@ -714,7 +715,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     if (showVideoLayer) {
       const clipStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
       const offset = Math.max(0, currentTime - clipStart);
-      if (Math.abs(video.currentTime - offset) > 0.25) {
+      if (Math.abs(video.currentTime - offset) > 0.45) {
         video.currentTime = offset;
       }
       if (isPlaying) {
@@ -983,13 +984,19 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             <video
               ref={videoElementRef}
               src={activeVideo}
+              poster={activeVideoClip?.posterUrl || activeVideoClip?.thumbnailUrl || activeStoryboardScene?.posterUrl}
               autoPlay
               loop
               muted={videoTrackVolume === 0}
               playsInline
               crossOrigin="anonymous"
               preload="auto"
+              onWaiting={() => setIsVideoBuffering(true)}
+              onPlaying={() => setIsVideoBuffering(false)}
+              onCanPlay={() => setIsVideoBuffering(false)}
+              onLoadedData={() => setIsVideoBuffering(false)}
               onLoadedMetadata={(e) => {
+                setIsVideoBuffering(false);
                 const target = e.currentTarget;
                 const clipStart = activeVideoClip ? activeVideoClip.start : (timelineState.videoStart || 0);
                 const offset = Math.max(0, currentTime - clipStart);
@@ -1000,6 +1007,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                   target.play().catch(() => {});
                 }
               }}
+              onError={() => setIsVideoBuffering(false)}
               className={`w-full h-full pointer-events-none transition-all duration-300 ${
                 backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
               } object-center opacity-100`}
@@ -1008,6 +1016,12 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 filter: computedBackdropFilter,
               }}
             />
+            {/* Subtle Buffering Pulse Indicator */}
+            {isVideoBuffering && isPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 bg-black/25 backdrop-blur-[1px] transition-opacity">
+                <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin shadow-lg" />
+              </div>
+            )}
             {/* Vignette Depth */}
             {filterSettings.vignette > 0 && (
               <div

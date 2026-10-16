@@ -598,6 +598,8 @@ Output MUST be a single raw JSON object matching this exact schema:
                 )
                 if matched_v:
                     sc["mediaUrl"] = matched_v["videoUrl"]
+                    sc["posterUrl"] = matched_v.get("posterUrl") or matched_v.get("thumbUrl") or matched_v.get("thumbnail") or ""
+                    sc["thumbnailUrl"] = sc["posterUrl"]
                     sc["mediaName"] = matched_v.get("title") or matched_v.get("name") or "Internet Video Cut"
                     sc["mediaId"] = matched_v.get("id", f"scene_vid_{sc.get('sceneNumber', 1)}")
                 else:
@@ -618,6 +620,8 @@ Output MUST be a single raw JSON object matching this exact schema:
 
                     if resolved_clip and resolved_clip.get("videoUrl"):
                         sc["mediaUrl"] = resolved_clip["videoUrl"]
+                        sc["posterUrl"] = resolved_clip.get("posterUrl") or resolved_clip.get("thumbnail") or ""
+                        sc["thumbnailUrl"] = sc["posterUrl"]
                         sc["mediaName"] = resolved_clip.get("title") or sc.get("mediaName") or "Internet Stock Video Cut"
                         sc["mediaId"] = resolved_clip.get("id") or sc.get("mediaId")
                     else:

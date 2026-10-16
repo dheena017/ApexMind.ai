@@ -36,11 +36,13 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [copied, setCopied] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [imgError, setImgError] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     setIsPlaying(true);
     setProgress(0);
+    setImgError(false);
   }, [video?.id]);
 
   // Handle escape key
@@ -126,14 +128,17 @@ ${video.tags || ''}
     }
   })();
 
+  const coverSrc = imgError || !video.coverImageUrl
+    ? 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80'
+    : video.coverImageUrl;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in font-sans-studio">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-fade-in font-sans-studio">
       {/* Click outside to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-4xl max-h-[92vh] bg-[#121212] border border-[#2D2D2D] rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row z-10">
+      <div className="relative w-full max-w-4xl lg:max-w-5xl max-h-[94vh] bg-[#121212] border border-[#2D2D2D] rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row z-10">
         {/* Close Button Top-Right on Mobile */}
         <button
           onClick={onClose}
@@ -144,14 +149,14 @@ ${video.tags || ''}
         </button>
 
         {/* ── Left: Video Player Frame (9:16 Shorts Presentation) ── */}
-        <div className="lg:w-[380px] shrink-0 bg-[#080808] border-b lg:border-b-0 lg:border-r border-[#262626] flex flex-col items-center justify-center p-4 sm:p-6 relative">
-          <div className="relative w-[210px] sm:w-[240px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border border-[#333333] bg-black flex items-center justify-center group select-none">
+        <div className="w-full lg:w-[400px] xl:w-[420px] shrink-0 bg-[#080808] border-b lg:border-b-0 lg:border-r border-[#262626] flex flex-col items-center justify-center p-3 sm:p-5 relative">
+          <div className="relative w-full max-w-[270px] sm:max-w-[310px] lg:max-w-[340px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border border-[#333333] bg-black flex items-center justify-center group select-none">
             {/* Live Video Element or Animated Backdrop */}
             {video.videoUrl ? (
               <video
                 ref={videoRef}
                 src={video.videoUrl}
-                poster={video.coverImageUrl}
+                poster={coverSrc}
                 autoPlay
                 loop
                 muted={isMuted}
@@ -162,8 +167,9 @@ ${video.tags || ''}
             ) : (
               <div className="relative w-full h-full overflow-hidden">
                 <img
-                  src={video.coverImageUrl}
+                  src={coverSrc}
                   alt={video.title}
+                  onError={() => setImgError(true)}
                   className={`w-full h-full object-cover transition-transform duration-1000 ${
                     isPlaying ? 'scale-110' : 'scale-100'
                   }`}

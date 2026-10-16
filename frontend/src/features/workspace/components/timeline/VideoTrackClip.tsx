@@ -140,7 +140,10 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
             )}
 
             {/* Filmstrip Repeating Background with Sprockets */}
-            <FilmstripTrackBackground imageUrl={clip.url || mediaUrl} />
+            <FilmstripTrackBackground
+              imageUrl={clip.posterUrl || clip.thumbnailUrl || clip.url || mediaUrl}
+              posterUrl={clip.posterUrl || clip.thumbnailUrl}
+            />
 
             {/* Left Trim Handle */}
             <div

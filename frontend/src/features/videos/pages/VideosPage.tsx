@@ -98,9 +98,9 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
   });
 
   return (
-    <div className="w-full space-y-7">
+    <div className="w-full space-y-5 sm:space-y-6">
       {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#2A2A2A]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2A2A2A]">
         <div className="flex items-center gap-3.5">
           <div className="p-3 rounded-2xl bg-gradient-to-tr from-[#3B82F6] to-[#6366F1] text-white shadow-lg">
             <Film className="w-6 h-6" />
@@ -286,7 +286,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
           </div>
         </Card>
       ) : filter.viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4.5">
           {sortedVideos.map((video) => (
             <VideoCard
               key={video.id}

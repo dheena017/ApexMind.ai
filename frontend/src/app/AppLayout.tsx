@@ -240,8 +240,8 @@ export default function AppLayout({
           </header>
 
           {/* Standard Main Framing */}
-          <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A] p-2.5 sm:p-5 lg:p-6">
-            <div className="w-full rounded-2xl sm:rounded-3xl bg-[#101010]/80 border border-[#2F2F2F] shadow-2xl p-3 sm:p-6 lg:p-8 transition-all">
+          <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A] p-2 sm:p-3.5 lg:p-4">
+            <div className="w-full rounded-2xl sm:rounded-3xl bg-[#101010]/80 border border-[#2F2F2F] shadow-2xl p-3.5 sm:p-5 lg:p-6 transition-all">
               {children}
             </div>
           </main>

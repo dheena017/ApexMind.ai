@@ -447,6 +447,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             id: clipId,
             type: 'video',
             url: scene.mediaUrl,
+            posterUrl: scene.posterUrl || scene.thumbnailUrl || (scene.mediaType === 'image' ? scene.mediaUrl : undefined),
+            thumbnailUrl: scene.thumbnailUrl || scene.posterUrl,
             name: clipName,
             start: clipStart,
             duration: clipDuration,
@@ -2065,62 +2067,69 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         <div className="flex flex-col bg-[#0D0D0D]">
           {/* ── Time Ruler Row (Placed Above Scrollable Tracks Area) ── */}
           <div className="flex border-b border-[#262626] bg-[#111111] select-none shrink-0 z-20">
-            {/* Corner Track Labels Header */}
-            <div
-              style={{ width: `${trackHeadersWidth}px` }}
-              className="shrink-0 h-6 border-r border-[#262626] flex items-center justify-between px-2.5 text-[9px] font-mono-studio text-[#737373] uppercase tracking-wider relative group/corner-header select-none"
-            >
-              <span className="truncate">Track Labels</span>
-              <div
-                onPointerDown={handleTrackHeadersResizeStart}
-                onDoubleClick={() => {
-                  setTrackHeadersWidth(DEFAULT_TRACK_HEADERS_WIDTH);
-                  try {
-                    localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
-                  } catch {}
-                }}
-                className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/20 z-30"
-                title="Drag left/right to adjust track labels width"
-              />
-            </div>
-
-            {/* Time Ruler (synced with horizontal scroll of tracks) */}
+            {/* Time Ruler & Track Labels Header (synced with horizontal scroll of tracks) */}
             <div
               ref={rulerScrollRef}
               className="flex-1 min-w-0 overflow-hidden relative h-6"
             >
               <div
-                ref={rulerContainerRef}
-                className="relative min-w-full h-full"
-                style={{ width: `${100 * timelineScale}%` }}
+                className="flex min-w-full"
+                style={{
+                  width: `calc(${100 * timelineScale}% - ${trackHeadersWidth * timelineScale}px + ${trackHeadersWidth}px)`,
+                }}
               >
-                <TimelineRuler
-                  ticks={ticks}
-                  totalDuration={totalDuration}
-                  onRulerPointerDown={handleRulerPointerDown}
-                />
-                {/* Modern Studio Playhead Needle on ruler */}
+                {/* Corner Track Labels Header (moves together with horizontal scroll) */}
                 <div
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    handleRulerPointerDown(e);
-                  }}
-                  className="absolute top-0 w-0 flex justify-center h-6 pointer-events-auto cursor-ew-resize group/playhead z-40 select-none"
-                  style={{ left: `${progressPercent}%` }}
-                  title={`Playhead: ${formatTime(currentTime)} (Drag to scrub)`}
+                  style={{ width: `${trackHeadersWidth}px` }}
+                  className="shrink-0 h-6 border-r border-[#262626] flex items-center justify-between px-2.5 text-[9px] font-mono-studio text-[#737373] uppercase tracking-wider relative group/corner-header select-none bg-[#111111]"
                 >
-                  <svg
-                    width="14"
-                    height="24"
-                    viewBox="0 0 14 24"
-                    className="overflow-visible shrink-0"
+                  <span className="truncate">Track Labels</span>
+                  <div
+                    onPointerDown={handleTrackHeadersResizeStart}
+                    onDoubleClick={() => {
+                      setTrackHeadersWidth(DEFAULT_TRACK_HEADERS_WIDTH);
+                      try {
+                        localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
+                      } catch {}
+                    }}
+                    className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/20 z-30"
+                    title="Drag left/right to adjust track labels width"
+                  />
+                </div>
+
+                {/* Time Ruler Canvas & Playhead Needle */}
+                <div
+                  ref={rulerContainerRef}
+                  className="relative flex-1 min-w-0 h-6"
+                >
+                  <TimelineRuler
+                    ticks={ticks}
+                    totalDuration={totalDuration}
+                    onRulerPointerDown={handleRulerPointerDown}
+                  />
+                  {/* Modern Studio Playhead Needle on ruler */}
+                  <div
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      handleRulerPointerDown(e);
+                    }}
+                    className="absolute top-0 w-0 flex justify-center h-6 pointer-events-auto cursor-ew-resize group/playhead z-40 select-none"
+                    style={{ left: `${progressPercent}%` }}
+                    title={`Playhead: ${formatTime(currentTime)} (Drag to scrub)`}
                   >
-                    <path
-                      d="M 2 0.5 L 12 0.5 C 13.1 0.5 14 1.4 14 2.5 L 14 13.5 L 7 24 L 0 13.5 L 0 2.5 C 0 1.4 0.9 0.5 2 0.5 Z"
-                      className="fill-white group-hover/playhead:fill-[#E4E4E7] transition-colors"
-                    />
-                    <circle cx="7" cy="7" r="1.5" fill="#18181B" />
-                  </svg>
+                    <svg
+                      width="14"
+                      height="24"
+                      viewBox="0 0 14 24"
+                      className="overflow-visible shrink-0"
+                    >
+                      <path
+                        d="M 2 0.5 L 12 0.5 C 13.1 0.5 14 1.4 14 2.5 L 14 13.5 L 7 24 L 0 13.5 L 0 2.5 C 0 1.4 0.9 0.5 2 0.5 Z"
+                        className="fill-white group-hover/playhead:fill-[#E4E4E7] transition-colors"
+                      />
+                      <circle cx="7" cy="7" r="1.5" fill="#18181B" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2147,7 +2156,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               {/* ── Track Header Column with Overlaid Zero-Flow Splitter ── */}
               <div
                 style={{ width: `${trackHeadersWidth}px` }}
-                className="relative shrink-0 flex flex-col"
+                className="relative shrink-0 flex flex-col bg-[#141416]"
               >
                 <TimelineTrackHeaders
                   width={trackHeadersWidth}
@@ -2198,7 +2207,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       localStorage.setItem('apexmind:timeline-track-width', String(DEFAULT_TRACK_HEADERS_WIDTH));
                     } catch {}
                   }}
-                  className={`absolute right-0 top-0 bottom-0 w-2 translate-x-1/2 z-30 cursor-col-resize group/col-resize flex items-center justify-center hover:bg-white/10 select-none transition-colors ${
+                  className={`absolute right-0 top-0 bottom-0 w-2 translate-x-1/2 z-50 cursor-col-resize group/col-resize flex items-center justify-center hover:bg-white/10 select-none transition-colors ${
                     isResizingTrackHeaders ? 'bg-white/20' : ''
                   }`}
                   title="Drag left/right to adjust track labels width (double-click to reset)"
