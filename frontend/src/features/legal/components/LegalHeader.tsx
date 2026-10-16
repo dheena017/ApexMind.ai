@@ -31,9 +31,15 @@ export const LegalHeader: React.FC<LegalHeaderProps> = ({
         <div className="flex items-center gap-3 shrink-0">
           <button
             type="button"
-            onClick={() => onNavigate('landing')}
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                window.history.back();
+              } else {
+                onNavigate(isAuthenticated ? 'dashboard' : 'login');
+              }
+            }}
             className="p-2 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer"
-            title="Back to ApexMind Home"
+            title="Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>

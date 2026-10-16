@@ -134,7 +134,12 @@ export default function App() {
     (page: string) => {
       let targetRoute = APP_ROUTES.find((route) => route.id === page)?.id ?? '404';
       const isPublicPage =
-        targetRoute === 'landing' || targetRoute === 'login' || targetRoute === 'loading' || targetRoute === '404';
+        targetRoute === 'landing' ||
+        targetRoute === 'login' ||
+        targetRoute === 'loading' ||
+        targetRoute === '404' ||
+        targetRoute === 'terms' ||
+        targetRoute === 'privacy';
 
       // If user is already authenticated and tries to navigate to login or landing, route directly to dashboard
       if (isAuthenticated && (targetRoute === 'login' || targetRoute === 'landing')) {

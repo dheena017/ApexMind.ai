@@ -323,9 +323,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           </div>
 
           {/* ── Agreement Checkbox ── */}
-          <label
-            htmlFor="agree-terms"
-            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors ${
+          <div
+            onClick={() => {
+              setAgreementChecked((prev) => !prev);
+              setShowAgreementError(false);
+              setNotice('');
+            }}
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors select-none ${
               showAgreementError
                 ? 'border-red-500/50 bg-red-500/10'
                 : agreementChecked
@@ -363,25 +367,33 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
             </div>
             <span className="text-xs leading-5 text-[#8E8E93]">
               I agree to the ApexMind{' '}
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); onNavigate('terms'); }}
+              <a
+                href="/terms"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onNavigate('terms');
+                }}
                 className="font-medium text-[#60A5FA] hover:text-white underline cursor-pointer"
               >
                 Terms of Service
-              </button>{' '}and{' '}
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }}
+              </a>{' '}and{' '}
+              <a
+                href="/privacy"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onNavigate('privacy');
+                }}
                 className="font-medium text-[#60A5FA] hover:text-white underline cursor-pointer"
               >
                 Privacy Policy
-              </button>.
+              </a>.
               {showAgreementError && (
                 <span className="mt-1 block font-medium text-red-400">Please check this box before signing in.</span>
               )}
             </span>
-          </label>
+          </div>
 
           {/* ── Sign In Actions ── */}
           <div className="space-y-3">
