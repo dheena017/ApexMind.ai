@@ -37,6 +37,21 @@ export const notificationsApi = {
     };
   },
 
+  // Get unread notification count only (optimized for navbar badge poller)
+  async getUnreadCount(category?: string): Promise<number> {
+    try {
+      const query = new URLSearchParams();
+      if (category && category !== 'all') query.set('category', category);
+      const path = `/api/notifications/unread-count${query.toString() ? `?${query.toString()}` : ''}`;
+      const res = await fetch(apiUrl(path));
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return typeof data.unreadCount === 'number' ? data.unreadCount : 0;
+    } catch {
+      return 0;
+    }
+  },
+
   async markNotificationRead(id: string, read: boolean = true): Promise<void> {
     const start = performance.now();
     const res = await fetch(apiUrl(`/api/notifications/${encodeURIComponent(id)}/read`), {

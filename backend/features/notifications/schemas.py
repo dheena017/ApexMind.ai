@@ -43,3 +43,7 @@ class StandardSuccessResponse(BaseModel):
     message: Optional[str] = None
     affected: Optional[int] = None
 
+class NotificationUnreadCountResponse(BaseModel):
+    success: bool
+    unreadCount: int = 0
+

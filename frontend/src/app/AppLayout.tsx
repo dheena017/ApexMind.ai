@@ -69,9 +69,9 @@ export default function AppLayout({
   useEffect(() => {
     if (!isAuthenticated) return;
     const fetchUnread = () => {
-      notificationsApi.getNotificationsWithMeta({ limit: 1 })
-        .then((res) => {
-          setDynamicUnread(res.unreadCount);
+      notificationsApi.getUnreadCount()
+        .then((count) => {
+          setDynamicUnread(count);
         })
         .catch(() => setDynamicUnread(0));
     };

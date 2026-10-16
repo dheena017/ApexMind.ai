@@ -12,9 +12,11 @@ from .schemas import (
     NotificationCreateRequest,
     NotificationToggleReadRequest,
     StandardSuccessResponse,
+    NotificationUnreadCountResponse,
 )
 from .service import (
     list_notifications,
+    get_unread_count,
     create_notification,
     toggle_item_read,
     delete_single_notification,
@@ -24,6 +26,24 @@ from .service import (
 
 logger = logging.getLogger("ApexMind.features.notifications")
 router = APIRouter(tags=["Notifications"])
+
+@router.get(
+    "/api/notifications/unread-count",
+    response_model=NotificationUnreadCountResponse,
+    summary="Get unread notifications count",
+    description="Retrieve only the unread notifications count for badge polling."
+)
+async def get_unread_count_route(
+    category: Optional[str] = Query(None, description="Optional category filter"),
+):
+    try:
+        return get_unread_count(category=category)
+    except Exception as e:
+        logger.error(f"Error fetching unread notification count: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve unread notification count."
+        )
 
 @router.get(
     "/api/notifications",

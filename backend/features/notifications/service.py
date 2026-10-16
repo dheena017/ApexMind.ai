@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Any, Optional
 from .repository import (
     fetch_notifications,
+    fetch_unread_count,
     insert_notification,
     toggle_read,
     delete_single,
@@ -10,6 +11,14 @@ from .repository import (
 )
 
 logger = logging.getLogger("ApexMind.Notifications")
+
+def get_unread_count(category: Optional[str] = None) -> Dict[str, Any]:
+    count = fetch_unread_count(category=category)
+    logger.debug(f"Unread notifications count: {count} (category: {category})")
+    return {
+        "success": True,
+        "unreadCount": count,
+    }
 
 def list_notifications(
     category: Optional[str] = None,
@@ -21,7 +30,10 @@ def list_notifications(
     
     # Filtered list
     notifs = fetch_notifications(category=category, unread_only=unread_only, limit=limit)
-    logger.info(f"Retrieved {len(notifs)} notifications (Unread: {unread_count}, Filter category: {category}).")
+    if limit != 1:
+        logger.info(f"Retrieved {len(notifs)} notifications (Unread: {unread_count}, Filter category: {category}).")
+    else:
+        logger.debug(f"Retrieved {len(notifs)} notifications (Unread: {unread_count}, Filter category: {category}).")
     return {
         "success": True,
         "notifications": notifs,

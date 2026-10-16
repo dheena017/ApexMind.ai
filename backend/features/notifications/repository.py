@@ -6,6 +6,7 @@ SQLite persistence for notifications.
 from typing import List, Dict, Any, Optional
 from backend.database.repository import (
     get_notifications,
+    get_unread_notification_count,
     add_notification,
     mark_notification_read,
     delete_notification,
@@ -19,6 +20,9 @@ def fetch_notifications(
     limit: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     return get_notifications(category=category, unread_only=unread_only, limit=limit)
+
+def fetch_unread_count(category: Optional[str] = None) -> int:
+    return get_unread_notification_count(category=category)
 
 def insert_notification(
     title: str,

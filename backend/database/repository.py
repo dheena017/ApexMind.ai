@@ -433,6 +433,20 @@ def get_notifications(
         for r in rows
     ]
 
+def get_unread_notification_count(category: Optional[str] = None) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT COUNT(*) FROM notifications WHERE read = 0"
+    params: List[Any] = []
+    if category and category.lower() != "all":
+        query += " AND category = ?"
+        params.append(category.lower())
+    cursor.execute(query, params)
+    row = cursor.fetchone()
+    count = row[0] if row else 0
+    conn.close()
+    return count
+
 def mark_notification_read(notif_id: str, read_state: bool = True) -> bool:
     conn = get_connection()
     cursor = conn.cursor()
