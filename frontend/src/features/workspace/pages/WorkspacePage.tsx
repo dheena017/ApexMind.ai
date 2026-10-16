@@ -248,10 +248,23 @@ export default function WorkspacePage({
 
   useEffect(() => {
     const handleTimelineState = (e: Event) => {
-      const detail = (e as CustomEvent<{ voiceMuted?: boolean; musicMuted?: boolean }>).detail;
+      const detail = (e as CustomEvent<{
+        voiceMuted?: boolean;
+        musicMuted?: boolean;
+        videoEnabled?: boolean;
+        videoClips?: unknown[];
+        imageEnabled?: boolean;
+        imageClips?: unknown[];
+      }>).detail;
       if (detail) {
         if (detail.voiceMuted !== undefined) setVoiceTrackMuted(Boolean(detail.voiceMuted));
         if (detail.musicMuted !== undefined) setMusicTrackMuted(Boolean(detail.musicMuted));
+        if (detail.videoEnabled === false || (Array.isArray(detail.videoClips) && detail.videoClips.length === 0)) {
+          setCustomBackdropVideo(undefined);
+        }
+        if (detail.imageEnabled === false || (Array.isArray(detail.imageClips) && detail.imageClips.length === 0)) {
+          setCustomBackdropImage(undefined);
+        }
       }
     };
     window.addEventListener('workspace:timeline-state', handleTimelineState);
@@ -2269,6 +2282,14 @@ export default function WorkspacePage({
             onTimelineDurationChange={setTimelineDuration}
             selectedSfx={selectedSfx}
             onRemoveSfx={() => setSelectedSfx(null)}
+            onRemoveVideo={() => {
+              setCustomBackdropVideo(undefined);
+              setActiveCompound((prev) => (prev === 'video' ? 'text' : prev));
+            }}
+            onRemoveImage={() => {
+              setCustomBackdropImage(undefined);
+              setActiveCompound((prev) => (prev === 'video' ? 'text' : prev));
+            }}
             script={script}
             onUpdateSubtitles={(newSubtitles) =>
               setScript((prev) => ({ ...prev, subtitles: newSubtitles }))

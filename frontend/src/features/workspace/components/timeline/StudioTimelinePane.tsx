@@ -35,6 +35,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   onTimelineDurationChange,
   selectedSfx,
   onRemoveSfx,
+  onRemoveVideo,
+  onRemoveImage,
   script,
   onUpdateSubtitles,
   activeBackdrop,
@@ -1464,11 +1466,15 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const remaining = prev.filter((c) => c.id !== targetId);
         if (remaining.length === 0) {
           setEnabledTracks((p) => ({ ...p, video: false }));
+          onRemoveVideo?.();
+          window.dispatchEvent(new CustomEvent('workspace:video-clips-cleared'));
         }
         return remaining;
       });
     } else {
       setEnabledTracks((p) => ({ ...p, video: false }));
+      onRemoveVideo?.();
+      window.dispatchEvent(new CustomEvent('workspace:video-clips-cleared'));
     }
     setSelectedClip(null);
   };
@@ -1809,11 +1815,15 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const remaining = prev.filter((c) => c.id !== targetId);
         if (remaining.length === 0) {
           setEnabledTracks((p) => ({ ...p, image: false }));
+          onRemoveImage?.();
+          window.dispatchEvent(new CustomEvent('workspace:image-clips-cleared'));
         }
         return remaining;
       });
     } else {
       setEnabledTracks((p) => ({ ...p, image: false }));
+      onRemoveImage?.();
+      window.dispatchEvent(new CustomEvent('workspace:image-clips-cleared'));
     }
     setSelectedClip(null);
   };
@@ -1931,8 +1941,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
 
   // Media presence flags strictly reflect whether track clips actually exist
-  const hasVideo = Boolean(videoClips.length > 0 || customVideoUrl);
-  const hasImage = Boolean(imageClips.length > 0 || customImageUrl);
+  const hasVideo = Boolean(videoClips.length > 0);
+  const hasImage = Boolean(imageClips.length > 0);
   const hasOverlay = Boolean(overlayClips.length > 0 || activeElementOverlay);
   const hasVoice = Boolean(voiceClips.length > 0 || audioUrl);
   const hasMusic = Boolean(musicClips.length > 0 || selectedMusic);

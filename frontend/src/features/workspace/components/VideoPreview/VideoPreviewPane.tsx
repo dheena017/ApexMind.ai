@@ -7,6 +7,7 @@ import { consoleLogger } from '@/src/shared/utils/logger';
 
 // Timeline state broadcast from StudioTimelinePane
 interface TimelineState {
+  imageEnabled?: boolean;
   videoVisible: boolean;
   imageVisible: boolean;
   overlayVisible: boolean;
@@ -45,6 +46,7 @@ const DEFAULT_TIMELINE_STATE: TimelineState = {
   videoStart: 0,
   videoDuration: 30,
   videoEnabled: true,
+  imageEnabled: true,
   imageStart: 0,
   imageDuration: 8.0,
   overlayStart: 0,
@@ -439,16 +441,27 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       }
     : activeElementOverlay;
 
+  // Track enabled & visible states
+  const videoEnabled = timelineState.videoVisible !== false && timelineState.videoEnabled !== false;
+  const imageEnabled = timelineState.imageVisible !== false && timelineState.imageEnabled !== false;
+  const overlayEnabled = timelineState.overlayVisible !== false;
+  const titleEnabled = timelineState.titleVisible !== false;
+  const captionsEnabled = timelineState.captionsVisible !== false;
+
   // ── Frame-Accurate Playhead Sync: Check which clip is active under currentTime ──
-  const isVideoTimeActive = Boolean(activeVideoClip) || (!timelineState.videoClips?.length && (
-    isCustomVideo || (currentTime >= timelineState.videoStart && currentTime <= (timelineState.videoStart + (timelineState.videoDuration || 30)))
-  ));
+  const isVideoTimeActive = Boolean(activeVideoClip) || (
+    timelineState.videoClips === undefined && videoEnabled && (
+      currentTime >= timelineState.videoStart && currentTime <= (timelineState.videoStart + (timelineState.videoDuration || 30))
+    )
+  );
 
   const imageStart = timelineState.imageStart ?? 0;
   const imageDuration = timelineState.imageDuration ?? 30;
-  const isImageTimeActive = Boolean(activeImageClip) || (!timelineState.imageClips?.length && (
-    isCustomImage || (currentTime >= imageStart && currentTime <= (imageStart + imageDuration))
-  ));
+  const isImageTimeActive = Boolean(activeImageClip) || (
+    timelineState.imageClips === undefined && imageEnabled && (
+      currentTime >= imageStart && currentTime <= (imageStart + imageDuration)
+    )
+  );
 
   const isOverlayTimeActive = Boolean(activeOverlayClip) || (
     currentTime >= timelineState.overlayStart &&
@@ -457,13 +470,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const isTitleTimeActive = currentTime >= timelineState.titleStart &&
     currentTime <= (timelineState.titleStart + timelineState.titleDuration);
-
-  // Track enabled & visible states
-  const videoEnabled = timelineState.videoVisible !== false || isCustomVideo;
-  const imageEnabled = timelineState.imageVisible !== false || isCustomImage;
-  const overlayEnabled = timelineState.overlayVisible !== false;
-  const titleEnabled = timelineState.titleVisible !== false;
-  const captionsEnabled = timelineState.captionsVisible !== false;
 
 
   const handleSelectLayer = (e: React.MouseEvent, layer: 'subtitle' | 'title' | 'overlay' | 'backdrop') => {
@@ -644,9 +650,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3) && sc.mediaType === 'image' && sc.mediaUrl
   )?.mediaUrl || (script.storyboard && script.storyboard[0]?.mediaType === 'image' ? script.storyboard[0]?.mediaUrl : undefined);
 
-  const activeVideo = activeVideoClip
-    ? activeVideoClip.url
-    : (timelineState.videoClips && timelineState.videoClips.length > 0
+  const activeVideo = !videoEnabled
+    ? undefined
+    : activeVideoClip
+      ? activeVideoClip.url
+      : Array.isArray(timelineState.videoClips)
         ? undefined
         : (activeStoryboardVideo
             ? activeStoryboardVideo
@@ -654,11 +662,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 ? customVideoUrl
                 : (!isCustomImage
                     ? (activeBackdrop?.videoUrl || (activeBackdrop?.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined))
-                    : undefined))));
+                    : undefined)));
 
-  const activeImage = activeImageClip
-    ? activeImageClip.url
-    : (timelineState.imageClips && timelineState.imageClips.length > 0
+  const activeImage = !imageEnabled
+    ? undefined
+    : activeImageClip
+      ? activeImageClip.url
+      : Array.isArray(timelineState.imageClips)
         ? undefined
         : (activeStoryboardImage
             ? activeStoryboardImage
@@ -666,11 +676,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 ? customImageUrl
                 : (!isCustomVideo
                     ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || theme?.imageUrl || undefined)
-                    : undefined))));
+                    : undefined)));
 
   // Determine whether video or image layer is shown under the current playhead
-  const showVideoLayer = Boolean(activeVideo) && (videoEnabled || isCustomVideo) && isVideoTimeActive;
-  const showImageLayer = Boolean(activeImage) && (imageEnabled || isCustomImage) && isImageTimeActive;
+  const showVideoLayer = Boolean(activeVideo) && videoEnabled && isVideoTimeActive;
+  const showImageLayer = Boolean(activeImage) && imageEnabled && isImageTimeActive;
 
   // Auto-reload video element only when source actually changes
   useEffect(() => {
@@ -956,7 +966,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         />
 
         {/* Layer 1b: Video Layer (V1) - strictly visible when playhead is in video clip */}
-        {activeVideo && (
+        {activeVideo && showVideoLayer && (
           <div
             ref={backdropRef}
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
@@ -965,8 +975,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               timelineState.selectedTrack === 'image' ? 'z-10' : 'z-20'
             }`}
             style={{
-              opacity: showVideoLayer ? animationOpacity : 0,
-              pointerEvents: showVideoLayer ? 'auto' : 'none',
+              opacity: animationOpacity,
+              pointerEvents: 'auto',
             }}
             title="Video Layer (V1) • Click to select & resize/move"
           >

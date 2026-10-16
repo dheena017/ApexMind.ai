@@ -21,6 +21,8 @@ export interface StudioTimelinePaneProps {
   onTimelineDurationChange?: (duration: number) => void;
   selectedSfx?: TimelineSoundEffect | null;
   onRemoveSfx?: () => void;
+  onRemoveVideo?: () => void;
+  onRemoveImage?: () => void;
   script: GeneratedScript;
   onUpdateSubtitles?: (subtitles: ScriptSubtitle[]) => void;
   activeBackdrop?: VisualBackdrop | null;
