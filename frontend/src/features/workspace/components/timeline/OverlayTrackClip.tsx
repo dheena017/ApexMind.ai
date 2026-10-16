@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Zap } from 'lucide-react';
+import { Zap, Move } from 'lucide-react';
 import { formatTime, SelectedClip, TimelineOverlayClip } from './timelineTypes';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
@@ -164,6 +164,7 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
 
             {/* Overlay Label Overlay */}
             <div className="flex items-center gap-1.5 z-10 truncate bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs max-w-[70%]">
+              <Move className="w-2.5 h-2.5 text-indigo-400/60 shrink-0" title="Move & drag clip" />
               <Zap className="w-3 h-3 text-indigo-400 shrink-0" />
               <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
                 {clip.label || clip.name || 'Overlay Element'}

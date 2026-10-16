@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Moveable from 'react-moveable';
 import { toCanvas } from 'html-to-image';
-import { GeneratedScript, VisualBackdrop, BackdropFilterSettings } from '../../types';
+import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -30,6 +30,7 @@ interface TimelineState {
   musicClips?: TimelineAudioClip[];
   sfxClips?: TimelineAudioClip[];
   overlayClips?: TimelineOverlayClip[];
+  captionClips?: ScriptSubtitle[];
   selectedTrack?: string;
 }
 
@@ -639,6 +640,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3) && sc.mediaType === 'video' && sc.mediaUrl
   )?.mediaUrl || (script.storyboard && script.storyboard[0]?.mediaType === 'video' ? script.storyboard[0]?.mediaUrl : undefined);
 
+  const activeStoryboardImage = (script.storyboard || []).find(
+    (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3) && sc.mediaType === 'image' && sc.mediaUrl
+  )?.mediaUrl || (script.storyboard && script.storyboard[0]?.mediaType === 'image' ? script.storyboard[0]?.mediaUrl : undefined);
+
   const activeVideo = activeVideoClip
     ? activeVideoClip.url
     : (timelineState.videoClips && timelineState.videoClips.length > 0
@@ -655,25 +660,36 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     ? activeImageClip.url
     : (timelineState.imageClips && timelineState.imageClips.length > 0
         ? undefined
-        : (isCustomImage
-            ? customImageUrl
-            : (!isCustomVideo
-                ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || theme?.imageUrl || undefined)
-                : undefined)));
+        : (activeStoryboardImage
+            ? activeStoryboardImage
+            : (isCustomImage
+                ? customImageUrl
+                : (!isCustomVideo
+                    ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || theme?.imageUrl || undefined)
+                    : undefined))));
 
   // Determine whether video or image layer is shown under the current playhead
   const showVideoLayer = Boolean(activeVideo) && (videoEnabled || isCustomVideo) && isVideoTimeActive;
   const showImageLayer = Boolean(activeImage) && (imageEnabled || isCustomImage) && isImageTimeActive;
 
-  // Auto-reload video element when source changes
+  // Auto-reload video element only when source actually changes
   useEffect(() => {
     const video = videoElementRef.current;
-    if (!video) return;
-    if (activeVideo && video.src !== activeVideo) {
-      video.src = activeVideo;
-      video.load();
-      const clipStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
-      video.currentTime = Math.max(0, currentTime - clipStart);
+    if (!video || !activeVideo) return;
+    const currentAttr = video.getAttribute('src');
+    if (currentAttr === activeVideo) return;
+    try {
+      if (new URL(activeVideo, window.location.href).href === video.src) return;
+    } catch {}
+    video.src = activeVideo;
+    video.load();
+    const clipStart = activeVideoClip ? activeVideoClip.start : (timelineState.videoStart || 0);
+    const offset = Math.max(0, currentTime - clipStart);
+    try {
+      video.currentTime = offset;
+    } catch {}
+    if (isPlaying) {
+      video.play().catch(() => {});
     }
   }, [activeVideo]);
 
@@ -701,32 +717,39 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     }
   }, [currentTime, isPlaying, playbackRate, showVideoLayer, activeVideoClip, timelineState.videoStart, videoTrackVolume]);
 
-  // Active subtitle text matching current playhead position (reads storyboard cut or subtitles)
-  const timedSubtitle = (() => {
-    const activeScene = (script.storyboard || []).find(
-      (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3)
-    );
-    if (activeScene && activeScene.subtitleText) {
-      return activeScene.subtitleText;
-    }
-    if (script.subtitles && script.subtitles.length > 0) {
-      const current = script.subtitles.find(
-        (s) => currentTime >= s.start && currentTime <= s.start + (s.duration || 3)
-      );
-      if (current) return current.text;
-    }
-    return currentTime <= captionStyle.duration ? script.quote || script.hook : '';
-  })();
+  // Active subtitle matching current playhead position strictly from timeline track clips or script.subtitles
+  const effectiveSubtitles = (timelineState.captionClips && timelineState.captionClips.length > 0)
+    ? timelineState.captionClips
+    : (script.subtitles || []);
 
-  const currentTitle = script.title?.trim() || '';
-  const currentSubtitle = (timedSubtitle || script.quote || '').trim();
-
-  const activeSubtitleObj = (script.subtitles || []).find(
+  const activeSubtitleObj = effectiveSubtitles.find(
     (s) => currentTime >= s.start && currentTime <= s.start + (s.duration || 3)
   );
+
   const activeStoryboardScene = (script.storyboard || []).find(
     (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3)
   );
+
+  const timedSubtitle = (() => {
+    // 1. If an active subtitle clip is found on the timeline track, display it!
+    if (activeSubtitleObj && activeSubtitleObj.text) {
+      return activeSubtitleObj.text;
+    }
+    // 2. If storyboard scenes exist and one matches, show its subtitleText
+    if (activeStoryboardScene && activeStoryboardScene.subtitleText) {
+      return activeStoryboardScene.subtitleText;
+    }
+    // 3. If there are subtitle clips or scenes in the project, but none match currentTime,
+    // show NOTHING (empty string)! DO NOT display script.quote!
+    if (effectiveSubtitles.length > 0 || (script.storyboard && script.storyboard.length > 0)) {
+      return '';
+    }
+    // 4. Fallback only if project has zero subtitle clips and zero scenes:
+    return currentTime <= (captionStyle.duration || 3) ? (script.quote || script.hook || '') : '';
+  })();
+
+  const currentTitle = script.title?.trim() || '';
+  const currentSubtitle = timedSubtitle.trim();
 
   const activeCaptionPresetClass =
     activeSubtitleObj?.captionPresetClass ||
@@ -744,7 +767,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const hasCaptionPreset = Boolean(activeCaptionPresetClass);
   const useCaptionPreset = hasCaptionPreset && !captionStyle.overridePreset;
-  const visibleSubtitle = currentSubtitle || (!isExporting && hasCaptionPreset ? captionPresetPreviewText || '' : '');
+  const visibleSubtitle = currentSubtitle;
   const currentVideoStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
   const currentVideoDuration = activeVideoClip ? activeVideoClip.duration : timelineState.videoDuration;
   const backdropProgress = Math.min(1, Math.max(0,
@@ -905,6 +928,17 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               playsInline
               crossOrigin="anonymous"
               preload="auto"
+              onLoadedMetadata={(e) => {
+                const target = e.currentTarget;
+                const clipStart = activeVideoClip ? activeVideoClip.start : (timelineState.videoStart || 0);
+                const offset = Math.max(0, currentTime - clipStart);
+                try {
+                  target.currentTime = offset;
+                } catch {}
+                if (isPlaying && target.paused) {
+                  target.play().catch(() => {});
+                }
+              }}
               className={`w-full h-full pointer-events-none transition-all duration-300 ${
                 backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
               } object-center opacity-100`}

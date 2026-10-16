@@ -413,7 +413,14 @@ Output MUST be a single raw JSON object with only these essential keys:
 
     try:
         models_to_try = [target_model]
-        for alt_model in ["gemini-3.5-flash-lite", "gemini-3.1-pro-preview", "gemini-3-flash-preview"]:
+        for alt_model in [
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-pro-preview",
+            "gemini-3-flash-preview",
+        ]:
             if alt_model not in models_to_try:
                 models_to_try.append(alt_model)
 
@@ -618,20 +625,36 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
             "Keep the pacing natural, the tone charismatic, and the emphasis clear. "
             f"Script: {normalized_text}"
         )
-        tts_res = gemini_client.models.generate_content(
-            model=tts_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["AUDIO"],
-                speech_config=types.SpeechConfig(
-                    voice_config=types.VoiceConfig(
-                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                            voice_name=voice_name,
-                        )
-                    )
-                ),
-            ),
-        )
+        tts_models_to_try = [tts_model]
+        for alt in ["gemini-2.5-flash-preview-tts", "gemini-2.0-flash", "gemini-2.5-flash"]:
+            if alt not in tts_models_to_try:
+                tts_models_to_try.append(alt)
+
+        tts_res = None
+        last_tts_err = None
+        for attempt_tts in tts_models_to_try:
+            try:
+                tts_res = gemini_client.models.generate_content(
+                    model=attempt_tts,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["AUDIO"],
+                        speech_config=types.SpeechConfig(
+                            voice_config=types.VoiceConfig(
+                                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                    voice_name=voice_name,
+                                )
+                            )
+                        ),
+                    ),
+                )
+                break
+            except Exception as e:
+                last_tts_err = e
+                logger.warning(f"TTS Model '{attempt_tts}' failed ({e}), trying next TTS model...")
+
+        if tts_res is None:
+            raise RuntimeError(f"All Gemini TTS models exhausted: {last_tts_err}")
 
         raw_audio, mime_type = extract_voiceover_audio(tts_res)
         if isinstance(raw_audio, bytes):

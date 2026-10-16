@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Film } from 'lucide-react';
 import { formatTime, SelectedClip, TimelineMediaClip } from './timelineTypes';
 import { FilmstripTrackBackground } from './FilmstripTrackBackground';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
@@ -73,15 +72,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
 }) => {
   const effectiveClips: (TimelineMediaClip & { lane?: number })[] = (clips && clips.length > 0)
     ? clips
-    : (mediaUrl || backdropName ? [{
-        id: 'vid-default',
-        type: 'video',
-        url: mediaUrl || '',
-        name: backdropName || 'Video Clip',
-        start: videoStart,
-        duration: videoDuration,
-        lane: 0,
-      }] : []);
+    : [];
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
   const [colorLabels, setColorLabels] = useState<Record<string, string>>({});
@@ -164,15 +155,8 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
             </div>
 
-            {/* Video Clip Label Overlay */}
-            <div className="flex items-center gap-1.5 z-10 bg-black/75 px-1.5 py-0.5 rounded backdrop-blur-xs max-w-[70%]">
-              <Film className="w-3 h-3 text-amber-400 shrink-0" />
-              <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
-                {clip.name || 'Video Clip'}
-              </span>
-            </div>
-
-            <span className="text-[9px] font-mono-studio text-amber-300 pointer-events-none pr-1.5 font-bold z-10 bg-black/75 px-1.5 py-0.5 rounded backdrop-blur-xs shrink-0">
+            {/* Time Duration Badge Only */}
+            <span className="ml-auto text-[9.5px] font-mono-studio text-amber-300 pointer-events-none px-1.5 py-0.5 font-bold z-10 bg-black/85 rounded-md backdrop-blur-xs shrink-0 border border-amber-500/30 shadow-md">
               {formatTime(clip.duration)}
             </span>
 

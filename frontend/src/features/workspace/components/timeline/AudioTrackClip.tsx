@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Mic, Music, Sparkles } from 'lucide-react';
+import { Mic, Music, Sparkles, Move } from 'lucide-react';
 import { formatTime, SelectedClip, TimelineAudioClip } from './timelineTypes';
 import { TimelineWaveform } from './TimelineWaveform';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
@@ -202,6 +202,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
 
             {/* Track Label Pill */}
             <div className="flex items-center gap-1.5 truncate pointer-events-none pl-1 z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs max-w-[65%]">
+              <Move className="w-2.5 h-2.5 opacity-60 shrink-0" title="Move & drag clip" />
               {theme.icon}
               <span className="text-[10px] font-mono-studio font-medium truncate">
                 {clip.name || label || `${type.toUpperCase()} Track`}

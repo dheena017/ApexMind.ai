@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Image as ImageIcon } from 'lucide-react';
 import { formatTime, SelectedClip, TimelineMediaClip } from './timelineTypes';
 import { ImageStripBackground } from './ImageStripBackground';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
@@ -71,15 +70,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
 }) => {
   const effectiveClips: (TimelineMediaClip & { lane?: number })[] = (clips && clips.length > 0)
     ? clips
-    : (imageUrl || imageName ? [{
-        id: 'img-default',
-        type: 'image',
-        url: imageUrl || '',
-        name: imageName || 'Image Clip',
-        start: imageStart,
-        duration: imageDuration,
-        lane: 0,
-      }] : []);
+    : [];
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
   const [colorLabels, setColorLabels] = useState<Record<string, string>>({});
@@ -162,14 +153,8 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               <div className="w-0.5 h-3 bg-rose-200 rounded-full" />
             </div>
 
-            <div className="flex items-center gap-1.5 z-10 bg-black/75 px-1.5 py-0.5 rounded backdrop-blur-xs max-w-[70%]">
-              <ImageIcon className="w-3 h-3 text-rose-400 shrink-0" />
-              <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
-                {clip.name || imageName || 'Image Frame'}
-              </span>
-            </div>
-
-            <span className="text-[9px] font-mono-studio text-rose-300 pointer-events-none pr-1.5 font-bold z-10 bg-black/75 px-1.5 py-0.5 rounded backdrop-blur-xs shrink-0">
+            {/* Time Duration Badge Only */}
+            <span className="ml-auto text-[9.5px] font-mono-studio text-rose-300 pointer-events-none px-1.5 py-0.5 font-bold z-10 bg-black/85 rounded-md backdrop-blur-xs shrink-0 border border-rose-500/30 shadow-md">
               {formatTime(clip.duration)}
             </span>
 

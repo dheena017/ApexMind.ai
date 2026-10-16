@@ -242,6 +242,21 @@ export default function WorkspacePage({
     return graph;
   }, [ensureAudioProcessingGraph]);
 
+  const [voiceTrackMuted, setVoiceTrackMuted] = useState(false);
+  const [musicTrackMuted, setMusicTrackMuted] = useState(false);
+
+  useEffect(() => {
+    const handleTimelineState = (e: Event) => {
+      const detail = (e as CustomEvent<{ voiceMuted?: boolean; musicMuted?: boolean }>).detail;
+      if (detail) {
+        if (detail.voiceMuted !== undefined) setVoiceTrackMuted(Boolean(detail.voiceMuted));
+        if (detail.musicMuted !== undefined) setMusicTrackMuted(Boolean(detail.musicMuted));
+      }
+    };
+    window.addEventListener('workspace:timeline-state', handleTimelineState);
+    return () => window.removeEventListener('workspace:timeline-state', handleTimelineState);
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -252,7 +267,7 @@ export default function WorkspacePage({
     const fadeOutGain = voiceFadeSettings.fadeOut > 0
       ? Math.min(1, Math.max(0, (trackDuration - currentTime) / voiceFadeSettings.fadeOut))
       : 1;
-    const effectiveGain = isMuted ? 0 : volume * Math.min(fadeInGain, fadeOutGain);
+    const effectiveGain = (isMuted || voiceTrackMuted) ? 0 : volume * Math.min(fadeInGain, fadeOutGain);
     const graph = audioProcessingGraphRef.current;
     if (graph) {
       audio.volume = 1;
@@ -262,11 +277,11 @@ export default function WorkspacePage({
       graph.lowPass.frequency.setTargetAtTime(noiseReduction ? 10_000 : 20_000, graph.context.currentTime, 0.05);
     } else {
       audio.volume = effectiveGain;
-      audio.muted = isMuted;
+      audio.muted = isMuted || voiceTrackMuted;
     }
     audio.playbackRate = playbackRate;
     if (isPlaying && graph?.context.state === 'suspended') void graph.context.resume();
-  }, [currentTime, duration, isMuted, isPlaying, noiseReduction, playbackRate, timelineDuration, volume, voiceFadeSettings]);
+  }, [currentTime, duration, isMuted, isPlaying, noiseReduction, playbackRate, timelineDuration, volume, voiceFadeSettings, voiceTrackMuted]);
 
   useEffect(() => {
     const handleAudioEffects = (event: Event) => {
@@ -323,12 +338,15 @@ export default function WorkspacePage({
     const fadeOutGain = musicFadeSettings.fadeOut > 0
       ? Math.min(1, Math.max(0, (totalDuration - currentTime) / musicFadeSettings.fadeOut))
       : 1;
+    const effectiveMusicGain = (isMuted || musicTrackMuted) ? 0 : musicVolume * Math.min(fadeInGain, fadeOutGain);
     const graph = audioProcessingGraphRef.current;
     if (graph?.musicSource) {
       musicAudio.volume = 1;
-      graph.musicGain.gain.setTargetAtTime(musicVolume * Math.min(fadeInGain, fadeOutGain), graph.context.currentTime, 0.02);
+      musicAudio.muted = false;
+      graph.musicGain.gain.setTargetAtTime(effectiveMusicGain, graph.context.currentTime, 0.02);
     } else {
-      musicAudio.volume = musicVolume * Math.min(fadeInGain, fadeOutGain);
+      musicAudio.volume = effectiveMusicGain;
+      musicAudio.muted = isMuted || musicTrackMuted;
     }
     musicAudio.playbackRate = playbackRate;
     if (Math.abs(musicAudio.currentTime - currentTime) > 0.5 && Number.isFinite(musicAudio.duration)) {
@@ -336,7 +354,7 @@ export default function WorkspacePage({
     }
     if (isPlaying && musicAudio.paused) musicAudio.play().catch(() => {});
     if (!isPlaying && !musicAudio.paused) musicAudio.pause();
-  }, [currentTime, duration, isPlaying, musicFadeSettings, musicVolume, playbackRate, selectedMusic, timelineDuration]);
+  }, [currentTime, duration, isMuted, isPlaying, musicFadeSettings, musicTrackMuted, musicVolume, playbackRate, selectedMusic, timelineDuration]);
 
   useEffect(() => () => {
     const graph = audioProcessingGraphRef.current;
@@ -697,15 +715,11 @@ export default function WorkspacePage({
 
       // If AI planned a multi-scene storyboard with multiple videos and images:
       if (generated.storyboard && generated.storyboard.length > 0) {
-        const firstScene = generated.storyboard[0];
-        if (firstScene.mediaType === 'video' && firstScene.mediaUrl) {
-          setCustomBackdropVideo(firstScene.mediaUrl);
-          setCustomBackdropImage(undefined);
-        } else if (firstScene.mediaUrl) {
-          setCustomBackdropImage(firstScene.mediaUrl);
-          setCustomBackdropVideo(undefined);
-        }
+        // Clear custom backdrop overrides so multi-scene storyboard cuts drive the timeline & preview
+        setCustomBackdropVideo(undefined);
+        setCustomBackdropImage(undefined);
 
+        const firstScene = generated.storyboard[0];
         if (firstScene.captionPresetClass) {
           setCaptionPreset({
             className: firstScene.captionPresetClass,
@@ -954,6 +968,43 @@ export default function WorkspacePage({
     setVolume(clampedVolume);
     setIsMuted(clampedVolume === 0);
   };
+
+  const handleStartNewVideo = useCallback(() => {
+    setAgentPrompt('');
+    setScriptSubPane('prompt');
+    onPaneChange('prompt');
+    setAudioUrl(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+    if (musicAudioRef.current) {
+      musicAudioRef.current.pause();
+      musicAudioRef.current.src = '';
+    }
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setScript({
+      title: '',
+      hook: '',
+      quote: '',
+      cta: '',
+      speechStyle: '',
+      visualTheme: '',
+      recommendedVoice: selectedVoice || 'Fenrir',
+      tags: [],
+      hashtags: [],
+      subtitles: [],
+    });
+    setSelectedBackdrop('');
+    setSelectedMusic('');
+    setCustomBackdropImage(undefined);
+    setCustomBackdropVideo(undefined);
+    setActiveElementOverlay(null);
+    setSelectedSfx(null);
+    // Dispatch event to clear all timeline tracks and clips immediately
+    window.dispatchEvent(new CustomEvent('workspace:clear-timeline'));
+  }, [onPaneChange, selectedVoice]);
 
   // Publish to YouTube Shorts
   const handlePublish = async () => {
@@ -1556,35 +1607,7 @@ export default function WorkspacePage({
                   setScriptSubPane('prompt');
                   onPaneChange('prompt');
                 }}
-                onStartNewVideo={() => {
-                  setAgentPrompt('');
-                  setScriptSubPane('prompt');
-                  onPaneChange('prompt');
-                  setAudioUrl(null);
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current.src = '';
-                  }
-                  setIsPlaying(false);
-                  setCurrentTime(0);
-                  setScript({
-                    title: '',
-                    hook: '',
-                    quote: '',
-                    cta: '',
-                    speechStyle: '',
-                    visualTheme: '',
-                    recommendedVoice: selectedVoice || 'Fenrir',
-                    tags: [],
-                    hashtags: [],
-                    subtitles: [],
-                  });
-                  setSelectedBackdrop('');
-                  setSelectedMusic('');
-                  setCustomBackdropImage(undefined);
-                  setCustomBackdropVideo(undefined);
-                  setActiveElementOverlay(null);
-                }}
+                onStartNewVideo={handleStartNewVideo}
               />
             ) : activePane === 'prompt' || (activePane === 'script' && scriptSubPane === 'prompt') ? (
               <AIAgentCreatorPane
@@ -1614,33 +1637,7 @@ export default function WorkspacePage({
                   setScriptSubPane('editor');
                   onPaneChange('editor');
                 }}
-                onStartNewVideo={() => {
-                  setAgentPrompt('');
-                  setAudioUrl(null);
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current.src = '';
-                  }
-                  setIsPlaying(false);
-                  setCurrentTime(0);
-                  setScript({
-                    title: '',
-                    hook: '',
-                    quote: '',
-                    cta: '',
-                    speechStyle: '',
-                    visualTheme: '',
-                    recommendedVoice: selectedVoice || 'Fenrir',
-                    tags: [],
-                    hashtags: [],
-                    subtitles: [],
-                  });
-                  setSelectedBackdrop('');
-                  setSelectedMusic('');
-                  setCustomBackdropImage(undefined);
-                  setCustomBackdropVideo(undefined);
-                  setActiveElementOverlay(null);
-                }}
+                onStartNewVideo={handleStartNewVideo}
               />
             ) : activePane === 'canvas' ? (
               <CanvasPane

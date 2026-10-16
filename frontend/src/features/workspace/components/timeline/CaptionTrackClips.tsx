@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Move } from 'lucide-react';
 import { LaneSubtitle, SelectedClip } from './timelineTypes';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
@@ -118,7 +118,10 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             {/* Left Trim Handle */}
             {!captionsTrackLocked && (
               <div
-                onPointerDown={(e) => onPointerDownTrimLeft(e, index, clip.start, clip.duration || 3)}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  onPointerDownTrimLeft(e, index, clip.start, clip.duration || 3);
+                }}
                 className="timeline-trim-handle-left bg-blue-400/40 hover:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Drag to trim start time"
               >
@@ -154,7 +157,8 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
               </div>
             ) : (
               <>
-                <span className="text-[10px] font-mono-studio truncate leading-tight pointer-events-none pl-1">
+                <Move className="w-2.5 h-2.5 text-blue-300/60 shrink-0 ml-1" title="Move & drag caption" />
+                <span className="text-[10px] font-mono-studio truncate leading-tight pointer-events-none pl-0.5">
                   "{clip.text}"
                 </span>
                 <span className="text-[8px] font-mono-studio text-blue-200/90 shrink-0 ml-1 pointer-events-none pr-1 font-bold">
@@ -166,7 +170,10 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             {/* Right Trim Handle */}
             {!captionsTrackLocked && (
               <div
-                onPointerDown={(e) => onPointerDownTrimRight(e, index, clip.start, clip.duration || 3)}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  onPointerDownTrimRight(e, index, clip.start, clip.duration || 3);
+                }}
                 className="timeline-trim-handle-right bg-blue-400/40 hover:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Drag to trim duration"
               >
