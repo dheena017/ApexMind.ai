@@ -262,6 +262,38 @@ class Ansi:
     def GRAY(self) -> str:
         return self._c("\033[90m")
 
+    @property
+    def BRIGHT_CYAN(self) -> str:
+        return self._c("\033[96;1m")
+
+    @property
+    def BRIGHT_WHITE(self) -> str:
+        return self._c("\033[97;1m")
+
+    @property
+    def BRIGHT_GREEN(self) -> str:
+        return self._c("\033[92;1m")
+
+    @property
+    def BRIGHT_YELLOW(self) -> str:
+        return self._c("\033[93;1m")
+
+    @property
+    def BRIGHT_MAGENTA(self) -> str:
+        return self._c("\033[95;1m")
+
+    @property
+    def BRIGHT_BLUE(self) -> str:
+        return self._c("\033[94;1m")
+
+    @property
+    def BRIGHT_RED(self) -> str:
+        return self._c("\033[91;1m")
+
+    @property
+    def UNDERLINE(self) -> str:
+        return self._c("\033[4m")
+
 
 def load_dotenv(path: Path) -> dict[str, str]:
     """Parse key=value pairs from a .env file safely."""
