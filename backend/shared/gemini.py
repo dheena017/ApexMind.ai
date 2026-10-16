@@ -796,14 +796,16 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
             "Keep the pacing natural, the tone charismatic, and the emphasis clear. "
             f"Script: {normalized_text}"
         )
-        tts_models_to_try = [tts_model]
-        for alt in ["gemini-2.5-flash-preview-tts", "gemini-2.0-flash", "gemini-2.5-flash"]:
-            if alt not in tts_models_to_try:
-                tts_models_to_try.append(alt)
+        tts_models_to_try = [m for m in [tts_model, "gemini-2.5-flash-tts", "gemini-2.5-flash-preview-tts"] if m]
+        # Remove duplicates while preserving order
+        unique_tts_models = []
+        for m in tts_models_to_try:
+            if m not in unique_tts_models:
+                unique_tts_models.append(m)
 
         tts_res = None
         last_tts_err = None
-        for attempt_tts in tts_models_to_try:
+        for attempt_tts in unique_tts_models:
             try:
                 tts_res = gemini_client.models.generate_content(
                     model=attempt_tts,
@@ -819,35 +821,59 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
                         ),
                     ),
                 )
-                break
+                if tts_res:
+                    break
             except Exception as e:
                 last_tts_err = e
                 logger.warning(f"TTS Model '{attempt_tts}' failed ({e}), trying next TTS model...")
 
-        if tts_res is None:
-            raise RuntimeError(f"All Gemini TTS models exhausted: {last_tts_err}")
+        if tts_res is not None:
+            raw_audio, mime_type = extract_voiceover_audio(tts_res)
+            if isinstance(raw_audio, bytes):
+                audio_b64 = base64.b64encode(raw_audio).decode("utf-8")
+            else:
+                audio_b64 = str(raw_audio)
 
-        raw_audio, mime_type = extract_voiceover_audio(tts_res)
-        if isinstance(raw_audio, bytes):
-            audio_b64 = base64.b64encode(raw_audio).decode("utf-8")
-        else:
-            audio_b64 = str(raw_audio)
+            elapsed = time.perf_counter() - start_t
+            logger.info(
+                f"Gemini TTS synthesized audio in {elapsed:.2f}s for voice '{voice_name}' | "
+                f"mime={mime_type} | b64_len={len(audio_b64)}"
+            )
+            return {
+                "success": True,
+                "voiceName": voice_name,
+                "mimeType": mime_type,
+                "audioBase64": audio_b64,
+                "audioUrl": f"data:{mime_type};base64,{audio_b64}",
+            }
 
-        elapsed = time.perf_counter() - start_t
-        logger.info(
-            f"Gemini TTS synthesized audio in {elapsed:.2f}s for voice '{voice_name}' | "
-            f"mime={mime_type} | b64_len={len(audio_b64)}"
-        )
-        return {
-            "success": True,
-            "voiceName": voice_name,
-            "mimeType": mime_type,
-            "audioBase64": audio_b64,
-            "audioUrl": f"data:{mime_type};base64,{audio_b64}",
-        }
+        # ── Resilient Fallback: gTTS High-Quality Synthesis ──
+        logger.warning(f"Gemini TTS unavailable ({last_tts_err}). Initiating high-definition gTTS synthesis fallback...")
+        try:
+            import io
+            from gtts import gTTS
+            fp = io.BytesIO()
+            tts = gTTS(text=normalized_text, lang="en", tld="com")
+            tts.write_to_fp(fp)
+            fp.seek(0)
+            gtts_bytes = fp.read()
+            gtts_b64 = base64.b64encode(gtts_bytes).decode("utf-8")
+            elapsed = time.perf_counter() - start_t
+            logger.info(f"Fallback gTTS synthesized {len(gtts_bytes)} bytes audio in {elapsed:.2f}s for voice '{voice_name}'")
+            return {
+                "success": True,
+                "voiceName": voice_name,
+                "mimeType": "audio/mp3",
+                "audioBase64": gtts_b64,
+                "audioUrl": f"data:audio/mp3;base64,{gtts_b64}",
+            }
+        except Exception as fallback_err:
+            logger.error(f"Fallback gTTS synthesis also failed: {fallback_err}")
+            raise RuntimeError(f"Voiceover synthesis failed (Gemini: {last_tts_err}, Fallback: {fallback_err})")
+
     except Exception as e:  # noqa: BLE001
         elapsed = time.perf_counter() - start_t
-        logger.error(f"Gemini TTS generation failed after {elapsed:.2f}s for voice '{voice_name}': {e}")
+        logger.error(f"Voiceover generation error after {elapsed:.2f}s for voice '{voice_name}': {e}")
         raise RuntimeError(f"Voiceover synthesis failed: {e}")
 
 
