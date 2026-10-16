@@ -266,186 +266,238 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   };
 
   return (
-    <main className="relative flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-[#0A0A0A] px-4 py-6 text-[#E5E5E5] sm:px-6 sm:py-8 font-sans-studio">
-      <div className="relative grid w-full max-w-4xl rounded-[28px] border border-[#2F2F2F] bg-[#1E1E1E] shadow-2xl shadow-black/50 lg:grid-cols-[1fr_1.1fr]">
-        <section className="relative hidden flex-col justify-between overflow-hidden rounded-l-[28px] bg-gradient-to-br from-[#172554] via-[#121212] to-[#1E1E1E] p-8 lg:flex xl:p-10">
-          <div className="relative">
-            <div className="flex w-fit items-center gap-3">
-              <div className="rounded-2xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-3 text-white shadow-lg shadow-black/40">
-                <Sparkles className="h-6 w-6" />
-              </div>
-              <span className="text-xl font-extrabold tracking-tight text-white">ApexMind</span>
-            </div>
+    <main className="relative flex min-h-screen w-full flex-col justify-between overflow-x-hidden bg-[#08080A] text-[#E5E5E5] px-4 py-4 sm:px-6 sm:py-6 font-sans-studio selection:bg-[#3B82F6]/30 selection:text-[#60A5FA]">
+      {/* ── Atmospheric Ambient Backdrop Glows ── */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] sm:w-[1000px] h-[500px] bg-gradient-to-tr from-[#2563EB]/15 via-[#6366F1]/10 to-emerald-500/10 blur-[140px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute -bottom-20 right-10 w-[500px] h-[350px] bg-gradient-to-tl from-[#3B82F6]/10 to-transparent blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:28px_28px] pointer-events-none -z-10" />
 
-            <h1 className="mt-8 max-w-sm text-3xl font-extrabold leading-tight tracking-tight text-white xl:text-4xl">
-              Turn your ideas into Shorts.
-            </h1>
-            <p className="mt-5 max-w-md text-sm leading-7 text-[#C5CBD5]">
-              Sign in with your Google account to access your automated AI scripts, voiceover studio, and YouTube publishing.
-            </p>
+      {/* ── Top Header Navigation ── */}
+      <header className="w-full max-w-6xl mx-auto flex items-center justify-between py-2 sm:py-3 z-20">
+        <button
+          type="button"
+          onClick={() => onNavigate('landing')}
+          className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer text-left"
+          aria-label="ApexMind Studio Home"
+        >
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white flex items-center justify-center border border-[#60A5FA]/30 shadow-md shadow-blue-500/20">
+            <Sparkles className="w-4 h-4" />
           </div>
-
-          <div className="relative mt-12 space-y-4">
-            {[
-              'Sign in securely with Google',
-              'Auto-verify live YouTube channel metrics',
-              'Generate 24kHz Gemini voiceovers & scripts',
-              'Manage YouTube Shorts publishing catalogs',
-            ].map((item) => (
-              <div key={item} className="flex items-center gap-3 text-sm text-[#E5E5E5]">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 shrink-0">
-                  <Check className="h-3.5 w-3.5" />
-                </span>
-                {item}
-              </div>
-            ))}
-            <p className="pt-6 text-xs text-[#9CA3AF]">Protected with Google OAuth standards.</p>
+          <div className="flex flex-col">
+            <span className="text-base font-extrabold tracking-tight text-gradient-brand">ApexMind</span>
+            <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider -mt-0.5">AI Shorts Studio</span>
           </div>
-        </section>
+        </button>
 
-        <section className="relative flex flex-col justify-center p-5 sm:p-10 lg:p-12">
-          <div className="mb-6 flex items-center justify-between lg:hidden">
-            <div className="flex items-center gap-2.5">
-              <div className="rounded-xl border border-[#60A5FA]/30 bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] p-2 text-white shadow-lg shadow-black/40">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <span className="font-extrabold tracking-tight text-white">ApexMind</span>
-            </div>
-          </div>
+        <button
+          type="button"
+          onClick={() => onNavigate('landing')}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#2F2F2F] bg-[#141414]/80 hover:bg-[#1E1E1E] hover:border-[#4A4A4A] text-xs font-semibold text-[#9CA3AF] hover:text-white transition-all cursor-pointer shadow-sm"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Home</span>
+        </button>
+      </header>
 
-          <div className="mx-auto w-full max-w-sm space-y-6">
-            <div className="space-y-4">
-              <div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('landing')}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#2F2F2F] bg-[#121212]/70 px-3 text-xs font-medium text-[#9CA3AF] shadow-sm transition-all duration-200 hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  <span>Back to ApexMind</span>
-                </button>
-              </div>
-
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#60A5FA]/20 bg-[#3B82F6]/5 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#93C5FD]">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Secure Studio Access
+      {/* ── Center: Unified Glassmorphism Card ── */}
+      <div className="my-auto py-6 sm:py-8 z-10 w-full flex items-center justify-center">
+        <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-[#121215]/90 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+          
+          {/* Left Column: Visual Studio Showcase */}
+          <section className="lg:col-span-6 relative flex flex-col justify-between overflow-hidden bg-gradient-to-br from-[#121B2F]/90 via-[#0F131E]/80 to-[#0A0D14]/90 p-6 sm:p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-white/5">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#60A5FA] text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-[#3B82F6]" />
+                <span>Next-Gen Shorts Engine</span>
               </div>
 
               <div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-white">Sign In</h2>
-                <p className="mt-2 text-sm leading-6 text-[#9CA3AF]">
-                  Sign in with your Google account to unlock the ApexMind Studio workspace.
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+                  Turn your ideas into <span className="text-gradient-brand">viral Shorts</span>.
+                </h1>
+                <p className="mt-3 text-xs sm:text-sm text-[#9CA3AF] leading-relaxed">
+                  Synthesize motivational scripts, generate 24kHz neural voiceovers, preview your visual canvas, and publish to YouTube in seconds.
                 </p>
               </div>
-            </div>
 
-            {/* ── Agreement Checkbox ── */}
-            <label
-              htmlFor="agree-terms"
-              className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3.5 transition-all duration-200 ${
-                showAgreementError
-                  ? 'border-red-500/50 bg-red-500/5'
-                  : agreementChecked
-                  ? 'border-emerald-500/30 bg-emerald-500/5'
-                  : 'border-[#2F2F2F] bg-[#121212] hover:border-[#3B82F6]/40'
-              }`}
-            >
-              <div className="relative mt-0.5 shrink-0">
-                <input
-                  id="agree-terms"
-                  type="checkbox"
-                  checked={agreementChecked}
-                  onChange={(e) => {
-                    setAgreementChecked(e.target.checked);
-                    if (e.target.checked) {
-                      setShowAgreementError(false);
-                      setNotice('');
-                    }
-                  }}
-                  className="peer sr-only"
-                />
-                <div
-                  className={`flex h-4.5 w-4.5 items-center justify-center rounded border-2 transition-all duration-200 ${
-                    agreementChecked
-                      ? 'border-emerald-500 bg-emerald-500'
-                      : showAgreementError
-                      ? 'border-red-500 bg-transparent'
-                      : 'border-[#4B5563] bg-transparent'
-                  }`}
-                  style={{ width: '1.1rem', height: '1.1rem' }}
-                >
-                  {agreementChecked && (
-                    <Check className="h-3 w-3 text-white" strokeWidth={3} />
-                  )}
+              {/* Mini Studio Canvas Preview Mockup */}
+              <div className="rounded-2xl border border-white/10 bg-[#0A0A0E]/90 p-4 shadow-xl space-y-3">
+                <div className="flex items-center justify-between text-[11px] text-[#71717A] border-b border-white/5 pb-2">
+                  <span className="font-mono-studio text-[#60A5FA] font-bold">STUDIO ENGINE v2.4</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-emerald-400 font-semibold text-[10px]">Ready</span>
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-gradient-to-r from-[#172033]/60 to-[#0F1420]/60 border border-[#3B82F6]/20">
+                  <p className="text-xs font-bold text-white leading-snug drop-shadow-sm">
+                    "When motivation fades, discipline takes the wheel. Do what must be done."
+                  </p>
+                  <div className="mt-2 flex items-center justify-between text-[10px] text-[#93C5FD]">
+                    <span>Voiceover: Fenrir (24kHz Studio)</span>
+                    <span className="font-mono-studio">00:30 • 9:16</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-[#9CA3AF] pt-1">
+                  <span>✓ Gemini 2.5 Flash Script</span>
+                  <span>✓ Auto-Synced Captions</span>
+                  <span>✓ 4K Shorts Direct Export</span>
                 </div>
               </div>
-              <span className="text-xs leading-5 text-[#9CA3AF]">
-                I have read and agree to the ApexMind{' '}
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); onNavigate('terms'); }}
-                  className="font-semibold text-[#60A5FA] hover:text-white underline"
-                >
-                  Terms of Service
-                </button>{' '}and{' '}
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }}
-                  className="font-semibold text-[#60A5FA] hover:text-white underline"
-                >
-                  Privacy Policy
-                </button>.
-                {showAgreementError && (
-                  <span className="mt-1 block font-semibold text-red-400">You must agree before signing in.</span>
-                )}
-              </span>
-            </label>
 
-            <div className="space-y-3.5">
-              {rememberedUser?.email && (
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#2F2F2F] bg-[#121212] p-3.5 shadow-lg shadow-black/10 transition-all duration-200 hover:border-[#3B82F6]/50">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <img
-                      src={rememberedUser.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rememberedUser.name || 'Creator')}`}
-                      alt=""
-                      className="h-9 w-9 shrink-0 rounded-full border border-white/10"
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-bold text-white">{rememberedUser.name || 'Creator'}</p>
-                      <p className="truncate text-[11px] text-[#9CA3AF]">{rememberedUser.email}</p>
-                    </div>
+              {/* Feature Checklist */}
+              <div className="space-y-2.5 pt-1">
+                {[
+                  'Secure Google OAuth 2.0 authentication',
+                  'Live YouTube channel sync & automatic Shorts upload',
+                  'High-fidelity 24kHz neural speech synthesis',
+                  'Royalty-free ambient soundtracks & sound design',
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-2.5 text-xs text-[#CBD5E1]">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shrink-0">
+                      <Check className="h-3 w-3" />
+                    </span>
+                    <span>{item}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-6 mt-6 border-t border-white/5 flex items-center justify-between text-[11px] text-[#6B7280]">
+              <span>Powered by Google Gemini 2.5</span>
+              <span>256-bit SSL Protected</span>
+            </div>
+          </section>
+
+          {/* Right Column: Sign In Form */}
+          <section className="lg:col-span-6 relative flex flex-col justify-center p-6 sm:p-8 lg:p-10 bg-[#121215]/80">
+            <div className="w-full max-w-md mx-auto space-y-6">
+              
+              {/* Header */}
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#60A5FA]/30 bg-[#3B82F6]/10 text-[10px] font-bold uppercase tracking-wider text-[#60A5FA]">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Secure Creator Access
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                  Sign In to Studio
+                </h2>
+                <p className="text-xs sm:text-sm text-[#9CA3AF] leading-relaxed">
+                  Sign in with your Google account to unlock the ApexMind AI Studio workspace.
+                </p>
+              </div>
+
+              {/* ── Agreement Checkbox ── */}
+              <label
+                htmlFor="agree-terms"
+                className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3.5 transition-all duration-200 ${
+                  showAgreementError
+                    ? 'border-red-500/50 bg-red-500/5'
+                    : agreementChecked
+                    ? 'border-emerald-500/30 bg-emerald-500/5'
+                    : 'border-[#2F2F2F] bg-[#161618] hover:border-[#3B82F6]/40'
+                }`}
+              >
+                <div className="relative mt-0.5 shrink-0">
+                  <input
+                    id="agree-terms"
+                    type="checkbox"
+                    checked={agreementChecked}
+                    onChange={(e) => {
+                      setAgreementChecked(e.target.checked);
+                      if (e.target.checked) {
+                        setShowAgreementError(false);
+                        setNotice('');
+                      }
+                    }}
+                    className="peer sr-only"
+                  />
+                  <div
+                    className={`flex h-4.5 w-4.5 items-center justify-center rounded-lg border-2 transition-all duration-200 ${
+                      agreementChecked
+                        ? 'border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-500/30'
+                        : showAgreementError
+                        ? 'border-red-500 bg-transparent'
+                        : 'border-[#4B5563] bg-transparent'
+                    }`}
+                    style={{ width: '1.15rem', height: '1.15rem' }}
+                  >
+                    {agreementChecked && (
+                      <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs leading-5 text-[#9CA3AF]">
+                  I agree to the ApexMind{' '}
                   <button
                     type="button"
-                    onClick={() => handleGoogleLogin(rememberedUser.email, rememberedUser.name)}
-                    disabled={googleLoading || !agreementChecked}
-                    title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
-                    className="shrink-0 rounded-lg bg-[#3B82F6]/10 px-3 py-1.5 text-xs font-semibold text-[#60A5FA] transition-colors hover:bg-[#3B82F6]/20 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={(e) => { e.preventDefault(); onNavigate('terms'); }}
+                    className="font-semibold text-[#60A5FA] hover:text-white underline cursor-pointer"
                   >
-                    Continue →
-                  </button>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={handleGoogleAccountAuth}
-                disabled={googleLoading || !agreementChecked}
-                title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
-                className="group relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-bold text-gray-900 shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.99]"
-              >
-                <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#60A5FA]/70 to-transparent" />
-                <span className="flex items-center justify-center gap-3">
-                  {googleLoading ? (
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
-                  ) : (
-                    <GoogleIcon className="h-5 w-5" />
+                    Terms of Service
+                  </button>{' '}and{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }}
+                    className="font-semibold text-[#60A5FA] hover:text-white underline cursor-pointer"
+                  >
+                    Privacy Policy
+                  </button>.
+                  {showAgreementError && (
+                    <span className="mt-1 block font-semibold text-red-400">Please check this box before signing in.</span>
                   )}
-                  <span>Sign In with Google</span>
                 </span>
-              </button>
+              </label>
 
-              <div className="pt-1 text-center">
+              {/* ── Actions ── */}
+              <div className="space-y-3">
+                {/* Remembered User Fast-Continue Card */}
+                {rememberedUser?.email && (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#2F2F2F] bg-[#161618] p-3 shadow-md hover:border-[#3B82F6]/50 transition-all">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <img
+                        src={rememberedUser.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rememberedUser.name || 'Creator')}`}
+                        alt=""
+                        className="h-9 w-9 shrink-0 rounded-full border border-white/10"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-white">{rememberedUser.name || 'Creator'}</p>
+                        <p className="truncate text-[11px] text-[#9CA3AF]">{rememberedUser.email}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleGoogleLogin(rememberedUser.email, rememberedUser.name)}
+                      disabled={googleLoading || !agreementChecked}
+                      title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
+                      className="shrink-0 rounded-xl bg-[#3B82F6]/10 hover:bg-[#3B82F6]/20 border border-[#3B82F6]/30 px-3 py-1.5 text-xs font-semibold text-[#60A5FA] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Continue →
+                    </button>
+                  </div>
+                )}
+
+                {/* Primary Google Sign In Button */}
+                <button
+                  type="button"
+                  onClick={handleGoogleAccountAuth}
+                  disabled={googleLoading || !agreementChecked}
+                  title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
+                  className="group relative w-full overflow-hidden rounded-2xl border border-white/20 bg-white hover:bg-gray-100 active:bg-gray-200 px-5 py-3.5 text-sm font-bold text-gray-900 shadow-xl transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.99]"
+                >
+                  <span className="flex items-center justify-center gap-3">
+                    {googleLoading ? (
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+                    ) : (
+                      <GoogleIcon className="h-5 w-5" />
+                    )}
+                    <span>Sign In with Google</span>
+                  </span>
+                </button>
+
+                {/* Secondary Option: Other Account */}
                 <button
                   type="button"
                   onClick={() => {
@@ -454,30 +506,52 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   }}
                   disabled={!agreementChecked}
                   title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
-                  className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#2F2F2F] bg-[#121212]/70 px-4 text-xs font-semibold text-[#9CA3AF] shadow-sm transition-all duration-200 hover:border-[#3B82F6]/45 hover:bg-[#3B82F6]/10 hover:text-[#93C5FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full inline-flex min-h-10 items-center justify-center rounded-xl border border-[#2F2F2F] bg-[#161618] hover:bg-[#1E1E22] hover:border-[#3B82F6]/40 px-4 text-xs font-semibold text-[#9CA3AF] hover:text-[#93C5FD] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Sign in with another Google account
                 </button>
               </div>
-            </div>
 
-            {notice && (
-              <p role="status" className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-5 text-amber-200 shadow-inner shadow-black/20">
-                {notice}
-              </p>
-            )}
-
-            <div className="border-t border-[#2F2F2F] pt-4">
-              <div className="flex items-start gap-3 rounded-xl border border-[#2F2F2F] bg-[#121212] p-3.5 shadow-inner shadow-black/30">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                <p className="text-xs leading-5 text-[#9CA3AF]">
-                  ApexMind uses Google OAuth authentication. Only verified sign-ins are permitted into the studio.
+              {/* Notice banner */}
+              {notice && (
+                <p role="status" className="rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-xs leading-5 text-amber-200 shadow-inner">
+                  {notice}
                 </p>
+              )}
+
+              {/* Security Trust Note */}
+              <div className="pt-2 border-t border-[#262626]">
+                <div className="flex items-start gap-3 rounded-xl border border-[#262626] bg-[#141416] p-3 text-left">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <p className="text-[11px] leading-relaxed text-[#9CA3AF]">
+                    ApexMind uses Google OAuth 2.0 standards. Only verified sign-ins are permitted into the studio workspace.
+                  </p>
+                </div>
               </div>
+
             </div>
-          </div>
-        </section>
+          </section>
+
+        </div>
       </div>
+
+      {/* ── Page Footer ── */}
+      <footer className="w-full max-w-6xl mx-auto py-3 text-center text-[11px] text-[#6B7280] flex flex-wrap items-center justify-between gap-3 border-t border-white/5 z-20">
+        <span>© 2026 ApexMind.ai • Automated AI Shorts Studio</span>
+        <div className="flex items-center gap-4">
+          <button type="button" onClick={() => onNavigate('terms')} className="hover:text-white transition-colors cursor-pointer">
+            Terms of Service
+          </button>
+          <span>•</span>
+          <button type="button" onClick={() => onNavigate('privacy')} className="hover:text-white transition-colors cursor-pointer">
+            Privacy Policy
+          </button>
+          <span>•</span>
+          <a href="https://developers.google.com/youtube/terms/api-services-terms-of-service" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+            YouTube API Terms
+          </a>
+        </div>
+      </footer>
 
       {/* Google Account Modal */}
       <Modal isOpen={showGoogleModal} onClose={() => setShowGoogleModal(false)} title="Sign In with Google">
