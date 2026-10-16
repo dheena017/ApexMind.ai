@@ -85,6 +85,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
   const [colorLabels, setColorLabels] = useState<Record<string, string>>({});
+  const [hoveredClip, setHoveredClip] = useState<{ id: string; x: number; y: number; clip: TimelineMediaClip } | null>(null);
 
   const actualTrackHeight = trackHeight ?? 40;
 
@@ -107,6 +108,11 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               if (onSelectClip) onSelectClip(clip.id);
               else onSelect?.();
             }}
+            onPointerEnter={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setHoveredClip({ id: clip.id, x: rect.left + rect.width / 2, y: rect.top, clip });
+            }}
+            onPointerLeave={() => setHoveredClip(null)}
             onPointerDown={(e) => {
               if (onPointerDownMoveClip) onPointerDownMoveClip(e, clip);
               else onPointerDownMove?.(e);
@@ -120,9 +126,9 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
             }}
             className={`timeline-clip-card rounded-md px-2.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
               isSelected
-                ? 'bg-[#1E293B] border-[#3A3A3A] text-white z-20'
+                ? 'bg-[#1E293B]/80 border-amber-400 text-white z-20 shadow-md ring-1 ring-amber-400/50'
                 : videoTrackVisible
-                ? 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
+                ? 'bg-[#111111]/75 border-[#333333] text-[#E5E5E5] hover:border-amber-500/70 z-10'
                 : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
             }`}
             style={{
@@ -185,6 +191,42 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
           </div>
         );
       })}
+
+      {/* Floating Live Video Preview Tooltip on Timeline Clip Hover */}
+      {hoveredClip && hoveredClip.clip.url && (
+        <div
+          className="fixed z-50 pointer-events-none -translate-x-1/2 -translate-y-full mb-3 bg-[#0A0A0A]/95 border border-amber-500/50 rounded-xl p-2 shadow-2xl backdrop-blur-md animate-fade-in w-52 flex flex-col gap-1.5"
+          style={{ left: `${hoveredClip.x}px`, top: `${hoveredClip.y - 6}px` }}
+        >
+          <div className="w-full aspect-video rounded-lg overflow-hidden bg-black border border-white/10 relative shadow-inner">
+            <video
+              src={hoveredClip.clip.url}
+              autoPlay
+              muted
+              loop
+              playsInline
+              crossOrigin="anonymous"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-1 left-1 bg-black/80 px-1.5 py-0.5 rounded text-[8px] font-mono-studio text-amber-300 font-extrabold flex items-center gap-1 border border-amber-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              TIMELINE PREVIEW
+            </div>
+            <div className="absolute bottom-1 right-1 bg-black/80 px-1 py-0.2 rounded text-[8px] font-mono-studio text-white/90">
+              {hoveredClip.clip.duration.toFixed(1)}s
+            </div>
+          </div>
+          <div className="flex flex-col px-0.5">
+            <span className="text-[11px] font-bold text-white truncate leading-tight">
+              {hoveredClip.clip.name || 'Video Scene Cut'}
+            </span>
+            <div className="flex items-center justify-between mt-0.5 text-[9px] font-mono-studio text-zinc-400">
+              <span>{formatTime(hoveredClip.clip.start)} → {formatTime(hoveredClip.clip.start + hoveredClip.clip.duration)}</span>
+              <span className="text-amber-400/90 font-medium capitalize">{hoveredClip.clip.type || 'video'}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Right-click Context Menu */}
       {contextMenu && (

@@ -998,18 +998,19 @@ def resolve_scene_media_from_internet(
     media_type: str,
     visual_query: str,
     fallback_topic: str = "",
+    exclude_urls: set | None = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Queries live internet media APIs for a specific storyboard scene's visual cue or search query.
-    Returns the top live internet match with real URL.
+    Enforces uniqueness: skips any video/media URL present in exclude_urls to prevent duplicate footage.
     """
     import re
+    exclude = set(exclude_urls or set())
     queries_to_try = []
     if visual_query and visual_query.strip():
-        # First try the clean visual query, then individual significant words
         clean_vq = visual_query.strip()
         queries_to_try.append(clean_vq)
-        words = [w for w in re.findall(r'[a-zA-Z]{3,}', clean_vq.lower()) if w not in {'the', 'and', 'with', 'from', 'into', 'shot', 'view'}]
+        words = [w for w in re.findall(r'[a-zA-Z]{3,}', clean_vq.lower()) if w not in {'the', 'and', 'with', 'from', 'into', 'shot', 'view', 'video'}]
         if words:
             queries_to_try.append(words[0])
             if len(words) > 1:
@@ -1021,36 +1022,40 @@ def resolve_scene_media_from_internet(
             queries_to_try.append(fallback_words[0])
 
     if not queries_to_try:
-        queries_to_try = ["cinematic", "nature"]
+        queries_to_try = ["cinematic", "nature", "epic", "motivation"]
 
     if media_type == "video":
         for q in queries_to_try:
             try:
-                res = search_open_videos(query=q, page_size=3)
+                res = search_open_videos(query=q, page_size=10)
                 items = res.get("items", [])
-                if items and items[0].get("videoUrl"):
-                    return {
-                        "id": items[0].get("id"),
-                        "title": items[0].get("title"),
-                        "videoUrl": items[0].get("videoUrl"),
-                        "posterUrl": items[0].get("posterUrl", ""),
-                        "source": items[0].get("source", "internet"),
-                    }
+                for item in items:
+                    v_url = item.get("videoUrl")
+                    if v_url and v_url not in exclude:
+                        return {
+                            "id": item.get("id"),
+                            "title": item.get("title"),
+                            "videoUrl": v_url,
+                            "posterUrl": item.get("posterUrl", ""),
+                            "source": item.get("source", "internet"),
+                        }
             except Exception as e:
                 logger.debug(f"Scene video search error for '{q}': {e}")
     else:
         for q in queries_to_try:
             try:
-                res = search_open_images(query=q, page_size=3)
+                res = search_open_images(query=q, page_size=10)
                 items = res.get("items", [])
-                if items and items[0].get("url"):
-                    return {
-                        "id": items[0].get("id"),
-                        "title": items[0].get("title"),
-                        "url": items[0].get("url"),
-                        "thumbnail": items[0].get("thumbnail", ""),
-                        "source": items[0].get("source", "internet"),
-                    }
+                for item in items:
+                    i_url = item.get("url")
+                    if i_url and i_url not in exclude:
+                        return {
+                            "id": item.get("id"),
+                            "title": item.get("title"),
+                            "url": i_url,
+                            "thumbnail": item.get("thumbnail", ""),
+                            "source": item.get("source", "internet"),
+                        }
             except Exception as e:
                 logger.debug(f"Scene image search error for '{q}': {e}")
 

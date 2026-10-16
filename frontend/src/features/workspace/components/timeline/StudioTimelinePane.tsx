@@ -415,19 +415,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const clipStart = typeof scene.start === 'number' ? scene.start : idx * 3.0;
         const clipDuration = typeof scene.duration === 'number' ? scene.duration : 3.0;
 
-        if (scene.mediaType === 'video' && scene.mediaUrl) {
+        // Enforce 100% pure video cuts on the timeline
+        if (scene.mediaUrl) {
           newVideoClips.push({
             id: clipId,
             type: 'video',
-            url: scene.mediaUrl,
-            name: clipName,
-            start: clipStart,
-            duration: clipDuration,
-          });
-        } else if (scene.mediaUrl) {
-          newImageClips.push({
-            id: clipId,
-            type: 'image',
             url: scene.mediaUrl,
             name: clipName,
             start: clipStart,
@@ -449,13 +441,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
       if (newVideoClips.length > 0) {
         setVideoClips(newVideoClips);
-        setEnabledTracks((prev) => ({ ...prev, video: true }));
+        setImageClips([]); // 100% pure video cuts
+        setEnabledTracks((prev) => ({ ...prev, video: true, image: false }));
         setVideoTrackVisible(true);
-      }
-      if (newImageClips.length > 0) {
-        setImageClips(newImageClips);
-        setEnabledTracks((prev) => ({ ...prev, image: true }));
-        setImageTrackVisible(true);
+        setImageTrackVisible(false);
       }
       if (newSfxClips.length > 0) {
         setSfxClips(newSfxClips);

@@ -261,20 +261,21 @@ WEBSITE MEDIA & STYLE ASSET CATALOG (SELECT FROM THESE REAL WEBSITE ASSETS):
 {voice_summary}
 
 ================================================================================
-MANDATORY MULTI-MEDIA / MULTI-SCENE DIRECTIVE (NO SINGLE IMAGE OR VIDEO):
+MANDATORY 100% PURE VIDEO DIRECTIVE (NO STATIC IMAGES & NO DUPLICATE VIDEOS):
 ================================================================================
-- Do NOT use only one image or video for the whole video!
-- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of multiple video and image clips (minimum 3-5 distinct scenes/shots across the timeline).
-- Alternate between dynamic video loops and atmospheric image backdrops for maximum visual retention and cinematic pace.
-- For EACH scene in the 'storyboard', choose real assets from the CATALOG above:
+- Do NOT use static images or photos! Every single scene MUST be a moving, cinematic VIDEO ("mediaType": "video").
+- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of multiple SHORT, high-energy video clips (minimum 4-6 distinct scenes/shots across the timeline).
+- SHORT CLIP DURATION: Each video clip must be short and punchy (2.0s to 4.0s duration each) for fast-paced viral YouTube Shorts retention.
+- ZERO DUPLICATE VIDEOS: Every scene MUST use a DIFFERENT, UNIQUE high-quality video clip. Never repeat the same video clip or video URL across the video!
+- For EACH scene in the 'storyboard':
   1. "sceneNumber": 1, 2, 3...
-  2. "beat": "hook" | "escalation" | "quote" | "cta"
+  2. "beat": "hook" | "escalation" | "quote" | "climax" | "cta"
   3. "start": start time in seconds (float, e.g. 0.0)
-  4. "duration": duration in seconds (float, e.g. 2.5)
-  5. "mediaType": "video" or "image"
-  6. "mediaId": exact ID from the AVAILABLE VIDEOS or AVAILABLE BACKDROPS
-  7. "mediaUrl": exact videoUrl or imageUrl of that asset
-  8. "mediaName": exact name/title of that asset
+  4. "duration": short duration in seconds (float, between 2.0 and 4.0)
+  5. "mediaType": "video" (ALWAYS "video", NEVER "image")
+  6. "mediaId": unique ID from AVAILABLE STOCK VIDEOS
+  7. "mediaUrl": exact videoUrl of that video
+  8. "mediaName": exact name/title of that video
   9. "textStyleId": exact ID from AVAILABLE TEXT STYLES (e.g. "sub-hormozi", "sub-mrbeast", "quote-stoic-roman", "cta-save-reel")
   10. "textStyleName": exact name of the text style
   11. "captionPresetClass": CSS classes of that text style
@@ -285,7 +286,7 @@ MANDATORY MULTI-MEDIA / MULTI-SCENE DIRECTIVE (NO SINGLE IMAGE OR VIDEO):
   16. "sfx": optional SFX name (e.g. "Fast Cinematic Whoosh" or "Cinematic Sub Bass Drop")
   17. "sfxUrl": audioUrl of the SFX
   18. "subtitleText": the spoken line or subtitle for this scene beat
-  19. "visualQuery": 2 to 4 word targeted visual search term to fetch real internet footage/photos (e.g. "rain tokyo neon street", "heavy gym deadlift", "misty mountain sunrise", "deep nebula stars")
+  19. "visualQuery": 2 to 4 word targeted visual search term to fetch real internet footage (e.g. "rain tokyo neon street", "heavy gym deadlift", "running athlete sprint", "deep nebula stars")
 - Choose "recommendedVoice" from the AVAILABLE VOICE PROFILES.
 - Choose "musicTrack" from the AVAILABLE SOUNDTRACKS.
 
@@ -356,11 +357,11 @@ Output MUST be a single raw JSON object with exactly these keys:
       "sceneNumber": 2,
       "beat": "escalation",
       "start": 2.5,
-      "duration": 4.5,
-      "mediaType": "image",
-      "mediaId": "v1",
-      "mediaUrl": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=720&q=80",
-      "mediaName": "Dark Mountain Dawn",
+      "duration": 3.0,
+      "mediaType": "video",
+      "mediaId": "vid-matrix",
+      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
+      "mediaName": "Neon Cyber Matrix Stream",
       "textStyleId": "sub-mrbeast",
       "textStyleName": "MrBeast Pop Bold",
       "captionPresetClass": "font-black tracking-tighter text-sky-400 uppercase drop-shadow-[0_4px_16px_rgba(0,0,0,1)] stroke-black",
@@ -370,13 +371,14 @@ Output MUST be a single raw JSON object with exactly these keys:
       "cameraMotion": "pan-right",
       "sfx": null,
       "sfxUrl": null,
+      "visualQuery": "neon stream digital cyberpunk",
       "subtitleText": "First quote sentence"
     }},
     {{
       "sceneNumber": 3,
       "beat": "quote",
-      "start": 7.0,
-      "duration": 5.0,
+      "start": 5.5,
+      "duration": 3.5,
       "mediaType": "video",
       "mediaId": "vid-gym",
       "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
@@ -390,17 +392,18 @@ Output MUST be a single raw JSON object with exactly these keys:
       "cameraMotion": "slow-zoom",
       "sfx": null,
       "sfxUrl": null,
+      "visualQuery": "gym power deadlift focus",
       "subtitleText": "Second quote sentence"
     }},
     {{
       "sceneNumber": 4,
       "beat": "cta",
-      "start": 12.0,
+      "start": 9.0,
       "duration": 3.0,
-      "mediaType": "image",
-      "mediaId": "v5",
-      "mediaUrl": "https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?auto=format&fit=crop&w=720&q=80",
-      "mediaName": "Golden Hour Hustle",
+      "mediaType": "video",
+      "mediaId": "vid-galaxy",
+      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+      "mediaName": "Cosmic Stars Acceleration",
       "textStyleId": "cta-save-reel",
       "textStyleName": "Save Reel Bookmark CTA",
       "captionPresetClass": "font-extrabold tracking-wide text-sky-400 uppercase bg-sky-950/60 px-5 py-2 rounded-xl border border-sky-500/40 text-center shadow-lg",
@@ -410,6 +413,7 @@ Output MUST be a single raw JSON object with exactly these keys:
       "cameraMotion": "static",
       "sfx": "Cash Register Cha-Ching",
       "sfxUrl": "https://cdn.pixabay.com/download/audio/2021/08/09/audio_732a101292.mp3?filename=cash-register-98214.mp3",
+      "visualQuery": "deep galaxy stars speed",
       "subtitleText": "Final call to action"
     }}
   ]
@@ -472,31 +476,35 @@ Output MUST be a single raw JSON object with exactly these keys:
             sample_texts = avail_text or CURATED_TEXT_PRESETS
 
             storyboard = []
+            seen_fallback_urls = set()
             for idx, sub in enumerate(subtitles):
-                is_video = (idx % 2 == 0)
-                if is_video and sample_videos:
+                # Always video - no static images
+                v_item = None
+                for candidate in (sample_videos or []):
+                    c_url = candidate.get("videoUrl")
+                    if c_url and c_url not in seen_fallback_urls:
+                        v_item = candidate
+                        seen_fallback_urls.add(c_url)
+                        break
+
+                if not v_item and sample_videos:
                     v_item = sample_videos[idx % len(sample_videos)]
-                    media_type = "video"
-                    media_id = v_item.get("id")
-                    media_url = v_item.get("videoUrl")
-                    media_name = v_item.get("title")
-                else:
-                    b_item = sample_backdrops[idx % len(sample_backdrops)]
-                    media_type = "image"
-                    media_id = b_item.get("id")
-                    media_url = b_item.get("imageUrl") or "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=720&q=80"
-                    media_name = b_item.get("name")
+
+                media_id = v_item.get("id") if v_item else f"vid-cut-{idx+1}"
+                media_url = v_item.get("videoUrl") if v_item else ""
+                media_name = v_item.get("title") or v_item.get("name") if v_item else f"Scene {idx+1} Video Cut"
 
                 t_item = sample_texts[idx % len(sample_texts)]
-                beat_name = "hook" if idx == 0 else ("cta" if idx == len(subtitles) - 1 else "quote")
+                beat_name = "hook" if idx == 0 else ("cta" if idx == len(subtitles) - 1 else ("climax" if idx == len(subtitles) - 2 else "quote"))
                 sfx_item = avail_sfx[0] if (idx == 0 and avail_sfx) else None
+                clip_dur = min(4.0, max(2.0, float(sub.get("duration", 3.0))))
 
                 storyboard.append({
                     "sceneNumber": idx + 1,
                     "beat": beat_name,
                     "start": float(sub.get("start", idx * 3.0)),
-                    "duration": float(sub.get("duration", 3.0)),
-                    "mediaType": media_type,
+                    "duration": clip_dur,
+                    "mediaType": "video",
                     "mediaId": str(media_id),
                     "mediaUrl": str(media_url),
                     "mediaName": str(media_name),
@@ -512,51 +520,52 @@ Output MUST be a single raw JSON object with exactly these keys:
                     "subtitleText": sub.get("text", ""),
                 })
 
-        # ── Dynamic Internet Media Resolution for All Scenes ──────────────────
+        # ── Dynamic Internet Media Resolution for All Scenes (100% Video, Zero Duplicates) ──
         from backend.features.workspace.open_media_service import resolve_scene_media_from_internet
+        seen_video_urls: set[str] = set()
+
         for sc in storyboard:
-            m_type = sc.get("mediaType") or "video"
+            # Force 100% video cuts (no static images)
+            sc["mediaType"] = "video"
+            # Keep duration punchy and short for YouTube Shorts (2.0s to 4.0s)
+            if "duration" in sc:
+                sc["duration"] = min(4.0, max(2.0, float(sc.get("duration", 3.0))))
+
             v_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
             curr_url = str(sc.get("mediaUrl") or "")
 
-            # If mediaUrl is missing or is an old static placeholder, query real live internet media
+            is_duplicate = curr_url in seen_video_urls
             is_placeholder = (
                 not curr_url
+                or is_duplicate
                 or any(ph in curr_url for ph in ["ForBiggerBlazes", "ForBiggerEscapes", "v1", "v2", "v3", "v4", "v5", "v6", "vid-"])
             )
 
             if is_placeholder:
-                # First check if matched in our dynamic internet assets
-                m_id = str(sc.get("mediaId") or "")
-                matched_v = next((v for v in avail_videos if v.get("id") == m_id and "commondatastorage" not in v.get("videoUrl", "")), None)
-                matched_b = next((b for b in avail_backdrops if b.get("id") == m_id and b.get("imageUrl") and not b.get("imageUrl", "").endswith("v1")), None)
-
-                if matched_v and matched_v.get("videoUrl"):
+                # 1. Try finding an unused video from available dynamic internet assets
+                matched_v = next(
+                    (v for v in avail_videos if v.get("videoUrl") and v["videoUrl"] not in seen_video_urls and "commondatastorage" not in v.get("videoUrl", "")),
+                    None
+                )
+                if matched_v:
                     sc["mediaUrl"] = matched_v["videoUrl"]
-                    sc["mediaName"] = matched_v.get("title") or matched_v.get("name")
+                    sc["mediaName"] = matched_v.get("title") or matched_v.get("name") or "Internet Video Cut"
                     sc["mediaId"] = matched_v["id"]
-                    sc["mediaType"] = "video"
-                elif matched_b and matched_b.get("imageUrl"):
-                    sc["mediaUrl"] = matched_b["imageUrl"]
-                    sc["mediaName"] = matched_b.get("name")
-                    sc["mediaId"] = matched_b["id"]
-                    sc["mediaType"] = "image"
                 else:
-                    # Dynamically search live internet media
+                    # 2. Dynamically search live internet video APIs for this specific scene query, excluding all seen URLs
                     live_resolved = resolve_scene_media_from_internet(
-                        media_type=m_type,
+                        media_type="video",
                         visual_query=v_query,
-                        fallback_topic=f"{topic} {category}"
+                        fallback_topic=f"{topic} {category}",
+                        exclude_urls=seen_video_urls,
                     )
-                    if live_resolved:
-                        if m_type == "video" and live_resolved.get("videoUrl"):
-                            sc["mediaUrl"] = live_resolved["videoUrl"]
-                            sc["mediaName"] = live_resolved.get("title") or sc.get("mediaName") or "Internet Stock Video"
-                            sc["mediaId"] = live_resolved.get("id") or sc.get("mediaId")
-                        elif m_type == "image" and live_resolved.get("url"):
-                            sc["mediaUrl"] = live_resolved["url"]
-                            sc["mediaName"] = live_resolved.get("title") or sc.get("mediaName") or "Internet Scenic Image"
-                            sc["mediaId"] = live_resolved.get("id") or sc.get("mediaId")
+                    if live_resolved and live_resolved.get("videoUrl"):
+                        sc["mediaUrl"] = live_resolved["videoUrl"]
+                        sc["mediaName"] = live_resolved.get("title") or sc.get("mediaName") or "Internet Stock Video Cut"
+                        sc["mediaId"] = live_resolved.get("id") or sc.get("mediaId")
+
+            if sc.get("mediaUrl"):
+                seen_video_urls.add(sc["mediaUrl"])
 
         result["storyboard"] = storyboard
         result["subtitles"] = subtitles
