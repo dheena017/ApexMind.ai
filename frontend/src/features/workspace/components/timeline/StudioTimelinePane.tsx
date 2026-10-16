@@ -604,14 +604,26 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   }, [activeElementOverlay]);
 
-  // Sync script subtitles into local clips
+  // Sync script subtitles into local clips (from subtitles or storyboard)
   useEffect(() => {
     if (script.subtitles && script.subtitles.length > 0) {
       setLocalClips(script.subtitles);
+    } else if (script.storyboard && script.storyboard.length > 0) {
+      setLocalClips(
+        script.storyboard
+          .filter((sc) => sc.subtitleText)
+          .map((sc) => ({
+            text: sc.subtitleText || '',
+            start: sc.start,
+            duration: sc.duration,
+            captionPresetClass: sc.captionPresetClass,
+            captionPresetColor: sc.captionPresetColor,
+          }))
+      );
     } else {
       setLocalClips([]);
     }
-  }, [script.subtitles]);
+  }, [script.subtitles, script.storyboard]);
 
   // Sync initial video / voice length to duration
   useEffect(() => {

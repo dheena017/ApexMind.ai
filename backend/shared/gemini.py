@@ -296,7 +296,7 @@ MANDATORY 100% PURE VIDEO DIRECTIVE (NO STATIC IMAGES & NO DUPLICATE VIDEOS):
   16. "sfx": optional SFX name (e.g. "Fast Cinematic Whoosh" or "Cinematic Sub Bass Drop")
   17. "sfxUrl": audioUrl of the SFX
   18. "subtitleText": the spoken line or subtitle for this scene beat
-  19. "visualQuery": 2 to 4 word targeted visual search term to fetch real internet footage (e.g. "rain tokyo neon street", "heavy gym deadlift", "running athlete sprint", "deep nebula stars")
+  19. "visualQuery": 2 to 4 word targeted visual search term for real high-impact cinematic footage (e.g. "heavy gym barbell deadlift", "athlete running sprint", "dark thunderstorm lightning", "fighter shadow boxing", "molten fire sparks", "mountain peak clouds"). NEVER use DIY, tutorial, or domestic terms.
 - Choose "recommendedVoice" from the AVAILABLE VOICE PROFILES.
 - Choose "musicTrack" from the AVAILABLE SOUNDTRACKS.
 
@@ -304,44 +304,17 @@ CRITICAL MEMORY & UNIQUENESS CONSTRAINT:
 Your script MUST NOT repeat, paraphrase, or borrow metaphors from any of these previously saved quotes:
 {memory_snippets}
 
-Output MUST be a single raw JSON object with exactly these keys:
+Output MUST be a single raw JSON object with only these essential keys:
 {{
   "title": "A viral Shorts title with punch under 60 chars",
   "hook": "Unforgettable 3 to 5 word opening line spoken in first 2 seconds",
   "quote": "A powerful 2-3 sentence motivational monologue",
   "cta": "A sharp 1-sentence closing call-to-action",
-  "speechStyle": "Short description of vocal cadence (e.g. Calm, grounded, stoic)",
-  "visualTheme": "Best visual theme ID or name matching the message",
-  "recommendedVoice": "Best voice matching the tone from the catalog",
-  "audioMood": "Best audio mood for the concept",
-  "backgroundStyle": "Best background treatment for the scene",
-  "textStyle": "Best on-screen typography treatment from the catalog",
-  "videoStyle": "Best video composition and pacing style",
   "aspectRatio": "9:16",
+  "recommendedVoice": "Best voice matching the tone from the catalog",
   "musicTrack": "Best soundtrack title or ID from catalog",
   "captionStyle": "Best caption style",
-  "motionStyle": "Best motion and transition style",
-  "outputFormat": "9:16 Vertical Video (1080x1920)",
-  "shotPacing": "Pacing description matched to soundtrack BPM",
-  "transitionStyle": "What transition or match-cut language drives the edits",
-  "subtitleMotion": "How the subtitles should move or appear on screen",
-  "textAnimation": "How key text should animate or reveal itself",
-  "cameraMovement": "How the camera moves across cuts",
-  "sceneStructure": {{
-    "hookPlacement": "Where the hook lands in the first 1-3 seconds",
-    "ctaTiming": "Where the closing CTA lands in timing",
-    "emphasisPoints": ["Primary emotional statement", "Second escalation beat", "Final payoff line"],
-    "shotPlan": "Description of the multi-clip hook/escalation/resolution structure",
-    "subtitlePriority": "How subtitles prioritize the strongest words"
-  }},
-  "tags": ["motivation", "discipline", "mindset", "shorts", "stoic"],
-  "hashtags": ["#Shorts", "#Motivation", "#Grit"],
-  "subtitles": [
-    {{"text": "Opening hook phrase", "start": 0.0, "duration": 2.5, "textStyleId": "sub-hormozi", "captionPresetClass": "font-black tracking-tight text-yellow-400 uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)] bg-black/85 px-3 py-1 rounded-md border border-yellow-400/30", "captionPresetColor": "#FACC15"}},
-    {{"text": "First quote sentence", "start": 2.5, "duration": 4.5, "textStyleId": "sub-mrbeast", "captionPresetClass": "font-black tracking-tighter text-sky-400 uppercase drop-shadow-[0_4px_16px_rgba(0,0,0,1)] stroke-black", "captionPresetColor": "#38BDF8"}},
-    {{"text": "Second quote sentence", "start": 7.0, "duration": 5.0, "textStyleId": "quote-stoic-roman", "captionPresetClass": "font-serif tracking-widest text-stone-100 uppercase drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] italic border-y border-stone-500/30 py-2", "captionPresetColor": "#F5F5F4"}},
-    {{"text": "Final call to action", "start": 12.0, "duration": 3.0, "textStyleId": "cta-save-reel", "captionPresetClass": "font-extrabold tracking-wide text-sky-400 uppercase bg-sky-950/60 px-5 py-2 rounded-xl border border-sky-500/40 text-center shadow-lg", "captionPresetColor": "#38BDF8"}}
-  ],
+  "tags": ["#Shorts", "#Motivation", "#Discipline"],
   "storyboard": [
     {{
       "sceneNumber": 1,
@@ -543,18 +516,26 @@ Output MUST be a single raw JSON object with exactly these keys:
 
             v_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
             curr_url = str(sc.get("mediaUrl") or "")
-
             is_duplicate = curr_url in seen_video_urls
+            title_lower = (sc.get("mediaName") or "").lower()
+            junk_check = ["paint", "pebble", "how to", "tutorial", "repair", "drone", "broadwater", "arnis", "demo", "renovation", "president", "trump", "biden", "protest", "campaign", "election", "rally", "politic", "activist", "grave", "cemetery", "gravel", "demolition"]
+            has_junk_name = any(j in title_lower for j in junk_check)
             is_placeholder = (
                 not curr_url
                 or is_duplicate
+                or has_junk_name
                 or any(ph in curr_url for ph in ["ForBiggerBlazes", "ForBiggerEscapes", "v1", "v2", "v3", "v4", "v5", "v6", "vid-"])
             )
 
             if is_placeholder:
-                # 1. Try finding an unused video from available dynamic internet assets
+                # 1. Try finding an unused video from available dynamic internet assets with clean cinematic title
                 matched_v = next(
-                    (v for v in avail_videos if v.get("videoUrl") and v["videoUrl"] not in seen_video_urls and "commondatastorage" not in v.get("videoUrl", "")),
+                    (v for v in avail_videos
+                     if v.get("videoUrl")
+                     and v["videoUrl"] not in seen_video_urls
+                     and "commondatastorage" not in v.get("videoUrl", "")
+                     and not any(j in (v.get("title") or "").lower() for j in junk_check)
+                    ),
                     None
                 )
                 if matched_v:
@@ -577,8 +558,21 @@ Output MUST be a single raw JSON object with exactly these keys:
             if sc.get("mediaUrl"):
                 seen_video_urls.add(sc["mediaUrl"])
 
+        # Ensure subtitles match storyboard scenes 1:1 with exact timing and text
+        synced_subtitles = []
+        for sc in storyboard:
+            txt = sc.get("subtitleText") or ""
+            synced_subtitles.append({
+                "text": txt,
+                "start": sc.get("start", 0.0),
+                "duration": sc.get("duration", 3.0),
+                "textStyleId": sc.get("textStyleId"),
+                "captionPresetClass": sc.get("captionPresetClass"),
+                "captionPresetColor": sc.get("captionPresetColor"),
+            })
+
         result["storyboard"] = storyboard
-        result["subtitles"] = subtitles
+        result["subtitles"] = synced_subtitles
         result["aspectRatio"] = target_aspect_ratio
         if not result.get("outputFormat"):
             result["outputFormat"] = f"{target_aspect_ratio} Vertical Video (1080x1920)" if target_aspect_ratio == "9:16" else f"{target_aspect_ratio} Video"

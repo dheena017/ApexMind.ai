@@ -695,16 +695,21 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     }
   }, [currentTime, isPlaying, playbackRate, showVideoLayer, activeVideoClip, timelineState.videoStart, videoTrackVolume]);
 
-  // Active subtitle text matching current playhead position
+  // Active subtitle text matching current playhead position (reads storyboard cut or subtitles)
   const timedSubtitle = (() => {
-    if (!script.subtitles || script.subtitles.length === 0) {
-      return currentTime <= captionStyle.duration ? script.quote || script.hook : '';
-    }
-    const current = script.subtitles.find(
-      (s) => currentTime >= s.start && currentTime <= s.start + (s.duration || 3)
+    const activeScene = (script.storyboard || []).find(
+      (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3)
     );
-    if (current) return current.text;
-    return '';
+    if (activeScene && activeScene.subtitleText) {
+      return activeScene.subtitleText;
+    }
+    if (script.subtitles && script.subtitles.length > 0) {
+      const current = script.subtitles.find(
+        (s) => currentTime >= s.start && currentTime <= s.start + (s.duration || 3)
+      );
+      if (current) return current.text;
+    }
+    return currentTime <= captionStyle.duration ? script.quote || script.hook : '';
   })();
 
   const currentTitle = script.title?.trim() || '';
