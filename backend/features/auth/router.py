@@ -80,7 +80,9 @@ async def get_me(authorization: Optional[str] = Header(None)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="No authenticated creator session found."
             )
-        logger.info(f"Loaded creator session profile: '{user.name}' ({user.email})")
+        user_name = user.get("name", "Creator") if isinstance(user, dict) else getattr(user, "name", "Creator")
+        user_email = user.get("email", "") if isinstance(user, dict) else getattr(user, "email", "")
+        logger.info(f"Loaded creator session profile: '{user_name}' ({user_email})")
         return user
     except HTTPException:
         raise
