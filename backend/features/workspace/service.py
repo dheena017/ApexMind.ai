@@ -37,6 +37,7 @@ def generate_script(
     creative_context: dict | None = None,
     available_assets: dict | None = None,
 ) -> Dict[str, Any]:
+    aspect_ratio = aspect_ratio or "9:16"
     memory = fetch_quote_memory(limit=20)
     
     # Dynamically fetch real videos and photos from the internet matching topic and category

@@ -106,7 +106,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
   const [opacity, setOpacity] = useState(100);
 
   // Screen Position
-  const [posY, setPosY] = useState(78); // Lower third standard safe zone for reels
+  const [posY, setPosY] = useState(64); // 9:16 safe zone (64%) avoids TikTok / Shorts UI clipping
 
   // Animation & Timing
   const [activeAnimation, setActiveAnimation] = useState('pop');
@@ -599,9 +599,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
               <div className="grid grid-cols-2 gap-1.5">
                 {[
                   { label: 'Top Hook Banner', y: 18, desc: 'Highest impact placement' },
-                  { label: 'Center Stage', y: 50, desc: 'Central dramatic text' },
-                  { label: 'Lower Third', y: 78, desc: 'Standard broadcast caption' },
-                  { label: 'Bottom Subtitle', y: 88, desc: 'Subtitles zone' },
+                  { label: 'Center Stage', y: 50, desc: 'Central dramatic hook' },
+                  { label: 'Shorts Safe Zone', y: 64, desc: 'Optimal 9:16 safe area' },
+                  { label: 'Lower Third', y: 72, desc: 'Landscape / standard caption' },
                 ].map((pos) => (
                   <button
                     key={pos.label}

@@ -231,7 +231,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     bgPadding: 8,
     opacity: 100,
     posX: 50,
-    posY: 78,
+    posY: 64, // 9:16 vertical safe zone (avoids YouTube Shorts / TikTok bottom UI overlap)
     customWidth: undefined as number | undefined,
     duration: 2.2,
   });
@@ -253,7 +253,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     rotation: 0,
     scale: 100,
     posX: 50,
-    posY: 78,
+    posY: 65,
     accentColor: '#3B82F6',
     opacity: 100,
     duration: 5,
@@ -1062,19 +1062,19 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={subtitleRef}
             onClick={(e) => handleSelectLayer(e, 'subtitle')}
-            className="absolute z-20 flex items-center justify-center cursor-move select-none p-1 transition-opacity duration-150"
+            className="absolute z-20 flex items-center justify-center cursor-move select-none px-3 py-1 transition-opacity duration-150"
             style={{
               left: `${captionStyle.posX ?? 50}%`,
-              top: `${captionStyle.posY ?? 78}%`,
+              top: `${captionStyle.posY && captionStyle.posY !== 78 ? captionStyle.posY : (canvasAspectRatio === '9:16' ? 64 : 72)}%`,
               transform: 'translate(-50%, -50%)',
               opacity: captionStyle.opacity / 100,
               width: captionStyle.customWidth ? `${captionStyle.customWidth}px` : undefined,
-              maxWidth: '92%',
-              minWidth: 'fit-content',
+              maxWidth: '88%',
+              boxSizing: 'border-box',
             }}
           >
             <div
-              className="pointer-events-none w-max max-w-full flex items-center justify-center text-center"
+              className="pointer-events-none w-full max-w-full flex items-center justify-center text-center px-1"
               style={{
                 backgroundColor: hasCaptionPreset ? 'transparent' : captionStyle.background,
                 borderRadius: hasCaptionPreset ? undefined : `${captionStyle.bgRadius}px`,
@@ -1082,7 +1082,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               }}
             >
               <p
-                className={`${useCaptionPreset ? activeCaptionPresetClass : `font-black text-center ${captionSizeClass}`} inline-block text-center leading-snug`}
+                className={`${useCaptionPreset ? activeCaptionPresetClass : `font-black text-center ${captionSizeClass}`} inline-block text-center leading-snug break-words`}
                 style={{
                   color: useCaptionPreset
                     ? activeCaptionPresetColor || captionStyle.color || captionColor

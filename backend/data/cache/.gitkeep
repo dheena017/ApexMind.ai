@@ -1,0 +1,2 @@
+# ApexMind Storage - Cache
+This directory stores temporary runtime cache, API response buffers, and intermediate processing assets.

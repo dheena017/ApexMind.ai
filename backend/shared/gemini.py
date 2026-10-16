@@ -203,6 +203,9 @@ def generate_gemini_script(
         for v in avail_voices[:6]
     ])
 
+    # Ensure aspectRatio defaults to 9:16 if not specified
+    target_aspect_ratio = aspect_ratio if aspect_ratio in ["9:16", "16:9", "1:1", "4:5", "21:9"] else (aspect_ratio or "9:16")
+
     selected_context = []
     for label, value in [
         ("TONE", tone),
@@ -212,12 +215,12 @@ def generate_gemini_script(
         ("TEXT STYLE", text_style),
         ("VIDEO STYLE", video_style),
         ("VOICE", voice_name),
-        ("ASPECT RATIO", aspect_ratio),
+        ("ASPECT RATIO", target_aspect_ratio),
         ("MUSIC TRACK", music_track),
         ("CAPTION STYLE", caption_style),
         ("VISUAL THEME", visual_theme),
         ("MOTION STYLE", motion_style),
-        ("OUTPUT FORMAT", output_format),
+        ("OUTPUT FORMAT", output_format or f"{target_aspect_ratio} Video"),
     ]:
         if value and str(value).strip():
             selected_context.append(f"{label}: {value}")
@@ -231,6 +234,13 @@ def generate_gemini_script(
 
     prompt = f"""You are an elite YouTube Shorts motivational director, writer, and virality strategist.
 Produce an inspiring, punchy, retention-optimized motivational video plan with full script and multi-scene storyboard.
+
+TARGET ASPECT RATIO: {target_aspect_ratio}
+ASPECT RATIO & SUBTITLE SAFE ZONE RULES:
+- The video will be rendered in {target_aspect_ratio} format.
+- Subtitle Safety: In {target_aspect_ratio} (especially 9:16 vertical shorts), the bottom 25% of the screen is blocked by social media UI (creator name, audio ticker, comment & like buttons).
+- Therefore, each subtitle line MUST be short and punchy (strictly 3 to 7 words per scene cut). NEVER output long continuous paragraph blocks in one subtitle cut!
+- Break longer sentences into sequential 2.0s - 4.0s scene subtitle cuts matching the exact video beats so subtitles are clearly readable in the vertical safe zone and NEVER get hidden or clipped.
 
 THEME: {category or 'Stoic Discipline & Relentless Focus'}
 TOPIC: {topic or 'Winning quiet battles, silence over excuses, compounding grit'}
@@ -569,6 +579,9 @@ Output MUST be a single raw JSON object with exactly these keys:
 
         result["storyboard"] = storyboard
         result["subtitles"] = subtitles
+        result["aspectRatio"] = target_aspect_ratio
+        if not result.get("outputFormat"):
+            result["outputFormat"] = f"{target_aspect_ratio} Vertical Video (1080x1920)" if target_aspect_ratio == "9:16" else f"{target_aspect_ratio} Video"
 
         logger.info(
             f"AI Model '{target_model}' generated multi-scene video plan in {elapsed:.2f}s | "
