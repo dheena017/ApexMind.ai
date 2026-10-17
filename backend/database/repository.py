@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from backend.shared.media_catalog import get_static_media_catalog
 from .connection import get_connection
@@ -22,8 +22,8 @@ def get_quote_memory(limit: int = 50) -> List[Dict[str, Any]]:
 def add_quote_to_memory(title: str, hook: str, quote: str, category: str) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
-    record_id = f"mem_{int(datetime.utcnow().timestamp() * 1000)}"
-    timestamp = datetime.utcnow().isoformat()
+    record_id = f"mem_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    timestamp = datetime.now(timezone.utc).isoformat()
     cursor.execute("""
     INSERT INTO quotes_memory (id, title, hook, quote, category, generated_at)
     VALUES (?, ?, ?, ?, ?, ?)
@@ -113,7 +113,7 @@ def save_channel_oauth(
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
     clean_handle = handle if handle.startswith("@") else f"@{handle}"
 
     cursor.execute("DELETE FROM youtube_channels")
@@ -173,12 +173,12 @@ def add_channel(
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
-    ch_id = custom_id or f"ch_{int(datetime.utcnow().timestamp() * 1000)}"
+    ch_id = custom_id or f"ch_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
     clean_handle = handle.strip() if handle else f"@{name.lower().replace(' ', '')}"
     if not clean_handle.startswith("@"):
         clean_handle = f"@{clean_handle}"
     avatar = avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={name}"
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     # Enforce strictly ONE channel in the system at any given time
     cursor.execute("DELETE FROM youtube_channels")
@@ -300,9 +300,9 @@ def publish_video(
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
-    vid_id = custom_id or f"yt_{int(datetime.utcnow().timestamp() * 1000)}"
-    timestamp = datetime.utcnow().isoformat()
-    final_video_url = video_url or f"https://youtube.com/shorts/{int(datetime.utcnow().timestamp())}"
+    vid_id = custom_id or f"yt_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    timestamp = datetime.now(timezone.utc).isoformat()
+    final_video_url = video_url or f"https://youtube.com/shorts/{int(datetime.now(timezone.utc).timestamp())}"
     views = 0
     likes = 0
 
@@ -327,8 +327,8 @@ def publish_video(
         cursor.execute("UPDATE youtube_channels SET videos_uploaded = videos_uploaded + 1 WHERE id = ?", (target_channel_id,))
 
     # Add real notification
-    notif_id = f"notif_{int(datetime.utcnow().timestamp() * 1000)}"
-    iso_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    notif_id = f"notif_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    iso_now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
     INSERT INTO notifications (id, title, message, timestamp, read, type, category, action_url, priority)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -363,8 +363,8 @@ def add_notification(
     priority: str = "normal",
     notif_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    nid = notif_id or f"notif_{int(datetime.utcnow().timestamp() * 1000)}"
-    iso_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    nid = notif_id or f"notif_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    iso_now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -538,7 +538,7 @@ def upsert_user(
     cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
     existing = cursor.fetchone()
 
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
     avatar = avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={name}"
 
     if existing:
@@ -550,7 +550,7 @@ def upsert_user(
         WHERE id = ?
         """, (name, avatar, google_id, timestamp, provider, user_id))
     else:
-        user_id = f"usr_{int(datetime.utcnow().timestamp() * 1000)}"
+        user_id = f"usr_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
         cursor.execute("""
         INSERT INTO users (id, email, name, avatar_url, provider, google_id, created_at, last_login_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -691,8 +691,8 @@ def add_community_post(
         published_at TEXT NOT NULL
     )
     """)
-    post_id = f"cp_{int(datetime.utcnow().timestamp() * 1000)}"
-    timestamp = datetime.utcnow().isoformat()
+    post_id = f"cp_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    timestamp = datetime.now(timezone.utc).isoformat()
     cursor.execute("""
     INSERT INTO community_posts (id, channel_id, author, handle, avatar_url, content, likes, comments, published_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -800,8 +800,8 @@ def get_website_video_by_id(video_id: str) -> Optional[Dict[str, Any]]:
 
 
 def add_website_video(data: Dict[str, Any]) -> Dict[str, Any]:
-    vid_id = data.get("id") or f"vid_web_{int(datetime.utcnow().timestamp() * 1000)}"
-    timestamp = data.get("createdAt") or datetime.utcnow().isoformat()
+    vid_id = data.get("id") or f"vid_web_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    timestamp = data.get("createdAt") or datetime.now(timezone.utc).isoformat()
     subtitles_raw = data.get("subtitles")
     subtitles_str = json.dumps(subtitles_raw) if isinstance(subtitles_raw, list) else (subtitles_raw or "[]")
     tags_raw = data.get("tags")
@@ -855,8 +855,8 @@ def add_website_video(data: Dict[str, Any]) -> Dict[str, Any]:
 
     # Add notification that a website video was created
     try:
-        notif_id = f"notif_{int(datetime.utcnow().timestamp() * 1000)}"
-        iso_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        notif_id = f"notif_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+        iso_now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("""
         INSERT INTO notifications (id, title, message, timestamp, read, type, category, action_url, priority)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

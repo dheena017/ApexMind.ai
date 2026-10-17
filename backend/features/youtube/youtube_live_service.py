@@ -129,22 +129,33 @@ def resolve_channel_metadata(query: str) -> Dict[str, Any]:
     target_url = f"https://www.youtube.com/{clean}" if not clean.startswith("http") else clean
 
     headers = {"User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9"}
-    resp = requests.get(target_url, headers=headers, timeout=10)
+    cookies = {"SOCS": "CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg"}
+    resp = requests.get(target_url, headers=headers, cookies=cookies, timeout=10)
     if resp.status_code != 200:
         raise ValueError(f"YouTube channel '{query}' not found (HTTP {resp.status_code})")
 
     match = re.search(r"(?:var\s+)?ytInitialData\s*=\s*(\{.+?\});\s*(?:</script>|;)", resp.text)
     if not match:
         match = re.search(r"ytInitialData\s*=\s*(\{.+?\});", resp.text)
-    if not match:
-        raise ValueError(f"Could not parse YouTube metadata for '{query}'.")
 
-    data = json.loads(match.group(1))
+    data = {}
+    if match:
+        try:
+            data = json.loads(match.group(1))
+        except Exception:
+            data = {}
+
     header = data.get("header", {})
     phr = header.get("pageHeaderRenderer", {})
     metadata = data.get("metadata", {}).get("channelMetadataRenderer", {})
 
-    name = phr.get("pageTitle") or metadata.get("title") or clean.replace("@", "")
+    og_title_match = re.search(r'<meta property="og:title" content="([^"]+)"', resp.text)
+    name = (
+        phr.get("pageTitle")
+        or metadata.get("title")
+        or (og_title_match.group(1) if og_title_match else None)
+        or clean.replace("@", "").title()
+    )
 
     # High-resolution avatar: ensure =s900 parameter for crisp display
     avatar_url = ""
@@ -152,6 +163,10 @@ def resolve_channel_metadata(query: str) -> Dict[str, Any]:
     if thumbnails:
         raw_avatar = thumbnails[-1].get("url", "")
         avatar_url = re.sub(r"=s\d+-", "=s900-", raw_avatar)
+    if not avatar_url:
+        og_img_match = re.search(r'<meta property="og:image" content="([^"]+)"', resp.text)
+        if og_img_match:
+            avatar_url = og_img_match.group(1)
     if not avatar_url:
         avatar_url = f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(name)}&backgroundColor=0284c7,4f46e5,7c3aed"
 

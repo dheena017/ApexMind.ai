@@ -53,23 +53,7 @@ class ReplyCommentRequest(BaseModel):
     parentId: Optional[str] = Field(default=None, description="Parent comment ID if replying")
 
 
-# ── 2. Backwards-compatible Legacy Request Models ─────────────────────────────
-
-class ConnectChannelRequest(BaseModel):
-    channelName: Optional[str] = Field(default=None)
-    handle: Optional[str] = Field(default="")
-    niche: Optional[str] = Field(default="Motivational Quotes")
-    avatarUrl: Optional[str] = Field(default=None)
-    bannerUrl: Optional[str] = Field(default=None)
-    subscribers: Optional[int] = Field(default=0)
-    videosUploaded: Optional[int] = Field(default=0)
-    autoResolve: Optional[bool] = Field(default=True)
-
-
-class CorrectChannelRequest(BaseModel):
-    channelId: str = Field(...)
-    query: Optional[str] = Field(default=None)
-
+# ── 2. Request Models ────────────────────────────────────────────────────────
 
 class PublishVideoRequest(BaseModel):
     title: str = Field(..., min_length=1)
@@ -80,10 +64,6 @@ class PublishVideoRequest(BaseModel):
     channelId: Optional[str] = Field(default=None)
     audioUrl: Optional[str] = Field(default=None)
     coverImageUrl: Optional[str] = Field(default=None)
-
-
-class ToggleAutomationRequest(BaseModel):
-    id: str = Field(...)
 
 
 # ── 3. Response DTOs ──────────────────────────────────────────────────────────

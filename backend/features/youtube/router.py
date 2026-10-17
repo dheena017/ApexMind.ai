@@ -38,11 +38,7 @@ from .schemas import (
     AddPlaylistItemRequest,
     ReplyCommentRequest,
     TokenConnectRequest,
-    # Legacy backward compatibility schemas
-    ConnectChannelRequest,
-    CorrectChannelRequest,
     PublishVideoRequest,
-    ToggleAutomationRequest,
 )
 from .youtube_live_service import (
     resolve_channel_metadata,

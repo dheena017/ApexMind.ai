@@ -22,19 +22,6 @@ export interface YouTubeChannel {
   source?: string;
 }
 
-export interface YouTubeLookupResult {
-  channelId: string;
-  name: string;
-  handle: string;
-  avatarUrl: string;
-  bannerUrl?: string;
-  subscribers: number;
-  videosUploaded: number;
-  description: string;
-  verified: boolean;
-  channelUrl: string;
-  source: string;
-}
 
 export interface YouTubeLiveShort {
   id: string;
@@ -77,12 +64,6 @@ export interface YouTubeForYouItem {
   isShort?: boolean;
 }
 
-export interface YouTubeLiveFeedResponse {
-  channel: YouTubeLookupResult | YouTubeChannel;
-  videos: YouTubeLiveVideo[];
-  shorts: YouTubeLiveShort[];
-  forYou: YouTubeForYouItem[];
-}
 
 export interface YouTubeCommunityPost {
   id: string;

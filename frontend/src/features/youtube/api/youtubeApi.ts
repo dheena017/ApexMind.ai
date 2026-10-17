@@ -1,11 +1,8 @@
 import {
   YouTubeChannel,
   YouTubeVideo,
-  AutomationJob,
-  YouTubeLookupResult,
   YouTubeLiveShort,
   YouTubeLiveVideo,
-  YouTubeLiveFeedResponse,
   YouTubeCommunityPost,
   YouTubePlaylist,
   YouTubeAnalyticsData,
@@ -36,12 +33,7 @@ export const youtubeApi = {
     return data.channel;
   },
 
-  // 2. Channel About Info (Merged into Channel Details)
-  async getChannelAbout(query?: string): Promise<any> {
-    return this.getChannelDetails(query);
-  },
-
-  // 3. Channel Videos (16:9 Long-Form)
+  // 2. Channel Videos (16:9 Long-Form)
   async getChannelVideos(query?: string, limit = 24): Promise<YouTubeLiveVideo[]> {
     const target = (query || getStoredHandle()).trim();
     if (!target) return [];
@@ -115,12 +107,7 @@ export const youtubeApi = {
     return data.comments || [];
   },
 
-  // 11. Search Autocomplete (Removed)
-  async getSearchSuggestions(_query: string): Promise<string[]> {
-    return [];
-  },
-
-  // 12. Competitor Tag Inspector
+  // 11. Competitor Tag Inspector
   async getVideoTags(videoId: string): Promise<string[]> {
     const res = await fetch(apiUrl(`/api/youtube/seo/tags?video_id=${encodeURIComponent(videoId)}`));
     if (!res.ok) return [];
@@ -128,12 +115,7 @@ export const youtubeApi = {
     return data.tags || [];
   },
 
-  // 13. Search Channels (Removed)
-  async searchChannels(_query: string, _limit = 10): Promise<any[]> {
-    return [];
-  },
-
-  // 14. Search Videos
+  // 12. Search Videos
   async searchVideos(query: string, type: 'video' | 'short' = 'video', limit = 15): Promise<YouTubeLiveVideo[]> {
     const res = await fetch(apiUrl(`/api/youtube/search/videos?query=${encodeURIComponent(query)}&type=${type}&limit=${limit}`));
     if (!res.ok) return [];
@@ -249,144 +231,6 @@ export const youtubeApi = {
 
   async disconnectChannel(_channelId?: string): Promise<boolean> {
     return this.disconnectOAuth();
-  },
-
-  // ── Backward Compatible Wrappers for Existing Studio Views ────────────────
-
-  async getYouTubeData(handle?: string): Promise<{ channels: YouTubeChannel[]; videos: YouTubeLiveVideo[] }> {
-    const target = (handle || getStoredHandle()).trim();
-    if (!target) return { channels: [], videos: [] };
-    try {
-      const channel = await this.getChannelDetails(target);
-      const videos = await this.getChannelVideos(target, 24);
-      return { channels: [channel], videos };
-    } catch {
-      return { channels: [], videos: [] };
-    }
-  },
-
-  async lookupChannel(query: string): Promise<YouTubeLookupResult> {
-    const ch = await this.getChannelDetails(query);
-    return {
-      channelId: ch.id,
-      name: ch.name,
-      handle: ch.handle,
-      avatarUrl: ch.avatarUrl,
-      bannerUrl: ch.bannerUrl,
-      subscribers: ch.subscribers,
-      videosUploaded: ch.videosUploaded,
-      description: ch.description || '',
-      verified: Boolean(ch.verified),
-      channelUrl: ch.channelUrl || `https://www.youtube.com/${ch.handle}`,
-      source: 'youtube-official-live',
-    };
-  },
-
-  async connectYouTubeChannel(payload: { handle: string; channelName?: string }): Promise<YouTubeChannel> {
-    return this.getChannelDetails(payload.handle);
-  },
-
-  async connectChannel(payload: {
-    handle?: string;
-    channelName?: string;
-    avatarUrl?: string;
-    subscribers?: number;
-    videosUploaded?: number;
-    niche?: string;
-  }): Promise<YouTubeChannel> {
-    const handleToQuery = (payload.handle || payload.channelName || getStoredHandle()).trim();
-    if (!handleToQuery) throw new Error('Channel handle is required to connect.');
-    return this.getChannelDetails(handleToQuery);
-  },
-
-  async syncChannel(channelIdOrHandle: string): Promise<{ channel: YouTubeChannel; message: string }> {
-    const ch = await this.getChannelDetails(channelIdOrHandle);
-    return {
-      channel: ch,
-      message: `Synced metrics live from YouTube for '${ch.name}'.`,
-    };
-  },
-
-  async correctChannel(channelId: string, query: string): Promise<{ channel: YouTubeChannel; message: string }> {
-    const ch = await this.getChannelDetails(query);
-    return {
-      channel: ch,
-      message: `Switched live channel to '${ch.name}' (${ch.handle}).`,
-    };
-  },
-
-  async getLiveShorts(query?: string, limit = 12): Promise<YouTubeLiveShort[]> {
-    return this.getChannelShorts(query, limit);
-  },
-
-  async getLiveFeed(query?: string): Promise<YouTubeLiveFeedResponse> {
-    const target = (query || getStoredHandle()).trim();
-    if (!target) {
-      return {
-        channel: null as any,
-        videos: [],
-        shorts: [],
-        forYou: [],
-      };
-    }
-
-    const [channel, videos, shorts] = await Promise.all([
-      this.getChannelDetails(target).catch(() => null),
-      this.getChannelVideos(target, 12).catch(() => []),
-      this.getChannelShorts(target, 12).catch(() => []),
-    ]);
-
-    const forYou = [
-      ...shorts.slice(0, 2).map((s) => ({
-        id: s.id,
-        title: s.title,
-        views: s.views,
-        thumbnailUrl: s.thumbnailUrl,
-        videoUrl: s.videoUrl,
-        isShort: true,
-      })),
-      ...videos.slice(0, 4).map((v) => ({
-        id: v.id,
-        title: v.title,
-        views: v.views,
-        published: v.published,
-        duration: v.duration,
-        thumbnailUrl: v.thumbnailUrl,
-        videoUrl: v.videoUrl,
-        isShort: false,
-      })),
-    ];
-
-    return {
-      channel: channel || ({} as any),
-      videos,
-      shorts,
-      forYou,
-    };
-  },
-
-  async updateChannel(channelId: string, updates: any): Promise<YouTubeChannel> {
-    return this.getChannelDetails(channelId);
-  },
-
-  async deleteChannel(_channelId?: string): Promise<boolean> {
-    return this.disconnectOAuth();
-  },
-
-  async publishVideo(payload: any): Promise<any> {
-    return {
-      id: `yt_${Date.now()}`,
-      title: payload.title,
-      videoUrl: 'https://www.youtube.com',
-    };
-  },
-
-  async getAutomations(): Promise<AutomationJob[]> {
-    return [];
-  },
-
-  async toggleAutomation(id: string): Promise<AutomationJob[]> {
-    return [];
   },
 
   async getCommunityPosts(channelId: string): Promise<YouTubeCommunityPost[]> {

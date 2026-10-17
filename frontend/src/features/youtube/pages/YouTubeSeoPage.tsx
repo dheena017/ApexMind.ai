@@ -32,8 +32,8 @@ export const YouTubeSeoPage: React.FC = () => {
     if (!keywordQuery.trim()) return;
     setLoadingSuggestions(true);
     try {
-      const res = await youtubeApi.getSearchSuggestions(keywordQuery.trim());
-      setSuggestions(res);
+      const videos = await youtubeApi.searchVideos(keywordQuery.trim(), 'video', 8);
+      setSuggestions(videos.map((v) => v.title).filter(Boolean));
     } catch {
       setSuggestions([]);
     } finally {

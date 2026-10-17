@@ -108,12 +108,7 @@ export default function YouTubePage({
   // Load channel data live from YouTube (Zero local DB reads)
   const loadChannelLive = async (targetQuery: string) => {
     const cleanQuery = (targetQuery || '').trim();
-    if (
-      !cleanQuery ||
-      cleanQuery === '@channel' ||
-      cleanQuery === 'channel' ||
-      cleanQuery.toLowerCase().includes('emoji')
-    ) {
+    if (!cleanQuery) {
       setChannel(null);
       setLiveVideos([]);
       setLiveShorts([]);

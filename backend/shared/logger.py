@@ -344,7 +344,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         m_color = method_colors.get(method, Colors.WHITE)
 
         client_host = request.client.host if request.client else "unknown"
-        is_poll = path in ("/api/notifications/unread-count",)
+        is_poll = path in ("/api/health",)
 
         if not is_poll:
             logger.info(
