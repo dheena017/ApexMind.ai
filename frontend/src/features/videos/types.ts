@@ -15,6 +15,8 @@ export interface WebsiteVideo {
   subtitles?: string | any[];
   tags?: string | string[];
   status: 'ready' | 'rendering' | 'draft';
+  views?: number;
+  likes?: number;
   createdAt: string;
 }
 

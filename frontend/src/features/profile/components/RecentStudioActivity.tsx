@@ -17,6 +17,7 @@ import {
 import { Button } from '@/src/shared/ui/common';
 import { useCreatorStudioData, RecentGeneratedScript } from '../hooks/useCreatorStudioData';
 import { YouTubeVideo } from '@/src/features/youtube/types';
+import { WebsiteVideo } from '@/src/features/videos/types';
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -36,12 +37,12 @@ export interface ActivityItem {
   views?: number | string;
   duration?: string;
   rawScript?: RecentGeneratedScript;
-  rawVideo?: YouTubeVideo;
+  rawVideo?: YouTubeVideo | WebsiteVideo;
 }
 
 export interface RecentStudioActivityProps {
   scripts?: RecentGeneratedScript[];
-  videos?: YouTubeVideo[];
+  videos?: (YouTubeVideo | WebsiteVideo)[];
   loading?: boolean;
   error?: string | null;
   limit?: number;
@@ -89,18 +90,22 @@ export const RecentStudioActivity: React.FC<RecentStudioActivityProps> = ({
         date: script.generated_at,
         rawScript: script,
       })),
-      ...videos.map((video) => ({
-        key: `short-${video.id}`,
-        type: 'video' as const,
-        title: video.title || 'YouTube Short',
-        category: video.category || 'Short',
-        snippet: video.quote || undefined,
-        date: video.publishedAt || video.published || new Date().toISOString(),
-        url: video.videoUrl || undefined,
-        views: video.views,
-        duration: video.duration,
-        rawVideo: video,
-      })),
+      ...videos.map((video) => {
+        const vid = video as any;
+        const dateVal = vid.publishedAt || vid.published || vid.createdAt || new Date().toISOString();
+        return {
+          key: `short-${vid.id}`,
+          type: 'video' as const,
+          title: vid.title || 'YouTube Short',
+          category: vid.category || 'Short',
+          snippet: vid.quote || undefined,
+          date: dateVal,
+          url: vid.videoUrl || undefined,
+          views: vid.views,
+          duration: vid.duration,
+          rawVideo: video,
+        };
+      }),
     ];
     return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [scripts, videos]);
