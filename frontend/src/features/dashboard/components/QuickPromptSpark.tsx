@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import { TrendingPromptIdea } from '../types';
+import { buildRouteUrl } from '@/src/app/routes';
 
 interface QuickPromptSparkProps {
   categories: string[];
@@ -44,8 +45,8 @@ export const QuickPromptSpark: React.FC<QuickPromptSparkProps> = ({
       // Storage unavailable fallback
     }
 
-    // Navigate directly to Workspace Studio Prompt Creator
-    onNavigate('workspace-prompt');
+    // Navigate directly to Workspace Studio Prompt Creator with deep-linked topic & category
+    onNavigate(buildRouteUrl('workspace-prompt', { topic: topicToUse, category: categoryToUse }));
   };
 
   return (

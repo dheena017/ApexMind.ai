@@ -25,6 +25,7 @@ import { WorkspaceCommandPalette } from '../components/WorkspaceCommandPalette';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DEFAULT_CREATOR_PROFILE, getCreatorProfile } from '@/src/features/profile/api/profileApi';
 import { addWorkspaceNotification } from '../utils/workspaceNotificationManager';
+import { getQueryParams, updateUrlQuery } from '@/src/app/routes';
 
 interface WorkspacePageProps {
   onNavigate: (page: string) => void;
@@ -462,6 +463,54 @@ export default function WorkspacePage({
         }
 
         setMemoryCount(mem.totalQuotesInMemory || 0);
+
+        // ── Deep Linking: Load Video, Prompt, or Tab from URL Query Parameters ──
+        const urlParams = getQueryParams();
+        const deepVideoId = urlParams.videoId || urlParams.video;
+        if (deepVideoId) {
+          try {
+            consoleLogger.info('Studio', `Deep link detected for videoId: ${deepVideoId}`);
+            const vid = await videosApi.getVideoById(deepVideoId);
+            if (vid) {
+              if (vid.videoUrl) setCustomBackdropVideo(vid.videoUrl);
+              if (vid.audioUrl) {
+                setAudioUrl(vid.audioUrl);
+              }
+              let parsedSubtitles: any[] = [];
+              if (Array.isArray(vid.subtitles)) {
+                parsedSubtitles = vid.subtitles;
+              } else if (typeof vid.subtitles === 'string') {
+                try {
+                  const p = JSON.parse(vid.subtitles);
+                  if (Array.isArray(p)) parsedSubtitles = p;
+                } catch {}
+              }
+              setScript((prev) => ({
+                ...prev,
+                title: vid.title || prev.title,
+                quote: vid.quote || prev.quote,
+                hook: vid.hook || prev.hook,
+                subtitles: parsedSubtitles.length > 0 ? parsedSubtitles : prev.subtitles,
+              }));
+              if (vid.category) setCategory(vid.category);
+              setScriptSubPane('editor');
+              onPaneChange('editor');
+              toast.success(`Loaded "${vid.title}" into Studio`);
+            }
+          } catch (vidErr) {
+            consoleLogger.warn('Studio', `Could not load deep-linked video ${deepVideoId}:`, vidErr);
+          }
+        }
+
+        if (urlParams.topic) {
+          setTargetAudience(urlParams.topic);
+        }
+        if (urlParams.category) {
+          setCategory(urlParams.category);
+        }
+        if (urlParams.prompt) {
+          setAgentPrompt(urlParams.prompt);
+        }
       } catch (err) {
         consoleLogger.error('Studio', 'Failed to load initial workspace data:', err);
       }

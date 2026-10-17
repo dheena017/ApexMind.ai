@@ -8,6 +8,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { RecentScriptItem } from '../types';
+import { buildRouteUrl } from '@/src/app/routes';
 
 interface RecentScriptsSectionProps {
   scripts: RecentScriptItem[];
@@ -35,7 +36,7 @@ export const RecentScriptsSection: React.FC<RecentScriptsSectionProps> = ({
         sessionStorage.setItem('apexmind_initial_prompt_category', script.category);
       }
     } catch (e) {}
-    onNavigate('workspace-script');
+    onNavigate(buildRouteUrl('workspace-script', { topic: script.title, category: script.category }));
   };
 
   return (

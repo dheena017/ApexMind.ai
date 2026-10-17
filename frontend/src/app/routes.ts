@@ -105,7 +105,9 @@ export const APP_ROUTES: RouteConfig[] = [
 ];
 
 export function parseRoute(pathname: string): PageRoute {
-  const clean = pathname.replace(/\/+$/, '') || '/';
+  // Strip query strings and hash before matching route path
+  const pathOnly = pathname.split('?')[0].split('#')[0];
+  const clean = pathOnly.replace(/\/+$/, '') || '/';
   const lower = clean.toLowerCase();
 
   for (const route of APP_ROUTES) {
@@ -122,13 +124,86 @@ export function parseRoute(pathname: string): PageRoute {
 
 export function routeToPath(page: string): string {
   const match = APP_ROUTES.find((r) => r.id === page);
-  return match ? match.path : `/${page}`;
+  return match ? match.path : (page.startsWith('/') ? page : `/${page}`);
+}
+
+export function getQueryParams(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const params: Record<string, string> = {};
+  try {
+    new URLSearchParams(window.location.search).forEach((v, k) => {
+      params[k] = v;
+    });
+  } catch {}
+  return params;
+}
+
+export function getQueryParam(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return new URLSearchParams(window.location.search).get(key);
+  } catch {
+    return null;
+  }
+}
+
+export function buildRouteUrl(
+  page: PageRoute | string,
+  queryParams?: Record<string, string | number | boolean | null | undefined>
+): string {
+  let basePath = '';
+  let searchParams = new URLSearchParams();
+
+  if (page.includes('?')) {
+    const [p, q] = page.split('?');
+    basePath = routeToPath(p);
+    searchParams = new URLSearchParams(q);
+  } else {
+    basePath = routeToPath(page);
+  }
+
+  if (queryParams) {
+    Object.entries(queryParams).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') {
+        searchParams.set(k, String(v));
+      } else {
+        searchParams.delete(k);
+      }
+    });
+  }
+
+  const qs = searchParams.toString();
+  return qs ? `${basePath}?${qs}` : basePath;
+}
+
+export function updateUrlQuery(
+  newParams: Record<string, string | number | boolean | null | undefined>,
+  replaceState = true
+): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const currentParams = new URLSearchParams(window.location.search);
+    Object.entries(newParams).forEach(([k, v]) => {
+      if (v === null || v === undefined || v === '') {
+        currentParams.delete(k);
+      } else {
+        currentParams.set(k, String(v));
+      }
+    });
+    const qs = currentParams.toString();
+    const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    if (replaceState) {
+      window.history.replaceState(window.history.state, '', newUrl);
+    } else {
+      window.history.pushState(window.history.state, '', newUrl);
+    }
+  } catch {}
 }
 
 export const REDIRECT_STORAGE_KEY = 'apexmind_redirect_after_login';
 
 export function getPostLoginRedirect(): PageRoute {
-  if (typeof window === 'undefined') return 'workspace';
+  if (typeof window === 'undefined') return 'dashboard';
 
   // 1. Check URL query parameters: ?redirect=... or ?returnTo=...
   try {
@@ -156,7 +231,7 @@ export function getPostLoginRedirect(): PageRoute {
   } catch {}
 
   // 3. Fallback default
-  return 'workspace';
+  return 'dashboard';
 }
 
 export function savePostLoginRedirect(targetRoute: string): void {

@@ -22,7 +22,7 @@ import { YouTubeTrendingPage } from './YouTubeTrendingPage';
 import { YouTubeVideoDetailsModal } from '../components/YouTubeVideoDetailsModal';
 import { youtubeApi } from '../api/youtubeApi';
 import { connectYouTubeWithGoogle } from '../utils/googleOAuthConnect';
-import { PageRoute } from '@/src/app/routes';
+import { PageRoute, getQueryParams, buildRouteUrl } from '@/src/app/routes';
 import {
   YouTubeChannel,
   YouTubeLiveShort,
@@ -45,7 +45,11 @@ export default function YouTubePage({
   const [liveVideos, setLiveVideos] = useState<YouTubeLiveVideo[]>([]);
   const [liveShorts, setLiveShorts] = useState<YouTubeLiveShort[]>([]);
   const [liveForYou, setLiveForYou] = useState<YouTubeForYouItem[]>([]);
-  const [activeTab, setActiveTab] = useState<YouTubeTab>(initialTab);
+  const [activeTab, setActiveTab] = useState<YouTubeTab>(() => {
+    const q = getQueryParams();
+    if (q.tab) return q.tab as YouTubeTab;
+    return initialTab;
+  });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Sync state if initialTab prop changes (e.g., from browser back/forward or route navigation)

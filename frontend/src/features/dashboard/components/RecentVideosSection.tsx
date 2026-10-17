@@ -11,6 +11,7 @@ import {
 import { WebsiteVideo } from '@/src/features/videos/types';
 import { VideoPlayerModal } from '@/src/features/videos/components/VideoPlayerModal';
 import { Button } from '@/src/shared/ui/common';
+import { buildRouteUrl } from '@/src/app/routes';
 
 interface RecentVideosSectionProps {
   videos: WebsiteVideo[];
@@ -142,7 +143,7 @@ export const RecentVideosSection: React.FC<RecentVideosSectionProps> = ({
                   <span>Voice: {video.voice || 'Fenrir'}</span>
                   <button
                     type="button"
-                    onClick={() => onNavigate('workspace')}
+                    onClick={() => onNavigate(buildRouteUrl('workspace', { tab: 'editor', videoId: video.id }))}
                     className="text-[#60A5FA] hover:text-white font-semibold transition-colors cursor-pointer"
                   >
                     Edit Studio
@@ -160,12 +161,13 @@ export const RecentVideosSection: React.FC<RecentVideosSectionProps> = ({
           video={playingVideo}
           onClose={() => setPlayingVideo(null)}
           onEditInStudio={() => {
+            const vidId = playingVideo.id;
             setPlayingVideo(null);
-            onNavigate('workspace');
+            onNavigate(buildRouteUrl('workspace', { tab: 'editor', videoId: vidId }));
           }}
           onDelete={() => {
             setPlayingVideo(null);
-            onNavigate('videos');
+            onNavigate(buildRouteUrl('videos', { filter: 'recent' }));
           }}
         />
       )}

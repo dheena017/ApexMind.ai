@@ -17,6 +17,7 @@ import { videosApi } from '../api/videosApi';
 import { VideoCard } from '../components/VideoCard';
 import { VideoPlayerModal } from '../components/VideoPlayerModal';
 import { VideoMetricsBar } from '../components/VideoMetricsBar';
+import { getQueryParams, updateUrlQuery, buildRouteUrl } from '@/src/app/routes';
 
 const CATEGORIES = [
   'All',
@@ -38,12 +39,15 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
   const [videos, setVideos] = useState<WebsiteVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<WebsiteVideo | null>(null);
-  const [filter, setFilter] = useState<VideoFilterState>({
-    search: '',
-    category: 'All',
-    aspectRatio: 'all',
-    sortBy: 'newest',
-    viewMode: 'grid',
+  const [filter, setFilter] = useState<VideoFilterState>(() => {
+    const q = getQueryParams();
+    return {
+      search: q.search || '',
+      category: q.category || 'All',
+      aspectRatio: (q.aspectRatio as VideoFilterState['aspectRatio']) || 'all',
+      sortBy: (q.sortBy as VideoFilterState['sortBy']) || 'newest',
+      viewMode: (q.view as VideoFilterState['viewMode']) || 'grid',
+    };
   });
   const [showSortMenu, setShowSortMenu] = useState(false);
 
@@ -55,6 +59,16 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
         search: filter.search || undefined,
       });
       setVideos(data);
+
+      // Deep Linking: Auto-play/open video if ?play= or ?video= is in URL query
+      const q = getQueryParams();
+      const targetVideoId = q.play || q.video;
+      if (targetVideoId) {
+        const found = data.find((v) => v.id === targetVideoId);
+        if (found) {
+          setSelectedVideo(found);
+        }
+      }
     } catch (err) {
       console.error('Failed to load website videos:', err);
     } finally {
@@ -72,6 +86,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
       setVideos((prev) => prev.filter((v) => v.id !== videoId));
       if (selectedVideo?.id === videoId) {
         setSelectedVideo(null);
+        updateUrlQuery({ play: null, video: null });
       }
     } catch (err) {
       console.error('Failed to delete video:', err);
@@ -79,7 +94,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
   };
 
   const handleEditInStudio = (video: WebsiteVideo) => {
-    onNavigate('workspace');
+    onNavigate(buildRouteUrl('workspace', { tab: 'editor', videoId: video.id }));
   };
 
   const sortedVideos = [...videos].sort((a, b) => {

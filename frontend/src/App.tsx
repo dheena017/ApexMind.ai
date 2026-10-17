@@ -5,6 +5,8 @@ import {
   APP_ROUTES,
   parseRoute,
   routeToPath,
+  buildRouteUrl,
+  getQueryParams,
   getPostLoginRedirect,
   savePostLoginRedirect,
   clearPostLoginRedirect,
@@ -46,10 +48,14 @@ export default function App() {
   });
   const [activeWorkspacePane, setActiveWorkspacePane] = useState<WorkspaceTabType>(() => {
     const parsed = typeof window === 'undefined' ? 'landing' : parseRoute(window.location.pathname);
+    const params = getQueryParams();
+    if (params.tab) {
+      return params.tab as WorkspaceTabType;
+    }
     if (parsed.startsWith('workspace-')) {
       return parsed.replace('workspace-', '') as WorkspaceTabType;
     }
-    return 'script';
+    return 'editor';
   });
 
   // Sync activeWorkspacePane if activePage changes to a workspace sub-path
@@ -57,6 +63,11 @@ export default function App() {
     if (activePage.startsWith('workspace-')) {
       const pane = activePage.replace('workspace-', '') as WorkspaceTabType;
       setActiveWorkspacePane(pane);
+    } else if (activePage === 'workspace') {
+      const params = getQueryParams();
+      if (params.tab) {
+        setActiveWorkspacePane(params.tab as WorkspaceTabType);
+      }
     }
   }, [activePage]);
 
@@ -112,7 +123,7 @@ export default function App() {
         parsed === 'terms' ||
         parsed === 'privacy';
       if (!isAuthenticated && !isPublicPage) {
-        savePostLoginRedirect(parsed);
+        savePostLoginRedirect(window.location.pathname + window.location.search);
         setActivePage('login');
         return;
       }
@@ -122,7 +133,13 @@ export default function App() {
         window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
         return;
       }
-      consoleLogger.action('Router', `Browser History PopState detected -> navigating to: "${parsed}"`);
+      const params = getQueryParams();
+      if (parsed.startsWith('workspace-')) {
+        setActiveWorkspacePane(parsed.replace('workspace-', '') as WorkspaceTabType);
+      } else if (parsed === 'workspace' && params.tab) {
+        setActiveWorkspacePane(params.tab as WorkspaceTabType);
+      }
+      consoleLogger.action('Router', `Browser History PopState detected -> navigating to: "${parsed}"`, params);
       setActivePage(parsed);
     };
 
@@ -131,8 +148,14 @@ export default function App() {
   }, [isAuthenticated]);
 
   const handleNavigate = useCallback(
-    (page: string) => {
-      let targetRoute = APP_ROUTES.find((route) => route.id === page)?.id ?? '404';
+    (page: string, queryParams?: Record<string, string | number | boolean | null | undefined>) => {
+      // Support passing "workspace?tab=editor&videoId=xxx" or page id
+      const [pathPart, queryPart] = page.split('?');
+      let targetRoute = APP_ROUTES.find((route) => route.id === pathPart)?.id;
+      if (!targetRoute) {
+        targetRoute = parseRoute(pathPart);
+      }
+
       const isPublicPage =
         targetRoute === 'landing' ||
         targetRoute === 'login' ||
@@ -151,19 +174,31 @@ export default function App() {
         clearPostLoginRedirect();
       }
 
+      // Merge inline query parameters with queryParams argument
+      const mergedParams: Record<string, any> = {};
+      if (queryPart) {
+        new URLSearchParams(queryPart).forEach((v, k) => {
+          mergedParams[k] = v;
+        });
+      }
+      if (queryParams) {
+        Object.assign(mergedParams, queryParams);
+      }
+
       // If user tries to open a protected studio page without login, save intent and redirect to login
       if (!isAuthenticated && !isPublicPage) {
-        consoleLogger.warn('AuthGuard', `Must login to access [${targetRoute}]. Preserving target for post-login redirect.`);
-        savePostLoginRedirect(targetRoute);
+        const fullIntended = buildRouteUrl(targetRoute, mergedParams);
+        consoleLogger.warn('AuthGuard', `Must login to access [${fullIntended}]. Preserving target for post-login redirect.`);
+        savePostLoginRedirect(fullIntended);
         setActivePage('login');
-        const loginUrl = `/login?redirect=${targetRoute}`;
+        const loginUrl = `/login?redirect=${encodeURIComponent(fullIntended)}`;
         if (window.location.pathname !== '/login') {
           window.history.pushState({ page: 'login' }, '', loginUrl);
         }
         return;
       }
 
-      const targetPath = routeToPath(targetRoute);
+      const targetPath = buildRouteUrl(targetRoute, mergedParams);
 
       setActivePage((currentRoute) => {
         if (currentRoute !== targetRoute) {
@@ -172,8 +207,17 @@ export default function App() {
         return targetRoute;
       });
 
-      if (window.location.pathname !== targetPath) {
-        window.history.pushState({ page: targetRoute }, '', targetPath);
+      // Synchronize workspace sub-tab if specified
+      if (targetRoute.startsWith('workspace-')) {
+        const pane = targetRoute.replace('workspace-', '') as WorkspaceTabType;
+        setActiveWorkspacePane(pane);
+      } else if (targetRoute === 'workspace' && mergedParams.tab) {
+        setActiveWorkspacePane(mergedParams.tab as WorkspaceTabType);
+      }
+
+      const currentFullUrl = window.location.pathname + window.location.search;
+      if (currentFullUrl !== targetPath) {
+        window.history.pushState({ page: targetRoute, params: mergedParams }, '', targetPath);
       }
     },
     [isAuthenticated]
@@ -183,9 +227,12 @@ export default function App() {
     (pane: WorkspaceTabType) => {
       setActiveWorkspacePane(pane);
       const targetRoute = `workspace-${pane}` as PageRoute;
-      const targetPath = routeToPath(targetRoute);
-      if (window.location.pathname !== targetPath) {
-        window.history.pushState({ page: targetRoute }, '', targetPath);
+      // Preserve active query params (e.g. videoId) when changing tabs
+      const currentParams = getQueryParams();
+      const targetPath = buildRouteUrl(targetRoute, currentParams);
+      const currentFullUrl = window.location.pathname + window.location.search;
+      if (currentFullUrl !== targetPath) {
+        window.history.pushState({ page: targetRoute, params: currentParams }, '', targetPath);
       }
     },
     []
