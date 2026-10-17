@@ -57,3 +57,23 @@ def test_notifications_unified_manage(client):
     assert body["success"] is True
     assert body["action"] == "delete"
     assert "unreadCount" in body
+
+def test_health_check_enhanced(client):
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] in ("healthy", "degraded")
+    assert data["version"] == "2.0.0"
+    assert "timestamp" in data
+    assert "uptime" in data
+    assert "system" in data
+    assert "services" in data
+    assert "database" in data["services"]
+    assert data["services"]["database"]["status"] == "connected"
+    assert "tables_count" in data["services"]["database"]
+    assert "gemini_ai" in data["services"]
+    assert "audio_cache" in data["services"]
+    assert "youtube" in data["services"]
+    assert "modules" in data
+    assert "active" in data["modules"]
+
