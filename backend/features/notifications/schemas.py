@@ -25,9 +25,6 @@ class NotificationCreateRequest(BaseModel):
     action_url: Optional[str] = None
     priority: Optional[str] = "normal"
 
-class NotificationToggleReadRequest(BaseModel):
-    read: bool = True
-
 class NotificationResponse(BaseModel):
     success: bool
     notification: NotificationItem

@@ -10,7 +10,6 @@ from .schemas import (
     NotificationsListResponse,
     NotificationResponse,
     NotificationCreateRequest,
-    NotificationToggleReadRequest,
     StandardSuccessResponse,
     NotificationManageRequest,
     NotificationManageResponse,
@@ -160,16 +159,6 @@ async def post_manage_notifications(
             detail="Failed to manage notification state."
         )
 
-@router.post(
-    "/api/notifications/mark-read",
-    response_model=NotificationManageResponse,
-    include_in_schema=False,
-)
-async def post_mark_read_alias(
-    payload: Optional[NotificationManageRequest] = None,
-    category: Optional[str] = Query(None),
-):
-    return await post_manage_notifications(payload=payload, category=category, action="mark_read")
 
 @router.delete(
     "/api/notifications",
