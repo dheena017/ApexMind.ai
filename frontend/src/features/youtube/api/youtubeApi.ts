@@ -47,7 +47,7 @@ export const youtubeApi = {
   async getChannelVideosSorted(query?: string, sort = 'popular', limit = 24): Promise<YouTubeLiveVideo[]> {
     const target = (query || getStoredHandle()).trim();
     if (!target) return [];
-    const res = await fetch(apiUrl(`/api/youtube/channel/videos/sorted?handle=${encodeURIComponent(target)}&sort=${sort}&limit=${limit}`));
+    const res = await fetch(apiUrl(`/api/youtube/channel/videos?query=${encodeURIComponent(target)}&sort=${sort}&limit=${limit}`));
     if (!res.ok) return [];
     const data = await res.json();
     return data.videos || [];
@@ -137,11 +137,11 @@ export const youtubeApi = {
     }));
   },
 
-  // ── Action / Mutation Operations ──────────────────────────────────────────
+  // ── Action / Mutation Operations (RESTful /api/youtube/videos) ────────────
 
-  // Direct Live Video Upload to YouTube via unified /api/youtube/publish
+  // Direct Live Video Upload to YouTube via unified /api/youtube/videos
   async uploadVideoToYouTube(formData: FormData): Promise<any> {
-    const res = await fetch(apiUrl('/api/youtube/publish'), {
+    const res = await fetch(apiUrl('/api/youtube/videos'), {
       method: 'POST',
       body: formData,
     });
@@ -152,49 +152,49 @@ export const youtubeApi = {
     return res.json();
   },
 
-  // Update video metadata on YouTube
+  // Update video metadata on YouTube via unified /api/youtube/videos
   async updateVideoMetadata(payload: { videoId: string; title?: string; description?: string; tags?: string[]; privacyStatus?: string }): Promise<any> {
-    const res = await fetch(apiUrl('/api/youtube/video/update'), {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    return res.json();
-  },
-
-  // Delete video permanently from YouTube
-  async deleteVideoFromYouTube(videoId: string): Promise<any> {
-    const res = await fetch(apiUrl('/api/youtube/video/delete'), {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ videoId }),
-    });
-    return res.json();
-  },
-
-  // Create playlist on YouTube
-  async createPlaylist(payload: { title: string; description?: string; privacyStatus?: string }): Promise<any> {
-    const res = await fetch(apiUrl('/api/youtube/playlist/create'), {
+    const res = await fetch(apiUrl('/api/youtube/videos'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, action: 'update' }),
     });
     return res.json();
   },
 
-  // Delete playlist on YouTube
-  async deletePlaylist(playlistId: string): Promise<any> {
-    const res = await fetch(apiUrl('/api/youtube/playlist/delete'), {
-      method: 'DELETE',
+  // Delete video permanently from YouTube via unified /api/youtube/videos
+  async deleteVideoFromYouTube(videoId: string): Promise<any> {
+    const res = await fetch(apiUrl('/api/youtube/videos'), {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playlistId }),
+      body: JSON.stringify({ videoId, action: 'delete' }),
     });
     return res.json();
   },
 
-  // Reply to comment on YouTube
+  // Create playlist on YouTube via unified /api/youtube/playlists
+  async createPlaylist(payload: { title: string; description?: string; privacyStatus?: string }): Promise<any> {
+    const res = await fetch(apiUrl('/api/youtube/playlists'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, action: 'create' }),
+    });
+    return res.json();
+  },
+
+  // Delete playlist on YouTube via unified /api/youtube/playlists
+  async deletePlaylist(playlistId: string): Promise<any> {
+    const res = await fetch(apiUrl('/api/youtube/playlists'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playlistId, action: 'delete' }),
+    });
+    return res.json();
+  },
+
+  // Reply to comment on YouTube via POST /api/youtube/video/comments
   async replyToComment(payload: { videoId: string; text: string; parentId?: string }): Promise<any> {
-    const res = await fetch(apiUrl('/api/youtube/video/comments/reply'), {
+    const res = await fetch(apiUrl('/api/youtube/video/comments'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

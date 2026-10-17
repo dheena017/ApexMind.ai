@@ -33,12 +33,14 @@ from .schemas import (
     UpdateVideoRequest,
     DeleteVideoRequest,
     CreatePlaylistRequest,
+    ManagePlaylistRequest,
     UpdatePlaylistRequest,
     DeletePlaylistRequest,
     AddPlaylistItemRequest,
     ReplyCommentRequest,
     TokenConnectRequest,
     PublishVideoRequest,
+    PublishVideoResponse,
 )
 from .youtube_live_service import (
     resolve_channel_metadata,
@@ -121,13 +123,23 @@ async def get_live_channel_details(handle: Optional[str] = None, channel_id: Opt
     "/api/youtube/channel/videos",
     response_model=ChannelVideosResponse,
     summary="Get live channel video uploads",
-    description="Fetches real 16:9 uploaded videos with durations, views, and watch URLs.",
+    description="Fetches real 16:9 uploaded videos with durations, views, and watch URLs. Supports sort by 'latest' or 'views'/'popular'.",
 )
-async def get_live_channel_videos(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, limit: int = 24):
-    target = _resolve_target(query, channel_id=channel_id, handle=handle)
+async def get_live_channel_videos(
+    handle: Optional[str] = None,
+    channel_id: Optional[str] = None,
+    query: Optional[str] = None,
+    channel: Optional[str] = None,
+    limit: int = 24,
+    sort: str = "latest",
+):
+    target = _resolve_target(query, channel, channel_id, handle)
     try:
-        videos = fetch_channel_videos(target, limit=limit)
-        logger.info(f"Retrieved {len(videos)} videos for channel '{target}' (Limit: {limit})")
+        if sort in ("popular", "views"):
+            videos = fetch_channel_videos_sorted(target, sort="views", limit=limit)
+        else:
+            videos = fetch_channel_videos(target, limit=limit)
+        logger.info(f"Retrieved {len(videos)} videos for channel '{target}' (Limit: {limit}, Sort: {sort})")
         return {"success": True, "source": "youtube-official-live", "total": len(videos), "videos": videos}
     except Exception as e:
         logger.error(f"Error fetching videos for '{target}': {e}")
@@ -136,19 +148,17 @@ async def get_live_channel_videos(handle: Optional[str] = None, channel_id: Opti
 
 @router.get(
     "/api/youtube/channel/videos/sorted",
-    response_model=ChannelVideosResponse,
-    summary="Get live sorted channel videos",
-    description="Sorts channel videos by 'popular' (highest views), 'latest', or 'oldest'.",
+    include_in_schema=False,
 )
-async def get_live_channel_videos_sorted(handle: Optional[str] = None, channel_id: Optional[str] = None, sort: str = "popular", limit: int = 24):
-    target = _resolve_target(channel_id=channel_id, handle=handle)
-    try:
-        videos = fetch_channel_videos_sorted(target, sort=sort, limit=limit)
-        logger.info(f"Retrieved {len(videos)} sorted videos for channel '{target}' [Sort: {sort}]")
-        return {"success": True, "source": "youtube-official-live", "total": len(videos), "videos": videos}
-    except Exception as e:
-        logger.error(f"Error sorting videos for '{target}': {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+async def get_live_channel_videos_sorted_alias(
+    handle: Optional[str] = None,
+    channel_id: Optional[str] = None,
+    query: Optional[str] = None,
+    channel: Optional[str] = None,
+    limit: int = 24,
+    sort: str = "popular",
+):
+    return await get_live_channel_videos(handle=handle, channel_id=channel_id, query=query, channel=channel, limit=limit, sort=sort)
 
 
 @router.get(
@@ -352,196 +362,168 @@ async def get_search_videos_route(query: str, type: str = "video", limit: int = 
 
 
 # ==============================================================================
-# Domain 4: Direct Mutation Operations (POST, PATCH, DELETE)
+# Domain 4: Direct Video Operations (POST /api/youtube/videos)
 # ==============================================================================
 
 @router.post(
-    "/api/youtube/publish",
+    "/api/youtube/videos",
+    response_model=PublishVideoResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Publish short or upload video to YouTube",
-    description="Unified endpoint: publish an automated AI short via JSON payload, or stream a video file directly to YouTube via multipart form upload.",
+    summary="Publish, upload, or manage video on YouTube",
+    description="Standard RESTful endpoint to generate and publish an AI motivational Short, or manage video metadata on YouTube.",
 )
-async def post_publish_video_route(request: Request):
-    content_type = request.headers.get("content-type", "")
-
-    # ── 1. Multipart Form Upload (Direct Video File Stream) ───────────────────
-    if "multipart/form-data" in content_type:
-        form = await request.form()
-        uploaded_file = form.get("file")
-        title = str(form.get("title") or "ApexMind Short").strip()
-        description = str(form.get("description") or form.get("quote") or "").strip()
-        tags_raw = form.get("tags")
-        privacy_status = str(form.get("privacyStatus") or "public").strip()
-        tag_list = [t.strip() for t in str(tags_raw).split(",") if t.strip()] if tags_raw else None
-
-        if not uploaded_file or not hasattr(uploaded_file, "filename"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A valid video file is required for multipart upload."
-            )
-
-        ext = os.path.splitext(uploaded_file.filename or "")[1] or ".mp4"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-            content = await uploaded_file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-
-        try:
-            res = upload_video_to_live_youtube(
-                video_path=tmp_path,
-                title=title,
-                description=description,
-                tags=tag_list,
-                privacy_status=privacy_status,
-                mimetype=getattr(uploaded_file, "content_type", None),
-            )
-            created = insert_video(
-                title=title,
-                quote=description,
-                voice="Direct Upload",
-                category="Upload",
-                video_url=res.get("videoUrl"),
-                custom_id=res.get("videoId"),
-            )
-            created["liveUploaded"] = True
-            return {
-                "success": True,
-                "video": created,
-                "videoId": res.get("videoId"),
-                "videoUrl": res.get("videoUrl"),
-                "liveUploaded": True,
-                "message": "Video successfully uploaded and published directly to your YouTube channel."
-            }
-        except RuntimeError as re:
-            logger.warning(f"YouTube authorization missing during upload: {re}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=str(re)
-            )
-        except Exception as e:
-            logger.error(f"Error uploading video to YouTube: {e}")
-            error_msg = str(e)
-            if "quotaExceeded" in error_msg:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="YouTube Data API upload quota exceeded. Please try again tomorrow or request a quota increase in Google Cloud Console."
-                )
-            raise HTTPException(status_code=500, detail=f"Failed to upload video to YouTube: {error_msg}")
-        finally:
-            if os.path.exists(tmp_path):
-                try:
-                    os.unlink(tmp_path)
-                except Exception:
-                    pass
-
-    # ── 2. JSON Payload (Automated AI Short Generation & Publishing) ───────────
+async def post_youtube_videos(payload: PublishVideoRequest):
     try:
-        data = await request.json()
-        payload = PublishVideoRequest(**data)
+        act = str(payload.action or "publish").lower().strip()
+        target_video_id = payload.videoId
+
+        # ── 1. Delete Video from YouTube ──────────────────────────────────────
+        if act == "delete":
+            if not target_video_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="videoId is required to delete video."
+                )
+            try:
+                res = delete_live_video(target_video_id)
+                return {
+                    "success": True,
+                    "videoId": target_video_id,
+                    "message": res.get("message", f"Video '{target_video_id}' deleted from YouTube."),
+                }
+            except Exception as de:
+                logger.error(f"Error deleting video '{target_video_id}': {de}")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(de))
+
+        # ── 2. Update Video Metadata on YouTube ───────────────────────────────
+        if act == "update" or (target_video_id and (payload.title or payload.description or payload.privacyStatus)):
+            if not target_video_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="videoId is required for updating video metadata."
+                )
+            tags_val = payload.tags
+            if isinstance(tags_val, str):
+                tags_val = [t.strip() for t in tags_val.split(",") if t.strip()]
+            try:
+                res = update_live_video_metadata(
+                    video_id=target_video_id,
+                    title=payload.title,
+                    description=payload.description or payload.quote,
+                    tags=tags_val,
+                    privacy_status=payload.privacyStatus,
+                )
+                return {
+                    "success": True,
+                    "videoId": target_video_id,
+                    "message": "Video metadata updated successfully on YouTube.",
+                    "video": res.get("updated"),
+                }
+            except Exception as ue:
+                logger.error(f"Error updating video metadata for '{target_video_id}': {ue}")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ue))
+
+        # ── 3. Publish AI Motivational Short to YouTube ───────────────────────
+        title_text = payload.title or "Untitled Short"
+        quote_text = payload.quote or ""
         return publish_video_to_shorts(
-            title=payload.title,
-            quote=payload.quote,
+            title=title_text,
+            quote=quote_text,
             voice=payload.voice or "Fenrir",
             category=payload.category or "Motivation",
             channel_id=payload.channelId,
             coverImageUrl=payload.coverImageUrl,
             visualTheme=payload.visualTheme,
         )
+    except HTTPException:
+        raise
     except ValueError as ve:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Validation error in publish payload: {ve}"
+            detail=f"Validation error in video payload: {ve}"
         )
     except Exception as e:
-        logger.error(f"Error publishing video to YouTube: {e}")
+        logger.error(f"Error processing video operation on YouTube: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to publish video: {e}"
+            detail=f"Failed to process video operation: {e}"
         )
-
-
-@router.patch(
-    "/api/youtube/video/update",
-    summary="Update video metadata on YouTube",
-    description="Updates title, description, tags, or privacy directly on YouTube.",
-)
-async def patch_video_metadata(payload: UpdateVideoRequest):
-    try:
-        return update_live_video_metadata(
-            video_id=payload.videoId,
-            title=payload.title,
-            description=payload.description,
-            tags=payload.tags,
-            privacy_status=payload.privacyStatus,
-        )
-    except Exception as e:
-        logger.error(f"Error updating video metadata for '{payload.videoId}': {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.delete(
-    "/api/youtube/video/delete",
-    summary="Delete video from YouTube",
-    description="Permanently deletes video directly from user's YouTube channel.",
-)
-async def delete_video_route(payload: DeleteVideoRequest):
-    try:
-        return delete_live_video(payload.videoId)
-    except Exception as e:
-        logger.error(f"Error deleting video '{payload.videoId}': {e}")
-        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
-    "/api/youtube/playlist/create",
+    "/api/youtube/publish",
+    response_model=PublishVideoResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create playlist on YouTube",
+    include_in_schema=False,
 )
-async def post_create_playlist(payload: CreatePlaylistRequest):
-    try:
-        return create_live_playlist(
-            title=payload.title,
-            description=payload.description or "",
-            privacy_status=payload.privacyStatus or "public",
-        )
-    except Exception as e:
-        logger.error(f"Error creating playlist: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.patch(
-    "/api/youtube/playlist/update",
-    summary="Update playlist on YouTube",
-)
-async def patch_playlist(payload: UpdatePlaylistRequest):
-    try:
-        return update_live_playlist(
-            playlist_id=payload.playlistId,
-            title=payload.title,
-            description=payload.description,
-            privacy_status=payload.privacyStatus,
-        )
-    except Exception as e:
-        logger.error(f"Error updating playlist: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.delete(
-    "/api/youtube/playlist/delete",
-    summary="Delete playlist from YouTube",
-)
-async def delete_playlist_route(payload: DeletePlaylistRequest):
-    try:
-        return delete_live_playlist(payload.playlistId)
-    except Exception as e:
-        logger.error(f"Error deleting playlist: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+async def post_publish_video_alias(payload: PublishVideoRequest):
+    return await post_youtube_videos(payload)
 
 
 @router.post(
-    "/api/youtube/video/comments/reply",
+    "/api/youtube/playlists",
+    status_code=status.HTTP_201_CREATED,
+    summary="Create or manage playlist on YouTube",
+    description="Unified RESTful endpoint to create, update, or delete a YouTube playlist.",
+)
+async def post_manage_playlist(payload: ManagePlaylistRequest):
+    act = (payload.action or "create").lower().strip()
+    try:
+        if act == "delete":
+            if not payload.playlistId:
+                raise HTTPException(status_code=400, detail="playlistId is required to delete playlist.")
+            return delete_live_playlist(payload.playlistId)
+        elif act == "update":
+            if not payload.playlistId:
+                raise HTTPException(status_code=400, detail="playlistId is required to update playlist.")
+            return update_live_playlist(
+                playlist_id=payload.playlistId,
+                title=payload.title,
+                description=payload.description,
+                privacy_status=payload.privacyStatus,
+            )
+        else:
+            if not payload.title:
+                raise HTTPException(status_code=400, detail="title is required to create playlist.")
+            return create_live_playlist(
+                title=payload.title,
+                description=payload.description or "",
+                privacy_status=payload.privacyStatus or "public",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error managing playlist: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# Backward-compatibility routes for existing callers & tests (unlisted in Swagger UI)
+@router.post("/api/youtube/playlist/create", status_code=status.HTTP_201_CREATED, include_in_schema=False)
+async def post_create_playlist(payload: CreatePlaylistRequest):
+    return await post_manage_playlist(
+        ManagePlaylistRequest(action="create", title=payload.title, description=payload.description, privacyStatus=payload.privacyStatus)
+    )
+
+
+@router.patch("/api/youtube/playlist/update", include_in_schema=False)
+async def patch_playlist(payload: UpdatePlaylistRequest):
+    return await post_manage_playlist(
+        ManagePlaylistRequest(action="update", playlistId=payload.playlistId, title=payload.title, description=payload.description, privacyStatus=payload.privacyStatus)
+    )
+
+
+@router.delete("/api/youtube/playlist/delete", include_in_schema=False)
+async def delete_playlist_route(payload: DeletePlaylistRequest):
+    return await post_manage_playlist(
+        ManagePlaylistRequest(action="delete", playlistId=payload.playlistId)
+    )
+
+
+@router.post(
+    "/api/youtube/video/comments",
     status_code=status.HTTP_201_CREATED,
     summary="Post comment or reply directly on YouTube",
+    description="Post a top-level comment or reply to an existing comment on a YouTube video.",
 )
 async def post_comment_reply(payload: ReplyCommentRequest):
     try:
@@ -553,6 +535,15 @@ async def post_comment_reply(payload: ReplyCommentRequest):
     except Exception as e:
         logger.error(f"Error posting comment reply: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post(
+    "/api/youtube/video/comments/reply",
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+)
+async def post_comment_reply_alias(payload: ReplyCommentRequest):
+    return await post_comment_reply(payload)
 
 
 # ==============================================================================

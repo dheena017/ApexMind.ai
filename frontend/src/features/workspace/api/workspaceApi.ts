@@ -176,13 +176,13 @@ export const workspaceApi = {
   }): Promise<any> {
     consoleLogger.info('YouTube', `Publishing Short: "${payload.title}"...`, payload);
     const start = performance.now();
-    const res = await fetch(apiUrl('/api/youtube/publish'), {
+    const res = await fetch(apiUrl('/api/youtube/videos'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const duration = performance.now() - start;
-    consoleLogger.api('POST', '/api/youtube/publish', res.status, duration);
+    consoleLogger.api('POST', '/api/youtube/videos', res.status, duration);
     const data = await res.json();
     if (!res.ok) {
       const errDetail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail || 'Failed to publish video');

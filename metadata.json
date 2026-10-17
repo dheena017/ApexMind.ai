@@ -43,7 +43,7 @@
     "GET /api/youtube/channel/shorts",
     "GET /api/youtube/channel/playlists",
     "GET /api/youtube/channel/analytics",
-    "POST /api/youtube/publish",
+    "POST /api/youtube/videos",
     "GET /api/notifications",
     "POST /api/notifications",
     "POST /api/notifications/manage",

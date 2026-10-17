@@ -31,6 +31,14 @@ class CreatePlaylistRequest(BaseModel):
     privacyStatus: Optional[str] = Field(default="public", description="public, unlisted, private")
 
 
+class ManagePlaylistRequest(BaseModel):
+    action: Optional[str] = Field(default="create", description="Action: create, update, or delete")
+    playlistId: Optional[str] = Field(default=None, description="Playlist ID (required for update/delete)")
+    title: Optional[str] = Field(default=None, description="Playlist title")
+    description: Optional[str] = Field(default="", description="Playlist description")
+    privacyStatus: Optional[str] = Field(default="public", description="public, unlisted, private")
+
+
 class UpdatePlaylistRequest(BaseModel):
     playlistId: str = Field(..., description="Playlist ID")
     title: Optional[str] = Field(default=None, description="Updated title")
@@ -56,8 +64,13 @@ class ReplyCommentRequest(BaseModel):
 # ── 2. Request Models ────────────────────────────────────────────────────────
 
 class PublishVideoRequest(BaseModel):
-    title: str = Field(..., min_length=1)
-    quote: str = Field(..., min_length=1)
+    action: Optional[str] = Field(default="publish")
+    videoId: Optional[str] = Field(default=None)
+    title: Optional[str] = Field(default=None)
+    quote: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    tags: Optional[Any] = Field(default=None)
+    privacyStatus: Optional[str] = Field(default="public")
     voice: Optional[str] = Field(default="Fenrir")
     visualTheme: Optional[str] = Field(default="Dark Mountain Dawn")
     category: Optional[str] = Field(default="Motivation")
@@ -184,7 +197,11 @@ class ConnectChannelResponse(BaseModel):
 
 class PublishVideoResponse(BaseModel):
     success: bool
-    video: VideoResponse
+    video: Optional[Dict[str, Any]] = None
+    videoId: Optional[str] = None
+    videoUrl: Optional[str] = None
+    liveUploaded: Optional[bool] = False
+    message: Optional[str] = None
 
 
 class AutomationsListResponse(BaseModel):

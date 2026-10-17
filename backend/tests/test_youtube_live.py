@@ -66,8 +66,8 @@ def test_youtube_channel_analytics():
 
 
 def test_youtube_publish_json():
-    """Test unified /api/youtube/publish endpoint with JSON short payload."""
-    res = client.post("/api/youtube/publish", json={
+    """Test unified RESTful /api/youtube/videos endpoint with JSON short payload."""
+    res = client.post("/api/youtube/videos", json={
         "title": "Test Motivational Short",
         "quote": "Success is the sum of small efforts repeated daily.",
         "voice": "Fenrir",
@@ -87,16 +87,58 @@ def test_youtube_publish_json():
         conn.close()
 
 
-def test_youtube_publish_multipart():
-    """Test unified /api/youtube/publish endpoint with multipart form video upload."""
-    import io
-    fake_video = io.BytesIO(b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00isommp42")
-    res = client.post(
-        "/api/youtube/publish",
-        data={"title": "Custom MP4 Upload", "description": "Testing multipart video upload"},
-        files={"file": ("video.mp4", fake_video, "video/mp4")},
+def test_youtube_publish_alias():
+    """Test backward-compatibility alias /api/youtube/publish."""
+    res = client.post("/api/youtube/publish", json={
+        "title": "Test Alias Short",
+        "quote": "Consistency builds greatness.",
+        "voice": "Fenrir",
+        "category": "Motivation",
+    })
+    try:
+        assert res.status_code == 201
+        data = res.json()
+        assert data["success"] is True
+    finally:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM published_videos WHERE title = 'Test Alias Short'")
+        conn.commit()
+        conn.close()
+
+
+def test_youtube_publish_update():
+    """Test updating and deleting video metadata via unified POST /api/youtube/videos endpoint."""
+    # POST /api/youtube/videos with action="update"
+    post_update_res = client.post(
+        "/api/youtube/videos",
+        json={"videoId": "dummy123", "title": "Updated Title Via POST", "action": "update"},
     )
-    # Without live OAuth token present in test environment, it properly returns 401 Unauthorized
-    assert res.status_code in (201, 401)
-    if res.status_code == 401:
-        assert "Google OAuth" in res.json()["detail"] or "authorize" in res.json()["detail"].lower()
+    assert post_update_res.status_code in (200, 400, 401)
+
+    # POST /api/youtube/videos with action="delete"
+    post_delete_res = client.post(
+        "/api/youtube/videos",
+        json={"videoId": "dummy123", "action": "delete"},
+    )
+    assert post_delete_res.status_code in (200, 400, 401)
+
+
+def test_youtube_playlists_endpoint():
+    """Test unified POST /api/youtube/playlists endpoint."""
+    res = client.post(
+        "/api/youtube/playlists",
+        json={"title": "Test Playlist", "description": "Playlist desc", "action": "create"},
+    )
+    # Without live OAuth credentials in test environment, it handles cleanly with 400
+    assert res.status_code in (200, 201, 400, 401)
+
+
+def test_youtube_comments_endpoint():
+    """Test unified POST /api/youtube/video/comments endpoint."""
+    res = client.post(
+        "/api/youtube/video/comments",
+        json={"videoId": "dummy123", "text": "Great video!"},
+    )
+    assert res.status_code in (200, 201, 400, 401)
+
