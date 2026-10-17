@@ -139,9 +139,9 @@ export const youtubeApi = {
 
   // ── Action / Mutation Operations ──────────────────────────────────────────
 
-  // Direct Live Video Upload to YouTube (Zero DB storage)
+  // Direct Live Video Upload to YouTube via unified /api/youtube/publish
   async uploadVideoToYouTube(formData: FormData): Promise<any> {
-    const res = await fetch(apiUrl('/api/youtube/video/upload'), {
+    const res = await fetch(apiUrl('/api/youtube/publish'), {
       method: 'POST',
       body: formData,
     });

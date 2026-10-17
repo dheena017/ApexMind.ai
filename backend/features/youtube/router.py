@@ -13,7 +13,7 @@ import os
 import logging
 import urllib.parse
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, status, Request, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 import tempfile
 from pathlib import Path
@@ -68,6 +68,7 @@ from .youtube_live_service import (
     reply_to_live_comment,
 )
 from .service import publish_video_to_shorts
+from .repository import insert_video
 from backend.database.repository import get_oauth_channel, get_channels, save_oauth_channel
 
 logger = logging.getLogger("ApexMind.features.youtube")
@@ -355,23 +356,34 @@ async def get_search_videos_route(query: str, type: str = "video", limit: int = 
 # ==============================================================================
 
 @router.post(
-    "/api/youtube/video/upload",
+    "/api/youtube/publish",
     status_code=status.HTTP_201_CREATED,
-    summary="Upload video directly to YouTube",
-    description="Streams video file directly into YouTube via YouTube Data API v3 (videos.insert). Zero DB storage.",
+    summary="Publish short or upload video to YouTube",
+    description="Unified endpoint: publish an automated AI short via JSON payload, or stream a video file directly to YouTube via multipart form upload.",
 )
-async def post_upload_video(
-    file: UploadFile = File(...),
-    title: str = Form(...),
-    description: str = Form(""),
-    tags: Optional[str] = Form(None),
-    privacyStatus: str = Form("public"),
-):
-    try:
-        tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
-        ext = os.path.splitext(file.filename or "")[1] or ".mp4"
+async def post_publish_video_route(request: Request):
+    content_type = request.headers.get("content-type", "")
+
+    # ── 1. Multipart Form Upload (Direct Video File Stream) ───────────────────
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        uploaded_file = form.get("file")
+        title = str(form.get("title") or "ApexMind Short").strip()
+        description = str(form.get("description") or form.get("quote") or "").strip()
+        tags_raw = form.get("tags")
+        privacy_status = str(form.get("privacyStatus") or "public").strip()
+        tag_list = [t.strip() for t in str(tags_raw).split(",") if t.strip()] if tags_raw else None
+
+        if not uploaded_file or not hasattr(uploaded_file, "filename"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A valid video file is required for multipart upload."
+            )
+
+        ext = os.path.splitext(uploaded_file.filename or "")[1] or ".mp4"
         with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-            tmp.write(await file.read())
+            content = await uploaded_file.read()
+            tmp.write(content)
             tmp_path = tmp.name
 
         try:
@@ -380,41 +392,52 @@ async def post_upload_video(
                 title=title,
                 description=description,
                 tags=tag_list,
-                privacy_status=privacyStatus,
-                mimetype=file.content_type,
+                privacy_status=privacy_status,
+                mimetype=getattr(uploaded_file, "content_type", None),
             )
-            return res
+            created = insert_video(
+                title=title,
+                quote=description,
+                voice="Direct Upload",
+                category="Upload",
+                video_url=res.get("videoUrl"),
+                custom_id=res.get("videoId"),
+            )
+            created["liveUploaded"] = True
+            return {
+                "success": True,
+                "video": created,
+                "videoId": res.get("videoId"),
+                "videoUrl": res.get("videoUrl"),
+                "liveUploaded": True,
+                "message": "Video successfully uploaded and published directly to your YouTube channel."
+            }
+        except RuntimeError as re:
+            logger.warning(f"YouTube authorization missing during upload: {re}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=str(re)
+            )
+        except Exception as e:
+            logger.error(f"Error uploading video to YouTube: {e}")
+            error_msg = str(e)
+            if "quotaExceeded" in error_msg:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="YouTube Data API upload quota exceeded. Please try again tomorrow or request a quota increase in Google Cloud Console."
+                )
+            raise HTTPException(status_code=500, detail=f"Failed to upload video to YouTube: {error_msg}")
         finally:
             if os.path.exists(tmp_path):
                 try:
                     os.unlink(tmp_path)
                 except Exception:
                     pass
-    except RuntimeError as re:
-        logger.warning(f"YouTube authorization missing during upload: {re}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(re)
-        )
-    except Exception as e:
-        logger.error(f"Error uploading video to YouTube: {e}")
-        error_msg = str(e)
-        if "quotaExceeded" in error_msg:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="YouTube Data API upload quota exceeded. Please try again tomorrow or request a quota increase in Google Cloud Console."
-            )
-        raise HTTPException(status_code=500, detail=f"Failed to upload video to YouTube: {error_msg}")
 
-
-@router.post(
-    "/api/youtube/publish",
-    status_code=status.HTTP_201_CREATED,
-    summary="Publish short to YouTube",
-    description="Publish an automated motivational video directly to YouTube Shorts or studio catalog."
-)
-async def post_publish_video_route(payload: PublishVideoRequest):
+    # ── 2. JSON Payload (Automated AI Short Generation & Publishing) ───────────
     try:
+        data = await request.json()
+        payload = PublishVideoRequest(**data)
         return publish_video_to_shorts(
             title=payload.title,
             quote=payload.quote,
@@ -423,6 +446,11 @@ async def post_publish_video_route(payload: PublishVideoRequest):
             channel_id=payload.channelId,
             coverImageUrl=payload.coverImageUrl,
             visualTheme=payload.visualTheme,
+        )
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error in publish payload: {ve}"
         )
     except Exception as e:
         logger.error(f"Error publishing video to YouTube: {e}")

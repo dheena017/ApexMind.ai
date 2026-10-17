@@ -63,3 +63,40 @@ def test_youtube_channel_analytics():
     assert analytics["channelName"] == "Emoji Eye Spy"
     assert analytics["subscribers"] >= 70
     assert analytics["totalVideosUploaded"] >= 1
+
+
+def test_youtube_publish_json():
+    """Test unified /api/youtube/publish endpoint with JSON short payload."""
+    res = client.post("/api/youtube/publish", json={
+        "title": "Test Motivational Short",
+        "quote": "Success is the sum of small efforts repeated daily.",
+        "voice": "Fenrir",
+        "category": "Motivation",
+    })
+    try:
+        assert res.status_code == 201
+        data = res.json()
+        assert data["success"] is True
+        assert "video" in data
+        assert data["video"]["title"] == "Test Motivational Short"
+    finally:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM published_videos WHERE title = 'Test Motivational Short'")
+        conn.commit()
+        conn.close()
+
+
+def test_youtube_publish_multipart():
+    """Test unified /api/youtube/publish endpoint with multipart form video upload."""
+    import io
+    fake_video = io.BytesIO(b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00isommp42")
+    res = client.post(
+        "/api/youtube/publish",
+        data={"title": "Custom MP4 Upload", "description": "Testing multipart video upload"},
+        files={"file": ("video.mp4", fake_video, "video/mp4")},
+    )
+    # Without live OAuth token present in test environment, it properly returns 401 Unauthorized
+    assert res.status_code in (201, 401)
+    if res.status_code == 401:
+        assert "Google OAuth" in res.json()["detail"] or "authorize" in res.json()["detail"].lower()
