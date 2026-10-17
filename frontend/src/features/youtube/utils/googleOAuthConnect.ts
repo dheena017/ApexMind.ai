@@ -69,20 +69,13 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
       tokenClient.requestAccessToken({ prompt: 'consent' });
       return;
     } catch (gisErr: any) {
-      console.warn('Google Identity popup error, trying redirect fallback:', gisErr);
+      console.error('Google Identity popup error:', gisErr);
+      onLoading?.(false);
+      onError?.(gisErr.message || 'Google authorization popup failed to open');
+      return;
     }
   }
 
-  // 2. Fallback: server-side redirect OAuth
-  try {
-    const res = await youtubeApi.getAuthConnectUrl();
-    if (res?.authUrl) {
-      window.location.href = res.authUrl;
-      return;
-    }
-    throw new Error('Could not generate YouTube authorization URL');
-  } catch (err: any) {
-    onLoading?.(false);
-    onError?.(err.message || 'Google YouTube connection failed');
-  }
+  onLoading?.(false);
+  onError?.('Google Identity Services client is not initialized or VITE_GOOGLE_CLIENT_ID is missing.');
 };

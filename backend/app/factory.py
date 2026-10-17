@@ -64,7 +64,6 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(workspace_router)
     app.include_router(videos_router)
-    app.include_router(videos_router, prefix="/api/videos")
     app.include_router(youtube_router)
     app.include_router(notifications_router)
     app.include_router(dashboard_router)

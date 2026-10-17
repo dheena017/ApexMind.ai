@@ -15,7 +15,10 @@ export interface YouTubeChannel {
   connectedAt?: string;
   niche?: string;
   isOAuthAuthenticated?: boolean;
-  hasRefreshToken?: boolean;
+  joinedDate?: string;
+  country?: string;
+  totalLifetimeViews?: number;
+  links?: Array<{ title: string; url: string }>;
   source?: string;
 }
 

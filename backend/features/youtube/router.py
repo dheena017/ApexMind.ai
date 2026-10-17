@@ -47,7 +47,6 @@ from .schemas import (
 )
 from .youtube_live_service import (
     resolve_channel_metadata,
-    fetch_channel_about,
     fetch_channel_videos,
     fetch_channel_videos_sorted,
     fetch_channel_shorts,
@@ -111,32 +110,17 @@ def _resolve_target(
 @router.get(
     "/api/youtube/channel/details",
     response_model=ChannelDetailsResponse,
-    summary="Get live channel metadata",
-    description="Resolves canonical channel ID, verified badge, high-res avatar, banner, and subscriber count.",
+    summary="Get live channel metadata & about details",
+    description="Resolves canonical channel ID, verified badge, high-res avatar, banner, subscribers, joined date, views, and country in a single call.",
 )
 async def get_live_channel_details(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, channel: Optional[str] = None):
     target = _resolve_target(query, channel, channel_id, handle)
     try:
         data = resolve_channel_metadata(target)
-        logger.info(f"Resolved channel metadata for '{target}' ➔ '{data.get('name')}' [Subs: {data.get('subscribers')}] (ID: {data.get('id')})")
+        logger.info(f"Resolved channel metadata for '{target}' ➔ '{data.get('name')}' [Subs: {data.get('subscribers')}, Views: {data.get('totalLifetimeViews')}] (ID: {data.get('id')})")
         return {"success": True, "source": "youtube-official-live", "channel": data}
     except Exception as e:
         logger.error(f"Error resolving channel details for '{target}': {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.get(
-    "/api/youtube/channel/about",
-    summary="Get channel about details",
-    description="Fetches joined date, country, cumulative views, and external links.",
-)
-async def get_live_channel_about(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None):
-    target = _resolve_target(query, channel_id=channel_id, handle=handle)
-    try:
-        about = fetch_channel_about(target)
-        return {"success": True, "source": "youtube-official-live", "about": about}
-    except Exception as e:
-        logger.error(f"Error fetching about for '{target}': {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -469,11 +453,6 @@ async def post_upload_video(
     summary="Publish short to YouTube",
     description="Publish an automated motivational video directly to YouTube Shorts or studio catalog."
 )
-@router.post(
-    "/api/youtube/video/publish",
-    status_code=status.HTTP_201_CREATED,
-    summary="Publish short to YouTube (alias)",
-)
 async def post_publish_video_route(payload: PublishVideoRequest):
     try:
         return publish_video_to_shorts(
@@ -589,64 +568,15 @@ async def post_comment_reply(payload: ReplyCommentRequest):
 
 
 # ==============================================================================
-# Domain 5: Google OAuth 2.0 Authorization
+# Domain 5: Google YouTube Channel Connect & OAuth Status
 # ==============================================================================
 
-@router.get(
-    "/api/youtube/oauth/authorize-url",
-    summary="Get Google OAuth 2.0 authorization URL",
-)
-async def get_oauth_authorize_url(request: Request, redirect_host: Optional[str] = None):
-    try:
-        host = redirect_host or request.headers.get("host") or "127.0.0.1:8000"
-        scheme = request.url.scheme or "http"
-        redirect_uri = f"{scheme}://{host}/api/youtube/oauth/callback"
-        auth_url = generate_youtube_auth_url(redirect_uri)
-        return {"success": True, "authorizationUrl": auth_url, "redirectUri": redirect_uri}
-    except Exception as e:
-        logger.error(f"Error generating YouTube auth URL: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.get(
-    "/api/youtube/oauth/callback",
-    summary="Google OAuth 2.0 callback",
-)
-async def get_oauth_callback(request: Request, code: str):
-    try:
-        host = request.headers.get("host") or "127.0.0.1:8000"
-        scheme = request.url.scheme or "http"
-        redirect_uri = f"{scheme}://{host}/api/youtube/oauth/callback"
-        res = handle_oauth_callback(code, redirect_uri)
-        ch_name = res.get("channel", {}).get("name", "channel")
-        frontend_url = os.getenv("APP_URL", "http://127.0.0.1:5173/").rstrip("/")
-        return RedirectResponse(url=f"{frontend_url}/youtube?oauth=success&channel={urllib.parse.quote(ch_name)}")
-    except Exception as e:
-        logger.error(f"Error in YouTube OAuth callback: {e}")
-        frontend_url = os.getenv("APP_URL", "http://127.0.0.1:5173/").rstrip("/")
-        return RedirectResponse(url=f"{frontend_url}/youtube?oauth=error&message={urllib.parse.quote(str(e))}")
-
-
-@router.get(
-    "/api/youtube/oauth/status",
-    summary="Check Google OAuth authorization status",
-)
-async def get_oauth_status_route():
-    yt = get_authenticated_youtube_client()
-    ch = get_oauth_channel()
-    return {
-        "success": True,
-        "isAuthorized": yt is not None,
-        "connected": yt is not None,
-        "channel": ch,
-    }
-
-
 @router.post(
-    "/api/youtube/oauth/token-connect",
-    summary="Connect YouTube channel using Google access token from client-side Google popup",
+    "/api/youtube/connect",
+    summary="Connect YouTube Channel",
+    description="Connect a YouTube channel using Google access token from client-side Google popup.",
 )
-async def post_token_connect(payload: TokenConnectRequest):
+async def post_connect_channel(payload: TokenConnectRequest):
     try:
         channel_data = fetch_authenticated_channel_details(payload.accessToken)
         saved = save_oauth_channel(
@@ -671,10 +601,21 @@ async def post_token_connect(payload: TokenConnectRequest):
         raise HTTPException(status_code=400, detail=f"Failed to connect YouTube channel: {str(e)}")
 
 
-@router.post(
-    "/api/youtube/oauth/disconnect",
-    summary="Disconnect Google OAuth YouTube channel",
+@router.get(
+    "/api/youtube/status",
+    summary="Check YouTube connection status",
 )
+async def get_oauth_status_route():
+    yt = get_authenticated_youtube_client()
+    ch = get_oauth_channel()
+    return {
+        "success": True,
+        "isAuthorized": yt is not None,
+        "connected": yt is not None,
+        "channel": ch,
+    }
+
+
 @router.post(
     "/api/youtube/disconnect",
     summary="Disconnect YouTube channel",
@@ -689,57 +630,11 @@ async def post_disconnect_oauth():
     return {"success": True, "message": "Disconnected YouTube OAuth session and channel credentials."}
 
 
-# ==============================================================================
-# Domain 6: Legacy Compatibility Wrappers (Keeps Frontend Working During Refactor)
-# ==============================================================================
-
-@router.get("/api/youtube/auth/connect")
-async def legacy_auth_connect(request: Request):
-    return await get_oauth_authorize_url(request)
-
-@router.get("/api/youtube/auth/callback")
-async def legacy_auth_callback(request: Request, code: str):
-    return await get_oauth_callback(request, code)
-
-@router.get("/api/youtube/auth/status")
-async def legacy_auth_status():
-    return await get_oauth_status_route()
-
-@router.get("/api/youtube/channels")
-async def legacy_get_channels(handle: Optional[str] = None):
+@router.get(
+    "/api/youtube/channels",
+    summary="Get saved YouTube channels",
+    description="Returns all connected channels from the studio database.",
+)
+async def get_saved_channels(handle: Optional[str] = None):
     db_channels = get_channels()
     return {"success": True, "channels": db_channels or [], "videos": []}
-
-@router.post("/api/youtube/lookup")
-async def legacy_post_lookup(payload: LookupChannelRequest):
-    meta = resolve_channel_metadata(payload.query)
-    return {"success": True, "channel": meta}
-
-@router.get("/api/youtube/channels/{channel_id}/shorts")
-async def legacy_get_shorts(channel_id: str, limit: int = 15):
-    shorts = fetch_channel_shorts(channel_id, limit=limit)
-    return {"success": True, "shorts": shorts}
-
-@router.get("/api/youtube/channels/{channel_id}/live-feed")
-async def legacy_get_live_feed(channel_id: str):
-    ch = resolve_channel_metadata(channel_id)
-    videos = fetch_channel_videos(channel_id, limit=24)
-    shorts = fetch_channel_shorts(channel_id, limit=12)
-    playlists = fetch_channel_playlists(channel_id, limit=10)
-    for_you = [{"id": s["id"], "title": s["title"], "views": s["views"], "thumbnailUrl": s["thumbnailUrl"], "videoUrl": s["videoUrl"], "isShort": True} for s in shorts[:2]]
-    for_you += [{"id": v["id"], "title": v["title"], "views": v["views"], "duration": v.get("duration", ""), "thumbnailUrl": v["thumbnailUrl"], "videoUrl": v["videoUrl"], "isShort": False} for v in videos[:4]]
-    return {"channel": ch, "videos": videos, "shorts": shorts, "forYou": for_you, "playlists": playlists}
-
-@router.get("/api/youtube/channels/{channel_id}/playlists")
-async def legacy_get_playlists(channel_id: str):
-    playlists = fetch_channel_playlists(channel_id, limit=20)
-    return {"success": True, "playlists": playlists}
-
-@router.get("/api/youtube/channels/{channel_id}/analytics")
-async def legacy_get_analytics(channel_id: str):
-    return {"success": True, "analytics": compute_live_channel_analytics(channel_id)}
-
-@router.post("/api/youtube/channels/{channel_id}/sync")
-async def legacy_sync_channel(channel_id: str):
-    meta = resolve_channel_metadata(channel_id)
-    return {"success": True, "channel": meta, "message": f"Successfully synced '{meta['name']}' directly from live YouTube."}

@@ -211,6 +211,19 @@ def resolve_channel_metadata(query: str) -> Dict[str, Any]:
         if link_match:
             channel_id = link_match.group(1)
 
+    # Extract about metadata: joined date, views, country
+    joined_date = "Unavailable"
+    total_lifetime_views = 0
+    country = "Global"
+
+    joined_match = re.search(r'Joined\s+([A-Za-z]+\s+\d+,\s+\d{4})', resp.text)
+    if joined_match:
+        joined_date = joined_match.group(1)
+
+    views_match = re.search(r'([\d,]+)\s+views', resp.text)
+    if views_match:
+        total_lifetime_views = parse_count_metric(views_match.group(1))
+
     return {
         "channelId": channel_id or f"yt_{clean.replace('@', '')}",
         "name": name,
@@ -222,6 +235,10 @@ def resolve_channel_metadata(query: str) -> Dict[str, Any]:
         "description": description[:600] if description else "",
         "verified": badge_found,
         "channelUrl": f"https://www.youtube.com/{real_handle}",
+        "joinedDate": joined_date,
+        "country": country,
+        "totalLifetimeViews": total_lifetime_views,
+        "links": [],
         "source": "youtube-official-live",
     }
 

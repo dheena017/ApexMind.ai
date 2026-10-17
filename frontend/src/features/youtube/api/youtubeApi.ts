@@ -51,14 +51,9 @@ export const youtubeApi = {
     return data.channel;
   },
 
-  // 2. Channel About Info
+  // 2. Channel About Info (Merged into Channel Details)
   async getChannelAbout(query?: string): Promise<any> {
-    const target = (query || getStoredHandle()).trim();
-    if (!target) throw new Error('No channel specified or connected');
-    const res = await fetch(apiUrl(`/api/youtube/channel/about?query=${encodeURIComponent(target)}`));
-    if (!res.ok) throw new Error(`Channel about failed: ${res.status}`);
-    const data = await res.json();
-    return data.about;
+    return this.getChannelDetails(query);
   },
 
   // 3. Channel Videos (16:9 Long-Form)
@@ -241,24 +236,10 @@ export const youtubeApi = {
     return res.json();
   },
 
-  // ── Google OAuth 2.0 Authorization ─────────────────────────────────────────
-
-  async getAuthConnectUrl(): Promise<{ success: boolean; authUrl: string; redirectUri: string }> {
-    let res = await fetch(apiUrl('/api/youtube/oauth/authorize-url'));
-    if (!res.ok) {
-      res = await fetch(apiUrl('/api/youtube/auth/connect'));
-    }
-    if (!res.ok) throw new Error('Failed to generate YouTube authorization URL');
-    const data = await res.json();
-    return {
-      success: true,
-      authUrl: data.authorizationUrl || data.authUrl,
-      redirectUri: data.redirectUri,
-    };
-  },
+  // ── YouTube Channel Connection ─────────────────────────────────────────────
 
   async connectWithToken(accessToken: string): Promise<{ success: boolean; channel: YouTubeChannel; message: string }> {
-    const res = await fetch(apiUrl('/api/youtube/oauth/token-connect'), {
+    const res = await fetch(apiUrl('/api/youtube/connect'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accessToken }),
@@ -271,14 +252,14 @@ export const youtubeApi = {
   },
 
   async getAuthStatus(): Promise<{ success: boolean; connected: boolean; channel?: any }> {
-    const res = await fetch(apiUrl('/api/youtube/oauth/status'));
+    const res = await fetch(apiUrl('/api/youtube/status'));
     if (!res.ok) return { success: false, connected: false };
     const data = await res.json();
     return { success: true, connected: Boolean(data.connected || data.isAuthorized), channel: data.channel };
   },
 
   async disconnectOAuth(): Promise<boolean> {
-    const res = await fetch(apiUrl('/api/youtube/oauth/disconnect'), { method: 'POST' });
+    const res = await fetch(apiUrl('/api/youtube/disconnect'), { method: 'POST' });
     return res.ok;
   },
 
