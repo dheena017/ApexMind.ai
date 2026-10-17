@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Film,
   Search,
+  LayoutDashboard,
 } from 'lucide-react';
 import { UserProfile } from '@/src/features/auth/types';
 
@@ -129,15 +130,15 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
 
   return (
     <header className="sticky top-0 h-10 shrink-0 z-30 w-full overflow-hidden bg-[#111111] border-b border-[#242424] px-2 sm:px-3 flex items-center justify-between gap-2 font-sans-studio select-none text-[#E5E5E5]">
-      {/* ── Left: Videos Button & Studio Title ── */}
+      {/* ── Left: Dashboard Button & Studio Title ── */}
       <div className="flex items-center gap-2 shrink-0 min-w-0">
         <button
-          onClick={() => onNavigate('videos')}
+          onClick={() => onNavigate('dashboard')}
           className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#282828] bg-[#161616] text-[#737373] transition-all cursor-pointer hover:text-[#60A5FA] hover:bg-[#1C1C1C] hover:border-[#383838]"
-          title="My Videos"
-          aria-label="My Videos"
+          title="Creator Dashboard"
+          aria-label="Creator Dashboard"
         >
-          <Film className="w-3.5 h-3.5" />
+          <LayoutDashboard className="w-3.5 h-3.5 text-[#60A5FA]" />
         </button>
 
         <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap hidden min-[440px]:inline">
