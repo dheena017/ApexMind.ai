@@ -15,7 +15,6 @@ from backend.features import (
     workspace_router,
     youtube_router,
     notifications_router,
-    dashboard_router,
     auth_router,
     settings_router,
     videos_router,
@@ -66,7 +65,6 @@ def create_app() -> FastAPI:
     app.include_router(videos_router)
     app.include_router(youtube_router)
     app.include_router(notifications_router)
-    app.include_router(dashboard_router)
     app.include_router(settings_router)
 
 

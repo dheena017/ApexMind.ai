@@ -18,22 +18,7 @@ import { apiUrl } from '@/src/shared/utils/api';
 
 const getStoredHandle = (): string => {
   if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('apexmind_yt_active_channel');
-    if (saved) {
-      const clean = saved.trim().toLowerCase();
-      if (
-        clean === '@emoji-eye-spy' ||
-        clean === 'emoji-eye-spy' ||
-        clean === 'emoji eye spy' ||
-        clean === '@channel' ||
-        clean === 'channel' ||
-        !clean
-      ) {
-        localStorage.removeItem('apexmind_yt_active_channel');
-        return '';
-      }
-      return saved.trim();
-    }
+    return localStorage.getItem('apexmind_yt_active_channel')?.trim() || '';
   }
   return '';
 };
