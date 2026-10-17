@@ -29,7 +29,6 @@ from .schemas import (
     VideoThumbnailsResponse,
     VideoChaptersResponse,
     VideoTranscriptResponse,
-    SeoAutocompleteResponse,
     LookupChannelRequest,
     UpdateVideoRequest,
     DeleteVideoRequest,
@@ -55,12 +54,9 @@ from .youtube_live_service import (
     fetch_video_thumbnails,
     fetch_video_chapters,
     fetch_video_comments,
-    fetch_search_suggestions,
     fetch_seo_tags,
     fetch_hashtag_feed,
-    search_youtube_channels,
     search_youtube_videos,
-    fetch_trending_shorts,
     compute_live_channel_analytics,
     fetch_channel_live_streams,
     generate_youtube_auth_url,
@@ -327,22 +323,8 @@ async def get_video_transcript_route(video_id: str, lang: str = "en"):
 
 
 # ==============================================================================
-# Domain 3: SEO & Viral Discovery
+# Domain 3: SEO & Video Search
 # ==============================================================================
-
-@router.get(
-    "/api/youtube/seo/autocomplete",
-    response_model=SeoAutocompleteResponse,
-    summary="Real-time YouTube search suggestions",
-    description="Fetches live search suggestions directly from YouTube prediction engine as users type.",
-)
-async def get_seo_autocomplete_route(query: Optional[str] = None, q: Optional[str] = None):
-    search_q = query or q or ""
-    if not search_q.strip():
-        return {"success": True, "query": search_q, "suggestions": []}
-    suggestions = fetch_search_suggestions(search_q)
-    return {"success": True, "query": search_q, "suggestions": suggestions}
-
 
 @router.get(
     "/api/youtube/seo/tags",
@@ -364,30 +346,12 @@ async def get_seo_hashtag_route(tag: str):
 
 
 @router.get(
-    "/api/youtube/search/channels",
-    summary="Search YouTube channels by topic or keyword",
-)
-async def get_search_channels_route(query: str, limit: int = 10):
-    channels = search_youtube_channels(query, limit=limit)
-    return {"success": True, "total": len(channels), "channels": channels}
-
-
-@router.get(
     "/api/youtube/search/videos",
     summary="Search YouTube videos and shorts",
 )
 async def get_search_videos_route(query: str, type: str = "video", limit: int = 15):
     videos = search_youtube_videos(query, video_type=type, limit=limit)
     return {"success": True, "total": len(videos), "videos": videos}
-
-
-@router.get(
-    "/api/youtube/trending/shorts",
-    summary="Get trending viral YouTube Shorts",
-)
-async def get_trending_shorts_route(limit: int = 15):
-    shorts = fetch_trending_shorts(limit=limit)
-    return {"success": True, "total": len(shorts), "shorts": shorts}
 
 
 # ==============================================================================

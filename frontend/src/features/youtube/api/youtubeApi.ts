@@ -130,13 +130,9 @@ export const youtubeApi = {
     return data.comments || [];
   },
 
-  // 11. Search Autocomplete (Live YouTube Search Predictions)
-  async getSearchSuggestions(query: string): Promise<string[]> {
-    if (!query.trim()) return [];
-    const res = await fetch(apiUrl(`/api/youtube/seo/autocomplete?query=${encodeURIComponent(query)}`));
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.suggestions || [];
+  // 11. Search Autocomplete (Removed)
+  async getSearchSuggestions(_query: string): Promise<string[]> {
+    return [];
   },
 
   // 12. Competitor Tag Inspector
@@ -147,12 +143,9 @@ export const youtubeApi = {
     return data.tags || [];
   },
 
-  // 13. Search Channels
-  async searchChannels(query: string, limit = 10): Promise<any[]> {
-    const res = await fetch(apiUrl(`/api/youtube/search/channels?query=${encodeURIComponent(query)}&limit=${limit}`));
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.channels || [];
+  // 13. Search Channels (Removed)
+  async searchChannels(_query: string, _limit = 10): Promise<any[]> {
+    return [];
   },
 
   // 14. Search Videos
@@ -163,12 +156,18 @@ export const youtubeApi = {
     return data.videos || [];
   },
 
-  // 15. Trending Shorts
+  // 15. Trending Shorts (Derived via searchVideos)
   async getTrendingShorts(limit = 15): Promise<YouTubeLiveShort[]> {
-    const res = await fetch(apiUrl(`/api/youtube/trending/shorts?limit=${limit}`));
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.shorts || [];
+    const videos = await this.searchVideos('shorts', 'short', limit);
+    return videos.map((v) => ({
+      id: v.id,
+      title: v.title,
+      views: v.views,
+      thumbnailUrl: v.thumbnailUrl,
+      videoUrl: v.videoUrl,
+      published: v.published || 'Trending on YouTube',
+      isShort: true,
+    }));
   },
 
   // ── Action / Mutation Operations ──────────────────────────────────────────

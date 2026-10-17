@@ -19,14 +19,13 @@ def test_database_has_no_fake_youtube_records():
     conn.close()
 
 
-def test_youtube_seo_autocomplete():
-    """Test live YouTube autocomplete search query predictions."""
-    res = client.get("/api/youtube/seo/autocomplete", params={"q": "brain teaser"})
+def test_youtube_search_videos():
+    """Test live YouTube video search."""
+    res = client.get("/api/youtube/search/videos", params={"query": "brain teaser", "limit": 5})
     assert res.status_code == 200
     data = res.json()
-    assert data["query"] == "brain teaser"
-    assert isinstance(data["suggestions"], list)
-    assert len(data["suggestions"]) > 0
+    assert data["success"] is True
+    assert isinstance(data["videos"], list)
 
 
 def test_youtube_channel_live_lookup():
