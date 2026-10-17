@@ -42,7 +42,7 @@ export default function ProfileChannelsPage({ onNavigate }: { onNavigate: (page:
     setActionError(null);
     setNotice(null);
     try {
-      const removed = await youtubeApi.deleteChannel(channelId);
+      const removed = await youtubeApi.disconnectOAuth();
       if (!removed) throw new Error('The channel could not be disconnected.');
       setChannels((current) => current.filter((channel) => channel.id !== channelId));
       setNotice(`${name} disconnected.`);

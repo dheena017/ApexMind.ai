@@ -255,7 +255,7 @@ export default function YouTubePage({
           onToggleAutoUpload={() => {}}
           onLoadLiveShorts={() => {}}
           onOpenCorrectModal={handleConnectWithGoogle}
-          onDeleteChannel={() => {}}
+          onDisconnectChannel={() => {}}
           onOpenConnectModal={handleConnectWithGoogle}
           onNavigate={onNavigate}
           onTabChange={handleTabChange}
@@ -331,7 +331,7 @@ export default function YouTubePage({
           copiedId={null}
           onCopyId={() => {}}
           onOpenCorrectModal={handleConnectWithGoogle}
-          onDeleteChannel={handleDisconnectChannel}
+          onDisconnectChannel={handleDisconnectChannel}
           onOpenConnectModal={handleConnectWithGoogle}
         />
       )}

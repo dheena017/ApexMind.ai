@@ -282,6 +282,10 @@ export const youtubeApi = {
     return res.ok;
   },
 
+  async disconnectChannel(_channelId?: string): Promise<boolean> {
+    return this.disconnectOAuth();
+  },
+
   // ── Backward Compatible Wrappers for Existing Studio Views ────────────────
 
   async getYouTubeData(handle?: string): Promise<{ channels: YouTubeChannel[]; videos: YouTubeLiveVideo[] }> {
@@ -400,8 +404,8 @@ export const youtubeApi = {
     return this.getChannelDetails(channelId);
   },
 
-  async deleteChannel(channelId: string): Promise<boolean> {
-    return true;
+  async deleteChannel(_channelId?: string): Promise<boolean> {
+    return this.disconnectOAuth();
   },
 
   async publishVideo(payload: any): Promise<any> {

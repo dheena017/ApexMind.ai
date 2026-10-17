@@ -9,7 +9,8 @@ export interface YouTubeSettingsPageProps {
   copiedId: string | null;
   onCopyId: (id: string) => void;
   onOpenCorrectModal: (ch: YouTubeChannel) => void;
-  onDeleteChannel: (id: string, name: string) => void;
+  onDisconnectChannel?: (id: string, name: string) => void;
+  onDeleteChannel?: (id: string, name: string) => void;
   onOpenConnectModal: () => void;
 }
 
@@ -18,10 +19,12 @@ export const YouTubeSettingsPage: React.FC<YouTubeSettingsPageProps> = ({
   copiedId,
   onCopyId,
   onOpenCorrectModal,
+  onDisconnectChannel,
   onDeleteChannel,
   onOpenConnectModal,
 }) => {
   const activeChannel = channels[0];
+  const handleDisconnect = onDisconnectChannel || onDeleteChannel || (() => {});
 
   return (
     <div className="space-y-6 animate-fade-in font-sans-studio text-[#E5E5E5]">
@@ -70,7 +73,7 @@ export const YouTubeSettingsPage: React.FC<YouTubeSettingsPageProps> = ({
               <Button
                 size="sm"
                 variant="danger"
-                onClick={() => onDeleteChannel(activeChannel.id, activeChannel.name)}
+                onClick={() => handleDisconnect(activeChannel.id, activeChannel.name)}
               >
                 Disconnect Channel
               </Button>

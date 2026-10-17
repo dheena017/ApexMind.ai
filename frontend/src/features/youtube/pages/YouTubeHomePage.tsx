@@ -48,6 +48,7 @@ export interface YouTubeHomePageProps {
   onToggleAutoUpload?: (ch: YouTubeChannel) => void;
   onLoadLiveShorts?: (ch: YouTubeChannel) => void;
   onOpenCorrectModal?: (ch: YouTubeChannel) => void;
+  onDisconnectChannel?: (id: string, name: string) => void;
   onDeleteChannel?: (id: string, name: string) => void;
   onOpenConnectModal?: () => void;
   onNavigate: (page: string) => void;

@@ -675,6 +675,10 @@ async def post_token_connect(payload: TokenConnectRequest):
     "/api/youtube/oauth/disconnect",
     summary="Disconnect Google OAuth YouTube channel",
 )
+@router.post(
+    "/api/youtube/disconnect",
+    summary="Disconnect YouTube channel",
+)
 async def post_disconnect_oauth():
     from backend.database.connection import get_connection
     conn = get_connection()
@@ -682,7 +686,7 @@ async def post_disconnect_oauth():
     c.execute("DELETE FROM youtube_channels")
     conn.commit()
     conn.close()
-    return {"success": True, "message": "Disconnected Google OAuth session."}
+    return {"success": True, "message": "Disconnected YouTube OAuth session and channel credentials."}
 
 
 # ==============================================================================
@@ -739,7 +743,3 @@ async def legacy_get_analytics(channel_id: str):
 async def legacy_sync_channel(channel_id: str):
     meta = resolve_channel_metadata(channel_id)
     return {"success": True, "channel": meta, "message": f"Successfully synced '{meta['name']}' directly from live YouTube."}
-
-@router.delete("/api/youtube/channels/{channel_id}")
-async def legacy_delete_channel(channel_id: str):
-    return {"success": True, "channelId": channel_id, "message": "Channel disconnected from studio session."}
