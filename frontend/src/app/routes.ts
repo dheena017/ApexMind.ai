@@ -1,6 +1,5 @@
 export type PageRoute =
   | 'landing'
-  | 'dashboard'
   | 'workspace'
   | 'workspace-script'
   | 'workspace-prompt'
@@ -47,12 +46,11 @@ export interface RouteConfig {
 }
 
 export const APP_ROUTES: RouteConfig[] = [
-  // ── 1. Landing & Home ──
+  // ── 1. Landing ──
   { id: 'landing', path: '/', title: 'ApexMind - AI Motivational YouTube Studio', aliases: ['/landing', '/home'] },
-  { id: 'dashboard', path: '/dashboard', title: 'Dashboard - ApexMind Studio', aliases: ['/home-dashboard'] },
 
   // ── 2. AI Video Creation Workspace & Sub-Panes ──
-  { id: 'workspace', path: '/workspace', title: 'AI Video Studio - ApexMind', aliases: ['/studio', '/editor'] },
+  { id: 'workspace', path: '/workspace', title: 'AI Video Studio - ApexMind', aliases: ['/studio', '/editor', '/dashboard', '/home-dashboard'] },
   { id: 'workspace-script', path: '/workspace/script', title: 'Script & AI - ApexMind Studio', aliases: ['/studio/script'] },
   { id: 'workspace-prompt', path: '/workspace/prompt', title: 'AI Script Creator - ApexMind Studio', aliases: ['/studio/prompt'] },
   { id: 'workspace-editor', path: '/workspace/editor', title: 'Script & Subtitles - ApexMind Studio', aliases: ['/studio/editor'] },
@@ -125,7 +123,7 @@ export function routeToPath(page: string): string {
 export const REDIRECT_STORAGE_KEY = 'apexmind_redirect_after_login';
 
 export function getPostLoginRedirect(): PageRoute {
-  if (typeof window === 'undefined') return 'dashboard';
+  if (typeof window === 'undefined') return 'workspace';
 
   // 1. Check URL query parameters: ?redirect=... or ?returnTo=...
   try {
@@ -153,7 +151,7 @@ export function getPostLoginRedirect(): PageRoute {
   } catch {}
 
   // 3. Fallback default
-  return 'dashboard';
+  return 'workspace';
 }
 
 export function savePostLoginRedirect(targetRoute: string): void {

@@ -19,12 +19,12 @@ export default function App() {
 
   const [activePage, setActivePage] = useState<PageRoute>(() => {
     const parsed = typeof window === 'undefined' ? 'landing' : parseRoute(window.location.pathname);
-    // If user is already authenticated and visits '/' or '/login', send directly to dashboard
+    // If user is already authenticated and visits '/' or '/login', send directly to workspace
     if ((parsed === 'landing' || parsed === 'login') && typeof window !== 'undefined' && isSessionValid()) {
-      if (window.location.pathname !== '/dashboard') {
-        window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
+      if (window.location.pathname !== '/workspace') {
+        window.history.replaceState({ page: 'workspace' }, '', '/workspace');
       }
-      return 'dashboard';
+      return 'workspace';
     }
 
     // If an unauthenticated user opens directly to an internal studio page, store the intent and load login
@@ -80,12 +80,12 @@ export default function App() {
     }
   }, [isAuthenticated, activePage]);
 
-  // If already authenticated and on login or landing, send directly to Dashboard
+  // If already authenticated and on login or landing, send directly to Workspace
   useEffect(() => {
     if (isAuthenticated && (activePage === 'login' || activePage === 'landing')) {
-      const destination = getPostLoginRedirect() || 'dashboard';
+      const destination = getPostLoginRedirect() || 'workspace';
       clearPostLoginRedirect();
-      consoleLogger.info('Auth', `Authenticated creator on [${activePage}] -> directing directly to Dashboard [${destination}]`);
+      consoleLogger.info('Auth', `Authenticated creator on [${activePage}] -> directing directly to Studio [${destination}]`);
       setActivePage(destination);
       const targetPath = routeToPath(destination);
       if (window.location.pathname !== targetPath) {
@@ -116,10 +116,10 @@ export default function App() {
         setActivePage('login');
         return;
       }
-      // If user is authenticated and clicks back to landing or login, direct to dashboard
+      // If user is authenticated and clicks back to landing or login, direct to workspace
       if (isAuthenticated && (parsed === 'landing' || parsed === 'login')) {
-        setActivePage('dashboard');
-        window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
+        setActivePage('workspace');
+        window.history.replaceState({ page: 'workspace' }, '', '/workspace');
         return;
       }
       consoleLogger.action('Router', `Browser History PopState detected -> navigating to: "${parsed}"`);
@@ -141,9 +141,9 @@ export default function App() {
         targetRoute === 'terms' ||
         targetRoute === 'privacy';
 
-      // If user is already authenticated and tries to navigate to login or landing, route directly to dashboard
+      // If user is already authenticated and tries to navigate to login or landing, route directly to workspace
       if (isAuthenticated && (targetRoute === 'login' || targetRoute === 'landing')) {
-        targetRoute = 'dashboard';
+        targetRoute = 'workspace';
       }
 
       // If user explicitly navigates to login (e.g. clicks "Sign In"), clear prior deep redirect

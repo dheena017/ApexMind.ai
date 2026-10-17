@@ -133,7 +133,9 @@ def resolve_channel_metadata(query: str) -> Dict[str, Any]:
     if resp.status_code != 200:
         raise ValueError(f"YouTube channel '{query}' not found (HTTP {resp.status_code})")
 
-    match = re.search(r"var ytInitialData = (\{.*?\});</script>", resp.text)
+    match = re.search(r"(?:var\s+)?ytInitialData\s*=\s*(\{.+?\});\s*(?:</script>|;)", resp.text)
+    if not match:
+        match = re.search(r"ytInitialData\s*=\s*(\{.+?\});", resp.text)
     if not match:
         raise ValueError(f"Could not parse YouTube metadata for '{query}'.")
 

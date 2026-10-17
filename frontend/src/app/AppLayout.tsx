@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   CheckCircle2,
   Sparkles,
-  LayoutDashboard,
   Wand2,
   Youtube,
   User,
@@ -120,7 +119,6 @@ export default function AppLayout({
 
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
     { id: 'workspace', label: 'AI Video Studio', icon: <Wand2 className="w-5 h-5 shrink-0" /> },
     { id: 'videos', label: 'Website Videos', icon: <Film className="w-5 h-5 shrink-0" /> },
     { id: 'youtube', label: 'YouTube Manager', icon: <Youtube className="w-5 h-5 text-red-400 shrink-0" /> },
@@ -200,7 +198,7 @@ export default function AppLayout({
 
               {/* Brand Logo */}
               <button
-                onClick={() => onNavigate('dashboard')}
+                onClick={() => onNavigate('workspace')}
                 className="text-base lg:text-lg font-extrabold tracking-tight flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer"
                 aria-label="ApexMind Studio home"
               >

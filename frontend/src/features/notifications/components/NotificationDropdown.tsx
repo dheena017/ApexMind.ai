@@ -115,7 +115,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     if (notif.action_url) {
       setIsOpen(false);
       const cleanRoute = notif.action_url.replace(/^\//, '').split('?')[0];
-      onNavigate(cleanRoute || 'dashboard');
+      onNavigate(cleanRoute || 'workspace');
     }
   };
 

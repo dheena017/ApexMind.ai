@@ -105,7 +105,7 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('dashboard')}
+                  onClick={() => onNavigate('workspace')}
                   className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
                 >
                   Analytics Sync
@@ -145,7 +145,7 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('dashboard')}
+                  onClick={() => onNavigate('workspace')}
                   className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
                 >
                   Quote Deduplication

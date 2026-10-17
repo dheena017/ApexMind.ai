@@ -47,7 +47,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
   useEffect(() => {
     if (isAuthenticated) {
-      const destination = getPostLoginRedirect() || 'dashboard';
+      const destination = getPostLoginRedirect() || 'workspace';
       clearPostLoginRedirect();
       onNavigate(destination);
     }
@@ -66,7 +66,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   // Compute intended post-login destination
   const targetDestination = getPostLoginRedirect();
   const targetRouteConfig = APP_ROUTES.find((r) => r.id === targetDestination);
-  const targetDisplayName = targetRouteConfig ? targetRouteConfig.title.split(' - ')[0] : 'Dashboard';
+  const targetDisplayName = targetRouteConfig ? targetRouteConfig.title.split(' - ')[0] : 'Studio';
 
   // Helper to decode Google JWT Identity credentials
   const decodeJwt = (token: string) => {
@@ -91,8 +91,8 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
   const handleSuccessfulAuth = () => {
     clearPostLoginRedirect();
-    setNotice('Signed in! Redirecting to Dashboard...');
-    onNavigate('dashboard');
+    setNotice('Signed in! Redirecting to Studio...');
+    onNavigate('workspace');
   };
 
   const googleClientId = (

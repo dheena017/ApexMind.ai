@@ -37,40 +37,47 @@ export const notificationsApi = {
     };
   },
 
-  // Get unread notification count only (optimized for navbar badge poller)
+  // Get unread notification count
   async getUnreadCount(category?: string): Promise<number> {
     try {
-      const query = new URLSearchParams();
-      if (category && category !== 'all') query.set('category', category);
-      const path = `/api/notifications/unread-count${query.toString() ? `?${query.toString()}` : ''}`;
-      const res = await fetch(apiUrl(path));
+      const res = await fetch(apiUrl('/api/notifications/manage'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'unread_count', category: category === 'all' ? undefined : category }),
+      });
       if (!res.ok) return 0;
       const data = await res.json();
-      return typeof data.unreadCount === 'number' ? data.unreadCount : 0;
+      return data.unreadCount ?? 0;
     } catch {
       return 0;
     }
   },
 
-  async markNotificationRead(id: string, read: boolean = true): Promise<void> {
+  async markNotificationRead(id: string, read: boolean = true): Promise<{ success: boolean; unreadCount?: number }> {
     const start = performance.now();
-    const res = await fetch(apiUrl(`/api/notifications/${encodeURIComponent(id)}/read`), {
-      method: 'PATCH',
+    const res = await fetch(apiUrl('/api/notifications/manage'), {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ read }),
+      body: JSON.stringify({ action: 'toggle_read', notification_id: id, read }),
     });
     const duration = performance.now() - start;
-    consoleLogger.api('PATCH', `/api/notifications/${id}/read`, res.status, duration);
+    consoleLogger.api('POST', '/api/notifications/manage?action=toggle_read', res.status, duration);
+    if (!res.ok) return { success: false };
+    return res.json();
   },
 
-  async deleteNotification(id: string): Promise<void> {
+  async deleteNotification(id: string): Promise<{ success: boolean; unreadCount?: number }> {
     const start = performance.now();
-    const res = await fetch(apiUrl(`/api/notifications/${encodeURIComponent(id)}`), {
-      method: 'DELETE',
+    const res = await fetch(apiUrl('/api/notifications/manage'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', notification_id: id }),
     });
     const duration = performance.now() - start;
-    consoleLogger.api('DELETE', `/api/notifications/${id}`, res.status, duration);
+    consoleLogger.api('POST', '/api/notifications/manage?action=delete', res.status, duration);
     consoleLogger.info('Notifications', `Deleted notification ${id}`);
+    if (!res.ok) return { success: false };
+    return res.json();
   },
 
   async createNotification(payload: {
@@ -93,13 +100,18 @@ export const notificationsApi = {
     return data.notification;
   },
 
-  async markNotificationsRead(category?: string): Promise<void> {
-    const path = category && category !== 'all' ? `/api/notifications/mark-read?category=${encodeURIComponent(category)}` : '/api/notifications/mark-read';
+  async markNotificationsRead(category?: string): Promise<{ success: boolean; affected?: number; count?: number; unreadCount?: number }> {
     const start = performance.now();
-    const res = await fetch(apiUrl(path), { method: 'POST' });
+    const res = await fetch(apiUrl('/api/notifications/manage'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark_all_read', category: category === 'all' ? undefined : category }),
+    });
     const duration = performance.now() - start;
-    consoleLogger.api('POST', path, res.status, duration);
+    consoleLogger.api('POST', '/api/notifications/manage?action=mark_all_read', res.status, duration);
     consoleLogger.success('Notifications', 'Notifications marked as read');
+    if (!res.ok) return { success: false, affected: 0, count: 0, unreadCount: 0 };
+    return res.json();
   },
 
   async clearNotifications(category?: string): Promise<void> {

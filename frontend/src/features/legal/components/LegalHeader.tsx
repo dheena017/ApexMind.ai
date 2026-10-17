@@ -35,7 +35,7 @@ export const LegalHeader: React.FC<LegalHeaderProps> = ({
               if (typeof window !== 'undefined' && window.history.length > 1) {
                 window.history.back();
               } else {
-                onNavigate(isAuthenticated ? 'dashboard' : 'login');
+                onNavigate(isAuthenticated ? 'workspace' : 'login');
               }
             }}
             className="p-2 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] transition-colors cursor-pointer"

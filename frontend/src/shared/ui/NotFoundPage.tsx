@@ -11,8 +11,8 @@ export default function NotFoundPage({ onNavigate, currentPath }: NotFoundPagePr
   const pathDisplay = currentPath || (typeof window !== 'undefined' ? window.location.pathname : '/unknown');
 
   const popularRoutes = [
-    { id: 'dashboard', label: 'Automation Dashboard', icon: <LayoutDashboard className="w-4 h-4 text-[#60A5FA]" /> },
     { id: 'workspace', label: 'AI Video Studio', icon: <Wand2 className="w-4 h-4 text-purple-400" /> },
+    { id: 'videos', label: 'My Videos', icon: <Sparkles className="w-4 h-4 text-[#60A5FA]" /> },
     { id: 'youtube', label: 'YouTube Manager', icon: <Youtube className="w-4 h-4 text-red-400" /> },
   ];
 
@@ -49,18 +49,18 @@ export default function NotFoundPage({ onNavigate, currentPath }: NotFoundPagePr
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <Button
             variant="primary"
-            icon={<LayoutDashboard className="w-4 h-4" />}
-            onClick={() => onNavigate('dashboard')}
+            icon={<Wand2 className="w-4 h-4" />}
+            onClick={() => onNavigate('workspace')}
           >
-            Back to Dashboard
+            Back to Studio
           </Button>
 
           <Button
             variant="secondary"
-            icon={<Wand2 className="w-4 h-4" />}
-            onClick={() => onNavigate('workspace')}
+            icon={<Youtube className="w-4 h-4" />}
+            onClick={() => onNavigate('youtube')}
           >
-            Open Studio
+            YouTube Manager
           </Button>
 
           <Button

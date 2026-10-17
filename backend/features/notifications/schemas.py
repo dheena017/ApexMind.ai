@@ -42,8 +42,22 @@ class StandardSuccessResponse(BaseModel):
     success: bool
     message: Optional[str] = None
     affected: Optional[int] = None
+    count: Optional[int] = None
+    unreadCount: Optional[int] = 0
 
-class NotificationUnreadCountResponse(BaseModel):
-    success: bool
+class NotificationManageRequest(BaseModel):
+    action: Optional[str] = "mark_read"
+    notification_id: Optional[str] = None
+    read: Optional[bool] = True
+    category: Optional[str] = None
+
+class NotificationManageResponse(BaseModel):
+    success: bool = True
+    action: str = "mark_read"
+    affected: int = 0
+    count: int = 0
     unreadCount: int = 0
+    totalCount: int = 0
+    message: Optional[str] = None
+
 

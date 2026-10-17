@@ -12,7 +12,8 @@ from .schemas import (
     NotificationCreateRequest,
     NotificationToggleReadRequest,
     StandardSuccessResponse,
-    NotificationUnreadCountResponse,
+    NotificationManageRequest,
+    NotificationManageResponse,
 )
 from .service import (
     list_notifications,
@@ -26,24 +27,6 @@ from .service import (
 
 logger = logging.getLogger("ApexMind.features.notifications")
 router = APIRouter(tags=["Notifications"])
-
-@router.get(
-    "/api/notifications/unread-count",
-    response_model=NotificationUnreadCountResponse,
-    summary="Get unread notifications count",
-    description="Retrieve only the unread notifications count for badge polling."
-)
-async def get_unread_count_route(
-    category: Optional[str] = Query(None, description="Optional category filter"),
-):
-    try:
-        return get_unread_count(category=category)
-    except Exception as e:
-        logger.error(f"Error fetching unread notification count: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve unread notification count."
-        )
 
 @router.get(
     "/api/notifications",
@@ -88,58 +71,105 @@ async def post_notification_route(payload: NotificationCreateRequest):
             detail="Failed to create notification."
         )
 
-@router.patch(
-    "/api/notifications/{notification_id}/read",
-    response_model=StandardSuccessResponse,
-    summary="Toggle single notification read state"
+@router.post(
+    "/api/notifications/manage",
+    response_model=NotificationManageResponse,
+    summary="Manage notifications",
+    description="Unified endpoint to mark all read, toggle single notification read state, delete a notification, or retrieve unread badge count."
 )
-async def patch_notification_read(
-    notification_id: str,
-    payload: NotificationToggleReadRequest = NotificationToggleReadRequest(read=True),
+async def post_manage_notifications(
+    payload: Optional[NotificationManageRequest] = None,
+    action: Optional[str] = Query(None, description="Action: mark_read, toggle_read, delete, unread_count"),
+    notification_id: Optional[str] = Query(None, description="Notification ID for toggle_read or delete"),
+    read: Optional[bool] = Query(None, description="Read state for toggle_read"),
+    category: Optional[str] = Query(None, description="Category filter"),
 ):
     try:
-        res = toggle_item_read(notif_id=notification_id, read_state=payload.read)
-        return {"success": res["success"], "message": f"Updated notification {notification_id}"}
-    except Exception as e:
-        logger.error(f"Error toggling notification {notification_id} read state: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update notification."
-        )
+        act = (payload.action if payload and payload.action else action) or "mark_read"
+        act_clean = act.lower().replace("-", "_")
+        target_id = (payload.notification_id if payload and payload.notification_id else notification_id)
+        target_read = (payload.read if payload and payload.read is not None else read)
+        if target_read is None:
+            target_read = True
+        target_category = (payload.category if payload and payload.category else category)
+        if target_category == "all":
+            target_category = None
 
-@router.delete(
-    "/api/notifications/{notification_id}",
-    response_model=StandardSuccessResponse,
-    summary="Delete single notification"
-)
-async def delete_single_notification_route(notification_id: str):
-    try:
-        res = delete_single_notification(notif_id=notification_id)
-        return {"success": res["success"], "message": f"Deleted notification {notification_id}"}
+        affected = 0
+        message = ""
+
+        if act_clean in ("mark_read", "mark_all_read"):
+            res = mark_read(category=target_category)
+            affected = res.get("affected", 0)
+            message = f"Marked {affected} notifications as read."
+
+        elif act_clean in ("toggle_read", "read", "unread"):
+            if not target_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="notification_id is required for toggle_read action."
+                )
+            res = toggle_item_read(notif_id=target_id, read_state=target_read)
+            affected = 1 if res.get("success") else 0
+            message = f"Notification {target_id} read state set to {target_read}."
+
+        elif act_clean == "delete":
+            if not target_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="notification_id is required for delete action."
+                )
+            res = delete_single_notification(notif_id=target_id)
+            affected = 1 if res.get("success") else 0
+            message = f"Notification {target_id} deleted."
+
+        elif act_clean in ("count", "unread_count"):
+            message = "Unread notifications count retrieved."
+
+        elif act_clean in ("clear_all", "delete_all"):
+            res = clear_all(category=target_category)
+            affected = res.get("affected", 0)
+            message = f"Cleared {affected} notifications."
+
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown notification action '{act}'."
+            )
+
+        unread_data = get_unread_count(category=target_category)
+        unread_count = unread_data.get("unreadCount", 0)
+        from .repository import fetch_notifications
+        all_items = fetch_notifications(category=target_category)
+
+        return {
+            "success": True,
+            "action": act_clean,
+            "affected": affected,
+            "count": affected,
+            "unreadCount": unread_count,
+            "totalCount": len(all_items),
+            "message": message,
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error deleting notification {notification_id}: {e}")
+        logger.error(f"Error managing notifications: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete notification."
+            detail="Failed to manage notification state."
         )
 
 @router.post(
     "/api/notifications/mark-read",
-    response_model=StandardSuccessResponse,
-    summary="Mark notifications as read"
+    response_model=NotificationManageResponse,
+    include_in_schema=False,
 )
-async def post_mark_read(
-    category: Optional[str] = Query(None, description="Optional category to mark as read"),
+async def post_mark_read_alias(
+    payload: Optional[NotificationManageRequest] = None,
+    category: Optional[str] = Query(None),
 ):
-    try:
-        res = mark_read(category=category)
-        return {"success": True, "affected": res.get("affected")}
-    except Exception as e:
-        logger.error(f"Error marking notifications read: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to mark notifications read."
-        )
+    return await post_manage_notifications(payload=payload, category=category, action="mark_read")
 
 @router.delete(
     "/api/notifications",
