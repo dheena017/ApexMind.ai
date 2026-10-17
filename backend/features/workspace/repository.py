@@ -3,7 +3,7 @@ backend/features/workspace/repository.py
 Database persistence and SQLite queries for workspace quote memory.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any
 from backend.database.connection import get_connection
 from backend.database.repository import get_media_library
@@ -24,8 +24,8 @@ def save_quote(title: str, hook: str, quote: str, category: str) -> Dict[str, An
     """Save newly generated quote to SQLite."""
     conn = get_connection()
     cursor = conn.cursor()
-    record_id = f"mem_{int(datetime.utcnow().timestamp() * 1000)}"
-    timestamp = datetime.utcnow().isoformat()
+    record_id = f"mem_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    timestamp = datetime.now(timezone.utc).isoformat()
     cursor.execute("""
     INSERT INTO quotes_memory (id, title, hook, quote, category, generated_at)
     VALUES (?, ?, ?, ?, ?, ?)

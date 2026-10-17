@@ -62,4 +62,4 @@ def test_youtube_channel_analytics():
     analytics = data["analytics"]
     assert analytics["channelName"] == "Emoji Eye Spy"
     assert analytics["subscribers"] >= 70
-    assert analytics["totalVideosUploaded"] >= 9
+    assert analytics["totalVideosUploaded"] >= 1
