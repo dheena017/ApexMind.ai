@@ -4,6 +4,7 @@ import { RouteLoadingFallback } from '@/src/shared/ui/feedback';
 import LandingPage from '@/src/features/landing/pages/LandingPage';
 import LoadingPage from '@/src/shared/ui/LoadingPage';
 import LoginPage from '@/src/features/auth/pages/LoginPage';
+import DashboardPage from '@/src/features/dashboard/pages/DashboardPage';
 import WorkspacePage from '@/src/features/workspace/pages/WorkspacePage';
 import VideosPage from '@/src/features/videos/pages/VideosPage';
 import YouTubePage from '@/src/features/youtube/pages/YouTubePage';
@@ -52,15 +53,11 @@ export default function AppRouter({
     return <LoginPage onNavigate={onNavigate} />;
   }
 
-  // Authenticated users on login or landing are sent directly to Workspace
+  // Authenticated users on login or landing are sent directly to Dashboard
   if (isAuthenticated && (activePage === 'login' || activePage === 'landing')) {
     return (
       <Suspense fallback={<RouteLoadingFallback />}>
-        <WorkspacePage
-          onNavigate={onNavigate}
-          activePane={activeWorkspacePane}
-          onPaneChange={onWorkspacePaneChange}
-        />
+        <DashboardPage onNavigate={onNavigate} />
       </Suspense>
     );
   }
@@ -76,6 +73,7 @@ export default function AppRouter({
           case 'login':
             return <LoginPage onNavigate={onNavigate} />;
           case 'dashboard':
+            return <DashboardPage onNavigate={onNavigate} />;
           case 'workspace':
           case 'workspace-script':
           case 'workspace-prompt':
@@ -94,6 +92,7 @@ export default function AppRouter({
                 onPaneChange={onWorkspacePaneChange}
               />
             );
+
           case 'youtube':
             return <YouTubePage onNavigate={onNavigate} initialTab="overview" />;
           case 'youtube-videos':

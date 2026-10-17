@@ -25,7 +25,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
 
   React.useEffect(() => {
     if (isSessionValid()) {
-      onNavigate('workspace');
+      onNavigate('dashboard');
     }
   }, [onNavigate]);
 

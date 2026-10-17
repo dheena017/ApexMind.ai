@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Film,
   Search,
+  LayoutDashboard,
 } from 'lucide-react';
 import { UserProfile } from '@/src/features/auth/types';
 
@@ -129,8 +130,18 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
 
   return (
     <header className="sticky top-0 h-10 shrink-0 z-30 w-full overflow-hidden bg-[#111111] border-b border-[#242424] px-2 sm:px-3 flex items-center justify-between gap-2 font-sans-studio select-none text-[#E5E5E5]">
-      {/* ── Left: Videos Button & Studio Title ── */}
-      <div className="flex items-center gap-2 shrink-0 min-w-0">
+      {/* ── Left: Dashboard & Videos Buttons & Studio Title ── */}
+      <div className="flex items-center gap-1.5 shrink-0 min-w-0">
+        <button
+          onClick={() => onNavigate('dashboard')}
+          className="flex h-7 px-2 items-center gap-1.5 rounded-lg border border-[#282828] bg-[#161616] text-[#A0A0A0] transition-all cursor-pointer hover:text-[#60A5FA] hover:bg-[#1C1C1C] hover:border-[#3B82F6]/40 text-[11px] font-semibold"
+          title="Creator Dashboard"
+          aria-label="Creator Dashboard"
+        >
+          <LayoutDashboard className="w-3.5 h-3.5 text-[#60A5FA]" />
+          <span className="hidden sm:inline">Dashboard</span>
+        </button>
+
         <button
           onClick={() => onNavigate('videos')}
           className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#282828] bg-[#161616] text-[#737373] transition-all cursor-pointer hover:text-[#60A5FA] hover:bg-[#1C1C1C] hover:border-[#383838]"
@@ -140,12 +151,15 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           <Film className="w-3.5 h-3.5" />
         </button>
 
-        <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap hidden min-[440px]:inline">
-          ApexMind Studio
-        </span>
-        <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap min-[440px]:hidden">
-          ApexMind
-        </span>
+        <button
+          type="button"
+          onClick={() => onNavigate('dashboard')}
+          className="font-extrabold text-xs tracking-tight text-white hover:text-[#60A5FA] transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1"
+          title="Return to Dashboard"
+        >
+          <span className="hidden min-[440px]:inline">ApexMind Studio</span>
+          <span className="min-[440px]:hidden">ApexMind</span>
+        </button>
       </div>
 
       {/* ── Center: Breadcrumb & Editable Video Title ── */}

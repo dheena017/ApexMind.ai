@@ -263,6 +263,14 @@ CURRENT CREATIVE CONTEXT:
 {context_block}
 
 ================================================================================
+CRITICAL ZERO-REPETITION QUOTE MEMORY (DO NOT REPEAT):
+================================================================================
+The studio maintains an active memory store of all previously produced motivational quotes to guarantee 100% originality.
+You MUST strictly avoid repeating, rephrasing, or closely copying any of the following past quotes:
+{memory_snippets}
+Your new quote and hook MUST be fresh, distinct, impactful, and unique from anything listed above!
+
+================================================================================
 WEBSITE MEDIA & STYLE ASSET CATALOG (CHOOSE FREELY FROM THESE COMPLETE ASSETS):
 ================================================================================
 

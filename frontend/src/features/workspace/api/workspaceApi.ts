@@ -137,33 +137,69 @@ export const workspaceApi = {
   },
 
   // Fetch quote memory catalog to avoid repetition
-  async getQuoteMemory(): Promise<{ totalQuotesInMemory: number; quotes: string[]; memoryStore?: any[] }> {
+  // Fetch quote memory catalog to avoid repetition (supports filtering, search, pagination, sort)
+  async getQuoteMemory(params?: {
+    category?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+  }): Promise<{
+    totalQuotesInMemory: number;
+    totalQuotesSaved?: number;
+    filteredCount?: number;
+    uniquenessScore?: number;
+    categories?: Record<string, number>;
+    recentThemes?: string[];
+    quotes: string[];
+    memoryStore?: any[];
+  }> {
     const start = performance.now();
-    const res = await fetch(apiUrl('/api/quote-memory'));
+    const query = new URLSearchParams();
+    if (params?.category) query.set('category', params.category);
+    if (params?.search) query.set('search', params.search);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    if (params?.sort) query.set('sort', params.sort);
+
+    const qs = query.toString();
+    const url = qs ? `/api/quote-memory?${qs}` : '/api/quote-memory';
+    const res = await fetch(apiUrl(url));
     const duration = performance.now() - start;
-    consoleLogger.api('GET', '/api/quote-memory', res.status, duration);
+    consoleLogger.api('GET', url, res.status, duration);
     const data = await res.json();
     return {
       totalQuotesInMemory: data.totalQuotesSaved || data.totalQuotesInMemory || (data.memoryStore ? data.memoryStore.length : 0),
+      totalQuotesSaved: data.totalQuotesSaved,
+      filteredCount: data.filteredCount,
+      uniquenessScore: data.uniquenessScore ?? 100,
+      categories: data.categories || {},
+      recentThemes: data.recentThemes || [],
       quotes: data.quotes || [],
       memoryStore: data.memoryStore || [],
     };
   },
 
-  // Fetch connected YouTube channel info
-  async getConnectedChannels(): Promise<any[]> {
-    try {
-      const res = await fetch(apiUrl('/api/youtube/channels'));
-      const data = await res.json();
-      return data.channels || [];
-    } catch {
-      return [];
-    }
+  // Manually add quote to uniqueness memory store
+  async addQuoteToMemory(payload: {
+    title: string;
+    quote: string;
+    hook?: string;
+    category?: string;
+  }): Promise<any> {
+    const res = await fetch(apiUrl('/api/quote-memory'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
   },
 
-  // Clear quote memory
-  async clearQuoteMemory(): Promise<void> {
-    await fetch(apiUrl('/api/quote-memory'), { method: 'DELETE' });
+  // Clear quote memory or delete specific quote by ID
+  async clearQuoteMemory(quoteId?: string): Promise<any> {
+    const url = quoteId ? `/api/quote-memory?id=${encodeURIComponent(quoteId)}` : '/api/quote-memory';
+    const res = await fetch(apiUrl(url), { method: 'DELETE' });
+    return res.json();
   },
 
   // Upload & Publish to YouTube Shorts

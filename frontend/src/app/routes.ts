@@ -1,5 +1,6 @@
 export type PageRoute =
   | 'landing'
+  | 'dashboard'
   | 'workspace'
   | 'workspace-script'
   | 'workspace-prompt'
@@ -49,8 +50,12 @@ export const APP_ROUTES: RouteConfig[] = [
   // ── 1. Landing ──
   { id: 'landing', path: '/', title: 'ApexMind - AI Motivational YouTube Studio', aliases: ['/landing', '/home'] },
 
-  // ── 2. AI Video Creation Workspace & Sub-Panes ──
-  { id: 'workspace', path: '/workspace', title: 'AI Video Studio - ApexMind', aliases: ['/studio', '/editor', '/dashboard', '/home-dashboard'] },
+  // ── 2. Creator Dashboard ──
+  { id: 'dashboard', path: '/dashboard', title: 'Creator Dashboard - ApexMind Studio', aliases: ['/home-dashboard', '/overview'] },
+
+  // ── 3. AI Video Creation Workspace & Sub-Panes ──
+  { id: 'workspace', path: '/workspace', title: 'AI Video Studio - ApexMind', aliases: ['/studio', '/editor'] },
+
   { id: 'workspace-script', path: '/workspace/script', title: 'Script & AI - ApexMind Studio', aliases: ['/studio/script'] },
   { id: 'workspace-prompt', path: '/workspace/prompt', title: 'AI Script Creator - ApexMind Studio', aliases: ['/studio/prompt'] },
   { id: 'workspace-editor', path: '/workspace/editor', title: 'Script & Subtitles - ApexMind Studio', aliases: ['/studio/editor'] },

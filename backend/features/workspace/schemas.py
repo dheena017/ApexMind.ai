@@ -3,7 +3,7 @@ backend/features/workspace/schemas.py
 Pydantic schemas and DTOs for the Workspace feature (Scripting, Voiceover, Memory, Media Library).
 """
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 # ── 1. Request Models ─────────────────────────────────────────────────────────
@@ -160,10 +160,35 @@ class QuoteMemoryItem(BaseModel):
     category: Optional[str] = None
     generated_at: str
 
+
+class CreateQuoteMemoryRequest(BaseModel):
+    title: str = Field(..., min_length=1, description="Title or topic of the quote")
+    quote: str = Field(..., min_length=1, description="The quote body text")
+    hook: Optional[str] = Field(default=None, description="Opening viral hook")
+    category: Optional[str] = Field(default="Stoic Mindset & Discipline", description="Category or theme")
+
+
+class CreateQuoteMemoryResponse(BaseModel):
+    success: bool
+    message: str
+    quote: QuoteMemoryItem
+    totalQuotesSaved: int
+
+
+class DeleteQuoteMemoryResponse(BaseModel):
+    success: bool
+    deletedCount: int
+    message: str
+
+
 class QuoteMemoryListResponse(BaseModel):
     success: bool
     totalQuotesSaved: int
+    filteredCount: int
     uniquenessScore: int = 100
+    categories: Dict[str, int] = {}
+    recentThemes: List[str] = []
+    quotes: List[str] = []
     memoryStore: List[QuoteMemoryItem]
 
 class MusicTrackItem(BaseModel):

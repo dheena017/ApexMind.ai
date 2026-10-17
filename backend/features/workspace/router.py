@@ -4,19 +4,25 @@ FastAPI route endpoints for workspace: script generation, TTS, memory, and media
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, HTTPException, status, Query
 from .schemas import (
     GenerateScriptRequest,
     GenerateScriptResponse,
     GenerateVoiceoverRequest,
     VoiceoverResponse,
     QuoteMemoryListResponse,
+    CreateQuoteMemoryRequest,
+    CreateQuoteMemoryResponse,
+    DeleteQuoteMemoryResponse,
     MediaLibraryResponse,
 )
 from .service import (
     get_memory_list,
     generate_script,
     clear_memory,
+    add_manual_quote,
+    remove_quote,
     synthesize_voiceover,
     get_media_library,
 )
@@ -99,11 +105,23 @@ def post_generate_voiceover(payload: GenerateVoiceoverRequest):
     "/api/quote-memory",
     response_model=QuoteMemoryListResponse,
     summary="Get quote memory history",
-    description="Retrieve all past quotes to guarantee zero repetition across video creations."
+    description="Retrieve past quotes to guarantee zero repetition across video creations. Supports category filtering, keyword search, pagination, and sorting.",
 )
-async def get_quotes_memory_route():
+async def get_quotes_memory_route(
+    category: Optional[str] = Query(None, description="Filter quotes by theme/category (e.g. 'Stoic Mindset', 'Motivation')"),
+    search: Optional[str] = Query(None, description="Search across quote text, hook, or title"),
+    limit: int = Query(50, ge=1, le=200, description="Max quotes to return per page"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+    sort: str = Query("newest", description="Sort by: 'newest', 'oldest', 'category', 'title'"),
+):
     try:
-        return get_memory_list()
+        return get_memory_list(
+            limit=limit,
+            offset=offset,
+            category=category,
+            search=search,
+            sort=sort,
+        )
     except Exception as e:
         logger.error(f"Error fetching quote memory: {e}")
         raise HTTPException(
@@ -111,19 +129,63 @@ async def get_quotes_memory_route():
             detail="Failed to retrieve quote memory."
         )
 
+
+@router.post(
+    "/api/quote-memory",
+    response_model=CreateQuoteMemoryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add quote to memory",
+    description="Manually register a quote in the uniqueness memory store to prevent AI repetition or preserve favorite quotes.",
+)
+async def post_quote_memory_route(payload: CreateQuoteMemoryRequest):
+    try:
+        return add_manual_quote(
+            title=payload.title,
+            quote=payload.quote,
+            hook=payload.hook,
+            category=payload.category,
+        )
+    except Exception as e:
+        logger.error(f"Error saving quote to memory: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to add quote to memory: {e}"
+        )
+
+
 @router.delete(
     "/api/quote-memory",
-    summary="Clear quote memory history"
+    response_model=DeleteQuoteMemoryResponse,
+    summary="Delete quote memory history",
+    description="Delete a specific quote by ID from memory, or clear all quote history if no ID is specified.",
 )
-async def delete_quotes_memory_route():
+async def delete_quotes_memory_route(
+    quote_id: Optional[str] = Query(None, alias="id", description="Optional ID of specific quote to delete. If omitted, clears all quotes."),
+):
     try:
-        return clear_memory()
+        return clear_memory(quote_id=quote_id)
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
     except Exception as e:
         logger.error(f"Error clearing quote memory: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to clear quote memory."
         )
+
+
+@router.delete(
+    "/api/quote-memory/{quote_id}",
+    response_model=DeleteQuoteMemoryResponse,
+    summary="Delete quote by ID",
+    description="Delete a specific quote by its ID from memory store.",
+    include_in_schema=False,
+)
+async def delete_quote_by_path_route(quote_id: str):
+    return await delete_quotes_memory_route(quote_id=quote_id)
 
 @router.get(
     "/api/media-library",
