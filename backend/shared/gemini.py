@@ -188,10 +188,13 @@ def generate_gemini_script(
         video_summary = f"- [No pre-cached videos for {target_aspect_ratio}]. Videos will be dynamically retrieved per scene via Google Video Search & stock APIs based on googleSearchQuery & visualQuery."
 
     avail_backdrops = catalog.get("visualBackdrops") or catalog.get("imageBackdrops") or VISUAL_BACKDROPS
-    backdrop_summary = "\n".join([
-        f"- ID: {b.get('id')} | Name: '{b.get('name')}' | Category: {b.get('category')} | ImageUrl: {b.get('imageUrl') or ''} | VideoUrl: {b.get('videoUrl') or ''}"
-        for b in avail_backdrops
-    ])
+    if avail_backdrops:
+        backdrop_summary = "\n".join([
+            f"- ID: {b.get('id')} | Name: '{b.get('name')}' | Category: {b.get('category')} | ImageUrl: {b.get('imageUrl') or ''} | VideoUrl: {b.get('videoUrl') or ''}"
+            for b in avail_backdrops
+        ])
+    else:
+        backdrop_summary = f"- [Dynamic Backdrops for {target_aspect_ratio}]. Visual footage & backdrops will be dynamically retrieved per scene via open media APIs based on visualQuery."
 
     avail_text = catalog.get("textPresets") or catalog.get("textStyles") or CURATED_TEXT_PRESETS
     text_summary = "\n".join([
@@ -200,16 +203,22 @@ def generate_gemini_script(
     ])
 
     avail_music = catalog.get("musicTracks") or MEDIA_TRACKS
-    music_summary = "\n".join([
-        f"- ID: {m.get('id')} | Title: '{m.get('title')}' | Genre: {m.get('genre')} | BPM: {m.get('bpm')} | AudioUrl: {m.get('audioUrl')}"
-        for m in avail_music
-    ])
+    if avail_music:
+        music_summary = "\n".join([
+            f"- ID: {m.get('id')} | Title: '{m.get('title')}' | Genre: {m.get('genre')} | BPM: {m.get('bpm')} | AudioUrl: {m.get('audioUrl')}"
+            for m in avail_music
+        ])
+    else:
+        music_summary = "- [Dynamic Music Search]. Recommend appropriate genre and BPM (e.g. phonk, cinematic, lofi, ambient) for live soundtrack retrieval."
 
     avail_sfx = catalog.get("soundEffects") or catalog.get("sfxList") or CURATED_SFX
-    sfx_summary = "\n".join([
-        f"- ID: {s.get('id')} | Name: '{s.get('name')}' | Category: {s.get('category', 'sfx')} | Duration: {s.get('duration')} | AudioUrl: {s.get('audioUrl')}"
-        for s in avail_sfx
-    ])
+    if avail_sfx:
+        sfx_summary = "\n".join([
+            f"- ID: {s.get('id')} | Name: '{s.get('name')}' | Category: {s.get('category', 'sfx')} | Duration: {s.get('duration')} | AudioUrl: {s.get('audioUrl')}"
+            for s in avail_sfx
+        ])
+    else:
+        sfx_summary = "- [Dynamic Sound Design]. Plan sound effect events (whoosh, subdrop, riser, impact) with time offsets."
 
     avail_voices = catalog.get("voiceProfiles") or VOICE_PROFILES
     voice_summary = "\n".join([
@@ -689,12 +698,12 @@ Output MUST be a single raw JSON object matching this exact schema:
         # ── Sound Design & Multi-Track SFX Resolution ──
         sound_design = result.get("soundDesign") or {}
         st_id = sound_design.get("soundtrackTrackId") or result.get("musicTrack") or "track-phonk-titan"
-        matched_track = next((m for m in MEDIA_TRACKS if m["id"] == st_id or m["title"].lower() in str(st_id).lower()), MEDIA_TRACKS[0])
-        sound_design["soundtrackTrackId"] = matched_track["id"]
-        sound_design["soundtrackTitle"] = matched_track["title"]
-        sound_design["genre"] = matched_track.get("genre", "phonk")
-        sound_design["bpm"] = matched_track.get("bpm", 140)
-        sound_design["audioUrl"] = matched_track.get("audioUrl")
+        matched_track = next((m for m in MEDIA_TRACKS if m["id"] == st_id or m["title"].lower() in str(st_id).lower()), {}) if MEDIA_TRACKS else {}
+        sound_design["soundtrackTrackId"] = matched_track.get("id", str(st_id))
+        sound_design["soundtrackTitle"] = matched_track.get("title", sound_design.get("soundtrackTitle", "Dynamic Soundtrack"))
+        sound_design["genre"] = matched_track.get("genre", sound_design.get("genre", "phonk"))
+        sound_design["bpm"] = matched_track.get("bpm", sound_design.get("bpm", 140))
+        sound_design["audioUrl"] = matched_track.get("audioUrl", sound_design.get("audioUrl", ""))
         if not sound_design.get("ducking"):
             sound_design["ducking"] = {
                 "active": True,
@@ -708,11 +717,11 @@ Output MUST be a single raw JSON object matching this exact schema:
         sfx_events = sound_design.get("sfxEvents") or []
         for evt in sfx_events:
             s_id = evt.get("sfxId")
-            matched_sfx = next((s for s in CURATED_SFX if s["id"] == s_id or s["name"].lower() in str(evt.get("label", "")).lower()), None)
+            matched_sfx = next((s for s in CURATED_SFX if s["id"] == s_id or s["name"].lower() in str(evt.get("label", "")).lower()), None) if CURATED_SFX else None
             if matched_sfx:
                 evt["sfxUrl"] = matched_sfx.get("audioUrl")
             elif not evt.get("sfxUrl"):
-                evt["sfxUrl"] = CURATED_SFX[0].get("audioUrl")
+                evt["sfxUrl"] = CURATED_SFX[0].get("audioUrl") if CURATED_SFX else ""
         sound_design["sfxEvents"] = sfx_events
         result["soundDesign"] = sound_design
 

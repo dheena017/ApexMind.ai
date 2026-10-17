@@ -662,7 +662,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             : (isCustomVideo
                 ? customVideoUrl
                 : (!isCustomImage
-                    ? (activeBackdrop?.videoUrl || (activeBackdrop?.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined))
+                    ? activeBackdrop?.videoUrl
                     : undefined)));
 
   const activeImage = !imageEnabled

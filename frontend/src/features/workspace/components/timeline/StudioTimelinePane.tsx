@@ -584,7 +584,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
     lastBackdropIdRef.current = activeBackdrop.id;
 
-    const videoUrl = activeBackdrop.videoUrl || (activeBackdrop.id === 'v1' ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : undefined);
+    const videoUrl = activeBackdrop.videoUrl || undefined;
     if (videoUrl) {
       setVideoClips((prev) => {
         if (prev.length <= 1) {
