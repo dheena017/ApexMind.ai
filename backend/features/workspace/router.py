@@ -201,9 +201,23 @@ async def get_media_library_route():
     summary="Search open-source & royalty-free videos",
     description="Query Pexels, Pixabay, or keyless open stock video loops."
 )
-async def get_open_videos_route(q: str = "", category: str = "all", page: int = 1, pageSize: int = 20, aspectRatio: str = "9:16"):
+async def get_open_videos_route(
+    q: str = "",
+    category: str = "all",
+    provider: str = "all",
+    page: int = 1,
+    pageSize: int = 20,
+    aspectRatio: str = "9:16"
+):
     from .open_media_service import search_open_videos
-    return search_open_videos(query=q, category=category, page=page, page_size=pageSize, aspect_ratio=aspectRatio)
+    return search_open_videos(
+        query=q,
+        category=category,
+        provider=provider,
+        page=page,
+        page_size=pageSize,
+        aspect_ratio=aspectRatio
+    )
 
 @router.get(
     "/api/workspace/open-media/images",
@@ -261,7 +275,13 @@ async def get_open_sfx_route(q: str = "whoosh", limit: int = 20):
     summary="Search real viral hooks & quotes from open-source APIs",
     description="Query ZenQuotes and DummyJSON open APIs dynamically with zero API keys."
 )
-async def get_open_quotes_route(q: str = "", category: str = "all", limit: int = 30):
+async def get_open_quotes_route(
+    q: str = "",
+    category: str = "all",
+    author: str = "",
+    page: int = 1,
+    limit: int = 30
+):
     from .open_media_service import search_open_quotes
-    return search_open_quotes(query=q, category=category, limit=limit)
+    return search_open_quotes(query=q, category=category, author=author, page=page, limit=limit)
 

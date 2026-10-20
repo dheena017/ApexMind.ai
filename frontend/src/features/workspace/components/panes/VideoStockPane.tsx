@@ -47,6 +47,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'settings' | 'saved'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [videos, setVideos] = useState<StockVideoItem[]>([]);
@@ -71,7 +72,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     } catch {}
   }, []);
 
-  // Fetch live stock videos from open media APIs (Wikimedia, Pexels, Pixabay)
+  // Fetch live stock videos from open media APIs (Wikimedia, Pexels, Pixabay, Google CSE)
   useEffect(() => {
     if (activeTab !== 'catalog') return;
     let isMounted = true;
@@ -80,7 +81,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     const timer = setTimeout(async () => {
       try {
         const cleanQ = searchQuery.trim().replace(/^#/, '');
-        const res = await workspaceApi.searchOpenVideos(cleanQ, selectedCategory, 1, 30);
+        const res = await workspaceApi.searchOpenVideos(cleanQ, selectedCategory, 1, 30, selectedProvider);
         if (isMounted) {
           if (res && res.items && res.items.length > 0) {
             setVideos(
@@ -110,7 +111,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [searchQuery, selectedCategory, activeTab]);
+  }, [searchQuery, selectedCategory, selectedProvider, activeTab]);
 
   const handleMouseEnter = (id: string) => {
     setHoveredId(id);
@@ -446,24 +447,52 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         ) : (
           /* Motion Catalog / Saved Clips */
           <>
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search motion clips or #tags..."
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+            {/* Search Input & Provider Selector */}
+            <div className="flex flex-col gap-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search motion clips or #tags..."
+                  className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Provider Quick Pills */}
+              {activeTab === 'catalog' && (
+                <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {[
+                    { id: 'all', label: '✨ All' },
+                    { id: 'pexels', label: '🎬 Pexels' },
+                    { id: 'pixabay', label: '🎥 Pixabay' },
+                    { id: 'wikimedia', label: '🌐 Wikimedia' },
+                    { id: 'google', label: '🔍 Google' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setSelectedProvider(p.id)}
+                      className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
+                        selectedProvider === p.id
+                          ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40 font-semibold'
+                          : 'bg-[#18181B] text-[#71717A] hover:text-[#D4D4D8] border border-[#27272A]'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 

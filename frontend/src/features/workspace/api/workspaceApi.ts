@@ -228,11 +228,20 @@ export const workspaceApi = {
     return data.video;
   },
 
-  // Search free open-source videos via Pexels, Pixabay, or CC0 open stock loops
-  async searchOpenVideos(query: string = '', category: string = 'all', page: number = 1, pageSize: number = 20): Promise<any> {
+  // Search free open-source videos via Pexels, Pixabay, Wikimedia, Google CSE, or CC0 open stock loops
+  async searchOpenVideos(
+    query: string = '',
+    category: string = 'all',
+    page: number = 1,
+    pageSize: number = 20,
+    provider: string = 'all',
+    aspectRatio: string = '9:16'
+  ): Promise<any> {
     try {
       const res = await fetch(
-        apiUrl(`/api/workspace/open-media/videos?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&page=${page}&pageSize=${pageSize}`)
+        apiUrl(
+          `/api/workspace/open-media/videos?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&page=${page}&pageSize=${pageSize}&provider=${encodeURIComponent(provider)}&aspectRatio=${encodeURIComponent(aspectRatio)}`
+        )
       );
       if (res.ok) {
         return await res.json();
@@ -314,11 +323,19 @@ export const workspaceApi = {
     return { success: false, items: [] };
   },
 
-  // Search live open-source quotes & viral hooks via ZenQuotes / DummyJSON
-  async searchOpenQuotes(query: string = '', category: string = 'all', limit: number = 30): Promise<any> {
+  // Search live open-source quotes & viral hooks via ZenQuotes / DummyJSON / Vault
+  async searchOpenQuotes(
+    query: string = '',
+    category: string = 'all',
+    limit: number = 30,
+    author: string = '',
+    page: number = 1
+  ): Promise<any> {
     try {
       const res = await fetch(
-        apiUrl(`/api/workspace/open-media/quotes?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&limit=${limit}`)
+        apiUrl(
+          `/api/workspace/open-media/quotes?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&limit=${limit}&author=${encodeURIComponent(author)}&page=${page}`
+        )
       );
       if (res.ok) {
         return await res.json();
