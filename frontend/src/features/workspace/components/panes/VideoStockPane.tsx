@@ -25,7 +25,7 @@ export interface StockVideoItem {
   title: string;
   category: 'gym' | 'clouds' | 'city' | 'ocean' | 'fire' | 'abstract' | 'minimal';
   videoUrl: string;
-  posterUrl: string;
+  posterUrl?: string;
   duration: string;
   resolution: string;
   tags?: string[];
@@ -36,7 +36,7 @@ export interface VideoStockPaneProps {
   activeVideoUrl?: string;
 }
 
-const SEARCH_TOPICS = ['#clouds', '#gym', '#city', '#ocean', '#fire', '#drone', '#night', '#lightning', '#abstract'];
+const SEARCH_TOPICS = ['#nature', '#mountains', '#forest', '#ocean', '#waterfall', '#clouds', '#sunset', '#aurora', '#river', '#rain'];
 
 const LOCAL_STORAGE_VIDEOS_KEY = 'apexmind_custom_videos';
 
@@ -80,7 +80,8 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
     const timer = setTimeout(async () => {
       try {
-        const cleanQ = searchQuery.trim().replace(/^#/, '');
+        const rawQ = searchQuery.trim().replace(/^#/, '');
+        const cleanQ = rawQ || (selectedCategory !== 'all' ? selectedCategory : 'nature landscape');
         const res = await workspaceApi.searchOpenVideos(cleanQ, selectedCategory, 1, 30, selectedProvider);
         if (isMounted) {
           if (res && res.items && res.items.length > 0) {
@@ -150,7 +151,6 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       title,
       category: 'minimal',
       videoUrl: url,
-      posterUrl: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=400&q=80',
       duration: 'Custom',
       resolution: 'Stream HD',
     };
@@ -200,9 +200,9 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <Film className="w-4 h-4 shrink-0 text-rose-400" />
+          <Film className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="text-xs font-bold text-white truncate">
-            Motion Stock Clips
+            Nature Video Clips
           </span>
         </div>
 
@@ -271,13 +271,15 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
           {(
             [
-              { id: 'all', label: 'All Loops' },
-              { id: 'clouds', label: 'Clouds & Sky' },
-              { id: 'gym', label: 'Gym & Iron' },
-              { id: 'city', label: 'Cyber City' },
-              { id: 'ocean', label: 'Storm Waves' },
-              { id: 'fire', label: 'Fire Embers' },
-              { id: 'abstract', label: 'Abstract Motion' },
+              { id: 'all', label: '🌲 All Nature' },
+              { id: 'mountains', label: '⛰️ Mountains' },
+              { id: 'forest', label: '🌲 Deep Forest' },
+              { id: 'waterfall', label: '🌊 Waterfall' },
+              { id: 'ocean', label: '🏖️ Ocean Waves' },
+              { id: 'clouds', label: '☁️ Storm & Sky' },
+              { id: 'aurora', label: '🌌 Northern Lights' },
+              { id: 'sunset', label: '🌅 Golden Hour' },
+              { id: 'river', label: '🏞️ River Rapids' },
             ] as const
           ).map((cat) => (
             <button

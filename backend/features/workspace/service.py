@@ -129,10 +129,11 @@ def generate_script(
     logger.info(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
     memory = fetch_quote_memory(limit=20)
     
-    # Dynamically fetch real videos and photos from the internet matching topic and category
+    # Dynamically fetch real videos and photos from the internet strictly matching cinematic nature footage
     from .open_media_service import fetch_dynamic_internet_media_for_prompt
+    nature_topic = f"{topic} cinematic nature landscape" if "nature" not in (topic or "").lower() else topic
     dynamic_media = fetch_dynamic_internet_media_for_prompt(
-        topic=topic,
+        topic=nature_topic,
         category=category,
         limit_videos=8,
         limit_images=12,

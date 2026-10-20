@@ -302,19 +302,30 @@ WEBSITE MEDIA & STYLE ASSET CATALOG (CHOOSE FREELY FROM THESE COMPLETE ASSETS):
 {voice_summary}
 
 ================================================================================
-MANDATORY 100% PURE VIDEO & SOUND DESIGN DIRECTIVES:
+MANDATORY 100% PURE CINEMATIC NATURE VIDEO & SOUND DESIGN DIRECTIVES:
 ================================================================================
 - Do NOT use static images or photos! Every single scene MUST be a moving, cinematic VIDEO ("mediaType": "video").
-- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of multiple SHORT, high-energy video clips (minimum 4 to 6 distinct scenes/shots across the timeline).
+- STRICT 100% NATURE FOOTAGE DIRECTIVE: Every single scene cut MUST feature majestic, cinematic NATURE footage.
+  Allowed nature environments: misty mountain summits, alpine peaks, lush pine forests, cascading waterfalls, dramatic ocean storm waves, winding rivers, northern lights (aurora borealis), starry night sky over mountain ridges, dramatic storm clouds, golden hour sunsets, or desert sand dunes.
+  NEVER use gym, fitness, workout, athletes, urban city, cars, traffic, buildings, office interiors, technology, screens, or talking humans.
+- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of multiple SHORT, high-energy nature video clips (minimum 4 to 6 distinct scenes/shots across the timeline).
 - SHORT CLIP DURATION: Each video clip must be short and punchy (2.0s to 3.5s duration each) for fast-paced viral retention.
-- ZERO DUPLICATE VIDEOS: Every scene MUST use a DIFFERENT, UNIQUE high-quality video clip.
+- ZERO DUPLICATE VIDEOS: Every scene MUST use a DIFFERENT, UNIQUE high-quality nature video clip.
 - MULTI-HOOK VARIATION: Provide 3 distinct hook variations in "hooks" with different psychological angles (e.g. Brutal Truth/Negative, Curiosity Gap, Direct Challenge) and a virality score (85-99).
 - SOUND DESIGN:
   - Select "soundtrackTrackId" from the AVAILABLE SOUNDTRACKS.
   - Define "ducking" (voiceActiveVolume ~0.18, pauseSwellVolume ~0.72).
   - Add layered "sfxEvents" matching scene transitions and climax drops (using IDs from AVAILABLE SOUND EFFECTS, e.g. "sfx-whoosh-fast", "sfx-impact-subdrop", "sfx-riser-cinematic", "sfx-notif-cash").
-- SEARCH ENGINE OPTIMIZATION: For every scene, provide a "googleSearchQuery" (e.g. 'boxer shadow boxing gym dark moody 9:16') and "fallbackQueries" for Google Video Search / Pexels / Pixabay.
+- SEARCH ENGINE OPTIMIZATION: For every scene, provide a "googleSearchQuery" (e.g. 'misty mountain peak sunrise clouds vertical 9:16') and "fallbackQueries" for Google Video Search / Pexels / Pixabay.
+- NEGATIVE TERMS: For every scene, explicitly specify negativeTerms: ["gym", "fitness", "workout", "city", "building", "urban", "office", "car", "technology", "phone", "smiling", "interview", "talking", "cartoon"].
 - KARAOKE WORD TIMING: For every scene, provide a "words" array breaking the scene's subtitle line into individual words with exact relative timestamps ("start", "end") and mark power words with "emphasis": true and "highlightColor" (e.g. "#FACC15" or "#38BDF8").
+- MANDATORY 100% SCRIPT-STORYBOARD CC PARITY & NATURAL SPEECH PACING:
+  * Scene 1 MUST ALWAYS be the HOOK ("beat": "hook"). Scene 1's "subtitleText" MUST match the "hook" text verbatim!
+  * Scenes 2 through N-1 MUST divide the monologue / "quote" sentence-by-sentence with zero omitted words.
+  * The final Scene MUST be the closing call-to-action ("beat": "cta"). Its "subtitleText" MUST match the "cta" text verbatim!
+  * The combined "subtitleText" across all scenes MUST EXACTLY EQUAL the spoken narrative ("hook" + "quote" + "cta").
+  * PACING & DURATION: Total spoken monologue words must comfortably match the target length (~2.5 words per second). For a 30s video, produce 65-80 words of powerful script!
+  * Every scene duration MUST realistically match its subtitle word count: duration = max(2.0, round(words * 0.35 + 0.5, 1)). Never assign a 3.5s duration to a 2-word phrase!
 
 CRITICAL MEMORY & UNIQUENESS CONSTRAINT:
 Your script MUST NOT repeat, paraphrase, or borrow metaphors from any of these previously saved quotes:
@@ -330,7 +341,7 @@ Output MUST be a single raw JSON object matching this exact schema:
   "recommendedVoice": "Best voice matching the tone from the catalog",
   "musicTrack": "Best soundtrack title or ID from catalog",
   "captionStyle": "Best caption style",
-  "tags": ["#Shorts", "#Motivation", "#Discipline"],
+  "tags": ["#Shorts", "#NatureMotivation", "#StoicMindset"],
   "hooks": [
     {{
       "id": "hook_1",
@@ -382,7 +393,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "mediaType": "video",
       "mediaId": "",
       "mediaUrl": "",
-      "mediaName": "Atmospheric Storm & Lightning",
+      "mediaName": "Atmospheric Mountain Ridge & Mist",
       "textStyleId": "sub-hormozi",
       "textStyleName": "Hormozi Viral Yellow",
       "captionPresetClass": "font-black tracking-tight text-yellow-400 uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)] bg-black/85 px-3 py-1 rounded-md border border-yellow-400/30",
@@ -392,10 +403,10 @@ Output MUST be a single raw JSON object matching this exact schema:
       "cameraMotion": "push-in",
       "sfx": "Fast Cinematic Whoosh",
       "sfxUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_27529fa22a.mp3?filename=fast-whoosh-10901.mp3",
-      "googleSearchQuery": "dark storm lightning sky vertical 9:16",
-      "visualQuery": "dark storm lightning sky",
-      "fallbackQueries": ["night clouds lightning storm", "dark moody rain city"],
-      "negativeTerms": ["cartoon", "daylight", "sunny", "smiling"],
+      "googleSearchQuery": "misty mountain peak sunrise clouds vertical 9:16",
+      "visualQuery": "misty mountain peak sunrise clouds nature",
+      "fallbackQueries": ["foggy pine forest aerial landscape", "mountain ridge clouds timelapse"],
+      "negativeTerms": ["indoor", "gym", "city", "people", "interview", "talking", "cartoon"],
       "subtitleText": "Stop waiting for motivation.",
       "words": [
         {{ "word": "STOP", "start": 0.0, "end": 0.4, "emphasis": true, "highlightColor": "#EF4444" }},
@@ -412,7 +423,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "mediaType": "video",
       "mediaId": "",
       "mediaUrl": "",
-      "mediaName": "Neon Cyber Matrix Stream",
+      "mediaName": "Majestic Forest Waterfall Rapids",
       "textStyleId": "sub-mrbeast",
       "textStyleName": "MrBeast Pop Bold",
       "captionPresetClass": "font-black tracking-tighter text-sky-400 uppercase drop-shadow-[0_4px_16px_rgba(0,0,0,1)] stroke-black",
@@ -422,10 +433,10 @@ Output MUST be a single raw JSON object matching this exact schema:
       "cameraMotion": "pan-right",
       "sfx": null,
       "sfxUrl": null,
-      "googleSearchQuery": "athlete running night sprint vertical 9:16",
-      "visualQuery": "athlete running sprint dark",
-      "fallbackQueries": ["boxer punching shadow gym", "heavy workout athlete"],
-      "negativeTerms": ["smiling", "tutorial", "home gym"],
+      "googleSearchQuery": "cascading waterfall deep pine forest 9:16",
+      "visualQuery": "cascading waterfall deep pine forest nature",
+      "fallbackQueries": ["river rapids rocky forest nature", "lush green woodland waterfall"],
+      "negativeTerms": ["indoor", "gym", "building", "urban", "office", "car"],
       "subtitleText": "Action creates the energy you need.",
       "words": [
         {{ "word": "ACTION", "start": 2.5, "end": 3.1, "emphasis": true, "highlightColor": "#38BDF8" }},
@@ -444,7 +455,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "mediaType": "video",
       "mediaId": "",
       "mediaUrl": "",
-      "mediaName": "Raw Iron Gym Power",
+      "mediaName": "Dramatic Ocean Storm Waves",
       "textStyleId": "quote-stoic-roman",
       "textStyleName": "Stoic Roman Empire",
       "captionPresetClass": "font-serif tracking-widest text-stone-100 uppercase drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] italic border-y border-stone-500/30 py-2",
@@ -454,10 +465,10 @@ Output MUST be a single raw JSON object matching this exact schema:
       "cameraMotion": "slow-zoom",
       "sfx": null,
       "sfxUrl": null,
-      "googleSearchQuery": "heavy deadlift chalk barbell dark gym 9:16",
-      "visualQuery": "athlete barbell deadlift focus",
-      "fallbackQueries": ["weightlifter chalk explosion", "gym iron weights intense"],
-      "negativeTerms": ["smiling", "casual", "cardio"],
+      "googleSearchQuery": "dramatic ocean waves crashing cliff sunset 9:16",
+      "visualQuery": "dramatic ocean storm waves coastline nature",
+      "fallbackQueries": ["pacific ocean breakers rocks nature", "stormy sea dark clouds"],
+      "negativeTerms": ["swimming", "beach resort", "boat", "people", "city", "gym"],
       "subtitleText": "Build your discipline in the quiet moments.",
       "words": [
         {{ "word": "BUILD", "start": 5.5, "end": 6.0, "emphasis": true, "highlightColor": "#FACC15" }},
@@ -477,7 +488,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "mediaType": "video",
       "mediaId": "",
       "mediaUrl": "",
-      "mediaName": "Cosmic Stars Acceleration",
+      "mediaName": "Celestial Aurora Borealis Over Peaks",
       "textStyleId": "cta-save-reel",
       "textStyleName": "Save Reel Bookmark CTA",
       "captionPresetClass": "font-extrabold tracking-wide text-sky-400 uppercase bg-sky-950/60 px-5 py-2 rounded-xl border border-sky-500/40 text-center shadow-lg",
@@ -487,10 +498,10 @@ Output MUST be a single raw JSON object matching this exact schema:
       "cameraMotion": "static",
       "sfx": "Cash Register Cha-Ching",
       "sfxUrl": "https://cdn.pixabay.com/download/audio/2021/08/09/audio_732a101292.mp3?filename=cash-register-98214.mp3",
-      "googleSearchQuery": "deep galaxy stars velocity hyperjump 9:16",
-      "visualQuery": "deep galaxy stars velocity",
-      "fallbackQueries": ["nebula stars warp speed", "astronomy cosmic dark"],
-      "negativeTerms": ["cartoon", "planet earth 2d"],
+      "googleSearchQuery": "northern lights aurora borealis mountain night sky 9:16",
+      "visualQuery": "aurora borealis northern lights mountain nature",
+      "fallbackQueries": ["starry night sky mountain timelapse nature", "green aurora night landscape"],
+      "negativeTerms": ["city skyline", "neon", "indoor", "cartoon", "gym"],
       "subtitleText": "Save this reel and start now.",
       "words": [
         {{ "word": "SAVE", "start": 9.0, "end": 9.5, "emphasis": true, "highlightColor": "#38BDF8" }},
@@ -589,7 +600,13 @@ Output MUST be a single raw JSON object matching this exact schema:
             ])
             is_duplicate = curr_url in seen_video_urls
             title_lower = (sc.get("mediaName") or "").lower()
-            junk_check = ["paint", "pebble", "how to", "tutorial", "repair", "drone", "broadwater", "arnis", "demo", "renovation", "president", "trump", "biden", "protest", "campaign", "election", "rally", "politic", "activist", "grave", "cemetery", "gravel", "demolition"]
+            junk_check = [
+                "paint", "pebble", "how to", "tutorial", "repair", "drone", "broadwater",
+                "arnis", "demo", "renovation", "president", "trump", "biden", "protest",
+                "campaign", "election", "rally", "politic", "activist", "grave", "cemetery",
+                "gravel", "demolition", "gym", "fitness", "workout", "crossfit", "barbell",
+                "dumbell", "interview", "talking", "presentation", "city", "traffic", "car", "office"
+            ]
             has_junk_name = any(j in title_lower for j in junk_check)
             is_placeholder = (
                 not curr_url
@@ -601,7 +618,7 @@ Output MUST be a single raw JSON object matching this exact schema:
             )
 
             if is_placeholder:
-                # 1. Try finding an unused video from available dynamic internet assets (strictly non-mock)
+                # 1. Try finding an unused video from available dynamic internet assets (strictly non-mock and nature-focused)
                 matched_v = next(
                     (v for v in avail_videos
                      if v.get("videoUrl")
@@ -617,17 +634,26 @@ Output MUST be a single raw JSON object matching this exact schema:
                     sc["mediaUrl"] = matched_v["videoUrl"]
                     sc["posterUrl"] = matched_v.get("posterUrl") or matched_v.get("thumbUrl") or matched_v.get("thumbnail") or ""
                     sc["thumbnailUrl"] = sc["posterUrl"]
-                    sc["mediaName"] = matched_v.get("title") or matched_v.get("name") or "Internet Video Cut"
+                    sc["mediaName"] = matched_v.get("title") or matched_v.get("name") or "Internet Nature Video Cut"
                     sc["mediaId"] = matched_v.get("id", f"scene_vid_{sc.get('sceneNumber', 1)}")
                 else:
                     # 2. Dynamically search live internet video APIs (Google Search Engine, Pexels, Pixabay, Wikimedia)
                     resolved_clip = None
-                    search_candidates = [primary_query] + [q for q in fallback_list if q]
+                    raw_candidates = [primary_query] + [q for q in fallback_list if q]
+                    nature_keywords = {"nature", "mountain", "forest", "waterfall", "ocean", "river", "clouds", "aurora", "landscape", "sunset", "trees", "alpine"}
+                    search_candidates = []
+                    for c_q in raw_candidates:
+                        c_clean = str(c_q).strip()
+                        if not any(nk in c_clean.lower() for nk in nature_keywords):
+                            search_candidates.append(f"{c_clean} cinematic nature landscape")
+                        else:
+                            search_candidates.append(c_clean)
+
                     for candidate_q in search_candidates:
                         live_resolved = resolve_scene_media_from_internet(
                             media_type="video",
                             visual_query=candidate_q,
-                            fallback_topic=f"{topic} {category}",
+                            fallback_topic=f"cinematic nature landscape {topic}",
                             exclude_urls=seen_video_urls,
                             aspect_ratio=target_aspect_ratio,
                         )
@@ -726,6 +752,16 @@ Output MUST be a single raw JSON object matching this exact schema:
         result["soundDesign"] = sound_design
 
         # ── Word-Level Dynamic Karaoke Subtitles Synchronization ──
+        # Recompute continuous scene boundaries and natural speech durations
+        curr_timeline_time = 0.0
+        for sc in storyboard:
+            txt = (sc.get("subtitleText") or "").strip()
+            w_count = max(1, len(txt.split()))
+            natural_dur = max(1.8, min(4.2, round(w_count * 0.35 + 0.5, 1)))
+            sc["duration"] = natural_dur
+            sc["start"] = round(curr_timeline_time, 2)
+            curr_timeline_time = round(curr_timeline_time + natural_dur, 2)
+
         synced_subtitles = []
         for sc in storyboard:
             txt = sc.get("subtitleText") or ""

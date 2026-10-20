@@ -13,6 +13,7 @@ import {
   EyeOff,
   Lock,
   Unlock,
+  Wand2,
 } from 'lucide-react';
 import { EnabledTracks, SelectedClip } from './timelineTypes';
 
@@ -20,6 +21,8 @@ export interface TimelineTrackHeadersProps {
   enabledTracks: EnabledTracks;
   selectedClip?: SelectedClip | null;
   onSelectClip: (clip: SelectedClip, compound?: 'video' | 'text' | 'voice' | 'music' | 'overlay') => void;
+  onSyncAudioAndCC?: () => void;
+  hasVoiceMismatch?: boolean;
   videoTrackVisible: boolean;
   onToggleVideoTrackVisible: () => void;
   videoTrackHeight?: number;
@@ -92,6 +95,8 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
   enabledTracks,
   selectedClip,
   onSelectClip,
+  onSyncAudioAndCC,
+  hasVoiceMismatch = false,
   videoTrackVisible,
   onToggleVideoTrackVisible,
   videoTrackHeight = 40,
@@ -408,6 +413,24 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
             )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
+            {onSyncAudioAndCC && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSyncAudioAndCC();
+                }}
+                className={`p-1 rounded transition-colors ${
+                  hasVoiceMismatch
+                    ? 'text-amber-400 hover:text-white hover:bg-amber-500/20 animate-pulse'
+                    : 'text-cyan-400 hover:text-white hover:bg-cyan-500/20'
+                }`}
+                title={hasVoiceMismatch ? 'Sync captions to match voice track duration (Mismatch detected!)' : 'Sync captions with voice track'}
+                aria-label="Sync captions to voice"
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+              </button>
+            )}
             {renderEyeButton(
               onToggleCaptionsTrackVisible ? captionsTrackVisible : localCaptionsVisible,
               () =>

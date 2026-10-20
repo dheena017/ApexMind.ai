@@ -27,7 +27,7 @@ class CreateWebsiteVideoRequest(BaseModel):
     hook: Optional[str] = ""
     cta: Optional[str] = ""
     category: Optional[str] = "Stoic Mindset & Discipline"
-    coverImageUrl: Optional[str] = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85"
+    coverImageUrl: Optional[str] = ""
     videoUrl: Optional[str] = ""
     audioUrl: Optional[str] = ""
     voice: Optional[str] = "Fenrir"

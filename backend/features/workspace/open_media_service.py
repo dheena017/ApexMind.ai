@@ -264,10 +264,10 @@ def search_wikimedia_videos(
     - Filters out broadcast/interview/junk media to return cinematic stock loops.
     """
     clean_q = (query or "").replace("#", "").strip()
-    if not clean_q:
-        clean_q = category if category != "all" else ""
-    if not clean_q:
-        return []
+    if not clean_q or clean_q.lower() in ["all", "stock", "video", "loop", "cinematic"]:
+        clean_q = "cinematic nature landscape mountains forest"
+    elif "nature" not in clean_q.lower() and not any(k in clean_q.lower() for k in ["mountain", "forest", "ocean", "waterfall", "river", "clouds", "sky", "aurora", "landscape", "tree", "alpine"]):
+        clean_q = f"{clean_q} nature landscape"
 
     # Wikimedia Commons search with video filetype filter
     search_term = f"{clean_q} filetype:video"
@@ -302,6 +302,8 @@ def search_wikimedia_videos(
         "cemetery", "gravel", "demolition", "memorial", "rink", "funeral", "president",
         "trump", "biden", "protest", "campaign", "election", "rally", "politic", "activist",
         "musicbank", "music bank", "fancam", "kbs", "broadcast", "press", "conference",
+        "gym", "workout", "fitness", "barbell", "dumbell", "crossfit", "city", "traffic",
+        "car", "office", "interior", "indoor", "screen", "laptop", "phone", "tech",
     )
 
     is_vertical_target = aspect_ratio in ["9:16", "4:5"]
@@ -322,6 +324,11 @@ def search_wikimedia_videos(
         raw_url = info.get("url") or ""
         # Prefer webm/mp4 for broad HTML5 video player compatibility
         if not (raw_url.endswith(".webm") or raw_url.endswith(".mp4") or "video/webm" in mime or "video/mp4" in mime):
+            continue
+
+        # Reject massive video files over 40MB that stall HTML5 browser playback
+        size_bytes = int(info.get("size") or 0)
+        if size_bytes > 40 * 1024 * 1024:
             continue
 
         raw_title = page_data.get("title", "").replace("File:", "").rsplit(".", 1)[0].replace("_", " ")
@@ -383,6 +390,10 @@ def search_pexels_videos(
     clean_q = (query or "").strip().replace("#", "").strip()
     if not clean_q and category != "all":
         clean_q = category.strip()
+    if not clean_q or clean_q.lower() in ["all", "cinematic", "stock", "video", "popular"]:
+        clean_q = "cinematic nature landscape"
+    elif "nature" not in clean_q.lower() and not any(k in clean_q.lower() for k in ["mountain", "forest", "ocean", "waterfall", "river", "clouds", "sky", "aurora", "landscape", "tree", "alpine"]):
+        clean_q = f"{clean_q} nature landscape"
 
     per_page = min(page_size, 40)
     orientation = "portrait"
@@ -393,13 +404,10 @@ def search_pexels_videos(
     elif aspect_ratio in ["9:16", "4:5"]:
         orientation = "portrait"
 
-    if clean_q:
-        url = (
-            f"https://api.pexels.com/v1/videos/search?"
-            f"query={urllib.parse.quote(clean_q)}&per_page={per_page}&page={page}&orientation={orientation}"
-        )
-    else:
-        url = f"https://api.pexels.com/v1/videos/popular?per_page={per_page}&page={page}&orientation={orientation}"
+    url = (
+        f"https://api.pexels.com/v1/videos/search?"
+        f"query={urllib.parse.quote(clean_q)}&per_page={per_page}&page={page}&orientation={orientation}"
+    )
 
     data = _http_get_json(url, headers={"Authorization": api_key}, timeout=5)
     if not data:
@@ -491,8 +499,10 @@ def search_pixabay_videos(
     search_term = (query or "").strip().replace("#", "")
     if not search_term and category != "all":
         search_term = category.strip()
-    if not search_term:
-        search_term = "background"
+    if not search_term or search_term.lower() in ["all", "background", "video", "loop"]:
+        search_term = "nature landscape"
+    elif "nature" not in search_term.lower() and not any(k in search_term.lower() for k in ["mountain", "forest", "ocean", "waterfall", "river", "clouds", "sky", "aurora", "landscape", "tree", "alpine"]):
+        search_term = f"{search_term} nature"
 
     orientation_param = ""
     if aspect_ratio in ["16:9", "21:9"]:
@@ -577,8 +587,10 @@ def search_google_videos(
     clean_q = (query or "").strip().replace("#", "").strip()
     if not clean_q and category != "all":
         clean_q = category.strip()
-    if not clean_q:
-        clean_q = "cinematic stock video background loop"
+    if not clean_q or clean_q.lower() in ["all", "cinematic", "stock", "cinematic stock video background loop"]:
+        clean_q = "cinematic nature landscape vertical loop"
+    elif "nature" not in clean_q.lower() and not any(k in clean_q.lower() for k in ["mountain", "forest", "ocean", "waterfall", "river", "clouds", "sky", "aurora", "landscape", "tree", "alpine"]):
+        clean_q = f"{clean_q} nature landscape"
 
     orient_tag = "vertical 9:16 short" if aspect_ratio in ["9:16", "4:5"] else "cinematic 16:9 loop"
     domains = "(site:pexels.com/video OR site:pixabay.com/videos OR site:coverr.co OR site:mixkit.co OR site:videvo.net)"
@@ -1556,7 +1568,7 @@ def search_jamendo_tracks(query: str = "", genre: str = "", limit: int = 20) -> 
                 "title": t.get("name") or "Royalty-Free Soundtrack",
                 "artist": t.get("artist_name") or "Creative Commons Artist",
                 "url": audio_url,
-                "cover": t.get("album_image") or t.get("image") or "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80",
+                "cover": t.get("album_image") or t.get("image") or "",
                 "duration": f"{mins}:{secs:02d}",
                 "durationSeconds": dur_sec,
                 "genre": genre_name,
@@ -2013,13 +2025,14 @@ def resolve_scene_media_from_internet(
     exclude = set(exclude_urls or set())
     candidates = _extract_semantic_search_candidates(visual_query, fallback_topic=fallback_topic)
 
-    # Ambient fail-safe fallbacks by category/intent to guarantee 100% resolution
+    # Ambient fail-safe fallbacks strictly featuring breathtaking nature loops to guarantee 100% nature resolution
     ambient_fallbacks = [
-        "cinematic motivational dark loop",
-        "dramatic clouds sky timelapsed",
-        "ocean storm waves loop",
-        "fire embers floating dark",
-        "abstract glowing cyber grid",
+        "misty mountain forest vertical 9:16",
+        "cascading waterfall deep pine forest 9:16",
+        "dramatic ocean waves sunset coastline 9:16",
+        "alpine glacial lake mountain reflections 9:16",
+        "dramatic storm clouds sky timelapse 9:16",
+        "aurora borealis northern lights night sky 9:16",
     ]
 
     all_query_tiers = candidates + ambient_fallbacks

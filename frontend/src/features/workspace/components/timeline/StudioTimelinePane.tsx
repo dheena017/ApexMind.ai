@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Type, Play, Pause } from 'lucide-react';
+import { toast } from 'sonner';
 import { ScriptSubtitle } from '../../types';
 import {
   StudioTimelinePaneProps,
@@ -654,7 +655,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   useEffect(() => {
     if (audioUrl) {
       setVoiceClips((prev) => {
-        if (prev.some((c) => c.url === audioUrl)) return prev;
+        if (prev.some((c) => c.url === audioUrl)) {
+          if (duration > 0 && Math.abs((prev[0]?.duration || 0) - duration) > 0.05) {
+            return prev.map((c) => (c.url === audioUrl ? { ...c, duration } : c));
+          }
+          return prev;
+        }
         return [
           ...prev,
           {
@@ -1487,6 +1493,184 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   };
 
+  // ── Sync Audio & CC (Closed Captions) ──────────────────────────────────
+  // Proportional word-based duration distribution matching voiceover length
+  const handleSyncAudioAndCC = useCallback(() => {
+    const targetVoiceDuration =
+      voiceClips.length > 0 && voiceClips[0].duration > 0
+        ? voiceClips[0].duration
+        : duration > 0
+        ? duration
+        : 0;
+
+    if (targetVoiceDuration <= 0) {
+      toast.info('No voiceover audio detected to sync with.');
+      return;
+    }
+
+    const voiceStart = voiceClips[0]?.start ?? 0;
+
+    let sourceCaptions = [...localClips];
+    if (sourceCaptions.length === 0 && script.storyboard && script.storyboard.length > 0) {
+      sourceCaptions = script.storyboard
+        .filter((sc) => sc.subtitleText)
+        .map((sc) => ({
+          text: sc.subtitleText || '',
+          start: sc.start,
+          duration: sc.duration,
+          captionPresetClass: sc.captionPresetClass,
+          captionPresetColor: sc.captionPresetColor,
+        }));
+    }
+
+    if (sourceCaptions.length === 0) {
+      toast.info('No caption cues available to sync.');
+      return;
+    }
+
+    const wordCounts = sourceCaptions.map((clip) => {
+      const words = (clip.text || '').trim().split(/\s+/).filter(Boolean);
+      return Math.max(1, words.length);
+    });
+    const totalWords = wordCounts.reduce((sum, w) => sum + w, 0);
+
+    let curStart = voiceStart;
+    const syncedCaptions: ScriptSubtitle[] = sourceCaptions.map((clip, i) => {
+      const isLast = i === sourceCaptions.length - 1;
+      let clipDur: number;
+
+      if (!isLast) {
+        clipDur = Math.max(0.4, parseFloat(((wordCounts[i] / totalWords) * targetVoiceDuration).toFixed(2)));
+      } else {
+        clipDur = Math.max(0.4, parseFloat(((voiceStart + targetVoiceDuration) - curStart).toFixed(2)));
+      }
+
+      const clipStart = parseFloat(curStart.toFixed(2));
+      curStart = parseFloat((curStart + clipDur).toFixed(2));
+
+      let scaledWords = clip.words;
+      if (clip.words && clip.words.length > 0) {
+        const origStart = clip.start || 0;
+        const origDur = Math.max(0.1, clip.duration || 1);
+        scaledWords = clip.words.map((w) => {
+          const relStart = Math.max(0, Math.min(1, ((w.start || 0) - origStart) / origDur));
+          const relEnd = Math.max(relStart + 0.05, Math.min(1, ((w.end || 0) - origStart) / origDur));
+          return {
+            ...w,
+            start: parseFloat((clipStart + relStart * clipDur).toFixed(2)),
+            end: parseFloat((clipStart + relEnd * clipDur).toFixed(2)),
+          };
+        });
+      }
+
+      return {
+        ...clip,
+        start: clipStart,
+        duration: clipDur,
+        words: scaledWords,
+      };
+    });
+
+    setLocalClips(syncedCaptions);
+    onUpdateSubtitles?.(syncedCaptions);
+
+    if (videoClips.length > 0) {
+      if (videoClips.length === syncedCaptions.length) {
+        setVideoClips((prev) =>
+          prev.map((vClip, idx) => ({
+            ...vClip,
+            start: syncedCaptions[idx].start,
+            duration: syncedCaptions[idx].duration,
+          }))
+        );
+      } else {
+        const oldTotalVideoDur = videoClips.reduce((sum, c) => sum + (c.duration || 1), 0);
+        let curVStart = voiceStart;
+        setVideoClips((prev) =>
+          prev.map((vClip, idx) => {
+            const isLast = idx === prev.length - 1;
+            const dur = isLast
+              ? Math.max(0.4, parseFloat(((voiceStart + targetVoiceDuration) - curVStart).toFixed(2)))
+              : Math.max(0.4, parseFloat((((vClip.duration || 1) / oldTotalVideoDur) * targetVoiceDuration).toFixed(2)));
+            const vStart = parseFloat(curVStart.toFixed(2));
+            curVStart = parseFloat((curVStart + dur).toFixed(2));
+            return {
+              ...vClip,
+              start: vStart,
+              duration: dur,
+            };
+          })
+        );
+      }
+    }
+
+    setVoiceClips((prev) => {
+      if (prev.length > 0) {
+        return prev.map((c, i) => (i === 0 ? { ...c, duration: targetVoiceDuration } : c));
+      }
+      return [
+        {
+          id: `vox-${Date.now()}`,
+          type: 'voice',
+          url: audioUrl || '',
+          name: selectedVoice ? `Voice: ${selectedVoice}` : 'Voiceover',
+          start: voiceStart,
+          duration: targetVoiceDuration,
+        },
+      ];
+    });
+
+    const totalEnd = parseFloat((voiceStart + targetVoiceDuration).toFixed(2));
+    onTimelineDurationChange?.(totalEnd);
+
+    window.dispatchEvent(
+      new CustomEvent('workspace:timeline-state', {
+        detail: {
+          captionClips: syncedCaptions,
+          totalDuration: totalEnd,
+        },
+      })
+    );
+
+    toast.success(
+      `Audio & CC Synchronized (${targetVoiceDuration.toFixed(1)}s)`,
+      {
+        description: `Aligned ${syncedCaptions.length} captions and video cuts to match voice track.`,
+      }
+    );
+  }, [
+    voiceClips,
+    duration,
+    localClips,
+    script.storyboard,
+    onUpdateSubtitles,
+    videoClips,
+    audioUrl,
+    selectedVoice,
+    onTimelineDurationChange,
+  ]);
+
+  const effectiveVoiceDur = voiceClips[0]?.duration > 0 ? voiceClips[0].duration : (duration > 0 ? duration : 0);
+  const maxCaptionsEnd = localClips.reduce((end, clip) => Math.max(end, (Number(clip.start) || 0) + (Number(clip.duration) || 0)), 0);
+  const hasAudioMismatch = Boolean(
+    effectiveVoiceDur > 0 &&
+    maxCaptionsEnd > 0 &&
+    Math.abs(maxCaptionsEnd - effectiveVoiceDur) > 0.6
+  );
+
+  const lastSyncedVoiceDurRef = useRef<number>(0);
+
+  // Auto-sync Audio & Captions once when voice duration is established or updated
+  useEffect(() => {
+    if (effectiveVoiceDur > 0 && localClips.length > 0) {
+      const mismatch = Math.abs(maxCaptionsEnd - effectiveVoiceDur);
+      if (mismatch > 0.8 && lastSyncedVoiceDurRef.current !== effectiveVoiceDur) {
+        lastSyncedVoiceDurRef.current = effectiveVoiceDur;
+        handleSyncAudioAndCC();
+      }
+    }
+  }, [effectiveVoiceDur, localClips.length, maxCaptionsEnd, handleSyncAudioAndCC]);
+
   // ── Context menu & clip manipulation handlers for Video & Image tracks ──
 
   // Video track
@@ -2046,6 +2230,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         onDeleteClip={handleDeleteClip}
         snapEnabled={snapEnabled}
         onToggleSnap={() => setSnapEnabled(!snapEnabled)}
+        onSyncAudioAndCC={handleSyncAudioAndCC}
+        hasAudioMismatch={hasAudioMismatch}
+        voiceDuration={effectiveVoiceDur}
+        captionsEnd={maxCaptionsEnd}
         addTrackMenuOpen={addTrackMenuOpen}
         onToggleAddTrackMenu={() => setAddTrackMenuOpen(!addTrackMenuOpen)}
         onCloseAddTrackMenu={() => setAddTrackMenuOpen(false)}
@@ -2164,6 +2352,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   enabledTracks={enabledTracks}
                   selectedClip={selectedClip}
                   onSelectClip={handleSelectClip}
+                  onSyncAudioAndCC={handleSyncAudioAndCC}
+                  hasVoiceMismatch={hasAudioMismatch}
                   videoTrackVisible={videoTrackVisible}
                   onToggleVideoTrackVisible={() => setVideoTrackVisible(!videoTrackVisible)}
                   videoTrackHeight={videoTrackHeight}

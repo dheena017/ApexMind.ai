@@ -81,13 +81,13 @@ const AI_MODELS = [
 ];
 
 const CATEGORY_OPTIONS = [
-  { value: 'Stoic Mindset & Discipline', label: 'Stoic Mindset & Discipline' },
-  { value: 'Fitness & Iron Will', label: 'Fitness & Iron Will' },
-  { value: 'Deep Focus & Flow', label: 'Deep Focus & Flow' },
-  { value: 'Calm & Resilience', label: 'Calm & Resilience' },
-  { value: 'Unstoppable Motivation', label: 'Unstoppable Motivation' },
-  { value: 'Dark Psychology & Power', label: 'Dark Psychology & Power' },
-  { value: 'High Finance & Wealth', label: 'High Finance & Wealth' },
+  { value: 'Nature & Stoic Solitude', label: '🌲 Nature & Stoic Solitude' },
+  { value: 'Stoic Mindset & Discipline', label: '⛰️ Stoic Mindset & Mountain Peak' },
+  { value: 'Deep Forest Flow & Silence', label: '🌿 Deep Forest Flow & Silence' },
+  { value: 'Calm Waters & Inner Resilience', label: '🌊 Ocean Storm & Inner Resilience' },
+  { value: 'Unstoppable Motivation', label: '⚡ Unstoppable Wild Motivation' },
+  { value: 'Dark Psychology & Power', label: '🌑 Dark Psychology & Quiet Moves' },
+  { value: 'High Finance & Wealth', label: '💎 High Finance & Generational Empire' },
 ];
 
 const HOOK_FORMULAS = [
@@ -111,28 +111,28 @@ const HOOK_FORMULAS = [
 
 const PROMPT_INSPIRATION_SEEDS = [
   {
-    title: 'The Solitary Standard',
-    tag: 'Stoic',
+    title: 'The Solitary Mountain',
+    tag: 'Mountain',
     icon: Shield,
-    prompt: 'Create an intense stoic reel about suffering in silence and letting your unstoppable results speak for themselves.',
+    prompt: 'A gripping stoic reel on standing alone like an unmovable mountain peak while storms rage below. Let your silent discipline speak.',
   },
   {
-    title: 'Iron Gym Discipline',
-    tag: 'Fitness',
+    title: 'The Deep Forest',
+    tag: 'Forest',
     icon: Flame,
-    prompt: 'A raw, aggressive fitness script explaining why your excuses are lies and why the barbell never lies.',
+    prompt: 'A deep reflection on quiet root growth, silence in the wilderness, and why giants grow in complete isolation.',
   },
   {
-    title: 'Dark Psychology: Quiet Moves',
-    tag: 'Mindset',
+    title: 'Ocean Storm Breakers',
+    tag: 'Ocean',
     icon: Brain,
-    prompt: 'Explain why telling people your goals kills dopamine and why true kings move in complete silence.',
+    prompt: 'An intense motivational speech about relentless compounding grit: break through every obstacle like crashing ocean waves on granite cliffs.',
   },
   {
-    title: 'Building The Empire',
-    tag: 'Wealth',
+    title: 'Glacial Dawn Stillness',
+    tag: 'Alpine',
     icon: Coins,
-    prompt: 'A punchy wealth reel about ignoring temporary pleasure to build generational freedom in the shadows.',
+    prompt: 'A calming philosophical meditation on inner stillness and absolute focus like a mirror-clear alpine glacial lake at dawn.',
   },
 ];
 
@@ -447,7 +447,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
                 <span className="text-[#71717A]">AI AGENT PROMPT</span>
-                <span className="text-[#60A5FA]">VIRAL HOOK ARCHITECT</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">🌲 100% NATURE VIDEO DIRECTOR</span>
               </div>
               <textarea
                 value={agentPrompt}

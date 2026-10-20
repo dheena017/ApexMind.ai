@@ -1209,14 +1209,25 @@ def render_vertical_short(
     output_dir.mkdir(parents=True, exist_ok=True)
     out_file = output_dir / f"short_{int(time.time() * 1000)}.mp4"
 
-    local_img_path = output_dir / f"bg_{int(time.time() * 1000)}.jpg"
-    img_url = cover_image_url or "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85"
+    img_url = cover_image_url or ""
+    if img_url.startswith("/api/media/") or img_url.startswith("/api/videos/"):
+        filename = img_url.rsplit("/", 1)[-1]
+        for candidate in [Path("backend/data/media") / filename, Path("backend/data/rendered_shorts") / filename]:
+            if candidate.exists():
+                local_img_path = candidate
+                break
+
     try:
-        req = urllib.request.Request(img_url, headers={"User-Agent": "ApexMindStudio/2.0"})
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            with open(local_img_path, "wb") as f:
-                f.write(resp.read())
-        clip = mp.ImageClip(str(local_img_path)).set_duration(duration_seconds).resize((1080, 1920))
+        if local_img_path.exists():
+            clip = mp.ImageClip(str(local_img_path)).set_duration(duration_seconds).resize((1080, 1920))
+        elif img_url.startswith("http"):
+            req = urllib.request.Request(img_url, headers={"User-Agent": "ApexMindStudio/2.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                with open(local_img_path, "wb") as f:
+                    f.write(resp.read())
+            clip = mp.ImageClip(str(local_img_path)).set_duration(duration_seconds).resize((1080, 1920))
+        else:
+            clip = mp.ColorClip(size=(1080, 1920), color=(15, 18, 25), duration=duration_seconds)
     except Exception as e:
         logger.warning(f"Could not load custom backdrop ({e}), creating color canvas.")
         clip = mp.ColorClip(size=(1080, 1920), color=(15, 18, 25), duration=duration_seconds)

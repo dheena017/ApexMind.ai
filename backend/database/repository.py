@@ -821,10 +821,24 @@ def add_website_video(data: Dict[str, Any]) -> Dict[str, Any]:
                 with open(audio_file, "wb") as f:
                     f.write(audio_bytes)
                 audio_raw = f"/api/audio/{vid_id}.wav"
+    cover_raw = data.get("coverImageUrl", "") or ""
+    if isinstance(cover_raw, str) and cover_raw.startswith("data:image"):
+        try:
+            import base64
+            from pathlib import Path
+            img_dir = Path("backend/data/media")
+            img_dir.mkdir(parents=True, exist_ok=True)
+            parts = cover_raw.split(",", 1)
+            if len(parts) == 2:
+                img_bytes = base64.b64decode(parts[1])
+                img_file = img_dir / f"cover_{vid_id}.jpg"
+                with open(img_file, "wb") as f:
+                    f.write(img_bytes)
+                cover_raw = f"/api/media/cover_{vid_id}.jpg"
         except Exception as e:
-            logger.warning(f"Could not write voiceover audio file: {e}")
+            logger.warning(f"Could not write cover image file: {e}")
 
-    cover_img = data.get("coverImageUrl") or "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85"
+    cover_img = cover_raw or ""
 
     conn = get_connection()
     cursor = conn.cursor()

@@ -84,10 +84,13 @@ export const RecentVideosSection: React.FC<RecentVideosSectionProps> = ({
               <div className="relative aspect-video w-full bg-[#1A1A1A] overflow-hidden">
                 {video.coverImageUrl ? (
                   <img
-                    src={video.coverImageUrl}
+                    src={video.coverImageUrl.startsWith('/api/') ? `${((import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '')}${video.coverImageUrl}` : video.coverImageUrl}
                     alt={video.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1A1A1A] to-[#0E0E0E]">

@@ -115,35 +115,31 @@ const BACKDROP_THEMES: Record<string, {
   gradient: string;
   accentColor: string;
   titleShadow: string;
-  imageUrl: string;
+  imageUrl?: string;
 }> = {
   v1: {
     name: 'Mountain Solitude',
     gradient: 'linear-gradient(180deg, #0a0f2c 0%, #111a45 30%, #1a0a3a 65%, #08070f 100%)',
     accentColor: '#3B82F6',
     titleShadow: '0 2px 10px rgba(0,0,0,0.9)',
-    imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=720&q=80',
   },
   v2: {
     name: 'Cyberpunk Neon',
     gradient: 'linear-gradient(180deg, #050d1a 0%, #0a1a35 30%, #120825 65%, #050508 100%)',
     accentColor: '#06B6D4',
     titleShadow: '0 2px 10px rgba(0,0,0,0.9)',
-    imageUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=720&q=80',
   },
   v3: {
     name: 'Ember Flame',
     gradient: 'linear-gradient(180deg, #160a02 0%, #291402 30%, #1c0a02 65%, #0a0500 100%)',
     accentColor: '#F59E0B',
     titleShadow: '0 2px 10px rgba(0,0,0,0.9)',
-    imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=720&q=80',
   },
   v4: {
     name: 'Teal Oceanic',
     gradient: 'linear-gradient(180deg, #010d18 0%, #021c2e 30%, #011420 65%, #010608 100%)',
     accentColor: '#2DD4BF',
     titleShadow: '0 2px 10px rgba(0,0,0,0.9)',
-    imageUrl: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=720&q=80',
   },
 };
 
@@ -655,7 +651,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     ? undefined
     : activeVideoClip
       ? activeVideoClip.url
-      : Array.isArray(timelineState.videoClips)
+      : (Array.isArray(timelineState.videoClips) && timelineState.videoClips.length > 0)
         ? undefined
         : (activeStoryboardVideo
             ? activeStoryboardVideo
@@ -669,14 +665,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     ? undefined
     : activeImageClip
       ? activeImageClip.url
-      : Array.isArray(timelineState.imageClips)
+      : (Array.isArray(timelineState.imageClips) && timelineState.imageClips.length > 0)
         ? undefined
         : (activeStoryboardImage
             ? activeStoryboardImage
             : (isCustomImage
                 ? customImageUrl
                 : (!isCustomVideo
-                    ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || theme?.imageUrl || undefined)
+                    ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || undefined)
                     : undefined)));
 
   // Determine whether video or image layer is shown under the current playhead
@@ -756,7 +752,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       return '';
     }
     // 4. Fallback only if project has zero subtitle clips and zero scenes:
-    return currentTime <= (captionStyle.duration || 3) ? (script.quote || script.hook || '') : '';
+    const fallbackText = script.quote || script.hook || captionPresetPreviewText || '';
+    if (!isPlaying) {
+      return fallbackText;
+    }
+    return currentTime <= (captionStyle.duration || 4) ? fallbackText : '';
   })();
 
   const currentTitle = script.title?.trim() || '';
@@ -921,6 +921,24 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     ? fittedCanvasWidth / aspectRatio
     : undefined;
 
+  // Base canvas reference widths for proportional text/overlay scaling
+  const baseCanvasWidth = {
+    '9:16': 360,
+    '16:9': 640,
+    '1:1': 400,
+    '4:5': 360,
+    '21:9': 720,
+  }[canvasAspectRatio] || 360;
+
+  const currentCanvasWidth = fittedCanvasWidth ?? (canvasFrameSize.width > 0 ? canvasFrameSize.width : baseCanvasWidth);
+  const canvasScale = Math.max(0.4, Math.min(3.0, currentCanvasWidth / baseCanvasWidth));
+
+  // Dynamic proportional caption font size
+  const baseCaptionFontSize = useCaptionPreset
+    ? (captionPresetFontSize || 21)
+    : (captionStyle.fontSize ? Math.round(captionStyle.fontSize * 0.35) : 21);
+  const scaledCaptionFontSize = Math.max(10, Math.min(64, Math.round(baseCaptionFontSize * canvasScale)));
+
   // For landscape ratios, constrain by width so the canvas reshapes short & wide.
   // For portrait/square ratios, constrain by height so the canvas stays tall & narrow.
   const isLandscape = canvasAspectRatio === '16:9' || canvasAspectRatio === '21:9';
@@ -942,7 +960,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             }
           }}
           id="apex-video-canvas-container"
-          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-all duration-300 cursor-pointer focus:outline-none @container`}
+          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-[border-color,box-shadow,opacity] duration-300 cursor-pointer focus:outline-none @container`}
           tabIndex={-1}
           style={{
             background: canvasBackground || '#050505',
@@ -1118,7 +1136,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               <h1
                 className="font-black uppercase tracking-tight text-white text-center leading-tight drop-shadow-md pointer-events-none"
                 style={{
-                  fontSize: 'clamp(14px, 4.2vw, 19px)',
+                  fontSize: `${Math.max(12, Math.min(36, Math.round(18 * canvasScale)))}px`,
                   textShadow: theme ? theme.titleShadow : '0 2px 10px rgba(0,0,0,0.9)',
                 }}
               >
@@ -1140,7 +1158,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               className="absolute w-fit cursor-move select-none pointer-events-auto"
               style={overlayPositionStyle}
             >
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-white shadow-lg border border-white/20 tracking-wider pointer-events-none" style={{ backgroundColor: overlayStyle.accentColor }}>
+              <span
+                className="rounded-full font-black uppercase text-white shadow-lg border border-white/20 tracking-wider pointer-events-none"
+                style={{
+                  backgroundColor: overlayStyle.accentColor,
+                  fontSize: `${Math.max(8, Math.min(20, Math.round(10 * canvasScale)))}px`,
+                  padding: `${Math.round(2 * canvasScale)}px ${Math.round(10 * canvasScale)}px`,
+                }}
+              >
                 {effectiveOverlay.value}
               </span>
             </div>
@@ -1152,9 +1177,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={overlayRef}
             onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute z-20 text-3xl cursor-move select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
+            className="absolute z-20 cursor-move select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
             style={{
               ...overlayPositionStyle,
+              fontSize: `${Math.max(16, Math.min(64, Math.round(30 * canvasScale)))}px`,
               opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0,
             }}
           >
@@ -1167,9 +1193,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={overlayRef}
             onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute z-20 px-3 py-1.5 rounded-xl border border-white/20 bg-black/70 backdrop-blur-md text-white text-xs font-bold cursor-move select-none shadow-xl transition-opacity duration-200"
+            className="absolute z-20 rounded-xl border border-white/20 bg-black/70 backdrop-blur-md text-white font-bold cursor-move select-none shadow-xl transition-opacity duration-200"
             style={{
               ...overlayPositionStyle,
+              fontSize: `${Math.max(9, Math.min(24, Math.round(12 * canvasScale)))}px`,
+              padding: `${Math.round(6 * canvasScale)}px ${Math.round(12 * canvasScale)}px`,
               opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0,
             }}
           >
@@ -1194,8 +1222,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 top: `${captionStyle.posY && captionStyle.posY !== 78 ? captionStyle.posY : (canvasAspectRatio === '9:16' ? 64 : 72)}%`,
                 transform: `translate(-50%, -50%) scale(${subScale})`,
                 opacity: captionStyle.opacity / 100,
-                width: captionStyle.customWidth ? `${captionStyle.customWidth}px` : undefined,
-                maxWidth: '88%',
+                width: captionStyle.customWidth ? `${Math.round(captionStyle.customWidth * canvasScale)}px` : undefined,
+                maxWidth: '90%',
                 boxSizing: 'border-box',
               }}
             >
@@ -1203,8 +1231,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               className="pointer-events-none w-full max-w-full flex items-center justify-center text-center px-1"
               style={{
                 backgroundColor: hasCaptionPreset ? 'transparent' : captionStyle.background,
-                borderRadius: hasCaptionPreset ? undefined : `${captionStyle.bgRadius}px`,
-                padding: hasCaptionPreset ? undefined : `${captionStyle.bgPadding}px`,
+                borderRadius: hasCaptionPreset ? undefined : `${Math.round(captionStyle.bgRadius * canvasScale)}px`,
+                padding: hasCaptionPreset ? undefined : `${Math.round(captionStyle.bgPadding * canvasScale)}px`,
               }}
             >
               <p
@@ -1215,9 +1243,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                     : captionStyle.color || captionColor,
                   filter: useCaptionPreset ? 'none' : undefined,
                   fontFamily: useCaptionPreset ? activeCaptionPresetFontFamily : captionStyle.fontFamily,
-                  fontSize: useCaptionPreset
-                    ? captionPresetFontSize ? `${captionPresetFontSize}px` : 'clamp(12px, 4.2cqi, 22px)'
-                    : `${Math.round(captionStyle.fontSize * 0.25)}px`,
+                  fontSize: `${scaledCaptionFontSize}px`,
                   fontWeight: useCaptionPreset ? captionPresetFontWeight : !captionStyle.isBold ? 400 : captionStyle.fontWeight === 'Black' ? 900
                     : captionStyle.fontWeight === 'ExtraBold' ? 800
                       : captionStyle.fontWeight === 'Bold' ? 700
@@ -1231,18 +1257,18 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                     captionStyle.isStrikethrough ? 'line-through' : '',
                   ].filter(Boolean).join(' ') || 'none',
                   letterSpacing: useCaptionPreset ? undefined : `${captionStyle.letterSpacing}em`,
-                  lineHeight: useCaptionPreset ? undefined : captionStyle.lineHeight,
+                  lineHeight: useCaptionPreset ? 1.25 : captionStyle.lineHeight,
                   textShadow: useCaptionPreset
-                    ? 'none'
+                    ? undefined
                     : captionStyle.neonGlow
-                    ? `0 0 10px ${captionStyle.glowColor}, 0 0 20px ${captionStyle.glowColor}`
+                    ? `0 0 ${Math.round(10 * canvasScale)}px ${captionStyle.glowColor}, 0 0 ${Math.round(20 * canvasScale)}px ${captionStyle.glowColor}`
                     : captionStyle.dropShadow
-                      ? `0 2px ${captionStyle.shadowBlur}px ${captionStyle.shadowColor}`
+                      ? `0 ${Math.max(1, Math.round(2 * canvasScale))}px ${Math.round(captionStyle.shadowBlur * canvasScale)}px ${captionStyle.shadowColor}`
                       : 'none',
                   WebkitTextStroke: useCaptionPreset
-                    ? 'none'
+                    ? undefined
                     : captionStyle.stroke
-                    ? `${captionStyle.strokeWidth}px ${captionStyle.strokeColor}`
+                    ? `${Math.max(1, Math.round(captionStyle.strokeWidth * canvasScale))}px ${captionStyle.strokeColor}`
                     : 'none',
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
@@ -1347,7 +1373,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             }}
             onResizeEnd={({ lastEvent }) => {
               if (lastEvent && lastEvent.width && selectedLayer === 'subtitle') {
-                setCaptionStyle((prev) => ({ ...prev, customWidth: Math.round(lastEvent.width) }));
+                setCaptionStyle((prev) => ({ ...prev, customWidth: Math.round(lastEvent.width / canvasScale) }));
               }
             }}
             onRotateStart={(e) => {

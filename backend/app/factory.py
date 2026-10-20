@@ -180,6 +180,18 @@ def create_app() -> FastAPI:
             return FileResponse(file_path, media_type="audio/wav")
         raise HTTPException(status_code=404, detail="Audio file not found")
 
+    @app.get("/api/videos/{filename}", tags=["Videos"])
+    @app.get("/api/media/{filename}", tags=["Videos"])
+    def get_video_file(filename: str):
+        from fastapi.responses import FileResponse
+        from pathlib import Path
+        for folder in ["backend/data/rendered_shorts", "backend/data/media", "backend/data"]:
+            file_path = Path(folder) / filename
+            if file_path.exists() and file_path.is_file():
+                media_type = "video/mp4" if filename.endswith(".mp4") else "video/webm"
+                return FileResponse(file_path, media_type=media_type)
+        raise HTTPException(status_code=404, detail="Video file not found")
+
     # Set custom OpenAPI schema
     app.openapi = lambda: custom_openapi(app)
 

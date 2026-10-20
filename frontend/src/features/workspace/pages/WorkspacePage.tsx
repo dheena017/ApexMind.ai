@@ -900,7 +900,14 @@ export default function WorkspacePage({
     setCurrentTime(0);
     consoleLogger.info('Studio', `Synthesizing voiceover with voice: ${voiceName}...`);
     try {
-      const textToSpeak = `${targetScript.hook} ${targetScript.quote} ${targetScript.cta}`;
+      // Prioritize storyboard subtitle texts to guarantee 100% exact parity between spoken audio and CC captions
+      const storyboardTexts = targetScript.storyboard
+        ?.map((s) => s.subtitleText?.trim())
+        .filter((txt): txt is string => Boolean(txt)) || [];
+      const textToSpeak = storyboardTexts.length > 0
+        ? storyboardTexts.join(' ')
+        : [targetScript.hook, targetScript.quote, targetScript.cta].filter(Boolean).join(' ');
+
       const res = await workspaceApi.generateVoiceover({
         text: textToSpeak,
         voiceName,
@@ -1098,6 +1105,34 @@ export default function WorkspacePage({
     window.dispatchEvent(new CustomEvent('workspace:clear-timeline'));
   }, [onPaneChange, selectedVoice]);
 
+  // Capture real cover image snapshot from active studio canvas or real media
+  const resolveRealCoverImage = async (): Promise<string> => {
+    try {
+      const canvasEl = document.getElementById('apex-video-canvas-container');
+      if (canvasEl) {
+        const { toJpeg } = await import('html-to-image');
+        const snapshot = await toJpeg(canvasEl, {
+          quality: 0.88,
+          pixelRatio: 1,
+          skipFonts: true,
+        });
+        if (snapshot && snapshot.startsWith('data:image')) {
+          return snapshot;
+        }
+      }
+    } catch (e) {
+      console.warn('Canvas snapshot notice:', e);
+    }
+
+    return (
+      customBackdropImage ||
+      script.storyboard?.find((s) => (s.mediaType === 'image' && s.mediaUrl) || s.posterUrl)?.mediaUrl ||
+      script.storyboard?.find((s) => s.posterUrl)?.posterUrl ||
+      backdrops.find((b) => b.id === selectedBackdrop)?.imageUrl ||
+      ''
+    );
+  };
+
   // Publish to YouTube Shorts
   const handlePublish = async () => {
     const publishTitle = script.title?.trim() || 'Untitled Short';
@@ -1114,15 +1149,22 @@ export default function WorkspacePage({
         category,
       });
       // Also save to website video library automatically
+      const resolvedVideoUrl =
+        customBackdropVideo ||
+        script.storyboard?.find((s) => s.mediaType === 'video' && s.mediaUrl)?.mediaUrl ||
+        backdrops.find((b) => b.id === selectedBackdrop)?.videoUrl ||
+        '';
+
+      const realCover = await resolveRealCoverImage();
+
       await videosApi.createVideo({
         title: publishTitle,
         quote: publishQuote,
         hook: script.hook || '',
         cta: script.cta || '',
         category,
-        coverImageUrl:
-          backdrops.find((b) => b.id === selectedBackdrop)?.imageUrl ||
-          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85',
+        coverImageUrl: realCover,
+        videoUrl: resolvedVideoUrl,
         audioUrl: audioUrl && !audioUrl.startsWith('data:') ? audioUrl : '',
         voice: selectedVoice,
         aspectRatio: canvasAspectRatio,
@@ -1165,15 +1207,22 @@ export default function WorkspacePage({
   const handleSaveToLibrary = async () => {
     if (!script.title && !script.quote) return;
     try {
+      const resolvedVideoUrl =
+        customBackdropVideo ||
+        script.storyboard?.find((s) => s.mediaType === 'video' && s.mediaUrl)?.mediaUrl ||
+        backdrops.find((b) => b.id === selectedBackdrop)?.videoUrl ||
+        '';
+
+      const realCover = await resolveRealCoverImage();
+
       await videosApi.createVideo({
         title: script.title || 'Untitled Short',
         quote: script.quote || '',
         hook: script.hook || '',
         cta: script.cta || '',
         category,
-        coverImageUrl:
-          backdrops.find((b) => b.id === selectedBackdrop)?.imageUrl ||
-          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1080&q=85',
+        coverImageUrl: realCover,
+        videoUrl: resolvedVideoUrl,
         audioUrl: audioUrl || '',
         voice: selectedVoice,
         aspectRatio: canvasAspectRatio,
@@ -2367,7 +2416,26 @@ export default function WorkspacePage({
             }}
             script={script}
             onUpdateSubtitles={(newSubtitles) =>
-              setScript((prev) => ({ ...prev, subtitles: newSubtitles }))
+              setScript((prev) => {
+                const updatedStoryboard = prev.storyboard?.map((sc, i) => {
+                  const sub = newSubtitles[i];
+                  if (sub) {
+                    return {
+                      ...sc,
+                      start: sub.start,
+                      duration: sub.duration,
+                      subtitleText: sub.text,
+                      words: sub.words || sc.words,
+                    };
+                  }
+                  return sc;
+                });
+                return {
+                  ...prev,
+                  subtitles: newSubtitles,
+                  ...(updatedStoryboard ? { storyboard: updatedStoryboard } : {}),
+                };
+              })
             }
             activeBackdrop={activeBackdropObj}
             selectedVoice={selectedVoice}
