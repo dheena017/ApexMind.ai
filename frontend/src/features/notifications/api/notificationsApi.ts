@@ -40,7 +40,9 @@ export const notificationsApi = {
   // Get unread notification count
   async getUnreadCount(category?: string): Promise<number> {
     try {
-      const res = await fetch(apiUrl('/api/notifications/manage'), {
+      const query = new URLSearchParams({ action: 'unread_count' });
+      if (category && category !== 'all') query.set('category', category);
+      const res = await fetch(apiUrl(`/api/notifications/manage?${query.toString()}`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'unread_count', category: category === 'all' ? undefined : category }),

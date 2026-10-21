@@ -75,9 +75,9 @@ const DEFAULT_FALLBACK_VOICES: VoiceProfile[] = [
 ];
 
 const AI_MODELS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Ultra Fast 60fps)' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Ultra Fast & Adaptive)' },
+  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Latest Performance)' },
   { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Deep Reasoning & Hooks)' },
-  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Standard)' },
 ];
 
 const CATEGORY_OPTIONS = [

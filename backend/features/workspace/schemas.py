@@ -225,3 +225,40 @@ class MediaLibraryData(BaseModel):
 class MediaLibraryResponse(BaseModel):
     success: bool
     data: MediaLibraryData
+
+
+class GenerateCaptionsRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Narration text to create timed subtitles for")
+    durationSeconds: float = Field(default=5.0, ge=0.5, description="Audio track duration in seconds")
+    stylePreset: str = Field(default="sub-hormozi", description="Subtitle visual styling preset")
+    maxWordsPerSegment: int = Field(default=4, ge=1, le=8, description="Max words per line for 9:16 vertical viewports")
+
+
+class CaptionWordItem(BaseModel):
+    word: str
+    start: float
+    end: float
+
+
+class CaptionSegmentItem(BaseModel):
+    segmentIndex: int
+    start: float
+    end: float
+    text: str
+    words: List[CaptionWordItem]
+
+
+class CaptionsData(BaseModel):
+    durationSeconds: float
+    totalWords: int
+    stylePreset: str
+    segments: List[CaptionSegmentItem]
+    srtExport: str
+    vttExport: str
+
+
+class GenerateCaptionsResponse(BaseModel):
+    success: bool = True
+    data: CaptionsData
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+

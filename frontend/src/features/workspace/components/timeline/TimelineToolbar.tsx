@@ -16,7 +16,6 @@ import {
   Copy,
   Magnet,
   Keyboard,
-  Wand2,
 } from 'lucide-react';
 import { formatTime, SelectedClip, EnabledTracks, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM } from './timelineTypes';
 import { TimelineAddTrackMenu } from './TimelineAddTrackMenu';
@@ -276,35 +275,6 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
               {snapEnabled ? 'Snap ON' : 'Snap'}
             </span>
           </button>
-
-          {/* Sync Audio & CC (Closed Captions) Button */}
-          {onSyncAudioAndCC && (
-            <button
-              type="button"
-              onClick={onSyncAudioAndCC}
-              className={`h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg border transition-all cursor-pointer select-none text-[10.5px] font-sans-studio ${
-                hasAudioMismatch
-                  ? 'border-amber-500/50 bg-amber-500/15 text-amber-300 font-semibold hover:bg-amber-500/25 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-500/30'
-                  : 'border-[#2D2D38] bg-[#16161E] text-[#9CA3AF] hover:text-white hover:border-[#424250]'
-              }`}
-              title={
-                hasAudioMismatch
-                  ? `Audio & CC Mismatch (${voiceDuration.toFixed(1)}s voice vs ${captionsEnd.toFixed(1)}s CC) • Click to sync!`
-                  : 'Sync CC & Audio • Align captions and video cuts to match voice audio length'
-              }
-              aria-label="Synchronize audio and closed captions"
-            >
-              <Wand2 className={`w-3.5 h-3.5 ${hasAudioMismatch ? 'text-amber-400 animate-pulse' : 'text-cyan-400'}`} />
-              <span className="font-medium">
-                {hasAudioMismatch ? 'Match Audio & CC' : 'Sync CC & Audio'}
-              </span>
-              {hasAudioMismatch && (
-                <span className="px-1 py-0.2 rounded text-[9px] font-mono-studio font-bold bg-amber-400/20 text-amber-300 shrink-0">
-                  !
-                </span>
-              )}
-            </button>
-          )}
         </div>
 
         <div className="h-4 w-px bg-[#262630] mx-0.5" />

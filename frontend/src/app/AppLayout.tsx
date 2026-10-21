@@ -69,6 +69,7 @@ export default function AppLayout({
   useEffect(() => {
     if (!isAuthenticated) return;
     const fetchUnread = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       notificationsApi.getUnreadCount()
         .then((count) => {
           setDynamicUnread(count);
@@ -77,9 +78,18 @@ export default function AppLayout({
     };
 
     fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
-    return () => clearInterval(interval);
-  }, [activePage, isAuthenticated]);
+    const interval = setInterval(fetchUnread, 60000);
+
+    const handleVisibility = () => {
+      if (!document.hidden) fetchUnread();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isAuthenticated]);
 
   const unreadCount = propUnreadCount !== undefined ? propUnreadCount : dynamicUnread;
 

@@ -128,29 +128,7 @@ def generate_script(
     aspect_ratio = aspect_ratio or "9:16"
     logger.info(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
     memory = fetch_quote_memory(limit=20)
-    
-    # Dynamically fetch real videos and photos from the internet strictly matching cinematic nature footage
-    from .open_media_service import fetch_dynamic_internet_media_for_prompt
-    nature_topic = f"{topic} cinematic nature landscape" if "nature" not in (topic or "").lower() else topic
-    dynamic_media = fetch_dynamic_internet_media_for_prompt(
-        topic=nature_topic,
-        category=category,
-        limit_videos=8,
-        limit_images=12,
-        aspect_ratio=aspect_ratio,
-    )
     merged_assets = dict(available_assets or {})
-    clean_existing_videos = [
-        v for v in merged_assets.get("stockVideos", [])
-        if "commondatastorage" not in str(v.get("videoUrl", "")).lower()
-        and not any(bad in str(v.get("videoUrl", "")).lower() for bad in ["sample", "forbigger", "sintel", "subaru", "tearsofsteel", "bullrun"])
-    ]
-    if dynamic_media.get("videos"):
-        merged_assets["stockVideos"] = dynamic_media["videos"] + clean_existing_videos
-    else:
-        merged_assets["stockVideos"] = clean_existing_videos
-    if dynamic_media.get("images"):
-        merged_assets["backdrops"] = dynamic_media["images"] + merged_assets.get("backdrops", [])
 
     data = generate_gemini_script(
         category=category,
@@ -180,7 +158,8 @@ def generate_script(
             quote=data.get("quote"),
             category=category or "General Motivation",
         )
-        logger.info(f"Generated AI script: '{data.get('title')}' ({len(data.get('scenes', []))} scenes, {data.get('estimatedDuration', '30s')})")
+        scenes_count = len(data.get("storyboard") or data.get("scenes") or [])
+        logger.info(f"Generated AI script: '{data.get('title')}' ({scenes_count} scenes, {data.get('estimatedDuration', '30s')})")
         try:
             add_notification(
                 title="AI Script Crafted",
@@ -207,7 +186,8 @@ def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = 
         raise ValueError("Voice name is required. Please select a workspace voice before generating audio.")
     logger.info(f"Synthesizing voiceover audio for voice '{voice_name}' | Length: {len(text)} characters | Model: {model or 'gemini'}")
     result = generate_gemini_voiceover(text=text, voice_name=voice_name, model=model)
-    logger.info(f"Voiceover audio ready: voice '{voice_name}' | Duration: {result.get('duration', '0s')}")
+    dur_display = result.get("durationFormatted") or (f"{result['duration']}s" if result.get("duration") else "0s")
+    logger.info(f"Voiceover audio ready: voice '{voice_name}' | Duration: {dur_display}")
     try:
         add_notification(
             title="Voiceover Synthesized",

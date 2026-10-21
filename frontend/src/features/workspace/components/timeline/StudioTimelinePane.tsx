@@ -434,27 +434,28 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       const newImageClips: TimelineMediaClip[] = [];
       const newSfxClips: TimelineAudioClip[] = [];
 
+      let runningStart = 0;
       detail.storyboard.forEach((scene: any, idx: number) => {
         const clipId = `sb-${scene.sceneNumber || idx + 1}-${Date.now()}`;
         const clipName = scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`;
         const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
         const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
-        const clipStart = Number.isFinite(parsedStart) && parsedStart >= 0 ? parsedStart : idx * 3.0;
         const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 3.0;
+        const clipStart = Number.isFinite(parsedStart) && parsedStart >= 0 ? parsedStart : runningStart;
+        runningStart = clipStart + clipDuration;
 
-        // Enforce 100% pure video cuts on the timeline
-        if (scene.mediaUrl) {
-          newVideoClips.push({
-            id: clipId,
-            type: 'video',
-            url: scene.mediaUrl,
-            posterUrl: scene.posterUrl || scene.thumbnailUrl || (scene.mediaType === 'image' ? scene.mediaUrl : undefined),
-            thumbnailUrl: scene.thumbnailUrl || scene.posterUrl,
-            name: clipName,
-            start: clipStart,
-            duration: clipDuration,
-          });
-        }
+        // Enforce pure video cuts on the timeline for every storyboard scene
+        const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || '';
+        newVideoClips.push({
+          id: clipId,
+          type: 'video',
+          url: resolvedUrl,
+          posterUrl: scene.posterUrl || scene.thumbnailUrl || (scene.mediaType === 'image' ? scene.mediaUrl : undefined),
+          thumbnailUrl: scene.thumbnailUrl || scene.posterUrl,
+          name: clipName,
+          start: clipStart,
+          duration: clipDuration,
+        });
 
         if (scene.sfxUrl) {
           newSfxClips.push({
@@ -1338,6 +1339,13 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       if (activeDrag) {
         if (activeDrag.kind === 'subtitle' && onUpdateSubtitles) {
           onUpdateSubtitles(localClips);
+        }
+        if (activeDrag.kind === 'video') {
+          window.dispatchEvent(
+            new CustomEvent('workspace:timeline-video-clips-updated', {
+              detail: { videoClips },
+            })
+          );
         }
         setActiveDrag(null);
         setSnapGuideTime(null);

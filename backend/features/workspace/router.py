@@ -11,6 +11,8 @@ from .schemas import (
     GenerateScriptResponse,
     GenerateVoiceoverRequest,
     VoiceoverResponse,
+    GenerateCaptionsRequest,
+    GenerateCaptionsResponse,
     QuoteMemoryListResponse,
     CreateQuoteMemoryRequest,
     CreateQuoteMemoryResponse,
@@ -99,6 +101,33 @@ def post_generate_voiceover(payload: GenerateVoiceoverRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate voiceover: {e}"
+        )
+
+@router.post(
+    "/api/generate-captions",
+    response_model=GenerateCaptionsResponse,
+    summary="Generate Closed Captions",
+    description="Generate word-level karaoke timestamps, safe-zone line chunking, SRT, and WebVTT for subtitles.",
+)
+def post_generate_captions(payload: GenerateCaptionsRequest):
+    try:
+        from .captions_service import generate_closed_captions
+        data = generate_closed_captions(
+            text=payload.text,
+            duration_seconds=payload.durationSeconds,
+            style_preset=payload.stylePreset,
+            max_words_per_segment=payload.maxWordsPerSegment,
+        )
+        return GenerateCaptionsResponse(
+            success=True,
+            data=data,
+            metadata={"totalSegments": len(data.get("segments", []))},
+        )
+    except Exception as e:
+        logger.error(f"Error generating captions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate captions: {e}"
         )
 
 @router.get(

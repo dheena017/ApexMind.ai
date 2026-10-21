@@ -417,13 +417,25 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const isCustomImage = Boolean(customImageUrl);
   const isCustomVideo = Boolean(customVideoUrl);
 
-  // Active clip resolution based on currentTime (top layer takes precedence when overlapping)
-  const activeVideoClip = (timelineState.videoClips || [])
-    .filter((c) => currentTime >= c.start && currentTime <= c.start + c.duration)
-    .slice(-1)[0];
-  const activeImageClip = (timelineState.imageClips || [])
-    .filter((c) => currentTime >= c.start && currentTime <= c.start + c.duration)
-    .slice(-1)[0];
+  // Active clip resolution based on currentTime (handles sub-frame transitions & continuous playback)
+  const activeVideoClip = (timelineState.videoClips || []).find((c) => {
+    const start = Number(c.start) || 0;
+    const dur = Number(c.duration) || 3;
+    return currentTime >= start - 0.05 && currentTime < start + dur + 0.05;
+  }) || (timelineState.videoClips || []).reduce<any>((closest, c) => {
+    if (currentTime >= c.start && (!closest || c.start > closest.start)) return c;
+    return closest;
+  }, undefined) || (timelineState.videoClips && timelineState.videoClips[0]);
+
+  const activeImageClip = (timelineState.imageClips || []).find((c) => {
+    const start = Number(c.start) || 0;
+    const dur = Number(c.duration) || 3;
+    return currentTime >= start - 0.05 && currentTime < start + dur + 0.05;
+  }) || (timelineState.imageClips || []).reduce<any>((closest, c) => {
+    if (currentTime >= c.start && (!closest || c.start > closest.start)) return c;
+    return closest;
+  }, undefined) || (timelineState.imageClips && timelineState.imageClips[0]);
+
   const activeOverlayClip = (timelineState.overlayClips || [])
     .filter((c) => currentTime >= c.start && currentTime <= c.start + c.duration)
     .slice(-1)[0];
@@ -445,18 +457,24 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const captionsEnabled = timelineState.captionsVisible !== false;
 
   // ── Frame-Accurate Playhead Sync: Check which clip is active under currentTime ──
-  const isVideoTimeActive = Boolean(activeVideoClip) || (
-    timelineState.videoClips === undefined && videoEnabled && (
-      currentTime >= timelineState.videoStart && currentTime <= (timelineState.videoStart + (timelineState.videoDuration || 30))
-    )
+  const isVideoTimeActive = videoEnabled && (
+    (Array.isArray(timelineState.videoClips) && timelineState.videoClips.length > 0)
+      ? Boolean(activeVideoClip?.url || script.storyboard?.some((s) => s.mediaUrl))
+      : (
+          currentTime >= timelineState.videoStart &&
+          currentTime <= (timelineState.videoStart + (timelineState.videoDuration || 30))
+        )
   );
 
   const imageStart = timelineState.imageStart ?? 0;
   const imageDuration = timelineState.imageDuration ?? 30;
-  const isImageTimeActive = Boolean(activeImageClip) || (
-    timelineState.imageClips === undefined && imageEnabled && (
-      currentTime >= imageStart && currentTime <= (imageStart + imageDuration)
-    )
+  const isImageTimeActive = imageEnabled && (
+    (Array.isArray(timelineState.imageClips) && timelineState.imageClips.length > 0)
+      ? Boolean(activeImageClip?.url)
+      : (
+          currentTime >= imageStart &&
+          currentTime <= (imageStart + imageDuration)
+        )
   );
 
   const isOverlayTimeActive = Boolean(activeOverlayClip) || (
@@ -649,31 +667,27 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const activeVideo = !videoEnabled
     ? undefined
-    : activeVideoClip
+    : (activeVideoClip && activeVideoClip.url)
       ? activeVideoClip.url
-      : (Array.isArray(timelineState.videoClips) && timelineState.videoClips.length > 0)
-        ? undefined
-        : (activeStoryboardVideo
-            ? activeStoryboardVideo
-            : (isCustomVideo
-                ? customVideoUrl
-                : (!isCustomImage
-                    ? activeBackdrop?.videoUrl
-                    : undefined)));
+      : (activeStoryboardVideo
+          ? activeStoryboardVideo
+          : (isCustomVideo
+              ? customVideoUrl
+              : (!isCustomImage
+                  ? activeBackdrop?.videoUrl
+                  : undefined)));
 
   const activeImage = !imageEnabled
     ? undefined
-    : activeImageClip
+    : (activeImageClip && activeImageClip.url)
       ? activeImageClip.url
-      : (Array.isArray(timelineState.imageClips) && timelineState.imageClips.length > 0)
-        ? undefined
-        : (activeStoryboardImage
-            ? activeStoryboardImage
-            : (isCustomImage
-                ? customImageUrl
-                : (!isCustomVideo
-                    ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || undefined)
-                    : undefined)));
+      : (activeStoryboardImage
+          ? activeStoryboardImage
+          : (isCustomImage
+              ? customImageUrl
+              : (!isCustomVideo
+                  ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || undefined)
+                  : undefined)));
 
   // Determine whether video or image layer is shown under the current playhead
   const showVideoLayer = Boolean(activeVideo) && videoEnabled && isVideoTimeActive;

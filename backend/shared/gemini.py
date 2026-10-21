@@ -31,25 +31,28 @@ if settings.GEMINI_API_KEY:
 else:
     logger.warning("GEMINI_API_KEY is not set.")
 
-DEFAULT_SCRIPT_MODEL = "gemini-3.5-flash"
+DEFAULT_SCRIPT_MODEL = "gemini-2.5-flash"
 
 # Model Registry: Maps model IDs strictly to active, available Google Gemini API models
 SUPPORTED_SCRIPT_MODELS: dict[str, str] = {
     # Actively available Google Gemini models
+    "gemini-2.5-flash": "gemini-2.5-flash",
+    "gemini-2.5-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-2.5-pro": "gemini-2.5-pro",
+    "gemini-3.8-flash": "gemini-3.8-flash",
     "gemini-3.5-flash": "gemini-3.5-flash",
     "gemini-3.5-flash-lite": "gemini-3.5-flash-lite",
     "gemini-3.1-pro-preview": "gemini-3.1-pro-preview",
     "gemini-3-flash-preview": "gemini-3-flash-preview",
-    "gemini-2.5-flash": "gemini-3.5-flash",
-    "gemini-2.5-pro": "gemini-3.1-pro-preview",
-    "gemini-2.5-flash-lite": "gemini-3.5-flash-lite",
-    "gemini-flash-latest": "gemini-3.5-flash",
-    "gemini-pro-latest": "gemini-3.1-pro-preview",
-    # Legacy aliases
-    "gemini-2.0-flash": "gemini-3.5-flash",
-    "gemini-2.0-flash-lite": "gemini-3.5-flash-lite",
-    "claude-3-7-sonnet": "gemini-3.1-pro-preview",
-    "gpt-4o": "gemini-3.1-pro-preview",
+    "gemini-flash-latest": "gemini-2.5-flash",
+    "gemini-pro-latest": "gemini-2.5-pro",
+    # Legacy aliases safely mapped to active models
+    "gemini-2.0-flash": "gemini-2.5-flash",
+    "gemini-2.0-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-1.5-flash": "gemini-2.5-flash",
+    "gemini-1.5-pro": "gemini-2.5-pro",
+    "claude-3-7-sonnet": "gemini-2.5-pro",
+    "gpt-4o": "gemini-2.5-pro",
 }
 
 def resolve_script_model(model_name: str | None = None) -> str:
@@ -135,6 +138,25 @@ def extract_voiceover_audio(response: Any) -> tuple[bytes, str]:
             return raw_audio, mime_type
 
     raise RuntimeError("No usable audio inline_data was returned by Gemini TTS.")
+
+
+def calculate_audio_duration(audio_bytes: bytes, mime_type: str = "audio/wav") -> float:
+    """Calculate the precise audio duration in seconds from raw WAV or PCM data."""
+    if not audio_bytes:
+        return 0.0
+    try:
+        import io
+        import wave
+        with wave.open(io.BytesIO(audio_bytes), "rb") as wf:
+            frames = wf.getnframes()
+            rate = wf.getframerate()
+            if rate > 0:
+                return round(frames / float(rate), 2)
+    except Exception:
+        pass
+    # Standard Gemini TTS format fallback: 24kHz 16-bit mono PCM (48,000 bytes/sec)
+    data_len = max(0, len(audio_bytes) - 44 if audio_bytes.startswith(b"RIFF") else len(audio_bytes))
+    return round(data_len / 48000.0, 2)
 
 
 def generate_gemini_script(
@@ -528,9 +550,11 @@ Output MUST be a single raw JSON object matching this exact schema:
         models_to_try = [target_model]
         for alt_model in [
             "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-3.8-flash",
+            "gemini-3.5-flash",
             "gemini-3.5-flash-lite",
+            "gemini-2.5-pro",
             "gemini-3.1-pro-preview",
             "gemini-3-flash-preview",
         ]:
@@ -578,148 +602,37 @@ Output MUST be a single raw JSON object matching this exact schema:
                 "Please retry with a more descriptive prompt or verify your GEMINI_API_KEY."
             )
 
-        # ── Dynamic Internet Media Resolution for All Scenes (100% Video, Zero Duplicates) ──
-        from backend.features.workspace.open_media_service import resolve_scene_media_from_internet
-        seen_video_urls: set[str] = set()
-
+        # ── Fast Decoupled Storyboard Formatting (Queries Only, Zero Media Latency) ──
         for sc in storyboard:
-            # Force 100% video cuts (no static images)
             sc["mediaType"] = "video"
-            # Keep duration punchy and short for YouTube Shorts (2.0s to 3.5s)
             if "duration" in sc:
                 sc["duration"] = min(3.5, max(2.0, float(sc.get("duration", 2.8))))
 
-            # Primary search query: prioritize Google Video Search expression if provided
-            primary_query = sc.get("googleSearchQuery") or sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
+            primary_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
+            google_q = sc.get("googleSearchQuery") or f"{primary_query} vertical 9:16"
             fallback_list = sc.get("fallbackQueries") or []
-            curr_url = str(sc.get("mediaUrl") or "").strip()
-            
-            is_mock_sample = any(bad in curr_url.lower() for bad in [
-                "commondatastorage", "sample", "forbigger", "sintel", "subaru", 
-                "tearsofsteel", "bullrun", "bunny", "example.com", "placeholder", "blob:"
-            ])
-            is_duplicate = curr_url in seen_video_urls
-            title_lower = (sc.get("mediaName") or "").lower()
-            junk_check = [
-                "paint", "pebble", "how to", "tutorial", "repair", "drone", "broadwater",
-                "arnis", "demo", "renovation", "president", "trump", "biden", "protest",
-                "campaign", "election", "rally", "politic", "activist", "grave", "cemetery",
-                "gravel", "demolition", "gym", "fitness", "workout", "crossfit", "barbell",
-                "dumbell", "interview", "talking", "presentation", "city", "traffic", "car", "office"
-            ]
-            has_junk_name = any(j in title_lower for j in junk_check)
-            is_placeholder = (
-                not curr_url
-                or not curr_url.startswith("http")
-                or is_mock_sample
-                or is_duplicate
-                or has_junk_name
-                or any(ph in curr_url for ph in ["v1", "v2", "v3", "v4", "v5", "v6", "vid-"])
-            )
 
-            if is_placeholder:
-                # 1. Try finding an unused video from available dynamic internet assets (strictly non-mock and nature-focused)
-                matched_v = next(
-                    (v for v in avail_videos
-                     if v.get("videoUrl")
-                     and v["videoUrl"] not in seen_video_urls
-                     and not any(bad in str(v.get("videoUrl", "")).lower() for bad in [
-                         "commondatastorage", "sample", "forbigger", "sintel", "subaru", "tearsofsteel", "bullrun", "bunny"
-                     ])
-                     and not any(j in (v.get("title") or "").lower() for j in junk_check)
-                    ),
-                    None
-                )
-                if matched_v:
-                    sc["mediaUrl"] = matched_v["videoUrl"]
-                    sc["posterUrl"] = matched_v.get("posterUrl") or matched_v.get("thumbUrl") or matched_v.get("thumbnail") or ""
-                    sc["thumbnailUrl"] = sc["posterUrl"]
-                    sc["mediaName"] = matched_v.get("title") or matched_v.get("name") or "Internet Nature Video Cut"
-                    sc["mediaId"] = matched_v.get("id", f"scene_vid_{sc.get('sceneNumber', 1)}")
-                else:
-                    # 2. Dynamically search live internet video APIs (Google Search Engine, Pexels, Pixabay, Wikimedia)
-                    resolved_clip = None
-                    raw_candidates = [primary_query] + [q for q in fallback_list if q]
-                    nature_keywords = {"nature", "mountain", "forest", "waterfall", "ocean", "river", "clouds", "aurora", "landscape", "sunset", "trees", "alpine"}
-                    search_candidates = []
-                    for c_q in raw_candidates:
-                        c_clean = str(c_q).strip()
-                        if not any(nk in c_clean.lower() for nk in nature_keywords):
-                            search_candidates.append(f"{c_clean} cinematic nature landscape")
-                        else:
-                            search_candidates.append(c_clean)
-
-                    for candidate_q in search_candidates:
-                        live_resolved = resolve_scene_media_from_internet(
-                            media_type="video",
-                            visual_query=candidate_q,
-                            fallback_topic=f"cinematic nature landscape {topic}",
-                            exclude_urls=seen_video_urls,
-                            aspect_ratio=target_aspect_ratio,
-                        )
-                        if live_resolved and live_resolved.get("videoUrl"):
-                            resolved_clip = live_resolved
-                            break
-
-                    if resolved_clip and resolved_clip.get("videoUrl"):
-                        sc["mediaUrl"] = resolved_clip["videoUrl"]
-                        sc["posterUrl"] = resolved_clip.get("posterUrl") or resolved_clip.get("thumbnail") or ""
-                        sc["thumbnailUrl"] = sc["posterUrl"]
-                        sc["mediaName"] = resolved_clip.get("title") or sc.get("mediaName") or "Internet Stock Video Cut"
-                        sc["mediaId"] = resolved_clip.get("id") or sc.get("mediaId")
-                    else:
-                        raise ValueError(
-                            f"No stock video found matching '{primary_query}' in {target_aspect_ratio} aspect ratio. "
-                            f"Zero fallbacks allowed. Please configure GOOGLE_SEARCH_API_KEY + GOOGLE_CSE_ID, PEXELS_API_KEY, or PIXABAY_API_KEY in backend/.env, or refine prompt keywords."
-                        )
-
-            curr_check = str(sc.get("mediaUrl") or "").strip()
-            is_bad_final = (
-                not curr_check
-                or not curr_check.startswith("http")
-                or any(bad in curr_check.lower() for bad in [
-                    "commondatastorage", "sample", "forbigger", "sintel", "subaru", 
-                    "tearsofsteel", "bullrun", "bunny", "example.com", "placeholder"
-                ])
-                or any(ph in curr_check for ph in ["v1", "v2", "v3", "v4", "v5", "v6", "vid-"])
-            )
-            if is_bad_final:
-                raise ValueError(
-                    f"No genuine video footage available for Scene {sc.get('sceneNumber', 1)} ('{primary_query}') in {target_aspect_ratio}. "
-                    f"Zero fallbacks allowed. Please configure GOOGLE_SEARCH_API_KEY + GOOGLE_CSE_ID, PEXELS_API_KEY, or PIXABAY_API_KEY in backend/.env."
-                )
-
+            sc["visualQuery"] = primary_query
+            sc["googleSearchQuery"] = google_q
+            sc["fallbackQueries"] = fallback_list
             sc["aspectRatio"] = target_aspect_ratio
-            seen_video_urls.add(sc["mediaUrl"])
+            sc["mediaStatus"] = "resolved" if sc.get("mediaUrl") and str(sc["mediaUrl"]).startswith("http") else "unresolved"
 
-        # ── Multi-Hook Resolution (Ensure 3 distinct angles are available) ──
+        # ── Multi-Hook Resolution (Ensure dynamic hook angles are available) ──
         hooks_data = result.get("hooks") or []
         if not hooks_data:
-            base_hook = result.get("hook") or "Discipline beats motivation every single time."
+            primary_hook = result.get("hook") or f"The brutal truth about {topic.lower() or 'this goal'}."
             hooks_data = [
                 {
                     "id": "hook_1",
-                    "angle": "Brutal Truth / Negative",
-                    "text": base_hook,
+                    "angle": "Primary Angle",
+                    "text": primary_hook,
                     "viralityScore": 95,
                     "spokenDuration": 2.2,
                 },
-                {
-                    "id": "hook_2",
-                    "angle": "Curiosity Gap",
-                    "text": f"The hidden secret to {topic.lower() or 'success'}.",
-                    "viralityScore": 91,
-                    "spokenDuration": 2.4,
-                },
-                {
-                    "id": "hook_3",
-                    "angle": "Direct Challenge",
-                    "text": f"Can you maintain focus on {topic.lower() or 'your goal'} today?",
-                    "viralityScore": 88,
-                    "spokenDuration": 2.1,
-                },
             ]
         result["hooks"] = hooks_data
+
 
         # ── Sound Design & Multi-Track SFX Resolution ──
         sound_design = result.get("soundDesign") or {}
@@ -888,13 +801,16 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
             raw_audio, mime_type = extract_voiceover_audio(tts_res)
             if isinstance(raw_audio, bytes):
                 audio_b64 = base64.b64encode(raw_audio).decode("utf-8")
+                dur_secs = calculate_audio_duration(raw_audio, mime_type=mime_type)
             else:
                 audio_b64 = str(raw_audio)
+                dur_secs = 0.0
 
+            dur_str = f"{dur_secs:.1f}s"
             elapsed = time.perf_counter() - start_t
             logger.info(
                 f"Gemini TTS synthesized audio in {elapsed:.2f}s for voice '{voice_name}' | "
-                f"mime={mime_type} | b64_len={len(audio_b64)}"
+                f"duration={dur_str} | mime={mime_type} | b64_len={len(audio_b64)}"
             )
             return {
                 "success": True,
@@ -902,6 +818,8 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
                 "mimeType": mime_type,
                 "audioBase64": audio_b64,
                 "audioUrl": f"data:{mime_type};base64,{audio_b64}",
+                "duration": dur_secs,
+                "durationFormatted": dur_str,
             }
 
         # ── Resilient Fallback: gTTS High-Quality Synthesis ──
@@ -916,13 +834,17 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
             gtts_bytes = fp.read()
             gtts_b64 = base64.b64encode(gtts_bytes).decode("utf-8")
             elapsed = time.perf_counter() - start_t
-            logger.info(f"Fallback gTTS synthesized {len(gtts_bytes)} bytes audio in {elapsed:.2f}s for voice '{voice_name}'")
+            # Estimate MP3 duration roughly: ~150 words per minute
+            est_dur = round(max(1.0, len(normalized_text.split()) / 2.5), 1)
+            logger.info(f"Fallback gTTS synthesized {len(gtts_bytes)} bytes audio in {elapsed:.2f}s for voice '{voice_name}' | est_duration={est_dur}s")
             return {
                 "success": True,
                 "voiceName": voice_name,
                 "mimeType": "audio/mp3",
                 "audioBase64": gtts_b64,
                 "audioUrl": f"data:audio/mp3;base64,{gtts_b64}",
+                "duration": est_dur,
+                "durationFormatted": f"{est_dur}s",
             }
         except Exception as fallback_err:
             logger.error(f"Fallback gTTS synthesis also failed: {fallback_err}")

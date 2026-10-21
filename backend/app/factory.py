@@ -19,6 +19,7 @@ from backend.shared.logger import (
 )
 from backend.features import (
     workspace_router,
+    media_router,
     youtube_router,
     notifications_router,
     auth_router,
@@ -72,6 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(auth_router)
     app.include_router(workspace_router)
+    app.include_router(media_router)
     app.include_router(videos_router)
     app.include_router(youtube_router)
     app.include_router(notifications_router)

@@ -280,8 +280,8 @@ export const workspaceApi = {
     return { success: false, items: [], providers: {} };
   },
 
-  // Check active status of stock media providers (Pexels, Pixabay, Unsplash)
-  async getMediaProvidersStatus(): Promise<{ pexels: boolean; pixabay: boolean; unsplash: boolean; jamendo: boolean }> {
+  // Check active status of stock media providers (Pexels, Pixabay, Unsplash, Google CSE)
+  async getMediaProvidersStatus(): Promise<{ pexels: boolean; pixabay: boolean; unsplash: boolean; jamendo: boolean; google_cse?: boolean; [key: string]: any }> {
     try {
       const res = await fetch(apiUrl('/api/workspace/open-media/providers'));
       if (res.ok) {
@@ -290,7 +290,7 @@ export const workspaceApi = {
     } catch (e) {
       consoleLogger.warn('OpenMedia', `Provider status fetch error: ${e}`);
     }
-    return { pexels: false, pixabay: false, unsplash: false, jamendo: false };
+    return { pexels: false, pixabay: false, unsplash: false, jamendo: false, google_cse: false };
   },
 
   // Search free royalty-free tracks via Jamendo API
@@ -345,5 +345,100 @@ export const workspaceApi = {
     }
     return { success: false, items: [] };
   },
+
+  // Batch resolve real media cuts for all storyboard scenes concurrently
+  async resolveScenesMedia(params: {
+    scenes: Array<{
+      sceneNumber: number;
+      visualQuery: string;
+      googleSearchQuery?: string;
+      fallbackQueries?: string[];
+      mediaType?: string;
+    }>;
+    aspectRatio?: string;
+  }): Promise<any> {
+    const start = performance.now();
+    try {
+      const res = await fetch(apiUrl('/api/media/resolve-scenes'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scenes: params.scenes,
+          aspectRatio: params.aspectRatio || '9:16',
+        }),
+      });
+      const duration = performance.now() - start;
+      consoleLogger.api('POST', '/api/media/resolve-scenes', res.status, duration);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.error('MediaEngine', `Failed to batch resolve scene media: ${e}`);
+    }
+    return { success: false, data: { scenes: [] } };
+  },
+
+  // Regenerate visual footage for a single scene with exclusion list support
+  async resolveSingleScene(params: {
+    sceneNumber: number;
+    query: string;
+    mediaType?: string;
+    aspectRatio?: string;
+    excludeUrls?: string[];
+  }): Promise<any> {
+    const start = performance.now();
+    try {
+      const res = await fetch(apiUrl('/api/media/resolve-scene'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sceneNumber: params.sceneNumber,
+          query: params.query,
+          mediaType: params.mediaType || 'video',
+          aspectRatio: params.aspectRatio || '9:16',
+          excludeUrls: params.excludeUrls || [],
+        }),
+      });
+      const duration = performance.now() - start;
+      consoleLogger.api('POST', '/api/media/resolve-scene', res.status, duration);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.error('MediaEngine', `Failed to resolve single scene visual: ${e}`);
+    }
+    return { success: false };
+  },
+
+  // Generate Closed Captions (word-level karaoke timings, SRT, WebVTT)
+  async generateCaptions(params: {
+    text: string;
+    durationSeconds?: number;
+    stylePreset?: string;
+    maxWordsPerSegment?: number;
+  }): Promise<any> {
+    const start = performance.now();
+    try {
+      const res = await fetch(apiUrl('/api/generate-captions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: params.text,
+          durationSeconds: params.durationSeconds || 5.0,
+          stylePreset: params.stylePreset || 'sub-hormozi',
+          maxWordsPerSegment: params.maxWordsPerSegment || 4,
+        }),
+      });
+      const duration = performance.now() - start;
+      consoleLogger.api('POST', '/api/generate-captions', res.status, duration);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.error('Captions', `Failed to generate closed captions: ${e}`);
+    }
+    return { success: false };
+  },
 };
+
 

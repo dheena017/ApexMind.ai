@@ -89,7 +89,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
 
         return (
           <div
-            key={index}
+            key={`${index}-${clip.start.toFixed(2)}`}
             onClick={() => onSelectClip(index, clip.start)}
             onDoubleClick={() => onDoubleClickClip(index, clip.text)}
             onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clip.duration || 3)}

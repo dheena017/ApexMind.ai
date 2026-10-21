@@ -821,6 +821,8 @@ def add_website_video(data: Dict[str, Any]) -> Dict[str, Any]:
                 with open(audio_file, "wb") as f:
                     f.write(audio_bytes)
                 audio_raw = f"/api/audio/{vid_id}.wav"
+        except Exception as e:
+            logger.warning(f"Could not write audio file: {e}")
     cover_raw = data.get("coverImageUrl", "") or ""
     if isinstance(cover_raw, str) and cover_raw.startswith("data:image"):
         try:

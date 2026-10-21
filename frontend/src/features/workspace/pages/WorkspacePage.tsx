@@ -797,12 +797,13 @@ export default function WorkspacePage({
       }
 
       // If AI planned a multi-scene storyboard with multiple videos and images:
-      if (generated.storyboard && generated.storyboard.length > 0) {
+      let finalStoryboard = generated.storyboard || [];
+      if (finalStoryboard.length > 0) {
         // Clear custom backdrop overrides so multi-scene storyboard cuts drive the timeline & preview
         setCustomBackdropVideo(undefined);
         setCustomBackdropImage(undefined);
 
-        const firstScene = generated.storyboard[0];
+        const firstScene = finalStoryboard[0];
         if (firstScene.captionPresetClass) {
           setCaptionPreset({
             className: firstScene.captionPresetClass,
@@ -810,28 +811,6 @@ export default function WorkspacePage({
             fontFamily: firstScene.captionPresetFontFamily || 'Impact, sans-serif',
           });
         }
-
-        // Dispatch multi-scene storyboard & sound design to timeline
-        window.dispatchEvent(
-          new CustomEvent('workspace:set-timeline-storyboard', {
-            detail: {
-              storyboard: generated.storyboard,
-              musicTrack: generated.soundDesign?.soundtrackTrackId || generated.musicTrack,
-              soundDesign: generated.soundDesign,
-              hooks: generated.hooks,
-            },
-          })
-        );
-        setShowTimeline(true);
-
-        addWorkspaceNotification({
-          title: 'Multi-Scene Storyboard Planned',
-          message: `AI directed ${generated.storyboard.length} dynamic scene cuts with synchronized visuals & sound design.`,
-          category: 'timeline',
-          type: 'ai',
-          targetPane: 'canvas',
-          actionLabel: 'Preview Video',
-        });
       } else if (generated.visualTheme) {
         const generatedBackdrop = backdrops.find(
           (backdrop) =>
@@ -867,8 +846,84 @@ export default function WorkspacePage({
         actionLabel: 'Review Script',
       });
 
-      // Automatically synthesize 24kHz voiceover with updated script
-      handleSynthesizeVoice(generated, selectedVoice || generated.recommendedVoice || 'Fenrir');
+      // ── Step: Synthesize Voiceover & Resolve Stock Media Cuts First ──
+      const voiceToUse = selectedVoice || generated.recommendedVoice || 'Fenrir';
+      const unresolvedScenes = finalStoryboard.filter((s: any) => !s.mediaUrl || s.mediaStatus === 'unresolved');
+
+      const [mediaBatchRes] = await Promise.all([
+        unresolvedScenes.length > 0
+          ? workspaceApi.resolveScenesMedia({
+              scenes: unresolvedScenes.map((s: any) => ({
+                sceneNumber: s.sceneNumber,
+                visualQuery: s.visualQuery || s.subtitleText || promptParts.join(' ') || 'nature landscape',
+                googleSearchQuery: s.googleSearchQuery,
+                fallbackQueries: s.fallbackQueries,
+                mediaType: s.mediaType || 'video',
+              })),
+              aspectRatio: generated.aspectRatio || canvasAspectRatio || '9:16',
+            }).catch((err) => {
+              consoleLogger.warn('Workspace', `Progressive scene media error: ${err}`);
+              return null;
+            })
+          : Promise.resolve(null),
+        handleSynthesizeVoice(generated, voiceToUse).catch((err) => {
+          consoleLogger.warn('Workspace', `Voiceover synthesis error: ${err}`);
+          return null;
+        }),
+      ]);
+
+      if (mediaBatchRes?.success && mediaBatchRes.data?.scenes) {
+        const resolvedMap = new Map();
+        mediaBatchRes.data.scenes.forEach((item: any) => {
+          if (item.status === 'resolved' && item.media) {
+            resolvedMap.set(item.sceneNumber, item.media);
+          }
+        });
+        if (resolvedMap.size > 0) {
+          finalStoryboard = finalStoryboard.map((s: any) => {
+            const resolved = resolvedMap.get(s.sceneNumber);
+            if (resolved) {
+              return {
+                ...s,
+                mediaUrl: resolved.url,
+                previewUrl: resolved.previewUrl || resolved.url,
+                posterUrl: resolved.previewUrl || resolved.thumbnailUrl || '',
+                thumbnailUrl: resolved.thumbnailUrl || resolved.previewUrl || '',
+                mediaName: resolved.title || s.mediaName,
+                mediaId: resolved.id || s.mediaId,
+                mediaStatus: 'resolved',
+              };
+            }
+            return s;
+          });
+          setScript((prev) => (prev ? { ...prev, storyboard: finalStoryboard } : prev));
+        }
+      }
+
+      // ── Step LAST: Timeline & Track Population ──
+      // Places scene cuts onto Video Track, captions onto Subtitles Track, BGM & SFX onto Audio Tracks, and opens Studio Timeline
+      if (finalStoryboard && finalStoryboard.length > 0) {
+        window.dispatchEvent(
+          new CustomEvent('workspace:set-timeline-storyboard', {
+            detail: {
+              storyboard: finalStoryboard,
+              musicTrack: generated.soundDesign?.soundtrackTrackId || generated.musicTrack,
+              soundDesign: generated.soundDesign,
+              hooks: generated.hooks,
+            },
+          })
+        );
+        setShowTimeline(true);
+
+        addWorkspaceNotification({
+          title: 'Timeline & Tracks Populated',
+          message: `AI directed ${finalStoryboard.length} dynamic scene cuts with synchronized visuals & sound design.`,
+          category: 'timeline',
+          type: 'ai',
+          targetPane: 'canvas',
+          actionLabel: 'Preview Video',
+        });
+      }
       return true;
     } catch (err) {
       consoleLogger.error('Studio', 'Error generating script:', err);
@@ -1671,6 +1726,31 @@ export default function WorkspacePage({
     };
     window.addEventListener('workspace:update-title', handleUpdateTitle);
     return () => window.removeEventListener('workspace:update-title', handleUpdateTitle);
+  }, []);
+
+  // Sync timeline video clip repositioning/trimming back into script storyboard
+  useEffect(() => {
+    const handleTimelineVideoClips = (e: Event) => {
+      const detail = (e as CustomEvent<{ videoClips: any[] }>).detail;
+      if (!detail?.videoClips) return;
+      setScript((prev) => {
+        if (!prev?.storyboard || prev.storyboard.length === 0) return prev;
+        const updatedStoryboard = prev.storyboard.map((sc, idx) => {
+          const matchingClip = detail.videoClips[idx];
+          if (matchingClip) {
+            return {
+              ...sc,
+              start: matchingClip.start,
+              duration: matchingClip.duration,
+            };
+          }
+          return sc;
+        });
+        return { ...prev, storyboard: updatedStoryboard };
+      });
+    };
+    window.addEventListener('workspace:timeline-video-clips-updated', handleTimelineVideoClips);
+    return () => window.removeEventListener('workspace:timeline-video-clips-updated', handleTimelineVideoClips);
   }, []);
 
   useEffect(() => {
