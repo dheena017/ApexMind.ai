@@ -253,17 +253,17 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     enabledTracks.sfx ? Math.max(maxSfxEnd, selectedSfx ? (Number(sfxStart) || 0) + (Number(sfxDuration) || 0) : 0) : 0
   );
   const rawProjectDuration = Math.max(
-    0.1,
-    Number.isFinite(duration) && duration > 0 ? duration : (Number(timelineDuration) || 30),
-    Number.isFinite(contentEnd) ? contentEnd : 0
+    0,
+    Number.isFinite(contentEnd) && contentEnd > 0
+      ? contentEnd
+      : (Number.isFinite(duration) && duration > 0 ? duration : (Number(timelineDuration) || 0))
   );
-  const projectDuration = Number.isFinite(rawProjectDuration) && rawProjectDuration > 0 ? rawProjectDuration : 30;
+  const projectDuration = Number.isFinite(rawProjectDuration) && rawProjectDuration > 0 ? rawProjectDuration : 0;
   const maxActiveTime = Math.max(contentEnd, currentTime, projectDuration);
-  // Infinite / spacious runway: minimum 5 minutes (300s), expanding dynamically in 60s blocks
-  const totalDuration = Math.max(
-    300,
-    Math.ceil((maxActiveTime + 120) / 60) * 60
-  );
+  // Dynamic non-hardcoded runway: 0 when empty, smoothly expanding to match active media + headroom
+  const totalDuration = projectDuration > 0
+    ? Math.max(projectDuration, Math.ceil((maxActiveTime + 1) / 5) * 5)
+    : 0;
   const progressPercent = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
   const timelineScale = Math.max(0.25, Number.isFinite(zoomLevel) ? zoomLevel : 1);
 
@@ -462,7 +462,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     };
 
     const handleSetStoryboard = (e: Event) => {
-      const detail = (e as CustomEvent<{ storyboard?: any[]; musicTrack?: string }>).detail;
+      const detail = (e as CustomEvent<{ storyboard?: any[]; musicTrack?: string; captions?: any[]; duration?: number; soundDesign?: any; hooks?: any[] }>).detail;
       if (!detail || !detail.storyboard || !detail.storyboard.length) return;
 
       const newVideoClips: TimelineMediaClip[] = [];
@@ -526,6 +526,17 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         setVideoTrackVisible(true);
         setImageTrackVisible(false);
         setIsCollapsed(false);
+      }
+      if (detail.captions && detail.captions.length > 0) {
+        setLocalClips(detail.captions);
+        setEnabledTracks((prev) => ({ ...prev, captions: true }));
+        setCaptionsTrackLocked(false);
+        onUpdateSubtitles?.(detail.captions);
+      }
+      if (detail.duration && detail.duration > 0) {
+        onTimelineDurationChange?.(detail.duration);
+        setVideoDuration(detail.duration);
+        setVoiceDuration(detail.duration);
       }
       if (newSfxClips.length > 0) {
         setSfxClips(newSfxClips);
@@ -1744,7 +1755,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   useEffect(() => {
     if (effectiveVoiceDur > 0 && localClips.length > 0) {
       const mismatch = Math.abs(maxCaptionsEnd - effectiveVoiceDur);
-      if (mismatch > 0.8 && lastSyncedVoiceDurRef.current !== effectiveVoiceDur) {
+      if (mismatch > 0.3 && lastSyncedVoiceDurRef.current !== effectiveVoiceDur) {
         lastSyncedVoiceDurRef.current = effectiveVoiceDur;
         handleSyncAudioAndCC();
       }
@@ -2378,6 +2389,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         isPlaying={isPlaying}
         onTogglePlay={onTogglePlay}
         currentTime={currentTime}
+        projectDuration={projectDuration}
         totalDuration={totalDuration}
         zoomLevel={zoomLevel}
         onZoomIn={() => setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, zoomLevel + TIMELINE_ZOOM_STEP))}

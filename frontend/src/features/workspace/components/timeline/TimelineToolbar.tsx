@@ -212,18 +212,15 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             <SkipForward className="w-3.5 h-3.5" />
           </button>
 
-          {/* Time Readout: Playhead / Media Duration with Infinite Canvas Runway indicator */}
+          {/* Time Readout: Playhead / Media Duration */}
           <div
-            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#08080A] border border-[#262630] text-[10px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
-            title={`Playhead: ${formatTime(currentTime)} | Media: ${formatTime(displayDuration)} | Timeline Runway: ${formatTime(totalDuration)}`}
+            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#08080A] border border-[#262630] text-[10.5px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
+            title={`Playhead: ${formatTime(currentTime)} | Duration: ${formatTime(displayDuration)}`}
             aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
           >
             <span className="text-white font-bold" title="Current Playhead Time">{formatTime(currentTime)}</span>
             <span className="text-[#52525B]">/</span>
-            <span className="text-[#60A5FA] font-medium" title="Media Project Duration">{formatTime(displayDuration)}</span>
-            <span className="text-[8.5px] text-[#52525B] ml-1 pl-1 border-l border-[#262630]" title="Infinite Canvas Runway">
-              Runway {formatTime(totalDuration)}
-            </span>
+            <span className="text-[#60A5FA] font-medium" title="Project Duration">{formatTime(displayDuration)}</span>
           </div>
         </div>
       </div>

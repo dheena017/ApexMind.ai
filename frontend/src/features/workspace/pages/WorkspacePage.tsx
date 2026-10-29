@@ -177,7 +177,7 @@ export default function WorkspacePage({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [timelineDuration, setTimelineDuration] = useState(30);
+  const [timelineDuration, setTimelineDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);

@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { toCanvas } from 'html-to-image';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
 import { consoleLogger } from '@/src/shared/utils/logger';
@@ -328,44 +327,130 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         const context = outputCanvas.getContext('2d', { alpha: false });
         if (!context) throw new Error('Could not create video render canvas.');
 
-        // Fill background initially with dark studio tone
-        context.fillStyle = '#0a0a0c';
-        context.fillRect(0, 0, dimensions.width, dimensions.height);
+        // Direct frame compositor: never empty, draws media + cinematic backdrop + titles + captions
+        const captureFrame = (renderTimeSec: number) => {
+          let drewMedia = false;
 
-        // Robust frame capture: Draw active video frame directly, then overlay captions/titles without CORS taint
-        const captureFrame = async () => {
-          // 1. Draw video background directly onto canvas
+          // 1. Draw active video frame if available and ready
           const videoEl = videoElementRef.current;
-          if (videoEl && videoEl.readyState >= 2) {
+          if (videoEl && videoEl.readyState >= 2 && videoEl.videoWidth > 0) {
             try {
               context.drawImage(videoEl, 0, 0, dimensions.width, dimensions.height);
-            } catch {
-              context.fillStyle = '#0E131F';
-              context.fillRect(0, 0, dimensions.width, dimensions.height);
+              drewMedia = true;
+            } catch {}
+          }
+
+          // 2. Draw active image backdrop if present
+          if (!drewMedia) {
+            const imgEl = preview.querySelector('img');
+            if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
+              try {
+                context.drawImage(imgEl, 0, 0, dimensions.width, dimensions.height);
+                drewMedia = true;
+              } catch {}
             }
-          } else {
-            context.fillStyle = '#0E131F';
+          }
+
+          // 3. Fallback: Draw rich studio gradient backdrop so frame is NEVER black
+          if (!drewMedia) {
+            const grad = context.createLinearGradient(0, 0, 0, dimensions.height);
+            grad.addColorStop(0, '#0F172A');
+            grad.addColorStop(0.45, '#1E1B4B');
+            grad.addColorStop(1, '#020617');
+            context.fillStyle = grad;
+            context.fillRect(0, 0, dimensions.width, dimensions.height);
+
+            const radial = context.createRadialGradient(
+              dimensions.width / 2, dimensions.height / 2, 40,
+              dimensions.width / 2, dimensions.height / 2, dimensions.width * 0.75
+            );
+            radial.addColorStop(0, 'rgba(59, 130, 246, 0.22)');
+            radial.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            context.fillStyle = radial;
             context.fillRect(0, 0, dimensions.width, dimensions.height);
           }
 
-          // 2. Draw text, captions, and title overlays via toCanvas (filtering out video to prevent cross-origin taint)
-          try {
-            const overlayFrame = await toCanvas(preview, {
-              pixelRatio: 1,
-              skipFonts: true,
-              filter: (node: HTMLElement) => {
-                // Filter out video tag so html-to-image never triggers cross-origin errors
-                return node.tagName !== 'VIDEO';
-              },
-              style: { border: 'none', borderRadius: '0', boxShadow: 'none' },
-            });
-            context.drawImage(overlayFrame, 0, 0, dimensions.width, dimensions.height);
-          } catch {
-            // Non-fatal if overlay fails on a single tick
+          // 4. Subtle Vignette
+          const gradVignette = context.createRadialGradient(
+            dimensions.width / 2, dimensions.height / 2, dimensions.width * 0.35,
+            dimensions.width / 2, dimensions.height / 2, dimensions.width * 0.82
+          );
+          gradVignette.addColorStop(0, 'transparent');
+          gradVignette.addColorStop(1, 'rgba(0, 0, 0, 0.65)');
+          context.fillStyle = gradVignette;
+          context.fillRect(0, 0, dimensions.width, dimensions.height);
+
+          // 5. Draw Title Pill (visible during first 3.5 seconds)
+          if (script.title && renderTimeSec < 3.5) {
+            context.save();
+            const titleFontSize = Math.round(dimensions.width * 0.046);
+            context.font = `800 ${titleFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            const titleY = dimensions.height * 0.16;
+            const metrics = context.measureText(script.title);
+            const pillW = Math.min(dimensions.width * 0.9, metrics.width + 48);
+            const pillH = titleFontSize + 24;
+
+            context.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            context.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+            context.lineWidth = 3;
+            if (context.roundRect) {
+              context.beginPath();
+              context.roundRect(dimensions.width / 2 - pillW / 2, titleY - pillH / 2, pillW, pillH, 16);
+              context.fill();
+              context.stroke();
+            } else {
+              context.fillRect(dimensions.width / 2 - pillW / 2, titleY - pillH / 2, pillW, pillH);
+            }
+
+            context.fillStyle = '#FFFFFF';
+            context.fillText(script.title, dimensions.width / 2, titleY, pillW - 24);
+            context.restore();
+          }
+
+          // 6. Draw Caption / Subtitle Text matched to renderTimeSec
+          const activeSub = (script.subtitles || []).find(
+            (s) => renderTimeSec >= s.start && renderTimeSec <= s.start + (s.duration || 3)
+          );
+          const captionText = activeSub ? activeSub.text : '';
+
+          if (captionText) {
+            context.save();
+            const capFontSize = Math.round(dimensions.width * 0.065);
+            context.font = `900 ${capFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            const capY = dimensions.height * 0.76;
+
+            const metrics = context.measureText(captionText);
+            const pillW = Math.min(dimensions.width * 0.92, metrics.width + 56);
+            const pillH = capFontSize + 32;
+
+            context.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            context.lineWidth = 2;
+            if (context.roundRect) {
+              context.beginPath();
+              context.roundRect(dimensions.width / 2 - pillW / 2, capY - pillH / 2, pillW, pillH, 18);
+              context.fill();
+              context.stroke();
+            } else {
+              context.fillRect(dimensions.width / 2 - pillW / 2, capY - pillH / 2, pillW, pillH);
+            }
+
+            // High impact outline + punchy fill
+            context.lineWidth = 6;
+            context.strokeStyle = '#000000';
+            context.strokeText(captionText, dimensions.width / 2, capY, pillW - 24);
+
+            context.fillStyle = captionPresetColor || '#FACC15'; // Gold highlight
+            context.fillText(captionText, dimensions.width / 2, capY, pillW - 24);
+            context.restore();
           }
         };
 
-        await captureFrame();
+        captureFrame(0);
         outputStream = outputCanvas.captureStream(30);
 
         // Attach audio tracks safely
@@ -425,19 +510,25 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         let lastReportedPercent = 0;
 
         while (!cancelled && performance.now() - exportStartedAt < exportLength) {
-          const frameStartedAt = performance.now();
-          await captureFrame();
+          const elapsed = performance.now() - exportStartedAt;
+          const renderTimeSec = elapsed / 1000;
+          captureFrame(renderTimeSec);
 
-          const pct = Math.min(99, Math.round(((performance.now() - exportStartedAt) / exportLength) * 100));
-          if (pct > lastReportedPercent + 5) {
+          const pct = Math.min(99, Math.round((elapsed / exportLength) * 100));
+          if (pct > lastReportedPercent + 4) {
             lastReportedPercent = pct;
             window.dispatchEvent(new CustomEvent('workspace:export-state', {
               detail: { exporting: true, message: `Rendering ${pct}%...` },
             }));
           }
 
-          const delay = Math.max(0, 1000 / 24 - (performance.now() - frameStartedAt));
-          if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
+          // Natively request frame capture on stream
+          const videoTrack = outputStream?.getVideoTracks()[0] as any;
+          if (videoTrack?.requestFrame) {
+            try { videoTrack.requestFrame(); } catch {}
+          }
+
+          await new Promise((resolve) => window.setTimeout(resolve, 1000 / 24));
         }
 
         if (!cancelled && recorder && recorder.state === 'recording') {
@@ -460,7 +551,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       if (recorder?.state === 'recording') recorder.stop();
       outputStream?.getTracks().forEach((track) => track.stop());
     };
-  }, [audioElement, audioOutputStream, canvasAspectRatio, canvasOutputSize, exportDuration, exportFileName, isExporting, onExportComplete]);
+  }, [audioElement, audioOutputStream, canvasAspectRatio, canvasOutputSize, exportDuration, exportFileName, isExporting, onExportComplete, script]);
 
   useEffect(() => {
     const handleTimelineState = (e: Event) => {

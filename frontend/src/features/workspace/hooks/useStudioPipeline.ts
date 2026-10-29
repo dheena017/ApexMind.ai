@@ -292,6 +292,32 @@ export function useStudioPipeline() {
           consoleLogger.warn('Studio', `[Pipeline] Stage 3 failed: ${mediaResult.reason}`);
         }
 
+        // ── Voice Audio is Master Clock: Proportional Scene Alignment to Exact Audio Duration ──
+        if (durationSeconds > 0 && resolvedStoryboard.length > 0) {
+          const totalSbDuration = resolvedStoryboard.reduce(
+            (sum, s) => sum + (Number(s.duration) || 3.0),
+            0
+          );
+          if (totalSbDuration > 0) {
+            let runningStart = 0;
+            resolvedStoryboard = resolvedStoryboard.map((s, idx) => {
+              const isLast = idx === resolvedStoryboard.length - 1;
+              const origDur = Number(s.duration) || 3.0;
+              const proportionalDur = isLast
+                ? Math.max(0.4, parseFloat((durationSeconds - runningStart).toFixed(2)))
+                : Math.max(0.4, parseFloat(((origDur / totalSbDuration) * durationSeconds).toFixed(2)));
+              const start = parseFloat(runningStart.toFixed(2));
+              runningStart = parseFloat((runningStart + proportionalDur).toFixed(2));
+              return {
+                ...s,
+                start,
+                duration: proportionalDur,
+              };
+            });
+            consoleLogger.info('Studio', `[Pipeline] Scaled ${resolvedStoryboard.length} storyboard scenes to match audio duration: ${durationSeconds}s`);
+          }
+        }
+
         setStage('captions', 75, 'Generating Captions…');
 
         // ── Stage 4: Caption Generation ────────────────────────────────────
@@ -339,6 +365,7 @@ export function useStudioPipeline() {
               hooks: scriptData.hooks,
               // Stage 2 — inject captions from Stage 4 directly as LocalClips
               captions: captionsResult?.timelineClips ?? [],
+              duration: durationSeconds,
             },
           })
         );
