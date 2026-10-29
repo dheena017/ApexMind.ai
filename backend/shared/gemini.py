@@ -141,7 +141,7 @@ def extract_voiceover_audio(response: Any) -> tuple[bytes, str]:
 
 
 def calculate_audio_duration(audio_bytes: bytes, mime_type: str = "audio/wav") -> float:
-    """Calculate the precise audio duration in seconds from raw WAV or PCM data."""
+    """Calculate the precise audio duration in seconds from raw WAV, MP3, or PCM data."""
     if not audio_bytes:
         return 0.0
     try:
@@ -152,6 +152,14 @@ def calculate_audio_duration(audio_bytes: bytes, mime_type: str = "audio/wav") -
             rate = wf.getframerate()
             if rate > 0:
                 return round(frames / float(rate), 2)
+    except Exception:
+        pass
+    try:
+        import io
+        from mutagen.mp3 import MP3
+        audio = MP3(io.BytesIO(audio_bytes))
+        if audio.info and audio.info.length > 0:
+            return round(float(audio.info.length), 2)
     except Exception:
         pass
     # Standard Gemini TTS format fallback: 24kHz 16-bit mono PCM (48,000 bytes/sec)
@@ -848,17 +856,18 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
             gtts_bytes = fp.read()
             gtts_b64 = base64.b64encode(gtts_bytes).decode("utf-8")
             elapsed = time.perf_counter() - start_t
-            # Estimate MP3 duration roughly: ~150 words per minute
-            est_dur = round(max(1.0, len(normalized_text.split()) / 2.5), 1)
-            logger.info(f"Fallback gTTS synthesized {len(gtts_bytes)} bytes audio in {elapsed:.2f}s for voice '{voice_name}' | est_duration={est_dur}s")
+            exact_dur = calculate_audio_duration(gtts_bytes, mime_type="audio/mp3")
+            if exact_dur <= 0.1:
+                exact_dur = round(max(1.0, len(normalized_text.split()) / 2.5), 1)
+            logger.info(f"Fallback gTTS synthesized {len(gtts_bytes)} bytes audio in {elapsed:.2f}s for voice '{voice_name}' | duration={exact_dur}s")
             return {
                 "success": True,
                 "voiceName": voice_name,
                 "mimeType": "audio/mp3",
                 "audioBase64": gtts_b64,
                 "audioUrl": f"data:audio/mp3;base64,{gtts_b64}",
-                "duration": est_dur,
-                "durationFormatted": f"{est_dur}s",
+                "duration": exact_dur,
+                "durationFormatted": f"{exact_dur}s",
             }
         except Exception as fallback_err:
             logger.error(f"Fallback gTTS synthesis also failed: {fallback_err}")

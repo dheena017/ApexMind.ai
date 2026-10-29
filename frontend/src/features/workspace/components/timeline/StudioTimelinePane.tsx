@@ -475,8 +475,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const clipName = scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`;
         const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
         const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
-        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration >= 3.0 ? parsedDuration : Math.max(3.0, parsedDuration || 3.5);
-        const clipStart = Number.isFinite(parsedStart) && parsedStart >= runningStart ? parsedStart : runningStart;
+        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 2.5;
+        const clipStart = Number.isFinite(parsedStart) ? parsedStart : runningStart;
         runningStart = parseFloat((clipStart + clipDuration).toFixed(2));
 
         // Enforce pure video cuts on the timeline for every storyboard scene
@@ -537,6 +537,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         onTimelineDurationChange?.(detail.duration);
         setVideoDuration(detail.duration);
         setVoiceDuration(detail.duration);
+        setEnabledTracks((prev) => ({ ...prev, voice: true, title: Boolean(script.title) }));
+        setVoiceTrackMuted(false);
+        if (script.title) setTitleTrackVisible(true);
       }
       if (newSfxClips.length > 0) {
         setSfxClips(newSfxClips);
@@ -783,8 +786,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || '';
         const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
         const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
-        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration >= 3.0 ? parsedDuration : Math.max(3.0, parsedDuration || 3.5);
-        const clipStart = Number.isFinite(parsedStart) && parsedStart >= runningStart ? parsedStart : runningStart;
+        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 2.5;
+        const clipStart = Number.isFinite(parsedStart) ? parsedStart : runningStart;
         runningStart = parseFloat((clipStart + clipDuration).toFixed(2));
 
         initialVideos.push({
