@@ -162,13 +162,13 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
               <div className="w-0.5 h-3 bg-indigo-200 rounded-full" />
             </div>
 
-            {/* Overlay Label Overlay */}
-            <div className="flex items-center gap-1.5 z-10 truncate pl-2">
-              <Zap className="w-3 h-3 text-indigo-400 shrink-0" />
-              <span className="text-[10px] font-mono-studio truncate font-medium text-white/90 pointer-events-none drop-shadow-sm">
-                {clip.label || clip.name || 'Overlay Element'}
-              </span>
-            </div>
+            {/* Clean Overlay Clip Label & Duration */}
+            <span className="text-[10px] font-mono-studio truncate leading-tight pointer-events-none pl-1.5 text-white/90 z-10 font-medium">
+              {clip.label || clip.name || 'Overlay Element'}
+            </span>
+            <span className="text-[8.5px] font-mono-studio text-indigo-300 shrink-0 ml-auto pointer-events-none pr-1.5 font-bold z-10">
+              {(Number(clip.duration) || 0).toFixed(1)}s
+            </span>
 
             {/* Right Trim Handle */}
             <div

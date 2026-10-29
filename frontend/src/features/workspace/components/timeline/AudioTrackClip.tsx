@@ -200,13 +200,13 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
               <div className={`w-0.5 h-3 ${theme.handlePip} rounded-full`} />
             </div>
 
-            {/* Track Label */}
-            <div className="flex items-center gap-1.5 truncate pointer-events-none pl-2 z-10">
-              {theme.icon}
-              <span className="text-[10px] font-mono-studio font-medium text-white/90 truncate drop-shadow-sm">
-                {clip.name || label || `${type.toUpperCase()} Track`}
-              </span>
-            </div>
+            {/* Clean Audio Clip Label & Duration */}
+            <span className="text-[10px] font-mono-studio truncate leading-tight pointer-events-none pl-1.5 text-white/90 z-10 font-medium">
+              {clip.name || label || `${type.toUpperCase()} Track`}
+            </span>
+            <span className={`text-[8.5px] font-mono-studio ${theme.text} shrink-0 ml-auto pointer-events-none pr-1.5 font-bold z-10`}>
+              {(Number(clip.duration) || 0).toFixed(1)}s
+            </span>
 
             {/* Right Trim Handle */}
             <div
