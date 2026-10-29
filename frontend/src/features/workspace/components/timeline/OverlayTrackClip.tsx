@@ -163,17 +163,12 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
             </div>
 
             {/* Overlay Label Overlay */}
-            <div className="flex items-center gap-1.5 z-10 truncate bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs max-w-[70%]">
-              <Move className="w-2.5 h-2.5 text-indigo-400/60 shrink-0" title="Move & drag clip" />
+            <div className="flex items-center gap-1.5 z-10 truncate pl-2">
               <Zap className="w-3 h-3 text-indigo-400 shrink-0" />
-              <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
+              <span className="text-[10px] font-mono-studio truncate font-medium text-white/90 pointer-events-none drop-shadow-sm">
                 {clip.label || clip.name || 'Overlay Element'}
               </span>
             </div>
-
-            <span className="text-[9px] font-mono-studio text-indigo-300 pointer-events-none pr-1 font-bold z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs shrink-0">
-              {formatTime(clip.duration)}
-            </span>
 
             {/* Right Trim Handle */}
             <div

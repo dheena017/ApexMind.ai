@@ -76,12 +76,16 @@ export const FilmstripTrackBackground: React.FC<FilmstripTrackBackgroundProps> =
         /* ── Case 2: Direct Video URL (Single Passive Metadata Frame - ZERO autoPlay loops) ── */
         <div className="relative w-full h-full overflow-hidden bg-black/90">
           <video
-            src={videoSource ? `${videoSource}#t=0.1` : undefined}
+            src={videoSource}
             muted
             playsInline
             autoPlay={false}
-            preload="metadata"
-            crossOrigin="anonymous"
+            preload="auto"
+            onLoadedMetadata={(e) => {
+              try {
+                (e.target as HTMLVideoElement).currentTime = 0.05;
+              } catch {}
+            }}
             onError={() => setLoadError(true)}
             className="w-full h-full object-cover filter brightness-95 saturate-105 pointer-events-none"
           />

@@ -200,19 +200,13 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
               <div className={`w-0.5 h-3 ${theme.handlePip} rounded-full`} />
             </div>
 
-            {/* Track Label Pill */}
-            <div className="flex items-center gap-1.5 truncate pointer-events-none pl-1 z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs max-w-[65%]">
-              <Move className="w-2.5 h-2.5 opacity-60 shrink-0" title="Move & drag clip" />
+            {/* Track Label */}
+            <div className="flex items-center gap-1.5 truncate pointer-events-none pl-2 z-10">
               {theme.icon}
-              <span className="text-[10px] font-mono-studio font-medium truncate">
+              <span className="text-[10px] font-mono-studio font-medium text-white/90 truncate drop-shadow-sm">
                 {clip.name || label || `${type.toUpperCase()} Track`}
               </span>
             </div>
-
-            {/* Duration or Sublabel Readout */}
-            <span className={`text-[9px] font-mono-studio ${theme.text} pointer-events-none pr-1 font-bold z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs shrink-0`}>
-              {subLabel || formatTime(clip.duration)}
-            </span>
 
             {/* Right Trim Handle */}
             <div
