@@ -39,20 +39,74 @@ class PixabayVideoProvider(BaseMediaProvider):
             return []
 
         clean_q = (query or "").strip().replace("#", "").strip() or "cinematic nature"
+
+        # Handle Pixabay Photos/Images search
+        if media_type == "image":
+            url = "https://pixabay.com/api/"
+            orientation = "vertical" if aspect_ratio in ["9:16", "4:5"] else "horizontal"
+            params = {
+                "key": api_key,
+                "q": clean_q,
+                "image_type": "photo",
+                "orientation": orientation,
+                "per_page": max(3, min(limit, 20)),
+                "page": page,
+                "safesearch": "true",
+            }
+            try:
+                resp = requests.get(url, params=params, timeout=6)
+                if resp.status_code != 200:
+                    logger.warning(f"Pixabay photo API returned status {resp.status_code}")
+                    return []
+                data = resp.json()
+            except Exception as e:
+                logger.warning(f"Pixabay photo API request failed: {e}")
+                return []
+
+            images: List[MediaAsset] = []
+            for hit in data.get("hits", []):
+                img_url = hit.get("largeImageURL") or hit.get("webformatURL")
+                if not img_url:
+                    continue
+                w = hit.get("imageWidth", 1080)
+                h = hit.get("imageHeight", 1920)
+                images.append(
+                    MediaAsset(
+                        id=f"pixabay_img_{hit.get('id')}",
+                        mediaType="image",
+                        title=hit.get("tags") or "Pixabay Photo",
+                        url=img_url,
+                        previewUrl=hit.get("webformatURL") or hit.get("previewURL") or img_url,
+                        thumbnailUrl=hit.get("previewURL") or img_url,
+                        duration=8.0,
+                        resolution=f"{w}x{h}",
+                        aspectRatio=aspect_ratio,
+                        provider="pixabay",
+                        extraMetadata={
+                            "author": hit.get("user"),
+                            "sourceUrl": hit.get("pageURL"),
+                            "views": hit.get("views"),
+                            "likes": hit.get("likes"),
+                        },
+                    )
+                )
+            return images
+
+        # Handle Pixabay Videos search (minimum per_page is 3 per Pixabay API spec)
         url = "https://pixabay.com/api/videos/"
         params = {
             "key": api_key,
             "q": clean_q,
-            "per_page": min(limit, 20),
+            "per_page": max(3, min(limit, 20)),
             "page": page,
             "safesearch": "true",
             "video_type": "film",
         }
 
         try:
-            resp = requests.get(url, params=params, timeout=5)
+            resp = requests.get(url, params=params, timeout=6)
             if resp.status_code != 200:
-                logger.warning(f"Pixabay video API returned {resp.status_code}")
+                logger.warning(f"Pixabay video API returned status {resp.status_code}: {resp.text[:120]}")
                 return []
             data = resp.json()
         except Exception as e:
@@ -70,11 +124,11 @@ class PixabayVideoProvider(BaseMediaProvider):
             )
             v_url = chosen.get("url", "")
             if v_url and v_url.startswith("http"):
-                picture_id = hit.get("picture_id", "")
-                poster_url = (
-                    f"https://i.vimeocdn.com/video/{picture_id}_640x360.jpg"
-                    if picture_id
-                    else ""
+                # Use high-quality thumbnail directly from Pixabay video object
+                poster_url = chosen.get("thumbnail") or (
+                    videos_obj.get("medium", {}).get("thumbnail")
+                    or videos_obj.get("small", {}).get("thumbnail")
+                    or ""
                 )
                 w = chosen.get("width", 1080)
                 h = chosen.get("height", 1920)
@@ -94,6 +148,8 @@ class PixabayVideoProvider(BaseMediaProvider):
                         extraMetadata={
                             "author": hit.get("user"),
                             "sourceUrl": hit.get("pageURL"),
+                            "views": hit.get("views"),
+                            "likes": hit.get("likes"),
                         },
                     )
                 )

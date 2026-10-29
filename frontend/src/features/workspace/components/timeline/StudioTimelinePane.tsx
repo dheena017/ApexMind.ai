@@ -225,6 +225,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     return () => ro.disconnect();
   }, []);
 
+
   const handleTracksScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (rulerScrollRef.current) {
       rulerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
@@ -256,13 +257,44 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     Number.isFinite(duration) && duration > 0 ? duration : (Number(timelineDuration) || 30),
     Number.isFinite(contentEnd) ? contentEnd : 0
   );
-  const totalDuration = Number.isFinite(rawProjectDuration) && rawProjectDuration > 0 ? rawProjectDuration : 30;
+  const projectDuration = Number.isFinite(rawProjectDuration) && rawProjectDuration > 0 ? rawProjectDuration : 30;
+  const maxActiveTime = Math.max(contentEnd, currentTime, projectDuration);
+  // Infinite / spacious runway: minimum 5 minutes (300s), expanding dynamically in 60s blocks
+  const totalDuration = Math.max(
+    300,
+    Math.ceil((maxActiveTime + 120) / 60) * 60
+  );
   const progressPercent = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
-  const timelineScale = Math.max(1, Number.isFinite(zoomLevel) ? zoomLevel : 1);
+  const timelineScale = Math.max(0.25, Number.isFinite(zoomLevel) ? zoomLevel : 1);
+
+  // Pixel-based canvas width across infinite runway
+  const safeTotalDuration = Math.max(0.1, Number.isFinite(totalDuration) ? totalDuration : 300);
+  const safeViewportWidth = Math.max(300, Number(rulerViewportWidth) || 720);
+  const safeScale = Math.max(0.25, Number.isFinite(timelineScale) ? timelineScale : 1);
+  const basePxPerSecond = 24;
+  const trackContentWidthPx = Math.max(
+    safeViewportWidth * 1.8,
+    Math.round(safeTotalDuration * basePxPerSecond * safeScale)
+  );
+  const totalTimelineWidthPx = trackHeadersWidth + trackContentWidthPx;
+
+  // Auto-scroll timeline to follow playhead during playback
+  useEffect(() => {
+    if (!isPlaying || !tracksScrollRef.current) return;
+    const scrollEl = tracksScrollRef.current;
+    const playheadPx = (currentTime / (totalDuration || 1)) * trackContentWidthPx;
+    const currentScrollLeft = scrollEl.scrollLeft;
+    const viewportWidth = scrollEl.clientWidth - trackHeadersWidth;
+    if (playheadPx > currentScrollLeft + viewportWidth - 60) {
+      scrollEl.scrollLeft = Math.max(0, playheadPx - 80);
+    } else if (playheadPx < currentScrollLeft) {
+      scrollEl.scrollLeft = Math.max(0, playheadPx - 40);
+    }
+  }, [isPlaying, currentTime, totalDuration, trackContentWidthPx, trackHeadersWidth]);
 
   useEffect(() => {
-    onTimelineDurationChange?.(totalDuration);
-  }, [onTimelineDurationChange, totalDuration]);
+    onTimelineDurationChange?.(projectDuration);
+  }, [onTimelineDurationChange, projectDuration]);
 
   useEffect(() => {
     if (!selectedSfx) return;
@@ -334,10 +366,13 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
       if (detail.type === 'video' && detail.url) {
         const clipDuration = detail.duration || 10;
+        const poster = (detail as any).posterUrl || (detail as any).thumbnailUrl || customImageUrl || activeBackdrop?.imageUrl;
         const newClip: TimelineMediaClip = {
           id: clipId,
           type: 'video',
           url: detail.url,
+          posterUrl: poster,
+          thumbnailUrl: poster,
           name: detail.name || 'Video Clip',
           start: clipStart,
           duration: clipDuration,
@@ -541,6 +576,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             id: `vid-${Date.now()}`,
             type: 'video',
             url: customVideoUrl,
+            posterUrl: customImageUrl || activeBackdrop?.imageUrl,
+            thumbnailUrl: customImageUrl || activeBackdrop?.imageUrl,
             name: 'Video Clip',
             start: 0,
             duration: duration > 0 ? duration : 12.1,
@@ -594,6 +631,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             id: `vid-${activeBackdrop.id}`,
             type: 'video',
             url: videoUrl,
+            posterUrl: activeBackdrop.imageUrl,
+            thumbnailUrl: activeBackdrop.imageUrl,
             name: activeBackdrop.name || 'Video Clip',
             start: prev[0]?.start ?? 0,
             duration: prev[0]?.duration ?? (duration > 0 ? duration : 12.1),
@@ -2233,19 +2272,45 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   ].filter(Boolean).length;
   const activeTracksCount = enabledTracksCount;
 
-  // Keep major labels comfortably separated at every zoom and viewport size.
-  const safeTotalDuration = Math.max(0.1, Number.isFinite(totalDuration) ? totalDuration : 30);
-  const safeViewportWidth = Math.max(300, Number(rulerViewportWidth) || 720);
-  const safeScale = Math.max(1, Number.isFinite(timelineScale) ? timelineScale : 1);
-  const targetTickInterval = Math.max(0.1, (56 * safeTotalDuration) / (safeViewportWidth * safeScale));
+  // Mouse wheel horizontal scroll handler for tracks
+  const handleTimelineWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!tracksScrollRef.current) return;
+    if (Math.abs(e.deltaX) > 0) return;
+    if (e.ctrlKey) return;
+    if (e.shiftKey) {
+      e.preventDefault();
+      tracksScrollRef.current.scrollLeft += e.deltaY;
+      return;
+    }
+    const canScrollVertically =
+      tracksScrollRef.current.scrollHeight > tracksScrollRef.current.clientHeight + 4;
+    if (!canScrollVertically && Math.abs(e.deltaY) > 0) {
+      tracksScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  // Mouse wheel horizontal scroll handler on time ruler
+  const handleRulerWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!tracksScrollRef.current) return;
+    if (e.ctrlKey) return;
+    if (Math.abs(e.deltaY) > 0 || Math.abs(e.deltaX) > 0) {
+      e.preventDefault();
+      const delta = Math.abs(e.deltaX) > 0 ? e.deltaX : e.deltaY;
+      tracksScrollRef.current.scrollLeft += delta;
+    }
+  };
+
+  // Keep major labels comfortably separated across infinite runway at every zoom and viewport size.
+  const targetTickInterval = Math.max(0.1, (80 * safeTotalDuration) / trackContentWidthPx);
   const tickMagnitude = 10 ** Math.floor(Math.log10(targetTickInterval));
   const tickInterval = Math.max(
     0.1,
-    [1, 2, 2.5, 5, 10].map((scale) => scale * tickMagnitude).find((interval) => interval >= targetTickInterval) ??
-      10 * tickMagnitude
+    [1, 2, 2.5, 5, 10, 15, 30, 60, 120, 300]
+      .map((scale) => scale * tickMagnitude)
+      .find((interval) => interval >= targetTickInterval) ?? 10 * tickMagnitude
   );
   const rawTickCount = Math.floor(safeTotalDuration / tickInterval + 1e-9) + 1;
-  const safeTickCount = Math.min(250, Math.max(1, Number.isFinite(rawTickCount) ? rawTickCount : 1));
+  const safeTickCount = Math.min(500, Math.max(1, Number.isFinite(rawTickCount) ? rawTickCount : 1));
   const ticks = Array.from(
     { length: safeTickCount },
     (_, index) => index * tickInterval
@@ -2301,7 +2366,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               <div
                 className="flex min-w-full"
                 style={{
-                  width: `calc(${100 * timelineScale}% - ${trackHeadersWidth * timelineScale}px + ${trackHeadersWidth}px)`,
+                  width: `${totalTimelineWidthPx}px`,
                 }}
               >
                 {/* Corner Track Labels Header (moves together with horizontal scroll) */}
@@ -2326,7 +2391,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 {/* Time Ruler Canvas & Playhead Needle */}
                 <div
                   ref={rulerContainerRef}
-                  className="relative flex-1 min-w-0 h-6"
+                  onWheel={handleRulerWheel}
+                  style={{ width: `${trackContentWidthPx}px` }}
+                  className="relative shrink-0 h-6"
                 >
                   <TimelineRuler
                     ticks={ticks}
@@ -2370,6 +2437,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           <div
             ref={tracksScrollRef}
             onScroll={handleTracksScroll}
+            onWheel={handleTimelineWheel}
             style={timelineHeight ? { height: `${timelineHeight}px`, maxHeight: `${timelineHeight}px` } : undefined}
             className={`min-w-0 w-full overflow-x-auto overflow-y-auto custom-scrollbar relative ${timelineHeight ? '' : timelineViewportHeight}`}
           >
@@ -2454,7 +2522,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               <div
                 ref={tracksContainerRef}
                 onPointerDown={handleTracksPointerDown}
-                className="relative flex-1 min-w-0 cursor-crosshair select-none"
+                style={{ width: `${trackContentWidthPx}px` }}
+                className="relative shrink-0 cursor-crosshair select-none"
               >
                 {/* ── Magnetic Snapping Guideline (Laser Line) ──────── */}
                 {snapGuideTime !== null && (
@@ -2480,6 +2549,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       videoTrackVisible={videoTrackVisible}
                       backdropName={activeBackdrop?.name || 'Video Clip'}
                       mediaUrl={customVideoUrl || activeBackdrop?.imageUrl}
+                      posterUrl={customImageUrl || activeBackdrop?.imageUrl}
                       onSelectClip={(clipId) => handleSelectClip({ track: 'video', clipId }, 'video')}
                       onPointerDownMoveClip={(e, clip) => {
                         handleSelectClip({ track: 'video', clipId: clip.id }, 'video');

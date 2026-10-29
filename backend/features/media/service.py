@@ -128,6 +128,7 @@ def _resolve_single_scene_internal(
     else:
         # Image search
         for q in all_queries:
+            # 1. Try Unsplash if configured
             if unsplash_image.is_configured():
                 try:
                     candidates = unsplash_image.search(query=q, aspect_ratio=aspect_ratio, limit=5)
@@ -140,6 +141,20 @@ def _resolve_single_scene_internal(
                             )
                 except Exception as e:
                     logger.debug(f"Unsplash error on scene {item.sceneNumber}: {e}")
+
+            # 2. Try Pixabay Photos (configured with user API key)
+            if pixabay_video.is_configured():
+                try:
+                    candidates = pixabay_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6)
+                    for cand in candidates:
+                        if cand.url not in excluded_urls:
+                            return ResolvedSceneResult(
+                                sceneNumber=item.sceneNumber,
+                                status="resolved",
+                                media=cand,
+                            )
+                except Exception as e:
+                    logger.debug(f"Pixabay photo error on scene {item.sceneNumber}: {e}")
 
     return ResolvedSceneResult(
         sceneNumber=item.sceneNumber,

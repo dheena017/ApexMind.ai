@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { workspaceApi } from '../api/workspaceApi';
+import { useStudioPipeline } from '../hooks/useStudioPipeline';
 import { videosApi } from '@/src/features/videos/api/videosApi';
 import { DEFAULT_SOUNDTRACK_AUDIO_URL, GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
@@ -93,6 +94,16 @@ export default function WorkspacePage({
   onPaneChange,
 }: WorkspacePageProps) {
   const { user } = useAuth();
+
+  // -- Studio Pipeline v2: 4-stage independent pipeline hook ---------------
+  const {
+    progress: pipelineProgress,
+    isRunning: pipelineRunning,
+    runPipeline,
+    retryVoice: retryPipelineVoice,
+    retryCaptions: retryPipelineCaptions,
+  } = useStudioPipeline();
+
   // Navigation between separate AI Creator and Script Editor pages
 
   // AI Model & Script Generation
@@ -464,7 +475,7 @@ export default function WorkspacePage({
 
         setMemoryCount(mem.totalQuotesInMemory || 0);
 
-        // ── Deep Linking: Load Video, Prompt, or Tab from URL Query Parameters ──
+        // â”€â”€ Deep Linking: Load Video, Prompt, or Tab from URL Query Parameters â”€â”€
         const urlParams = getQueryParams();
         const deepVideoId = urlParams.videoId || urlParams.video;
         if (deepVideoId) {
@@ -609,15 +620,14 @@ export default function WorkspacePage({
   };
 
   // Run AI Script Generation
-  const handleRunAIAgent = async (): Promise<boolean> => {
-    setLoadingAgent(true);
-    setAgentError(null);
-    consoleLogger.info('Studio', `Generating script for category: ${category}`);
+  // â”€â”€ Unified Studio Pipeline Executor (Stages 1 -> 4) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const handleExecuteStudioPipeline = async (): Promise<boolean> => {
+    consoleLogger.info('Studio', `Executing 4-stage pipeline for category: ${category}`);
     try {
       const creativeBrief = getActiveCreativeBrief();
-      const selectedTrack = musicTracks.find((track) => track.id === selectedMusic);
-      const selectedBackdropItem = backdrops.find((backdrop) => backdrop.id === selectedBackdrop);
-      const selectedVoiceProfile = voices.find((voice) => voice.id === selectedVoice);
+      const selectedTrack = musicTracks.find((t) => t.id === selectedMusic);
+      const selectedBackdropItem = backdrops.find((b) => b.id === selectedBackdrop);
+      const selectedVoiceProfile = voices.find((v) => v.id === selectedVoice);
 
       const creativeContext: Record<string, unknown> = {
         category,
@@ -628,325 +638,83 @@ export default function WorkspacePage({
         audience: targetAudience,
         creatorPrompt: agentPrompt || null,
         shotPacing: selectedTrack?.bpm
-          ? `short-form pacing matched to ${selectedTrack.bpm} BPM with quick-cut rhythm`
-          : 'fast vertical short-form pacing with tight retention hooks',
+          ? `short-form pacing matched to ${selectedTrack.bpm} BPM`
+          : 'fast vertical short-form pacing',
         transitionStyle: selectedSfx?.name
-          ? `use ${selectedSfx.name} as an impact transition and fast match cut`
-          : (selectedBackdropItem?.particleEffect ? `cinematic ${selectedBackdropItem.particleEffect} transitions` : 'dynamic match cuts and quick transitions'),
-        subtitleMotion: captionPreset?.className
-          ? `subtitle motion styled like ${captionPreset.className}`
-          : 'centered kinetic subtitles with strong readability',
-        textAnimation: captionPreset?.className
-          ? `text animation using ${captionPreset.className}`
-          : 'bold punch-in text reveal with clean title emphasis',
-        cameraMovement: activeElementOverlay
-          ? `camera movement guided by ${activeElementOverlay.type} ${activeElementOverlay.name || ''}`.trim()
-          : (selectedBackdropItem?.particleEffect ? `subtle push-in and parallax around ${selectedBackdropItem.particleEffect}` : 'steady hand-held feel with occasional push-in focus'),
-        sceneStructure: {
-          hookPlacement: 'front-load the strongest emotional hook in the first 1-3 seconds',
-          ctaTiming: 'deliver the closing call-to-action in the final 2-4 seconds with a hard stop',
-          emphasisPoints: [
-            'lead with the most shocking truth or tension',
-            'repeat the emotional payoff once in the middle',
-            'land the final action cue in the closing beat',
-          ],
-          shotPlan: selectedTrack?.bpm
-            ? `3-beat rhythm driven by ${selectedTrack.bpm} BPM energy: hook, escalation, resolution`
-            : '3-beat rhythm: hook, escalation, resolution',
-          subtitlePriority: 'keep subtitles readable, dominant, and synced to the strongest words',
-        },
+          ? `use ${selectedSfx.name} as transition`
+          : 'dynamic match cuts',
+        subtitleMotion: captionPreset?.className || 'centered kinetic subtitles',
+        textAnimation: captionPreset?.className || 'bold punch-in',
+        cameraMovement: activeElementOverlay ? `overlay: ${activeElementOverlay.name || ''}` : 'steady with push-in',
         visual: {
           aspectRatio: canvasAspectRatio,
           backgroundColor: canvasBackground,
-          selectedBackdrop: selectedBackdropItem
-            ? {
-                id: selectedBackdropItem.id,
-                name: selectedBackdropItem.name,
-                category: selectedBackdropItem.category,
-                particleEffect: selectedBackdropItem.particleEffect,
-                previewColor: selectedBackdropItem.previewColor,
-              }
-            : null,
-          customBackdropImage: customBackdropImage || null,
-          customBackdropVideo: customBackdropVideo || null,
-          captionPreset: captionPreset
-            ? {
-                className: captionPreset.className || null,
-                color: captionPreset.color || null,
-                fontFamily: captionPreset.fontFamily || null,
-                fontSize: captionPreset.fontSize || null,
-                fontWeight: captionPreset.fontWeight || null,
-                textTransform: captionPreset.textTransform || null,
-                previewText: captionPreset.previewText || null,
-              }
-            : null,
-          overlay: activeElementOverlay
-            ? {
-                id: activeElementOverlay.id || null,
-                name: activeElementOverlay.name || null,
-                type: activeElementOverlay.type,
-                value: activeElementOverlay.value,
-                label: activeElementOverlay.label || null,
-              }
-            : null,
-          motionStyle: creativeBrief.motionStyle || null,
-          visualTheme: creativeBrief.visualTheme || null,
+          selectedBackdrop: selectedBackdropItem ? { id: selectedBackdropItem.id, name: selectedBackdropItem.name } : null,
+          captionPreset: captionPreset ? { className: captionPreset.className, color: captionPreset.color } : null,
+          overlay: activeElementOverlay,
         },
         audio: {
           voiceName: selectedVoice || null,
           voiceStyle: selectedVoiceProfile?.style || null,
-          musicTrack: selectedTrack
-            ? {
-                id: selectedTrack.id,
-                title: selectedTrack.title || selectedTrack.name || selectedMusic,
-                genre: selectedTrack.genre,
-                mood: selectedTrack.mood || null,
-                bpm: selectedTrack.bpm,
-              }
-            : (selectedMusic ? { id: selectedMusic, title: selectedMusic } : null),
-          sfx: selectedSfx
-            ? {
-                id: selectedSfx.id,
-                name: selectedSfx.name,
-                duration: selectedSfx.duration,
-                start: selectedSfx.start,
-              }
-            : null,
+          musicTrack: selectedTrack ? { id: selectedTrack.id, title: selectedTrack.title, bpm: selectedTrack.bpm } : null,
           volume,
-          isMuted,
           musicVolume,
-          playbackRate,
-          noiseReduction,
-          voiceFade: voiceFadeSettings,
-          musicFade: musicFadeSettings,
-          audioMood: creativeBrief.audioMood || null,
-        },
-        text: {
-          captionStyle: creativeBrief.captionStyle || null,
-          textStyle: creativeBrief.textStyle || null,
-          typographyPreset: captionPreset ? captionPreset.className || null : null,
-        },
-        composition: {
-          aspectRatio: canvasAspectRatio,
-          backgroundStyle: creativeBrief.backgroundStyle || null,
-          videoStyle: creativeBrief.videoStyle || null,
-          outputFormat: creativeBrief.outputFormat || null,
-          activeCompound,
         },
       };
 
-      const promptParts = [
-        agentPrompt.trim(),
-        targetAudience.trim() ? `Target audience: ${targetAudience.trim()}` : '',
-      ].filter(Boolean);
-      const generated = await workspaceApi.generateScript({
+      const pipelineRes = await runPipeline({
         category,
-        userPrompt: promptParts.join('\n') || undefined,
-        tone: preferredTone,
-        model: selectedModel,
-        length: targetLength,
-        ...(creativeBrief.audioMood ? { audioMood: creativeBrief.audioMood } : {}),
-        ...(creativeBrief.backgroundStyle ? { backgroundStyle: creativeBrief.backgroundStyle } : {}),
-        ...(creativeBrief.textStyle ? { textStyle: creativeBrief.textStyle } : {}),
-        ...(creativeBrief.videoStyle ? { videoStyle: creativeBrief.videoStyle } : {}),
-        ...(creativeBrief.voiceName ? { voiceName: creativeBrief.voiceName } : {}),
-        aspectRatio: creativeBrief.aspectRatio || canvasAspectRatio || '9:16',
-        ...(creativeBrief.musicTrack ? { musicTrack: creativeBrief.musicTrack } : {}),
-        ...(creativeBrief.captionStyle ? { captionStyle: creativeBrief.captionStyle } : {}),
-        ...(creativeBrief.visualTheme ? { visualTheme: creativeBrief.visualTheme } : {}),
-        ...(creativeBrief.motionStyle ? { motionStyle: creativeBrief.motionStyle } : {}),
-        ...(creativeBrief.outputFormat ? { outputFormat: creativeBrief.outputFormat } : {}),
+        topic: targetAudience || undefined,
+        userPrompt: agentPrompt || undefined,
+        tone: preferredTone || undefined,
+        length: targetLength || '30 seconds',
+        model: selectedModel || 'gemini-2.5-flash',
+        aspectRatio: canvasAspectRatio,
+        voiceName: selectedVoice || 'Fenrir',
+        musicTrackId: selectedMusic || undefined,
+        captionStylePreset: captionPreset?.className || undefined,
+        backdropId: selectedBackdrop || undefined,
+        audioMood: creativeBrief.audioMood,
+        backgroundStyle: creativeBrief.backgroundStyle,
+        textStyle: creativeBrief.textStyle,
+        videoStyle: creativeBrief.videoStyle,
+        visualTheme: creativeBrief.visualTheme,
+        motionStyle: creativeBrief.motionStyle,
         creativeContext,
         availableAssets: {
-          visualBackdrops: backdrops.map((b) => ({
-            id: b.id,
-            name: b.name,
-            category: b.category,
-            imageUrl: b.imageUrl,
-            videoUrl: b.videoUrl,
-            previewColor: b.previewColor,
-          })),
-          textStyles: TYPOGRAPHY_PRESETS.slice(0, 20).map((t) => ({
-            id: t.id,
-            name: t.name,
-            className: t.className,
-            color: t.color,
-            fontFamily: t.fontFamily,
-            styleDescription: t.styleDescription,
-          })),
-          musicTracks: musicTracks.map((m) => ({
-            id: m.id,
-            title: m.title,
-            genre: m.genre,
-            bpm: m.bpm,
-            audioUrl: m.audioUrl,
-          })),
-          voices: voices.map((v) => ({
-            id: v.id,
-            name: v.name,
-            gender: v.gender,
-            style: v.style,
-          })),
+          visualBackdrops: backdrops.map((b) => ({ id: b.id, name: b.name, category: b.category })),
+          musicTracks: musicTracks.map((m) => ({ id: m.id, title: m.title, bpm: m.bpm, genre: m.genre })),
+          voices: voices.map((v) => ({ id: v.id, name: v.name, style: v.style })),
         },
       });
 
-      setScript({ ...generated, recommendedVoice: selectedVoice || generated.recommendedVoice });
+      if (pipelineRes?.script) {
+        setScript({
+          speechStyle: '',
+          visualTheme: '',
+          ...pipelineRes.script,
+          recommendedVoice: selectedVoice || pipelineRes.script.recommendedVoice || 'Fenrir',
+        } as unknown as GeneratedScript);
 
-      if (generated.aspectRatio && generated.aspectRatio !== canvasAspectRatio) {
-        handleCanvasAspectRatioChange(generated.aspectRatio as CanvasAspectRatio);
-      }
-
-      // If AI planned a multi-scene storyboard with multiple videos and images:
-      let finalStoryboard = generated.storyboard || [];
-      if (finalStoryboard.length > 0) {
-        // Clear custom backdrop overrides so multi-scene storyboard cuts drive the timeline & preview
-        setCustomBackdropVideo(undefined);
-        setCustomBackdropImage(undefined);
-
-        const firstScene = finalStoryboard[0];
-        if (firstScene.captionPresetClass) {
-          setCaptionPreset({
-            className: firstScene.captionPresetClass,
-            color: firstScene.captionPresetColor || '#FACC15',
-            fontFamily: firstScene.captionPresetFontFamily || 'Impact, sans-serif',
-          });
+        if (pipelineRes.script.aspectRatio && pipelineRes.script.aspectRatio !== canvasAspectRatio) {
+          handleCanvasAspectRatioChange(pipelineRes.script.aspectRatio as CanvasAspectRatio);
         }
-      } else if (generated.visualTheme) {
-        const generatedBackdrop = backdrops.find(
-          (backdrop) =>
-            backdrop.id === generated.visualTheme ||
-            backdrop.name.toLowerCase() === generated.visualTheme?.trim().toLowerCase()
-        );
-        if (generatedBackdrop) setSelectedBackdrop(generatedBackdrop.id);
-      }
-
-      const chosenMusicId = generated.soundDesign?.soundtrackTrackId || generated.musicTrack;
-      if (chosenMusicId) {
-        const matchedMusic = musicTracks.find(
-          (m) =>
-            m.id === chosenMusicId ||
-            m.title.toLowerCase().includes(chosenMusicId?.toLowerCase() || '')
-        );
-        if (matchedMusic) setSelectedMusic(matchedMusic.id);
-      }
-
-      const mem = await workspaceApi.getQuoteMemory();
-      setMemoryCount(mem.totalQuotesInMemory || 0);
-
-      toast.success('AI Script Generated!', {
-        description: generated.title || 'Ready for studio editing',
-      });
-
-      addWorkspaceNotification({
-        title: 'AI Script Generated',
-        message: `"${generated.title || 'Short'}" ready with ${generated.subtitles?.length || 0} cue points.`,
-        category: 'script',
-        type: 'ai',
-        targetPane: 'editor',
-        actionLabel: 'Review Script',
-      });
-
-      // ── Step: Synthesize Voiceover & Resolve Stock Media Cuts First ──
-      const voiceToUse = selectedVoice || generated.recommendedVoice || 'Fenrir';
-      const unresolvedScenes = finalStoryboard.filter((s: any) => !s.mediaUrl || s.mediaStatus === 'unresolved');
-
-      const [mediaBatchRes] = await Promise.all([
-        unresolvedScenes.length > 0
-          ? workspaceApi.resolveScenesMedia({
-              scenes: unresolvedScenes.map((s: any) => ({
-                sceneNumber: s.sceneNumber,
-                visualQuery: s.visualQuery || s.subtitleText || promptParts.join(' ') || 'nature landscape',
-                googleSearchQuery: s.googleSearchQuery,
-                fallbackQueries: s.fallbackQueries,
-                mediaType: s.mediaType || 'video',
-              })),
-              aspectRatio: generated.aspectRatio || canvasAspectRatio || '9:16',
-            }).catch((err) => {
-              consoleLogger.warn('Workspace', `Progressive scene media error: ${err}`);
-              return null;
-            })
-          : Promise.resolve(null),
-        handleSynthesizeVoice(generated, voiceToUse).catch((err) => {
-          consoleLogger.warn('Workspace', `Voiceover synthesis error: ${err}`);
-          return null;
-        }),
-      ]);
-
-      if (mediaBatchRes?.success && mediaBatchRes.data?.scenes) {
-        const resolvedMap = new Map();
-        mediaBatchRes.data.scenes.forEach((item: any) => {
-          if (item.status === 'resolved' && item.media) {
-            resolvedMap.set(item.sceneNumber, item.media);
-          }
-        });
-        if (resolvedMap.size > 0) {
-          finalStoryboard = finalStoryboard.map((s: any) => {
-            const resolved = resolvedMap.get(s.sceneNumber);
-            if (resolved) {
-              return {
-                ...s,
-                mediaUrl: resolved.url,
-                previewUrl: resolved.previewUrl || resolved.url,
-                posterUrl: resolved.previewUrl || resolved.thumbnailUrl || '',
-                thumbnailUrl: resolved.thumbnailUrl || resolved.previewUrl || '',
-                mediaName: resolved.title || s.mediaName,
-                mediaId: resolved.id || s.mediaId,
-                mediaStatus: 'resolved',
-              };
-            }
-            return s;
-          });
-          setScript((prev) => (prev ? { ...prev, storyboard: finalStoryboard } : prev));
+        if (pipelineRes.voice?.audioUrl) {
+          setAudioUrl(pipelineRes.voice.audioUrl);
+          setDuration(pipelineRes.voice.durationSeconds);
         }
-      }
-
-      // ── Step LAST: Timeline & Track Population ──
-      // Places scene cuts onto Video Track, captions onto Subtitles Track, BGM & SFX onto Audio Tracks, and opens Studio Timeline
-      if (finalStoryboard && finalStoryboard.length > 0) {
-        window.dispatchEvent(
-          new CustomEvent('workspace:set-timeline-storyboard', {
-            detail: {
-              storyboard: finalStoryboard,
-              musicTrack: generated.soundDesign?.soundtrackTrackId || generated.musicTrack,
-              soundDesign: generated.soundDesign,
-              hooks: generated.hooks,
-            },
-          })
-        );
+        setScriptSubPane('editor');
+        onPaneChange('editor');
         setShowTimeline(true);
-
-        addWorkspaceNotification({
-          title: 'Timeline & Tracks Populated',
-          message: `AI directed ${finalStoryboard.length} dynamic scene cuts with synchronized visuals & sound design.`,
-          category: 'timeline',
-          type: 'ai',
-          targetPane: 'canvas',
-          actionLabel: 'Preview Video',
-        });
+        return true;
       }
-      return true;
-    } catch (err) {
-      consoleLogger.error('Studio', 'Error generating script:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Please check connection or API keys.';
-      setAgentError(errorMessage);
-      setScriptSubPane('prompt');
-      onPaneChange('prompt');
-      toast.error('Script generation failed', {
-        description: errorMessage,
-      });
-      addWorkspaceNotification({
-        title: 'Script Generation Failed',
-        message: errorMessage,
-        category: 'script',
-        type: 'error',
-        targetPane: 'script',
-        actionLabel: 'Retry Prompt',
-      });
       return false;
-    } finally {
-      setLoadingAgent(false);
+    } catch (err) {
+      consoleLogger.error('Studio', 'Pipeline execution error:', err);
+      return false;
     }
   };
+
 
   // Synthesize Voiceover via 24kHz Gemini API
   const handleSynthesizeVoice = async (targetScript = script, voiceName = selectedVoice) => {
@@ -1194,7 +962,7 @@ export default function WorkspacePage({
     const publishQuote = script.quote?.trim() || script.hook?.trim() || script.cta?.trim() || 'ApexMind video';
 
     setPublishing(true);
-    consoleLogger.info('YouTube', `📤 Uploading video to YouTube Shorts: "${publishTitle}"`);
+    consoleLogger.info('YouTube', `ðŸ“¤ Uploading video to YouTube Shorts: "${publishTitle}"`);
     try {
       const publishedShort = await workspaceApi.publishVideo({
         title: publishTitle,
@@ -1287,7 +1055,7 @@ export default function WorkspacePage({
         tags: script.hashtags || [],
         status: 'ready',
       });
-      consoleLogger.success('Library', `✅ Saved "${script.title}" to Website Video Library`);
+      consoleLogger.success('Library', `âœ… Saved "${script.title}" to Website Video Library`);
       toast.success(`Saved "${script.title}" to Video Library!`);
       addWorkspaceNotification({
         title: 'Saved to Video Library',
@@ -1332,7 +1100,7 @@ export default function WorkspacePage({
   const [showTimeline, setShowTimeline] = useState(true);
   const [showRightPane, setShowRightPane] = useState(true);
 
-  // ── Resizable Layout Panel Dimensions ──────────────────────────────
+  // â”€â”€ Resizable Layout Panel Dimensions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const DEFAULT_LEFT_WIDTH = 380;
   const DEFAULT_RIGHT_WIDTH = 380;
   const DEFAULT_TIMELINE_HEIGHT = 180;
@@ -1698,7 +1466,7 @@ export default function WorkspacePage({
         : getDefaultCanvasOutputSize(canvasAspectRatio);
       addWorkspaceNotification({
         title: 'Export Render Started',
-        message: `Rendering ${renderSize.width} × ${renderSize.height} MP4 (${canvasAspectRatio}) with timeline audio...`,
+        message: `Rendering ${renderSize.width} Ã— ${renderSize.height} MP4 (${canvasAspectRatio}) with timeline audio...`,
         category: 'export',
         type: 'render',
         targetPane: 'canvas',
@@ -1724,7 +1492,7 @@ export default function WorkspacePage({
       <audio ref={audioRef} className="hidden" preload="auto" />
       <audio ref={musicAudioRef} className="hidden" preload="auto" crossOrigin="anonymous" loop />
 
-      {/* ── Left Studio Column: Full-Height (Top to Bottom) ── */}
+      {/* â”€â”€ Left Studio Column: Full-Height (Top to Bottom) â”€â”€ */}
       {showLeftPane && (
         <div
           style={isDesktop ? { width: `${leftPaneWidth}px` } : undefined}
@@ -1765,14 +1533,13 @@ export default function WorkspacePage({
                 testingVoiceId={testingVoiceId}
                 selectedModel={selectedModel}
                 onModelChange={setSelectedModel}
-                loadingAgent={loadingAgent}
-                onRunAgent={async () => {
-                  const success = await handleRunAIAgent();
-                  if (success) {
-                    setScriptSubPane('editor');
-                    onPaneChange('editor');
-                  }
-                }}
+                tone={preferredTone}
+                onToneChange={setPreferredTone}
+                loadingAgent={pipelineRunning}
+                pipelineStage={pipelineProgress.stage}
+                pipelinePercent={pipelineProgress.percent}
+                pipelineLabel={pipelineProgress.label}
+                onRunAgent={handleExecuteStudioPipeline}
                 onSwitchToEditor={() => {
                   setScriptSubPane('editor');
                   onPaneChange('editor');
@@ -2065,7 +1832,7 @@ export default function WorkspacePage({
               />
             ) : activePane === 'video' ? (
               <VideoStockPane
-                onSelectVideo={(url) => {
+                onSelectVideo={(url, posterUrl) => {
                   setShowTimeline(true);
                   setActiveCompound('video');
                   setCustomBackdropVideo(url);
@@ -2075,6 +1842,8 @@ export default function WorkspacePage({
                       detail: {
                         type: 'video',
                         url,
+                        posterUrl,
+                        thumbnailUrl: posterUrl,
                         name: 'Stock Video',
                         duration: 10,
                         start: currentTime,
@@ -2097,7 +1866,7 @@ export default function WorkspacePage({
           </div>
         )}
 
-      {/* ── Main Work Area (Right of Left Panel): Top Preview & Controls, Bottom Timeline ── */}
+      {/* â”€â”€ Main Work Area (Right of Left Panel): Top Preview & Controls, Bottom Timeline â”€â”€ */}
       <div className="flex-1 min-w-0 h-auto lg:h-full flex flex-col min-h-0 overflow-hidden">
         {/* Top Area: Video Preview and Inspiration Studio */}
         <div className="flex flex-col lg:flex-row gap-0 h-auto min-h-0 flex-1 overflow-hidden relative">
@@ -2231,7 +2000,7 @@ export default function WorkspacePage({
           )}
         </div>
 
-        {/* ── Studio Multi-Track Timeline Panel (Bottom Studio Area, placed next to Left Panel) ── */}
+        {/* â”€â”€ Studio Multi-Track Timeline Panel (Bottom Studio Area, placed next to Left Panel) â”€â”€ */}
         {showTimeline && (
           <div className="shrink-0 min-h-[44px] border-t border-[#242426]">
             <StudioTimelinePane
@@ -2309,7 +2078,7 @@ export default function WorkspacePage({
         onSelectAspectRatio={setCanvasAspectRatio}
         onTogglePlay={togglePlay}
         onToggleMute={() => setIsMuted((prev) => !prev)}
-        onGenerateScript={handleRunAIAgent}
+        onGenerateScript={handleExecuteStudioPipeline}
         onToggleTimeline={() => setShowTimeline((prev) => !prev)}
       />
     </div>

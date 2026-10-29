@@ -14,7 +14,6 @@ import {
   Plus,
   Trash2,
   Copy,
-  Magnet,
   Keyboard,
 } from 'lucide-react';
 import { formatTime, SelectedClip, EnabledTracks, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM } from './timelineTypes';
@@ -32,8 +31,8 @@ export interface TimelineToolbarProps {
   onDuplicateClip: () => void;
   onAddCaption: () => void;
   onDeleteClip: () => void;
-  snapEnabled: boolean;
-  onToggleSnap: () => void;
+  snapEnabled?: boolean;
+  onToggleSnap?: () => void;
   onSyncAudioAndCC?: () => void;
   hasAudioMismatch?: boolean;
   voiceDuration?: number;
@@ -47,6 +46,7 @@ export interface TimelineToolbarProps {
   onTogglePlay: () => void;
   currentTime: number;
   totalDuration: number;
+  projectDuration?: number;
   zoomLevel: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -81,6 +81,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   onTogglePlay,
   currentTime,
   totalDuration,
+  projectDuration,
   zoomLevel,
   onZoomIn,
   onZoomOut,
@@ -88,6 +89,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   onDurationChange,
 }) => {
   const hasSelection = Boolean(selectedClip);
+  const displayDuration = projectDuration && projectDuration > 0 ? projectDuration : totalDuration;
   const addTrackAnchorRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -202,22 +204,26 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
 
           <button
             type="button"
-            onClick={() => onSeek(totalDuration)}
+            onClick={() => onSeek(displayDuration)}
             className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
-            title="Jump to End"
+            title={`Jump to End (${formatTime(displayDuration)})`}
             aria-label="Jump to end"
           >
             <SkipForward className="w-3.5 h-3.5" />
           </button>
 
-          {/* Time Readout: Clean Non-Editable Display */}
+          {/* Time Readout: Playhead / Media Duration with Infinite Canvas Runway indicator */}
           <div
             className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#08080A] border border-[#262630] text-[10px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
-            aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(totalDuration)}`}
+            title={`Playhead: ${formatTime(currentTime)} | Media: ${formatTime(displayDuration)} | Timeline Runway: ${formatTime(totalDuration)}`}
+            aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
           >
             <span className="text-white font-bold" title="Current Playhead Time">{formatTime(currentTime)}</span>
             <span className="text-[#52525B]">/</span>
-            <span className="text-[#A1A1AA]" title="Total Project Duration">{formatTime(totalDuration)}</span>
+            <span className="text-[#60A5FA] font-medium" title="Media Project Duration">{formatTime(displayDuration)}</span>
+            <span className="text-[8.5px] text-[#52525B] ml-1 pl-1 border-l border-[#262630]" title="Infinite Canvas Runway">
+              Runway {formatTime(totalDuration)}
+            </span>
           </div>
         </div>
       </div>
@@ -256,24 +262,6 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           >
             <Plus className="w-3 h-3 text-[#A1A1AA]" />
             <span>Cue</span>
-          </button>
-
-          {/* Magnetic Snapping Toggle */}
-          <button
-            type="button"
-            onClick={onToggleSnap}
-            className={`h-7 px-2 inline-flex items-center gap-1.5 rounded-lg border transition-all cursor-pointer select-none ${snapEnabled
-                ? 'border-white/30 bg-white/10 text-white font-semibold'
-                : 'border-[#2D2D38] bg-[#16161E] text-[#71717A] hover:text-[#D4D4D8] hover:border-[#3E3E4C]'
-              }`}
-            title={snapEnabled ? 'Magnetic Snapping: ON (Press N to toggle) — Clips and playhead snap to cuts' : 'Magnetic Snapping: OFF (Press N to toggle)'}
-            aria-label={snapEnabled ? 'Disable magnetic snapping' : 'Enable magnetic snapping'}
-            aria-pressed={snapEnabled}
-          >
-            <Magnet className={`w-3.5 h-3.5 ${snapEnabled ? 'text-white' : ''}`} />
-            <span className="text-[11px] font-mono-studio">
-              {snapEnabled ? 'Snap ON' : 'Snap'}
-            </span>
           </button>
         </div>
 

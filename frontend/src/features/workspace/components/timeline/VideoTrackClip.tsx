@@ -16,6 +16,7 @@ export interface VideoTrackClipProps {
   videoTrackVisible: boolean;
   backdropName: string;
   mediaUrl?: string;
+  posterUrl?: string;
   onSelectClip?: (clipId: string) => void;
   onPointerDownMoveClip?: (e: React.PointerEvent<HTMLDivElement>, clip: TimelineMediaClip) => void;
   onPointerDownTrimLeftClip?: (e: React.PointerEvent<HTMLDivElement>, clip: TimelineMediaClip) => void;
@@ -50,6 +51,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
   videoTrackVisible,
   backdropName,
   mediaUrl,
+  posterUrl,
   onSelectClip,
   onPointerDownMoveClip,
   onPointerDownTrimLeftClip,
@@ -135,8 +137,9 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
 
             {/* Filmstrip Repeating Background with Sprockets */}
             <FilmstripTrackBackground
-              imageUrl={clip.posterUrl || clip.thumbnailUrl || clip.url || mediaUrl}
-              posterUrl={clip.posterUrl || clip.thumbnailUrl}
+              imageUrl={clip.posterUrl || clip.thumbnailUrl || clip.url || mediaUrl || posterUrl}
+              posterUrl={clip.posterUrl || clip.thumbnailUrl || posterUrl}
+              videoUrl={clip.url || mediaUrl}
             />
 
             {/* Left Trim Handle */}

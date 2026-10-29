@@ -32,7 +32,7 @@ export interface StockVideoItem {
 }
 
 export interface VideoStockPaneProps {
-  onSelectVideo: (videoUrl: string) => void;
+  onSelectVideo: (videoUrl: string, posterUrl?: string) => void;
   activeVideoUrl?: string;
 }
 
@@ -134,7 +134,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
   const handleApply = (vid: StockVideoItem) => {
     setSelectedId(null);
-    onSelectVideo(vid.videoUrl);
+    onSelectVideo(vid.videoUrl, vid.posterUrl);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
     toast.success(`Applied "${vid.title}"`);
   };
@@ -155,7 +155,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       resolution: 'Stream HD',
     };
 
-    onSelectVideo(url);
+    onSelectVideo(url, newItem.posterUrl);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
 
     if (saveToFavorites) {

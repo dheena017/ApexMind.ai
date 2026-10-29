@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Moveable from 'react-moveable';
 import { toCanvas } from 'html-to-image';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
@@ -192,7 +191,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
 
   const [selectedLayer, setSelectedLayer] = useState<'subtitle' | 'title' | 'overlay' | 'backdrop' | null>(null);
-  const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const [backdropFlipH, setBackdropFlipH] = useState(false);
   const [backdropFlipV, setBackdropFlipV] = useState(false);
   const [backdropRotation, setBackdropRotation] = useState(0);
@@ -417,15 +415,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const isCustomImage = Boolean(customImageUrl);
   const isCustomVideo = Boolean(customVideoUrl);
 
-  // Active clip resolution based on currentTime (handles sub-frame transitions & continuous playback)
+  // Active clip resolution based on currentTime (exact bounds with graceful fallback)
   const activeVideoClip = (timelineState.videoClips || []).find((c) => {
     const start = Number(c.start) || 0;
     const dur = Number(c.duration) || 3;
-    return currentTime >= start - 0.05 && currentTime < start + dur + 0.05;
-  }) || (timelineState.videoClips || []).reduce<any>((closest, c) => {
-    if (currentTime >= c.start && (!closest || c.start > closest.start)) return c;
-    return closest;
-  }, undefined) || (timelineState.videoClips && timelineState.videoClips[0]);
+    return currentTime >= start && currentTime < start + dur;
+  }) || (timelineState.videoClips || []).filter((c) => currentTime >= (Number(c.start) || 0)).slice(-1)[0]
+    || (timelineState.videoClips && timelineState.videoClips[0]);
 
   const activeImageClip = (timelineState.imageClips || []).find((c) => {
     const start = Number(c.start) || 0;
@@ -490,25 +486,21 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     e.stopPropagation();
     setSelectedLayer(layer);
     if (layer === 'backdrop') {
-      setTargetElement(backdropRef.current);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', {
         detail: { compound: 'video', openInspector: true },
       }));
     }
     if (layer === 'subtitle') {
-      setTargetElement(subtitleRef.current);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', {
         detail: { compound: 'text', openInspector: true },
       }));
     }
     if (layer === 'title') {
-      setTargetElement(titleRef.current);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', {
         detail: { compound: 'text', openInspector: true },
       }));
     }
     if (layer === 'overlay') {
-      setTargetElement(overlayRef.current);
       window.dispatchEvent(new CustomEvent('workspace:select-compound', {
         detail: { compound: 'overlay', openInspector: true },
       }));
@@ -553,12 +545,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSelectedLayer(null);
-        setTargetElement(null);
       }
     };
     const handleDeselect = () => {
       setSelectedLayer(null);
-      setTargetElement(null);
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('workspace:deselect-layer', handleDeselect);
@@ -693,7 +683,40 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const showVideoLayer = Boolean(activeVideo) && videoEnabled && isVideoTimeActive;
   const showImageLayer = Boolean(activeImage) && imageEnabled && isImageTimeActive;
 
-  // Auto-reload video element only when source actually changes
+  const isSeekingOrSwitchingRef = useRef(false);
+  const currentTimeRef = useRef(currentTime);
+  currentTimeRef.current = currentTime;
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+  const activeVideoClipRef = useRef(activeVideoClip);
+  activeVideoClipRef.current = activeVideoClip;
+  const bufferingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced buffering state so quick frame loads don't flash the loading spinner
+  const handleWaiting = () => {
+    if (bufferingTimeoutRef.current) clearTimeout(bufferingTimeoutRef.current);
+    bufferingTimeoutRef.current = setTimeout(() => {
+      setIsVideoBuffering(true);
+    }, 450);
+  };
+
+  const handlePlayingOrCanPlay = () => {
+    if (bufferingTimeoutRef.current) {
+      clearTimeout(bufferingTimeoutRef.current);
+      bufferingTimeoutRef.current = null;
+    }
+    setIsVideoBuffering(false);
+  };
+
+  // Next upcoming clip for background preloading
+  const currentClipIndex = (timelineState.videoClips || []).findIndex(
+    (c) => c.url === activeVideo || (c.start <= currentTime && currentTime < c.start + (c.duration || 3))
+  );
+  const nextVideoClip = currentClipIndex >= 0 && timelineState.videoClips
+    ? timelineState.videoClips[currentClipIndex + 1]
+    : undefined;
+
+  // Auto-reload video element only when active source changes
   useEffect(() => {
     const video = videoElementRef.current;
     if (!video || !activeVideo) return;
@@ -702,39 +725,47 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     try {
       if (new URL(activeVideo, window.location.href).href === video.src) return;
     } catch {}
+
+    isSeekingOrSwitchingRef.current = true;
     video.src = activeVideo;
     video.load();
-    const clipStart = activeVideoClip ? activeVideoClip.start : (timelineState.videoStart || 0);
-    const offset = Math.max(0, currentTime - clipStart);
-    try {
-      video.currentTime = offset;
-    } catch {}
-    if (isPlaying) {
-      video.play().catch(() => {});
-    }
+    // Do not force currentTime immediately before metadata is ready
   }, [activeVideo]);
 
-  // Sync video element time and play/pause state with timeline currentTime
+  // Synchronize playback & seek without thrashing video decoders during continuous play
   useEffect(() => {
     const video = videoElementRef.current;
     if (!video) return;
+
     video.volume = videoTrackVolume / 100;
     video.muted = videoTrackVolume === 0;
     video.playbackRate = playbackRate;
 
-    if (showVideoLayer) {
-      const clipStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
-      const offset = Math.max(0, currentTime - clipStart);
-      if (Math.abs(video.currentTime - offset) > 0.45) {
-        video.currentTime = offset;
-      }
-      if (isPlaying) {
+    if (!showVideoLayer) {
+      if (!video.paused) video.pause();
+      return;
+    }
+
+    const clipStart = activeVideoClip ? activeVideoClip.start : (timelineState.videoStart || 0);
+    const offset = Math.max(0, currentTime - clipStart);
+
+    if (isPlaying) {
+      if (video.paused && video.readyState >= 2 && !video.seeking) {
         video.play().catch(() => {});
-      } else {
-        video.pause();
+      }
+      // Only resync if video has drifted significantly (> 1.2s, e.g. user scrubbed or jumped)
+      // and is not currently in the middle of a seek or cut switch
+      if (!video.seeking && !isSeekingOrSwitchingRef.current && video.readyState >= 2) {
+        if (Math.abs(video.currentTime - offset) > 1.2) {
+          video.currentTime = offset;
+        }
       }
     } else {
-      video.pause();
+      // Paused: pause video and sync position smoothly
+      if (!video.paused) video.pause();
+      if (!video.seeking && video.readyState >= 1 && Math.abs(video.currentTime - offset) > 0.08) {
+        video.currentTime = offset;
+      }
     }
   }, [currentTime, isPlaying, playbackRate, showVideoLayer, activeVideoClip, timelineState.videoStart, videoTrackVolume]);
 
@@ -969,12 +1000,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           onClick={(e) => {
             if (e.target === canvasRef.current) {
               setSelectedLayer(null);
-              setTargetElement(null);
               onTogglePlay();
             }
           }}
           id="apex-video-canvas-container"
-          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-[border-color,box-shadow,opacity] duration-300 cursor-pointer focus:outline-none @container`}
+          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-[border-color,box-shadow,opacity] duration-300 cursor-default focus:outline-none @container`}
           tabIndex={-1}
           style={{
             background: canvasBackground || '#050505',
@@ -987,14 +1017,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         {/* Layer 1: Cinematic Background (Custom Color/Gradient or Theme Gradient) */}
         <div
           data-canvas-bg="true"
-          className="absolute inset-0 z-0 transition-all duration-700 cursor-pointer"
+          className="absolute inset-0 z-0 transition-all duration-700 cursor-default"
           style={{
             background: canvasBackground || (theme ? theme.gradient : '#050505'),
             filter: computedBackdropFilter,
           }}
           onClick={() => {
             setSelectedLayer(null);
-            setTargetElement(null);
           }}
         />
 
@@ -1004,14 +1033,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             ref={backdropRef}
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
             onDoubleClick={handleResetBackdrop}
-            className={`absolute inset-0 overflow-hidden cursor-move select-none transition-opacity duration-150 ${
+            className={`absolute inset-0 overflow-hidden cursor-default select-none transition-opacity duration-150 ${
               timelineState.selectedTrack === 'image' ? 'z-10' : 'z-20'
             }`}
             style={{
               opacity: animationOpacity,
               pointerEvents: 'auto',
             }}
-            title="Video Layer (V1) • Click to select & resize/move"
+            title="Video Layer (V1) • Click to select"
           >
             <video
               ref={videoElementRef}
@@ -1023,23 +1052,33 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               playsInline
               crossOrigin="anonymous"
               preload="auto"
-              onWaiting={() => setIsVideoBuffering(true)}
-              onPlaying={() => setIsVideoBuffering(false)}
-              onCanPlay={() => setIsVideoBuffering(false)}
-              onLoadedData={() => setIsVideoBuffering(false)}
+              onWaiting={handleWaiting}
+              onPlaying={handlePlayingOrCanPlay}
+              onCanPlay={handlePlayingOrCanPlay}
+              onLoadedData={handlePlayingOrCanPlay}
+              onSeeked={handlePlayingOrCanPlay}
               onLoadedMetadata={(e) => {
-                setIsVideoBuffering(false);
+                handlePlayingOrCanPlay();
                 const target = e.currentTarget;
-                const clipStart = activeVideoClip ? activeVideoClip.start : (timelineState.videoStart || 0);
-                const offset = Math.max(0, currentTime - clipStart);
+                const clipStart = activeVideoClipRef.current ? activeVideoClipRef.current.start : 0;
+                const offset = Math.max(0, currentTimeRef.current - clipStart);
                 try {
-                  target.currentTime = offset;
+                  if (offset > 0.05 && target.duration > offset) {
+                    target.currentTime = offset;
+                  }
                 } catch {}
-                if (isPlaying && target.paused) {
+                if (isPlayingRef.current && target.paused) {
                   target.play().catch(() => {});
                 }
+                setTimeout(() => {
+                  isSeekingOrSwitchingRef.current = false;
+                }, 150);
               }}
-              onError={() => setIsVideoBuffering(false)}
+              onError={() => {
+                if (bufferingTimeoutRef.current) clearTimeout(bufferingTimeoutRef.current);
+                setIsVideoBuffering(false);
+                isSeekingOrSwitchingRef.current = false;
+              }}
               className={`w-full h-full pointer-events-none transition-all duration-300 ${
                 backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
               } object-center opacity-100`}
@@ -1048,6 +1087,18 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 filter: computedBackdropFilter,
               }}
             />
+            {/* Background preloader for next video clip to ensure seamless cut transitions */}
+            {nextVideoClip?.url && nextVideoClip.url !== activeVideo && (
+              <video
+                key={nextVideoClip.url}
+                src={nextVideoClip.url}
+                preload="auto"
+                muted
+                playsInline
+                className="hidden pointer-events-none"
+                style={{ display: 'none' }}
+              />
+            )}
             {/* Subtle Buffering Pulse Indicator */}
             {isVideoBuffering && isPlaying && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 bg-black/25 backdrop-blur-[1px] transition-opacity">
@@ -1081,14 +1132,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
             onDoubleClick={handleResetBackdrop}
-            className={`absolute inset-0 overflow-hidden cursor-move select-none transition-opacity duration-150 ${
+            className={`absolute inset-0 overflow-hidden cursor-default select-none transition-opacity duration-150 ${
               timelineState.selectedTrack === 'image' ? 'z-20' : 'z-10'
             }`}
             style={{
               opacity: showImageLayer ? animationOpacity : 0,
               pointerEvents: showImageLayer ? 'auto' : 'none',
             }}
-            title="Image Layer (V2) • Click to select & resize/move"
+            title="Image Layer (V2) • Click to select"
           >
             <img
               src={activeImage}
@@ -1145,7 +1196,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             <div
               ref={titleRef}
               onClick={(e) => handleSelectLayer(e, 'title')}
-              className="w-fit max-w-[92%] px-3 py-1 cursor-move select-none pointer-events-auto"
+              className="w-fit max-w-[92%] px-3 py-1 cursor-default select-none pointer-events-auto"
             >
               <h1
                 className="font-black uppercase tracking-tight text-white text-center leading-tight drop-shadow-md pointer-events-none"
@@ -1169,7 +1220,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             <div
               ref={overlayRef}
               onClick={(e) => handleSelectLayer(e, 'overlay')}
-              className="absolute w-fit cursor-move select-none pointer-events-auto"
+              className="absolute w-fit cursor-default select-none pointer-events-auto"
               style={overlayPositionStyle}
             >
               <span
@@ -1191,7 +1242,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={overlayRef}
             onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute z-20 cursor-move select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
+            className="absolute z-20 cursor-default select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
             style={{
               ...overlayPositionStyle,
               fontSize: `${Math.max(16, Math.min(64, Math.round(30 * canvasScale)))}px`,
@@ -1207,7 +1258,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={overlayRef}
             onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute z-20 rounded-xl border border-white/20 bg-black/70 backdrop-blur-md text-white font-bold cursor-move select-none shadow-xl transition-opacity duration-200"
+            className="absolute z-20 rounded-xl border border-white/20 bg-black/70 backdrop-blur-md text-white font-bold cursor-default select-none shadow-xl transition-opacity duration-200"
             style={{
               ...overlayPositionStyle,
               fontSize: `${Math.max(9, Math.min(24, Math.round(12 * canvasScale)))}px`,
@@ -1230,7 +1281,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             <div
               ref={subtitleRef}
               onClick={(e) => handleSelectLayer(e, 'subtitle')}
-              className="absolute z-20 flex items-center justify-center cursor-move select-none px-3 py-1 transition-all duration-100"
+              className="absolute z-20 flex items-center justify-center cursor-default select-none px-3 py-1 transition-all duration-100"
               style={{
                 left: `${captionStyle.posX ?? 50}%`,
                 top: `${captionStyle.posY && captionStyle.posY !== 78 ? captionStyle.posY : (canvasAspectRatio === '9:16' ? 64 : 72)}%`,
@@ -1306,8 +1357,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                             ? (useCaptionPreset ? activeCaptionPresetColor || captionStyle.color : captionStyle.color)
                             : undefined,
                           textShadow: isWordActive
-                            ? '0 0 14px rgba(250, 204, 21, 0.9), 0 2px 4px rgba(0,0,0,1)'
-                            : undefined,
+                            ? '0 2px 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 2px 0 0 #000, 0 4px 10px rgba(0,0,0,0.85)'
+                            : '0 2px 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 2px 0 0 #000, 0 3px 6px rgba(0,0,0,0.7)',
+                          WebkitTextStroke: isWordActive ? '1px #000' : '0.5px #000',
                           opacity: isPast ? 0.95 : isWordActive ? 1 : 0.72,
                         }}
                       >
@@ -1326,78 +1378,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
         {/* Bottom Spacing Anchor */}
         <div className="h-6 pointer-events-none" />
-
-        {/* ── React Moveable Transform Bounding Box (Clideo/Canva Style) ── */}
-        {targetElement && !isExporting && (
-          <Moveable
-            target={targetElement}
-            container={canvasRef.current}
-            origin={false}
-            edge={true}
-            draggable={true}
-            resizable={true}
-            rotatable={true}
-            scalable={false}
-            keepRatio={false}
-            rotationPosition="top"
-            renderDirections={['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se']}
-            throttleDrag={0}
-            throttleResize={0}
-            throttleRotate={0}
-            onDragStart={(e) => {
-              e.setTransform(e.target.style.transform);
-            }}
-            onDrag={({ target, transform }) => {
-              target.style.transform = transform;
-            }}
-            onDragEnd={({ target, isDrag }) => {
-              if (!isDrag || !canvasRef.current || !target) return;
-              const canvasRect = canvasRef.current.getBoundingClientRect();
-              const targetRect = (target as HTMLElement).getBoundingClientRect();
-              const centerX = targetRect.left + targetRect.width / 2 - canvasRect.left;
-              const centerY = targetRect.top + targetRect.height / 2 - canvasRect.top;
-              const posX = Math.round(Math.max(5, Math.min(95, (centerX / canvasRect.width) * 100)));
-              const posY = Math.round(Math.max(5, Math.min(95, (centerY / canvasRect.height) * 100)));
-
-              if (selectedLayer === 'subtitle') {
-                (target as HTMLElement).style.transform = 'translate(-50%, -50%)';
-                setCaptionStyle((prev) => ({ ...prev, posX, posY }));
-                window.dispatchEvent(
-                  new CustomEvent('workspace:caption-position-update', {
-                    detail: { posX, posY },
-                  })
-                );
-              } else if (selectedLayer === 'overlay') {
-                (target as HTMLElement).style.transform = 'translate(-50%, -50%)';
-                setOverlayStyle((prev) => ({ ...prev, posX, posY }));
-              }
-            }}
-            onResizeStart={(e) => {
-              e.setOrigin(['%', '%']);
-              if (e.dragStart) {
-                e.dragStart.setTransform(e.target.style.transform);
-              }
-            }}
-            onResize={({ target, width, height, delta, drag }) => {
-              if (delta[0]) target.style.width = `${width}px`;
-              if (delta[1]) target.style.height = `${height}px`;
-              if (drag && drag.transform) {
-                target.style.transform = drag.transform;
-              }
-            }}
-            onResizeEnd={({ lastEvent }) => {
-              if (lastEvent && lastEvent.width && selectedLayer === 'subtitle') {
-                setCaptionStyle((prev) => ({ ...prev, customWidth: Math.round(lastEvent.width / canvasScale) }));
-              }
-            }}
-            onRotateStart={(e) => {
-              e.setTransform(e.target.style.transform);
-            }}
-            onRotate={({ target, transform }) => {
-              target.style.transform = transform;
-            }}
-          />
-        )}
 
         </div>
       </div>

@@ -1,32 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   Wand2,
   Sparkles,
   Plus,
   Cpu,
-  Compass,
-  FileText,
   Mic,
   Volume2,
-  Radio,
   Sliders,
   Zap,
   Flame,
   Shield,
-  Coins,
   Brain,
   RefreshCw,
   ArrowLeftRight,
-  Hash,
   Gauge,
   Smartphone,
   Monitor,
   Square,
-  Maximize2,
   AlertCircle,
   X,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -50,7 +44,12 @@ export interface AIAgentCreatorPaneProps {
   onTestVoice?: (voiceId: string) => void;
   testingVoiceId?: string | null;
   loadingAgent: boolean;
+  pipelineStage?: string;
+  pipelinePercent?: number;
+  pipelineLabel?: string;
   onRunAgent: () => void;
+  tone?: string;
+  onToneChange?: (tone: string) => void;
   onSwitchToEditor?: () => void;
   onStartNewVideo?: () => void;
   selectedModel?: string;
@@ -58,11 +57,11 @@ export interface AIAgentCreatorPaneProps {
 }
 
 export const ASPECT_RATIO_OPTIONS = [
-  { value: '9:16', label: '9:16 Vertical (Shorts, Reels, TikTok)' },
-  { value: '16:9', label: '16:9 Landscape (YouTube, Full HD)' },
-  { value: '1:1', label: '1:1 Square (Instagram Feed & Posts)' },
-  { value: '4:5', label: '4:5 Portrait (Instagram Feed Portrait)' },
-  { value: '21:9', label: '21:9 Ultrawide (Cinematic Film)' },
+  { value: '9:16' as const, label: '9:16', desc: 'Shorts / Reels / TikTok', res: '1080×1920', icon: Smartphone },
+  { value: '16:9' as const, label: '16:9', desc: 'YouTube Landscape', res: '1920×1080', icon: Monitor },
+  { value: '1:1' as const, label: '1:1', desc: 'Square Post', res: '1080×1080', icon: Square },
+  { value: '4:5' as const, label: '4:5', desc: 'IG Portrait', res: '1080×1350', icon: Smartphone },
+  { value: '21:9' as const, label: '21:9', desc: 'Cinematic Ultrawide', res: '2560×1080', icon: Monitor },
 ];
 
 const DEFAULT_FALLBACK_VOICES: VoiceProfile[] = [
@@ -90,51 +89,19 @@ const CATEGORY_OPTIONS = [
   { value: 'High Finance & Wealth', label: '💎 High Finance & Generational Empire' },
 ];
 
-const HOOK_FORMULAS = [
-  {
-    name: 'Curiosity Gap',
-    template: 'Start with: "This 1 mindset habit changed everything, but 99% ignore it..."',
-  },
-  {
-    name: 'Contrarian Truth',
-    template: 'Start with: "Everything they told you about motivation is completely false..."',
-  },
-  {
-    name: 'Direct Challenge',
-    template: 'Start with: "If you cannot handle the cold truth, scroll away right now..."',
-  },
-  {
-    name: 'Rule #1 Protocol',
-    template: 'Start with: "Rule #1 of high performance: Never explain yourself..."',
-  },
+const DURATION_PRESETS = [
+  { value: '15 seconds', label: '15s', badge: 'Fast Cut' },
+  { value: '30 seconds', label: '30s', badge: 'Standard' },
+  { value: '45 seconds', label: '45s', badge: 'Extended' },
+  { value: '60 seconds', label: '60s', badge: 'Deep Dive' },
 ];
 
-const PROMPT_INSPIRATION_SEEDS = [
-  {
-    title: 'The Solitary Mountain',
-    tag: 'Mountain',
-    icon: Shield,
-    prompt: 'A gripping stoic reel on standing alone like an unmovable mountain peak while storms rage below. Let your silent discipline speak.',
-  },
-  {
-    title: 'The Deep Forest',
-    tag: 'Forest',
-    icon: Flame,
-    prompt: 'A deep reflection on quiet root growth, silence in the wilderness, and why giants grow in complete isolation.',
-  },
-  {
-    title: 'Ocean Storm Breakers',
-    tag: 'Ocean',
-    icon: Brain,
-    prompt: 'An intense motivational speech about relentless compounding grit: break through every obstacle like crashing ocean waves on granite cliffs.',
-  },
-  {
-    title: 'Glacial Dawn Stillness',
-    tag: 'Alpine',
-    icon: Coins,
-    prompt: 'A calming philosophical meditation on inner stillness and absolute focus like a mirror-clear alpine glacial lake at dawn.',
-  },
-];
+const DELIVERY_TONES = [
+  { id: 'authoritative', label: 'Authoritative', desc: 'Heavy & Grounded', icon: Shield },
+  { id: 'aggressive', label: 'Aggressive', desc: 'Raw & High Intensity', icon: Flame },
+  { id: 'calm', label: 'Philosophical', desc: 'Calm & Measured', icon: Brain },
+  { id: 'cinematic', label: 'Cinematic', desc: 'Epic Movie Trailer', icon: Sparkles },
+] as const;
 
 export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   agentPrompt,
@@ -153,18 +120,23 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   onTestVoice,
   testingVoiceId,
   loadingAgent,
+  pipelineStage,
+  pipelinePercent,
+  pipelineLabel,
   onRunAgent,
+  tone: propTone,
+  onToneChange,
   onSwitchToEditor,
   onStartNewVideo,
   selectedModel: propModel,
   onModelChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'prompt' | 'voice' | 'seo'>('prompt');
+  const [activeTab, setActiveTab] = useState<'prompt' | 'voice'>('prompt');
   const [liveVoices, setLiveVoices] = useState<VoiceProfile[]>(voices.length > 0 ? voices : DEFAULT_FALLBACK_VOICES);
-  const [speechPace, setSpeechPace] = useState<'0.9x' | '1.0x' | '1.15x' | '1.25x'>('1.0x');
-  const [speechTone, setSpeechTone] = useState<'authoritative' | 'aggressive' | 'calm' | 'cinematic'>('authoritative');
-  const [voicePitch, setVoicePitch] = useState<number>(0);
-  const [targetPlatform, setTargetPlatform] = useState<'tiktok' | 'reels' | 'shorts'>('tiktok');
+  const speechTone = (propTone as any) || 'authoritative';
+  const handleSelectTone = (newTone: string) => {
+    onToneChange?.(newTone);
+  };
 
   // Sync or fetch voices from media library
   useEffect(() => {
@@ -198,12 +170,8 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
     }
   };
 
-  const getTrendingTags = () => {
-    if (category.includes('Fitness')) return ['#gymmotivation', '#discipline', '#bodybuilding', '#mindset', '#workout'];
-    if (category.includes('Finance') || category.includes('Wealth')) return ['#wealth', '#money', '#investing', '#success', '#grind'];
-    if (category.includes('Dark')) return ['#darkpsychology', '#power', '#stoic', '#manipulation', '#machiavelli'];
-    return ['#stoicism', '#discipline', '#marcusAurelius', '#selfimprovement', '#mindset'];
-  };
+
+  const activeCategoryShort = category ? category.split('&')[0].trim() : 'AI Video';
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
@@ -243,62 +211,43 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               <ArrowLeftRight className="w-3 h-3 text-[#A1A1AA] group-hover:text-white transition-colors" />
             </button>
           )}
-
         </div>
       </div>
 
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
+      <div className="flex items-center gap-2 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
         <button
           type="button"
           onClick={() => setActiveTab('prompt')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+          className={`flex items-center gap-1.5 pb-2.5 px-1.5 capitalize transition-all cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'prompt'
-              ? 'text-white border-white'
+              ? 'text-white border-[#3B82F6]'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          Prompt &amp; Concept
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('pacing')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'pacing'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Pacing &amp; Model
+          <Wand2 className={`w-3.5 h-3.5 ${activeTab === 'prompt' ? 'text-[#60A5FA]' : 'text-[#71717A]'}`} />
+          <span>Prompt &amp; Concept</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('voice')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
+          className={`flex items-center gap-1.5 pb-2.5 px-1.5 capitalize transition-all cursor-pointer border-b-2 shrink-0 ${
             activeTab === 'voice'
-              ? 'text-white border-white'
+              ? 'text-white border-[#3B82F6]'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          Voice Actor ({liveVoices.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('seo')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1 ${
-            activeTab === 'seo'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Hash className="w-3 h-3 text-[#60A5FA]" />
-          Hashtags
+          <Mic className={`w-3.5 h-3.5 ${activeTab === 'voice' ? 'text-[#60A5FA]' : 'text-[#71717A]'}`} />
+          <span>Voice Actor</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#26262B] text-zinc-400 font-mono-studio">
+            {liveVoices.length}
+          </span>
         </button>
       </div>
 
-      {/* ── Prominent Error Banner (Always Pinned) ── */}
+      {/* ── Prominent Error Banner (Pinned) ── */}
       {agentError && (
-        <div className="mx-3.5 mt-2.5 p-3.5 rounded-xl bg-red-950/90 border border-red-500/60 text-red-200 text-xs flex items-start gap-2.5 shadow-xl shadow-red-950/70 shrink-0 animate-in fade-in slide-in-from-top-1">
+        <div className="mx-3.5 mt-2.5 p-3 rounded-xl bg-red-950/90 border border-red-500/60 text-red-200 text-xs flex items-start gap-2.5 shadow-xl shadow-red-950/70 shrink-0 animate-in fade-in slide-in-from-top-1">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-red-300 text-xs">Generation Error &mdash; Zero Fallbacks</p>
@@ -318,67 +267,14 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       )}
 
       {/* ── Main Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3.5">
 
-        {/* ── Tab: SEO & Trending Hashtags ── */}
-        {activeTab === 'seo' && (
-          <div className="flex flex-col gap-3">
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Hash className="w-3.5 h-3.5 text-[#60A5FA]" />
-                Auto-Detected Viral Tags &amp; Topics
-              </span>
-              <p className="text-[11px] text-[#A1A1AA]">
-                Optimized for YouTube Shorts and Instagram algorithmic distribution.
-              </p>
-
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {getTrendingTags().map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => enhancePrompt(`Tags to optimize for: ${tag}`)}
-                    className="px-2.5 py-1 rounded-lg bg-[#141417] hover:bg-[#3B82F6] hover:text-white text-[#60A5FA] border border-[#2A2A30] text-xs font-mono transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Target Algorithm Preset */}
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-2.5">
-              <span className="text-xs font-bold text-white">Target Algorithm Style</span>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'tiktok', label: 'TikTok (Hyper Punchy)' },
-                  { id: 'shorts', label: 'YouTube (High Retention)' },
-                  { id: 'reels', label: 'Reels (Aesthetic Quote)' },
-                ].map((plat) => (
-                  <button
-                    key={plat.id}
-                    type="button"
-                    onClick={() => setTargetPlatform(plat.id as any)}
-                    className={`p-2 rounded-lg text-xs font-semibold border transition-all text-left ${
-                      targetPlatform === plat.id
-                        ? 'bg-[#1E2330] text-white border-[#3B82F6]'
-                        : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
-                    }`}
-                  >
-                    {plat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Tab 1: Prompt & Seeds ── */}
+        {/* ── Tab 1: Prompt & Concept ── */}
         {activeTab === 'prompt' && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3.5">
             {/* Category Select */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">
+              <label className="text-[10px] uppercase font-mono-studio text-[#71717A] tracking-wider">
                 Niche &amp; Philosophy Category
               </label>
               <CustomSelect
@@ -389,54 +285,43 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               />
             </div>
 
-            {/* Video Aspect Ratio Dropdown & Presets */}
+            {/* Video Aspect Ratio Selector */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <label className="uppercase text-[#71717A] flex items-center gap-1.5">
+                <label className="uppercase text-[#71717A] flex items-center gap-1.5 tracking-wider">
                   <Smartphone className="w-3.5 h-3.5 text-[#38BDF8]" />
-                  Video Aspect Ratio (AI Video Target)
+                  Video Aspect Ratio
                 </label>
                 <span className="text-[#38BDF8] font-bold">
                   {aspectRatio === '9:16'
-                    ? '9:16 • 1080×1920 (Shorts/Reels)'
+                    ? '9:16 • 1080×1920 (Vertical)'
                     : aspectRatio === '16:9'
-                    ? '16:9 • 1920×1080 (YouTube/HD)'
+                    ? '16:9 • 1920×1080 (Landscape)'
                     : aspectRatio === '1:1'
-                    ? '1:1 • 1080×1080 (Square Feed)'
+                    ? '1:1 • 1080×1080 (Square)'
                     : aspectRatio === '4:5'
-                    ? '4:5 • 1080×1350 (IG Portrait)'
+                    ? '4:5 • 1080×1350 (Portrait)'
                     : '21:9 • 2560×1080 (Cinematic)'}
                 </span>
               </div>
-              <CustomSelect
-                options={ASPECT_RATIO_OPTIONS}
-                value={aspectRatio}
-                onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
-                className="w-full text-xs"
-              />
-              <div className="grid grid-cols-4 gap-1.5 mt-0.5">
-                {[
-                  { id: '9:16' as const, label: '9:16', desc: 'Shorts/TikTok', icon: Smartphone },
-                  { id: '16:9' as const, label: '16:9', desc: 'Landscape', icon: Monitor },
-                  { id: '1:1' as const, label: '1:1', desc: 'Square', icon: Square },
-                  { id: '4:5' as const, label: '4:5', desc: 'Portrait', icon: Maximize2 },
-                ].map((item) => {
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+                {ASPECT_RATIO_OPTIONS.map((item) => {
                   const Icon = item.icon;
-                  const isSelected = aspectRatio === item.id;
+                  const isSelected = aspectRatio === item.value;
                   return (
                     <button
-                      key={item.id}
+                      key={item.value}
                       type="button"
-                      onClick={() => onAspectRatioChange?.(item.id)}
+                      onClick={() => onAspectRatioChange?.(item.value)}
                       className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-[#1E293B] border-[#38BDF8] text-[#38BDF8] shadow-sm shadow-[#38BDF8]/20'
+                          ? 'bg-[#1E293B] border-[#38BDF8] text-[#38BDF8] shadow-sm shadow-[#38BDF8]/20 ring-1 ring-[#38BDF8]/40'
                           : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-[#D4D4D8] hover:border-[#3A3A42]'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5 mb-1" />
                       <span className="text-[10px] font-bold leading-none">{item.label}</span>
-                      <span className="text-[8px] opacity-70 mt-0.5">{item.desc}</span>
+                      <span className="text-[8px] opacity-70 mt-0.5 truncate w-full text-center">{item.desc.split('/')[0].trim()}</span>
                     </button>
                   );
                 })}
@@ -446,167 +331,147 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             {/* Prompt Textarea */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <span className="text-[#71717A]">AI AGENT PROMPT</span>
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">🌲 100% NATURE VIDEO DIRECTOR</span>
+                <span className="text-[#71717A] tracking-wider">AI AGENT PROMPT</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  ✨ {activeCategoryShort} Director
+                </span>
               </div>
-              <textarea
-                value={agentPrompt}
-                onChange={(e) => onPromptChange(e.target.value)}
-                placeholder="What core truth or motivational message should this reel deliver? (e.g., The power of silence and daily non-negotiable standards)..."
-                rows={4}
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] transition-colors resize-none leading-relaxed"
-              />
-            </div>
-
-            {/* Hook Formulas */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase">
-                Hook Architecture Formulas
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {HOOK_FORMULAS.map((form) => (
+              <div className="relative">
+                <textarea
+                  value={agentPrompt}
+                  onChange={(e) => onPromptChange(e.target.value)}
+                  placeholder="What core truth or motivational message should this reel deliver? (e.g., The power of silence and daily non-negotiable standards)..."
+                  rows={4}
+                  className="w-full bg-[#18181B] border border-[#2A2A30] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/40 transition-all resize-none leading-relaxed"
+                />
+                {agentPrompt.trim().length > 0 && (
                   <button
-                    key={form.name}
                     type="button"
-                    onClick={() => enhancePrompt(form.template)}
-                    className="p-2 rounded-lg bg-[#141417] hover:bg-[#202026] border border-[#2A2A30] text-left text-[10px] text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                    onClick={() => onPromptChange('')}
+                    className="absolute top-2.5 right-2.5 p-1 rounded-md text-[#71717A] hover:text-white hover:bg-[#26262B] transition-colors"
+                    title="Clear prompt"
                   >
-                    <p className="font-bold text-[#60A5FA]">{form.name}</p>
-                    <p className="text-[9px] text-[#A1A1AA] truncate">{form.template}</p>
+                    <X className="w-3 h-3" />
                   </button>
-                ))}
+                )}
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-[#71717A] font-mono-studio px-0.5">
+                <span>Enter core topic, hook angle, or key lesson</span>
+                <span>{agentPrompt.length} chars</span>
               </div>
             </div>
 
-            {/* Prompt Inspiration Seeds */}
-            <div className="flex flex-col gap-2 pt-1">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase">
-                Instant Concept Seeds
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {PROMPT_INSPIRATION_SEEDS.map((seed, idx) => {
-                  const Icon = seed.icon;
-                  return (
-                    <motion.button
-                      key={idx}
-                      type="button"
-                      whileHover={{ scale: 1.025, y: -1 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                      onClick={() => {
-                        onPromptChange(seed.prompt);
-                        try {
-                          confetti({ particleCount: 20, spread: 40, origin: { y: 0.6 } });
-                        } catch {}
-                      }}
-                      className="p-2.5 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] hover:bg-[#222228] transition-all text-left flex flex-col gap-1 cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-1.5 text-[#60A5FA]">
-                        <Icon className="w-3.5 h-3.5" />
-                        <span className="text-[11px] font-bold text-white group-hover:text-[#60A5FA] transition-colors truncate">
-                          {seed.title}
-                        </span>
-                      </div>
-                      <span className="text-[9px] text-[#A1A1AA] line-clamp-2">
-                        {seed.prompt}
-                      </span>
-                    </motion.button>
-                  );
-                })}
+            {/* ── Pacing & Model Configuration Card ── */}
+            <div className="bg-[#18181B] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3.5">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#26262B]">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
+                  <span className="text-xs font-bold text-white tracking-wide">Pacing &amp; Model Engine</span>
+                </div>
+                <span className="text-[10px] font-mono-studio text-[#60A5FA] bg-[#3B82F6]/10 px-2 py-0.5 rounded-md border border-[#3B82F6]/20">
+                  AI Script Tuning
+                </span>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* ── Tab 2: Pacing & Model ── */}
-        {activeTab === 'pacing' && (
-          <div className="flex flex-col gap-3.5">
-            {/* AI Model Selector */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">
-                Reasoning Engine
-              </label>
-              <CustomSelect
-                options={AI_MODELS}
-                value={currentModel}
-                onChange={(val) => onModelChange?.(val)}
-                className="w-full text-xs"
-              />
-            </div>
-
-            {/* Video Aspect Ratio */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <label className="uppercase text-[#71717A] flex items-center gap-1.5">
-                  <Smartphone className="w-3.5 h-3.5 text-[#38BDF8]" />
-                  Video Aspect Ratio
+              {/* AI Model Selector */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#71717A] flex items-center gap-1.5 tracking-wider">
+                  <Cpu className="w-3 h-3 text-[#60A5FA]" />
+                  Reasoning Engine
                 </label>
-                <span className="text-[#38BDF8] font-bold">{aspectRatio}</span>
+                <CustomSelect
+                  options={AI_MODELS}
+                  value={currentModel}
+                  onChange={(val) => onModelChange?.(val)}
+                  className="w-full text-xs"
+                />
               </div>
-              <CustomSelect
-                options={ASPECT_RATIO_OPTIONS}
-                value={aspectRatio}
-                onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
-                className="w-full text-xs"
-              />
-            </div>
 
-            {/* Target Duration */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">
-                Target Video Duration
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {['15s', '30s', '45s', '60s'].map((len) => (
-                  <button
-                    key={len}
-                    type="button"
-                    onClick={() => onTargetLengthChange(len)}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
-                      targetLength === len
-                        ? 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-[#3B82F6]/20'
-                        : 'bg-[#1C1C20] text-[#A1A1AA] border-[#2A2A30] hover:text-white'
-                    }`}
-                  >
-                    {len}
-                  </button>
-                ))}
+              {/* Target Duration */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <label className="uppercase text-[#71717A] flex items-center gap-1.5 tracking-wider">
+                    <Gauge className="w-3 h-3 text-[#38BDF8]" />
+                    Target Video Duration
+                  </label>
+                  <span className="text-[#38BDF8] font-bold">
+                    {targetLength ? targetLength.replace('seconds', 's').replace('second', 's').trim() : '30s'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {DURATION_PRESETS.map((opt) => {
+                    const isSelected =
+                      targetLength === opt.value ||
+                      targetLength === opt.label ||
+                      targetLength.startsWith(opt.label.replace('s', '')) ||
+                      (opt.label === '30s' && (!targetLength || targetLength.includes('30'))) ||
+                      (opt.label === '15s' && targetLength.includes('15')) ||
+                      (opt.label === '45s' && targetLength.includes('45')) ||
+                      (opt.label === '60s' && targetLength.includes('60'));
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => onTargetLengthChange(opt.value)}
+                        className={`py-2 px-1 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center ${
+                          isSelected
+                            ? 'bg-[#1E293B] border-[#38BDF8] text-[#38BDF8] shadow-sm shadow-[#38BDF8]/20 ring-1 ring-[#38BDF8]/40'
+                            : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30] hover:text-white hover:border-[#3A3A42]'
+                        }`}
+                      >
+                        <span className="text-xs font-bold leading-tight">{opt.label}</span>
+                        <span className="text-[8px] font-normal opacity-70 mt-0.5">{opt.badge}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* Delivery Tone */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">
-                Narration Delivery Tone
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'authoritative', label: 'Authoritative & Heavy' },
-                  { id: 'aggressive', label: 'Aggressive & Raw' },
-                  { id: 'calm', label: 'Calm & Philosophical' },
-                  { id: 'cinematic', label: 'Epic Trailer Narration' },
-                ].map((tone) => (
-                  <button
-                    key={tone.id}
-                    type="button"
-                    onClick={() => setSpeechTone(tone.id as any)}
-                    className={`p-2.5 rounded-xl text-[11px] font-semibold border transition-all text-left ${
-                      speechTone === tone.id
-                        ? 'bg-[#1E2330] text-white border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
-                        : 'bg-[#1C1C20] text-[#A1A1AA] border-[#2A2A30] hover:text-white'
-                    }`}
-                  >
-                    {tone.label}
-                  </button>
-                ))}
+              {/* Delivery Tone */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#71717A] flex items-center gap-1.5 tracking-wider">
+                  <Volume2 className="w-3 h-3 text-[#A78BFA]" />
+                  Narration Delivery Tone
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {DELIVERY_TONES.map((tone) => {
+                    const Icon = tone.icon;
+                    const isSelected = speechTone === tone.id;
+                    return (
+                      <button
+                        key={tone.id}
+                        type="button"
+                        onClick={() => handleSelectTone(tone.id)}
+                        className={`p-2.5 rounded-xl border transition-all text-left flex items-start gap-2.5 cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#1E2330] text-white border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
+                            : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30] hover:text-white hover:border-[#3A3A42]'
+                        }`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? 'text-[#60A5FA]' : 'text-[#71717A]'}`} />
+                        <div className="min-w-0">
+                          <div className={`text-[11px] font-semibold leading-tight ${isSelected ? 'text-white' : 'text-[#D4D4D8]'}`}>
+                            {tone.label}
+                          </div>
+                          <div className="text-[9px] text-[#71717A] mt-0.5 truncate">
+                            {tone.desc}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Tab 3: AI Voice Actors ── */}
+        {/* ── Tab 2: AI Voice Actors ── */}
         {activeTab === 'voice' && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
+            <div className="text-[11px] text-[#71717A] px-0.5 pb-0.5">
+              Select an AI voice narrator to voice your generated video reel:
+            </div>
             <div className="flex flex-col gap-2">
               {liveVoices.map((v) => {
                 const isSelected = selectedVoice === v.id || selectedVoice === v.name;
@@ -618,14 +483,14 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                     onClick={() => onVoiceChange?.(v.id || v.name)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
-                        : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
+                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
+                        : 'bg-[#18181B] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#1E1E24]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          isSelected ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A32] text-[#60A5FA]'
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                          isSelected ? 'bg-[#3B82F6] text-white' : 'bg-[#26262B] text-[#60A5FA]'
                         }`}
                       >
                         <Mic className="w-4 h-4" />
@@ -633,11 +498,11 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-bold text-white truncate">{v.name}</span>
-                          <span className="text-[9px] font-mono-studio px-1 rounded bg-zinc-800 text-zinc-300">
+                          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">
                             {v.gender}
                           </span>
                         </div>
-                        <p className="text-[10px] text-[#A1A1AA] truncate">{v.style}</p>
+                        <p className="text-[10px] text-[#A1A1AA] truncate mt-0.5">{v.style}</p>
                       </div>
                     </div>
 
@@ -649,15 +514,19 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                             e.stopPropagation();
                             onTestVoice(v.id);
                           }}
-                          className="p-1.5 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-white transition-colors"
+                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                            isTesting
+                              ? 'bg-[#3B82F6]/20 text-[#60A5FA] border-[#3B82F6]/50'
+                              : 'bg-[#26262B] hover:bg-[#34343E] text-zinc-300 hover:text-white border-[#323238]'
+                          }`}
                           title="Audition voice"
                         >
-                          <Volume2 className={`w-3.5 h-3.5 ${isTesting ? 'text-[#60A5FA] animate-pulse' : ''}`} />
+                          <Volume2 className={`w-3.5 h-3.5 ${isTesting ? 'animate-pulse text-[#60A5FA]' : ''}`} />
                         </button>
                       )}
                       {isSelected && (
                         <div className="p-1 rounded-full bg-[#3B82F6] text-white">
-                          <Zap className="w-3 h-3 fill-current" />
+                          <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       )}
                     </div>
@@ -670,7 +539,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       </div>
 
       {/* ── Bottom Action Footer ── */}
-      <div className="px-3 py-2.5 border-t border-[#26262B] bg-[#17171A] shrink-0">
+      <div className="px-3.5 py-2.5 border-t border-[#26262B] bg-[#17171A] shrink-0">
         <Button
           size="sm"
           onClick={() => {
@@ -684,12 +553,12 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             onRunAgent();
           }}
           disabled={loadingAgent}
-          className="w-full bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-bold rounded-lg shadow-lg shadow-[#3B82F6]/25 transition-all"
+          className="w-full bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-bold rounded-lg shadow-lg shadow-[#3B82F6]/25 transition-all py-2 text-xs"
         >
           {loadingAgent ? (
             <>
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>Generating Script &amp; Directing...</span>
+              <span>{pipelineLabel || 'Generating Script & Directing...'}</span>
             </>
           ) : (
             <>

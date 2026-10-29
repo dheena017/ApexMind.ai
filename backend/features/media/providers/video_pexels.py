@@ -38,11 +38,61 @@ class PexelsVideoProvider(BaseMediaProvider):
         if not api_key:
             return []
 
-        orientation = "portrait" if aspect_ratio in ["9:16", "4:5"] else "landscape"
-        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic nature vertical"
+        orientation = "portrait" if aspect_ratio in ["9:16", "4:5"] else ("square" if aspect_ratio == "1:1" else "landscape")
+        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic nature"
 
-        url = "https://api.pexels.com/videos/search"
         headers = {"Authorization": api_key}
+
+        # Handle Image Search vs Video Search according to Pexels official API
+        if media_type == "image":
+            url = "https://api.pexels.com/v1/search"
+            params = {
+                "query": clean_q,
+                "per_page": min(limit, 20),
+                "page": page,
+                "orientation": orientation,
+            }
+            try:
+                resp = requests.get(url, headers=headers, params=params, timeout=6)
+                if resp.status_code != 200:
+                    logger.warning(f"Pexels photo API returned status {resp.status_code}")
+                    return []
+                data = resp.json()
+            except Exception as e:
+                logger.warning(f"Pexels photo API request failed: {e}")
+                return []
+
+            images: List[MediaAsset] = []
+            for it in data.get("photos", []):
+                src = it.get("src", {})
+                img_url = src.get("large2x") or src.get("large") or src.get("original")
+                if not img_url:
+                    continue
+                w = it.get("width", 1080)
+                h = it.get("height", 1920)
+                images.append(
+                    MediaAsset(
+                        id=f"pexels_img_{it.get('id')}",
+                        mediaType="image",
+                        title=it.get("alt") or it.get("photographer", "Pexels Photo"),
+                        url=img_url,
+                        previewUrl=src.get("medium") or src.get("small") or img_url,
+                        thumbnailUrl=src.get("tiny") or src.get("small") or img_url,
+                        duration=8.0,
+                        resolution=f"{w}x{h}",
+                        aspectRatio=aspect_ratio,
+                        provider="pexels",
+                        extraMetadata={
+                            "author": it.get("photographer"),
+                            "sourceUrl": it.get("url"),
+                            "photographerUrl": it.get("photographer_url"),
+                        },
+                    )
+                )
+            return images
+
+        # Video Search using official modern v1 endpoint
+        url = "https://api.pexels.com/v1/videos/search"
         params = {
             "query": clean_q,
             "per_page": min(limit, 20),
@@ -51,9 +101,12 @@ class PexelsVideoProvider(BaseMediaProvider):
         }
 
         try:
-            resp = requests.get(url, headers=headers, params=params, timeout=5)
-            if resp.status_code != 200:
-                logger.warning(f"Pexels video API returned {resp.status_code}")
+            resp = requests.get(url, headers=headers, params=params, timeout=6)
+            if resp.status_code == 401:
+                logger.warning("Pexels API returned 401 Unauthorized. Please verify PEXELS_API_KEY in .env.")
+                return []
+            elif resp.status_code != 200:
+                logger.warning(f"Pexels video API returned status {resp.status_code}")
                 return []
             data = resp.json()
         except Exception as e:

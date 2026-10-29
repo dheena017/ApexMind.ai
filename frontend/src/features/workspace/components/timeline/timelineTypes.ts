@@ -1,8 +1,8 @@
 import { GeneratedScript, VisualBackdrop, ScriptSubtitle, VoiceProfile, MusicTrack } from '../../types';
 
-export const MIN_TIMELINE_ZOOM = 1;
-export const MAX_TIMELINE_ZOOM = 4;
-export const TIMELINE_ZOOM_STEP = 0.5;
+export const MIN_TIMELINE_ZOOM = 0.25;
+export const MAX_TIMELINE_ZOOM = 5;
+export const TIMELINE_ZOOM_STEP = 0.25;
 
 export interface TimelineSoundEffect {
   id: string;

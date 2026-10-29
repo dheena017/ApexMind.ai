@@ -18,6 +18,17 @@ from .schemas import (
     CreateQuoteMemoryResponse,
     DeleteQuoteMemoryResponse,
     MediaLibraryResponse,
+    # Studio Pipeline v2 schemas
+    StudioScriptRequest,
+    StudioScriptResponse,
+    StudioVoiceRequest,
+    StudioVoiceResponse,
+    StudioMediaRequest,
+    StudioMediaResponse,
+    StudioMediaData,
+    StudioBackgroundInfo,
+    StudioCaptionsRequest,
+    StudioCaptionsResponse,
 )
 from .service import (
     get_memory_list,
@@ -314,3 +325,182 @@ async def get_open_quotes_route(
     from .open_media_service import search_open_quotes
     return search_open_quotes(query=q, category=category, author=author, page=page, limit=limit)
 
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STUDIO PIPELINE v2 — 4 Clean, Independently-Callable Endpoints
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post(
+    "/api/studio/generate-script",
+    response_model=StudioScriptResponse,
+    summary="[Stage 1] Studio AI Script Generation",
+    description=(
+        "Generates a full viral short-form script with multi-scene storyboard, hooks, "
+        "sound design plan, and creative metadata via Gemini AI. "
+        "Storyboard scenes are returned with mediaStatus='unresolved', ready for Stage 3."
+    ),
+    tags=["Studio Pipeline"],
+)
+def post_studio_generate_script(payload: StudioScriptRequest):
+    from .studio_script_service import run_studio_script
+    try:
+        return run_studio_script(
+            category=payload.category,
+            topic=payload.topic or payload.category,
+            tone=payload.tone or "",
+            length=payload.length or "30 seconds",
+            model=payload.model or "gemini-2.5-flash",
+            aspect_ratio=payload.aspectRatio or "9:16",
+            voice_name=payload.voiceName,
+            music_track_id=payload.musicTrackId,
+            caption_style_preset=payload.captionStylePreset,
+            backdrop_id=payload.backdropId,
+            audio_mood=payload.audioMood,
+            background_style=payload.backgroundStyle,
+            text_style=payload.textStyle,
+            video_style=payload.videoStyle,
+            visual_theme=payload.visualTheme,
+            motion_style=payload.motionStyle,
+            output_format=payload.outputFormat,
+            creative_context=payload.creativeContext,
+            available_assets=payload.availableAssets,
+            user_prompt=payload.userPrompt,
+        )
+    except ValueError as ve:
+        logger.warning(f"[Studio/Script] Validation error: {ve}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"[Studio/Script] Error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post(
+    "/api/studio/synthesize-voice",
+    response_model=StudioVoiceResponse,
+    summary="[Stage 2] Studio Voice Synthesis",
+    description=(
+        "Synthesizes a full narration voiceover using Gemini TTS. "
+        "Accepts either storyboard[] (narration auto-assembled from subtitleText) "
+        "or a direct fullNarrationText string. "
+        "Returns audioUrl, durationSeconds, and word-level timestamps."
+    ),
+    tags=["Studio Pipeline"],
+)
+def post_studio_synthesize_voice(payload: StudioVoiceRequest):
+    from .studio_voice_service import run_studio_voice
+    if not payload.voiceName or not payload.voiceName.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="voiceName is required. Please select a voice from the workspace.",
+        )
+    if not payload.storyboard and not payload.fullNarrationText:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide either storyboard[] or fullNarrationText.",
+        )
+    try:
+        return run_studio_voice(
+            voice_name=payload.voiceName,
+            storyboard=[s.model_dump() for s in (payload.storyboard or [])],
+            full_narration_text=payload.fullNarrationText,
+            model=payload.model,
+            speech_style=payload.speechStyle,
+            target_duration_seconds=payload.targetDurationSeconds,
+        )
+    except ValueError as ve:
+        logger.warning(f"[Studio/Voice] Validation error: {ve}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"[Studio/Voice] Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Voice synthesis failed: {e}",
+        )
+
+
+@router.post(
+    "/api/studio/resolve-media",
+    response_model=StudioMediaResponse,
+    summary="[Stage 3] Studio Media Resolution",
+    description=(
+        "Batch-resolves real stock video/image URLs for all storyboard scenes concurrently "
+        "using Google CSE, Pexels, Pixabay, and Wikimedia. "
+        "Also resolves SFX audio URLs and returns backdrop/background metadata."
+    ),
+    tags=["Studio Pipeline"],
+)
+def post_studio_resolve_media(payload: StudioMediaRequest):
+    import time as _time
+    from .studio_media_service import run_studio_media
+    t0 = _time.perf_counter()
+    try:
+        result = run_studio_media(
+            scenes=[s.model_dump() for s in payload.scenes],
+            aspect_ratio=payload.aspectRatio,
+            sfx_events=[e.model_dump() for e in (payload.sfxEvents or [])],
+            backdrop_id=payload.backdropId,
+            resolve_background=payload.resolveBackground,
+            resolve_images=payload.resolveImages,
+        )
+        validated_data = StudioMediaData(
+            scenes=result["data"]["scenes"],
+            sfxEvents=result["data"]["sfxEvents"],
+            background=StudioBackgroundInfo(**result["data"]["background"]),
+            resolvedCount=result["data"]["resolvedCount"],
+            failedCount=result["data"]["failedCount"],
+            totalScenes=result["data"]["totalScenes"],
+        )
+        return StudioMediaResponse(
+            success=True,
+            stageId="media",
+            data=validated_data,
+            metadata={"executionTimeMs": int((_time.perf_counter() - t0) * 1000)},
+            generatedAt=result.get("generatedAt", ""),
+        )
+    except Exception as e:
+        logger.error(f"[Studio/Media] Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Media resolution failed: {e}",
+        )
+
+
+@router.post(
+    "/api/studio/generate-captions",
+    response_model=StudioCaptionsResponse,
+    summary="[Stage 4] Studio Caption Generation",
+    description=(
+        "Generates scene-aligned, word-level timed captions pinned to each scene's time window. "
+        "Returns timelineClips[] directly usable as LocalClips[] in StudioTimelinePane, "
+        "plus SRT and WebVTT exports."
+    ),
+    tags=["Studio Pipeline"],
+)
+def post_studio_generate_captions(payload: StudioCaptionsRequest):
+    from .studio_captions_service import run_studio_captions
+    if not payload.storyboardScenes and not payload.fullNarrationText:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide either storyboardScenes[] or fullNarrationText.",
+        )
+    try:
+        return run_studio_captions(
+            storyboard_scenes=[s.model_dump() for s in (payload.storyboardScenes or [])],
+            duration_seconds=payload.durationSeconds,
+            full_narration_text=payload.fullNarrationText,
+            style_preset=payload.stylePreset,
+            max_words_per_segment=payload.maxWordsPerSegment,
+            aspect_ratio=payload.aspectRatio,
+            caption_color=payload.captionColor,
+            caption_font_family=payload.captionFontFamily,
+        )
+    except ValueError as ve:
+        logger.warning(f"[Studio/Captions] Validation error: {ve}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"[Studio/Captions] Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Caption generation failed: {e}",
+        )
