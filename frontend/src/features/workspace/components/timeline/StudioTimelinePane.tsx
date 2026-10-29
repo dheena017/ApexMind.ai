@@ -137,15 +137,15 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     return () => observer.disconnect();
   }, [isCollapsed]);
 
-  // Available tracks corresponding to Left-Panel categories
+  // Available tracks corresponding to Left-Panel categories (starts with only 1 primary Video track; tracks dynamically open when media is present)
   const [enabledTracks, setEnabledTracks] = useState<EnabledTracks>({
     video: true,
     image: false,
-    overlay: true,
-    captions: true,
+    overlay: false,
+    captions: false,
     title: false,
-    voice: true,
-    music: true,
+    voice: false,
+    music: false,
     sfx: false,
   });
 
@@ -2164,13 +2164,43 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
 
   // Media presence flags strictly reflect whether track clips actually exist
-  const hasVideo = Boolean(videoClips.length > 0);
-  const hasImage = Boolean(imageClips.length > 0);
+  const hasVideo = Boolean(videoClips.length > 0 || customVideoUrl || activeBackdrop?.videoUrl);
+  const hasImage = Boolean(imageClips.length > 0 || customImageUrl || activeBackdrop?.imageUrl);
   const hasOverlay = Boolean(overlayClips.length > 0 || activeElementOverlay);
-  const hasVoice = Boolean(voiceClips.length > 0 || audioUrl);
-  const hasMusic = Boolean(musicClips.length > 0 || selectedMusic);
+  const hasCaptions = Boolean(captionLanes.length > 0 || (script.subtitles && script.subtitles.length > 0) || localClips.length > 0);
+  const hasVoice = Boolean(voiceClips.length > 0 || (audioUrl && audioUrl.trim()));
+  const hasMusic = Boolean(musicClips.length > 0 || (selectedMusic && selectedMusic.trim()));
   const hasSfx = Boolean(sfxClips.length > 0 || selectedSfx);
-  const hasTitle = Boolean(script.title);
+  const hasTitle = Boolean(script.title && script.title.trim());
+
+  // Dynamically open tracks when media is added, and keep empty tracks hidden
+  useEffect(() => {
+    setEnabledTracks((prev) => {
+      const next = {
+        video: true, // Primary video track is always visible at starting
+        image: hasImage,
+        overlay: hasOverlay,
+        captions: hasCaptions,
+        title: hasTitle,
+        voice: hasVoice,
+        music: hasMusic,
+        sfx: hasSfx,
+      };
+      if (
+        prev.video === next.video &&
+        prev.image === next.image &&
+        prev.overlay === next.overlay &&
+        prev.captions === next.captions &&
+        prev.title === next.title &&
+        prev.voice === next.voice &&
+        prev.music === next.music &&
+        prev.sfx === next.sfx
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [hasImage, hasOverlay, hasCaptions, hasTitle, hasVoice, hasMusic, hasSfx]);
 
   // Dynamic voice profile resolution from loaded voices
   const activeVoiceObj = voices.find((v) => v.id === selectedVoice || v.name === selectedVoice);
