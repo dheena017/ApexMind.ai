@@ -159,7 +159,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   selectedModel: propModel,
   onModelChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'prompt' | 'pacing' | 'voice' | 'seo'>('prompt');
+  const [activeTab, setActiveTab] = useState<'prompt' | 'voice' | 'seo'>('prompt');
   const [liveVoices, setLiveVoices] = useState<VoiceProfile[]>(voices.length > 0 ? voices : DEFAULT_FALLBACK_VOICES);
   const [speechPace, setSpeechPace] = useState<'0.9x' | '1.0x' | '1.15x' | '1.25x'>('1.0x');
   const [speechTone, setSpeechTone] = useState<'authoritative' | 'aggressive' | 'calm' | 'cinematic'>('authoritative');

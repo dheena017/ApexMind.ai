@@ -1372,103 +1372,7 @@ export default function WorkspacePage({
     return () => window.removeEventListener('resize', handleWindowResize);
   }, []);
 
-  const [activeResize, setActiveResize] = useState<'left' | 'right' | 'timeline' | null>(null);
-  const resizeStartPos = useRef<{ x: number; y: number; startDim: number }>({ x: 0, y: 0, startDim: 0 });
-  const dimsRef = useRef<{ left: number; right: number; timeline: number }>({
-    left: leftPaneWidth,
-    right: rightPaneWidth,
-    timeline: timelineHeight,
-  });
 
-  useEffect(() => {
-    dimsRef.current = {
-      left: leftPaneWidth,
-      right: rightPaneWidth,
-      timeline: timelineHeight,
-    };
-  }, [leftPaneWidth, rightPaneWidth, timelineHeight]);
-
-  useEffect(() => {
-    if (!activeResize) return;
-
-    const handlePointerMove = (e: PointerEvent) => {
-      if (activeResize === 'left') {
-        const delta = e.clientX - resizeStartPos.current.x;
-        const newWidth = Math.max(260, Math.min(window.innerWidth * 0.45, Math.round(resizeStartPos.current.startDim + delta)));
-        dimsRef.current.left = newWidth;
-        setLeftPaneWidth(newWidth);
-      } else if (activeResize === 'right') {
-        const delta = resizeStartPos.current.x - e.clientX;
-        const newWidth = Math.max(260, Math.min(window.innerWidth * 0.45, Math.round(resizeStartPos.current.startDim + delta)));
-        dimsRef.current.right = newWidth;
-        setRightPaneWidth(newWidth);
-      } else if (activeResize === 'timeline') {
-        const delta = resizeStartPos.current.y - e.clientY;
-        const minHeight = 90;
-        const maxHeight = Math.max(minHeight, Math.floor(window.innerHeight * 0.65));
-        const newHeight = Math.max(minHeight, Math.min(maxHeight, Math.round(resizeStartPos.current.startDim + delta)));
-        dimsRef.current.timeline = newHeight;
-        setTimelineHeight(newHeight);
-      }
-    };
-
-    const handlePointerUp = () => {
-      try {
-        if (activeResize === 'left') {
-          localStorage.setItem('apexmind:left-pane-width', String(dimsRef.current.left));
-        } else if (activeResize === 'right') {
-          localStorage.setItem('apexmind:right-pane-width', String(dimsRef.current.right));
-        } else if (activeResize === 'timeline') {
-          localStorage.setItem('apexmind:timeline-height', String(dimsRef.current.timeline));
-        }
-      } catch {}
-      setActiveResize(null);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-    };
-
-    window.addEventListener('pointermove', handlePointerMove, { passive: true });
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('pointercancel', handlePointerUp);
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('pointercancel', handlePointerUp);
-    };
-  }, [activeResize]);
-
-  const handleLeftResizeStart = (e: React.PointerEvent) => {
-    e.preventDefault();
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {}
-    resizeStartPos.current = { x: e.clientX, y: e.clientY, startDim: dimsRef.current.left };
-    setActiveResize('left');
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
-  };
-
-  const handleRightResizeStart = (e: React.PointerEvent) => {
-    e.preventDefault();
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {}
-    resizeStartPos.current = { x: e.clientX, y: e.clientY, startDim: dimsRef.current.right };
-    setActiveResize('right');
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
-  };
-
-  const handleTimelineResizeStart = (e: React.PointerEvent) => {
-    e.preventDefault();
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {}
-    resizeStartPos.current = { x: e.clientX, y: e.clientY, startDim: dimsRef.current.timeline };
-    setActiveResize('timeline');
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'row-resize';
-  };
 
   // Synchronize publish state and actions with WorkspaceHeader
   useEffect(() => {
@@ -1815,19 +1719,17 @@ export default function WorkspacePage({
   }, [canPublish, handleSaveToLibrary]);
 
   return (
-    <div className="w-full h-auto lg:h-full flex flex-col min-h-0 font-sans-studio select-none gap-1">
+    <div className="w-full h-auto lg:h-full flex flex-col lg:flex-row min-h-0 font-sans-studio select-none gap-0 overflow-hidden">
       {/* Hidden Audio Element */}
       <audio ref={audioRef} className="hidden" preload="auto" />
       <audio ref={musicAudioRef} className="hidden" preload="auto" crossOrigin="anonymous" loop />
 
-      {/* ── Tri-Pane Studio Layout (Left: AI Prompt/Script, Center: Video Preview, Right: Inspiration Studio) ── */}
-      <div className="flex flex-col lg:flex-row gap-0 h-auto min-h-0 flex-1 overflow-hidden relative">
-        {/* Left Pane: Dynamic Active Studio Panel */}
-        {showLeftPane && (
-          <div
-            style={isDesktop ? { width: `${leftPaneWidth}px` } : undefined}
-            className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden"
-          >
+      {/* ── Left Studio Column: Full-Height (Top to Bottom) ── */}
+      {showLeftPane && (
+        <div
+          style={isDesktop ? { width: `${leftPaneWidth}px` } : undefined}
+          className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-r border-[#242426]"
+        >
             {activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
               <ScriptEditorPane
                 script={script}
@@ -2195,347 +2097,206 @@ export default function WorkspacePage({
           </div>
         )}
 
-        {/* Left-to-Center Vertical Splitter Handle */}
-        {showLeftPane && (
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize left workspace panel"
-            aria-valuenow={leftPaneWidth}
-            aria-valuemin={260}
-            aria-valuemax={Math.max(260, Math.round(window.innerWidth * 0.45))}
-            aria-valuetext={`${leftPaneWidth} pixels wide`}
-            tabIndex={0}
-            onPointerDown={handleLeftResizeStart}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                e.preventDefault();
-                const direction = e.key === 'ArrowRight' ? 1 : -1;
-                setLeftPaneWidth((width) => {
-                  const nextWidth = Math.max(260, Math.min(window.innerWidth * 0.45, width + direction * (e.shiftKey ? 40 : 16)));
-                  try { localStorage.setItem('apexmind:left-pane-width', String(nextWidth)); } catch {}
-                  return nextWidth;
-                });
-              } else if (e.key === 'Home') {
-                e.preventDefault();
-                setLeftPaneWidth(260);
-                try { localStorage.setItem('apexmind:left-pane-width', '260'); } catch {}
-              } else if (e.key === 'End') {
-                e.preventDefault();
-                const maxWidth = Math.round(window.innerWidth * 0.45);
-                setLeftPaneWidth(maxWidth);
-                try { localStorage.setItem('apexmind:left-pane-width', String(maxWidth)); } catch {}
-              }
-            }}
-            className="hidden lg:flex w-6 -mx-2 z-30 cursor-col-resize items-center justify-center group select-none shrink-0 touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#60A5FA]"
-            title="Drag to resize. Use arrow keys; Shift + arrow resizes faster. Home/End sets the minimum/maximum. Double-click resets."
-            onDoubleClick={() => {
-              setLeftPaneWidth(DEFAULT_LEFT_WIDTH);
-              try { localStorage.setItem('apexmind:left-pane-width', String(DEFAULT_LEFT_WIDTH)); } catch {}
-            }}
-          >
-            <div className="relative flex h-8 w-2 items-center justify-center">
-              <div className={`h-4 w-0.5 rounded-full transition-all duration-150 group-hover:h-5 group-focus-visible:h-5 ${activeResize === 'left' ? 'bg-[#60A5FA]' : 'bg-white/35 group-hover:bg-[#60A5FA] group-focus-visible:bg-[#60A5FA]'}`} />
+      {/* ── Main Work Area (Right of Left Panel): Top Preview & Controls, Bottom Timeline ── */}
+      <div className="flex-1 min-w-0 h-auto lg:h-full flex flex-col min-h-0 overflow-hidden">
+        {/* Top Area: Video Preview and Inspiration Studio */}
+        <div className="flex flex-col lg:flex-row gap-0 h-auto min-h-0 flex-1 overflow-hidden relative">
+          {/* Center Pane: Video Preview Canvas */}
+          <div className="flex-1 min-w-0 w-full max-w-full min-h-130 lg:h-full lg:min-h-0 flex flex-col items-center justify-center overflow-hidden">
+            <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
+              <VideoPreviewPane
+                canvasAspectRatio={canvasAspectRatio}
+                canvasOutputSize={canvasOutputSize}
+                canvasBackground={canvasBackground}
+                script={script}
+                activeBackdrop={activeBackdropObj}
+                customImageUrl={customBackdropImage}
+                customVideoUrl={customBackdropVideo}
+                activeElementOverlay={activeElementOverlay}
+                captionPresetClass={captionPreset?.className}
+                captionPresetColor={captionPreset?.color}
+                captionPresetFontFamily={captionPreset?.fontFamily}
+                captionPresetFontSize={captionPreset?.fontSize}
+                captionPresetFontWeight={captionPreset?.fontWeight}
+                captionPresetTextTransform={captionPreset?.textTransform}
+                captionPresetPreviewText={captionPreset?.previewText}
+                isPlaying={isPlaying}
+                isMuted={isMuted}
+                volume={volume}
+                playbackRate={playbackRate}
+                onTogglePlay={togglePlay}
+                onToggleMute={() => {
+                  if (isMuted || volume === 0) {
+                    setVolume((currentVolume) => currentVolume || 0.7);
+                    setIsMuted(false);
+                  } else {
+                    setIsMuted(true);
+                  }
+                }}
+                onVolumeChange={handleVolumeChange}
+                onPlaybackRateChange={setPlaybackRate}
+                currentTime={currentTime}
+                duration={duration}
+                playbackDuration={Math.max(duration, timelineDuration)}
+                onSeek={handleSeek}
+                isLooping={isLooping}
+                onToggleLoop={() => setIsLooping((prev) => !prev)}
+                audioUrl={audioUrl}
+                audioElement={audioRef.current}
+                audioOutputStream={audioOutputStream}
+                isExporting={isExporting}
+                exportDuration={Math.max(duration, timelineDuration)}
+                exportFileName={script.title || 'apexmind-video'}
+                onExportComplete={handleVideoExportComplete}
+                onApplyRecordedVoice={(recordedUrl) => {
+                  setAudioUrl(recordedUrl);
+                  if (audioRef.current) {
+                    audioRef.current.src = recordedUrl;
+                    audioRef.current.play().catch(() => {});
+                    setIsPlaying(true);
+                  }
+                }}
+                onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
+                onSelectBackdrop={setSelectedBackdrop}
+                backdrops={backdrops}
+                voices={voices}
+                selectedVoice={selectedVoice}
+                onSelectVoice={(vId) => {
+                  setSelectedVoice(vId);
+                  handleSynthesizeVoice(script, vId);
+                }}
+                onPublish={handlePublish}
+                canPublish={canPublish}
+                publishing={publishing}
+                publishedSuccess={publishedSuccess}
+              />
             </div>
           </div>
-        )}
 
-        {/* Center Pane: Video Preview Canvas */}
-        <div className="flex-1 min-w-0 w-full max-w-full min-h-130 lg:h-full lg:min-h-0 flex flex-col items-center justify-center overflow-hidden">
-          <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
-            <VideoPreviewPane
-              canvasAspectRatio={canvasAspectRatio}
-              canvasOutputSize={canvasOutputSize}
-              canvasBackground={canvasBackground}
-              script={script}
-              activeBackdrop={activeBackdropObj}
-              customImageUrl={customBackdropImage}
-              customVideoUrl={customBackdropVideo}
-              activeElementOverlay={activeElementOverlay}
-              captionPresetClass={captionPreset?.className}
-              captionPresetColor={captionPreset?.color}
-              captionPresetFontFamily={captionPreset?.fontFamily}
-              captionPresetFontSize={captionPreset?.fontSize}
-              captionPresetFontWeight={captionPreset?.fontWeight}
-              captionPresetTextTransform={captionPreset?.textTransform}
-              captionPresetPreviewText={captionPreset?.previewText}
-              isPlaying={isPlaying}
-              isMuted={isMuted}
-              volume={volume}
-              playbackRate={playbackRate}
-              onTogglePlay={togglePlay}
-              onToggleMute={() => {
-                if (isMuted || volume === 0) {
-                  setVolume((currentVolume) => currentVolume || 0.7);
-                  setIsMuted(false);
-                } else {
-                  setIsMuted(true);
-                }
-              }}
-              onVolumeChange={handleVolumeChange}
-              onPlaybackRateChange={setPlaybackRate}
-              currentTime={currentTime}
-              duration={duration}
-              playbackDuration={Math.max(duration, timelineDuration)}
-              onSeek={handleSeek}
-              isLooping={isLooping}
-              onToggleLoop={() => setIsLooping((prev) => !prev)}
-              audioUrl={audioUrl}
-              audioElement={audioRef.current}
-              audioOutputStream={audioOutputStream}
-              isExporting={isExporting}
-              exportDuration={Math.max(duration, timelineDuration)}
-              exportFileName={script.title || 'apexmind-video'}
-              onExportComplete={handleVideoExportComplete}
-              onApplyRecordedVoice={(recordedUrl) => {
-                setAudioUrl(recordedUrl);
-                if (audioRef.current) {
-                  audioRef.current.src = recordedUrl;
-                  audioRef.current.play().catch(() => {});
-                  setIsPlaying(true);
-                }
-              }}
-              onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
-              onSelectBackdrop={setSelectedBackdrop}
-              backdrops={backdrops}
-              voices={voices}
-              selectedVoice={selectedVoice}
-              onSelectVoice={(vId) => {
-                setSelectedVoice(vId);
-                handleSynthesizeVoice(script, vId);
-              }}
-              onPublish={handlePublish}
-              canPublish={canPublish}
-              publishing={publishing}
-              publishedSuccess={publishedSuccess}
-            />
-          </div>
+          {/* Right Pane: Inspiration Studio Panel */}
+          {showRightPane && (
+            <div
+              style={isDesktop ? { width: `${rightPaneWidth}px` } : undefined}
+              className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-l border-[#242426]"
+            >
+              <StudioControlsPane
+                voices={voices}
+                selectedVoice={selectedVoice}
+                onSelectVoice={(vId) => {
+                  setSelectedVoice(vId);
+                  handleSynthesizeVoice(script, vId);
+                }}
+                onTestVoice={handleTestVoice}
+                testingVoiceId={testingVoiceId}
+                backdrops={backdrops}
+                selectedBackdrop={selectedBackdrop}
+                onSelectBackdrop={setSelectedBackdrop}
+                musicTracks={musicTracks}
+                selectedMusic={selectedMusic}
+                onSelectMusic={setSelectedMusic}
+                onPublish={handlePublish}
+                publishing={publishing}
+                canPublish={canPublish}
+                publishedSuccess={publishedSuccess}
+                script={script}
+                onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
+                duration={duration}
+                timelineDuration={timelineDuration}
+                onDurationChange={setTimelineDuration}
+                currentTime={currentTime}
+                playbackRate={playbackRate}
+                onPlaybackRateChange={setPlaybackRate}
+                volume={volume}
+                onVolumeChange={handleVolumeChange}
+                musicVolume={musicVolume}
+                onMusicVolumeChange={setMusicVolume}
+                category={category}
+                customImageUrl={customBackdropImage}
+                customVideoUrl={customBackdropVideo}
+                activeElementOverlay={activeElementOverlay}
+                onSetCustomImage={(url) => {
+                  setCustomBackdropImage(url);
+                }}
+                onSetCustomVideo={(url) => {
+                  setCustomBackdropVideo(url);
+                }}
+                canvasBackground={canvasBackground}
+                onCanvasBackgroundChange={setCanvasBackground}
+                canvasAspectRatio={canvasAspectRatio}
+                onCanvasAspectRatioChange={handleCanvasAspectRatioChange}
+                activeCompound={activeCompound}
+                onSelectCompound={setActiveCompound}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Center-to-Right Vertical Splitter Handle */}
-        {showRightPane && (
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize right workspace panel"
-            aria-valuenow={rightPaneWidth}
-            aria-valuemin={260}
-            aria-valuemax={Math.max(260, Math.round(window.innerWidth * 0.45))}
-            aria-valuetext={`${rightPaneWidth} pixels wide`}
-            tabIndex={0}
-            onPointerDown={handleRightResizeStart}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                e.preventDefault();
-                const direction = e.key === 'ArrowLeft' ? 1 : -1;
-                setRightPaneWidth((width) => {
-                  const nextWidth = Math.max(260, Math.min(window.innerWidth * 0.45, width + direction * (e.shiftKey ? 40 : 16)));
-                  try { localStorage.setItem('apexmind:right-pane-width', String(nextWidth)); } catch {}
-                  return nextWidth;
-                });
-              } else if (e.key === 'Home') {
-                e.preventDefault();
-                setRightPaneWidth(260);
-                try { localStorage.setItem('apexmind:right-pane-width', '260'); } catch {}
-              } else if (e.key === 'End') {
-                e.preventDefault();
-                const maxWidth = Math.round(window.innerWidth * 0.45);
-                setRightPaneWidth(maxWidth);
-                try { localStorage.setItem('apexmind:right-pane-width', String(maxWidth)); } catch {}
-              }
-            }}
-            className="hidden lg:flex w-6 -mx-2 z-30 cursor-col-resize items-center justify-center group select-none shrink-0 touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#60A5FA]"
-            title="Drag to resize. Use arrow keys; Shift + arrow resizes faster. Home/End sets the minimum/maximum. Double-click resets."
-            onDoubleClick={() => {
-              setRightPaneWidth(DEFAULT_RIGHT_WIDTH);
-              try { localStorage.setItem('apexmind:right-pane-width', String(DEFAULT_RIGHT_WIDTH)); } catch {}
-            }}
-          >
-            <div className="relative flex h-8 w-2 items-center justify-center">
-              <div className={`h-4 w-0.5 rounded-full transition-all duration-150 group-hover:h-5 group-focus-visible:h-5 ${activeResize === 'right' ? 'bg-[#60A5FA]' : 'bg-white/35 group-hover:bg-[#60A5FA] group-focus-visible:bg-[#60A5FA]'}`} />
-            </div>
-          </div>
-        )}
-
-        {/* Right Pane: Inspiration Studio Panel */}
-        {showRightPane && (
-          <div
-            style={isDesktop ? { width: `${rightPaneWidth}px` } : undefined}
-            className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden"
-          >
-            <StudioControlsPane
-              voices={voices}
-              selectedVoice={selectedVoice}
-              onSelectVoice={(vId) => {
-                setSelectedVoice(vId);
-                handleSynthesizeVoice(script, vId);
-              }}
-              onTestVoice={handleTestVoice}
-              testingVoiceId={testingVoiceId}
-              backdrops={backdrops}
-              selectedBackdrop={selectedBackdrop}
-              onSelectBackdrop={setSelectedBackdrop}
-              musicTracks={musicTracks}
-              selectedMusic={selectedMusic}
-              onSelectMusic={setSelectedMusic}
-              onPublish={handlePublish}
-              publishing={publishing}
-              canPublish={canPublish}
-              publishedSuccess={publishedSuccess}
-              script={script}
-              onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
+        {/* ── Studio Multi-Track Timeline Panel (Bottom Studio Area, placed next to Left Panel) ── */}
+        {showTimeline && (
+          <div className="shrink-0 min-h-[44px] border-t border-[#242426]">
+            <StudioTimelinePane
+              timelineHeight={timelineHeight}
+              onTimelineHeightChange={setTimelineHeight}
+              currentTime={currentTime}
               duration={duration}
               timelineDuration={timelineDuration}
-              onDurationChange={setTimelineDuration}
-              currentTime={currentTime}
-              playbackRate={playbackRate}
-              onPlaybackRateChange={setPlaybackRate}
+              isPlaying={isPlaying}
+              onTogglePlay={togglePlay}
+              onSeek={handleSeek}
+              onTimelineDurationChange={setTimelineDuration}
+              selectedSfx={selectedSfx}
+              onRemoveSfx={() => setSelectedSfx(null)}
+              onRemoveVideo={() => {
+                setCustomBackdropVideo(undefined);
+                setActiveCompound((prev) => (prev === 'video' ? 'text' : prev));
+              }}
+              onRemoveImage={() => {
+                setCustomBackdropImage(undefined);
+                setActiveCompound((prev) => (prev === 'video' ? 'text' : prev));
+              }}
+              script={script}
+              onUpdateSubtitles={(newSubtitles) =>
+                setScript((prev) => {
+                  const updatedStoryboard = prev.storyboard?.map((sc, i) => {
+                    const sub = newSubtitles[i];
+                    if (sub) {
+                      return {
+                        ...sc,
+                        start: sub.start,
+                        duration: sub.duration,
+                        subtitleText: sub.text,
+                        words: sub.words || sc.words,
+                      };
+                    }
+                    return sc;
+                  });
+                  return {
+                    ...prev,
+                    subtitles: newSubtitles,
+                    ...(updatedStoryboard ? { storyboard: updatedStoryboard } : {}),
+                  };
+                })
+              }
+              activeBackdrop={activeBackdropObj}
+              selectedVoice={selectedVoice}
+              selectedMusic={selectedMusic}
+              audioUrl={audioUrl}
               volume={volume}
-              onVolumeChange={handleVolumeChange}
-              musicVolume={musicVolume}
-              onMusicVolumeChange={setMusicVolume}
-              category={category}
+              isMuted={isMuted}
+              onToggleMute={() => setIsMuted(!isMuted)}
               customImageUrl={customBackdropImage}
               customVideoUrl={customBackdropVideo}
               activeElementOverlay={activeElementOverlay}
-              onSetCustomImage={(url) => {
-                setCustomBackdropImage(url);
+              voices={voices}
+              musicTracks={musicTracks}
+              onSelectCompound={(compound) => {
+                setShowRightPane(true);
+                setActiveCompound(compound as CompoundType);
               }}
-              onSetCustomVideo={(url) => {
-                setCustomBackdropVideo(url);
-              }}
-              canvasBackground={canvasBackground}
-              onCanvasBackgroundChange={setCanvasBackground}
-              canvasAspectRatio={canvasAspectRatio}
-              onCanvasAspectRatioChange={handleCanvasAspectRatioChange}
-              activeCompound={activeCompound}
-              onSelectCompound={setActiveCompound}
             />
           </div>
         )}
       </div>
-
-      {/* Horizontal Splitter Handle (Top Tri-Pane <-> Bottom Timeline) */}
-      {showTimeline && (
-        <div
-          role="separator"
-          aria-orientation="horizontal"
-          aria-label="Resize timeline panel"
-          aria-valuenow={timelineHeight}
-          aria-valuemin={90}
-          aria-valuemax={Math.max(90, Math.floor(window.innerHeight * 0.65))}
-          aria-valuetext={`${timelineHeight} pixels high`}
-          tabIndex={0}
-          onPointerDown={handleTimelineResizeStart}
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-              e.preventDefault();
-              const direction = e.key === 'ArrowUp' ? 1 : -1;
-              setTimelineHeight((height) => {
-                const minHeight = 90;
-                const maxHeight = Math.max(minHeight, Math.floor(window.innerHeight * 0.65));
-                const nextHeight = Math.max(minHeight, Math.min(maxHeight, height + direction * (e.shiftKey ? 60 : 20)));
-                try { localStorage.setItem('apexmind:timeline-height', String(nextHeight)); } catch {}
-                return nextHeight;
-              });
-            } else if (e.key === 'Home') {
-              e.preventDefault();
-              setTimelineHeight(90);
-              try { localStorage.setItem('apexmind:timeline-height', '90'); } catch {}
-            } else if (e.key === 'End') {
-              e.preventDefault();
-              const maxHeight = Math.max(90, Math.floor(window.innerHeight * 0.65));
-              setTimelineHeight(maxHeight);
-              try { localStorage.setItem('apexmind:timeline-height', String(maxHeight)); } catch {}
-            }
-          }}
-          className="w-full h-5 -my-1 z-30 cursor-row-resize flex items-center justify-center group select-none shrink-0 touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#60A5FA]"
-          title="Drag to resize timeline. Use arrow keys; Shift + arrow resizes faster. Home/End sets the minimum/maximum. Double-click resets."
-          onDoubleClick={() => {
-            setTimelineHeight(DEFAULT_TIMELINE_HEIGHT);
-            try {
-              localStorage.setItem('apexmind:timeline-height', String(DEFAULT_TIMELINE_HEIGHT));
-            } catch {}
-          }}
-        >
-          <div className="flex items-center gap-1.5 pointer-events-none">
-            <div
-              className={`h-1 rounded-full transition-all duration-150 ${
-                activeResize === 'timeline'
-                  ? 'w-8 bg-[#60A5FA]'
-                  : 'w-6 bg-white/35 group-hover:bg-[#60A5FA] group-focus-visible:bg-[#60A5FA]'
-              }`}
-            />
-          </div>
-          <span className="sr-only">Timeline height: {timelineHeight} pixels. Use up and down arrow keys to resize.</span>
-        </div>
-      )}
-
-      {/* ── Studio Multi-Track Timeline Panel (Bottom Studio Area) ── */}
-      {showTimeline && (
-        <div className="shrink-0 min-h-[44px]">
-          <StudioTimelinePane
-            timelineHeight={timelineHeight}
-            onTimelineHeightChange={setTimelineHeight}
-            currentTime={currentTime}
-            duration={duration}
-            timelineDuration={timelineDuration}
-            isPlaying={isPlaying}
-            onTogglePlay={togglePlay}
-            onSeek={handleSeek}
-            onTimelineDurationChange={setTimelineDuration}
-            selectedSfx={selectedSfx}
-            onRemoveSfx={() => setSelectedSfx(null)}
-            onRemoveVideo={() => {
-              setCustomBackdropVideo(undefined);
-              setActiveCompound((prev) => (prev === 'video' ? 'text' : prev));
-            }}
-            onRemoveImage={() => {
-              setCustomBackdropImage(undefined);
-              setActiveCompound((prev) => (prev === 'video' ? 'text' : prev));
-            }}
-            script={script}
-            onUpdateSubtitles={(newSubtitles) =>
-              setScript((prev) => {
-                const updatedStoryboard = prev.storyboard?.map((sc, i) => {
-                  const sub = newSubtitles[i];
-                  if (sub) {
-                    return {
-                      ...sc,
-                      start: sub.start,
-                      duration: sub.duration,
-                      subtitleText: sub.text,
-                      words: sub.words || sc.words,
-                    };
-                  }
-                  return sc;
-                });
-                return {
-                  ...prev,
-                  subtitles: newSubtitles,
-                  ...(updatedStoryboard ? { storyboard: updatedStoryboard } : {}),
-                };
-              })
-            }
-            activeBackdrop={activeBackdropObj}
-            selectedVoice={selectedVoice}
-            selectedMusic={selectedMusic}
-            audioUrl={audioUrl}
-            volume={volume}
-            isMuted={isMuted}
-            onToggleMute={() => setIsMuted(!isMuted)}
-            customImageUrl={customBackdropImage}
-            customVideoUrl={customBackdropVideo}
-            activeElementOverlay={activeElementOverlay}
-            voices={voices}
-            musicTracks={musicTracks}
-            onSelectCompound={(compound) => {
-              setShowRightPane(true);
-              setActiveCompound(compound as CompoundType);
-            }}
-          />
-        </div>
-      )}
 
       {/* Modern Rich Notifications (Sonner) */}
       <Toaster position="top-right" theme="dark" richColors closeButton />
