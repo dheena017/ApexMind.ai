@@ -73,10 +73,7 @@ class GoogleVideoProvider(BaseMediaProvider):
                 if resp.status_code in (403, 429):
                     GoogleVideoProvider._cooldown_until = time.time() + 3600  # 1 hour cooldown
                     err_reason = "quota exceeded (429)" if resp.status_code == 429 else "access forbidden (403)"
-                    logger.warning(
-                        f"Google CSE search returned {err_reason}. "
-                        f"Cooling down Google CSE for 60m; falling back directly to Pexels, Pixabay, Wikimedia."
-                    )
+                    logger.debug(f"Google CSE returned {err_reason}. Cooling down for 60m; falling back to Pexels/Pixabay/Wikimedia.")
                 else:
                     logger.warning(f"Google CSE search returned {resp.status_code}: {resp.text[:120]}")
                 return []

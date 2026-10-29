@@ -1,6 +1,7 @@
 # Dependencies & Build Artifacts
 node_modules/
 build/
+scratch/
 dist/
 coverage/
 .DS_Store

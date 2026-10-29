@@ -37,7 +37,7 @@ async def list_website_videos(
 ):
     try:
         videos = get_website_videos(category=category, search=search)
-        logger.info(f"Retrieved {len(videos)} studio videos (Category: {category or 'all'}, Search: '{search or ''}')")
+        logger.debug(f"Retrieved {len(videos)} studio videos (Category: {category or 'all'}, Search: '{search or ''}')")
         return {
             "success": True,
             "videos": videos,

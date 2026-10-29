@@ -126,7 +126,7 @@ def generate_script(
     available_assets: dict | None = None,
 ) -> Dict[str, Any]:
     aspect_ratio = aspect_ratio or "9:16"
-    logger.info(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
+    logger.debug(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
     memory = fetch_quote_memory(limit=20)
     merged_assets = dict(available_assets or {})
 
@@ -159,7 +159,7 @@ def generate_script(
             category=category or "General Motivation",
         )
         scenes_count = len(data.get("storyboard") or data.get("scenes") or [])
-        logger.info(f"Generated AI script: '{data.get('title')}' ({scenes_count} scenes, {data.get('estimatedDuration', '30s')})")
+        logger.debug(f"Generated AI script: '{data.get('title')}' ({scenes_count} scenes, {data.get('estimatedDuration', '30s')})")
         try:
             add_notification(
                 title="AI Script Crafted",
@@ -184,10 +184,10 @@ def clear_memory(quote_id: Optional[str] = None) -> Dict[str, Any]:
 def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = None) -> Dict[str, Any]:
     if not voice_name or not str(voice_name).strip():
         raise ValueError("Voice name is required. Please select a workspace voice before generating audio.")
-    logger.info(f"Synthesizing voiceover audio for voice '{voice_name}' | Length: {len(text)} characters | Model: {model or 'gemini'}")
+    logger.debug(f"Synthesizing voiceover audio for voice '{voice_name}' | Length: {len(text)} characters | Model: {model or 'gemini'}")
     result = generate_gemini_voiceover(text=text, voice_name=voice_name, model=model)
     dur_display = result.get("durationFormatted") or (f"{result['duration']}s" if result.get("duration") else "0s")
-    logger.info(f"Voiceover audio ready: voice '{voice_name}' | Duration: {dur_display}")
+    logger.debug(f"Voiceover audio ready: voice '{voice_name}' | Duration: {dur_display}")
     try:
         add_notification(
             title="Voiceover Synthesized",
@@ -202,6 +202,6 @@ def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = 
 
 def get_media_library() -> Dict[str, Any]:
     catalog = fetch_media_library()
-    logger.info(f"Retrieved media library catalog: {len(catalog.get('audioTracks', []))} tracks | {len(catalog.get('backdrops', []))} backdrops | {len(catalog.get('voices', []))} voice presets")
+    logger.debug(f"Retrieved media library catalog: {len(catalog.get('audioTracks', []))} tracks | {len(catalog.get('backdrops', []))} backdrops | {len(catalog.get('voices', []))} voice presets")
     return {"success": True, "data": catalog}
 

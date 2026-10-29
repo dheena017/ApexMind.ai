@@ -30,10 +30,7 @@ def list_notifications(
     
     # Filtered list
     notifs = fetch_notifications(category=category, unread_only=unread_only, limit=limit)
-    if limit != 1:
-        logger.info(f"Retrieved {len(notifs)} notifications (Unread: {unread_count}, Filter category: {category}).")
-    else:
-        logger.debug(f"Retrieved {len(notifs)} notifications (Unread: {unread_count}, Filter category: {category}).")
+    logger.debug(f"Retrieved {len(notifs)} notifications (Unread: {unread_count}, Filter category: {category}).")
     return {
         "success": True,
         "notifications": notifs,

@@ -344,17 +344,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         m_color = method_colors.get(method, Colors.WHITE)
 
         client_host = request.client.host if request.client else "unknown"
-        is_poll = path in ("/api/health",) or (
-            path == "/api/notifications/manage" and request.query_params.get("action") == "unread_count"
+        is_poll = (
+            path in ("/api/health", "/api/settings/gemini", "/api/notifications")
+            or (path == "/api/notifications/manage" and request.query_params.get("action") == "unread_count")
         )
-
-        if not is_poll:
-            logger.info(
-                f"{Colors.GRAY}-->{Colors.RESET} "
-                f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
-                f"{path_color}{path}{Colors.RESET} "
-                f"{Colors.GRAY}(from {client_host}){Colors.RESET}"
-            )
 
         try:
             response: Response = await call_next(request)

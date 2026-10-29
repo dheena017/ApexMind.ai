@@ -82,7 +82,7 @@ async def get_me(authorization: Optional[str] = Header(None)):
             )
         user_name = user.get("name", "Creator") if isinstance(user, dict) else getattr(user, "name", "Creator")
         user_email = user.get("email", "") if isinstance(user, dict) else getattr(user, "email", "")
-        logger.info(f"Loaded creator session profile: '{user_name}' ({user_email})")
+        logger.debug(f"Loaded creator session profile: '{user_name}' ({user_email})")
         return user
     except HTTPException:
         raise

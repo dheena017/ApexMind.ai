@@ -67,7 +67,7 @@ DEFAULT_TRENDING_PROMPTS = [
 
 def get_dashboard_summary(server_start_time: float) -> Dict[str, Any]:
     """Compile aggregated data and metrics for the Creator Dashboard."""
-    logger.info("Fetching complete dashboard summary metrics")
+    logger.debug("Fetching complete dashboard summary metrics")
 
     # 1. Fetch website videos
     videos = get_website_videos()

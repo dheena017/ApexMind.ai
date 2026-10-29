@@ -16,7 +16,7 @@ def get_quote_memory(limit: int = 50) -> List[Dict[str, Any]]:
     )
     rows = cursor.fetchall()
     conn.close()
-    logger.info(f"Queried quotes memory (limit: {limit}) -> Found {len(rows)} recorded quotes")
+    logger.debug(f"Queried quotes memory (limit: {limit}) -> Found {len(rows)} recorded quotes")
     return [dict(r) for r in rows]
 
 def add_quote_to_memory(title: str, hook: str, quote: str, category: str) -> Dict[str, Any]:
@@ -57,7 +57,7 @@ def get_channels() -> List[Dict[str, Any]]:
     cursor.execute("SELECT * FROM youtube_channels WHERE is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != '') ORDER BY connected_at DESC")
     rows = cursor.fetchall()
     conn.close()
-    logger.info(f"Queried YouTube channels -> Found {len(rows)} connected channel(s)")
+    logger.debug(f"Queried YouTube channels -> Found {len(rows)} connected channel(s)")
     return [
         {
             "id": r["id"],
@@ -270,7 +270,7 @@ def get_videos() -> List[Dict[str, Any]]:
     cursor.execute("SELECT * FROM published_videos ORDER BY published_at DESC")
     rows = cursor.fetchall()
     conn.close()
-    logger.info(f"Queried published Shorts catalog -> Found {len(rows)} video(s)")
+    logger.debug(f"Queried published Shorts catalog -> Found {len(rows)} video(s)")
     return [
         {
             "id": r["id"],
@@ -499,7 +499,7 @@ def get_automations() -> List[Dict[str, Any]]:
     cursor.execute("SELECT * FROM automation_jobs")
     rows = cursor.fetchall()
     conn.close()
-    logger.info(f"Queried automation schedules -> Found {len(rows)} job(s)")
+    logger.debug(f"Queried automation schedules -> Found {len(rows)} job(s)")
     return [
         {
             "id": r["id"],
@@ -766,7 +766,7 @@ def get_website_videos(category: Optional[str] = None, search: Optional[str] = N
             "status": r["status"] or "ready",
             "createdAt": r["created_at"],
         })
-    logger.info(f"Queried website studio videos -> Found {len(result)} video(s)")
+    logger.debug(f"Queried website studio videos -> Found {len(result)} video(s)")
     return result
 
 

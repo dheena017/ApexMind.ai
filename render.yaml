@@ -14,7 +14,17 @@ services:
         value: 0.0.0.0
       - key: GEMINI_API_KEY
         sync: false
+      - key: PIXABAY_API_KEY
+        sync: false
+      - key: PEXELS_API_KEY
+        sync: false
+      - key: UNSPLASH_ACCESS_KEY
+        sync: false
       - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_SECRET
+        sync: false
+      - key: APP_URL
         sync: false
 
   # React Vite Frontend Static Site

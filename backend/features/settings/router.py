@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/settings", tags=["Settings"])
 )
 def get_gemini_api_status() -> dict[str, bool | str]:
     is_conf = bool(settings.GEMINI_API_KEY.strip())
-    logger.info(f"Verified Gemini AI API configuration status ➔ Configured: {is_conf}")
+    logger.debug(f"Verified Gemini AI API configuration status ➔ Configured: {is_conf}")
     return {
         "configured": is_conf,
         "usageUrl": "https://aistudio.google.com/usage",

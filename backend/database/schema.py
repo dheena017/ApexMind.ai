@@ -18,14 +18,14 @@ def init_db():
         with open(SCHEMA_FILE, "r", encoding="utf-8") as f:
             schema_sql = f.read()
             cursor.executescript(schema_sql)
-            logger.info("Schema verified (schema.sql)")
+            logger.debug("Schema verified (schema.sql)")
 
     # 2. Seed initial data using idempotent INSERT OR IGNORE
     if os.path.exists(SEED_FILE):
         with open(SEED_FILE, "r", encoding="utf-8") as f:
             seed_sql = f.read()
             cursor.executescript(seed_sql)
-            logger.info("Presets verified (seed.sql)")
+            logger.debug("Presets verified (seed.sql)")
 
     # 3. Dynamic migration for notifications table columns
     try:
@@ -43,7 +43,7 @@ def init_db():
                 logger.info("Migrated notifications: added 'priority' column")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_notifications_category ON notifications (category)")
     except Exception as e:
-        logger.warning(f"Notifications schema migration notice: {e}")
+        logger.debug(f"Notifications schema migration notice: {e}")
 
     # 4. Dynamic migration for youtube_channels columns (banner_url & OAuth credentials)
     try:
@@ -66,7 +66,7 @@ def init_db():
                 cursor.execute("ALTER TABLE youtube_channels ADD COLUMN is_oauth_authenticated INTEGER DEFAULT 0")
                 logger.info("Migrated youtube_channels: added 'is_oauth_authenticated' column")
     except Exception as e:
-        logger.warning(f"YouTube channels schema migration notice: {e}")
+        logger.debug(f"YouTube channels schema migration notice: {e}")
 
     # 5. Verify website_videos table & seed starter studio-created videos if empty
     try:
@@ -94,7 +94,7 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_website_videos_created_at ON website_videos (created_at DESC);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_website_videos_category ON website_videos (category);")
     except Exception as e:
-        logger.warning(f"website_videos table initialization notice: {e}")
+        logger.debug(f"website_videos table initialization notice: {e}")
 
 
     conn.commit()

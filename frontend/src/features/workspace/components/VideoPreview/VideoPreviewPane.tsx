@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
-import { consoleLogger } from '@/src/shared/utils/logger';
 
 // Timeline state broadcast from StudioTimelinePane
 interface TimelineState {
@@ -905,6 +904,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     isSeekingOrSwitchingRef.current = true;
     video.src = activeVideo;
     video.load();
+    if (!isPlayingRef.current && !video.paused) {
+      video.pause();
+    }
     // Do not force currentTime immediately before metadata is ready
   }, [activeVideo]);
 
@@ -1250,8 +1252,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               ref={videoElementRef}
               src={activeVideo}
               poster={activeVideoClip?.posterUrl || activeVideoClip?.thumbnailUrl || activeStoryboardScene?.posterUrl}
-              autoPlay
-              loop
               muted={videoTrackVolume === 0}
               playsInline
               crossOrigin="anonymous"
@@ -1275,8 +1275,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                     target.currentTime = offset;
                   }
                 } catch {}
-                if (isPlayingRef.current && target.paused) {
-                  target.play().catch(() => {});
+                if (isPlayingRef.current) {
+                  if (target.paused) target.play().catch(() => {});
+                } else {
+                  if (!target.paused) target.pause();
                 }
                 setTimeout(() => {
                   isSeekingOrSwitchingRef.current = false;

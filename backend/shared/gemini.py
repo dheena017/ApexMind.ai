@@ -544,7 +544,7 @@ Output MUST be a single raw JSON object matching this exact schema:
         raise ValueError("GEMINI_API_KEY is not configured. Please set GEMINI_API_KEY in your environment to generate dynamic AI scripts.")
 
     target_model = resolve_script_model(model)
-    logger.info(f"Initiating AI script & storyboard generation | Model: '{target_model}' | Theme: '{category}' | Topic: '{topic}' | Deduplicated: {len(memory_quotes)}")
+    logger.debug(f"Initiating AI script & storyboard generation | Model: '{target_model}' | Theme: '{category}' | Topic: '{topic}' | Deduplicated: {len(memory_quotes)}")
     start_t = time.perf_counter()
 
     try:
@@ -578,7 +578,7 @@ Output MUST be a single raw JSON object matching this exact schema:
                 break
             except Exception as e:
                 last_err = e
-                logger.warning(f"Model '{attempt_model}' unavailable ({e}), trying next model...")
+                logger.debug(f"Model '{attempt_model}' unavailable ({e}), trying next model...")
                 time.sleep(1.0)
 
         if response is None:
@@ -768,7 +768,7 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
         raise ValueError("GEMINI_API_KEY is not configured. Please set GEMINI_API_KEY in your environment to generate voiceover audio.")
 
     tts_model = resolve_tts_model(model)
-    logger.info(
+    logger.debug(
         f"Requesting Gemini TTS voiceover synthesis | Model: '{tts_model}' | "
         f"Voice: '{voice_name}' | Text Length: {len(normalized_text)} chars"
     )
@@ -809,7 +809,7 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
                     break
             except Exception as e:
                 last_tts_err = e
-                logger.warning(f"TTS Model '{attempt_tts}' failed ({e}), trying next TTS model...")
+                logger.debug(f"TTS Model '{attempt_tts}' failed ({e}), trying next TTS model...")
 
         if tts_res is not None:
             raw_audio, mime_type = extract_voiceover_audio(tts_res)
@@ -837,7 +837,7 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
             }
 
         # ── Resilient Fallback: gTTS High-Quality Synthesis ──
-        logger.warning(f"Gemini TTS unavailable ({last_tts_err}). Initiating high-definition gTTS synthesis fallback...")
+        logger.info(f"Gemini TTS fallback: using gTTS synthesis for voice '{voice_name}'...")
         try:
             import io
             from gtts import gTTS

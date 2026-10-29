@@ -357,7 +357,7 @@ def fetch_channel_videos(query: str, limit: int = 24) -> List[Dict[str, Any]]:
                         "isShort": False,
                     })
         except Exception as e:
-            logger.warning(f"Official Atom feed fetch failed ({e}). Falling back to live grid.")
+            logger.debug(f"Official Atom feed fetch notice ({e}). Using live grid.")
 
     # 2. Enrich or fallback using channel /videos tab for precise durations
     try:
@@ -413,7 +413,7 @@ def fetch_channel_videos(query: str, limit: int = 24) -> List[Dict[str, Any]]:
                     if enriched_videos:
                         return enriched_videos[:limit]
     except Exception as e:
-        logger.warning(f"Could not enrich video grid: {e}")
+        logger.debug(f"Could not enrich video grid: {e}")
 
     return videos_list[:limit]
 
@@ -630,7 +630,7 @@ def fetch_video_details(video_id: str) -> Dict[str, Any]:
             if meta_match:
                 tags = [t.strip() for t in meta_match[0].split(",") if t.strip()]
     except Exception as e:
-        logger.warning(f"Could not load deep watch metadata for {video_id}: {e}")
+        logger.debug(f"Could not load deep watch metadata for {video_id}: {e}")
 
     return {
         "id": video_id,
@@ -708,7 +708,7 @@ def fetch_video_comments(video_id: str, limit: int = 20) -> List[Dict[str, Any]]
                 })
             return comments
         except Exception as e:
-            logger.warning(f"Authenticated comments lookup failed: {e}")
+            logger.debug(f"Authenticated comments lookup failed: {e}")
 
     return []
 
