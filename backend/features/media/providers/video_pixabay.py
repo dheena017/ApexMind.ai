@@ -116,12 +116,25 @@ class PixabayVideoProvider(BaseMediaProvider):
         videos: List[MediaAsset] = []
         for hit in data.get("hits", []):
             videos_obj = hit.get("videos", {})
-            chosen = (
-                videos_obj.get("large")
-                or videos_obj.get("medium")
-                or videos_obj.get("small")
-                or {}
-            )
+            # Prioritize crisp Full HD 1080p/720p for fast streaming and studio render
+            # Avoid 100MB 4K files that stall web playback and cause browser buffering
+            chosen = None
+            for key in ["small", "medium", "tiny", "large"]:
+                cand = videos_obj.get(key)
+                if cand and cand.get("url") and str(cand["url"]).startswith("http"):
+                    w = cand.get("width", 0)
+                    h = cand.get("height", 0)
+                    if 720 <= min(w, h) <= 1440 or 1080 <= max(w, h) <= 1920:
+                        chosen = cand
+                        break
+            if not chosen:
+                chosen = (
+                    videos_obj.get("small")
+                    or videos_obj.get("medium")
+                    or videos_obj.get("tiny")
+                    or videos_obj.get("large")
+                    or {}
+                )
             v_url = chosen.get("url", "")
             if v_url and v_url.startswith("http"):
                 # Use high-quality thumbnail directly from Pixabay video object

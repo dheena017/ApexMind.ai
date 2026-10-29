@@ -331,21 +331,45 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         const captureFrame = (renderTimeSec: number) => {
           let drewMedia = false;
 
-          // 1. Draw active video frame if available and ready
+          // 1. Draw active video frame with proper object-fit: cover aspect scaling
           const videoEl = videoElementRef.current;
           if (videoEl && videoEl.readyState >= 2 && videoEl.videoWidth > 0) {
             try {
-              context.drawImage(videoEl, 0, 0, dimensions.width, dimensions.height);
+              const vW = videoEl.videoWidth;
+              const vH = videoEl.videoHeight;
+              const targetRatio = dimensions.width / dimensions.height;
+              const sourceRatio = vW / vH;
+              let sx = 0, sy = 0, sWidth = vW, sHeight = vH;
+              if (sourceRatio > targetRatio) {
+                sWidth = vH * targetRatio;
+                sx = (vW - sWidth) / 2;
+              } else {
+                sHeight = vW / targetRatio;
+                sy = (vH - sHeight) / 2;
+              }
+              context.drawImage(videoEl, sx, sy, sWidth, sHeight, 0, 0, dimensions.width, dimensions.height);
               drewMedia = true;
             } catch {}
           }
 
-          // 2. Draw active image backdrop if present
+          // 2. Draw active image backdrop with proper object-fit: cover aspect scaling
           if (!drewMedia) {
             const imgEl = preview.querySelector('img');
             if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
               try {
-                context.drawImage(imgEl, 0, 0, dimensions.width, dimensions.height);
+                const iW = imgEl.naturalWidth;
+                const iH = imgEl.naturalHeight;
+                const targetRatio = dimensions.width / dimensions.height;
+                const sourceRatio = iW / iH;
+                let sx = 0, sy = 0, sWidth = iW, sHeight = iH;
+                if (sourceRatio > targetRatio) {
+                  sWidth = iH * targetRatio;
+                  sx = (iW - sWidth) / 2;
+                } else {
+                  sHeight = iW / targetRatio;
+                  sy = (iH - sHeight) / 2;
+                }
+                context.drawImage(imgEl, sx, sy, sWidth, sHeight, 0, 0, dimensions.width, dimensions.height);
                 drewMedia = true;
               } catch {}
             }
@@ -899,23 +923,31 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     }
 
     const clipStart = activeVideoClip ? activeVideoClip.start : (timelineState.videoStart || 0);
-    const offset = Math.max(0, currentTime - clipStart);
+    const rawOffset = Math.max(0, currentTime - clipStart);
+    const videoDuration = video.duration && Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+    const offset = videoDuration > 0 ? (rawOffset % videoDuration) : rawOffset;
 
     if (isPlaying) {
       if (video.paused && video.readyState >= 2 && !video.seeking) {
         video.play().catch(() => {});
       }
-      // Only resync if video has drifted significantly (> 1.2s, e.g. user scrubbed or jumped)
+      // Calculate true circular drift on looping media so loop boundaries never trigger false seek stutter
+      const diff = Math.abs(video.currentTime - offset);
+      const circularDiff = videoDuration > 0 ? Math.min(diff, Math.abs(videoDuration - diff)) : diff;
+
+      // Only resync if video has genuinely drifted (> 1.2s, e.g. user scrubbed or jumped)
       // and is not currently in the middle of a seek or cut switch
       if (!video.seeking && !isSeekingOrSwitchingRef.current && video.readyState >= 2) {
-        if (Math.abs(video.currentTime - offset) > 1.2) {
+        if (circularDiff > 1.2) {
           video.currentTime = offset;
         }
       }
     } else {
       // Paused: pause video and sync position smoothly
       if (!video.paused) video.pause();
-      if (!video.seeking && video.readyState >= 1 && Math.abs(video.currentTime - offset) > 0.08) {
+      const diff = Math.abs(video.currentTime - offset);
+      const circularDiff = videoDuration > 0 ? Math.min(diff, Math.abs(videoDuration - diff)) : diff;
+      if (!video.seeking && video.readyState >= 1 && circularDiff > 0.08) {
         video.currentTime = offset;
       }
     }
@@ -1233,9 +1265,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 handlePlayingOrCanPlay();
                 const target = e.currentTarget;
                 const clipStart = activeVideoClipRef.current ? activeVideoClipRef.current.start : 0;
-                const offset = Math.max(0, currentTimeRef.current - clipStart);
+                const rawOffset = Math.max(0, currentTimeRef.current - clipStart);
+                const vDur = target.duration && Number.isFinite(target.duration) && target.duration > 0 ? target.duration : 0;
+                const offset = vDur > 0 ? (rawOffset % vDur) : rawOffset;
                 try {
-                  if (offset > 0.05 && target.duration > offset) {
+                  const diff = Math.abs(target.currentTime - offset);
+                  const circularDiff = vDur > 0 ? Math.min(diff, Math.abs(vDur - diff)) : diff;
+                  if (circularDiff > 0.15) {
                     target.currentTime = offset;
                   }
                 } catch {}

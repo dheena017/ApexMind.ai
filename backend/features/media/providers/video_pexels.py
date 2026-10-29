@@ -116,22 +116,36 @@ class PexelsVideoProvider(BaseMediaProvider):
         videos: List[MediaAsset] = []
         for it in data.get("videos", []):
             video_files = it.get("video_files", [])
-            # Prioritize HD 1080p or 720p matching orientation
             matched_file = None
-            for vf in sorted(video_files, key=lambda x: (x.get("width", 0) * x.get("height", 0)), reverse=True):
-                vf_link = vf.get("link", "")
-                if vf_link.startswith("http") and vf.get("file_type") == "video/mp4":
+            mp4_files = [
+                vf for vf in video_files
+                if str(vf.get("link", "")).startswith("http") and vf.get("file_type") == "video/mp4"
+            ]
+
+            # Prioritize crisp Full HD 1080p/720p matching orientation, avoiding bloated 4K files
+            for vf in sorted(mp4_files, key=lambda x: (x.get("width", 0) * x.get("height", 0)), reverse=True):
+                w = vf.get("width", 0)
+                h = vf.get("height", 0)
+                if max(w, h) > 2560:
+                    continue
+                if orientation == "portrait" and h > w:
+                    matched_file = vf
+                    break
+                elif orientation == "landscape" and w >= h:
+                    matched_file = vf
+                    break
+
+            # Secondary fallback: any crisp 720p - 1080p file
+            if not matched_file:
+                for vf in sorted(mp4_files, key=lambda x: (x.get("width", 0) * x.get("height", 0)), reverse=True):
                     w = vf.get("width", 0)
                     h = vf.get("height", 0)
-                    if orientation == "portrait" and h > w:
-                        matched_file = vf
-                        break
-                    elif orientation == "landscape" and w >= h:
+                    if 720 <= max(w, h) <= 2560:
                         matched_file = vf
                         break
 
-            if not matched_file and video_files:
-                matched_file = video_files[0]
+            if not matched_file and mp4_files:
+                matched_file = sorted(mp4_files, key=lambda x: (x.get("width", 0) * x.get("height", 0)), reverse=True)[0]
 
             if matched_file and matched_file.get("link"):
                 v_link = matched_file["link"]

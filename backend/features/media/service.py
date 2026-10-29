@@ -43,23 +43,49 @@ jamendo_audio = JamendoAudioProvider()
 sfx_provider = SfxProvider()
 
 
+DISALLOWED_CLIPART = {
+    "green screen", "chroma key", "subscribe button", "click button",
+    "red button", "isolated green", "subscribe animation", "subscribe like"
+}
+
+def _is_valid_cand(cand, excluded_urls: Set[str]) -> bool:
+    if not cand or not cand.url or cand.url in excluded_urls:
+        return False
+    title = (cand.title or "").lower()
+    return not any(d in title for d in DISALLOWED_CLIPART)
+
 def _resolve_single_scene_internal(
     item: SceneResolveItem,
     aspect_ratio: str,
     excluded_urls: Set[str],
 ) -> ResolvedSceneResult:
     """Resolves one scene cut using Google CSE, Pexels, Pixabay, and Wikimedia with fallback tiers."""
-    queries_to_try: List[str] = []
+    # Disallowed low-quality clipart / green-screen / CTA overlay patterns
+    cta_words = {"subscribe", "like", "follow", "cta", "button", "bell", "comment", "share", "channel", "click"}
+    
+    raw_queries: List[str] = []
     if item.googleSearchQuery:
-        queries_to_try.append(item.googleSearchQuery)
-    if item.visualQuery and item.visualQuery not in queries_to_try:
-        queries_to_try.append(item.visualQuery)
+        raw_queries.append(item.googleSearchQuery)
+    if item.visualQuery and item.visualQuery not in raw_queries:
+        raw_queries.append(item.visualQuery)
     for fq in item.fallbackQueries:
-        if fq and fq not in queries_to_try:
-            queries_to_try.append(fq)
+        if fq and fq not in raw_queries:
+            raw_queries.append(fq)
+
+    queries_to_try: List[str] = []
+    for q in raw_queries:
+        words = set(q.lower().replace(",", " ").replace("-", " ").split())
+        # If query is dominated by CTA words, replace with majestic closing scene nature footage
+        if words & cta_words and len(words - cta_words) <= 2:
+            queries_to_try.append("dramatic golden hour sunset mountain summit vertical 9:16")
+            queries_to_try.append("majestic ocean dusk horizon twilight vertical 9:16")
+        else:
+            clean_q = " ".join([w for w in q.split() if w.lower() not in cta_words]).strip()
+            queries_to_try.append(clean_q if len(clean_q) > 3 else q)
 
     # Ambient nature loops if all specific queries fail
     ambient_fallbacks = [
+        "dramatic golden hour sunset mountain summit vertical 9:16",
         "misty mountain forest vertical 9:16",
         "dramatic ocean waves sunset coastline 9:16",
         "alpine glacial lake mountain reflections 9:16",
@@ -75,7 +101,7 @@ def _resolve_single_scene_internal(
                 try:
                     candidates = google_video.search(query=q, aspect_ratio=aspect_ratio, limit=5)
                     for cand in candidates:
-                        if cand.url not in excluded_urls:
+                        if _is_valid_cand(cand, excluded_urls):
                             return ResolvedSceneResult(
                                 sceneNumber=item.sceneNumber,
                                 status="resolved",
@@ -89,7 +115,7 @@ def _resolve_single_scene_internal(
                 try:
                     candidates = pexels_video.search(query=q, aspect_ratio=aspect_ratio, limit=6)
                     for cand in candidates:
-                        if cand.url not in excluded_urls:
+                        if _is_valid_cand(cand, excluded_urls):
                             return ResolvedSceneResult(
                                 sceneNumber=item.sceneNumber,
                                 status="resolved",
@@ -103,7 +129,7 @@ def _resolve_single_scene_internal(
                 try:
                     candidates = pixabay_video.search(query=q, aspect_ratio=aspect_ratio, limit=6)
                     for cand in candidates:
-                        if cand.url not in excluded_urls:
+                        if _is_valid_cand(cand, excluded_urls):
                             return ResolvedSceneResult(
                                 sceneNumber=item.sceneNumber,
                                 status="resolved",
@@ -116,8 +142,8 @@ def _resolve_single_scene_internal(
             try:
                 candidates = wikimedia_video.search(query=q, aspect_ratio=aspect_ratio, limit=6)
                 for cand in candidates:
-                    if cand.url not in excluded_urls:
-                        return ResolvedSceneResult(
+                        if _is_valid_cand(cand, excluded_urls):
+                            return ResolvedSceneResult(
                             sceneNumber=item.sceneNumber,
                             status="resolved",
                             media=cand,
@@ -133,7 +159,7 @@ def _resolve_single_scene_internal(
                 try:
                     candidates = unsplash_image.search(query=q, aspect_ratio=aspect_ratio, limit=5)
                     for cand in candidates:
-                        if cand.url not in excluded_urls:
+                        if _is_valid_cand(cand, excluded_urls):
                             return ResolvedSceneResult(
                                 sceneNumber=item.sceneNumber,
                                 status="resolved",
@@ -147,7 +173,7 @@ def _resolve_single_scene_internal(
                 try:
                     candidates = pixabay_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6)
                     for cand in candidates:
-                        if cand.url not in excluded_urls:
+                        if _is_valid_cand(cand, excluded_urls):
                             return ResolvedSceneResult(
                                 sceneNumber=item.sceneNumber,
                                 status="resolved",
@@ -160,8 +186,8 @@ def _resolve_single_scene_internal(
             try:
                 candidates = wikimedia_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6)
                 for cand in candidates:
-                    if cand.url not in excluded_urls:
-                        return ResolvedSceneResult(
+                        if _is_valid_cand(cand, excluded_urls):
+                            return ResolvedSceneResult(
                             sceneNumber=item.sceneNumber,
                             status="resolved",
                             media=cand,

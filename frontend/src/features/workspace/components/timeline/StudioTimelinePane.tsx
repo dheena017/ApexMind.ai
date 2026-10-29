@@ -475,7 +475,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const clipName = scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`;
         const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
         const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
-        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 3.0;
+        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration >= 3.0 ? parsedDuration : Math.max(3.0, parsedDuration || 3.5);
         const clipStart = Number.isFinite(parsedStart) && parsedStart >= runningStart ? parsedStart : runningStart;
         runningStart = parseFloat((clipStart + clipDuration).toFixed(2));
 
@@ -783,7 +783,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || '';
         const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
         const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
-        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 3.0;
+        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration >= 3.0 ? parsedDuration : Math.max(3.0, parsedDuration || 3.5);
         const clipStart = Number.isFinite(parsedStart) && parsedStart >= runningStart ? parsedStart : runningStart;
         runningStart = parseFloat((clipStart + clipDuration).toFixed(2));
 
@@ -1666,33 +1666,41 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     onUpdateSubtitles?.(syncedCaptions);
 
     if (videoClips.length > 0) {
-      if (videoClips.length === syncedCaptions.length) {
-        setVideoClips((prev) =>
-          prev.map((vClip, idx) => ({
-            ...vClip,
-            start: syncedCaptions[idx].start,
-            duration: syncedCaptions[idx].duration,
-          }))
-        );
-      } else {
-        const oldTotalVideoDur = videoClips.reduce((sum, c) => sum + (c.duration || 1), 0);
-        let curVStart = voiceStart;
-        setVideoClips((prev) =>
-          prev.map((vClip, idx) => {
-            const isLast = idx === prev.length - 1;
-            const dur = isLast
-              ? Math.max(0.4, parseFloat(((voiceStart + targetVoiceDuration) - curVStart).toFixed(2)))
-              : Math.max(0.4, parseFloat((((vClip.duration || 1) / oldTotalVideoDur) * targetVoiceDuration).toFixed(2)));
-            const vStart = parseFloat(curVStart.toFixed(2));
-            curVStart = parseFloat((curVStart + dur).toFixed(2));
-            return {
-              ...vClip,
-              start: vStart,
-              duration: dur,
-            };
-          })
-        );
+      // Enforce cinematic pacing: Each video clip must sustain for at least 3.2s
+      // Never collapse video clips into 0.4s micro-cuts matching single caption words
+      const MIN_CLIP_DURATION = 3.2;
+      const availableDuration = targetVoiceDuration;
+      const maxClipsAllowed = Math.max(1, Math.floor(availableDuration / MIN_CLIP_DURATION));
+
+      let effectiveClips = videoClips;
+      if (videoClips.length > maxClipsAllowed) {
+        const step = videoClips.length / maxClipsAllowed;
+        effectiveClips = Array.from({ length: maxClipsAllowed }, (_, idx) => {
+          const pickIndex = Math.min(videoClips.length - 1, Math.floor(idx * step));
+          return videoClips[pickIndex];
+        });
       }
+
+      const totalClips = effectiveClips.length;
+      let curVStart = voiceStart;
+      const oldTotalVideoDur = effectiveClips.reduce((sum, c) => sum + (c.duration || 3.5), 0);
+
+      setVideoClips(
+        effectiveClips.map((vClip, idx) => {
+          const isLast = idx === totalClips - 1;
+          const proportionalDur = ((vClip.duration || 3.5) / oldTotalVideoDur) * availableDuration;
+          const dur = isLast
+            ? Math.max(MIN_CLIP_DURATION, parseFloat(((voiceStart + targetVoiceDuration) - curVStart).toFixed(2)))
+            : Math.max(MIN_CLIP_DURATION, parseFloat(proportionalDur.toFixed(2)));
+          const vStart = parseFloat(curVStart.toFixed(2));
+          curVStart = parseFloat((curVStart + dur).toFixed(2));
+          return {
+            ...vClip,
+            start: vStart,
+            duration: dur,
+          };
+        })
+      );
     }
 
     setVoiceClips((prev) => {

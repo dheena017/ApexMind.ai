@@ -156,6 +156,13 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
             </div>
 
+            {/* Clip Name / Beat Label (Top-Left Corner) */}
+            {clip.name && (
+              <span className="absolute top-1 left-2 text-[8px] font-bold text-amber-200 truncate max-w-[80%] pointer-events-none px-1.5 py-0.5 z-10 bg-black/80 rounded border border-amber-500/20 backdrop-blur-xs shadow-xs select-none">
+                {clip.name}
+              </span>
+            )}
+
             {/* Small Time Duration Badge (Bottom-Right Corner) */}
             <span className="absolute bottom-1 right-2 text-[8.5px] font-mono-studio text-amber-300 pointer-events-none px-1.5 py-0.2 font-bold z-10 bg-black/80 rounded border border-amber-500/30 backdrop-blur-xs shadow-xs">
               {formatTime(clip.duration)}

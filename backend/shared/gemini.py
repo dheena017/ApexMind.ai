@@ -330,8 +330,8 @@ MANDATORY 100% PURE CINEMATIC NATURE VIDEO & SOUND DESIGN DIRECTIVES:
 - STRICT 100% NATURE FOOTAGE DIRECTIVE: Every single scene cut MUST feature majestic, cinematic NATURE footage.
   Allowed nature environments: misty mountain summits, alpine peaks, lush pine forests, cascading waterfalls, dramatic ocean storm waves, winding rivers, northern lights (aurora borealis), starry night sky over mountain ridges, dramatic storm clouds, golden hour sunsets, or desert sand dunes.
   NEVER use gym, fitness, workout, athletes, urban city, cars, traffic, buildings, office interiors, technology, screens, or talking humans.
-- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of multiple SHORT, high-energy nature video clips (minimum 4 to 6 distinct scenes/shots across the timeline).
-- SHORT CLIP DURATION: Each video clip must be short and punchy (2.0s to 3.5s duration each) for fast-paced viral retention.
+- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of majestic, high-energy nature video clips (typically 5 to 8 distinct scenes/shots across a 30s-60s timeline).
+- CINEMATIC SCENE DURATION: Each video scene clip should comfortably sustain for 3.5s to 6.0s (minimum 3.0s, ideal 4.0s - 5.0s) so viewers can absorb the majestic visuals without jarring micro-cuts.
 - ZERO DUPLICATE VIDEOS: Every scene MUST use a DIFFERENT, UNIQUE high-quality nature video clip.
 - MULTI-HOOK VARIATION: Provide 3 distinct hook variations in "hooks" with different psychological angles (e.g. Brutal Truth/Negative, Curiosity Gap, Direct Challenge) and a virality score (85-99).
 - SOUND DESIGN:
@@ -341,13 +341,14 @@ MANDATORY 100% PURE CINEMATIC NATURE VIDEO & SOUND DESIGN DIRECTIVES:
 - SEARCH ENGINE OPTIMIZATION: For every scene, provide a "googleSearchQuery" (e.g. 'misty mountain peak sunrise clouds vertical 9:16') and "fallbackQueries" for Google Video Search / Pexels / Pixabay.
 - NEGATIVE TERMS: For every scene, explicitly specify negativeTerms: ["gym", "fitness", "workout", "city", "building", "urban", "office", "car", "technology", "phone", "smiling", "interview", "talking", "cartoon"].
 - KARAOKE WORD TIMING: For every scene, provide a "words" array breaking the scene's subtitle line into individual words with exact relative timestamps ("start", "end") and mark power words with "emphasis": true and "highlightColor" (e.g. "#FACC15" or "#38BDF8").
-- MANDATORY 100% SCRIPT-STORYBOARD CC PARITY & NATURAL SPEECH PACING:
+- MANDATORY 100% SCRIPT-STORYBOARD CC PARITY & CINEMATIC PACING:
   * Scene 1 MUST ALWAYS be the HOOK ("beat": "hook"). Scene 1's "subtitleText" MUST match the "hook" text verbatim!
   * Scenes 2 through N-1 MUST divide the monologue / "quote" sentence-by-sentence with zero omitted words.
   * The final Scene MUST be the closing call-to-action ("beat": "cta"). Its "subtitleText" MUST match the "cta" text verbatim!
   * The combined "subtitleText" across all scenes MUST EXACTLY EQUAL the spoken narrative ("hook" + "quote" + "cta").
-  * PACING & DURATION: Total spoken monologue words must comfortably match the target length (~2.5 words per second). For a 30s video, produce 65-80 words of powerful script!
-  * Every scene duration MUST realistically match its subtitle word count: duration = max(2.0, round(words * 0.35 + 0.5, 1)). Never assign a 3.5s duration to a 2-word phrase!
+  * PACING & DURATION: Total spoken monologue words must comfortably match the target length (~2.5 words per second).
+  * CINEMATIC SCENE BREATH: Every scene duration MUST be at least 3.5s to 6.0s (never under 3.5s).
+  * CRITICAL FINAL SCENE (CTA) NATURE MANDATE: The final scene's visualQuery and googleSearchQuery MUST STILL BE A BREATHTAKING NATURE VIDEO (e.g. 'golden hour mountain summit sunset vertical 9:16' or 'dramatic ocean waves crashing rocks at dusk'). NEVER put 'subscribe', 'button', 'cta', 'like', 'follow', 'youtube', or 'bell' in any scene's visualQuery! The CTA text only appears as a subtitle overlay OVER epic nature footage!
 
 CRITICAL MEMORY & UNIQUENESS CONSTRAINT:
 Your script MUST NOT repeat, paraphrase, or borrow metaphors from any of these previously saved quotes:
@@ -603,10 +604,23 @@ Output MUST be a single raw JSON object matching this exact schema:
             )
 
         # ── Fast Decoupled Storyboard Formatting (Queries Only, Zero Media Latency) ──
+        cta_terms = {"subscribe", "follow", "cta", "button", "bell", "comment", "share", "channel"}
         for sc in storyboard:
             sc["mediaType"] = "video"
             if "duration" in sc:
-                sc["duration"] = min(3.5, max(2.0, float(sc.get("duration", 2.8))))
+                sc["duration"] = min(6.0, max(3.5, float(sc.get("duration", 4.5))))
+
+            # Force final scene (CTA) to always feature breathtaking nature, never green-screen button clipart
+            is_cta = sc.get("beat") == "cta" or any(t in str(sc.get("visualQuery", "")).lower() for t in cta_terms)
+            if is_cta:
+                sc["mediaName"] = "Cinematic Golden Hour Mountain Sunset"
+                sc["visualQuery"] = "dramatic golden hour sunset mountain summit vertical 9:16"
+                sc["googleSearchQuery"] = "dramatic golden hour sunset mountain summit vertical 9:16"
+                sc["fallbackQueries"] = [
+                    "majestic ocean dusk horizon twilight vertical 9:16",
+                    "aurora borealis northern lights night sky vertical 9:16",
+                ]
+                sc["duration"] = max(4.0, float(sc.get("duration", 4.5)))
 
             primary_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
             google_q = sc.get("googleSearchQuery") or f"{primary_query} vertical 9:16"
@@ -670,7 +684,7 @@ Output MUST be a single raw JSON object matching this exact schema:
         for sc in storyboard:
             txt = (sc.get("subtitleText") or "").strip()
             w_count = max(1, len(txt.split()))
-            natural_dur = max(1.8, min(4.2, round(w_count * 0.35 + 0.5, 1)))
+            natural_dur = max(3.0, min(6.0, round(w_count * 0.45 + 1.5, 1)))
             sc["duration"] = natural_dur
             sc["start"] = round(curr_timeline_time, 2)
             curr_timeline_time = round(curr_timeline_time + natural_dur, 2)
