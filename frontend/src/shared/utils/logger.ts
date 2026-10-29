@@ -30,6 +30,19 @@ const TEXT_STYLES: Record<string, string> = {
   dim: 'color: #9CA3AF; font-size: 10px;',
 };
 
+function sanitizeLogMessage(message: unknown): string {
+  const raw = typeof message === 'string' ? message : JSON.stringify(message);
+  // Shorten any embedded base64 data URLs
+  let sanitized = raw.replace(
+    /data:(audio|image|video)\/[a-zA-Z0-9.+_-]+;base64,[A-Za-z0-9+/=]{20,}/g,
+    'data:$1/... [base64]'
+  );
+  if (sanitized.length > 300) {
+    sanitized = sanitized.slice(0, 300) + '... [shortened]';
+  }
+  return sanitized;
+}
+
 function sendToTerminal(level: string, module: string, message: string) {
   if (typeof window === 'undefined') return;
 
@@ -41,7 +54,7 @@ function sendToTerminal(level: string, module: string, message: string) {
   const payload = {
     level,
     module: module === 'App' || module === 'Router' || module === 'Vite' || module === 'HMR' ? module : `UI:${module}`,
-    message: typeof message === 'string' ? message : JSON.stringify(message),
+    message: sanitizeLogMessage(message),
   };
 
   try {

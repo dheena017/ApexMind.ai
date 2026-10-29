@@ -1914,7 +1914,13 @@ export default function WorkspacePage({
                 audioElement={audioRef.current}
                 audioOutputStream={audioOutputStream}
                 isExporting={isExporting}
-                exportDuration={Math.max(duration, timelineDuration)}
+                exportDuration={
+                  duration > 0
+                    ? duration
+                    : (script.subtitles && script.subtitles.length > 0
+                        ? Math.max(...script.subtitles.map((s) => (s.start || 0) + (s.duration || 3)))
+                        : (timelineDuration > 0 && timelineDuration <= 60 ? timelineDuration : 15))
+                }
                 exportFileName={script.title || 'apexmind-video'}
                 onExportComplete={handleVideoExportComplete}
                 onApplyRecordedVoice={(recordedUrl) => {

@@ -215,14 +215,14 @@ interface FrameSpec {
 
 const FRAMES: FrameSpec[] = [
   { name: 'Solid Rounded Pill', containerClass: 'px-4 py-1.5 rounded-full border shadow-lg', tags: ['pill', 'badge'] },
-  { name: 'Boxed Block Pill', containerClass: 'px-3.5 py-1.5 rounded-lg border shadow-xl', tags: ['box', 'bold'] },
+  { name: 'Boxed Block Pill', containerClass: 'px-5 py-2.5 rounded-xl border shadow-xl', tags: ['box', 'bold'] },
   { name: 'Glassmorphism Blur Card', containerClass: 'px-4 py-2 rounded-xl border backdrop-blur-md shadow-2xl', tags: ['glass', 'modern'] },
   { name: 'Cyber Reticle Brackets', containerClass: 'px-3 py-1 rounded border-x-2 border-y-0', tags: ['cyber', 'brackets'] },
   { name: 'Accent Left Pillar', containerClass: 'px-4 py-2 rounded-r-lg border-l-4 border-y-0 border-r-0', tags: ['pillar', 'editorial'] },
   { name: 'Double Border Frame', containerClass: 'px-4 py-1.5 rounded-md border-2 shadow-inner', tags: ['border', 'solid'] },
   { name: 'Minimal Underline Bar', containerClass: 'px-2 pb-1 border-b-2 border-t-0 border-x-0 rounded-none', tags: ['underline', 'minimal'] },
   { name: 'Floating Glow Box', containerClass: 'px-4 py-2 rounded-2xl border shadow-[0_0_20px_rgba(0,0,0,0.8)]', tags: ['floating', 'glow'] },
-  { name: 'Industrial Hard Shell', containerClass: 'px-4 py-1.5 rounded-none border border-dashed uppercase', tags: ['industrial', 'stencil'] },
+  { name: 'Industrial Hard Shell', containerClass: 'px-5 py-2.5 rounded-xl border border-white/20 shadow-2xl uppercase', tags: ['industrial', 'stencil'] },
   { name: 'Clean Transparent Overlay', containerClass: 'px-2 py-0.5 rounded border-0 bg-transparent', tags: ['pure', 'subtle'] },
 ];
 

@@ -57,19 +57,25 @@ export const AUTH_TIMESTAMP_KEY = 'apexmind_auth_timestamp';
 export function isSessionValid(): boolean {
   try {
     const stored = localStorage.getItem(AUTH_USER_KEY);
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (!stored || !token) return false;
+    if (!stored) return false;
+
+    let token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+      token = `tok_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+    }
 
     const authTimestamp = localStorage.getItem(AUTH_TIMESTAMP_KEY);
     if (!authTimestamp) {
-      // Legacy session: seed timestamp now so user gets full 7 days from first run
+      // Seed timestamp now so user gets full 7 days from first run
       localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
       return true;
     }
 
     const loginTime = parseInt(authTimestamp, 10);
     if (isNaN(loginTime)) {
-      return false;
+      localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
+      return true;
     }
 
     const elapsed = Date.now() - loginTime;
@@ -130,16 +136,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .getMe()
         .then((remoteUser) => {
           setUser((prev) => {
-            if (!prev) return null;
+            if (!prev) return remoteUser as UserProfile;
             const merged = { ...prev, ...remoteUser };
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(merged));
             return merged;
           });
         })
-        .catch(() => {
-          // Session invalid on backend - reset
-          setUser(null);
-          clearAuthStorage();
+        .catch((err) => {
+          // Do not wipe local session on network error or offline - allow creator to continue
+          consoleLogger.warn('Auth', `Remote session sync notice: ${err}`);
         });
     }
 

@@ -93,7 +93,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
     voice: {
       color: 'bg-emerald-400',
       text: 'text-emerald-300',
-      selectedRing: 'bg-[#1E293B] border-[#3A3A3A] text-white z-20',
+      selectedRing: 'bg-[#0D2E24] border-emerald-400 ring-1 ring-emerald-400/60 text-white z-20 shadow-md',
       normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
       handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
       handlePip: 'bg-[#D1D5DB]',
@@ -102,7 +102,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
     music: {
       color: 'bg-purple-400',
       text: 'text-purple-300',
-      selectedRing: 'bg-[#1E293B] border-[#3A3A3A] text-white z-20',
+      selectedRing: 'bg-[#25143A] border-purple-400 ring-1 ring-purple-400/60 text-white z-20 shadow-md',
       normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
       handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
       handlePip: 'bg-[#D1D5DB]',
@@ -111,7 +111,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
     sfx: {
       color: 'bg-amber-400',
       text: 'text-amber-300',
-      selectedRing: 'bg-[#1E293B] border-[#3A3A3A] text-white z-20',
+      selectedRing: 'bg-[#2D2109] border-amber-400 ring-1 ring-amber-400/60 text-white z-20 shadow-md',
       normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
       handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
       handlePip: 'bg-[#D1D5DB]',
@@ -169,7 +169,8 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
             }`}
             style={{
               left: `${(clip.start / totalDuration) * 100}%`,
-              width: `${Math.max(1.5, Math.min(100, (clip.duration / totalDuration) * 100))}%`,
+              width: `${Math.max(0.01, Math.min(100, (clip.duration / totalDuration) * 100))}%`,
+              minWidth: '4px',
               top: `${topPos}px`,
               height: `${laneHeight}px`,
               ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),

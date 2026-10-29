@@ -136,7 +136,10 @@ export const studioApi = {
       speechStyle: params.speechStyle || undefined,
       targetDurationSeconds: params.targetDurationSeconds || undefined,
     });
-    consoleLogger.success('Studio', `[Stage 2] Voice ready | duration=${data.durationSeconds}s url=${data.audioUrl}`);
+    const shortUrl = data.audioUrl?.startsWith('data:')
+      ? `${data.audioUrl.slice(0, 32)}... [base64 audio]`
+      : (data.audioUrl ? `${data.audioUrl.slice(0, 60)}...` : 'none');
+    consoleLogger.success('Studio', `[Stage 2] Voice ready | duration=${data.durationSeconds}s url=${shortUrl}`);
     return {
       audioUrl: data.audioUrl,
       durationSeconds: data.durationSeconds,

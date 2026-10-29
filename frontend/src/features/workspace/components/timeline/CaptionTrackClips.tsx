@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Check, Move } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { LaneSubtitle, SelectedClip } from './timelineTypes';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
@@ -79,8 +79,9 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
     >
       {captionLanes.map((clip) => {
         const index = clip.origIndex;
+        const clipDur = typeof clip.duration === 'number' && clip.duration > 0 ? clip.duration : 1.5;
         const startPct = (clip.start / totalDuration) * 100;
-        const widthPct = Math.max(3, ((clip.duration || 3) / totalDuration) * 100);
+        const widthPct = Math.max(0.01, (clipDur / totalDuration) * 100);
         const isSelected = selectedClip?.track === 'caption' && selectedClip.index === index;
         const isEditing = editingClipIndex === index;
         const clipColor = colorLabels[index] || '';
@@ -92,11 +93,11 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             key={`${index}-${clip.start.toFixed(2)}`}
             onClick={() => onSelectClip(index, clip.start)}
             onDoubleClick={() => onDoubleClickClip(index, clip.text)}
-            onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clip.duration || 3)}
+            onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clipDur)}
             onContextMenu={(e) => handleContextMenu(e, index, clip.start)}
-            className={`timeline-clip-card absolute rounded-md px-2 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden ${isSelected
-                ? 'bg-[#1A1A1A] border-[#3A3A3A] text-white z-20'
-                : 'bg-[#1A1A1A]/80 hover:bg-[#1C1C1C] border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
+            className={`timeline-clip-card absolute rounded-md px-1.5 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden shadow-xs ${isSelected
+                ? 'bg-[#0E3538] border-teal-400 text-white z-20 ring-1 ring-teal-400/60 shadow-md'
+                : 'bg-[#0A2224]/90 hover:bg-[#0E2E31] border-teal-500/35 text-teal-100 hover:border-teal-400/70 z-10'
               }`}
             style={{
               left: `${startPct}%`,
@@ -120,7 +121,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
               <div
                 onPointerDown={(e) => {
                   e.stopPropagation();
-                  onPointerDownTrimLeft(e, index, clip.start, clip.duration || 3);
+                  onPointerDownTrimLeft(e, index, clip.start, clipDur);
                 }}
                 className="timeline-trim-handle-left bg-teal-400/40 hover:bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Drag to trim start time"
@@ -132,7 +133,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             {/* Caption Text or Inline Editor */}
             {isEditing ? (
               <div
-                className="flex items-center gap-1 w-full pl-2 pr-2 z-30"
+                className="flex items-center gap-1 w-full pl-1 pr-1 z-30"
                 onClick={(e) => e.stopPropagation()}
               >
                 <input
@@ -156,15 +157,14 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
                 </button>
               </div>
             ) : (
-              <>
-                <Move className="w-2.5 h-2.5 text-teal-300/60 shrink-0 ml-1" title="Move & drag caption" />
-                <span className="text-[10px] font-mono-studio truncate leading-tight pointer-events-none pl-0.5">
-                  "{clip.text}"
+              <div className="flex items-center justify-between w-full min-w-0 overflow-hidden px-0.5">
+                <span className="text-[10px] font-medium text-teal-100 truncate pointer-events-none select-none tracking-tight">
+                  {clip.text}
                 </span>
-                <span className="text-[8px] font-mono-studio text-teal-200/90 shrink-0 ml-1 pointer-events-none pr-1 font-bold">
-                  {(clip.duration || 3).toFixed(1)}s
+                <span className="text-[7.5px] font-mono-studio text-teal-300/60 shrink-0 ml-1 pointer-events-none font-bold hidden sm:inline-block">
+                  {clipDur.toFixed(1)}s
                 </span>
-              </>
+              </div>
             )}
 
             {/* Right Trim Handle */}

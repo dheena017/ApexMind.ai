@@ -56,12 +56,20 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
           </nav>
 
           <div className="hidden sm:flex items-center gap-3 shrink-0">
-            <Button variant="secondary" size="sm" onClick={() => onNavigate('login')}>
-              Sign In
-            </Button>
-            <Button variant="primary" size="sm" icon={<Zap className="w-4 h-4" />} onClick={() => onNavigate('workspace')}>
-              Launch Studio
-            </Button>
+            {isSessionValid() ? (
+              <Button variant="primary" size="sm" icon={<Zap className="w-4 h-4" />} onClick={() => onNavigate('dashboard')}>
+                Continue to Studio →
+              </Button>
+            ) : (
+              <>
+                <Button variant="secondary" size="sm" onClick={() => onNavigate('login')}>
+                  Sign In
+                </Button>
+                <Button variant="primary" size="sm" icon={<Zap className="w-4 h-4" />} onClick={() => onNavigate('workspace')}>
+                  Launch Studio
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Hamburger Toggle */}
@@ -124,12 +132,20 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
               </button>
             </div>
             <div className="pt-2 border-t border-[#262626] flex gap-2">
-              <Button variant="secondary" className="w-full text-xs" onClick={() => onNavigate('login')}>
-                Sign In
-              </Button>
-              <Button variant="primary" className="w-full text-xs" onClick={() => onNavigate('workspace')}>
-                Launch Studio
-              </Button>
+              {isSessionValid() ? (
+                <Button variant="primary" className="w-full text-xs" onClick={() => onNavigate('dashboard')}>
+                  Continue to Studio →
+                </Button>
+              ) : (
+                <>
+                  <Button variant="secondary" className="w-full text-xs" onClick={() => onNavigate('login')}>
+                    Sign In
+                  </Button>
+                  <Button variant="primary" className="w-full text-xs" onClick={() => onNavigate('workspace')}>
+                    Launch Studio
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}

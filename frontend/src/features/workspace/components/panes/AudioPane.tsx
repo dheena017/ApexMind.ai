@@ -616,7 +616,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 return (
                   <div
                     key={track.id}
-                    onClick={() => setPendingMusicId(track.id)}
+                    onClick={() => handleSelectSoundtrack(track.id)}
                     className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isSelected
                         ? 'bg-[#181D2A] border-blue-500/80 ring-1 ring-blue-500/40 shadow-sm'
@@ -668,23 +668,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectSoundtrack(track.id);
-                        }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                          isSelected
-                            ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30 ring-1 ring-blue-400'
-                            : 'bg-[#22222A] hover:bg-blue-600 text-zinc-300 hover:text-white border border-[#2E2E38] hover:border-blue-500'
-                        }`}
-                      >
-                        {isSelected ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                        <span>{isSelected ? 'Applied' : 'Apply'}</span>
-                      </button>
-                    </div>
+                    
                   </div>
                 );
               })}

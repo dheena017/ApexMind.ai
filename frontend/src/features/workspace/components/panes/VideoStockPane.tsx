@@ -1,8 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Film,
   Play,
+  ChevronDown,
   Search,
+  ChevronLeft,
+  ChevronRight,
   X,
   Check,
   ExternalLink,
@@ -28,6 +31,7 @@ export interface StockVideoItem {
   posterUrl?: string;
   duration: string;
   resolution: string;
+  source?: string;
   tags?: string[];
 }
 
@@ -56,6 +60,11 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   const [customTitleInput, setCustomTitleInput] = useState('');
   const [urlVideoValid, setUrlVideoValid] = useState<boolean | null>(null);
   const [isLoadingBackend, setIsLoadingBackend] = useState(false);
+  const [page, setPage] = useState<number>(1);
+  const [totalClipsFound, setTotalClipsFound] = useState<number>(0);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const contentScrollRef = useRef<HTMLDivElement>(null);
 
   // Playback & Filter settings
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
@@ -72,47 +81,101 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     } catch {}
   }, []);
 
-  // Fetch live stock videos from open media APIs (Wikimedia, Pexels, Pixabay, Google CSE)
-  useEffect(() => {
-    if (activeTab !== 'catalog') return;
-    let isMounted = true;
-    setIsLoadingBackend(true);
-
-    const timer = setTimeout(async () => {
+  // Live stock videos runner with progressive infinite appending (down by down like Image pane)
+  const fetchVideos = useCallback(
+    async (
+      query: string,
+      category: string,
+      provider: string,
+      pageNum: number,
+      isAppending: boolean = false
+    ) => {
       try {
-        const rawQ = searchQuery.trim().replace(/^#/, '');
-        const cleanQ = rawQ || (selectedCategory !== 'all' ? selectedCategory : 'nature landscape');
-        const res = await workspaceApi.searchOpenVideos(cleanQ, selectedCategory, 1, 30, selectedProvider);
-        if (isMounted) {
-          if (res && res.items && res.items.length > 0) {
-            setVideos(
-              res.items.map((it: any) => ({
-                id: it.id || `live-vid-${Date.now()}-${Math.random()}`,
-                title: it.title || 'Stock Video Loop',
-                category: it.category || selectedCategory,
-                videoUrl: it.videoUrl,
-                posterUrl: it.posterUrl || '',
-                duration: it.duration || 'Loop',
-                resolution: it.resolution || '1080x1920 HD',
-                tags: it.tags || [],
-              }))
-            );
+        if (isAppending) {
+          setIsLoadingMore(true);
+        } else {
+          setIsLoadingBackend(true);
+        }
+
+        const rawQ = query.trim().replace(/^#/, '');
+        const cleanQ = rawQ || (category !== 'all' ? category : 'cinematic nature');
+        const res = await workspaceApi.searchOpenVideos(cleanQ, category, pageNum, 24, provider);
+
+        if (res && res.items && res.items.length > 0) {
+          const formatted: StockVideoItem[] = res.items.map((it: any) => ({
+            id: it.id || `live-vid-${Date.now()}-${Math.random()}`,
+            title: it.title || 'Stock Video Loop',
+            category: it.category || category,
+            videoUrl: it.videoUrl,
+            posterUrl: it.posterUrl || '',
+            duration: typeof it.duration === 'number' ? `${Math.round(it.duration)}s` : (it.duration || 'Loop'),
+            resolution: it.resolution || '1080x1920 HD',
+            source: it.source || it.provider || 'stock',
+            tags: it.tags || [],
+          }));
+
+          setTotalClipsFound(res.total || formatted.length);
+          setHasMore(formatted.length >= 6);
+
+          if (isAppending) {
+            setVideos((prev) => {
+              const existingUrls = new Set(prev.map((p) => p.videoUrl));
+              const newItems = formatted.filter((f) => !existingUrls.has(f.videoUrl));
+              return [...prev, ...newItems];
+            });
           } else {
-            setVideos([]);
+            setVideos(formatted);
           }
+        } else {
+          if (!isAppending) {
+            setVideos([]);
+            setTotalClipsFound(0);
+          }
+          setHasMore(false);
         }
       } catch {
-        if (isMounted) setVideos([]);
+        if (!isAppending) {
+          setVideos([]);
+          setTotalClipsFound(0);
+        }
       } finally {
-        if (isMounted) setIsLoadingBackend(false);
+        setIsLoadingBackend(false);
+        setIsLoadingMore(false);
       }
-    }, 350);
+    },
+    []
+  );
 
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
-  }, [searchQuery, selectedCategory, selectedProvider, activeTab]);
+  // Re-fetch when search filters change
+  useEffect(() => {
+    if (activeTab !== 'catalog') return;
+    setPage(1);
+    const timer = setTimeout(() => {
+      fetchVideos(searchQuery, selectedCategory, selectedProvider, 1, false);
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCategory, selectedProvider, activeTab, fetchVideos]);
+
+  // Load next page of clips down below the current grid
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchVideos(searchQuery, selectedCategory, selectedProvider, nextPage, true);
+  };
+
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+  };
+
+  const handleCategoryChange = (catId: string) => {
+    setSelectedCategory(catId);
+    setSearchQuery('');
+  };
+
+  const handleProviderChange = (provId: string) => {
+    setSelectedProvider(provId);
+  };
 
   const handleMouseEnter = (id: string) => {
     setHoveredId(id);
@@ -133,7 +196,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   };
 
   const handleApply = (vid: StockVideoItem) => {
-    setSelectedId(null);
+    setSelectedId(vid.id);
     onSelectVideo(vid.videoUrl, vid.posterUrl);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
     toast.success(`Applied "${vid.title}"`);
@@ -271,24 +334,23 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
           {(
             [
-              { id: 'all', label: '🌲 All Nature' },
+              { id: 'all', label: '✨ All Free Loops' },
+              { id: 'nature', label: '🌲 Nature' },
               { id: 'mountains', label: '⛰️ Mountains' },
-              { id: 'forest', label: '🌲 Deep Forest' },
-              { id: 'waterfall', label: '🌊 Waterfall' },
-              { id: 'ocean', label: '🏖️ Ocean Waves' },
-              { id: 'clouds', label: '☁️ Storm & Sky' },
-              { id: 'aurora', label: '🌌 Northern Lights' },
+              { id: 'ocean', label: '🌊 Ocean Waves' },
+              { id: 'city', label: '🏙️ City & Cyber' },
+              { id: 'gym', label: '💪 Gym & Fitness' },
+              { id: 'clouds', label: '☁️ Sky & Storm' },
+              { id: 'fire', label: '🔥 Fire & Action' },
               { id: 'sunset', label: '🌅 Golden Hour' },
-              { id: 'river', label: '🏞️ River Rapids' },
+              { id: 'space', label: '🌌 Space' },
+              { id: 'abstract', label: '🌀 Dark & Stoic' },
             ] as const
           ).map((cat) => (
             <button
               key={cat.id}
               type="button"
-              onClick={() => {
-                setSelectedCategory(cat.id);
-                setSearchQuery('');
-              }}
+              onClick={() => handleCategoryChange(cat.id)}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
                 selectedCategory === cat.id
                   ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
@@ -302,7 +364,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       )}
 
       {/* ── Main Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3.5">
+      <div ref={contentScrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3.5">
         {activeTab === 'settings' ? (
           /* Motion Speed & Mood Grading Tab */
           <div className="flex flex-col gap-4">
@@ -456,7 +518,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search motion clips or #tags..."
                   className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
                 />
@@ -475,16 +537,15 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
               {activeTab === 'catalog' && (
                 <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {[
-                    { id: 'all', label: '✨ All' },
-                    { id: 'pexels', label: '🎬 Pexels' },
-                    { id: 'pixabay', label: '🎥 Pixabay' },
-                    { id: 'wikimedia', label: '🌐 Wikimedia' },
-                    { id: 'google', label: '🔍 Google' },
+                    { id: 'all', label: '✨ All (Pexels + Pixabay + Wikimedia)' },
+                    { id: 'pixabay', label: '🎥 Pixabay (Free)' },
+                    { id: 'pexels', label: '🎬 Pexels (Free)' },
+                    { id: 'wikimedia', label: '🌐 Wikimedia (Public Domain)' },
                   ].map((p) => (
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => setSelectedProvider(p.id)}
+                      onClick={() => handleProviderChange(p.id)}
                       className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
                         selectedProvider === p.id
                           ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40 font-semibold'
@@ -532,8 +593,9 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 No video clips matching &ldquo;{searchQuery}&rdquo;
               </div>
             ) : (
-              /* Video Grid */
-              <div className="grid grid-cols-2 gap-2.5">
+              /* Video Grid & Pagination */
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                 {filteredVideos.map((vid) => {
                   const isHovered = hoveredId === vid.id;
                   const isSelected = selectedId === vid.id || (!selectedId && activeVideoUrl === vid.videoUrl);
@@ -543,11 +605,11 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       key={vid.id}
                       role="button"
                       tabIndex={0}
-                      onClick={() => handleStageVideo(vid)}
+                      onClick={() => handleApply(vid)}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
-                          handleStageVideo(vid);
+                          handleApply(vid);
                         }
                       }}
                       onMouseEnter={() => handleMouseEnter(vid.id)}
@@ -574,9 +636,16 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
                       {/* Top Glass Badges */}
                       <div className="relative z-10 p-2 flex items-center justify-between pointer-events-none">
-                        <span className="px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-semibold text-zinc-200 border border-white/10 uppercase tracking-wider">
-                          {vid.category}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-semibold text-zinc-200 border border-white/10 uppercase tracking-wider">
+                            {vid.category}
+                          </span>
+                          {vid.source && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-blue-950/80 backdrop-blur-md text-[8.5px] font-bold text-blue-300 border border-blue-500/30 uppercase">
+                              {vid.source}
+                            </span>
+                          )}
+                        </div>
                         <span className="px-1.5 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-mono text-zinc-300 border border-white/10">
                           {vid.duration}
                         </span>
@@ -615,26 +684,69 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                             Loop
                           </span>
 
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleApply(vid);
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                              isSelected
-                                ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30 ring-1 ring-blue-400'
-                                : 'bg-white/15 hover:bg-blue-600 text-white backdrop-blur-sm border border-white/20 hover:border-blue-500'
-                            }`}
-                          >
-                            {isSelected ? <Check className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
-                            <span>{isSelected ? 'Active' : 'Apply'}</span>
-                          </button>
+                          {isSelected && (
+                            <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                              Active
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Load More / Next Page button (Appends down by down like Image pane) */}
+              {activeTab === 'catalog' && filteredVideos.length > 0 && (
+                <div className="pt-3 pb-2 flex flex-col items-center gap-2 border-t border-[#26262B]">
+                  {hasMore && (
+                    <button
+                      type="button"
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore || isLoadingBackend}
+                      className="w-full py-2.5 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] hover:border-blue-500/40 text-xs font-semibold text-zinc-300 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-sm"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                          <span>Loading Next Video Clips...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5 text-blue-400" />
+                          <span>Load More Clips (Next Page {page + 1})</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <span className="text-[10px] font-mono-studio text-zinc-500">
+                    Showing {filteredVideos.length} clips • {totalClipsFound || filteredVideos.length} available
+                  </span>
+                  <div className="flex items-center justify-center gap-1.5 text-[9px] text-zinc-500">
+                    <span>Free videos provided by</span>
+                    <a
+                      href="https://pixabay.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-zinc-400 hover:text-white underline font-semibold flex items-center gap-0.5"
+                    >
+                      Pixabay
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                    <span>•</span>
+                    <a
+                      href="https://www.pexels.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-zinc-400 hover:text-white underline font-semibold flex items-center gap-0.5"
+                    >
+                      Pexels
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </div>
+                </div>
+              )}
               </div>
             )}
           </>

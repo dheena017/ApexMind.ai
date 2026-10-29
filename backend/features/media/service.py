@@ -156,6 +156,19 @@ def _resolve_single_scene_internal(
                 except Exception as e:
                     logger.debug(f"Pixabay photo error on scene {item.sceneNumber}: {e}")
 
+            # 3. Try Wikimedia Commons Photos (keyless public domain fallback)
+            try:
+                candidates = wikimedia_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6)
+                for cand in candidates:
+                    if cand.url not in excluded_urls:
+                        return ResolvedSceneResult(
+                            sceneNumber=item.sceneNumber,
+                            status="resolved",
+                            media=cand,
+                        )
+            except Exception as e:
+                logger.debug(f"Wikimedia photo error on scene {item.sceneNumber}: {e}")
+
     return ResolvedSceneResult(
         sceneNumber=item.sceneNumber,
         status="unresolved",
@@ -240,18 +253,55 @@ def search_media(
     """Searches live videos or images across configured providers."""
     items: List[MediaAsset] = []
 
+    clean_q = (query or "").strip()
+    if not clean_q or clean_q.lower() in ("all", "*"):
+        clean_q = "cinematic nature" if media_type == "video" else "nature landscape"
+
+    per_prov_limit = limit if provider != "all" else max(6, min(limit, 15))
+
     if media_type == "video":
-        if provider in ["all", "google", "google_cse"] and google_video.is_configured():
-            items.extend(google_video.search(query=query, aspect_ratio=aspect_ratio, page=page, limit=limit))
-        if provider in ["all", "pexels"] and pexels_video.is_configured():
-            items.extend(pexels_video.search(query=query, aspect_ratio=aspect_ratio, page=page, limit=limit))
         if provider in ["all", "pixabay"] and pixabay_video.is_configured():
-            items.extend(pixabay_video.search(query=query, aspect_ratio=aspect_ratio, page=page, limit=limit))
-        if provider in ["all", "wikimedia"] and (not items or provider == "wikimedia"):
-            items.extend(wikimedia_video.search(query=query, aspect_ratio=aspect_ratio, page=page, limit=limit))
+            try:
+                items.extend(pixabay_video.search(query=clean_q, aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Pixabay video search error: {e}")
+        if provider in ["all", "pexels"] and pexels_video.is_configured():
+            try:
+                items.extend(pexels_video.search(query=clean_q, aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Pexels video search error: {e}")
+        if provider in ["all", "wikimedia"]:
+            try:
+                items.extend(wikimedia_video.search(query=clean_q, aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Wikimedia video search error: {e}")
+        if provider in ["google", "google_cse"] and google_video.is_configured():
+            try:
+                items.extend(google_video.search(query=clean_q, aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Google CSE video search error: {e}")
     else:
+        # Search Stock Photos / Images across all supported providers
+        if provider in ["all", "pixabay"] and pixabay_video.is_configured():
+            try:
+                items.extend(pixabay_video.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Pixabay photo search error: {e}")
+        if provider in ["all", "pexels"] and pexels_video.is_configured():
+            try:
+                items.extend(pexels_video.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Pexels photo search error: {e}")
         if provider in ["all", "unsplash"] and unsplash_image.is_configured():
-            items.extend(unsplash_image.search(query=query, aspect_ratio=aspect_ratio, page=page, limit=limit))
+            try:
+                items.extend(unsplash_image.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Unsplash photo search error: {e}")
+        if provider in ["all", "wikimedia", "flickr"]:
+            try:
+                items.extend(wikimedia_video.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Wikimedia photo search error: {e}")
 
     # Deduplicate by URL
     seen = set()

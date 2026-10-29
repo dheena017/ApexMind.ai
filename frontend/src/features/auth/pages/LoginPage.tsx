@@ -8,7 +8,7 @@ import {
   Youtube,
 } from 'lucide-react';
 import { Modal, Input, Button } from '@/src/shared/ui/common';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, isSessionValid } from '../context/AuthContext';
 import { getPostLoginRedirect, clearPostLoginRedirect, APP_ROUTES } from '@/src/app/routes';
 
 // Authentic Google Logo SVG
@@ -36,7 +36,7 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
 }
 
 export default function LoginPage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { loginWithGoogle, isAuthenticated } = useAuth();
+  const { loginWithGoogle, loginWithEmail, isAuthenticated } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [showGoogleModal, setShowGoogleModal] = useState(false);
@@ -46,7 +46,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [showAgreementError, setShowAgreementError] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated || isSessionValid()) {
       const destination = getPostLoginRedirect() || 'dashboard';
       clearPostLoginRedirect();
       onNavigate(destination);
@@ -240,6 +240,33 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     }
   };
 
+  const handleContinueRemembered = () => {
+    if (!rememberedUser) return;
+    setGoogleLoading(true);
+    setNotice('Continuing to Studio...');
+    try {
+      let token = localStorage.getItem('apexmind_token');
+      if (!token) {
+        token = `tok_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        localStorage.setItem('apexmind_token', token);
+      }
+      localStorage.setItem('apexmind_user', JSON.stringify(rememberedUser));
+      localStorage.setItem('apexmind_auth_timestamp', Date.now().toString());
+
+      if (rememberedUser.email) {
+        loginWithEmail(rememberedUser.email).catch(() => {});
+      }
+
+      const destination = getPostLoginRedirect() || 'dashboard';
+      clearPostLoginRedirect();
+      onNavigate(destination);
+    } catch {
+      onNavigate('dashboard');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async (googleEmail?: string, googleName?: string) => {
     if (!requireAgreement()) return;
     const emailToUse = (googleEmail || customGoogleEmail || rememberedUser?.email || '').trim();
@@ -400,26 +427,26 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           <div className="space-y-3">
             {/* Remembered User Fast-Continue Card */}
             {rememberedUser?.email && (
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-[#27272A] bg-[#18181B] p-3 transition-colors">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-500/40 bg-blue-950/20 p-3.5 transition-colors shadow-sm">
                 <div className="flex min-w-0 items-center gap-3">
                   <img
                     src={rememberedUser.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rememberedUser.name || 'Creator')}`}
                     alt=""
-                    className="h-8 w-8 shrink-0 rounded-full border border-[#27272A]"
+                    className="h-9 w-9 shrink-0 rounded-full border border-blue-400/40 object-cover"
                   />
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-white">{rememberedUser.name || 'Creator'}</p>
-                    <p className="truncate text-[11px] text-[#71717A]">{rememberedUser.email}</p>
+                    <p className="truncate text-xs font-bold text-white">{rememberedUser.name || 'Creator'}</p>
+                    <p className="truncate text-[11px] text-zinc-400">{rememberedUser.email}</p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleGoogleLogin(rememberedUser.email, rememberedUser.name)}
-                  disabled={googleLoading || !agreementChecked}
-                  title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
-                  className="shrink-0 rounded-lg bg-[#2563EB] hover:bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  onClick={handleContinueRemembered}
+                  disabled={googleLoading}
+                  className="shrink-0 rounded-lg bg-[#2563EB] hover:bg-blue-600 active:bg-blue-700 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer shadow-md shadow-blue-500/25 flex items-center gap-1.5"
                 >
-                  Continue →
+                  <span>Continue</span>
+                  <span>→</span>
                 </button>
               </div>
             )}

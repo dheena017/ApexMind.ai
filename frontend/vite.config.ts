@@ -60,7 +60,13 @@ export default defineConfig(({mode}) => {
         if (!data || !data.module) return;
         const level = data.level || 'INFO';
         const mod = data.module;
-        const msg = data.message || '';
+        let msg = String(data.message || '');
+        if (msg.includes('data:') || msg.length > 300) {
+          msg = msg.replace(/data:(audio|image|video)\/[^;]+;base64,[A-Za-z0-9+/=]{20,}/g, 'data:$1/... [shortened base64]');
+          if (msg.length > 300) {
+            msg = msg.slice(0, 300) + '... [shortened]';
+          }
+        }
         console.log(`[APEX_LOG] ${level}|${mod}|${msg}`);
       };
 

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Type, Play, Pause } from 'lucide-react';
+import { Type, Play, Pause, Film } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptSubtitle } from '../../types';
 import {
@@ -476,8 +476,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
         const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
         const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 3.0;
-        const clipStart = Number.isFinite(parsedStart) && parsedStart >= 0 ? parsedStart : runningStart;
-        runningStart = clipStart + clipDuration;
+        const clipStart = Number.isFinite(parsedStart) && parsedStart >= runningStart ? parsedStart : runningStart;
+        runningStart = parseFloat((clipStart + clipDuration).toFixed(2));
 
         // Enforce pure video cuts on the timeline for every storyboard scene
         const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || '';
@@ -762,6 +762,39 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       setLocalClips([]);
     }
   }, [script.subtitles, script.storyboard]);
+
+  // Auto-sync storyboard scenes into videoClips if videoClips is empty
+  useEffect(() => {
+    if (script.storyboard && script.storyboard.length > 0 && videoClips.length === 0) {
+      let runningStart = 0;
+      const initialVideos: TimelineMediaClip[] = [];
+      script.storyboard.forEach((scene: any, idx: number) => {
+        const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || '';
+        const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
+        const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
+        const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 3.0;
+        const clipStart = Number.isFinite(parsedStart) && parsedStart >= runningStart ? parsedStart : runningStart;
+        runningStart = parseFloat((clipStart + clipDuration).toFixed(2));
+
+        initialVideos.push({
+          id: `sb-${scene.sceneNumber || idx + 1}-${Date.now()}`,
+          type: 'video',
+          url: resolvedUrl,
+          posterUrl: scene.posterUrl || scene.thumbnailUrl || (scene.mediaType === 'image' ? scene.mediaUrl : undefined),
+          thumbnailUrl: scene.thumbnailUrl || scene.posterUrl,
+          name: scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`,
+          start: clipStart,
+          duration: clipDuration,
+        });
+      });
+
+      if (initialVideos.length > 0) {
+        setVideoClips(initialVideos);
+        setEnabledTracks((prev) => ({ ...prev, video: true }));
+        setVideoTrackVisible(true);
+      }
+    }
+  }, [script.storyboard, videoClips.length]);
 
   // Sync initial video / voice length to duration
   useEffect(() => {
@@ -2641,7 +2674,21 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       onZoomToClip={handleVideoZoom}
                     />
                   ) : (
-                    <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
+                    <div
+                      onClick={() => {
+                        onSelectCompound?.('video');
+                        window.dispatchEvent(new CustomEvent('workspace:open-pane', { detail: 'video' }));
+                      }}
+                      className="h-10 border-b border-[#262626] p-1 relative flex items-center cursor-pointer group/empty"
+                      title="Click to open Motion Video Catalog and add video clips"
+                    >
+                      <div className="w-full h-8 rounded-md border border-dashed border-amber-500/35 hover:border-amber-400 bg-amber-500/5 hover:bg-amber-500/10 flex items-center justify-center gap-2 text-zinc-400 hover:text-amber-200 transition-all">
+                        <Film className="w-3.5 h-3.5 text-amber-400/80 group-hover/empty:scale-110 transition-transform" />
+                        <span className="text-[10px] font-medium text-amber-300/80 group-hover/empty:text-amber-200">
+                          + Add Video Clip (Click to browse Motion Catalog)
+                        </span>
+                      </div>
+                    </div>
                   )
                 )}
 
@@ -2991,7 +3038,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           setTitleContextMenu({ x: e.clientX, y: e.clientY });
                         }}
                         className={`h-full rounded-md px-2.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-colors relative overflow-hidden ${selectedClip?.track === 'title'
-                            ? 'bg-sky-950/70 border-[#3A3A3A] text-sky-100 z-20'
+                            ? 'bg-sky-950/90 border-sky-400 ring-1 ring-sky-400/60 text-white z-20 shadow-md'
                             : 'bg-sky-950/40 border-sky-500/30 text-sky-200 hover:border-sky-400 z-10'
                           }`}
                         style={{

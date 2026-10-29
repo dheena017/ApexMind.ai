@@ -101,7 +101,14 @@ def search_open_images(
     orientation: str = "portrait",
 ) -> Dict[str, Any]:
     """Search stock images, delegating directly to backend.features.media."""
-    q = query or (category if category != "all" else "")
+    clean_query = (query or "").strip()
+    clean_cat = (category or "").strip()
+    if clean_query and clean_query.lower() not in ("all", "*"):
+        q = clean_query
+    elif clean_cat and clean_cat.lower() not in ("all", "*"):
+        q = clean_cat
+    else:
+        q = "nature landscape"
     ratio = "9:16" if orientation == "portrait" else "16:9"
     res = search_media(
         query=q,

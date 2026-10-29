@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toCanvas } from 'html-to-image';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
@@ -228,7 +228,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     bgPadding: 8,
     opacity: 100,
     posX: 50,
-    posY: 64, // 9:16 vertical safe zone (avoids YouTube Shorts / TikTok bottom UI overlap)
+    posY: 76, // 9:16 viral safe zone sweet spot (avoids TikTok / Shorts UI clipping while staying prominent)
     customWidth: undefined as number | undefined,
     duration: 2.2,
   });
@@ -289,11 +289,29 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       try {
         const preview = canvasRef.current;
         if (!preview) throw new Error('The video preview is not available.');
-        if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported('video/mp4')) {
-          throw new Error('MP4 export is not supported by this browser.');
+
+        // Broad cross-browser MIME type negotiation
+        const candidateTypes = [
+          'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+          'video/mp4;codecs=h264,aac',
+          'video/mp4',
+          'video/webm;codecs=h264,opus',
+          'video/webm;codecs=vp9,opus',
+          'video/webm;codecs=vp8,opus',
+          'video/webm',
+        ];
+        let mimeType = '';
+        if (typeof MediaRecorder !== 'undefined') {
+          for (const t of candidateTypes) {
+            if (MediaRecorder.isTypeSupported(t)) {
+              mimeType = t;
+              break;
+            }
+          }
         }
-        const h264MimeType = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
-        const mimeType = MediaRecorder.isTypeSupported(h264MimeType) ? h264MimeType : 'video/mp4';
+        if (!mimeType) {
+          throw new Error('Video recording is not supported by your browser.');
+        }
 
         const defaultDimensions = {
           '9:16': { width: 1080, height: 1920 },
@@ -301,94 +319,137 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           '1:1': { width: 1080, height: 1080 },
           '4:5': { width: 1080, height: 1350 },
           '21:9': { width: 1920, height: 823 },
-        }[canvasAspectRatio];
-        const hasValidOutputSize =
-          canvasOutputSize?.aspectRatio === canvasAspectRatio &&
-          Number.isInteger(canvasOutputSize.width) &&
-          Number.isInteger(canvasOutputSize.height) &&
-          canvasOutputSize.width >= 2 &&
-          canvasOutputSize.height >= 2 &&
-          canvasOutputSize.width % 2 === 0 &&
-          canvasOutputSize.height % 2 === 0 &&
-          Math.max(canvasOutputSize.width, canvasOutputSize.height) >= 1080 &&
-          canvasOutputSize.width <= 8192 &&
-          canvasOutputSize.height <= 8192;
-        const dimensions = hasValidOutputSize
-          ? { width: canvasOutputSize.width, height: canvasOutputSize.height }
-          : defaultDimensions;
+        }[canvasAspectRatio] || { width: 1080, height: 1920 };
+
+        const dimensions = defaultDimensions;
         const outputCanvas = document.createElement('canvas');
         outputCanvas.width = dimensions.width;
         outputCanvas.height = dimensions.height;
-        const context = outputCanvas.getContext('2d');
-        if (!context) throw new Error('Could not create the video export canvas.');
+        const context = outputCanvas.getContext('2d', { alpha: false });
+        if (!context) throw new Error('Could not create video render canvas.');
 
+        // Fill background initially with dark studio tone
+        context.fillStyle = '#0a0a0c';
+        context.fillRect(0, 0, dimensions.width, dimensions.height);
+
+        // Robust frame capture: Draw active video frame directly, then overlay captions/titles without CORS taint
         const captureFrame = async () => {
-          const frame = await toCanvas(preview, {
-            pixelRatio: 1,
-            skipFonts: true,
-            style: { border: 'none', borderRadius: '0', boxShadow: 'none' },
-          });
-          context.drawImage(frame, 0, 0, dimensions.width, dimensions.height);
+          // 1. Draw video background directly onto canvas
+          const videoEl = videoElementRef.current;
+          if (videoEl && videoEl.readyState >= 2) {
+            try {
+              context.drawImage(videoEl, 0, 0, dimensions.width, dimensions.height);
+            } catch {
+              context.fillStyle = '#0E131F';
+              context.fillRect(0, 0, dimensions.width, dimensions.height);
+            }
+          } else {
+            context.fillStyle = '#0E131F';
+            context.fillRect(0, 0, dimensions.width, dimensions.height);
+          }
+
+          // 2. Draw text, captions, and title overlays via toCanvas (filtering out video to prevent cross-origin taint)
+          try {
+            const overlayFrame = await toCanvas(preview, {
+              pixelRatio: 1,
+              skipFonts: true,
+              filter: (node: HTMLElement) => {
+                // Filter out video tag so html-to-image never triggers cross-origin errors
+                return node.tagName !== 'VIDEO';
+              },
+              style: { border: 'none', borderRadius: '0', boxShadow: 'none' },
+            });
+            context.drawImage(overlayFrame, 0, 0, dimensions.width, dimensions.height);
+          } catch {
+            // Non-fatal if overlay fails on a single tick
+          }
         };
 
         await captureFrame();
         outputStream = outputCanvas.captureStream(30);
-        const captureAudio = audioElement as (HTMLAudioElement & {
-          captureStream?: () => MediaStream;
-          mozCaptureStream?: () => MediaStream;
-        }) | null | undefined;
-        const audioStream = audioOutputStream ?? captureAudio?.captureStream?.() ?? captureAudio?.mozCaptureStream?.();
-        audioStream?.getAudioTracks().forEach((track) => outputStream?.addTrack(track));
+
+        // Attach audio tracks safely
+        try {
+          const captureAudio = audioElement as (HTMLAudioElement & {
+            captureStream?: () => MediaStream;
+            mozCaptureStream?: () => MediaStream;
+          }) | null | undefined;
+          const audioStream = audioOutputStream ?? captureAudio?.captureStream?.() ?? captureAudio?.mozCaptureStream?.();
+          audioStream?.getAudioTracks().forEach((track) => {
+            try {
+              outputStream?.addTrack(track);
+            } catch {}
+          });
+        } catch {}
 
         const chunks: BlobPart[] = [];
         recorder = new MediaRecorder(outputStream, {
           mimeType,
-          videoBitsPerSecond: 8_000_000,
+          videoBitsPerSecond: 6_000_000,
           audioBitsPerSecond: 192_000,
         });
+
         recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) chunks.push(event.data);
+          if (event.data && event.data.size > 0) chunks.push(event.data);
         };
+
         recorder.onstop = () => {
           if (cancelled) return;
           const blob = new Blob(chunks, { type: mimeType });
           if (blob.size === 0) {
-            onExportComplete?.('The MP4 export did not contain any video frames.');
+            onExportComplete?.('Rendered video was empty.');
             return;
           }
 
           const safeName = exportFileName.trim().replace(/[<>:"/\\|?*]+/g, '').slice(0, 80) || 'apexmind-video';
+          const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
           const link = document.createElement('a');
           const downloadUrl = URL.createObjectURL(blob);
           link.href = downloadUrl;
-          link.download = `${safeName}.mp4`;
+          link.download = `${safeName}.${ext}`;
           document.body.appendChild(link);
           link.click();
           link.remove();
           window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60_000);
           onExportComplete?.();
         };
+
         recorder.onerror = () => {
-          if (!cancelled) onExportComplete?.('The browser could not encode the MP4.');
+          if (!cancelled) onExportComplete?.('Recording error in browser encoder.');
         };
-        recorder.start(1000);
+
+        recorder.start(500);
 
         const exportStartedAt = performance.now();
         const exportLength = Math.max(1, exportDuration) * 1000;
+        let lastReportedPercent = 0;
+
         while (!cancelled && performance.now() - exportStartedAt < exportLength) {
           const frameStartedAt = performance.now();
           await captureFrame();
-          const delay = Math.max(0, 1000 / 15 - (performance.now() - frameStartedAt));
+
+          const pct = Math.min(99, Math.round(((performance.now() - exportStartedAt) / exportLength) * 100));
+          if (pct > lastReportedPercent + 5) {
+            lastReportedPercent = pct;
+            window.dispatchEvent(new CustomEvent('workspace:export-state', {
+              detail: { exporting: true, message: `Rendering ${pct}%...` },
+            }));
+          }
+
+          const delay = Math.max(0, 1000 / 24 - (performance.now() - frameStartedAt));
           if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
         }
 
-        if (!cancelled && recorder.state === 'recording') recorder.stop();
+        if (!cancelled && recorder && recorder.state === 'recording') {
+          try {
+            recorder.requestData();
+          } catch {}
+          recorder.stop();
+        }
       } catch (error) {
         if (!cancelled) {
           const message = error instanceof Error ? error.message : 'Video export failed.';
-          onExportComplete?.(message.includes('tainted') || message.includes('cross-origin')
-            ? 'A media source blocks capture. Upload the video or image file directly, or use a CORS-enabled source.'
-            : message);
+          onExportComplete?.(message);
         }
       }
     };
@@ -824,6 +885,26 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const hasCaptionPreset = Boolean(activeCaptionPresetClass);
   const useCaptionPreset = hasCaptionPreset && !captionStyle.overridePreset;
   const visibleSubtitle = currentSubtitle;
+
+  // Auto-synthesized karaoke words so ANY scene/quote gets animated rhythm
+  const effectiveWords = useMemo(() => {
+    if (activeSubtitleObj?.words && activeSubtitleObj.words.length > 0) {
+      return activeSubtitleObj.words;
+    }
+    if (!visibleSubtitle) return [];
+    const tokens = visibleSubtitle.trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return [];
+    const subStart = activeSubtitleObj?.start ?? (activeStoryboardScene?.start ?? 0);
+    const subDur = Math.max(0.6, activeSubtitleObj?.duration ?? (activeStoryboardScene?.duration ?? 3));
+    const step = subDur / tokens.length;
+    return tokens.map((word, i) => ({
+      word,
+      start: subStart + i * step,
+      end: subStart + (i + 1) * step,
+      highlightColor: activeCaptionPresetColor || captionStyle.color || '#FACC15',
+    }));
+  }, [activeSubtitleObj, activeStoryboardScene, visibleSubtitle, activeCaptionPresetColor, captionStyle.color]);
+
   const effectiveDuration = Math.max(1, Number.isFinite(playbackDuration) && (playbackDuration ?? 0) > 0 ? playbackDuration! : (Number.isFinite(duration) && duration > 0 ? duration : 30));
 
   const currentVideoStart = activeVideoClip ? activeVideoClip.start : timelineState.videoStart;
@@ -1277,32 +1358,36 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           const subPopProgress = Math.min(1, subElapsed / 0.22);
           const subScale = 0.94 + Math.sin(subPopProgress * Math.PI * 0.5) * 0.06;
 
+          const activePosY = (captionStyle.posY !== undefined && captionStyle.posY !== 64)
+            ? captionStyle.posY
+            : (canvasAspectRatio === '9:16' ? 76 : 80);
+
           return (
             <div
               ref={subtitleRef}
               onClick={(e) => handleSelectLayer(e, 'subtitle')}
-              className="absolute z-20 flex items-center justify-center cursor-default select-none px-3 py-1 transition-all duration-100"
+              className="absolute z-20 flex items-center justify-center cursor-default select-none px-2 transition-all duration-100 pointer-events-auto"
               style={{
                 left: `${captionStyle.posX ?? 50}%`,
-                top: `${captionStyle.posY && captionStyle.posY !== 78 ? captionStyle.posY : (canvasAspectRatio === '9:16' ? 64 : 72)}%`,
+                top: `${activePosY}%`,
                 transform: `translate(-50%, -50%) scale(${subScale})`,
                 opacity: captionStyle.opacity / 100,
-                width: captionStyle.customWidth ? `${Math.round(captionStyle.customWidth * canvasScale)}px` : undefined,
-                maxWidth: '90%',
+                width: captionStyle.customWidth ? `${Math.round(captionStyle.customWidth * canvasScale)}px` : 'fit-content',
+                minWidth: 'min(75%, 260px)',
+                maxWidth: '92%',
                 boxSizing: 'border-box',
               }}
             >
-            <div
-              className="pointer-events-none w-full max-w-full flex items-center justify-center text-center px-1"
-              style={{
-                backgroundColor: hasCaptionPreset ? 'transparent' : captionStyle.background,
-                borderRadius: hasCaptionPreset ? undefined : `${Math.round(captionStyle.bgRadius * canvasScale)}px`,
-                padding: hasCaptionPreset ? undefined : `${Math.round(captionStyle.bgPadding * canvasScale)}px`,
-              }}
-            >
-              <p
-                className={`${useCaptionPreset ? activeCaptionPresetClass : `font-black text-center ${captionSizeClass}`} inline-block text-center leading-snug break-words`}
+              <div
+                className={`pointer-events-none w-full max-w-full flex items-center justify-center text-center ${
+                  useCaptionPreset
+                    ? activeCaptionPresetClass
+                    : `font-black text-center ${captionSizeClass} bg-black/80 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/20 shadow-2xl`
+                }`}
                 style={{
+                  backgroundColor: useCaptionPreset ? undefined : captionStyle.background,
+                  borderRadius: useCaptionPreset ? undefined : `${Math.max(8, Math.round(captionStyle.bgRadius * canvasScale))}px`,
+                  padding: useCaptionPreset ? undefined : `${Math.round(captionStyle.bgPadding * canvasScale)}px`,
                   color: useCaptionPreset
                     ? activeCaptionPresetColor || captionStyle.color || captionColor
                     : captionStyle.color || captionColor,
@@ -1314,7 +1399,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                       : captionStyle.fontWeight === 'Bold' ? 700
                         : captionStyle.fontWeight === 'SemiBold' ? 600
                           : captionStyle.fontWeight === 'Medium' ? 500 : 400,
-                  textAlign: useCaptionPreset ? undefined : captionStyle.textAlign,
+                  textAlign: 'center',
                   textTransform: useCaptionPreset ? captionPresetTextTransform : captionStyle.textTransform,
                   fontStyle: useCaptionPreset ? undefined : captionStyle.isItalic ? 'italic' : 'normal',
                   textDecoration: useCaptionPreset ? undefined : [
@@ -1322,7 +1407,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                     captionStyle.isStrikethrough ? 'line-through' : '',
                   ].filter(Boolean).join(' ') || 'none',
                   letterSpacing: useCaptionPreset ? undefined : `${captionStyle.letterSpacing}em`,
-                  lineHeight: useCaptionPreset ? 1.25 : captionStyle.lineHeight,
+                  lineHeight: useCaptionPreset ? 1.3 : captionStyle.lineHeight,
                   textShadow: useCaptionPreset
                     ? undefined
                     : captionStyle.neonGlow
@@ -1336,31 +1421,41 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                     ? `${Math.max(1, Math.round(captionStyle.strokeWidth * canvasScale))}px ${captionStyle.strokeColor}`
                     : 'none',
                   whiteSpace: 'normal',
-                  wordBreak: 'break-word',
+                  wordBreak: 'normal',
+                  overflowWrap: 'normal',
+                  hyphens: 'none',
+                  textWrap: 'balance',
                   boxSizing: 'border-box',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  rowGap: '2px',
                 }}
               >
-                {activeSubtitleObj?.words && activeSubtitleObj.words.length > 0 ? (
-                  activeSubtitleObj.words.map((w, wIdx) => {
+                {effectiveWords.length > 0 ? (
+                  effectiveWords.map((w, wIdx) => {
                     const isWordActive = currentTime >= w.start && currentTime <= w.end;
                     const isPast = currentTime > w.end;
                     return (
                       <span
                         key={wIdx}
-                        className={`inline-block transition-all duration-75 mr-[0.22em] ${
-                          isWordActive ? 'scale-110 font-black' : ''
+                        className={`inline-block transition-all duration-100 mx-[0.16em] my-[0.04em] ${
+                          isWordActive ? 'font-black' : ''
                         }`}
                         style={{
+                          whiteSpace: 'nowrap',
                           color: isWordActive
                             ? (w.highlightColor || '#FACC15')
                             : isPast
                             ? (useCaptionPreset ? activeCaptionPresetColor || captionStyle.color : captionStyle.color)
                             : undefined,
                           textShadow: isWordActive
-                            ? '0 2px 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 2px 0 0 #000, 0 4px 10px rgba(0,0,0,0.85)'
+                            ? '0 0 16px rgba(250, 204, 21, 0.75), 0 2px 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 2px 0 0 #000, 0 4px 12px rgba(0,0,0,0.95)'
                             : '0 2px 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 2px 0 0 #000, 0 3px 6px rgba(0,0,0,0.7)',
                           WebkitTextStroke: isWordActive ? '1px #000' : '0.5px #000',
-                          opacity: isPast ? 0.95 : isWordActive ? 1 : 0.72,
+                          opacity: isPast ? 0.95 : isWordActive ? 1 : 0.75,
+                          transform: isWordActive ? 'scale(1.1) translateY(-1px)' : 'scale(1)',
                         }}
                       >
                         {w.word}
@@ -1368,13 +1463,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                     );
                   })
                 ) : (
-                  visibleSubtitle
+                  <span style={{ display: 'inline-block', textWrap: 'balance', wordBreak: 'normal', overflowWrap: 'normal', hyphens: 'none', whiteSpace: 'nowrap' }}>
+                    {visibleSubtitle}
+                  </span>
                 )}
-              </p>
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
         {/* Bottom Spacing Anchor */}
         <div className="h-6 pointer-events-none" />

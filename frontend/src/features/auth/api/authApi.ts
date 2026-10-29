@@ -53,7 +53,12 @@ export const authApi = {
   async getMe(): Promise<UserProfile> {
     const start = performance.now();
     const endpoint = apiUrl('/api/auth/me');
-    const res = await fetch(endpoint);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('apexmind_token') : null;
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(endpoint, { headers });
     const duration = performance.now() - start;
     consoleLogger.api('GET', '/api/auth/me', res.status, duration);
     if (!res.ok) {

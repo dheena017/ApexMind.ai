@@ -16,7 +16,6 @@ import {
   Zap,
   AlignLeft,
   Heading,
-  Wand2,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { toast } from 'sonner';
@@ -511,26 +510,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
         {/* ── UNIFIED TAB: PRESET PACKS & 10M+ STYLES ── */}
         {activeTab === 'presets' && (
           <div className="flex flex-col gap-3">
-            {/* Quick AI Style Synthesizer Bar */}
-            <div className="flex items-center gap-2 p-2 rounded-xl bg-[#18181D] border border-[#272730]">
-              <button
-                type="button"
-                onClick={() => handleSynthesizeStyles()}
-                disabled={isSynthesizing}
-                className="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSynthesizing ? 'animate-spin text-blue-200' : 'text-blue-200'}`} />
-                <span>{isSynthesizing ? 'Synthesizing...' : '🎲 Synthesize 10M+ Styles'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleRandomizeAndApply}
-                className="py-1.5 px-3 rounded-lg bg-[#22222A] hover:bg-[#2B2B36] border border-[#333340] text-zinc-200 hover:text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
-              >
-                <Wand2 className="w-3.5 h-3.5 text-blue-400" />
-                <span>⚡ 1-Click Apply</span>
-              </button>
-            </div>
 
             {/* Presets & Generated Styles Grid */}
             {filteredPresets.length === 0 ? (
@@ -610,9 +589,11 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
                       <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5 px-0.5">
                         <span className="truncate">{preset.styleDescription}</span>
-                        <span className="text-blue-400 font-semibold group-hover:underline shrink-0 ml-2">
-                          Apply style →
-                        </span>
+                        {isSelected && (
+                          <span className="text-blue-400 font-semibold shrink-0 ml-2">
+                            Active
+                          </span>
+                        )}
                       </div>
                     </div>
                   );

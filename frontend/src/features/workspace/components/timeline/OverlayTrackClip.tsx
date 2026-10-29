@@ -134,7 +134,8 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
             }`}
             style={{
               left: `${(clip.start / totalDuration) * 100}%`,
-              width: `${Math.max(1.5, Math.min(100, (clip.duration / totalDuration) * 100))}%`,
+              width: `${Math.max(0.01, Math.min(100, (clip.duration / totalDuration) * 100))}%`,
+              minWidth: '4px',
               top: `${topPos}px`,
               height: `${laneHeight}px`,
               ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),

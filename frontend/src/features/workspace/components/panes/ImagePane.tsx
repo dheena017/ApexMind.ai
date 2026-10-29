@@ -285,7 +285,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   };
 
   const handleApply = (img: StockImageItem) => {
-    setSelectedId(null);
+    setSelectedId(img.id);
     onSelectImage(img.url);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
     toast.success(`Applied "${img.title}"`);
@@ -904,11 +904,11 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                         key={img.id}
                         role="button"
                         tabIndex={0}
-                        onClick={() => handleStageImage(img)}
+                        onClick={() => handleApply(img)}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
-                            handleStageImage(img);
+                            handleApply(img);
                           }
                         }}
                         className={`group relative rounded-xl border overflow-hidden aspect-[9/16] bg-[#1C1C20] transition-all cursor-pointer text-left ${
@@ -976,17 +976,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                             </p>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleApply(img);
-                            }}
-                            className="w-full py-1.5 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-bold shadow-md flex items-center justify-center gap-1 cursor-pointer transition-all"
-                          >
-                            <Sparkles className="w-3 h-3" />
-                            <span>Apply Backdrop</span>
-                          </button>
+                          
                         </div>
                       </div>
                     );

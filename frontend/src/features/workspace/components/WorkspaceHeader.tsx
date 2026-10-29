@@ -249,7 +249,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           title={exporting ? 'Rendering the final video' : 'Export the composed video preview'}
         >
           <Download className="w-3 h-3 text-[#3B82F6]" />
-          <span>{exporting ? 'Exporting...' : 'Export MP4'}</span>
+          <span>{exporting ? (notice?.startsWith('Rendering') ? notice : 'Exporting...') : 'Export MP4'}</span>
         </button>
 
         {/* Save Draft */}
