@@ -751,24 +751,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     : 30;
   const progressPercent = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
 
-  // Hover playhead skimmer & time tooltip
-  const [timelineHoverTime, setTimelineHoverTime] = useState<number | null>(null);
-  const [timelineHoverPercent, setTimelineHoverPercent] = useState<number | null>(null);
-
-  const handleTimelinePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    const pct = (x / rect.width) * 100;
-    const time = (x / rect.width) * totalDuration;
-    setTimelineHoverPercent(pct);
-    setTimelineHoverTime(time);
-  }, [totalDuration]);
-
-  const handleTimelinePointerLeave = useCallback(() => {
-    setTimelineHoverPercent(null);
-    setTimelineHoverTime(null);
-  }, []);
   const timelineScale = Math.max(0.25, Number.isFinite(zoomLevel) ? zoomLevel : 1);
 
   // Pixel-based canvas width across infinite runway
@@ -4043,8 +4025,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 <div
                   ref={rulerContainerRef}
                   onWheel={handleRulerWheel}
-                  onPointerMove={handleTimelinePointerMove}
-                  onPointerLeave={handleTimelinePointerLeave}
                   style={{ width: `${trackContentWidthPx}px` }}
                   className="relative shrink-0 h-6"
                 >
@@ -4053,19 +4033,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     totalDuration={totalDuration}
                     onRulerPointerDown={handleRulerPointerDown}
                   />
-                  {/* Hover Needle & Floating Time Pill on Ruler */}
-                  {timelineHoverPercent !== null && timelineHoverTime !== null && (
-                    <div
-                      className="absolute top-0 bottom-0 pointer-events-none z-35 flex flex-col items-center select-none"
-                      style={{ left: `${timelineHoverPercent}%`, transform: 'translateX(-50%)' }}
-                    >
-                      <div className="px-1.5 py-0.5 rounded bg-[#2563EB] text-white text-[9px] font-mono-studio font-bold shadow-md shadow-blue-500/40 whitespace-nowrap -translate-y-0.5 border border-blue-400">
-                        {formatTime(timelineHoverTime)}
-                      </div>
-                      <div className="w-[1.5px] flex-1 bg-blue-400 shadow-[0_0_4px_rgba(59,130,246,0.6)]" />
-                    </div>
-                  )}
-
                   {/* Modern Studio Playhead Needle on ruler */}
                   <div
                     onPointerDown={(e) => {
@@ -4202,8 +4169,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               <div
                 ref={tracksContainerRef}
                 onPointerDown={handleTracksPointerDown}
-                onPointerMove={handleTimelinePointerMove}
-                onPointerLeave={handleTimelinePointerLeave}
                 style={{ width: `${trackContentWidthPx}px` }}
                 className="relative shrink-0 cursor-crosshair select-none"
               >
@@ -4211,19 +4176,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
                 {/* ── Dynamic Order Track Lanes ─────────────────────────────── */}
                 {trackOrder.map((trackId) => renderTrackLane(trackId))}
-
-                {/* ── Hover Playhead Skimmer & Floating Timecode ── */}
-                {timelineHoverPercent !== null && timelineHoverTime !== null && (
-                  <div
-                    className="absolute top-0 bottom-0 pointer-events-none z-28 select-none w-0 flex justify-center"
-                    style={{ left: `${timelineHoverPercent}%` }}
-                  >
-                    <div className="w-[1.5px] h-full bg-[#3B82F6] opacity-75 shadow-[0_0_6px_rgba(59,130,246,0.6)] shrink-0" />
-                    <div className="absolute top-1.5 px-1.5 py-0.5 rounded bg-[#18181C]/95 text-[#93C5FD] border border-blue-500/60 text-[9px] font-mono-studio font-bold shadow-lg backdrop-blur-xs whitespace-nowrap pointer-events-none -translate-x-1/2">
-                      {formatTime(timelineHoverTime)}
-                    </div>
-                  </div>
-                )}
 
                 {/* ── Playhead indicator line across all tracks ────── */}
                 <div

@@ -1160,52 +1160,12 @@ export default function WorkspacePage({
     );
   }, [showLeftPane, showTimeline, showRightPane]);
 
+  // Fresh session: always ensure reload starts completely in clean empty state
   useEffect(() => {
     try {
-      const storedDraft = localStorage.getItem(getWorkspaceDraftKey(user?.id));
-      if (!storedDraft) return;
-      const draft = JSON.parse(storedDraft) as WorkspaceDraftSnapshot;
-      if (draft.version !== 1 || !draft.script || typeof draft.script !== 'object') return;
-
-      setScript(draft.script);
-      setAgentPrompt(draft.agentPrompt || '');
-      setCategory(draft.category || 'Stoic Mindset & Discipline');
-      setTargetLength(draft.targetLength || '30 seconds');
-      setSelectedModel(draft.selectedModel || 'gemini-2.5-flash');
-      setSelectedVoice(draft.selectedVoice || 'Fenrir');
-      setSelectedMusic(draft.selectedMusic || '');
-      setSelectedBackdrop(draft.selectedBackdrop || '');
-      setCustomBackdropImage(draft.customBackdropImage);
-      setCustomBackdropVideo(draft.customBackdropVideo);
-      const restoredAspectRatio = draft.canvasAspectRatio || '9:16';
-      setCanvasAspectRatio(restoredAspectRatio);
-      const restoredOutputSize = draft.canvasOutputSize;
-      setCanvasOutputSize(
-        restoredOutputSize?.aspectRatio === restoredAspectRatio &&
-          Number.isInteger(restoredOutputSize.width) &&
-          Number.isInteger(restoredOutputSize.height) &&
-          restoredOutputSize.width >= 2 &&
-          restoredOutputSize.height >= 2 &&
-          restoredOutputSize.width % 2 === 0 &&
-          restoredOutputSize.height % 2 === 0 &&
-          Math.max(restoredOutputSize.width, restoredOutputSize.height) >= 1080 &&
-          restoredOutputSize.width <= 8192 &&
-          restoredOutputSize.height <= 8192
-          ? restoredOutputSize
-          : getDefaultCanvasOutputSize(restoredAspectRatio),
-      );
-      setCanvasBackground(draft.canvasBackground || '#050505');
-      setTimelineDuration(draft.timelineDuration || 30);
-      setPlaybackRate(draft.playbackRate || 1);
-      setVolume(draft.volume ?? 1);
-      setIsMuted(draft.isMuted ?? false);
-      setMusicVolume(draft.musicVolume ?? 0.35);
-      setActiveElementOverlay(draft.activeElementOverlay || null);
-      setSelectedSfx(draft.selectedSfx || null);
-      setCaptionPreset(draft.captionPreset || null);
-    } catch (error) {
-      consoleLogger.warn('Studio', 'Could not restore the local workspace draft:', error);
-    }
+      localStorage.removeItem(getWorkspaceDraftKey(user?.id));
+      localStorage.removeItem(getWorkspaceDraftKey('guest'));
+    } catch {}
   }, [user?.id]);
 
   // Synchronize targetLength preset with timelineDuration when no recorded audio duration is active
