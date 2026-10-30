@@ -52,6 +52,183 @@ const DEFAULT_TIMELINE_STATE: TimelineState = {
   titleDuration: 30,
 };
 
+const getTransitionStyles = (type: string, progress: number): { styleA: React.CSSProperties; styleB: React.CSSProperties } => {
+  const p = Math.max(0, Math.min(1, progress));
+
+  switch (type) {
+    case 'dissolve':
+    case 'crossfade':
+      return {
+        styleA: { opacity: 1 - p },
+        styleB: { opacity: p },
+      };
+
+    case 'fade-black':
+      return {
+        styleA: {
+          opacity: p < 0.5 ? 1 : 0,
+          filter: `brightness(${Math.max(0, (0.5 - p) * 2)})`,
+        },
+        styleB: {
+          opacity: p >= 0.5 ? 1 : 0,
+          filter: `brightness(${Math.max(0, (p - 0.5) * 2)})`,
+        },
+      };
+
+    case 'fade-white':
+      return {
+        styleA: {
+          opacity: p < 0.5 ? 1 : 0,
+          filter: `brightness(${1 + p * 6})`,
+        },
+        styleB: {
+          opacity: p >= 0.5 ? 1 : 0,
+          filter: `brightness(${1 + (1 - p) * 6})`,
+        },
+      };
+
+    case 'slide-left':
+      return {
+        styleA: { transform: `translateX(-${p * 100}%)` },
+        styleB: { transform: `translateX(${(1 - p) * 100}%)` },
+      };
+
+    case 'slide-right':
+      return {
+        styleA: { transform: `translateX(${p * 100}%)` },
+        styleB: { transform: `translateX(-${(1 - p) * 100}%)` },
+      };
+
+    case 'slide-up':
+      return {
+        styleA: { transform: `translateY(-${p * 100}%)` },
+        styleB: { transform: `translateY(${(1 - p) * 100}%)` },
+      };
+
+    case 'slide-down':
+      return {
+        styleA: { transform: `translateY(${p * 100}%)` },
+        styleB: { transform: `translateY(-${(1 - p) * 100}%)` },
+      };
+
+    case 'push-left':
+      return {
+        styleA: { transform: `translateX(-${p * 100}%)` },
+        styleB: { transform: `translateX(${(1 - p) * 100}%)` },
+      };
+
+    case 'push-right':
+      return {
+        styleA: { transform: `translateX(${p * 100}%)` },
+        styleB: { transform: `translateX(-${(1 - p) * 100}%)` },
+      };
+
+    case 'push-up':
+      return {
+        styleA: { transform: `translateY(-${p * 100}%)` },
+        styleB: { transform: `translateY(${(1 - p) * 100}%)` },
+      };
+
+    case 'push-down':
+      return {
+        styleA: { transform: `translateY(${p * 100}%)` },
+        styleB: { transform: `translateY(-${(1 - p) * 100}%)` },
+      };
+
+    case 'circle-wipe':
+      return {
+        styleA: { zIndex: 1 },
+        styleB: {
+          zIndex: 2,
+          clipPath: `circle(${p * 150}% at 50% 50%)`,
+          WebkitClipPath: `circle(${p * 150}% at 50% 50%)`,
+        },
+      };
+
+    case 'split-reveal':
+      return {
+        styleA: { zIndex: 1 },
+        styleB: {
+          zIndex: 2,
+          clipPath: `inset(0 ${(1 - p) * 50}% 0 ${(1 - p) * 50}%)`,
+          WebkitClipPath: `inset(0 ${(1 - p) * 50}% 0 ${(1 - p) * 50}%)`,
+        },
+      };
+
+    case 'zoom-in':
+      return {
+        styleA: { transform: `scale(${1 + p * 0.3})`, opacity: 1 - p },
+        styleB: { transform: `scale(${0.7 + p * 0.3})`, opacity: p },
+      };
+
+    case 'zoom-out':
+      return {
+        styleA: { transform: `scale(${1 - p * 0.3})`, opacity: 1 - p },
+        styleB: { transform: `scale(${1.3 - p * 0.3})`, opacity: p },
+      };
+
+    case 'smooth-zoom':
+      return {
+        styleA: { transform: `scale(${1 + p * 0.5})`, opacity: 1 - p * 0.8 },
+        styleB: { transform: `scale(${0.6 + p * 0.4})`, opacity: p },
+      };
+
+    case 'soft-rotate':
+      return {
+        styleA: { transform: `rotate(-${p * 20}deg) scale(${1 - p * 0.2})`, opacity: 1 - p },
+        styleB: { transform: `rotate(${(1 - p) * 20}deg) scale(${0.8 + p * 0.2})`, opacity: p },
+      };
+
+    case 'flash':
+      return {
+        styleA: {
+          opacity: p < 0.5 ? 1 : 0,
+          filter: `brightness(${1 + p * 8})`,
+        },
+        styleB: {
+          opacity: p >= 0.5 ? 1 : 0,
+          filter: `brightness(${1 + (1 - p) * 8})`,
+        },
+      };
+
+    case 'blur-crossfade':
+      return {
+        styleA: { filter: `blur(${p * 16}px)`, opacity: 1 - p },
+        styleB: { filter: `blur(${(1 - p) * 16}px)`, opacity: p },
+      };
+
+    case 'luma-fade':
+      return {
+        styleA: { filter: `contrast(${100 + p * 150}%) brightness(${Math.max(0, 1 - p * 1.5)})`, opacity: 1 - p },
+        styleB: { filter: `contrast(${100 + (1 - p) * 150}%) brightness(${Math.min(1, p * 1.5)})`, opacity: p },
+      };
+
+    case 'rgb-split':
+      return {
+        styleA: { filter: `hue-rotate(${p * 120}deg) saturate(${100 + p * 100}%)`, opacity: 1 - p },
+        styleB: { filter: `hue-rotate(${(1 - p) * -120}deg) saturate(${100 + (1 - p) * 100}%)`, opacity: p },
+      };
+
+    case 'whip-pan-left':
+      return {
+        styleA: { transform: `translateX(-${p * 120}%) skewX(${p * 12}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 10}px)` },
+        styleB: { transform: `translateX(${(1 - p) * 120}%) skewX(-${(1 - p) * 12}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 10}px)` },
+      };
+
+    case 'whip-pan-right':
+      return {
+        styleA: { transform: `translateX(${p * 120}%) skewX(-${p * 12}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 10}px)` },
+        styleB: { transform: `translateX(${(1 - p) * 120}%) skewX(${(1 - p) * 12}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 10}px)` },
+      };
+
+    default:
+      return {
+        styleA: { opacity: 1 - p },
+        styleB: { opacity: p },
+      };
+  }
+};
+
 interface VideoPreviewPaneProps {
   script: GeneratedScript;
   activeBackdrop?: VisualBackdrop | null;
@@ -190,6 +367,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const transitionVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const [selectedLayer, setSelectedLayer] = useState<'subtitle' | 'title' | 'overlay' | 'backdrop' | null>(null);
   const [backdropFlipH, setBackdropFlipH] = useState(false);
@@ -683,6 +861,35 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     return () => window.removeEventListener('workspace:timeline-state', handleTimelineState);
   }, []);
 
+  // Listen directly for clip property/transition changes so preview responds instantly
+  useEffect(() => {
+    const handleClipPropUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      if (detail.transition !== undefined || detail.transitionDuration !== undefined) {
+        setTimelineState((prev) => {
+          const updatedClips = (prev.videoClips || []).map((c) => {
+            if (detail.applyToAll || (detail.clipId && c.id === detail.clipId)) {
+              return {
+                ...c,
+                transition: detail.transition ?? c.transition,
+                transitionDuration: detail.transitionDuration ?? c.transitionDuration,
+              };
+            }
+            return c;
+          });
+          return { ...prev, videoClips: updatedClips };
+        });
+      }
+    };
+    window.addEventListener('workspace:update-clip-props', handleClipPropUpdate);
+    window.addEventListener('workspace:update-clip-properties', handleClipPropUpdate);
+    return () => {
+      window.removeEventListener('workspace:update-clip-props', handleClipPropUpdate);
+      window.removeEventListener('workspace:update-clip-properties', handleClipPropUpdate);
+    };
+  }, []);
+
   const isCustomImage = Boolean(customImageUrl);
   const isCustomVideo = Boolean(customVideoUrl);
 
@@ -702,6 +909,38 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     if (currentTime >= c.start && (!closest || c.start > closest.start)) return c;
     return closest;
   }, undefined) || (timelineState.imageClips && timelineState.imageClips[0]);
+
+  // Detect if playhead is currently within an active cut transition between two video clips
+  const activeTransition = useMemo(() => {
+    const clips = (timelineState.videoClips || []).slice().sort((a, b) => (Number(a.start) || 0) - (Number(b.start) || 0));
+    if (clips.length < 2) return null;
+
+    for (let i = 0; i < clips.length - 1; i++) {
+      const clipA = clips[i];
+      const clipB = clips[i + 1];
+      const transType = (clipA.transition && clipA.transition !== 'none') ? clipA.transition : ((clipB.transition && clipB.transition !== 'none') ? clipB.transition : null);
+      if (!transType || transType === 'none') continue;
+
+      const cutTime = (Number(clipB.start) !== undefined && Number(clipB.start) > 0) ? Number(clipB.start) : ((Number(clipA.start) || 0) + (Number(clipA.duration) || 3));
+      const transDuration = Math.max(0.1, Math.min(Number(clipA.transitionDuration || clipB.transitionDuration) || 0.5, 2.0));
+      const transStart = cutTime - transDuration / 2;
+      const transEnd = cutTime + transDuration / 2;
+
+      if (currentTime >= transStart && currentTime <= transEnd) {
+        const progress = Math.max(0, Math.min(1, (currentTime - transStart) / transDuration));
+        return {
+          isActive: true,
+          type: transType,
+          duration: transDuration,
+          progress,
+          clipA,
+          clipB,
+          cutTime,
+        };
+      }
+    }
+    return null;
+  }, [timelineState.videoClips, currentTime]);
 
   const activeOverlayClip = (timelineState.overlayClips || [])
     .filter((c) => currentTime >= c.start && currentTime <= c.start + c.duration)
@@ -965,7 +1204,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                   : undefined)));
 
   // Determine whether video or image layer is shown under the current playhead
-  const showVideoLayer = Boolean(activeVideo) && videoEnabled && isVideoTimeActive;
+  const showVideoLayer = ((Boolean(activeVideo) && isVideoTimeActive) || Boolean(activeTransition)) && videoEnabled;
   const showImageLayer = Boolean(activeImage) && imageEnabled && isImageTimeActive;
 
   const isSeekingOrSwitchingRef = useRef(false);
@@ -1001,28 +1240,51 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     ? timelineState.videoClips[currentClipIndex + 1]
     : undefined;
 
+  const currentVideoSrc = activeTransition ? (activeTransition.clipA?.url || activeVideo) : activeVideo;
+  const transitionVideoSrc = activeTransition?.clipB?.url;
+
   // Auto-reload video element only when active source changes
   useEffect(() => {
     const video = videoElementRef.current;
-    if (!video || !activeVideo) return;
+    const tVideo = transitionVideoRef.current;
+    if (!video || !currentVideoSrc) return;
     const currentAttr = video.getAttribute('src');
-    if (currentAttr === activeVideo) return;
+    if (currentAttr === currentVideoSrc) return;
     try {
-      if (new URL(activeVideo, window.location.href).href === video.src) return;
+      if (new URL(currentVideoSrc, window.location.href).href === video.src) return;
     } catch {}
 
     isSeekingOrSwitchingRef.current = true;
-    video.src = activeVideo;
+    video.src = currentVideoSrc;
     video.load();
     if (!isPlayingRef.current && !video.paused) {
       video.pause();
     }
     // Do not force currentTime immediately before metadata is ready
-  }, [activeVideo]);
+  }, [currentVideoSrc]);
+
+  // Auto-sync incoming transition video source
+  useEffect(() => {
+    const tVideo = transitionVideoRef.current;
+    if (!tVideo || !transitionVideoSrc) return;
+    const currentAttr = tVideo.getAttribute('src');
+    if (currentAttr === transitionVideoSrc) return;
+    try {
+      if (new URL(transitionVideoSrc, window.location.href).href === tVideo.src) return;
+    } catch {}
+
+    tVideo.src = transitionVideoSrc;
+    tVideo.load();
+    tVideo.muted = true;
+    if (!isPlayingRef.current && !tVideo.paused) {
+      tVideo.pause();
+    }
+  }, [transitionVideoSrc]);
 
   // Synchronize playback & seek without thrashing video decoders during continuous play
   useEffect(() => {
     const video = videoElementRef.current;
+    const tVideo = transitionVideoRef.current;
     if (!video) return;
 
     video.volume = videoTrackVolume / 100;
@@ -1034,15 +1296,36 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       return;
     }
 
-    const clipStart = activeVideoClip ? activeVideoClip.start : (timelineState.videoStart || 0);
+    if (tVideo) {
+      tVideo.volume = 0;
+      tVideo.muted = true;
+      tVideo.playbackRate = playbackRate;
+    }
+
+    const clipA = activeTransition ? activeTransition.clipA : activeVideoClip;
+    const clipStart = clipA ? (Number(clipA.start) || 0) : (timelineState.videoStart || 0);
     const rawOffset = Math.max(0, currentTime - clipStart);
     const videoDuration = video.duration && Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
     const offset = videoDuration > 0 ? (rawOffset % videoDuration) : rawOffset;
+
+    // Transition Player B sync calculation
+    let offsetB = 0;
+    let vDurB = 0;
+    if (activeTransition && tVideo) {
+      const clipBStart = Number(activeTransition.clipB?.start) || 0;
+      const rawOffsetB = Math.max(0, currentTime - clipBStart);
+      vDurB = tVideo.duration && Number.isFinite(tVideo.duration) && tVideo.duration > 0 ? tVideo.duration : 0;
+      offsetB = vDurB > 0 ? (rawOffsetB % vDurB) : rawOffsetB;
+    }
 
     if (isPlaying) {
       if (video.paused && video.readyState >= 2 && !video.seeking) {
         video.play().catch(() => {});
       }
+      if (activeTransition && tVideo && tVideo.paused && tVideo.readyState >= 2 && !tVideo.seeking) {
+        tVideo.play().catch(() => {});
+      }
+
       // Calculate true circular drift on looping media so loop boundaries never trigger false seek stutter
       const diff = Math.abs(video.currentTime - offset);
       const circularDiff = videoDuration > 0 ? Math.min(diff, Math.abs(videoDuration - diff)) : diff;
@@ -1052,18 +1335,28 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       if (!video.seeking && !isSeekingOrSwitchingRef.current && video.readyState >= 2) {
         if (circularDiff > 1.2) {
           video.currentTime = offset;
+      }
+      if (activeTransition && tVideo && !tVideo.seeking && tVideo.readyState >= 1 && Math.abs(tVideo.currentTime - offsetB) > 0.09) {
+        tVideo.currentTime = offsetB;
+        }
+        if (activeTransition && tVideo && !tVideo.seeking && tVideo.readyState >= 2 && Math.abs(tVideo.currentTime - offsetB) > 1.2) {
+          tVideo.currentTime = offsetB;
         }
       }
     } else {
       // Paused: pause video and sync position smoothly
+      if (tVideo && !tVideo.paused) tVideo.pause();
       if (!video.paused) video.pause();
       const diff = Math.abs(video.currentTime - offset);
       const circularDiff = videoDuration > 0 ? Math.min(diff, Math.abs(videoDuration - diff)) : diff;
       if (!video.seeking && video.readyState >= 1 && circularDiff > 0.08) {
         video.currentTime = offset;
       }
+      if (activeTransition && tVideo && !tVideo.seeking && tVideo.readyState >= 1 && Math.abs(tVideo.currentTime - offsetB) > 0.09) {
+        tVideo.currentTime = offsetB;
+      }
     }
-  }, [currentTime, isPlaying, playbackRate, showVideoLayer, activeVideoClip, timelineState.videoStart, videoTrackVolume]);
+  }, [currentTime, isPlaying, playbackRate, showVideoLayer, activeVideoClip, timelineState.videoStart, videoTrackVolume, activeTransition]);
 
   // Active subtitle matching current playhead position strictly from timeline track clips or script.subtitles
   const effectiveSubtitles = (timelineState.captionClips && timelineState.captionClips.length > 0)
@@ -1329,7 +1622,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         />
 
         {/* Layer 1b: Video Layer (V1) - strictly visible when playhead is in video clip */}
-        {activeVideo && showVideoLayer && (
+        {(currentVideoSrc || activeVideo) && showVideoLayer && (
           <div
             ref={backdropRef}
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
@@ -1343,9 +1636,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             }}
             title="Video Layer (V1) • Click to select"
           >
-            <video
+            <div
+              className="absolute inset-0 w-full h-full overflow-hidden"
+              /* outgoing A */ style={activeTransition ? getTransitionStyles(activeTransition.type, activeTransition.progress).styleA : undefined}
+            >
+              <video
               ref={videoElementRef}
-              src={activeVideo}
+              src={currentVideoSrc}
               poster={activeVideoClip?.posterUrl || activeVideoClip?.thumbnailUrl || activeStoryboardScene?.posterUrl}
               muted={videoTrackVolume === 0}
               playsInline
@@ -1393,8 +1690,37 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 filter: computedBackdropFilter,
               }}
             />
+            </div>
+
+            {/* Layer B (Incoming Transition Layer) */}
+            {activeTransition && activeTransition.clipB?.url && (
+              <div
+                className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
+                style={getTransitionStyles(activeTransition.type, activeTransition.progress).styleB}
+              >
+                  <video
+                  ref={transitionVideoRef}
+                  src={activeTransition.clipB.url}
+                  poster={activeTransition.clipB.url}
+                  muted
+                  playsInline
+                  loop
+                  crossOrigin="anonymous"
+                  preload="auto"
+                  className={`w-full h-full pointer-events-none ${
+                    backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
+                  } object-center opacity-100`}
+                  style={{
+                    transform: backdropTransform,
+                    filter: computedBackdropFilter,
+                  }}
+                />
+              </div>
+            )}
+
             {/* Background preloader for next video clip to ensure seamless cut transitions */}
             {nextVideoClip?.url && nextVideoClip.url !== activeVideo && (
+
               <video
                 key={nextVideoClip.url}
                 src={nextVideoClip.url}

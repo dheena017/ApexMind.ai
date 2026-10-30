@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Video,
   Type,
@@ -34,6 +34,8 @@ export interface TimelineTrackHeadersProps {
   videoMaxLane?: number;
   videoTrackLocked?: boolean;
   onToggleVideoTrackLocked?: () => void;
+  videoTrackMuted?: boolean;
+  onToggleVideoTrackMuted?: () => void;
 
   imageTrackVisible: boolean;
   onToggleImageTrackVisible: () => void;
@@ -112,6 +114,8 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
   videoMaxLane = 0,
   videoTrackLocked = false,
   onToggleVideoTrackLocked,
+  videoTrackMuted,
+  onToggleVideoTrackMuted,
 
   imageTrackVisible,
   onToggleImageTrackVisible,
@@ -178,6 +182,33 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
   const [localImageLocked, setLocalImageLocked] = useState(false);
   const [localOverlayLocked, setLocalOverlayLocked] = useState(false);
   const [localCaptionsVisible, setLocalCaptionsVisible] = useState(true);
+  const [localVideoMuted, setLocalVideoMuted] = useState(false);
+
+  useEffect(() => {
+    const handleAudioEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail?.volume === 'number') {
+        setLocalVideoMuted(detail.volume === 0);
+      }
+    };
+    window.addEventListener('workspace:backdrop-audio', handleAudioEvent);
+    return () => window.removeEventListener('workspace:backdrop-audio', handleAudioEvent);
+  }, []);
+
+  const isVideoMuted = videoTrackMuted !== undefined ? videoTrackMuted : localVideoMuted;
+  const handleToggleVideoMute = () => {
+    if (onToggleVideoTrackMuted) {
+      onToggleVideoTrackMuted();
+    } else {
+      const nextMuted = !localVideoMuted;
+      setLocalVideoMuted(nextMuted);
+      window.dispatchEvent(
+        new CustomEvent('workspace:backdrop-audio', {
+          detail: { volume: nextMuted ? 0 : 100 },
+        })
+      );
+    }
+  };
 
   // Local fallback track ordering
   const [internalOrder, setInternalOrder] = useState<TrackId[]>(DEFAULT_TRACK_ORDER);
@@ -421,6 +452,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       </div>
       <div className="flex items-center gap-0.5 shrink-0">
         {renderEyeButton(videoTrackVisible, onToggleVideoTrackVisible, 'Video')}
+        {renderMuteButton(isVideoMuted, handleToggleVideoMute, 'Video Sound')}
         {renderLockButton(
           onToggleVideoTrackLocked ? videoTrackLocked : localVideoLocked,
           () => (onToggleVideoTrackLocked ? onToggleVideoTrackLocked() : setLocalVideoLocked((p) => !p)),

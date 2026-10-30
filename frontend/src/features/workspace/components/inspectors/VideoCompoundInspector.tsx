@@ -15,7 +15,6 @@ export type VideoInspectorTab =
   | 'style'
   | 'adjust'
   | 'transitions'
-  | 'lut'
   | 'speed'
   | 'audio'
   | 'time';
@@ -44,64 +43,41 @@ const LUT_PRESETS = [
   { id: 'tokyo-drift', label: 'Tokyo Night Drive', desc: 'Neon cyan & magenta' },
 ];
 
+const MOUNTAIN_PREVIEW_IMG = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=260&q=80';
 
-const TRANSITION_PRESETS = [
-  {
-    id: 'dissolve',
-    label: 'Cross Dissolve',
-    desc: 'Smooth cinematic blend between cuts',
-    icon: (
-      <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-amber-400 shrink-0">
-        <polygon points="3,3 10,10 3,17" />
-        <polygon points="17,3 10,10 17,17" />
-      </svg>
-    ),
-  },
-  {
-    id: 'fade',
-    label: 'Fade to Black',
-    desc: 'Dip through black between cuts',
-    icon: <div className="w-3 h-3 rounded-full bg-gradient-to-tr from-black to-zinc-500 border border-white/20 shrink-0" />,
-  },
-  {
-    id: 'wipe-left',
-    label: 'Wipe Left',
-    desc: 'Linear horizontal wipe',
-    icon: (
-      <div className="w-3.5 h-2.5 rounded-xs border border-white/30 flex overflow-hidden shrink-0">
-        <div className="w-1/2 bg-amber-400" />
-        <div className="w-1/2 bg-zinc-700" />
-      </div>
-    ),
-  },
-  {
-    id: 'slide',
-    label: 'Push Slide',
-    desc: 'Next scene pushes the current one',
-    icon: <span className="text-[11px] font-bold text-amber-300 shrink-0">➔</span>,
-  },
-  {
-    id: 'zoom',
-    label: 'Zoom Blur',
-    desc: 'Dynamic forward focal plunge',
-    icon: <span className="text-[10px] font-mono text-cyan-300 font-bold shrink-0">⤢</span>,
-  },
-  {
-    id: 'glitch',
-    label: 'Digital Glitch',
-    desc: 'Cyberpunk chromatic aberration',
-    icon: <Sparkles className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />,
-  },
-  {
-    id: 'none',
-    label: 'Cut (None)',
-    desc: 'Instant hard cut between clips',
-    icon: <div className="w-[2.5px] h-3 bg-neutral-300 rounded-full shrink-0" />,
-  },
+export interface TransitionPresetItem {
+  id: string;
+  label: string;
+  category: 'all' | 'basic' | 'slide' | 'zoom' | 'wipe' | 'special';
+  hoverEffect?: string;
+}
+
+const TRANSITION_PRESETS: TransitionPresetItem[] = [
+  { id: 'none', label: 'None', category: 'basic' },
+  { id: 'dissolve', label: 'Crossfade', category: 'basic', hoverEffect: 'group-hover:opacity-40' },
+  { id: 'fade-black', label: 'Fade to Black', category: 'basic', hoverEffect: 'group-hover:brightness-25' },
+  { id: 'fade-white', label: 'Fade to White', category: 'basic', hoverEffect: 'group-hover:brightness-175' },
+  { id: 'zoom-in', label: 'Zoom In', category: 'zoom', hoverEffect: 'group-hover:scale-125' },
+  { id: 'zoom-out', label: 'Zoom Out', category: 'zoom', hoverEffect: 'group-hover:scale-75' },
+  { id: 'slide-left', label: 'Slide Left', category: 'slide', hoverEffect: 'group-hover:-translate-x-3' },
+  { id: 'slide-right', label: 'Slide Right', category: 'slide', hoverEffect: 'group-hover:translate-x-3' },
+  { id: 'slide-up', label: 'Slide Up', category: 'slide', hoverEffect: 'group-hover:-translate-y-3' },
+  { id: 'slide-down', label: 'Slide Down', category: 'slide', hoverEffect: 'group-hover:translate-y-3' },
+  { id: 'push-left', label: 'Push Left', category: 'slide', hoverEffect: 'group-hover:-translate-x-4' },
+  { id: 'push-right', label: 'Push Right', category: 'slide', hoverEffect: 'group-hover:translate-x-4' },
+  { id: 'push-up', label: 'Push Up', category: 'slide', hoverEffect: 'group-hover:-translate-y-4' },
+  { id: 'push-down', label: 'Push Down', category: 'slide', hoverEffect: 'group-hover:translate-y-4' },
+  { id: 'luma-fade', label: 'Luma Fade', category: 'basic', hoverEffect: 'group-hover:contrast-200 group-hover:brightness-80' },
+  { id: 'blur-crossfade', label: 'Blur Crossfade', category: 'basic', hoverEffect: 'group-hover:blur-xs group-hover:opacity-60' },
+  { id: 'split-reveal', label: 'Split Reveal', category: 'wipe', hoverEffect: 'group-hover:scale-x-75' },
+  { id: 'circle-wipe', label: 'Circle Wipe', category: 'wipe', hoverEffect: 'group-hover:scale-90' },
+  { id: 'rgb-split', label: 'RGB Split', category: 'special', hoverEffect: 'group-hover:hue-rotate-90 group-hover:saturate-200' },
+  { id: 'whip-pan-left', label: 'Whip Pan Left', category: 'slide', hoverEffect: 'group-hover:-translate-x-5 group-hover:skew-x-6' },
+  { id: 'whip-pan-right', label: 'Whip Pan Right', category: 'slide', hoverEffect: 'group-hover:translate-x-5 group-hover:-skew-x-6' },
+  { id: 'soft-rotate', label: 'Soft Rotate', category: 'special', hoverEffect: 'group-hover:rotate-12 group-hover:scale-110' },
+  { id: 'smooth-zoom', label: 'Smooth Zoom', category: 'zoom', hoverEffect: 'group-hover:scale-120' },
+  { id: 'flash', label: 'Flash', category: 'special', hoverEffect: 'group-hover:brightness-200' },
 ];
-
-
-
 
 const CANVAS_BG_PRESETS = [
   { label: 'Pure Black', value: '#000000' },
@@ -180,6 +156,17 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     if (initialSubTab) setActiveSubTab(initialSubTab);
   }, [initialSubTab]);
 
+  useEffect(() => {
+    const handleOpenTab = (e: Event) => {
+      const detail = (e as CustomEvent<{ compound?: string; subTab?: VideoInspectorTab }>).detail;
+      if (detail && detail.subTab && (detail.compound === 'video' || !detail.compound)) {
+        setActiveSubTab(detail.subTab);
+      }
+    };
+    window.addEventListener('workspace:open-inspector-tab', handleOpenTab);
+    return () => window.removeEventListener('workspace:open-inspector-tab', handleOpenTab);
+  }, []);
+
   const isImageMode = Boolean(customImageUrl && !customVideoUrl);
 
   useEffect(() => {
@@ -214,9 +201,44 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   const [blur, setBlur] = useState(0);
   const [grain, setGrain] = useState(0);
   const [activeStyle, setActiveStyle] = useState('Natural');
+  const [styleSection, setStyleSection] = useState<'all' | 'looks' | 'lut' | 'adjust'>('all');
+  const hasAdjustments = brightness !== 100 || contrast !== 100 || saturation !== 100 || vignette !== 0 || hue !== 0 || blur !== 0 || grain !== 0;
+
+  useEffect(() => {
+    if (activeSubTab === 'adjust') {
+      setActiveSubTab('style');
+      setStyleSection('adjust');
+    }
+  }, [activeSubTab]);
+
+  const adjustmentGroups = useMemo(() => [
+    {
+      title: 'Basic Tone',
+      items: [
+        { label: 'Brightness', icon: <Sun className="w-3.5 h-3.5 text-amber-400" />, value: brightness, setter: setBrightness, min: 20, max: 200, unit: '%', def: 100 },
+        { label: 'Contrast', icon: <Contrast className="w-3.5 h-3.5 text-sky-400" />, value: contrast, setter: setContrast, min: 20, max: 200, unit: '%', def: 100 },
+        { label: 'Saturation', icon: <Palette className="w-3.5 h-3.5 text-purple-400" />, value: saturation, setter: setSaturation, min: 0, max: 200, unit: '%', def: 100 },
+      ],
+    },
+    {
+      title: 'Color & Mood',
+      items: [
+        { label: 'Vignette Darkening', icon: <Eye className="w-3.5 h-3.5 text-zinc-400" />, value: vignette, setter: setVignette, min: 0, max: 100, unit: '%', def: 0 },
+        { label: 'Hue Rotate', icon: <Sparkles className="w-3.5 h-3.5 text-emerald-400" />, value: hue, setter: setHue, min: -180, max: 180, unit: '°', def: 0 },
+      ],
+    },
+    {
+      title: 'Texture & Detail',
+      items: [
+        { label: 'Gaussian Blur', icon: <Layers className="w-3.5 h-3.5 text-blue-400" />, value: blur, setter: setBlur, min: 0, max: 20, unit: 'px', def: 0 },
+        { label: 'Film Grain Intensity', icon: <Film className="w-3.5 h-3.5 text-yellow-400" />, value: grain, setter: setGrain, min: 0, max: 100, unit: '%', def: 0 },
+      ],
+    },
+  ], [brightness, contrast, saturation, vignette, hue, blur, grain]);
 
   const [activeTransition, setActiveTransition] = useState('dissolve');
   const [transitionDuration, setTransitionDuration] = useState(0.5);
+  const [transitionCategory, setTransitionCategory] = useState<'all' | 'basic' | 'slide' | 'zoom' | 'wipe' | 'special'>('all');
   const [animationIn, setAnimationIn] = useState('none');
   const [animationInDuration, setAnimationInDuration] = useState(0.5);
   const [animationOut, setAnimationOut] = useState('none');
@@ -228,8 +250,19 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     const d = dur ?? transitionDuration;
     const isSingleVideoClip = Boolean(selectedClip && (selectedClip.track === 'video' || selectedClip.track === 'image') && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
     const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    const applyToAll = !clipId;
     window.dispatchEvent(
       new CustomEvent('workspace:update-clip-props', {
+        detail: {
+          track: isImageMode ? 'image' : 'video',
+          clipId,
+          transition: newTrans,
+          transitionDuration: d,
+        },
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-properties', {
         detail: {
           track: isImageMode ? 'image' : 'video',
           clipId,
@@ -251,6 +284,16 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         },
       })
     );
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-properties', {
+        detail: {
+          track: isImageMode ? 'image' : 'video',
+          transition: activeTransition,
+          transitionDuration,
+          applyToAll: true,
+        },
+      })
+    );
   };
 
   const handleInAnimChange = (anim: string, dur?: number) => {
@@ -258,6 +301,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     const d = dur ?? animationInDuration;
     const isSingleVideoClip = Boolean(selectedClip && (selectedClip.track === 'video' || selectedClip.track === 'image') && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
     const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    const applyToAll = !clipId;
     window.dispatchEvent(
       new CustomEvent('workspace:update-clip-props', {
         detail: {
@@ -275,6 +319,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     const d = dur ?? animationOutDuration;
     const isSingleVideoClip = Boolean(selectedClip && (selectedClip.track === 'video' || selectedClip.track === 'image') && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
     const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    const applyToAll = !clipId;
     window.dispatchEvent(
       new CustomEvent('workspace:update-clip-props', {
         detail: {
@@ -300,6 +345,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   useEffect(() => {
     const isSingleVideoClip = Boolean(selectedClip && selectedClip.track === 'video' && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
     const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    const applyToAll = !clipId;
     window.dispatchEvent(
       new CustomEvent('workspace:backdrop-transform', {
         detail: { clipId, fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect },
@@ -322,6 +368,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   useEffect(() => {
     const isSingleVideoClip = Boolean(selectedClip && selectedClip.track === 'video' && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
     const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    const applyToAll = !clipId;
     window.dispatchEvent(
       new CustomEvent('workspace:backdrop-filter', {
         detail: { clipId, brightness, contrast, saturate: saturation, vignette, hue, blur, grain, lut: activeLUT, lutIntensity },
@@ -344,6 +391,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   useEffect(() => {
     const isSingleVideoClip = Boolean(selectedClip && selectedClip.track === 'video' && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
     const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    const applyToAll = !clipId;
     window.dispatchEvent(
       new CustomEvent('workspace:backdrop-animation', {
         detail: { clipId, animation, speed: parseFloat(animSpeed) },
@@ -417,8 +465,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   };
 
   const tabs: VideoInspectorTab[] = isImageMode
-    ? ['transform', 'style', 'adjust', 'transitions', 'lut', 'time']
-    : ['transform', 'style', 'adjust', 'transitions', 'lut', 'speed', 'audio', 'time'];
+    ? ['transform', 'style', 'transitions', 'time']
+    : ['transform', 'style', 'transitions', 'speed', 'audio', 'time'];
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
@@ -730,225 +778,367 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* ── STYLE TAB ── */}
+        {/* ── STYLE TAB (Merged Cinematic Looks & 3D LUTs) ── */}
         {activeSubTab === 'style' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Cinematic Look Presets</span>
-            <div className="grid grid-cols-2 gap-1.5">
-              {VIDEO_STYLE_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => applyStylePreset(preset)}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    activeStyle === preset.label
-                      ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-md'
-                      : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-bold text-white">{preset.label}</span>
-                    {activeStyle === preset.label && <Check className="w-3 h-3 text-[#3B82F6]" />}
-                  </div>
-                  <p className="text-[9px] text-[#71717A] leading-tight">{preset.desc}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── ADJUST TAB (Sliders with Numeric Inputs + Individual Resets) ── */}
-        {activeSubTab === 'adjust' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Color & Tone Controls</span>
+          <div className="flex flex-col gap-3.5 pt-0.5">
+            {/* Top Sub-category Navigation Pills + Quick Reset */}
+            <div className="flex items-center justify-between pb-0.5">
+              <div className="flex items-center gap-1 bg-[#16161A] p-0.5 rounded-lg border border-[#282830]">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'looks', label: 'Looks' },
+                  { id: 'lut', label: '3D LUT' },
+                  { id: 'adjust', label: 'Adjust' },
+                ].map((sec) => (
+                  <button
+                    key={sec.id}
+                    type="button"
+                    onClick={() => setStyleSection(sec.id as any)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                      styleSection === sec.id
+                        ? 'bg-[#2A2A36] text-white shadow-xs'
+                        : 'text-[#71717A] hover:text-[#A1A1AA]'
+                    }`}
+                  >
+                    {sec.label}
+                    {sec.id === 'adjust' && hasAdjustments && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 onClick={handleResetAdjustments}
-                className="text-[10px] text-[#3B82F6] hover:text-blue-300 cursor-pointer flex items-center gap-1"
+                className="text-[10px] text-[#71717A] hover:text-white flex items-center gap-1 cursor-pointer transition-colors px-2 py-1 rounded hover:bg-[#1E1E24]"
+                title="Reset all look presets, LUTs, and color adjustments to default"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
                 Reset All
               </button>
             </div>
-
-            {[
-              { label: 'Brightness', value: brightness, setter: setBrightness, min: 20, max: 200, unit: '%', def: 100 },
-              { label: 'Contrast', value: contrast, setter: setContrast, min: 20, max: 200, unit: '%', def: 100 },
-              { label: 'Saturation', value: saturation, setter: setSaturation, min: 0, max: 200, unit: '%', def: 100 },
-              { label: 'Vignette Darkening', value: vignette, setter: setVignette, min: 0, max: 100, unit: '%', def: 0 },
-              { label: 'Hue Rotate', value: hue, setter: setHue, min: -180, max: 180, unit: '°', def: 0 },
-              { label: 'Gaussian Blur', value: blur, setter: setBlur, min: 0, max: 20, unit: 'px', def: 0 },
-              { label: 'Film Grain Intensity', value: grain, setter: setGrain, min: 0, max: 100, unit: '%', def: 0 },
-            ].map((ctrl) => (
-              <div key={ctrl.label} className="p-2.5 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#A1A1AA] font-medium">{ctrl.label}</span>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="number"
-                      min={ctrl.min}
-                      max={ctrl.max}
-                      value={ctrl.value}
-                      onChange={(e) => ctrl.setter(Number(e.target.value))}
-                      className="w-12 bg-[#121215] border border-[#2A2A30] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none"
-                    />
-                    <span className="text-[10px] text-[#71717A] w-3">{ctrl.unit}</span>
-                    <button
-                      type="button"
-                      onClick={() => ctrl.setter(ctrl.def)}
-                      title={`Reset to default (${ctrl.def}${ctrl.unit})`}
-                      className="text-[#555] hover:text-white cursor-pointer ml-1"
-                    >
-                      <RefreshCw className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min={ctrl.min}
-                  max={ctrl.max}
-                  value={ctrl.value}
-                  onChange={(e) => ctrl.setter(Number(e.target.value))}
-                  className="w-full accent-[#3B82F6] cursor-pointer"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        
-        {/* ── TRANSITIONS TAB ── */}
-        {activeSubTab === 'transitions' && (
-          <div className="flex flex-col gap-4 pt-0.5">
-            {/* Header banner */}
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-[5px] bg-[#FACC15] border border-[#18181B] flex items-center justify-center shrink-0">
-                  <svg viewBox="0 0 20 20" className="w-3 h-3 fill-[#18181B]">
-                    <polygon points="3,3 10,10 3,17" />
-                    <polygon points="17,3 10,10 17,17" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-amber-200 block">Cut & Seam Transitions</span>
-                  <span className="text-[10px] text-amber-300/70">Styled to match timeline in/out overlap</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleApplyToAllTransitions}
-                className="px-2 py-1 rounded-md bg-amber-400 text-black font-bold text-[10px] hover:bg-amber-300 transition-colors cursor-pointer shrink-0 shadow-xs"
-                title="Apply this transition style to every cut on this track"
-              >
-                Apply to All
-              </button>
-            </div>
-
-            {/* Transition Duration */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-[#A1A1AA]">Transition Duration</span>
-                <span className="font-mono-studio text-amber-300 font-bold">{transitionDuration.toFixed(1)}s</span>
-              </div>
-              <div className="grid grid-cols-5 gap-1">
-                {[0.3, 0.5, 0.8, 1.0, 1.5].map((d) => (
+            {(styleSection === 'all' || styleSection === 'looks') && (
+              <div className="flex flex-col gap-2">
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-amber-400" />Cinematic Look Presets</span>
+                <span className="font-mono-studio text-[10px] text-[#A1A1AA]">{activeStyle}</span>
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {VIDEO_STYLE_PRESETS.map((preset) => (
                   <button
-                    key={d}
+                    key={preset.label}
                     type="button"
-                    onClick={() => {
-                      setTransitionDuration(d);
-                      handleTransitionChange(activeTransition, d);
-                    }}
-                    className={`py-1 rounded-lg text-xs font-mono font-medium border cursor-pointer transition-colors ${
-                      Math.abs(transitionDuration - d) < 0.05
-                        ? 'bg-amber-400 text-black border-amber-300 font-bold shadow-xs'
-                        : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                    onClick={() => applyStylePreset(preset)}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      activeStyle === preset.label
+                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-md'
+                        : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
                     }`}
                   >
-                    {d}s
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs font-bold text-white">{preset.label}</span>
+                      {activeStyle === preset.label && <Check className="w-3 h-3 text-[#3B82F6]" />}
+                    </div>
+                    <p className="text-[9px] text-[#71717A] leading-tight">{preset.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Transition Styles */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Transition Presets</span>
-              <div className="grid grid-cols-1 gap-1.5">
-                {TRANSITION_PRESETS.map((t) => {
-                  const isSelected = activeTransition === t.id;
+            )}
+
+            {/* 3D LUT Film Emulation */}
+            {(styleSection === 'all' || styleSection === 'lut') && (
+              <div className={styleSection === 'all' ? "border-t border-[#26262B] pt-3 flex flex-col gap-2" : "flex flex-col gap-2"}>
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Film className="w-3 h-3 text-sky-400" />3D LUT Film Emulation</span>
+                <span className="font-mono-studio text-[10px] text-[#A1A1AA]">
+                  {LUT_PRESETS.find((l) => l.id === activeLUT)?.label || 'None'}
+                </span>
+              </span>
+              <div className="flex flex-col gap-1.5">
+                {LUT_PRESETS.map((lut) => (
+                  <button
+                    key={lut.id}
+                    type="button"
+                    onClick={() => setActiveLUT(lut.id)}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
+                      activeLUT === lut.id
+                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
+                        : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-semibold text-white block">{lut.label}</span>
+                      <span className="text-[10px] text-[#71717A]">{lut.desc}</span>
+                    </div>
+                    {activeLUT === lut.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                  </button>
+                ))}
+              </div>
+
+              {activeLUT !== 'none' && (
+                <div className="mt-2.5 p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-[#A1A1AA]">LUT Blend Mix</span>
+                    <span className="font-mono-studio text-white font-bold">{lutIntensity}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    value={lutIntensity}
+                    onChange={(e) => setLutIntensity(Number(e.target.value))}
+                    className="w-full accent-[#3B82F6] cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
+            )}
+
+            {/* Color & Tone Adjustments Grouped */}
+            {(styleSection === 'all' || styleSection === 'adjust') && (
+              <div className={`flex flex-col gap-3 ${styleSection === 'all' ? 'border-t border-[#26262B] pt-3.5' : 'pt-0.5'}`}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-blue-400" />
+                    Color & Tone Controls
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleResetAdjustments}
+                    className="text-[10px] text-[#3B82F6] hover:text-blue-300 cursor-pointer flex items-center gap-1 font-medium"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5" />
+                    Reset Sliders
+                  </button>
+                </div>
+
+                {adjustmentGroups.map((group) => {
+                  const isGroupModified = group.items.some((item) => item.value !== item.def);
                   return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => handleTransitionChange(t.id)}
-                      className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
-                        isSelected
-                          ? 'bg-amber-500/15 border-amber-400/80 text-white shadow-sm ring-1 ring-amber-400/30'
-                          : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-6 h-6 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center shrink-0">
-                          {t.icon}
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-xs font-semibold text-white block truncate">{t.label}</span>
-                          <span className="text-[10px] text-[#71717A] truncate block">{t.desc}</span>
-                        </div>
+                    <div key={group.title} className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between px-0.5">
+                        <span className="text-[10px] font-mono-studio text-[#A1A1AA] uppercase tracking-wider font-semibold">
+                          {group.title}
+                        </span>
+                        {isGroupModified && (
+                          <span className="text-[9px] text-blue-400 font-mono-studio bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                            Modified
+                          </span>
+                        )}
                       </div>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-2" />}
-                    </button>
+
+                      <div className="flex flex-col gap-1.5">
+                        {group.items.map((ctrl) => {
+                          const isModified = ctrl.value !== ctrl.def;
+                          return (
+                            <div
+                              key={ctrl.label}
+                              className={`p-2.5 rounded-xl border transition-colors flex flex-col gap-1.5 ${
+                                isModified ? 'bg-[#1A1A22] border-[#3B82F6]/40' : 'bg-[#18181C] border-[#282830]'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-1.5">
+                                  {ctrl.icon}
+                                  <span className={`font-medium ${isModified ? 'text-white font-semibold' : 'text-[#A1A1AA]'}`}>
+                                    {ctrl.label}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="number"
+                                    min={ctrl.min}
+                                    max={ctrl.max}
+                                    value={ctrl.value}
+                                    onChange={(e) => ctrl.setter(Number(e.target.value))}
+                                    className="w-12 bg-[#121215] border border-[#2A2A30] focus:border-[#3B82F6] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none transition-colors"
+                                  />
+                                  <span className="text-[10px] text-[#71717A] w-3">{ctrl.unit}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => ctrl.setter(ctrl.def)}
+                                    title={`Reset to default (${ctrl.def}${ctrl.unit})`}
+                                    disabled={!isModified}
+                                    className={`cursor-pointer ml-1 p-0.5 rounded transition-colors ${
+                                      isModified ? 'text-[#A1A1AA] hover:text-white hover:bg-[#2A2A34]' : 'text-[#444] cursor-not-allowed opacity-40'
+                                    }`}
+                                  >
+                                    <RefreshCw className="w-2.5 h-2.5" />
+                                  </button>
+                                </div>
+                              </div>
+                              <input
+                                type="range"
+                                min={ctrl.min}
+                                max={ctrl.max}
+                                value={ctrl.value}
+                                onChange={(e) => ctrl.setter(Number(e.target.value))}
+                                className="w-full accent-[#3B82F6] cursor-pointer"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
-            </div>
-
-            </div>
+            )}
+          </div>
         )}
 
-        {/* ── LUT COLOR GRADING TAB ── */}
-        {activeSubTab === 'lut' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">3D LUT Film Emulation</span>
-            <div className="flex flex-col gap-1.5">
-              {LUT_PRESETS.map((lut) => (
+        {/* ── TRANSITIONS TAB ── */}
+        {activeSubTab === 'transitions' && (
+          <div className="flex flex-col gap-3.5 pt-0.5">
+            {/* Transition Duration & Quick Controls */}
+            <div className="p-2.5 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#A1A1AA] font-medium">Transition Duration</span>
+                <span className="font-mono-studio text-sky-400 font-bold">{transitionDuration.toFixed(1)}s</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0.1"
+                  max="2.0"
+                  step="0.1"
+                  value={transitionDuration}
+                  onChange={(e) => {
+                    const d = Number(e.target.value);
+                    setTransitionDuration(d);
+                    handleTransitionChange(activeTransition, d);
+                  }}
+                  className="flex-1 accent-[#3B82F6] cursor-pointer"
+                />
+                <div className="flex gap-1 shrink-0">
+                  {[0.3, 0.5, 0.8, 1.0].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        setTransitionDuration(d);
+                        handleTransitionChange(activeTransition, d);
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
+                        Math.abs(transitionDuration - d) < 0.05
+                          ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
+                          : 'bg-[#141417] text-[#71717A] hover:text-white border border-[#2A2A30]'
+                      }`}
+                    >
+                      {d}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Category Filter Pills (CapCut Style) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs select-none">
+              {(
+                [
+                  { id: 'all', label: 'All' },
+                  { id: 'basic', label: 'Basic' },
+                  { id: 'slide', label: 'Slide & Push' },
+                  { id: 'zoom', label: 'Zoom' },
+                  { id: 'wipe', label: 'Wipe' },
+                  { id: 'special', label: 'Special' },
+                ] as const
+              ).map((cat) => (
                 <button
-                  key={lut.id}
+                  key={cat.id}
                   type="button"
-                  onClick={() => setActiveLUT(lut.id)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
-                    activeLUT === lut.id
-                      ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                      : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
+                  onClick={() => setTransitionCategory(cat.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors shrink-0 ${
+                    transitionCategory === cat.id
+                      ? 'bg-[#282834] text-white border border-white/30 shadow-xs'
+                      : 'bg-[#16161A] text-[#71717A] hover:text-white border border-transparent'
                   }`}
                 >
-                  <div>
-                    <span className="text-xs font-semibold text-white block">{lut.label}</span>
-                    <span className="text-[10px] text-[#71717A]">{lut.desc}</span>
-                  </div>
-                  {activeLUT === lut.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                  {cat.label}
                 </button>
               ))}
             </div>
 
-            {activeLUT !== 'none' && (
-              <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#A1A1AA]">LUT Blend Mix</span>
-                  <span className="font-mono-studio text-white">{lutIntensity}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="10"
-                  max="100"
-                  value={lutIntensity}
-                  onChange={(e) => setLutIntensity(Number(e.target.value))}
-                  className="w-full accent-[#3B82F6] cursor-pointer"
-                />
-              </div>
-            )}
+            {/* Transition Cards Grid (Matching Reference Screenshot) */}
+            <div className="grid grid-cols-4 gap-2.5 pt-0.5">
+              {TRANSITION_PRESETS.filter((t) =>
+                transitionCategory === 'all' ? true : t.category === transitionCategory || t.id === 'none'
+              ).map((t) => {
+                const isSelected = activeTransition === t.id;
+                const isNone = t.id === 'none';
+
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => handleTransitionChange(t.id)}
+                    className="group flex flex-col items-center cursor-pointer text-left select-none"
+                    title={t.label}
+                  >
+                    <div
+                      className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 ${
+                        isSelected
+                          ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
+                          : 'border-[#26262E] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30 bg-[#16161A]'
+                      }`}
+                    >
+                      {isNone ? (
+                        <div className="w-full h-full bg-[#1A1A22] flex items-center justify-center">
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="w-7 h-7 text-[#71717A] stroke-[1.8]"
+                            fill="none"
+                            stroke="currentColor"
+                          >
+                            <circle cx="12" cy="12" r="9" />
+                            <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full relative overflow-hidden bg-[#141418]">
+                          <img
+                            src={MOUNTAIN_PREVIEW_IMG}
+                            alt={t.label}
+                            className={`w-full h-full object-cover transition-all duration-300 ${
+                              t.hoverEffect || ''
+                            }`}
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[11px] font-medium truncate block text-center mt-1.5 w-full leading-tight transition-colors ${
+                        isSelected ? 'text-white font-bold' : 'text-[#A1A1AA] group-hover:text-white'
+                      }`}
+                    >
+                      {t.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bottom Actions Floating Bar */}
+            <div className="mt-2 pt-2 border-t border-[#26262B] flex items-center justify-between">
+              <span className="text-[11px] text-[#A1A1AA]">
+                Active:{' '}
+                <span className="font-semibold text-white">
+                  {TRANSITION_PRESETS.find((p) => p.id === activeTransition)?.label || 'None'}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={handleApplyToAllTransitions}
+                className="px-3 py-1.5 rounded-lg bg-[#252530] hover:bg-[#323240] border border-white/10 hover:border-white/30 text-xs font-semibold text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                title="Apply this transition to all cuts on track"
+              >
+                <Check className="w-3.5 h-3.5 text-sky-400" />
+                Apply to all
+              </button>
+            </div>
           </div>
         )}
 
@@ -976,7 +1166,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             </div>
 
             <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex items-center justify-between">
-              <div>
+              <div className="flex flex-col gap-2">
                 <p className="text-xs font-semibold text-white">Loop Backdrop Clip</p>
                 <p className="text-[10px] text-[#71717A]">Automatically restart video at end</p>
               </div>
@@ -1043,7 +1233,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
         {/* ── TIME TAB ── */}
         {activeSubTab === 'time' && (
-          <div className="flex flex-col gap-3 pt-0.5">
+          <div className={`flex flex-col gap-3 ${styleSection === 'all' ? 'border-t border-[#26262B] pt-3.5 mt-2' : 'pt-0.5'}`}>
             <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-[#A1A1AA] font-medium">Active Clip Duration</span>

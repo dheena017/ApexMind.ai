@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { formatTime, SelectedClip, TimelineMediaClip } from './timelineTypes';
 import { FilmstripTrackBackground } from './FilmstripTrackBackground';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
-import { TimelineTransitionButton } from './TimelineTransitionButton';
+import { TimelineTransitionButton, getTransitionConfig } from './TimelineTransitionButton';
 import { Film } from 'lucide-react';
 
 export interface VideoTrackClipProps {
@@ -41,6 +41,11 @@ export interface VideoTrackClipProps {
   onCopyTimings?: () => void;
   onDetach?: () => void;
 }
+
+const getTransitionWingStyle = (transId?: string) => {
+  const cfg = getTransitionConfig(transId);
+  return { bg: cfg.wingBg, border: cfg.wingBorder };
+};
 
 export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
   clips,
@@ -143,6 +148,24 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
         const clipLane = clip.lane ?? 0;
         const topPos = 4 + clipLane * (laneHeight + laneGap);
 
+        // Outgoing transition to next clip (right side of this clip)
+        const overrides = transitionOverrides[clip.id] || {};
+        const activeTransition = overrides.transition !== undefined ? overrides.transition : clip.transition;
+        const activeDuration = overrides.transitionDuration !== undefined ? overrides.transitionDuration : (clip.transitionDuration || 0.5);
+        const nextClip = effectiveClips[idx + 1];
+        const hasOutgoingTrans = Boolean(nextClip && activeTransition && activeTransition !== 'none');
+        const outgoingWidth = hasOutgoingTrans ? Math.min(45, Math.max(8, ((activeDuration / 2) / (clip.duration || 1)) * 100)) : 0;
+        const outgoingStyle = hasOutgoingTrans ? getTransitionWingStyle(activeTransition) : null;
+
+        // Incoming transition from prev clip (left side of this clip)
+        const prevClip = idx > 0 ? effectiveClips[idx - 1] : undefined;
+        const prevOverrides = prevClip ? (transitionOverrides[prevClip.id] || {}) : {};
+        const prevTransition = prevClip ? (prevOverrides.transition !== undefined ? prevOverrides.transition : prevClip.transition) : undefined;
+        const prevDuration = prevClip ? (prevOverrides.transitionDuration !== undefined ? prevOverrides.transitionDuration : (prevClip.transitionDuration || 0.5)) : 0.5;
+        const hasIncomingTrans = Boolean(prevClip && prevTransition && prevTransition !== 'none');
+        const incomingWidth = hasIncomingTrans ? Math.min(45, Math.max(8, ((prevDuration / 2) / (clip.duration || 1)) * 100)) : 0;
+        const incomingStyle = hasIncomingTrans ? getTransitionWingStyle(prevTransition) : null;
+
         return (
           <div
             key={clip.id}
@@ -188,6 +211,32 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               count={Math.max(4, Math.min(14, Math.round((clip.duration || 3) * 2)))}
             />
 
+            {/* ── Transition Incoming Wing (Head of Right Clip) ── */}
+            {hasIncomingTrans && incomingStyle && (
+              <div
+                style={{ width: `${incomingWidth}%` }}
+                className={`absolute left-0 top-0 bottom-0 pointer-events-none select-none z-10 ${incomingStyle.bg} border-r ${incomingStyle.border} flex items-center overflow-hidden transition-all`}
+              >
+                <div className="absolute right-0 top-0 bottom-0 w-[1.5px] bg-white/40" />
+                <svg className="absolute bottom-0 left-0 w-full h-[5px] opacity-35 overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 10">
+                  <line x1="0" y1="0" x2="100" y2="10" stroke="white" strokeWidth="1.5" />
+                </svg>
+              </div>
+            )}
+
+            {/* ── Transition Outgoing Wing (Tail of Left Clip) ── */}
+            {hasOutgoingTrans && outgoingStyle && (
+              <div
+                style={{ width: `${outgoingWidth}%` }}
+                className={`absolute right-0 top-0 bottom-0 pointer-events-none select-none z-10 ${outgoingStyle.bg} border-l ${outgoingStyle.border} flex items-center justify-end overflow-hidden transition-all`}
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-[1.5px] bg-white/40" />
+                <svg className="absolute bottom-0 left-0 w-full h-[5px] opacity-35 overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 10">
+                  <line x1="0" y1="10" x2="100" y2="0" stroke="white" strokeWidth="1.5" />
+                </svg>
+              </div>
+            )}
+
             {/* ── Left Trim Handle (Clean, Native Website Theme) ── */}
             <div
               onPointerDown={(e) => {
@@ -204,7 +253,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
             </div>
 
             {/* Minimalist Floating Film Icon Badge */}
-            <div className="z-15 ml-3 flex items-center justify-center p-1 rounded-sm bg-black/60 border border-white/10 backdrop-blur-xs pointer-events-none select-none shadow-xs">
+            <div className="z-15 ml-5 flex items-center justify-center p-1 rounded-sm bg-black/60 border border-white/10 backdrop-blur-xs pointer-events-none select-none shadow-xs">
               <Film className="w-2.5 h-2.5 text-amber-300" />
             </div>
 
