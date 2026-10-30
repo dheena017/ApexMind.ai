@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { formatTime, SelectedClip, TimelineMediaClip } from './timelineTypes';
 import { FilmstripTrackBackground } from './FilmstripTrackBackground';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
+import { MoreHorizontal } from 'lucide-react';
 
 export interface VideoTrackClipProps {
   clips?: (TimelineMediaClip & { lane?: number })[];
@@ -111,12 +112,12 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               else onSelect?.();
               setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
             }}
-            className={`timeline-clip-card rounded-md px-2.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
+            className={`timeline-clip-card rounded-lg flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
               isSelected
-                ? 'bg-[#1E293B]/80 border-amber-400 text-white z-20 shadow-md ring-1 ring-amber-400/50'
+                ? 'border-amber-400 text-white z-20 shadow-[0_0_14px_rgba(245,158,11,0.3)] ring-1.5 ring-amber-400/80'
                 : videoTrackVisible
-                ? 'bg-[#111111]/75 border-[#333333] text-[#E5E5E5] hover:border-amber-500/70 z-10'
-                : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
+                ? 'border-[#2D2D33] hover:border-amber-400/60 text-[#E5E5E5] z-10'
+                : 'border-[#222226] text-[#6B7280] opacity-40 z-10'
             }`}
             style={{
               left: `${(clip.start / totalDuration) * 100}%`,
@@ -150,23 +151,39 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
                 if (onPointerDownTrimLeftClip) onPointerDownTrimLeftClip(e, clip);
                 else onPointerDownTrimLeft?.(e);
               }}
-              className="timeline-trim-handle-left bg-amber-500/40 hover:bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="timeline-trim-handle-left bg-gradient-to-r from-amber-500/50 via-amber-500/20 to-transparent hover:from-amber-400/80 opacity-0 group-hover:opacity-100 transition-opacity z-20"
               title="Drag to trim video start point"
             >
-              <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
+              <div className="w-1 h-3.5 bg-amber-200 rounded-full shadow-xs" />
             </div>
 
-            {/* Clip Name / Beat Label (Top-Left Corner) */}
-            {clip.name && (
-              <span className="absolute top-1 left-2 text-[8px] font-bold text-amber-200 truncate max-w-[80%] pointer-events-none px-1.5 py-0.5 z-10 bg-black/80 rounded border border-amber-500/20 backdrop-blur-xs shadow-xs select-none">
-                {clip.name}
+            {/* Unified Floating Duration & 3-Dot Options Pill (Indented safely from right trim handle) */}
+            <div
+              className="absolute bottom-1 right-3.5 flex items-center gap-1.5 z-20 bg-black/85 hover:bg-black/95 border border-white/10 hover:border-amber-400/50 rounded-full px-2 py-0.5 backdrop-blur-md shadow-lg transition-all"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="text-[9px] font-mono-studio font-bold text-amber-300 tracking-tight pointer-events-none select-none">
+                {formatTime(clip.duration)}
               </span>
-            )}
 
-            {/* Small Time Duration Badge (Bottom-Right Corner) */}
-            <span className="absolute bottom-1 right-2 text-[8.5px] font-mono-studio text-amber-300 pointer-events-none px-1.5 py-0.2 font-bold z-10 bg-black/80 rounded border border-amber-500/30 backdrop-blur-xs shadow-xs">
-              {formatTime(clip.duration)}
-            </span>
+              <div className="w-px h-2.5 bg-white/20" />
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onSelectClip) onSelectClip(clip.id);
+                  else onSelect?.();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setContextMenu({ x: rect.left, y: rect.bottom + 6, clipId: clip.id });
+                }}
+                className="text-amber-200/70 hover:text-white transition-colors cursor-pointer flex items-center justify-center p-0.5 -mr-0.5 rounded-full hover:bg-white/10"
+                title="Clip options & actions (...)"
+                aria-label="Clip options"
+              >
+                <MoreHorizontal className="w-3 h-3" />
+              </button>
+            </div>
 
             {/* Right Trim Handle */}
             <div
@@ -175,10 +192,10 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
                 if (onPointerDownTrimRightClip) onPointerDownTrimRightClip(e, clip);
                 else onPointerDownTrimRight?.(e);
               }}
-              className="timeline-trim-handle-right bg-amber-500/40 hover:bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="timeline-trim-handle-right bg-gradient-to-l from-amber-500/50 via-amber-500/20 to-transparent hover:from-amber-400/80 opacity-0 group-hover:opacity-100 transition-opacity z-20"
               title="Drag to trim video end point"
             >
-              <div className="w-0.5 h-3 bg-amber-200 rounded-full" />
+              <div className="w-1 h-3.5 bg-amber-200 rounded-full shadow-xs" />
             </div>
           </div>
         );

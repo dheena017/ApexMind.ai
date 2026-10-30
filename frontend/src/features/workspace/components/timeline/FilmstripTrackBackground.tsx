@@ -150,9 +150,8 @@ export const FilmstripTrackBackground: React.FC<FilmstripTrackBackgroundProps> =
               </div>
             )}
 
-            {/* 35mm Film Sprocket Hole Accents (Top & Bottom) */}
-            <div className="absolute top-0.5 left-1 w-1.5 h-1 bg-black/70 rounded-xs border border-white/10 pointer-events-none" />
-            <div className="absolute bottom-0.5 left-1 w-1.5 h-1 bg-black/70 rounded-xs border border-white/10 pointer-events-none" />
+            {/* Clean Frame Edge Highlight & Vignette */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/35 pointer-events-none" />
           </div>
         ))}
       </div>

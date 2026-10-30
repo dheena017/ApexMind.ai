@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { formatTime, SelectedClip, TimelineMediaClip } from './timelineTypes';
 import { ImageStripBackground } from './ImageStripBackground';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
+import { MoreHorizontal } from 'lucide-react';
 
 export interface ImageTrackClipProps {
   clips?: (TimelineMediaClip & { lane?: number })[];
@@ -142,16 +143,39 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
                 if (onPointerDownTrimLeftClip) onPointerDownTrimLeftClip(e, clip);
                 else onPointerDownTrimLeft?.(e);
               }}
-              className="timeline-trim-handle-left bg-rose-500/40 hover:bg-rose-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="timeline-trim-handle-left bg-gradient-to-r from-rose-500/50 via-rose-500/20 to-transparent hover:from-rose-400/80 opacity-0 group-hover:opacity-100 transition-opacity z-20"
               title="Drag to trim image start point"
             >
-              <div className="w-0.5 h-3 bg-rose-200 rounded-full" />
+              <div className="w-1 h-3.5 bg-rose-200 rounded-full shadow-xs" />
             </div>
 
-            {/* Small Time Duration Badge (Bottom-Right Corner) */}
-            <span className="absolute bottom-1 right-2 text-[8.5px] font-mono-studio text-rose-300 pointer-events-none px-1.5 py-0.2 font-bold z-10 bg-black/80 rounded border border-rose-500/30 backdrop-blur-xs shadow-xs">
-              {formatTime(clip.duration)}
-            </span>
+            {/* Unified Floating Duration & 3-Dot Options Pill */}
+            <div
+              className="absolute bottom-1 right-3.5 flex items-center gap-1.5 z-20 bg-black/85 hover:bg-black/95 border border-white/10 hover:border-rose-400/50 rounded-full px-2 py-0.5 backdrop-blur-md shadow-lg transition-all"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="text-[9px] font-mono-studio font-bold text-rose-300 tracking-tight pointer-events-none select-none">
+                {formatTime(clip.duration)}
+              </span>
+
+              <div className="w-px h-2.5 bg-white/20" />
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onSelectClip) onSelectClip(clip.id);
+                  else onSelect?.();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setContextMenu({ x: rect.left, y: rect.bottom + 6, clipId: clip.id });
+                }}
+                className="text-rose-200/70 hover:text-white transition-colors cursor-pointer flex items-center justify-center p-0.5 -mr-0.5 rounded-full hover:bg-white/10"
+                title="Clip options & actions (...)"
+                aria-label="Clip options"
+              >
+                <MoreHorizontal className="w-3 h-3" />
+              </button>
+            </div>
 
             {/* Right Trim Handle */}
             <div
@@ -160,10 +184,10 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
                 if (onPointerDownTrimRightClip) onPointerDownTrimRightClip(e, clip);
                 else onPointerDownTrimRight?.(e);
               }}
-              className="timeline-trim-handle-right bg-rose-500/40 hover:bg-rose-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="timeline-trim-handle-right bg-gradient-to-l from-rose-500/50 via-rose-500/20 to-transparent hover:from-rose-400/80 opacity-0 group-hover:opacity-100 transition-opacity z-20"
               title="Drag to trim image end point"
             >
-              <div className="w-0.5 h-3 bg-rose-200 rounded-full" />
+              <div className="w-1 h-3.5 bg-rose-200 rounded-full shadow-xs" />
             </div>
           </div>
         );

@@ -539,8 +539,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         setVoiceDuration(detail.duration);
         setEnabledTracks((prev) => ({ ...prev, voice: true, title: Boolean(script.title) }));
         setVoiceTrackMuted(false);
-        if (script.title) setTitleTrackVisible(true);
-      }
+              }
       if (newSfxClips.length > 0) {
         setSfxClips(newSfxClips);
         setEnabledTracks((prev) => ({ ...prev, sfx: true }));

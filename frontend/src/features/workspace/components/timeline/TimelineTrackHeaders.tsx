@@ -167,9 +167,6 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
   const [localImageLocked, setLocalImageLocked] = useState(false);
   const [localOverlayLocked, setLocalOverlayLocked] = useState(false);
   const [localCaptionsVisible, setLocalCaptionsVisible] = useState(true);
-  const [localVoiceSolo, setLocalVoiceSolo] = useState(false);
-  const [localMusicSolo, setLocalMusicSolo] = useState(false);
-  const [localSfxSolo, setLocalSfxSolo] = useState(false);
 
   // Active track count for header indicator
   const activeTrackCount = Object.values(enabledTracks).filter(Boolean).length;
@@ -234,25 +231,6 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     </button>
   );
 
-  // ── Render Solo Button (Audio) ───────────────────────────────────────
-  const renderSoloButton = (isSolo: boolean, onToggle: () => void, label: string) => (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggle();
-      }}
-      aria-label={isSolo ? `Unsolo ${label}` : `Solo ${label}`}
-      title={isSolo ? `Unsolo ${label}` : `Solo ${label}`}
-      className={`w-5 h-6 rounded flex items-center justify-center text-[9px] font-mono-studio font-bold transition-all cursor-pointer shrink-0 ${
-        isSolo
-          ? 'bg-amber-400 text-black font-black shadow-xs'
-          : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/10 active:scale-95'
-      }`}
-    >
-      S
-    </button>
-  );
 
   return (
     <div
@@ -483,11 +461,6 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
             )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
-            {renderSoloButton(
-              onToggleVoiceSolo ? voiceSolo : localVoiceSolo,
-              () => (onToggleVoiceSolo ? onToggleVoiceSolo() : setLocalVoiceSolo((p) => !p)),
-              'Voice'
-            )}
             {renderMuteButton(voiceTrackMuted, onToggleVoiceTrackMuted, 'Voiceover')}
             {renderLockButton(
               voiceTrackLocked,
@@ -527,11 +500,6 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
             )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
-            {renderSoloButton(
-              onToggleMusicSolo ? musicSolo : localMusicSolo,
-              () => (onToggleMusicSolo ? onToggleMusicSolo() : setLocalMusicSolo((p) => !p)),
-              'Music'
-            )}
             {renderMuteButton(musicTrackMuted, onToggleMusicTrackMuted, 'Music')}
             {renderLockButton(
               musicTrackLocked,
@@ -569,11 +537,6 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
             )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
-            {renderSoloButton(
-              onToggleSfxSolo ? sfxSolo : localSfxSolo,
-              () => (onToggleSfxSolo ? onToggleSfxSolo() : setLocalSfxSolo((p) => !p)),
-              'Sound FX'
-            )}
             {renderMuteButton(sfxTrackMuted, onToggleSfxTrackMuted, 'Sound FX')}
             {renderLockButton(
               sfxTrackLocked,
