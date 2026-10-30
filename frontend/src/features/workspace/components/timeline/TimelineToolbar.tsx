@@ -26,10 +26,10 @@ export interface TimelineToolbarProps {
   onToggleExpandedHeight?: () => void;
   activeTracksCount?: number;
   selectedClip?: SelectedClip | null;
-  captionsTrackLocked: boolean;
+  captionsTrackLocked?: boolean;
   onSplitClip: () => void;
   onDuplicateClip: () => void;
-  onAddCaption: () => void;
+  onAddCaption?: () => void;
   onDeleteClip: () => void;
   snapEnabled?: boolean;
   onToggleSnap?: () => void;
@@ -227,39 +227,25 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
 
       {/* Right: Add Track, Snapping, Zoom Level Controls & Shortcuts */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* ── Add Track & Add Subtitle Cue ── */}
-        <div className="flex items-center gap-1.5 relative">
-          <div ref={addTrackAnchorRef} className="relative">
-            <button
-              type="button"
-              onClick={onToggleAddTrackMenu}
-              className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg text-[10.5px] font-sans-studio font-medium text-[#E4E4E7] bg-[#16161E] border border-[#333340] hover:bg-[#22222D] hover:border-[#4B4B5C] hover:text-white transition-all cursor-pointer shadow-sm"
-              title="Add a new track from media categories"
-              aria-label="Add track"
-              aria-expanded={addTrackMenuOpen}
-            >
-              <Plus className="w-3 h-3 text-[#A1A1AA]" />
-              <span>Add Track</span>
-            </button>
-            <TimelineAddTrackMenu
-              isOpen={addTrackMenuOpen}
-              onClose={onCloseAddTrackMenu}
-              anchorRef={addTrackAnchorRef}
-              onEnableTrack={onEnableTrack}
-            />
-          </div>
-
+        {/* ── Add Track ── */}
+        <div ref={addTrackAnchorRef} className="relative">
           <button
             type="button"
-            onClick={onAddCaption}
-            disabled={captionsTrackLocked}
-            className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg text-[10.5px] font-sans-studio font-medium text-[#E4E4E7] bg-[#16161E] border border-[#333340] hover:bg-[#22222D] hover:border-[#4B4B5C] hover:text-white transition-all cursor-pointer shadow-sm disabled:opacity-35"
-            title="Add subtitle cue at current playhead (+)"
-            aria-label="Add subtitle cue at playhead"
+            onClick={onToggleAddTrackMenu}
+            className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg text-[10.5px] font-sans-studio font-medium text-[#E4E4E7] bg-[#16161E] border border-[#333340] hover:bg-[#22222D] hover:border-[#4B4B5C] hover:text-white transition-all cursor-pointer shadow-sm"
+            title="Add a new track from media categories"
+            aria-label="Add track"
+            aria-expanded={addTrackMenuOpen}
           >
             <Plus className="w-3 h-3 text-[#A1A1AA]" />
-            <span>Cue</span>
+            <span>Add Track</span>
           </button>
+          <TimelineAddTrackMenu
+            isOpen={addTrackMenuOpen}
+            onClose={onCloseAddTrackMenu}
+            anchorRef={addTrackAnchorRef}
+            onEnableTrack={onEnableTrack}
+          />
         </div>
 
         <div className="h-4 w-px bg-[#262630] mx-0.5" />
