@@ -123,18 +123,9 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               minWidth: '4px',
               top: `${topPos}px`,
               height: `${laneHeight}px`,
-              ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
             }}
             title={`Image Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
-            {/* Color Label Strip */}
-            {colorLabel && (
-              <div
-                className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
-                style={{ background: colorLabel }}
-              />
-            )}
-
             {/* Left Trim Handle */}
             <div
               onPointerDown={(e) => {

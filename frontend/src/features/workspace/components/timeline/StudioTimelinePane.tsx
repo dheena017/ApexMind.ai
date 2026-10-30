@@ -3343,9 +3343,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           handleSelectClip({ track: 'title' });
                           setTitleContextMenu({ x: e.clientX, y: e.clientY });
                         }}
-                        className={`timeline-clip-card absolute rounded-md px-1.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-all overflow-hidden shadow-xs ${selectedClip?.track === 'title'
-                            ? 'bg-[#0E2A44] border-sky-300 text-white z-20 ring-2 ring-sky-300/80 shadow-lg'
-                            : 'bg-[#0A1A2A]/90 hover:bg-[#0E2338] border-sky-500/35 text-sky-100 hover:border-sky-400/70 z-10'
+                        className={`timeline-clip-card absolute rounded-md px-1.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-all overflow-hidden ${selectedClip?.track === 'title'
+                            ? 'bg-[#0E2A44] border-sky-300 text-white z-20'
+                            : 'bg-[#0A1A2A] hover:bg-[#0E2338] border-sky-500/30 text-sky-100 z-10'
                           }`}
                         style={{
                           left: `${(titleStart / totalDuration) * 100}%`,
@@ -3353,17 +3353,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           minWidth: '44px',
                           top: '4px',
                           height: '32px',
-                          ...(titleColorLabel ? { boxShadow: `inset 0 0 0 2px ${titleColorLabel}40, 0 0 0 1px ${titleColorLabel}` } : {}),
                         }}
                       >
-                        {/* Color Label Strip */}
-                        {titleColorLabel && (
-                          <div
-                            className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
-                            style={{ background: titleColorLabel }}
-                          />
-                        )}
-
                         {/* Left Trim Handle */}
                         {!titleTrackLocked && (
                           <div

@@ -114,13 +114,13 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               else onSelect?.();
               setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
             }}
-            className={`timeline-clip-card rounded-md px-1.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden shadow-xs ${
+            className={`timeline-clip-card rounded-md px-1.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
               isSingleSelected
-                ? 'bg-[#38260A] border-amber-300 text-white z-20 ring-2 ring-amber-300/80 shadow-lg'
+                ? 'bg-[#38260A] border-amber-300 text-white z-20'
                 : isAllSelected
-                ? 'bg-[#38260A] border-amber-400/90 text-white z-20 ring-1 ring-amber-400/70 shadow-md'
+                ? 'bg-[#38260A] border-amber-400 text-white z-20'
                 : videoTrackVisible
-                ? 'bg-[#241A08]/90 hover:bg-[#30220A] border-amber-500/35 text-amber-100 hover:border-amber-400/70 z-10'
+                ? 'bg-[#241A08] hover:bg-[#30220A] border-amber-500/30 text-amber-100 z-10'
                 : 'bg-[#181818] border-[#222226] text-[#6B7280] opacity-40 z-10'
             }`}
             style={{
@@ -129,18 +129,9 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               minWidth: '4px',
               top: `${topPos}px`,
               height: `${laneHeight}px`,
-              ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
             }}
             title={`Video Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
-            {/* Color Label Strip (top edge) */}
-            {colorLabel && (
-              <div
-                className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
-                style={{ background: colorLabel }}
-              />
-            )}
-
 
 
             {/* Frame-by-frame Video Filmstrip across the box */}

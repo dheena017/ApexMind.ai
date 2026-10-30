@@ -117,7 +117,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
       text: 'text-emerald-100',
       accent: 'text-emerald-300',
       box: 'bg-[#0A241A]/90 hover:bg-[#0E3123] border-emerald-500/35',
-      selectedRing: 'bg-[#0E3827] border-emerald-300 text-white z-20 ring-2 ring-emerald-300/80 shadow-lg',
+      selectedRing: 'bg-[#0E3827] border-emerald-300 text-white z-20',
       handle: 'bg-emerald-400/40 hover:bg-emerald-400',
       handlePip: 'bg-white',
       icon: <Mic className="w-3 h-3 text-emerald-300/90 shrink-0 pointer-events-none" />,
@@ -127,7 +127,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
       text: 'text-purple-100',
       accent: 'text-purple-300',
       box: 'bg-[#1A0A24]/90 hover:bg-[#230E31] border-purple-500/35',
-      selectedRing: 'bg-[#280E38] border-purple-300 text-white z-20 ring-2 ring-purple-300/80 shadow-lg',
+      selectedRing: 'bg-[#280E38] border-purple-300 text-white z-20',
       handle: 'bg-purple-400/40 hover:bg-purple-400',
       handlePip: 'bg-white',
       icon: <Music className="w-3 h-3 text-purple-300/90 shrink-0 pointer-events-none" />,
@@ -137,7 +137,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
       text: 'text-amber-100',
       accent: 'text-amber-300',
       box: 'bg-[#24170A]/90 hover:bg-[#311E0E] border-amber-500/35',
-      selectedRing: 'bg-[#38220E] border-amber-300 text-white z-20 ring-2 ring-amber-300/80 shadow-lg',
+      selectedRing: 'bg-[#38220E] border-amber-300 text-white z-20',
       handle: 'bg-amber-400/40 hover:bg-amber-400',
       handlePip: 'bg-white',
       icon: <Sparkles className="w-3 h-3 text-amber-300/90 shrink-0 pointer-events-none" />,
@@ -200,18 +200,9 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
               minWidth: type === 'sfx' ? '64px' : '36px',
               top: `${topPos}px`,
               height: `${laneHeight}px`,
-              ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
             }}
             title={`${type.toUpperCase()} Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
-            {/* Color Label Strip (top edge) */}
-            {colorLabel && (
-              <div
-                className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
-                style={{ background: colorLabel }}
-              />
-            )}
-
             {/* Full-Width Procedural Audio Waveform Display (Subtle background) */}
             <div className="opacity-15 pointer-events-none absolute inset-0">
               <TimelineWaveform type={type} color={theme.color} />

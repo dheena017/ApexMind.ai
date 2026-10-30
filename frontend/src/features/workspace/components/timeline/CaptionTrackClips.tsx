@@ -86,7 +86,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
         const isSingleSelected = selectedClip?.track === 'caption' && !selectedClip.all && selectedClip.index === index;
         const isSelected = isAllSelected || isSingleSelected;
         const isEditing = editingClipIndex === index;
-        const clipColor = clip.color || clip.captionPresetColor || colorLabels[index] || '';
+        const clipColor = clip.color || colorLabels[index] || '';
         // Lane 0 is base row (bottom), higher lanes are positioned ABOVE!
         const topPos = 4 + (captionMaxLane - clip.lane) * (laneHeight + laneGap);
 
@@ -97,11 +97,11 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             onDoubleClick={() => onDoubleClickClip(index, clip.text)}
             onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clipDur)}
             onContextMenu={(e) => handleContextMenu(e, index)}
-            className={`timeline-clip-card absolute rounded-md px-1.5 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden shadow-xs ${isSingleSelected
-                ? 'bg-[#0E3538] border-teal-300 text-white z-20 ring-2 ring-teal-300/80 shadow-lg'
+            className={`timeline-clip-card absolute rounded-md px-1.5 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden ${isSingleSelected
+                ? 'bg-[#0E3538] border-teal-300 text-white z-20'
                 : isAllSelected
-                ? 'bg-[#0E3538] border-teal-400/90 text-white z-20 ring-1 ring-teal-400/70 shadow-md'
-                : 'bg-[#0A2224]/90 hover:bg-[#0E2E31] border-teal-500/35 text-teal-100 hover:border-teal-400/70 z-10'
+                ? 'bg-[#0E3538] border-teal-400 text-white z-20'
+                : 'bg-[#0A2224] hover:bg-[#0E2E31] border-teal-500/30 text-teal-100 z-10'
               }`}
             style={{
               left: `${startPct}%`,
@@ -109,18 +109,9 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
               minWidth: '44px',
               top: `${topPos}px`,
               height: `${laneHeight}px`,
-              ...(clipColor ? { boxShadow: `inset 0 0 0 2px ${clipColor}40, 0 0 0 1px ${clipColor}` } : {}),
             }}
             title={`"${clip.text}" (${clip.lane > 0 ? `Layer ${clip.lane + 1} (Above)` : 'Base Layer'}) - Drag to move or trim. Right-click for options.`}
           >
-            {/* Color Label Strip */}
-            {clipColor && (
-              <div
-                className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
-                style={{ background: clipColor }}
-              />
-            )}
-
             {/* Left Trim Handle */}
             {!captionsTrackLocked && (
               <div
