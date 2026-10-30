@@ -5,7 +5,8 @@ import {
   Eye, Copy, RotateCw, Zap, Star, Wand2, Check, Sliders, RefreshCw,
   Palette, Move, Lock,
 } from 'lucide-react';
-import { GeneratedScript } from '../../types';
+import { GeneratedScript, ScriptSubtitle } from '../../types';
+import { SelectedClip } from '../timeline/timelineTypes';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
 export interface TextCompoundInspectorProps {
@@ -13,6 +14,8 @@ export interface TextCompoundInspectorProps {
   onUpdateScript?: (updated: Partial<GeneratedScript>) => void;
   captionColor?: string;
   onCaptionColorChange?: (color: string) => void;
+  selectedClip?: SelectedClip | null;
+  onUpdateSubtitles?: (subtitles: ScriptSubtitle[]) => void;
 }
 
 const CAPTION_ANIMATION_PRESETS = [
@@ -64,11 +67,49 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
   onUpdateScript,
   captionColor,
   onCaptionColorChange,
+  selectedClip,
+  onUpdateSubtitles,
 }) => {
+  const effectiveSubtitles: ScriptSubtitle[] = (script?.subtitles && script.subtitles.length > 0)
+    ? script.subtitles
+    : ((script?.storyboard?.filter((sc) => sc.subtitleText).map((sc) => ({
+        text: sc.subtitleText || '',
+        start: sc.start,
+        duration: sc.duration,
+        captionPresetClass: sc.captionPresetClass,
+        captionPresetColor: sc.captionPresetColor,
+      })) as ScriptSubtitle[]) || []);
+
+  const isSingleCue = Boolean(
+    selectedClip?.track === 'caption' &&
+    !selectedClip.all &&
+    typeof selectedClip.index === 'number' &&
+    selectedClip.index >= 0 &&
+    selectedClip.index < (effectiveSubtitles.length || 0)
+  );
+  const isTitleSelected = Boolean(selectedClip?.track === 'title');
+
+  const activeCueIndex = isSingleCue && selectedClip?.track === 'caption' ? (selectedClip.index ?? 0) : null;
+  const activeCue = activeCueIndex !== null && effectiveSubtitles[activeCueIndex]
+    ? effectiveSubtitles[activeCueIndex]
+    : null;
+
+  const [titleTiming, setTitleTiming] = useState<{ start: number; duration: number }>({ start: 0, duration: 3.5 });
+
+  useEffect(() => {
+    const handleSelectedClipDetails = (e: Event) => {
+      const detail = (e as CustomEvent<{ selectedClip: SelectedClip | null; details: { start: number; duration: number; name: string } | null }>).detail;
+      if (detail?.selectedClip?.track === 'title' && detail.details) {
+        setTitleTiming({ start: detail.details.start, duration: detail.details.duration });
+      }
+    };
+    window.addEventListener('workspace:selected-clip-details', handleSelectedClipDetails);
+    return () => window.removeEventListener('workspace:selected-clip-details', handleSelectedClipDetails);
+  }, []);
   const [activeSubTab, setActiveSubTab] = useState<'text' | 'style' | 'animation' | 'position' | 'background' | 'shadow'>('text');
 
   // Text target selector: user can choose what part of script they are styling
-  const [textTarget, setTextTarget] = useState<'quote' | 'hook' | 'cta' | 'title'>('quote');
+  const [textTarget, setTextTarget] = useState<'cue' | 'quote' | 'hook' | 'cta' | 'title'>(isTitleSelected ? 'title' : isSingleCue ? 'cue' : 'quote');
 
   const [textContent, setTextContent] = useState('');
   const [textColor, setTextColor] = useState(captionColor || '#FFFFFF');
@@ -86,7 +127,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
   const [isStrikethrough, setIsStrikethrough] = useState(false);
 
   // Stroke & Outline
-  const [strokeOutline, setStrokeOutline] = useState(false);
+  const [strokeOutline, setStrokeOutline] = useState(true);
   const [strokeColor, setStrokeColor] = useState('#000000');
   const [strokeWidth, setStrokeWidth] = useState(2);
 
@@ -113,9 +154,45 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
   const [animDuration, setAnimDuration] = useState(0.35);
   const [displayDuration, setDisplayDuration] = useState(3.0);
 
-  // Sync text content based on selected text target
+  const isSyncingFromCueRef = useRef(false);
+
+  // Sync state when active cue changes so inspector reflects the selected clip
   useEffect(() => {
-    if (textTarget === 'quote') {
+    if (isSingleCue && activeCue) {
+      isSyncingFromCueRef.current = true;
+      setTextTarget('cue');
+      setTextContent(activeCue.text || '');
+      if (activeCue.color || activeCue.captionPresetColor) {
+        setTextColor(activeCue.color || activeCue.captionPresetColor!);
+      }
+      if (activeCue.fontFamily) setTextFont(activeCue.fontFamily);
+      if (activeCue.fontSize) setTextSize(activeCue.fontSize);
+      if (activeCue.fontWeight) setTextWeight(activeCue.fontWeight);
+      if (activeCue.textAlign) setTextAlign(activeCue.textAlign);
+      if (activeCue.textTransform) setTextTransform(activeCue.textTransform);
+      if (activeCue.isBold !== undefined) setIsBold(activeCue.isBold);
+      if (activeCue.isItalic !== undefined) setIsItalic(activeCue.isItalic);
+      if (activeCue.isUnderline !== undefined) setIsUnderline(activeCue.isUnderline);
+      if (activeCue.isStrikethrough !== undefined) setIsStrikethrough(activeCue.isStrikethrough);
+      if (activeCue.stroke !== undefined) setStrokeOutline(activeCue.stroke);
+      if (activeCue.strokeColor) setStrokeColor(activeCue.strokeColor);
+      if (activeCue.strokeWidth !== undefined) setStrokeWidth(activeCue.strokeWidth);
+      if (activeCue.dropShadow !== undefined) setDropShadow(activeCue.dropShadow);
+      if (activeCue.shadowColor) setShadowColor(activeCue.shadowColor);
+      if (activeCue.shadowBlur !== undefined) setShadowBlur(activeCue.shadowBlur);
+      if (activeCue.neonGlow !== undefined) setNeonGlow(activeCue.neonGlow);
+      if (activeCue.glowColor) setGlowColor(activeCue.glowColor);
+      if (activeCue.background) setBgColor(activeCue.background);
+      if (activeCue.bgRadius !== undefined) setBgRadius(activeCue.bgRadius);
+      if (activeCue.bgPadding !== undefined) setBgPadding(activeCue.bgPadding);
+      if (activeCue.opacity !== undefined) setOpacity(activeCue.opacity);
+      if (activeCue.posY !== undefined) setPosY(activeCue.posY);
+      if (activeCue.animation) setActiveAnimation(activeCue.animation);
+      setTimeout(() => { isSyncingFromCueRef.current = false; }, 50);
+    } else if (isTitleSelected) {
+      setTextTarget('title');
+      setTextContent(script?.title || '');
+    } else if (textTarget === 'quote') {
       setTextContent(script?.quote || '');
     } else if (textTarget === 'hook') {
       setTextContent(script?.hook || '');
@@ -124,7 +201,22 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     } else if (textTarget === 'title') {
       setTextContent(script?.title || '');
     }
-  }, [textTarget, script?.quote, script?.hook, script?.cta, script?.title]);
+  }, [
+    isTitleSelected,
+    isSingleCue,
+    activeCueIndex,
+    activeCue?.text,
+    activeCue?.color,
+    activeCue?.captionPresetColor,
+    activeCue?.fontFamily,
+    activeCue?.fontSize,
+    activeCue?.fontWeight,
+    textTarget,
+    script?.quote,
+    script?.hook,
+    script?.cta,
+    script?.title,
+  ]);
 
   // Sync color with prop if provided
   useEffect(() => {
@@ -145,17 +237,44 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
   const isInitialMount = useRef(true);
 
-  // Broadcast caption style changes to canvas in real time
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
+  // Helper to apply current single cue style to all cues if user requests
+  const handleApplyToAllCues = () => {
+    const subs = (script?.subtitles && script.subtitles.length > 0) ? script.subtitles : effectiveSubtitles;
+    if (!subs.length || !onUpdateSubtitles) return;
+    onCaptionColorChange?.(textColor);
+    const updated = subs.map((sub) => ({
+      ...sub,
+      color: textColor,
+      captionPresetColor: textColor,
+      fontFamily: textFont,
+      fontWeight: textWeight,
+      fontSize: textSize,
+      textAlign,
+      textTransform,
+      isBold,
+      isItalic,
+      isUnderline,
+      isStrikethrough,
+      stroke: strokeOutline,
+      strokeColor,
+      strokeWidth,
+      dropShadow,
+      shadowColor,
+      shadowBlur,
+      neonGlow,
+      glowColor,
+      background: bgColor,
+      bgRadius,
+      bgPadding,
+      opacity,
+      posY,
+      animation: activeAnimation,
+    }));
+    onUpdateSubtitles(updated);
     window.dispatchEvent(
       new CustomEvent('workspace:caption-style-change', {
         detail: {
-          text: textContent,
-          overridePreset,
+          cueIndex: null,
           color: textColor,
           fontFamily: textFont,
           fontWeight: textWeight,
@@ -187,24 +306,251 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         },
       })
     );
+  };
+
+  // Broadcast caption style changes to canvas in real time & persist per-clip
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (isSyncingFromCueRef.current) return;
+
+    // When an isolated cue is active, persist changes ONLY to that specific cue!
+    const subs = (script?.subtitles && script.subtitles.length > 0) ? script.subtitles : effectiveSubtitles;
+    if (isSingleCue && activeCueIndex !== null && subs.length > 0 && onUpdateSubtitles) {
+      const currentSub = subs[activeCueIndex];
+      if (currentSub && (
+        currentSub.color !== textColor ||
+        currentSub.fontFamily !== textFont ||
+        currentSub.fontSize !== textSize ||
+        currentSub.fontWeight !== textWeight ||
+        currentSub.textAlign !== textAlign ||
+        currentSub.textTransform !== textTransform ||
+        currentSub.isBold !== isBold ||
+        currentSub.isItalic !== isItalic ||
+        currentSub.isUnderline !== isUnderline ||
+        currentSub.isStrikethrough !== isStrikethrough ||
+        currentSub.stroke !== strokeOutline ||
+        currentSub.strokeColor !== strokeColor ||
+        currentSub.strokeWidth !== strokeWidth ||
+        currentSub.dropShadow !== dropShadow ||
+        currentSub.shadowColor !== shadowColor ||
+        currentSub.shadowBlur !== shadowBlur ||
+        currentSub.neonGlow !== neonGlow ||
+        currentSub.glowColor !== glowColor ||
+        currentSub.background !== bgColor ||
+        currentSub.bgRadius !== bgRadius ||
+        currentSub.bgPadding !== bgPadding ||
+        currentSub.opacity !== opacity ||
+        currentSub.posY !== posY ||
+        currentSub.animation !== activeAnimation
+      )) {
+        const updated = subs.map((sub, idx) =>
+          idx === activeCueIndex
+            ? {
+                ...sub,
+                color: textColor,
+                captionPresetColor: textColor,
+                fontFamily: textFont,
+                fontSize: textSize,
+                fontWeight: textWeight,
+                textAlign,
+                textTransform,
+                isBold,
+                isItalic,
+                isUnderline,
+                isStrikethrough,
+                stroke: strokeOutline,
+                strokeColor,
+                strokeWidth,
+                dropShadow,
+                shadowColor,
+                shadowBlur,
+                neonGlow,
+                glowColor,
+                background: bgColor,
+                bgRadius,
+                bgPadding,
+                opacity,
+                posY,
+                animation: activeAnimation,
+              }
+            : sub
+        );
+        onUpdateSubtitles(updated);
+        window.dispatchEvent(
+          new CustomEvent('workspace:update-clip-properties', {
+            detail: {
+              track: 'caption',
+              index: activeCueIndex,
+              color: textColor,
+              captionPresetColor: textColor,
+              fontFamily: textFont,
+              fontSize: textSize,
+              fontWeight: textWeight,
+              textAlign,
+              textTransform,
+              isBold,
+              isItalic,
+              isUnderline,
+              isStrikethrough,
+              stroke: strokeOutline,
+              strokeColor,
+              strokeWidth,
+              dropShadow,
+              shadowColor,
+              shadowBlur,
+              neonGlow,
+              glowColor,
+              background: bgColor,
+              bgRadius,
+              bgPadding,
+              opacity,
+              posY,
+              animation: activeAnimation,
+            },
+          })
+        );
+      }
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('workspace:caption-style-change', {
+        detail: {
+          cueIndex: isSingleCue ? activeCueIndex : null,
+          text: isSingleCue ? undefined : textContent,
+          overridePreset,
+          color: isSingleCue ? undefined : textColor,
+          fontFamily: isSingleCue ? undefined : textFont,
+          fontWeight: isSingleCue ? undefined : textWeight,
+          fontSize: isSingleCue ? undefined : textSize,
+          textAlign: isSingleCue ? undefined : textAlign,
+          textTransform: isSingleCue ? undefined : textTransform,
+          isBold: isSingleCue ? undefined : isBold,
+          isItalic: isSingleCue ? undefined : isItalic,
+          isUnderline: isSingleCue ? undefined : isUnderline,
+          isStrikethrough: isSingleCue ? undefined : isStrikethrough,
+          stroke: isSingleCue ? undefined : strokeOutline,
+          strokeColor: isSingleCue ? undefined : strokeColor,
+          strokeWidth: isSingleCue ? undefined : strokeWidth,
+          dropShadow: isSingleCue ? undefined : dropShadow,
+          shadowColor: isSingleCue ? undefined : shadowColor,
+          shadowBlur: isSingleCue ? undefined : shadowBlur,
+          neonGlow: isSingleCue ? undefined : neonGlow,
+          glowColor: isSingleCue ? undefined : glowColor,
+          letterSpacing: isSingleCue ? undefined : letterSpacing,
+          lineHeight: isSingleCue ? undefined : lineHeight,
+          background: isSingleCue ? undefined : bgColor,
+          bgRadius: isSingleCue ? undefined : bgRadius,
+          bgPadding: isSingleCue ? undefined : bgPadding,
+          opacity: isSingleCue ? undefined : opacity,
+          posY: isSingleCue ? undefined : posY,
+          animation: isSingleCue ? undefined : activeAnimation,
+          animDuration,
+          duration: displayDuration,
+        },
+      })
+    );
   }, [
     textContent, overridePreset, textColor, textFont, textWeight, textSize, textAlign, textTransform,
     isBold, isItalic, isUnderline, isStrikethrough, strokeOutline, strokeColor, strokeWidth,
     dropShadow, shadowColor, shadowBlur, neonGlow, glowColor, letterSpacing, lineHeight,
     bgColor, bgRadius, bgPadding, opacity, posY, activeAnimation, animDuration, displayDuration,
+    isSingleCue, activeCueIndex, onUpdateSubtitles, script?.subtitles
   ]);
 
   const handleUpdateContent = (newText: string) => {
     setTextContent(newText);
+    const subs = (script?.subtitles && script.subtitles.length > 0) ? script.subtitles : effectiveSubtitles;
+    if (isSingleCue && activeCueIndex !== null && subs.length > 0 && onUpdateSubtitles) {
+      const currentSub = subs[activeCueIndex];
+      const tokens = newText.trim().split(/\s+/).filter(Boolean);
+      const subStart = currentSub?.start ?? 0;
+      const subDur = Math.max(0.6, currentSub?.duration ?? 2.5);
+      const step = tokens.length > 0 ? subDur / tokens.length : 0;
+      const newWords = tokens.map((word, i) => ({
+        word,
+        start: parseFloat((subStart + i * step).toFixed(2)),
+        end: parseFloat((subStart + (i + 1) * step).toFixed(2)),
+        highlightColor: currentSub?.color || textColor || '#FACC15',
+      }));
+
+      const updated = subs.map((sub, idx) =>
+        idx === activeCueIndex ? { ...sub, text: newText, words: newWords } : sub
+      );
+      onUpdateSubtitles(updated);
+
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-text', {
+          detail: { track: 'caption', index: activeCueIndex, text: newText, words: newWords },
+        })
+      );
+      return;
+    }
     if (textTarget === 'quote') onUpdateScript?.({ quote: newText });
     else if (textTarget === 'hook') onUpdateScript?.({ hook: newText });
     else if (textTarget === 'cta') onUpdateScript?.({ cta: newText });
     else if (textTarget === 'title') onUpdateScript?.({ title: newText });
   };
 
+  const handleCueStartChange = (newStart: number) => {
+    const subs = (script?.subtitles && script.subtitles.length > 0) ? script.subtitles : effectiveSubtitles;
+    if (isSingleCue && activeCueIndex !== null && subs.length > 0 && onUpdateSubtitles) {
+      const roundedStart = Math.max(0, parseFloat(newStart.toFixed(2)));
+      const updated = subs.map((sub, idx) =>
+        idx === activeCueIndex ? { ...sub, start: roundedStart } : sub
+      );
+      onUpdateSubtitles(updated);
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-timing', {
+          detail: { track: 'caption', index: activeCueIndex, start: roundedStart },
+        })
+      );
+    }
+  };
+
+  const handleCueDurationChange = (newDur: number) => {
+    const subs = (script?.subtitles && script.subtitles.length > 0) ? script.subtitles : effectiveSubtitles;
+    if (isSingleCue && activeCueIndex !== null && subs.length > 0 && onUpdateSubtitles) {
+      const roundedDur = Math.max(0.2, parseFloat(newDur.toFixed(2)));
+      const updated = subs.map((sub, idx) =>
+        idx === activeCueIndex ? { ...sub, duration: roundedDur } : sub
+      );
+      onUpdateSubtitles(updated);
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-timing', {
+          detail: { track: 'caption', index: activeCueIndex, duration: roundedDur },
+        })
+      );
+    }
+  };
+
+  const handleTitleStartChange = (newStart: number) => {
+    const val = Math.max(0, parseFloat(newStart.toFixed(2)));
+    setTitleTiming((prev) => ({ ...prev, start: val }));
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-timing', {
+        detail: { track: 'title', start: val },
+      })
+    );
+  };
+
+  const handleTitleDurationChange = (newDur: number) => {
+    const val = Math.max(0.5, parseFloat(newDur.toFixed(2)));
+    setTitleTiming((prev) => ({ ...prev, duration: val }));
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-timing', {
+        detail: { track: 'title', duration: val },
+      })
+    );
+  };
+
   const handleColorChange = (newCol: string) => {
     setTextColor(newCol);
-    onCaptionColorChange?.(newCol);
+    if (!isSingleCue) {
+      onCaptionColorChange?.(newCol);
+    }
   };
 
   const activateCustomTextStyle = () => setOverridePreset(true);
@@ -218,7 +564,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     setStrokeOutline(combo.stroke);
     setStrokeColor(combo.strokeColor);
     setStrokeWidth(combo.strokeWidth);
-    onCaptionColorChange?.(combo.color);
+    if (!isSingleCue) {
+      onCaptionColorChange?.(combo.color);
+    }
   };
 
   const tabs = ['text', 'style', 'animation', 'position', 'background', 'shadow'] as const;
@@ -249,6 +597,121 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         {/* ── TEXT TAB ── */}
         {activeSubTab === 'text' && (
           <div className="flex flex-col gap-3 pt-0.5">
+            {/* Title Clip Active Banner with Start and Duration Steppers */}
+            {isTitleSelected && (
+              <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/30 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0"></span>
+                    <span className="font-bold text-sky-200 truncate">
+                      Editing Video Title Clip
+                    </span>
+                  </div>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0">
+                    TITLE CLIP
+                  </span>
+                </div>
+
+                {/* Title Specific Timings */}
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="flex flex-col gap-1 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
+                    <span className="text-[9px] text-[#71717A] uppercase font-bold">Start Time</span>
+                    <div className="flex items-center justify-between font-mono-studio text-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleTitleStartChange(Math.max(0, titleTiming.start - 0.2))}
+                        className="w-5 h-5 rounded bg-[#222228] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
+                      >-</button>
+                      <span className="text-white font-bold">{titleTiming.start.toFixed(1)}s</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTitleStartChange(titleTiming.start + 0.2)}
+                        className="w-5 h-5 rounded bg-[#222228] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
+                      >+</button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
+                    <span className="text-[9px] text-[#71717A] uppercase font-bold">Duration</span>
+                    <div className="flex items-center justify-between font-mono-studio text-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleTitleDurationChange(Math.max(0.5, titleTiming.duration - 0.2))}
+                        className="w-5 h-5 rounded bg-[#222228] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
+                      >-</button>
+                      <span className="text-white font-bold">{titleTiming.duration.toFixed(1)}s</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTitleDurationChange(titleTiming.duration + 0.2)}
+                        className="w-5 h-5 rounded bg-[#222228] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
+                      >+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Single Cue Active Banner */}
+            {isSingleCue && activeCue && (
+              <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-teal-400 shrink-0"></span>
+                    <span className="font-bold text-teal-200 truncate">
+                      Editing Cue #{activeCueIndex! + 1}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                      ISOLATED CUE
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleApplyToAllCues}
+                      className="px-2 py-0.5 rounded text-[9px] font-bold bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white transition-colors cursor-pointer border border-white/20"
+                      title="Apply this clip's color & style to all cues"
+                    >
+                      Apply to All
+                    </button>
+                  </div>
+                </div>
+
+                {/* Cue Specific Timings */}
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="flex flex-col gap-1 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
+                    <span className="text-[9px] text-[#71717A] uppercase font-bold">Start Time</span>
+                    <div className="flex items-center justify-between font-mono-studio text-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleCueStartChange(Math.max(0, (activeCue.start || 0) - 0.2))}
+                        className="w-5 h-5 rounded bg-[#222228] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
+                      >-</button>
+                      <span className="text-white font-bold">{(activeCue.start || 0).toFixed(1)}s</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCueStartChange((activeCue.start || 0) + 0.2)}
+                        className="w-5 h-5 rounded bg-[#222228] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
+                      >+</button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
+                    <span className="text-[9px] text-[#71717A] uppercase font-bold">Duration</span>
+                    <div className="flex items-center justify-between font-mono-studio text-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleCueDurationChange(Math.max(0.3, (activeCue.duration || 1.5) - 0.2))}
+                        className="w-5 h-5 rounded bg-[#222228] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
+                      >-</button>
+                      <span className="text-white font-bold">{(activeCue.duration || 1.5).toFixed(1)}s</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCueDurationChange((activeCue.duration || 1.5) + 0.2)}
+                        className="w-5 h-5 rounded bg-[#222228] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
+                      >+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Target Layer Selector */}
             <div className="flex flex-col gap-1">
               <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Select Layer To Edit</span>

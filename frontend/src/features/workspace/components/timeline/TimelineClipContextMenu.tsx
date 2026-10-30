@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Copy,
   Scissors,
@@ -85,24 +86,80 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
   onDetach,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [showColorPicker, setShowColorPicker] = React.useState(false);
-  const [adjustedPos, setAdjustedPos] = React.useState({ x, y });
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  // Adjust position so the menu doesn't go off-screen
-  useEffect(() => {
+  // Pre-calculate initial position to prevent any 1-frame position jump/clipping
+  const [adjustedPos, setAdjustedPos] = useState(() => {
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const estW = 210;
+    const estH = 280;
+    let initX = x;
+    let initY = y;
+    let flippedUp = false;
+    let flippedLeft = false;
+
+    if (y + estH > vh - 12) {
+      if (y - estH >= 12) {
+        initY = y - estH;
+        flippedUp = true;
+      } else {
+        initY = Math.max(12, vh - estH - 12);
+        flippedUp = initY < y;
+      }
+    }
+    if (x + estW > vw - 12) {
+      if (x - estW >= 12) {
+        initX = x - estW;
+        flippedLeft = true;
+      } else {
+        initX = Math.max(12, vw - estW - 12);
+        flippedLeft = initX < x;
+      }
+    }
+    return { x: initX, y: initY, flippedUp, flippedLeft };
+  });
+
+  // Measure synchronously before browser paint to guarantee 100% viewport fit
+  useLayoutEffect(() => {
     if (!isVisible || !menuRef.current) return;
     const menu = menuRef.current;
-    const rect = menu.getBoundingClientRect();
+    const width = menu.offsetWidth || 210;
+    const height = menu.offsetHeight || 280;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+
     let nx = x;
     let ny = y;
-    if (x + rect.width > vw) nx = Math.max(0, vw - rect.width - 8);
-    if (y + rect.height > vh) ny = Math.max(0, vh - rect.height - 8);
-    setAdjustedPos({ x: nx, y: ny });
+    let flippedUp = false;
+    let flippedLeft = false;
+
+    // Flip upwards if extending below viewport boundary
+    if (y + height > vh - 12) {
+      if (y - height >= 12) {
+        ny = y - height;
+        flippedUp = true;
+      } else {
+        ny = Math.max(12, vh - height - 12);
+        flippedUp = ny < y;
+      }
+    }
+
+    // Flip leftwards if extending beyond right window boundary
+    if (x + width > vw - 12) {
+      if (x - width >= 12) {
+        nx = x - width;
+        flippedLeft = true;
+      } else {
+        nx = Math.max(12, vw - width - 12);
+        flippedLeft = nx < x;
+      }
+    }
+
+    setAdjustedPos({ x: nx, y: ny, flippedUp, flippedLeft });
   }, [isVisible, x, y]);
 
-  // Close on outside click or Escape
+  // Close on outside click, window resize, timeline scroll, or Escape key
   useEffect(() => {
     if (!isVisible) return;
     const handleClick = (e: MouseEvent) => {
@@ -113,15 +170,26 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+    const handleScroll = (e: Event) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+
     document.addEventListener('mousedown', handleClick);
     document.addEventListener('keydown', handleKey);
+    window.addEventListener('resize', onClose);
+    window.addEventListener('scroll', handleScroll, true);
+
     return () => {
       document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('keydown', handleKey);
+      window.removeEventListener('resize', onClose);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [isVisible, onClose]);
 
-  if (!isVisible) return null;
+  if (!isVisible || typeof document === 'undefined') return null;
 
   const isAudioTrack = trackType === 'voice' || trackType === 'music' || trackType === 'sfx';
   const isVideoTrack = trackType === 'video' || trackType === 'image';
@@ -142,22 +210,27 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  return (
+  const submenuOpensLeft = typeof window !== 'undefined' && adjustedPos.x + 210 + 175 > window.innerWidth;
+  const submenuOpensUp = typeof window !== 'undefined' && adjustedPos.y + 160 > window.innerHeight;
+
+  const menuContent = (
     <div
       ref={menuRef}
       className="timeline-context-menu"
       style={{
         position: 'fixed',
-        left: adjustedPos.x,
-        top: adjustedPos.y,
-        zIndex: 9999,
+        left: `${adjustedPos.x}px`,
+        top: `${adjustedPos.y}px`,
+        zIndex: 99999,
+        transformOrigin: `${adjustedPos.flippedUp ? 'bottom' : 'top'} ${adjustedPos.flippedLeft ? 'right' : 'left'}`,
+        maxHeight: 'calc(100vh - 24px)',
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
       {/* Header / Track Badge */}
-      <div className="px-3 py-2 border-b border-white/10 flex items-center gap-2">
+      <div className="px-3 py-2 border-b border-white/10 flex items-center gap-2 rounded-t-[9px] bg-black/40">
         <div
-          className="w-2 h-2 rounded-full"
+          className="w-2 h-2 rounded-full shrink-0"
           style={{
             background:
               trackType === 'video' ? '#F59E0B'
@@ -170,14 +243,13 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
                             : '#6366F1',
           }}
         />
-        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest select-none">
+        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest select-none truncate">
           {trackLabel[trackType]}
         </span>
       </div>
 
-      {/* Menu Items */}
-      <div className="py-1">
-
+      {/* Menu Items Container */}
+      <div className="py-1 max-h-[calc(100vh-80px)] overflow-y-auto custom-scrollbar rounded-b-[9px]">
         {/* ── Edit / Rename ── */}
         {onRename && (
           <ContextMenuItem
@@ -276,18 +348,18 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               onMouseEnter={() => setShowColorPicker(true)}
               onMouseLeave={() => setShowColorPicker(false)}
             >
-              <Tag className="w-3.5 h-3.5 text-neutral-400" />
-              <span className="flex-1">Color Label</span>
-              <ChevronRight className="w-3 h-3 text-neutral-500" />
+              <Tag className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+              <span className="flex-1 truncate">Color Label</span>
+              <ChevronRight className="w-3 h-3 text-neutral-500 shrink-0" />
             </button>
             {showColorPicker && (
               <div
-                className="absolute left-full top-0 ml-1 bg-[#1A1A1A] border border-white/10 rounded-lg p-2 shadow-2xl"
+                className={`absolute ${submenuOpensLeft ? 'right-full mr-1' : 'left-full ml-1'} ${submenuOpensUp ? 'bottom-0' : 'top-0'} bg-[#1A1A1A] border border-white/10 rounded-lg p-2 shadow-2xl z-50`}
                 style={{ minWidth: 160 }}
                 onMouseEnter={() => setShowColorPicker(true)}
                 onMouseLeave={() => setShowColorPicker(false)}
               >
-                <p className="text-[9px] text-neutral-500 uppercase tracking-widest px-1 mb-1.5">
+                <p className="text-[9px] text-neutral-500 uppercase tracking-widest px-1 mb-1.5 select-none">
                   Label Color
                 </p>
                 <div className="grid grid-cols-4 gap-1.5">
@@ -335,6 +407,8 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
       </div>
     </div>
   );
+
+  return createPortal(menuContent, document.body);
 };
 
 // ── Sub-component: individual menu item ──────────────────────────
@@ -364,10 +438,10 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({
       ${!danger && !disabled ? 'text-neutral-200 hover:bg-white/8' : ''}
     `}
   >
-    <span className={`${danger ? 'text-red-400' : 'text-neutral-400'}`}>{icon}</span>
-    <span className="flex-1">{label}</span>
+    <span className={`shrink-0 ${danger ? 'text-red-400' : 'text-neutral-400'}`}>{icon}</span>
+    <span className="flex-1 truncate">{label}</span>
     {shortcut && (
-      <span className="text-[9px] text-neutral-600 font-mono tabular-nums">{shortcut}</span>
+      <span className="text-[9px] text-neutral-600 font-mono tabular-nums shrink-0">{shortcut}</span>
     )}
   </button>
 );

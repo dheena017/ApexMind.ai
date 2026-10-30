@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { formatTime, SelectedClip, TimelineMediaClip } from './timelineTypes';
 import { FilmstripTrackBackground } from './FilmstripTrackBackground';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
-import { MoreHorizontal } from 'lucide-react';
+import { Film, MoreVertical } from 'lucide-react';
 
 export interface VideoTrackClipProps {
   clips?: (TimelineMediaClip & { lane?: number })[];
@@ -84,12 +84,14 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
 
   return (
     <div
-      className="border-b border-[#262626] p-1 relative flex items-center w-full transition-all"
+      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full transition-all"
       style={{ height: `${actualTrackHeight}px` }}
     >
       {effectiveClips.map((clip) => {
-        const isSelected = selectedClip?.track === 'video' && (!selectedClip.clipId || selectedClip.clipId === clip.id);
-        const colorLabel = colorLabels[clip.id] || '';
+        const isAllSelected = selectedClip?.track === 'video' && Boolean(selectedClip.all);
+        const isSingleSelected = selectedClip?.track === 'video' && !selectedClip.all && (selectedClip.clipId === clip.id || (!selectedClip.clipId && effectiveClips.length === 1));
+        const isSelected = isAllSelected || isSingleSelected;
+        const colorLabel = clip.colorLabel || colorLabels[clip.id] || '';
         const clipLane = clip.lane ?? 0;
         const topPos = 4 + clipLane * (laneHeight + laneGap);
 
@@ -112,12 +114,14 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               else onSelect?.();
               setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
             }}
-            className={`timeline-clip-card rounded-lg flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
-              isSelected
-                ? 'border-amber-400 text-white z-20 shadow-[0_0_14px_rgba(245,158,11,0.3)] ring-1.5 ring-amber-400/80'
+            className={`timeline-clip-card rounded-md px-1.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden shadow-xs ${
+              isSingleSelected
+                ? 'bg-[#38260A] border-amber-300 text-white z-20 ring-2 ring-amber-300/80 shadow-lg'
+                : isAllSelected
+                ? 'bg-[#38260A] border-amber-400/90 text-white z-20 ring-1 ring-amber-400/70 shadow-md'
                 : videoTrackVisible
-                ? 'border-[#2D2D33] hover:border-amber-400/60 text-[#E5E5E5] z-10'
-                : 'border-[#222226] text-[#6B7280] opacity-40 z-10'
+                ? 'bg-[#241A08]/90 hover:bg-[#30220A] border-amber-500/35 text-amber-100 hover:border-amber-400/70 z-10'
+                : 'bg-[#181818] border-[#222226] text-[#6B7280] opacity-40 z-10'
             }`}
             style={{
               left: `${(clip.start / totalDuration) * 100}%`,
@@ -137,11 +141,14 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               />
             )}
 
-            {/* Filmstrip Repeating Background with Sprockets */}
+
+
+            {/* Frame-by-frame Video Filmstrip across the box */}
             <FilmstripTrackBackground
               imageUrl={clip.posterUrl || clip.thumbnailUrl || clip.url || mediaUrl || posterUrl}
               posterUrl={clip.posterUrl || clip.thumbnailUrl || posterUrl}
               videoUrl={clip.url || mediaUrl}
+              count={Math.max(4, Math.min(14, Math.round((clip.duration || 3) * 2)))}
             />
 
             {/* Left Trim Handle */}
@@ -151,23 +158,24 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
                 if (onPointerDownTrimLeftClip) onPointerDownTrimLeftClip(e, clip);
                 else onPointerDownTrimLeft?.(e);
               }}
-              className="timeline-trim-handle-left bg-gradient-to-r from-amber-500/50 via-amber-500/20 to-transparent hover:from-amber-400/80 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="timeline-trim-handle-left bg-amber-400/40 hover:bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
               title="Drag to trim video start point"
             >
-              <div className="w-1 h-3.5 bg-amber-200 rounded-full shadow-xs" />
+              <div className="w-0.5 h-3 bg-white rounded-full" />
             </div>
 
-            {/* Unified Floating Duration & 3-Dot Options Pill (Indented safely from right trim handle) */}
-            <div
-              className="absolute bottom-1 right-3.5 flex items-center gap-1.5 z-20 bg-black/85 hover:bg-black/95 border border-white/10 hover:border-amber-400/50 rounded-full px-2 py-0.5 backdrop-blur-md shadow-lg transition-all"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-[9px] font-mono-studio font-bold text-amber-300 tracking-tight pointer-events-none select-none">
-                {formatTime(clip.duration)}
-              </span>
+            {/* Floating Left: Minimalist Film Icon Badge (No words!) */}
+            <div className="z-10 ml-1.5 flex items-center justify-center p-1 rounded-sm bg-black/75 border border-white/15 backdrop-blur-xs pointer-events-none select-none shadow-xs">
+              <Film className="w-2.5 h-2.5 text-amber-300" />
+            </div>
 
-              <div className="w-px h-2.5 bg-white/20" />
-
+            {/* Floating Right: Duration Badge + 3-Dot Options Button (No words!) */}
+            <div className="z-10 mr-1.5 ml-auto flex items-center gap-1 bg-black/80 hover:bg-black/95 px-1.5 py-0.5 rounded-md border border-white/20 backdrop-blur-xs shadow-md select-none">
+              {(clip.duration >= 0.5) && (
+                <span className="text-[8px] font-mono-studio text-amber-300 font-bold pointer-events-none">
+                  {(Number(clip.duration) || 0).toFixed(1)}s
+                </span>
+              )}
               <button
                 type="button"
                 onClick={(e) => {
@@ -175,13 +183,13 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
                   if (onSelectClip) onSelectClip(clip.id);
                   else onSelect?.();
                   const rect = e.currentTarget.getBoundingClientRect();
-                  setContextMenu({ x: rect.left, y: rect.bottom + 6, clipId: clip.id });
+                  setContextMenu({ x: rect.left, y: rect.bottom + 4, clipId: clip.id });
                 }}
-                className="text-amber-200/70 hover:text-white transition-colors cursor-pointer flex items-center justify-center p-0.5 -mr-0.5 rounded-full hover:bg-white/10"
-                title="Clip options & actions (...)"
-                aria-label="Clip options"
+                className="text-amber-300/80 hover:text-white p-0.5 rounded hover:bg-white/20 transition-colors shrink-0 cursor-pointer"
+                title="Video options"
+                aria-label="Video options"
               >
-                <MoreHorizontal className="w-3 h-3" />
+                <MoreVertical className="w-3 h-3" />
               </button>
             </div>
 
@@ -192,10 +200,10 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
                 if (onPointerDownTrimRightClip) onPointerDownTrimRightClip(e, clip);
                 else onPointerDownTrimRight?.(e);
               }}
-              className="timeline-trim-handle-right bg-gradient-to-l from-amber-500/50 via-amber-500/20 to-transparent hover:from-amber-400/80 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="timeline-trim-handle-right bg-amber-400/40 hover:bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
               title="Drag to trim video end point"
             >
-              <div className="w-1 h-3.5 bg-amber-200 rounded-full shadow-xs" />
+              <div className="w-0.5 h-3 bg-white rounded-full" />
             </div>
           </div>
         );

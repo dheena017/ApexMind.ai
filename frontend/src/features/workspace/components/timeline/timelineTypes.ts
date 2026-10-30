@@ -1,4 +1,4 @@
-import { GeneratedScript, VisualBackdrop, ScriptSubtitle, VoiceProfile, MusicTrack } from '../../types';
+import { GeneratedScript, VisualBackdrop, ScriptSubtitle, VoiceProfile, MusicTrack, WordTimestamp } from '../../types';
 
 export const MIN_TIMELINE_ZOOM = 0.25;
 export const MAX_TIMELINE_ZOOM = 5;
@@ -41,6 +41,8 @@ export interface StudioTimelinePaneProps {
   timelineDuration?: number;
   timelineHeight?: number;
   onTimelineHeightChange?: (height: number) => void;
+  selectedClip?: SelectedClip | null;
+  onSelectClip?: (clip: SelectedClip) => void;
 }
 
 export const formatTime = (seconds: number): string => {
@@ -54,6 +56,71 @@ export const formatTime = (seconds: number): string => {
 export interface LaneSubtitle extends ScriptSubtitle {
   origIndex: number;
   lane: number;
+}
+
+export function groupMicroCaptionsIntoPhrases(
+  cues: ScriptSubtitle[],
+  minDuration: number = 2.0,
+  maxWords: number = 6
+): ScriptSubtitle[] {
+  if (!cues || !Array.isArray(cues) || cues.length <= 1) return cues || [];
+
+  // Check if cues are micro-cues (average words <= 2 or average duration < 1.4s)
+  const totalWords = cues.reduce((sum, c) => sum + (c.text ? c.text.trim().split(/\s+/).length : 1), 0);
+  const avgWords = totalWords / cues.length;
+  const avgDuration = cues.reduce((sum, c) => sum + (c.duration || 1), 0) / cues.length;
+
+  if (avgWords > 3 && avgDuration >= 2.0) {
+    return cues;
+  }
+
+  const grouped: ScriptSubtitle[] = [];
+  let current: ScriptSubtitle | null = null;
+  let currentWords: WordTimestamp[] = [];
+
+  for (const cue of cues) {
+    const cueText = (cue.text || '').trim();
+    if (!cueText) continue;
+
+    const rawWords = cueText.split(/\s+/);
+    const cueWords = cue.words && cue.words.length > 0
+      ? cue.words
+      : rawWords.map((w, idx) => {
+          const wDur = (cue.duration || 1) / Math.max(1, rawWords.length);
+          return {
+            word: w,
+            start: cue.start + idx * wDur,
+            end: cue.start + (idx + 1) * wDur,
+          };
+        });
+
+    if (!current) {
+      current = { ...cue, words: [...cueWords] };
+      currentWords = [...cueWords];
+      continue;
+    }
+
+    const currentWordCount = (current.text || '').trim().split(/\s+/).length;
+    const currentDur = (cue.start + (cue.duration || 1)) - current.start;
+
+    // Group if current duration is less than minDuration AND word count is less than maxWords
+    if (currentDur <= minDuration || currentWordCount < 3) {
+      current.text = `${current.text} ${cueText}`.trim();
+      current.duration = parseFloat(((cue.start + (cue.duration || 1)) - current.start).toFixed(2));
+      currentWords = [...currentWords, ...cueWords];
+      current.words = currentWords;
+    } else {
+      grouped.push(current);
+      current = { ...cue, words: [...cueWords] };
+      currentWords = [...cueWords];
+    }
+  }
+
+  if (current) {
+    grouped.push(current);
+  }
+
+  return grouped;
 }
 
 export const computeCaptionLanes = (clips: ScriptSubtitle[]): { lanes: LaneSubtitle[]; maxLane: number } => {
@@ -155,6 +222,30 @@ export interface TimelineMediaClip {
   laneOffset?: number;
   posterUrl?: string;
   thumbnailUrl?: string;
+  colorLabel?: string;
+  filterSettings?: {
+    brightness?: number;
+    contrast?: number;
+    saturate?: number;
+    vignette?: number;
+    hue?: number;
+    blur?: number;
+    grain?: number;
+    lut?: string;
+    lutIntensity?: number;
+    stylePreset?: string;
+  };
+  transform?: {
+    fitMode?: 'fill' | 'fit' | 'crop';
+    scale?: number;
+    rotation?: number;
+    flipH?: boolean;
+    flipV?: boolean;
+    posX?: number;
+    posY?: number;
+  };
+  animation?: string;
+  volume?: number;
 }
 
 export interface TimelineAudioClip {
@@ -179,14 +270,14 @@ export interface TimelineOverlayClip {
 }
 
 export type SelectedClip =
-  | { track: 'video'; clipId?: string }
-  | { track: 'image'; clipId?: string }
-  | { track: 'caption'; index: number }
-  | { track: 'title' }
-  | { track: 'overlay'; clipId?: string }
-  | { track: 'voice'; clipId?: string }
-  | { track: 'music'; clipId?: string }
-  | { track: 'sfx'; clipId?: string }
+  | { track: 'video'; clipId?: string; all?: boolean }
+  | { track: 'image'; clipId?: string; all?: boolean }
+  | { track: 'caption'; index?: number; all?: boolean }
+  | { track: 'title'; all?: boolean }
+  | { track: 'overlay'; clipId?: string; all?: boolean }
+  | { track: 'voice'; clipId?: string; all?: boolean }
+  | { track: 'music'; clipId?: string; all?: boolean }
+  | { track: 'sfx'; clipId?: string; all?: boolean }
   | null;
 
 export type DragAction =
@@ -210,3 +301,16 @@ export interface EnabledTracks {
   music: boolean;
   sfx: boolean;
 }
+
+export type TrackId = keyof EnabledTracks;
+
+export const DEFAULT_TRACK_ORDER: TrackId[] = [
+  'video',
+  'image',
+  'overlay',
+  'captions',
+  'title',
+  'voice',
+  'music',
+  'sfx',
+];

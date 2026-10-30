@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Crop, FlipHorizontal, FlipVertical, RotateCw, Minus, Plus, Film,
   Sliders, Zap, Palette, Clock, Volume2, VolumeX, RefreshCw,
@@ -6,7 +6,8 @@ import {
   Check, Maximize2, Lock, Unlock, Play, ChevronRight, Gauge,
   Smartphone, Monitor, Square,
 } from 'lucide-react';
-import { VisualBackdrop } from '../../types';
+import { VisualBackdrop, DEFAULT_VISUAL_BACKDROPS } from '../../types';
+import { SelectedClip } from '../timeline/timelineTypes';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
 export type VideoInspectorTab =
@@ -83,6 +84,7 @@ export interface VideoCompoundInspectorProps {
   canvasAspectRatio?: '9:16' | '16:9' | '1:1' | '4:5' | '21:9';
   onCanvasAspectRatioChange?: (ratio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => void;
   initialSubTab?: VideoInspectorTab;
+  selectedClip?: SelectedClip | null;
 }
 
 const formatTimeDigital = (seconds: number) => {
@@ -109,7 +111,22 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   canvasAspectRatio = '9:16',
   onCanvasAspectRatioChange,
   initialSubTab = 'transform',
+  selectedClip,
 }) => {
+  const backdropOptions = useMemo(() => {
+    const list = (backdrops && Array.isArray(backdrops) && backdrops.length > 0)
+      ? backdrops
+      : DEFAULT_VISUAL_BACKDROPS;
+    const finalItems = (list && list.length > 0) ? list : DEFAULT_VISUAL_BACKDROPS;
+    return finalItems
+      .filter((b) => b && (b.id || b.name))
+      .map((b) => ({
+        value: b.id || b.name,
+        label: `${b.name || b.id}${b.category ? ` (${b.category})` : ''}`,
+        description: b.category,
+        badge: b.aspectRatio || '9:16',
+      }));
+  }, [backdrops]);
   const [activeSubTab, setActiveSubTab] = useState<VideoInspectorTab>(initialSubTab);
 
   useEffect(() => {
@@ -160,32 +177,67 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   const [loopVideo, setLoopVideo] = useState(true);
   const [muteVideo, setMuteVideo] = useState(false);
 
-  // Broadcast transform changes to the canvas in real time
+  // Broadcast transform changes to the canvas in real time (scoped to clipId if single clip selected)
   useEffect(() => {
+    const isSingleVideoClip = Boolean(selectedClip && selectedClip.track === 'video' && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
+    const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
     window.dispatchEvent(
       new CustomEvent('workspace:backdrop-transform', {
-        detail: { fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect },
+        detail: { clipId, fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect },
       })
     );
-  }, [fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect]);
+    if (clipId) {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: {
+            track: 'video',
+            clipId,
+            transform: { fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect },
+          },
+        })
+      );
+    }
+  }, [fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect, selectedClip]);
 
-  // Broadcast filter adjustments to the canvas
+  // Broadcast filter adjustments to the canvas (scoped to clipId if single clip selected)
   useEffect(() => {
+    const isSingleVideoClip = Boolean(selectedClip && selectedClip.track === 'video' && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
+    const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
     window.dispatchEvent(
       new CustomEvent('workspace:backdrop-filter', {
-        detail: { brightness, contrast, saturate: saturation, vignette, hue, blur, grain, lut: activeLUT, lutIntensity },
+        detail: { clipId, brightness, contrast, saturate: saturation, vignette, hue, blur, grain, lut: activeLUT, lutIntensity },
       })
     );
-  }, [brightness, contrast, saturation, vignette, hue, blur, grain, activeLUT, lutIntensity]);
+    if (clipId) {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: {
+            track: 'video',
+            clipId,
+            filterSettings: { brightness, contrast, saturate: saturation, vignette, hue, blur, grain, lut: activeLUT, lutIntensity, stylePreset: activeStyle },
+          },
+        })
+      );
+    }
+  }, [brightness, contrast, saturation, vignette, hue, blur, grain, activeLUT, lutIntensity, selectedClip, activeStyle]);
 
-  // Broadcast animation changes
+  // Broadcast animation changes (scoped to clipId if single clip selected)
   useEffect(() => {
+    const isSingleVideoClip = Boolean(selectedClip && selectedClip.track === 'video' && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
+    const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
     window.dispatchEvent(
       new CustomEvent('workspace:backdrop-animation', {
-        detail: { animation, speed: parseFloat(animSpeed) },
+        detail: { clipId, animation, speed: parseFloat(animSpeed) },
       })
     );
-  }, [animation, animSpeed]);
+    if (clipId) {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: 'video', clipId, animation },
+        })
+      );
+    }
+  }, [animation, animSpeed, selectedClip]);
 
   // Broadcast audio changes
   useEffect(() => {
@@ -219,9 +271,21 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   };
 
   const handleDurationChange = (newDur: number) => {
-    const val = Math.max(1, Math.min(300, parseFloat(newDur.toFixed(1))));
+    const val = Math.max(0.5, Math.min(300, parseFloat(newDur.toFixed(1))));
     setLocalDuration(val);
-    onUpdateDuration?.(val);
+    if (selectedClip && !selectedClip.all && 'clipId' in selectedClip && selectedClip.clipId) {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-timing', {
+          detail: {
+            track: selectedClip.track,
+            clipId: selectedClip.clipId,
+            duration: val,
+          },
+        })
+      );
+    } else {
+      onUpdateDuration?.(val);
+    }
   };
 
   const applyStylePreset = (preset: typeof VIDEO_STYLE_PRESETS[0]) => {
@@ -259,6 +323,21 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
       {/* ── Tab Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+        {Boolean(selectedClip && selectedClip.track === 'video' && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all) && (
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs mb-3">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+              <span className="font-bold text-amber-200 truncate">
+                Editing Clip: {'clipId' in selectedClip! ? selectedClip.clipId : ''}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                ISOLATED CLIP
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* ── TRANSFORM TAB ── */}
         {activeSubTab === 'transform' && (
@@ -500,20 +579,21 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               <CustomSelect
                 label="Select Visual Backdrop"
                 labelClassName="text-[10px] text-[#71717A] uppercase font-bold tracking-wider mb-1 block"
-                value={activeBackdrop?.id || ''}
+                value={customVideoUrl || customImageUrl ? '' : (activeBackdrop?.id || '')}
                 onChange={(backdropId) => {
                   onSetCustomImage?.(undefined);
                   onSetCustomVideo?.(undefined);
                   onSelectBackdrop(backdropId);
                 }}
-                options={backdrops.map((b) => ({
-                  value: b.id,
-                  label: `${b.name} (${b.category})`,
-                  description: b.category,
-                  badge: b.aspectRatio || '9:16',
-                }))}
+                options={backdropOptions}
                 icon={<Film className="w-3.5 h-3.5 text-[#60A5FA]" />}
-                placeholder="Choose backdrop preset..."
+                placeholder={
+                  customVideoUrl
+                    ? 'Custom Video active — switch to preset...'
+                    : customImageUrl
+                    ? 'Custom Image active — switch to preset...'
+                    : 'Choose backdrop preset...'
+                }
                 buttonClassName="bg-[#1C1C20] border-[#2A2A30] hover:border-[#3B82F6]/50"
                 menuClassName="bg-[#1C1C20] border-[#2A2A30]"
               />

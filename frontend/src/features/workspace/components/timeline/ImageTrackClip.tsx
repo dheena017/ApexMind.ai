@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { formatTime, SelectedClip, TimelineMediaClip } from './timelineTypes';
 import { ImageStripBackground } from './ImageStripBackground';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
-import { MoreHorizontal } from 'lucide-react';
+import { Image as ImageIcon, MoreVertical } from 'lucide-react';
 
 export interface ImageTrackClipProps {
   clips?: (TimelineMediaClip & { lane?: number })[];
@@ -80,12 +80,14 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
 
   return (
     <div
-      className="border-b border-[#262626] p-1 relative flex items-center w-full transition-all"
+      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full transition-all"
       style={{ height: `${actualTrackHeight}px` }}
     >
       {effectiveClips.map((clip) => {
-        const isSelected = selectedClip?.track === 'image' && (!selectedClip.clipId || selectedClip.clipId === clip.id);
-        const colorLabel = colorLabels[clip.id] || '';
+        const isAllSelected = selectedClip?.track === 'image' && Boolean(selectedClip.all);
+        const isSingleSelected = selectedClip?.track === 'image' && !selectedClip.all && (selectedClip.clipId === clip.id || (!selectedClip.clipId && effectiveClips.length === 1));
+        const isSelected = isAllSelected || isSingleSelected;
+        const colorLabel = clip.colorLabel || colorLabels[clip.id] || '';
         const clipLane = clip.lane ?? 0;
         const topPos = 4 + clipLane * (laneHeight + laneGap);
 
@@ -108,11 +110,11 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               else onSelect?.();
               setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
             }}
-            className={`timeline-clip-card rounded-md px-2.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
+            className={`timeline-clip-card rounded-md px-1.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden shadow-xs ${
               isSelected
-                ? 'bg-[#1E293B] border-[#3A3A3A] text-white z-20'
+                ? 'bg-[#380E21] border-rose-300 text-white z-20 ring-2 ring-rose-300/80 shadow-lg'
                 : imageTrackVisible
-                ? 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
+                ? 'bg-[#240A14]/90 hover:bg-[#310E1D] border-rose-500/35 text-rose-100 hover:border-rose-400/70 z-10'
                 : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
             }`}
             style={{
@@ -133,9 +135,6 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               />
             )}
 
-            {/* Photo Filmstrip Background */}
-            <ImageStripBackground imageUrl={clip.url || imageUrl} />
-
             {/* Left Trim Handle */}
             <div
               onPointerDown={(e) => {
@@ -143,23 +142,23 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
                 if (onPointerDownTrimLeftClip) onPointerDownTrimLeftClip(e, clip);
                 else onPointerDownTrimLeft?.(e);
               }}
-              className="timeline-trim-handle-left bg-gradient-to-r from-rose-500/50 via-rose-500/20 to-transparent hover:from-rose-400/80 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="timeline-trim-handle-left bg-rose-400/40 hover:bg-rose-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
               title="Drag to trim image start point"
             >
-              <div className="w-1 h-3.5 bg-rose-200 rounded-full shadow-xs" />
+              <div className="w-0.5 h-3 bg-white rounded-full" />
             </div>
 
-            {/* Unified Floating Duration & 3-Dot Options Pill */}
-            <div
-              className="absolute bottom-1 right-3.5 flex items-center gap-1.5 z-20 bg-black/85 hover:bg-black/95 border border-white/10 hover:border-rose-400/50 rounded-full px-2 py-0.5 backdrop-blur-md shadow-lg transition-all"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-[9px] font-mono-studio font-bold text-rose-300 tracking-tight pointer-events-none select-none">
-                {formatTime(clip.duration)}
+            {/* Clean Box Content: Icon + Title + Duration + 3-Dot Button */}
+            <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1 select-none z-10">
+              <ImageIcon className="w-3 h-3 text-rose-300/90 shrink-0 pointer-events-none" />
+              <span className="text-[10px] font-bold text-rose-100 truncate tracking-tight flex-1 min-w-0 pointer-events-none">
+                {clip.name || 'Image Clip'}
               </span>
-
-              <div className="w-px h-2.5 bg-white/20" />
-
+              {(clip.duration >= 0.5) && (
+                <span className="text-[8px] font-mono-studio text-rose-300/90 shrink-0 bg-black/60 border border-rose-500/20 px-1.5 py-0.5 rounded font-bold pointer-events-none">
+                  {(Number(clip.duration) || 0).toFixed(1)}s
+                </span>
+              )}
               <button
                 type="button"
                 onClick={(e) => {
@@ -167,13 +166,13 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
                   if (onSelectClip) onSelectClip(clip.id);
                   else onSelect?.();
                   const rect = e.currentTarget.getBoundingClientRect();
-                  setContextMenu({ x: rect.left, y: rect.bottom + 6, clipId: clip.id });
+                  setContextMenu({ x: rect.left, y: rect.bottom + 4, clipId: clip.id });
                 }}
-                className="text-rose-200/70 hover:text-white transition-colors cursor-pointer flex items-center justify-center p-0.5 -mr-0.5 rounded-full hover:bg-white/10"
-                title="Clip options & actions (...)"
-                aria-label="Clip options"
+                className="text-rose-300/70 hover:text-white hover:bg-white/10 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                title="Image options"
+                aria-label="Image options"
               >
-                <MoreHorizontal className="w-3 h-3" />
+                <MoreVertical className="w-3 h-3" />
               </button>
             </div>
 
@@ -184,10 +183,10 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
                 if (onPointerDownTrimRightClip) onPointerDownTrimRightClip(e, clip);
                 else onPointerDownTrimRight?.(e);
               }}
-              className="timeline-trim-handle-right bg-gradient-to-l from-rose-500/50 via-rose-500/20 to-transparent hover:from-rose-400/80 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="timeline-trim-handle-right bg-rose-400/40 hover:bg-rose-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
               title="Drag to trim image end point"
             >
-              <div className="w-1 h-3.5 bg-rose-200 rounded-full shadow-xs" />
+              <div className="w-0.5 h-3 bg-white rounded-full" />
             </div>
           </div>
         );

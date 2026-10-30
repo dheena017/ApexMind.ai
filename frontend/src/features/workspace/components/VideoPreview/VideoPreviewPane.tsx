@@ -69,6 +69,7 @@ interface VideoPreviewPaneProps {
   isLooping?: boolean;
   onToggleLoop?: () => void;
   audioUrl?: string | null;
+  musicUrl?: string | null;
   onApplyRecordedVoice?: (recordedUrl: string) => void;
   onUpdateScript?: (updated: Partial<GeneratedScript>) => void;
   onSelectBackdrop?: (backdropId: string) => void;
@@ -175,6 +176,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   isExporting = false,
   exportDuration = 30,
   exportFileName = 'apexmind-video',
+  audioUrl,
+  musicUrl,
   audioElement,
   audioOutputStream,
   onExportComplete,
@@ -211,7 +214,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     isItalic: false,
     isUnderline: false,
     isStrikethrough: false,
-    stroke: false,
+    stroke: true,
     strokeColor: '#000000',
     strokeWidth: 2,
     dropShadow: true,
@@ -289,14 +292,71 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         if (!preview) throw new Error('The video preview is not available.');
 
         // Broad cross-browser MIME type negotiation
+        // Fast check: Try direct native FFmpeg render from backend first for pristine 60/30fps and full audio
+        try {
+          window.dispatchEvent(new CustomEvent('workspace:export-state', {
+            detail: { exporting: true, message: 'Rendering broadcast-quality Full HD video with FFmpeg...' },
+          }));
+
+          const maxSubEnd = Math.max(
+            0,
+            ...(script.subtitles || []).map((s) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
+          );
+          const fullRenderDuration = Math.max(
+            Number(exportDuration) || 0,
+            Number(duration) || 0,
+            Number(playbackDuration) || 0,
+            maxSubEnd,
+            15
+          );
+
+          const renderPayload = {
+            title: script.title || exportFileName || 'apexmind-video',
+            aspectRatio: canvasAspectRatio,
+            duration: fullRenderDuration,
+            audioUrl: audioUrl || null,
+            musicUrl: musicUrl || null,
+            backdropUrl: customVideoUrl || customImageUrl || activeBackdrop?.imageUrl || null,
+            backdropType: customVideoUrl ? 'video' : 'image',
+            subtitles: (script.subtitles || []).map((s) => ({
+              start: s.start,
+              duration: s.duration,
+              text: s.text,
+            })),
+            captionColor: captionPresetColor || '#FACC15',
+          };
+
+          const res = await fetch('/api/workspace/render-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(renderPayload),
+          });
+
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.videoUrl) {
+              const link = document.createElement('a');
+              link.href = result.videoUrl;
+              link.download = result.filename || `${renderPayload.title}.mp4`;
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+              onExportComplete?.();
+              return;
+            }
+          }
+        } catch (serverErr) {
+          console.warn('Server FFmpeg render unavailable, using browser capture:', serverErr);
+        }
+
+        // Broad cross-browser MIME type negotiation (prefer VP9/Opus which preserves audio)
         const candidateTypes = [
+          'video/webm;codecs=vp9,opus',
+          'video/webm;codecs=h264,opus',
+          'video/webm',
           'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
           'video/mp4;codecs=h264,aac',
           'video/mp4',
-          'video/webm;codecs=h264,opus',
-          'video/webm;codecs=vp9,opus',
-          'video/webm;codecs=vp8,opus',
-          'video/webm',
         ];
         let mimeType = '';
         if (typeof MediaRecorder !== 'undefined') {
@@ -415,20 +475,19 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             const pillW = Math.min(dimensions.width * 0.9, metrics.width + 48);
             const pillH = titleFontSize + 24;
 
-            context.fillStyle = 'rgba(15, 23, 42, 0.88)';
-            context.strokeStyle = 'rgba(56, 189, 248, 0.6)';
-            context.lineWidth = 3;
-            if (context.roundRect) {
-              context.beginPath();
-              context.roundRect(dimensions.width / 2 - pillW / 2, titleY - pillH / 2, pillW, pillH, 16);
-              context.fill();
-              context.stroke();
-            } else {
-              context.fillRect(dimensions.width / 2 - pillW / 2, titleY - pillH / 2, pillW, pillH);
-            }
+            // Broadcast title: thick black border around font, no box panel
+            context.lineWidth = Math.max(5, Math.round(titleFontSize * 0.14));
+            context.strokeStyle = '#000000';
+            context.lineJoin = 'round';
+            context.miterLimit = 2;
+            context.shadowColor = 'rgba(0, 0, 0, 0.95)';
+            context.shadowBlur = 12;
+            context.shadowOffsetX = 0;
+            context.shadowOffsetY = 3;
+            context.strokeText(script.title, dimensions.width / 2, titleY, dimensions.width * 0.9);
 
             context.fillStyle = '#FFFFFF';
-            context.fillText(script.title, dimensions.width / 2, titleY, pillW - 24);
+            context.fillText(script.title, dimensions.width / 2, titleY, dimensions.width * 0.9);
             context.restore();
           }
 
@@ -450,25 +509,19 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             const pillW = Math.min(dimensions.width * 0.92, metrics.width + 56);
             const pillH = capFontSize + 32;
 
-            context.fillStyle = 'rgba(0, 0, 0, 0.75)';
-            context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            context.lineWidth = 2;
-            if (context.roundRect) {
-              context.beginPath();
-              context.roundRect(dimensions.width / 2 - pillW / 2, capY - pillH / 2, pillW, pillH, 18);
-              context.fill();
-              context.stroke();
-            } else {
-              context.fillRect(dimensions.width / 2 - pillW / 2, capY - pillH / 2, pillW, pillH);
-            }
-
-            // High impact outline + punchy fill
-            context.lineWidth = 6;
+            // Broadcast subtitle: thick black outline (border) around font, no box panel
+            context.lineWidth = Math.max(6, Math.round(capFontSize * 0.16));
             context.strokeStyle = '#000000';
-            context.strokeText(captionText, dimensions.width / 2, capY, pillW - 24);
+            context.lineJoin = 'round';
+            context.miterLimit = 2;
+            context.shadowColor = 'rgba(0, 0, 0, 0.95)';
+            context.shadowBlur = 14;
+            context.shadowOffsetX = 0;
+            context.shadowOffsetY = 4;
+            context.strokeText(captionText, dimensions.width / 2, capY, dimensions.width * 0.92);
 
-            context.fillStyle = captionPresetColor || '#FACC15'; // Gold highlight
-            context.fillText(captionText, dimensions.width / 2, capY, pillW - 24);
+            context.fillStyle = captionPresetColor || '#FACC15'; // Gold / vibrant highlight
+            context.fillText(captionText, dimensions.width / 2, capY, dimensions.width * 0.92);
             context.restore();
           }
         };
@@ -493,7 +546,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         const chunks: BlobPart[] = [];
         recorder = new MediaRecorder(outputStream, {
           mimeType,
-          videoBitsPerSecond: 6_000_000,
+          videoBitsPerSecond: 10_000_000,
           audioBitsPerSecond: 192_000,
         });
 
@@ -501,7 +554,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           if (event.data && event.data.size > 0) chunks.push(event.data);
         };
 
-        recorder.onstop = () => {
+        recorder.onstop = async () => {
           if (cancelled) return;
           const blob = new Blob(chunks, { type: mimeType });
           if (blob.size === 0) {
@@ -510,6 +563,38 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           }
 
           const safeName = exportFileName.trim().replace(/[<>:"/\\|?*]+/g, '').slice(0, 80) || 'apexmind-video';
+
+          // If browser recorded WebM, transcode to broadcast MP4 with FFmpeg via backend
+          if (mimeType.includes('webm')) {
+            try {
+              window.dispatchEvent(new CustomEvent('workspace:export-state', {
+                detail: { exporting: true, message: 'Finalizing pristine MP4...' },
+              }));
+              const formData = new FormData();
+              formData.append('file', blob, 'video.webm');
+              formData.append('filename', safeName);
+              const convRes = await fetch('/api/workspace/convert-to-mp4', {
+                method: 'POST',
+                body: formData,
+              });
+              if (convRes.ok) {
+                const convData = await convRes.json();
+                if (convData.videoUrl) {
+                  const link = document.createElement('a');
+                  link.href = convData.videoUrl;
+                  link.download = convData.filename || `${safeName}.mp4`;
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  onExportComplete?.();
+                  return;
+                }
+              }
+            } catch (convErr) {
+              console.warn('Backend MP4 transcode failed, downloading direct file:', convErr);
+            }
+          }
+
           const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
           const link = document.createElement('a');
           const downloadUrl = URL.createObjectURL(blob);
@@ -529,7 +614,18 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         recorder.start(500);
 
         const exportStartedAt = performance.now();
-        const exportLength = Math.max(1, exportDuration) * 1000;
+        const maxSubEnd = Math.max(
+          0,
+          ...(script.subtitles || []).map((s) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
+        );
+        const effectiveDuration = Math.max(
+          Number(exportDuration) || 0,
+          Number(duration) || 0,
+          Number(playbackDuration) || 0,
+          maxSubEnd,
+          15
+        );
+        const exportLength = Math.max(1, effectiveDuration) * 1000;
         let lastReportedPercent = 0;
 
         while (!cancelled && performance.now() - exportStartedAt < exportLength) {
@@ -574,7 +670,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       if (recorder?.state === 'recording') recorder.stop();
       outputStream?.getTracks().forEach((track) => track.stop());
     };
-  }, [audioElement, audioOutputStream, canvasAspectRatio, canvasOutputSize, exportDuration, exportFileName, isExporting, onExportComplete, script]);
+  }, [audioUrl, musicUrl, audioElement, audioOutputStream, canvasAspectRatio, canvasOutputSize, exportDuration, exportFileName, isExporting, onExportComplete, script]);
 
   useEffect(() => {
     const handleTimelineState = (e: Event) => {
@@ -751,6 +847,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     lutIntensity: 80,
     presetFilter: 'none',
   });
+  const [perClipFilters, setPerClipFilters] = useState<Record<string, BackdropFilterSettings>>({});
+  const [perClipTransforms, setPerClipTransforms] = useState<Record<string, any>>({});
+  const [perClipAnimations, setPerClipAnimations] = useState<Record<string, string>>({});
 
   // Listen for backdrop transform and filter changes from inspectors
   useEffect(() => {
@@ -789,16 +888,27 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       }
     };
     const handleCaptionStyle = (e: Event) => {
-      const detail = (e as CustomEvent<Partial<typeof captionStyle>>).detail;
-      if (detail) setCaptionStyle((prev) => ({ ...prev, ...detail }));
+      const detail = (e as CustomEvent<Partial<typeof captionStyle> & { cueIndex?: number | null }>).detail;
+      if (!detail) return;
+      // Do not mutate global captionStyle if this is an isolated single cue change
+      if (typeof detail.cueIndex === 'number') {
+        return;
+      }
+      setCaptionStyle((prev) => ({ ...prev, ...detail }));
     };
     const handleOverlayStyle = (e: Event) => {
       const detail = (e as CustomEvent<Partial<typeof overlayStyle>>).detail;
       if (detail) setOverlayStyle((prev) => ({ ...prev, ...detail }));
     };
     const handleBackdropAnimation = (e: Event) => {
-      const detail = (e as CustomEvent<{ animation: string }>).detail;
-      if (detail) setBackdropAnimation(detail.animation);
+      const detail = (e as CustomEvent<{ animation: string; clipId?: string }>).detail;
+      if (detail) {
+        if (detail.clipId) {
+          setPerClipAnimations((prev) => ({ ...prev, [detail.clipId!]: detail.animation }));
+        } else {
+          setBackdropAnimation(detail.animation);
+        }
+      }
     };
     const handleVideoVolume = (e: Event) => {
       const detail = (e as CustomEvent<{ volume: number }>).detail;
@@ -1014,7 +1124,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   // Auto-synthesized karaoke words so ANY scene/quote gets animated rhythm
   const effectiveWords = useMemo(() => {
     if (activeSubtitleObj?.words && activeSubtitleObj.words.length > 0) {
-      return activeSubtitleObj.words;
+      const wordsJoined = activeSubtitleObj.words.map((w) => w.word).join(' ').trim().toLowerCase();
+      const currentText = (activeSubtitleObj.text || '').trim().toLowerCase();
+      if (wordsJoined === currentText) {
+        return activeSubtitleObj.words;
+      }
     }
     if (!visibleSubtitle) return [];
     const tokens = visibleSubtitle.trim().split(/\s+/).filter(Boolean);
@@ -1026,7 +1140,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       word,
       start: subStart + i * step,
       end: subStart + (i + 1) * step,
-      highlightColor: activeCaptionPresetColor || captionStyle.color || '#FACC15',
+      highlightColor: activeSubtitleObj?.color || activeCaptionPresetColor || captionStyle.color || '#FACC15',
     }));
   }, [activeSubtitleObj, activeStoryboardScene, visibleSubtitle, activeCaptionPresetColor, captionStyle.color]);
 
@@ -1045,56 +1159,33 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const sceneProgress = Math.min(1, Math.max(0, (currentTime - sceneStart) / Math.max(0.1, sceneDuration)));
   const sceneElapsed = Math.max(0, currentTime - sceneStart);
 
-  // Camera motion directed by AI storyboard or dynamic alternating flow
-  const sceneCameraMotion = currentScene?.cameraMotion;
-  const sceneTransition = currentScene?.transition;
-
-  // Cut transition impact
-  const isTransitionCut = sceneElapsed < 0.38 && currentTime > 0.05;
-  const cutProgress = 1 - Math.min(1, sceneElapsed / 0.38);
-
-  const cutImpactScale = isTransitionCut
-    ? (sceneTransition === 'zoom' ? 1 + cutProgress * 0.08 : 1 + cutProgress * 0.04)
-    : 1;
-  const cutImpactBrightness = 100;
-  const cutGlitchX = isTransitionCut && sceneTransition === 'glitch' ? Math.sin(currentTime * 36) * 4 * cutProgress : 0;
-  const cutSlideY = isTransitionCut && sceneTransition === 'slide' ? cutProgress * 6 : 0;
-
   const backdropProgress = Math.min(1, Math.max(0,
     (currentTime - currentVideoStart) / Math.max(0.1, currentVideoDuration)
   ));
+  const cutImpactBrightness = 100;
 
-  // Scene motion
-  let sceneMotionTransform = '';
-  if (sceneCameraMotion === 'push-in') {
-    sceneMotionTransform = `scale(${1.02 * cutImpactScale + sceneProgress * 0.12})`;
-  } else if (sceneCameraMotion === 'slow-zoom') {
-    sceneMotionTransform = `scale(${1.0 * cutImpactScale + sceneProgress * 0.08})`;
-  } else if (sceneCameraMotion === 'pan-right') {
-    sceneMotionTransform = `scale(${1.08 * cutImpactScale}) translate(${sceneProgress * 3 - 1.5}%, 0%)`;
-  } else if (sceneCameraMotion === 'handheld') {
-    sceneMotionTransform = `scale(${1.04 * cutImpactScale}) translate(${Math.sin(currentTime * 3.5) * 0.4}%, ${Math.cos(currentTime * 4.2) * 0.4}%)`;
-  } else {
-    // Dynamic cinematic motion tailored to scene cuts
-    const isEvenScene = (activeStoryboardIndex >= 0 ? activeStoryboardIndex : 0) % 2 === 0;
-    sceneMotionTransform = isEvenScene
-      ? `scale(${1.02 * cutImpactScale + sceneProgress * 0.08}) translate(${sceneProgress * 0.8 - 0.4}%, ${-sceneProgress * 0.6 + 0.3}%)`
-      : `scale(${1.08 * cutImpactScale - sceneProgress * 0.06}) translate(${-sceneProgress * 0.8 + 0.4}%, ${sceneProgress * 0.6 - 0.3}%)`;
+  // Camera & backdrop animation: rock-solid video playback with zero artificial camera shake/jitter
+  const isVideoMedia = !!activeVideo && showVideoLayer;
+  const isStaticMode = !backdropAnimation || backdropAnimation === 'none';
+
+  let animationTransform = '';
+  if (!isStaticMode) {
+    if (backdropAnimation === 'zoom') {
+      animationTransform = `scale(${1.0 + backdropProgress * 0.08})`;
+    } else if (backdropAnimation === 'kenburns') {
+      animationTransform = `scale(${1.05 + backdropProgress * 0.08}) translate(${-1 + backdropProgress * 2}%, ${1 - backdropProgress * 2}%)`;
+    } else if (backdropAnimation === 'slide') {
+      animationTransform = `translateY(${(1 - backdropProgress) * 6}%)`;
+    } else if (backdropAnimation === 'glitch') {
+      animationTransform = `translateX(${Math.sin(currentTime * 24) * 2}px)`;
+    } else if (backdropAnimation === 'handheld') {
+      animationTransform = `scale(1.02) translate(${Math.sin(currentTime * 3.5) * 0.3}%, ${Math.cos(currentTime * 4.2) * 0.3}%)`;
+    }
   }
-
-  const animationTransform = backdropAnimation === 'zoom'
-    ? `scale(${1.02 * cutImpactScale + backdropProgress * 0.12})`
-    : backdropAnimation === 'kenburns'
-      ? `scale(${1.1 * cutImpactScale + backdropProgress * 0.15}) translate(${-2 + backdropProgress * 4}%, ${2 - backdropProgress * 4}%)`
-      : backdropAnimation === 'slide'
-        ? `translateY(${(1 - backdropProgress) * 8}%)`
-        : backdropAnimation === 'glitch'
-          ? `translateX(${Math.sin(currentTime * 24) * 2}px)`
-          : `${sceneMotionTransform} ${cutGlitchX ? `translateX(${cutGlitchX}px)` : ''} ${cutSlideY ? `translateY(${cutSlideY}%)` : ''}`.trim();
 
   const animationOpacity = backdropAnimation === 'fade'
     ? Math.min(1, backdropProgress * 4)
-    : (isTransitionCut && sceneTransition === 'fade' ? Math.max(0.2, 1 - cutProgress * 0.75) : 1);
+    : 1;
 
   const backdropTransform = [
     (backdropPosX !== 50 || backdropPosY !== 50) ? `translate(${(backdropPosX - 50) * 0.8}%, ${(backdropPosY - 50) * 0.8}%)` : '',
@@ -1105,26 +1196,28 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     animationTransform,
   ].filter(Boolean).join(' ') || undefined;
 
+  const activeClipFilter = (activeVideoClip && perClipFilters[activeVideoClip.id]) || (activeImageClip && perClipFilters[activeImageClip.id]) || filterSettings;
+
   const computedBackdropFilter = (() => {
     const parts: string[] = [];
-    if (filterSettings.presetFilter && filterSettings.presetFilter !== 'none') {
-      parts.push(filterSettings.presetFilter);
+    if (activeClipFilter.presetFilter && activeClipFilter.presetFilter !== 'none') {
+      parts.push(activeClipFilter.presetFilter);
     }
-    const effectiveBrightness = Math.round((filterSettings.brightness / 100) * cutImpactBrightness);
+    const effectiveBrightness = Math.round((activeClipFilter.brightness / 100) * cutImpactBrightness);
     if (effectiveBrightness !== 100) parts.push(`brightness(${effectiveBrightness}%)`);
-    if (filterSettings.contrast !== 100) parts.push(`contrast(${filterSettings.contrast}%)`);
-    if (filterSettings.saturate !== 100) parts.push(`saturate(${filterSettings.saturate}%)`);
-    if (filterSettings.hue && filterSettings.hue !== 0) parts.push(`hue-rotate(${filterSettings.hue}deg)`);
-    if (filterSettings.blur && filterSettings.blur !== 0) parts.push(`blur(${filterSettings.blur}px)`);
-    if (filterSettings.lut && filterSettings.lut !== 'none') {
-      const intensity = (filterSettings.lutIntensity ?? 80) / 100;
-      if (filterSettings.lut === 'fuji-eterna') parts.push(`sepia(${20 * intensity}%) hue-rotate(${-10 * intensity}deg)`);
-      else if (filterSettings.lut === 'kodak-vision') parts.push(`contrast(${100 + 15 * intensity}%) saturate(${100 + 20 * intensity}%)`);
-      else if (filterSettings.lut === 'matrix-green') parts.push(`hue-rotate(${85 * intensity}deg) saturate(${100 + 30 * intensity}%)`);
-      else if (filterSettings.lut === 'sepia-classic') parts.push(`sepia(${75 * intensity}%) contrast(${100 - 10 * intensity}%)`);
-      else if (filterSettings.lut === 'tokyo-drift') parts.push(`hue-rotate(${180 * intensity}deg) saturate(${100 + 40 * intensity}%)`);
-      else if (filterSettings.lut === 'alexa-logc') parts.push(`contrast(${100 - 15 * intensity}%) brightness(${100 + 5 * intensity}%)`);
-      else if (filterSettings.lut === 'red-dragon') parts.push(`saturate(${100 + 30 * intensity}%) contrast(${100 + 10 * intensity}%) hue-rotate(${10 * intensity}deg)`);
+    if (activeClipFilter.contrast !== 100) parts.push(`contrast(${activeClipFilter.contrast}%)`);
+    if (activeClipFilter.saturate !== 100) parts.push(`saturate(${activeClipFilter.saturate}%)`);
+    if (activeClipFilter.hue && activeClipFilter.hue !== 0) parts.push(`hue-rotate(${activeClipFilter.hue}deg)`);
+    if (activeClipFilter.blur && activeClipFilter.blur !== 0) parts.push(`blur(${activeClipFilter.blur}px)`);
+    if (activeClipFilter.lut && activeClipFilter.lut !== 'none') {
+      const intensity = (activeClipFilter.lutIntensity ?? 80) / 100;
+      if (activeClipFilter.lut === 'fuji-eterna') parts.push(`sepia(${20 * intensity}%) hue-rotate(${-10 * intensity}deg)`);
+      else if (activeClipFilter.lut === 'kodak-vision') parts.push(`contrast(${100 + 15 * intensity}%) saturate(${100 + 20 * intensity}%)`);
+      else if (activeClipFilter.lut === 'matrix-green') parts.push(`hue-rotate(${85 * intensity}deg) saturate(${100 + 30 * intensity}%)`);
+      else if (activeClipFilter.lut === 'sepia-classic') parts.push(`sepia(${75 * intensity}%) contrast(${100 - 10 * intensity}%)`);
+      else if (activeClipFilter.lut === 'tokyo-drift') parts.push(`hue-rotate(${180 * intensity}deg) saturate(${100 + 40 * intensity}%)`);
+      else if (activeClipFilter.lut === 'alexa-logc') parts.push(`contrast(${100 - 15 * intensity}%) brightness(${100 + 5 * intensity}%)`);
+      else if (activeClipFilter.lut === 'red-dragon') parts.push(`saturate(${100 + 30 * intensity}%) contrast(${100 + 10 * intensity}%) hue-rotate(${10 * intensity}deg)`);
     }
     return parts.length > 0 ? parts.join(' ') : undefined;
   })();
@@ -1185,7 +1278,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const canvasScale = Math.max(0.4, Math.min(3.0, currentCanvasWidth / baseCanvasWidth));
 
   // Dynamic proportional caption font size
-  const baseCaptionFontSize = useCaptionPreset
+  const baseCaptionFontSize = activeSubtitleObj?.fontSize
+    ? Math.round(activeSubtitleObj.fontSize * 0.35)
+    : useCaptionPreset
     ? (captionPresetFontSize || 21)
     : (captionStyle.fontSize ? Math.round(captionStyle.fontSize * 0.35) : 21);
   const scaledCaptionFontSize = Math.max(10, Math.min(64, Math.round(baseCaptionFontSize * canvasScale)));
@@ -1254,6 +1349,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               poster={activeVideoClip?.posterUrl || activeVideoClip?.thumbnailUrl || activeStoryboardScene?.posterUrl}
               muted={videoTrackVolume === 0}
               playsInline
+              loop
               crossOrigin="anonymous"
               preload="auto"
               onWaiting={handleWaiting}
@@ -1289,7 +1385,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 setIsVideoBuffering(false);
                 isSeekingOrSwitchingRef.current = false;
               }}
-              className={`w-full h-full pointer-events-none transition-all duration-300 ${
+              className={`w-full h-full pointer-events-none ${
                 backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
               } object-center opacity-100`}
               style={{
@@ -1356,7 +1452,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               alt={activeBackdrop?.name || 'Visual Backdrop'}
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
-              className={`w-full h-full pointer-events-none transition-all duration-300 ${
+              className={`w-full h-full pointer-events-none ${
                 backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
               } object-center opacity-100`}
               style={{
@@ -1487,7 +1583,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           const subPopProgress = Math.min(1, subElapsed / 0.22);
           const subScale = 0.94 + Math.sin(subPopProgress * Math.PI * 0.5) * 0.06;
 
-          const activePosY = (captionStyle.posY !== undefined && captionStyle.posY !== 64)
+          const activePosY = (activeSubtitleObj?.posY !== undefined)
+            ? activeSubtitleObj.posY
+            : (captionStyle.posY !== undefined && captionStyle.posY !== 64)
             ? captionStyle.posY
             : (canvasAspectRatio === '9:16' ? 76 : 80);
 
@@ -1511,30 +1609,33 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                 className={`pointer-events-none w-full max-w-full text-center ${
                   useCaptionPreset
                     ? activeCaptionPresetClass
-                    : `font-black text-center ${captionSizeClass} bg-black/85 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/20 shadow-2xl`
+                    : `font-black text-center ${captionSizeClass} drop-shadow-[0_4px_14px_rgba(0,0,0,1)]`
                 }`}
                 style={{
-                  backgroundColor: useCaptionPreset ? undefined : captionStyle.background,
-                  borderRadius: useCaptionPreset ? undefined : `${Math.max(8, Math.round(captionStyle.bgRadius * canvasScale))}px`,
-                  padding: useCaptionPreset ? undefined : `${Math.round(captionStyle.bgPadding * canvasScale)}px`,
-                  color: useCaptionPreset
+                  backgroundColor: useCaptionPreset ? undefined : (captionStyle.background && captionStyle.background !== 'transparent' ? captionStyle.background : undefined),
+                  borderRadius: useCaptionPreset ? undefined : (captionStyle.background && captionStyle.background !== 'transparent' ? `${Math.max(8, Math.round(captionStyle.bgRadius * canvasScale))}px` : undefined),
+                  padding: useCaptionPreset ? undefined : (captionStyle.background && captionStyle.background !== 'transparent' ? `${Math.round(captionStyle.bgPadding * canvasScale)}px` : undefined),
+                  color: (activeSubtitleObj?.color || activeSubtitleObj?.captionPresetColor) || (useCaptionPreset
                     ? activeCaptionPresetColor || captionStyle.color || captionColor
-                    : captionStyle.color || captionColor,
+                    : captionStyle.color || captionColor),
                   filter: useCaptionPreset ? 'none' : undefined,
-                  fontFamily: useCaptionPreset ? activeCaptionPresetFontFamily : captionStyle.fontFamily,
+                  fontFamily: activeSubtitleObj?.fontFamily || (useCaptionPreset ? activeCaptionPresetFontFamily : captionStyle.fontFamily),
                   fontSize: `${scaledCaptionFontSize}px`,
-                  fontWeight: useCaptionPreset ? captionPresetFontWeight : !captionStyle.isBold ? 400 : captionStyle.fontWeight === 'Black' ? 900
+                  fontWeight: activeSubtitleObj?.fontWeight ? (activeSubtitleObj.fontWeight === 'Black' ? 900 : activeSubtitleObj.fontWeight === 'ExtraBold' ? 800 : activeSubtitleObj.fontWeight === 'Bold' ? 700 : activeSubtitleObj.fontWeight === 'SemiBold' ? 600 : activeSubtitleObj.fontWeight === 'Medium' ? 500 : 400) : (useCaptionPreset ? captionPresetFontWeight : !captionStyle.isBold ? 400 : captionStyle.fontWeight === 'Black' ? 900
                     : captionStyle.fontWeight === 'ExtraBold' ? 800
                       : captionStyle.fontWeight === 'Bold' ? 700
                         : captionStyle.fontWeight === 'SemiBold' ? 600
-                          : captionStyle.fontWeight === 'Medium' ? 500 : 400,
-                  textAlign: 'center',
-                  textTransform: useCaptionPreset ? captionPresetTextTransform : captionStyle.textTransform,
-                  fontStyle: useCaptionPreset ? undefined : captionStyle.isItalic ? 'italic' : 'normal',
-                  textDecoration: useCaptionPreset ? undefined : [
+                          : captionStyle.fontWeight === 'Medium' ? 500 : 400),
+                  textAlign: activeSubtitleObj?.textAlign || 'center',
+                  textTransform: activeSubtitleObj?.textTransform || (useCaptionPreset ? captionPresetTextTransform : captionStyle.textTransform),
+                  fontStyle: activeSubtitleObj?.isItalic !== undefined ? (activeSubtitleObj.isItalic ? 'italic' : 'normal') : (useCaptionPreset ? undefined : captionStyle.isItalic ? 'italic' : 'normal'),
+                  textDecoration: activeSubtitleObj ? [
+                    activeSubtitleObj.isUnderline ? 'underline' : '',
+                    activeSubtitleObj.isStrikethrough ? 'line-through' : '',
+                  ].filter(Boolean).join(' ') || 'none' : (useCaptionPreset ? undefined : [
                     captionStyle.isUnderline ? 'underline' : '',
                     captionStyle.isStrikethrough ? 'line-through' : '',
-                  ].filter(Boolean).join(' ') || 'none',
+                  ].filter(Boolean).join(' ') || 'none'),
                   letterSpacing: useCaptionPreset ? undefined : `${captionStyle.letterSpacing}em`,
                   lineHeight: useCaptionPreset ? 1.35 : captionStyle.lineHeight,
                   textShadow: useCaptionPreset
@@ -1543,12 +1644,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                     ? `0 0 ${Math.round(10 * canvasScale)}px ${captionStyle.glowColor}, 0 0 ${Math.round(20 * canvasScale)}px ${captionStyle.glowColor}`
                     : captionStyle.dropShadow
                       ? `0 ${Math.max(1, Math.round(2 * canvasScale))}px ${Math.round(captionStyle.shadowBlur * canvasScale)}px ${captionStyle.shadowColor}`
-                      : 'none',
+                      : '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 14px rgba(0,0,0,0.95)',
                   WebkitTextStroke: useCaptionPreset
                     ? undefined
                     : captionStyle.stroke
                     ? `${Math.max(1, Math.round(captionStyle.strokeWidth * canvasScale))}px ${captionStyle.strokeColor}`
-                    : 'none',
+                    : `${Math.max(1.5, Math.round(2 * canvasScale))}px #000`,
+                  paintOrder: 'stroke fill',
                   whiteSpace: 'normal',
                   wordBreak: 'keep-all',
                   overflowWrap: 'normal',
@@ -1576,13 +1678,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                           hyphens: 'none',
                           color: isWordActive
                             ? (w.highlightColor || '#FACC15')
-                            : isPast
-                            ? (useCaptionPreset ? activeCaptionPresetColor || captionStyle.color : captionStyle.color)
-                            : undefined,
+                            : (activeSubtitleObj?.color || (isPast ? (activeSubtitleObj?.captionPresetColor || (useCaptionPreset ? activeCaptionPresetColor || captionStyle.color : captionStyle.color)) : undefined)),
                           textShadow: isWordActive
-                            ? '0 0 16px rgba(250, 204, 21, 0.75), 0 2px 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 2px 0 0 #000, 0 4px 12px rgba(0,0,0,0.95)'
-                            : '0 2px 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 2px 0 0 #000, 0 3px 6px rgba(0,0,0,0.7)',
-                          WebkitTextStroke: isWordActive ? '1px #000' : '0.5px #000',
+                            ? '0 0 16px rgba(250, 204, 21, 0.8), -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 14px rgba(0,0,0,0.95)'
+                            : '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.85)',
+                          WebkitTextStroke: isWordActive
+                            ? `${Math.max(1.8, Math.round(2.6 * canvasScale))}px #000`
+                            : `${Math.max(1.4, Math.round(2.0 * canvasScale))}px #000`,
+                          paintOrder: 'stroke fill',
                           opacity: isPast ? 0.95 : isWordActive ? 1 : 0.75,
                           transform: isWordActive ? 'scale(1.08) translateY(-1px)' : 'scale(1)',
                         }}
@@ -1592,7 +1695,17 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                     );
                   })
                 ) : (
-                  <span style={{ display: 'inline-block', textWrap: 'balance', wordBreak: 'keep-all', overflowWrap: 'normal', hyphens: 'none', whiteSpace: 'normal' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    textWrap: 'balance',
+                    wordBreak: 'keep-all',
+                    overflowWrap: 'normal',
+                    hyphens: 'none',
+                    whiteSpace: 'normal',
+                    WebkitTextStroke: `${Math.max(1.5, Math.round(2.2 * canvasScale))}px #000`,
+                    paintOrder: 'stroke fill',
+                    textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 14px rgba(0,0,0,0.95)',
+                  }}>
                     {visibleSubtitle}
                   </span>
                 )}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Mic, Music, Sparkles, Move } from 'lucide-react';
+import { Mic, Music, Sparkles, Move, MoreVertical } from 'lucide-react';
 import { formatTime, SelectedClip, TimelineAudioClip } from './timelineTypes';
 import { TimelineWaveform } from './TimelineWaveform';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
@@ -38,6 +38,28 @@ export interface AudioTrackClipProps {
   onColorLabel?: (color: string) => void;
   onCopyTimings?: () => void;
 }
+
+const normalizeAudioLabel = (name: string, type: string) => {
+  if (!name) return type === 'sfx' ? 'Whoosh' : `${type.toUpperCase()} Track`;
+  if (type !== 'sfx') return name;
+
+  // Clean verbose AI labels into punchy studio SFX names
+  const lower = name.toLowerCase();
+  if (lower.includes('whoosh') || lower.includes('swoosh') || lower.includes('transition')) return 'Whoosh';
+  if (lower.includes('impact') || lower.includes('hit') || lower.includes('slam') || lower.includes('boom')) return 'Impact';
+  if (lower.includes('riser') || lower.includes('rise') || lower.includes('buildup')) return 'Riser';
+  if (lower.includes('cash') || lower.includes('kaching') || lower.includes('money') || lower.includes('chime')) return 'Chime';
+  if (lower.includes('drop') || lower.includes('bass') || lower.includes('sub')) return 'Sub Drop';
+  if (lower.includes('trailer') || lower.includes('cinematic')) return 'Impact';
+
+  const cleaned = name
+    .replace(/^sfx[-_:\s]*/i, '')
+    .replace(/^(Fast|Cinematic|Scene\s*\d*|Trailer)\s*/i, '')
+    .replace(/\s*(Transition|Effect|Hit|Drop|Sound|Track)$/i, '')
+    .trim();
+
+  return cleaned || 'Whoosh';
+};
 
 export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
   type,
@@ -92,30 +114,33 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
   const theme = {
     voice: {
       color: 'bg-emerald-400',
-      text: 'text-emerald-300',
-      selectedRing: 'bg-[#0D2E24] border-emerald-400 ring-1 ring-emerald-400/60 text-white z-20 shadow-md',
-      normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
-      handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
-      handlePip: 'bg-[#D1D5DB]',
-      icon: <Mic className="w-3 h-3 text-emerald-400 shrink-0" />,
+      text: 'text-emerald-100',
+      accent: 'text-emerald-300',
+      box: 'bg-[#0A241A]/90 hover:bg-[#0E3123] border-emerald-500/35',
+      selectedRing: 'bg-[#0E3827] border-emerald-300 text-white z-20 ring-2 ring-emerald-300/80 shadow-lg',
+      handle: 'bg-emerald-400/40 hover:bg-emerald-400',
+      handlePip: 'bg-white',
+      icon: <Mic className="w-3 h-3 text-emerald-300/90 shrink-0 pointer-events-none" />,
     },
     music: {
       color: 'bg-purple-400',
-      text: 'text-purple-300',
-      selectedRing: 'bg-[#25143A] border-purple-400 ring-1 ring-purple-400/60 text-white z-20 shadow-md',
-      normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
-      handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
-      handlePip: 'bg-[#D1D5DB]',
-      icon: <Music className="w-3 h-3 text-purple-400 shrink-0" />,
+      text: 'text-purple-100',
+      accent: 'text-purple-300',
+      box: 'bg-[#1A0A24]/90 hover:bg-[#230E31] border-purple-500/35',
+      selectedRing: 'bg-[#280E38] border-purple-300 text-white z-20 ring-2 ring-purple-300/80 shadow-lg',
+      handle: 'bg-purple-400/40 hover:bg-purple-400',
+      handlePip: 'bg-white',
+      icon: <Music className="w-3 h-3 text-purple-300/90 shrink-0 pointer-events-none" />,
     },
     sfx: {
       color: 'bg-amber-400',
-      text: 'text-amber-300',
-      selectedRing: 'bg-[#2D2109] border-amber-400 ring-1 ring-amber-400/60 text-white z-20 shadow-md',
-      normal: 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10',
-      handle: 'bg-[#3A3A3A]/80 hover:bg-[#4A4A4A]',
-      handlePip: 'bg-[#D1D5DB]',
-      icon: <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />,
+      text: 'text-amber-100',
+      accent: 'text-amber-300',
+      box: 'bg-[#24170A]/90 hover:bg-[#311E0E] border-amber-500/35',
+      selectedRing: 'bg-[#38220E] border-amber-300 text-white z-20 ring-2 ring-amber-300/80 shadow-lg',
+      handle: 'bg-amber-400/40 hover:bg-amber-400',
+      handlePip: 'bg-white',
+      icon: <Sparkles className="w-3 h-3 text-amber-300/90 shrink-0 pointer-events-none" />,
     },
   }[type];
 
@@ -132,11 +157,13 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
 
   return (
     <div
-      className="border-b border-[#262626] p-1 relative flex items-center w-full transition-all"
+      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full transition-all"
       style={{ height: `${actualTrackHeight}px` }}
     >
       {effectiveClips.map((clip) => {
-        const isSelected = selectedClip?.track === type && (!selectedClip.clipId || selectedClip.clipId === clip.id);
+        const isAllSelected = selectedClip?.track === type && Boolean(selectedClip.all);
+        const isSingleSelected = selectedClip?.track === type && !selectedClip.all && (selectedClip.clipId === clip.id || (!selectedClip.clipId && effectiveClips.length === 1));
+        const isSelected = isAllSelected || isSingleSelected;
         const colorLabel = colorLabels[clip.id] || '';
         const clipLane = clip.lane ?? 0;
         const topPos = 4 + clipLane * (laneHeight + laneGap);
@@ -160,17 +187,17 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
               else onSelect?.();
               setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
             }}
-            className={`timeline-clip-card rounded-md px-2 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-all absolute overflow-hidden ${
+            className={`timeline-clip-card rounded-md px-1.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-all absolute overflow-hidden shadow-xs ${
               isSelected
                 ? theme.selectedRing
                 : isMuted
                 ? 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
-                : `${theme.normal} z-10`
+                : `${theme.box} ${theme.text} z-10`
             }`}
             style={{
               left: `${(clip.start / totalDuration) * 100}%`,
               width: `${Math.max(0.01, Math.min(100, (clip.duration / totalDuration) * 100))}%`,
-              minWidth: '4px',
+              minWidth: type === 'sfx' ? '64px' : '36px',
               top: `${topPos}px`,
               height: `${laneHeight}px`,
               ...(colorLabel ? { boxShadow: `inset 0 0 0 2px ${colorLabel}40, 0 0 0 1px ${colorLabel}` } : {}),
@@ -185,8 +212,10 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
               />
             )}
 
-            {/* Full-Width Procedural Audio Waveform Display */}
-            <TimelineWaveform type={type} color={theme.color} />
+            {/* Full-Width Procedural Audio Waveform Display (Subtle background) */}
+            <div className="opacity-15 pointer-events-none absolute inset-0">
+              <TimelineWaveform type={type} color={theme.color} />
+            </div>
 
             {/* Left Trim Handle */}
             <div
@@ -201,13 +230,33 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
               <div className={`w-0.5 h-3 ${theme.handlePip} rounded-full`} />
             </div>
 
-            {/* Clean Audio Clip Label & Duration */}
-            <span className="text-[10px] font-mono-studio truncate leading-tight pointer-events-none pl-1.5 text-white/90 z-10 font-medium">
-              {clip.name || label || `${type.toUpperCase()} Track`}
-            </span>
-            <span className={`text-[8.5px] font-mono-studio ${theme.text} shrink-0 ml-auto pointer-events-none pr-1.5 font-bold z-10`}>
-              {(Number(clip.duration) || 0).toFixed(1)}s
-            </span>
+            {/* Clean Box Content: Icon + Title + Duration + 3-Dot Button */}
+            <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1 select-none z-10">
+              {theme.icon}
+              <span className={`text-[10px] font-bold ${theme.text} truncate tracking-tight flex-1 min-w-0 pointer-events-none`}>
+                {normalizeAudioLabel(clip.name || label || '', type)}
+              </span>
+              {((Number(clip.duration) || 0) >= 0.5) && (
+                <span className={`text-[8px] font-mono-studio ${theme.accent}/90 shrink-0 bg-black/60 border border-white/10 px-1.5 py-0.5 rounded font-bold pointer-events-none`}>
+                  {(Number(clip.duration) || 0).toFixed(1)}s
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onSelectClip) onSelectClip(clip.id);
+                  else onSelect?.();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setContextMenu({ x: rect.left, y: rect.bottom + 4, clipId: clip.id });
+                }}
+                className={`${theme.accent}/70 hover:text-white hover:bg-white/10 p-0.5 rounded transition-colors shrink-0 cursor-pointer`}
+                title={`${type.toUpperCase()} options`}
+                aria-label="Audio options"
+              >
+                <MoreVertical className="w-3 h-3" />
+              </button>
+            </div>
 
             {/* Right Trim Handle */}
             <div

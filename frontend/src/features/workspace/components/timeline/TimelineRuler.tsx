@@ -61,7 +61,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
         const pct = (t / totalDuration) * 100;
         const label = formatRulerLabel(t, decimalPlaces);
         const labelPosition =
-          idx === 0 ? 'translate-x-0' : idx === ticks.length - 1 ? '-translate-x-full' : '-translate-x-1/2';
+          idx === 0 ? 'translate-x-2' : idx === ticks.length - 1 ? '-translate-x-full' : '-translate-x-1/2';
         return (
           <div
             key={`${t}-${idx}`}

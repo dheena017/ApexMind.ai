@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { workspaceApi } from '../api/workspaceApi';
 import { useStudioPipeline } from '../hooks/useStudioPipeline';
 import { videosApi } from '@/src/features/videos/api/videosApi';
-import { DEFAULT_SOUNDTRACK_AUDIO_URL, GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
+import { DEFAULT_SOUNDTRACK_AUDIO_URL, DEFAULT_VISUAL_BACKDROPS, GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { VideoPreviewPane } from '../components/VideoPreview';
 import { StudioControlsPane, CompoundType } from '../components/StudioControlsPane';
-import { StudioTimelinePane } from '../components/timeline';
+import { StudioTimelinePane, SelectedClip } from '../components/timeline';
 import { WorkspaceTabType } from '../components/WorkspaceSidebar';
 import {
   AIAgentCreatorPane,
@@ -124,6 +124,7 @@ export default function WorkspacePage({
   const [customBackdropVideo, setCustomBackdropVideo] = useState<string | undefined>(undefined);
   const [activeElementOverlay, setActiveElementOverlay] = useState<{ id?: string; name?: string; type: string; value: string; label?: string } | null>(null);
   const [activeCompound, setActiveCompound] = useState<CompoundType>('home');
+  const [selectedClip, setSelectedClip] = useState<SelectedClip | null>(null);
   const [canvasAspectRatio, setCanvasAspectRatio] = useState<'9:16' | '16:9' | '1:1' | '4:5' | '21:9'>('9:16');
   const [canvasOutputSize, setCanvasOutputSize] = useState<CanvasOutputSize>(() => getDefaultCanvasOutputSize('9:16'));
   const [canvasBackground, setCanvasBackground] = useState<string>('#050505');
@@ -154,7 +155,7 @@ export default function WorkspacePage({
 
   // Media Library Catalog (Loaded dynamically from SQLite backend)
   const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
-  const [backdrops, setBackdrops] = useState<VisualBackdrop[]>([]);
+  const [backdrops, setBackdrops] = useState<VisualBackdrop[]>(DEFAULT_VISUAL_BACKDROPS);
   const [voices, setVoices] = useState<VoiceProfile[]>([]);
 
   // Active Selections
@@ -462,7 +463,7 @@ export default function WorkspacePage({
         ]);
 
         setMusicTracks(media.musicTracks || []);
-        setBackdrops(media.visualBackdrops || []);
+        setBackdrops(media.visualBackdrops && media.visualBackdrops.length > 0 ? media.visualBackdrops : DEFAULT_VISUAL_BACKDROPS);
         setVoices(media.voiceProfiles || []);
 
         if (media.voiceProfiles && media.voiceProfiles.length > 0) {
@@ -1331,12 +1332,15 @@ export default function WorkspacePage({
   useEffect(() => {
     const handleCompoundSelect = (e: Event) => {
       const detail = (e as CustomEvent<
-        CompoundType | { compound: CompoundType; openInspector?: boolean }
+        CompoundType | { compound: CompoundType; openInspector?: boolean; selectedClip?: SelectedClip }
       >).detail;
       const compound = typeof detail === 'string' ? detail : detail?.compound;
       if (!compound) return;
       if (typeof detail !== 'string' && detail.openInspector) setShowRightPane(true);
       setActiveCompound(compound);
+      if (typeof detail !== 'string' && detail?.selectedClip !== undefined) {
+        setSelectedClip(detail.selectedClip);
+      }
     };
     window.addEventListener('workspace:select-compound', handleCompoundSelect);
     return () => window.removeEventListener('workspace:select-compound', handleCompoundSelect);
@@ -1911,15 +1915,17 @@ export default function WorkspacePage({
                 isLooping={isLooping}
                 onToggleLoop={() => setIsLooping((prev) => !prev)}
                 audioUrl={audioUrl}
+                musicUrl={musicTracks.find((t) => t.id === selectedMusic)?.audioUrl || null}
                 audioElement={audioRef.current}
                 audioOutputStream={audioOutputStream}
                 isExporting={isExporting}
                 exportDuration={
-                  duration > 0
-                    ? duration
-                    : (script.subtitles && script.subtitles.length > 0
-                        ? Math.max(...script.subtitles.map((s) => (s.start || 0) + (s.duration || 3)))
-                        : (timelineDuration > 0 && timelineDuration <= 60 ? timelineDuration : 15))
+                  Math.max(
+                    timelineDuration || 0,
+                    duration || 0,
+                    ...(script.subtitles || []).map((s) => (Number(s.start) || 0) + (Number(s.duration) || 2.5)),
+                    15
+                  )
                 }
                 exportFileName={script.title || 'apexmind-video'}
                 onExportComplete={handleVideoExportComplete}
@@ -2001,6 +2007,30 @@ export default function WorkspacePage({
                 onCanvasAspectRatioChange={handleCanvasAspectRatioChange}
                 activeCompound={activeCompound}
                 onSelectCompound={setActiveCompound}
+                selectedClip={selectedClip}
+                onSelectClip={setSelectedClip}
+                onUpdateSubtitles={(newSubtitles) =>
+                  setScript((prev) => {
+                    const updatedStoryboard = prev.storyboard?.map((sc, i) => {
+                      const sub = newSubtitles[i];
+                      if (sub) {
+                        return {
+                          ...sc,
+                          start: sub.start,
+                          duration: sub.duration,
+                          subtitleText: sub.text,
+                          words: sub.words || sc.words,
+                        };
+                      }
+                      return sc;
+                    });
+                    return {
+                      ...prev,
+                      subtitles: newSubtitles,
+                      ...(updatedStoryboard ? { storyboard: updatedStoryboard } : {}),
+                    };
+                  })
+                }
               />
             </div>
           )}
@@ -2064,6 +2094,8 @@ export default function WorkspacePage({
               activeElementOverlay={activeElementOverlay}
               voices={voices}
               musicTracks={musicTracks}
+              selectedClip={selectedClip}
+              onSelectClip={setSelectedClip}
               onSelectCompound={(compound) => {
                 setShowRightPane(true);
                 setActiveCompound(compound as CompoundType);

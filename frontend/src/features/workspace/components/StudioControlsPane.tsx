@@ -10,7 +10,8 @@ import {
   Home,
   Image as ImageIcon,
 } from 'lucide-react';
-import { VoiceProfile, VisualBackdrop, MusicTrack, GeneratedScript } from '../types';
+import { VoiceProfile, VisualBackdrop, MusicTrack, GeneratedScript, ScriptSubtitle, DEFAULT_VISUAL_BACKDROPS } from '../types';
+import { SelectedClip } from './timeline/timelineTypes';
 import {
   VideoCompoundInspector,
   TextCompoundInspector,
@@ -65,6 +66,9 @@ export interface StudioControlsPaneProps {
   onCanvasAspectRatioChange?: (ratio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => void;
   activeCompound?: CompoundType;
   onSelectCompound?: (compound: CompoundType) => void;
+  selectedClip?: SelectedClip | null;
+  onSelectClip?: (clip: SelectedClip | null) => void;
+  onUpdateSubtitles?: (subtitles: ScriptSubtitle[]) => void;
 }
 
 export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
@@ -106,7 +110,29 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   onCanvasAspectRatioChange,
   activeCompound: propCompound,
   onSelectCompound,
+  selectedClip: propSelectedClip,
+  onSelectClip,
+  onUpdateSubtitles,
 }) => {
+  const [activeClipDetails, setActiveClipDetails] = useState<{ start: number; duration: number; name: string } | null>(null);
+
+  useEffect(() => {
+    const handleClipDetails = (e: Event) => {
+      const detail = (e as CustomEvent<{ selectedClip: SelectedClip | null; details: { start: number; duration: number; name: string } | null }>).detail;
+      if (detail) {
+        setActiveClipDetails(detail.details);
+      }
+    };
+    window.addEventListener('workspace:selected-clip-details', handleClipDetails);
+    return () => window.removeEventListener('workspace:selected-clip-details', handleClipDetails);
+  }, []);
+  const [localSelectedClip, setLocalSelectedClip] = useState<SelectedClip | null>(propSelectedClip || null);
+
+  useEffect(() => {
+    if (propSelectedClip !== undefined) {
+      setLocalSelectedClip(propSelectedClip);
+    }
+  }, [propSelectedClip]);
   const effectiveDuration = duration || timelineDuration || 15;
   const readinessDuration = duration && duration > 0 ? duration : timelineDuration ?? 0;
   const effectiveCategory = category || (script?.tags?.[0]) || 'General';
@@ -126,27 +152,33 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   useEffect(() => {
     const handleCompoundSelect = (e: Event) => {
       const detail = (e as CustomEvent<
-        CompoundType | { compound: CompoundType; openInspector?: boolean }
+        CompoundType | { compound: CompoundType; openInspector?: boolean; selectedClip?: SelectedClip }
       >).detail;
       const compound = typeof detail === 'string' ? detail : detail?.compound;
       if (!compound) return;
       setActiveCompound(compound);
       onSelectCompound?.(compound);
+      if (typeof detail !== 'string' && detail?.selectedClip !== undefined) {
+        setLocalSelectedClip(detail.selectedClip);
+      }
     };
     window.addEventListener('workspace:select-compound', handleCompoundSelect);
     return () => window.removeEventListener('workspace:select-compound', handleCompoundSelect);
   }, [onSelectCompound]);
 
+  const availableBackdrops = (backdrops && backdrops.length > 0) ? backdrops : DEFAULT_VISUAL_BACKDROPS;
+
   const activeBackdropObj =
-    backdrops.find((b) => b.id === selectedBackdrop) ||
+    availableBackdrops.find((b) => b.id === selectedBackdrop) ||
+    availableBackdrops[0] ||
     {
-      id: '',
-      name: 'No Backdrop Selected',
-      category: '',
+      id: 'v1',
+      name: 'Dark Mountain Dawn',
+      category: 'Nature & Solitude',
       aspectRatio: '9:16',
-      previewColor: '',
+      previewColor: 'from-slate-900 via-indigo-950 to-purple-950',
       textColor: '#FFFFFF',
-      particleEffect: '',
+      particleEffect: 'glowing-dust',
     };
 
   const compoundMetadata = {
@@ -162,6 +194,12 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     music: { label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-purple-400' },
     overlay: { label: 'Overlay Sticker / Badge', icon: Layers, color: 'text-indigo-400' },
   }[activeCompound] || { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' };
+
+  const isAllClipsMode = Boolean(
+    !localSelectedClip ||
+    localSelectedClip.all ||
+    (!('clipId' in localSelectedClip && localSelectedClip.clipId) && !('index' in localSelectedClip && typeof localSelectedClip.index === 'number'))
+  );
 
   const CurrentIcon = compoundMetadata.icon;
 
@@ -268,10 +306,11 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
         {activeCompound === 'video' && (
           <VideoCompoundInspector
             activeBackdrop={activeBackdropObj}
-            backdrops={backdrops}
+            backdrops={availableBackdrops}
             onSelectBackdrop={onSelectBackdrop}
-            duration={timelineDuration ?? effectiveDuration}
+            duration={!isAllClipsMode && activeClipDetails?.duration ? activeClipDetails.duration : (timelineDuration ?? effectiveDuration)}
             onUpdateDuration={onDurationChange}
+            selectedClip={localSelectedClip}
             playbackRate={playbackRate}
             onPlaybackRateChange={onPlaybackRateChange}
             customImageUrl={customImageUrl}
@@ -290,6 +329,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
           <TextCompoundInspector
             script={script}
             onUpdateScript={onUpdateScript}
+            selectedClip={localSelectedClip}
+            onUpdateSubtitles={onUpdateSubtitles}
           />
         )}
 

@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Type, Play, Pause, Film } from 'lucide-react';
+import { Type, Play, Pause, Film, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptSubtitle } from '../../types';
 import {
   StudioTimelinePaneProps,
+  groupMicroCaptionsIntoPhrases,
   formatTime,
   computeCaptionLanes,
   computeClipLanes,
@@ -16,6 +17,8 @@ import {
   MIN_TIMELINE_ZOOM,
   MAX_TIMELINE_ZOOM,
   TIMELINE_ZOOM_STEP,
+  TrackId,
+  DEFAULT_TRACK_ORDER,
 } from './timelineTypes';
 import { TimelineToolbar } from './TimelineToolbar';
 import { TimelineTrackHeaders } from './TimelineTrackHeaders';
@@ -53,6 +56,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   timelineDuration = 30,
   timelineHeight,
   onTimelineHeightChange,
+  selectedClip: propSelectedClip,
+  onSelectClip: onSelectClipProp,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isTimelineExpandedLocal, setIsTimelineExpandedLocal] = useState(false);
@@ -139,15 +144,116 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   // Available tracks corresponding to Left-Panel categories (starts with only 1 primary Video track; tracks dynamically open when media is present)
   const [enabledTracks, setEnabledTracks] = useState<EnabledTracks>({
+
     video: true,
+
     image: false,
+
     overlay: false,
+
     captions: false,
+
     title: false,
+
     voice: false,
+
     music: false,
+
     sfx: false,
+
   });
+
+
+
+  const [trackOrder, setTrackOrder] = useState<TrackId[]>(() => {
+
+    try {
+
+      const saved = localStorage.getItem('apexmind:timeline-track-order');
+
+      if (saved) {
+
+        const parsed = JSON.parse(saved);
+
+        if (Array.isArray(parsed) && parsed.length > 0) {
+
+          const valid = new Set(DEFAULT_TRACK_ORDER);
+
+          const filtered = parsed.filter((t): t is TrackId => valid.has(t));
+
+          const missing = DEFAULT_TRACK_ORDER.filter((t) => !filtered.includes(t));
+
+          return [...filtered, ...missing];
+
+        }
+
+      }
+
+    } catch {}
+
+    return DEFAULT_TRACK_ORDER;
+
+  });
+
+
+
+  const handleReorderTracks = useCallback((newOrder: TrackId[]) => {
+
+    setTrackOrder(newOrder);
+
+    try {
+
+      localStorage.setItem('apexmind:timeline-track-order', JSON.stringify(newOrder));
+
+    } catch {}
+
+  }, []);
+
+
+
+  const handleMoveTrack = useCallback((trackId: TrackId, direction: 'up' | 'down') => {
+
+    setTrackOrder((prev) => {
+
+      const enabledList = prev.filter((t) => enabledTracks[t]);
+
+      const currIdx = enabledList.indexOf(trackId);
+
+      if (currIdx === -1) return prev;
+
+      const targetIdx = direction === 'up' ? currIdx - 1 : currIdx + 1;
+
+      if (targetIdx < 0 || targetIdx >= enabledList.length) return prev;
+
+
+
+      const targetTrackId = enabledList[targetIdx];
+
+      const nextOrder = [...prev];
+
+      const fromIndex = nextOrder.indexOf(trackId);
+
+      const toIndex = nextOrder.indexOf(targetTrackId);
+
+      if (fromIndex === -1 || toIndex === -1) return prev;
+
+
+
+      nextOrder.splice(fromIndex, 1);
+
+      nextOrder.splice(toIndex, 0, trackId);
+
+      try {
+
+        localStorage.setItem('apexmind:timeline-track-order', JSON.stringify(nextOrder));
+
+      } catch {}
+
+      return nextOrder;
+
+    });
+
+  }, [enabledTracks]);
 
   const [addTrackMenuOpen, setAddTrackMenuOpen] = useState(false);
 
@@ -162,7 +268,26 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const [sfxTrackMuted, setSfxTrackMuted] = useState(false);
 
   // Active clip selection across any compound track
-  const [selectedClip, setSelectedClip] = useState<SelectedClip | null>(null);
+  const [selectedClip, setSelectedClip] = useState<SelectedClip | null>(propSelectedClip || null);
+
+  useEffect(() => {
+    if (propSelectedClip !== undefined) {
+      setSelectedClip(propSelectedClip);
+    }
+  }, [propSelectedClip]);
+
+  useEffect(() => {
+    const handleTimelineSelect = (e: Event) => {
+      const detail = (e as CustomEvent<{ selectedClip?: SelectedClip }>).detail;
+      if (detail?.selectedClip !== undefined) {
+        setSelectedClip(detail.selectedClip);
+      }
+    };
+    window.addEventListener('workspace:timeline-select-clip', handleTimelineSelect);
+    return () => window.removeEventListener('workspace:timeline-select-clip', handleTimelineSelect);
+  }, []);
+
+
 
   // Multi-clip state for all tracks
   const [videoClips, setVideoClips] = useState<TimelineMediaClip[]>([]);
@@ -196,6 +321,319 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   // Subtitle clips for fluid dragging, trimming, and editing
   const [localClips, setLocalClips] = useState<ScriptSubtitle[]>([]);
+
+  // Listen for clip timing changes dispatched from inspectors
+  useEffect(() => {
+    const handleUpdateClipTiming = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        track: string;
+        clipId?: string;
+        index?: number;
+        duration?: number;
+        start?: number;
+        text?: string;
+        words?: any[];
+      }>).detail;
+      if (!detail) return;
+
+      if (detail.track === 'video') {
+        setVideoClips((prev) => {
+          if (prev.length > 0 && detail.clipId) {
+            return prev.map((c) =>
+              c.id === detail.clipId
+                ? {
+                    ...c,
+                    duration: detail.duration ?? c.duration,
+                    start: detail.start ?? c.start,
+                  }
+                : c
+            );
+          }
+          return prev;
+        });
+        if (typeof detail.duration === 'number') setVideoDuration(detail.duration);
+        if (typeof detail.start === 'number') setVideoStart(detail.start);
+      } else if (detail.track === 'image') {
+        setImageClips((prev) => {
+          if (prev.length > 0 && detail.clipId) {
+            return prev.map((c) =>
+              c.id === detail.clipId
+                ? {
+                    ...c,
+                    duration: detail.duration ?? c.duration,
+                    start: detail.start ?? c.start,
+                  }
+                : c
+            );
+          }
+          return prev;
+        });
+        if (typeof detail.duration === 'number') setImageDuration(detail.duration);
+        if (typeof detail.start === 'number') setImageStart(detail.start);
+      } else if (detail.track === 'overlay') {
+        if (detail.clipId) {
+          setOverlayClips((prev) =>
+            prev.map((c) =>
+              c.id === detail.clipId
+                ? {
+                    ...c,
+                    duration: detail.duration ?? c.duration,
+                    start: detail.start ?? c.start,
+                  }
+                : c
+            )
+          );
+        }
+      } else if (detail.track === 'voice') {
+        if (detail.clipId) {
+          setVoiceClips((prev) =>
+            prev.map((c) =>
+              c.id === detail.clipId
+                ? {
+                    ...c,
+                    duration: detail.duration ?? c.duration,
+                    start: detail.start ?? c.start,
+                  }
+                : c
+            )
+          );
+        }
+      } else if (detail.track === 'music') {
+        if (detail.clipId) {
+          setMusicClips((prev) =>
+            prev.map((c) =>
+              c.id === detail.clipId
+                ? {
+                    ...c,
+                    duration: detail.duration ?? c.duration,
+                    start: detail.start ?? c.start,
+                  }
+                : c
+            )
+          );
+        }
+      } else if (detail.track === 'sfx') {
+        if (detail.clipId) {
+          setSfxClips((prev) =>
+            prev.map((c) =>
+              c.id === detail.clipId
+                ? {
+                    ...c,
+                    duration: detail.duration ?? c.duration,
+                    start: detail.start ?? c.start,
+                  }
+                : c
+            )
+          );
+        }
+      } else if (detail.track === 'caption') {
+        if (typeof detail.index === 'number') {
+          setLocalClips((prev) =>
+            prev.map((c, idx) =>
+              idx === detail.index
+                ? {
+                    ...c,
+                    start: typeof detail.start === 'number' ? Math.max(0, parseFloat(detail.start.toFixed(2))) : c.start,
+                    duration: typeof detail.duration === 'number' ? Math.max(0.2, parseFloat(detail.duration.toFixed(2))) : c.duration,
+                    text: detail.text !== undefined ? detail.text : c.text,
+                    words: detail.words !== undefined ? detail.words : c.words,
+                  }
+                : c
+            )
+          );
+        }
+      } else if (detail.track === 'title') {
+        if (typeof detail.start === 'number') setTitleStart(Math.max(0, parseFloat(detail.start.toFixed(2))));
+        if (typeof detail.duration === 'number') setTitleDuration(Math.max(0.5, parseFloat(detail.duration.toFixed(2))));
+      }
+    };
+    const handleUpdateClipProperties = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        track: string;
+        clipId?: string;
+        index?: number;
+        filterSettings?: any;
+        transform?: any;
+        animation?: string;
+        colorLabel?: string;
+        color?: string;
+        fontFamily?: string;
+        fontSize?: number;
+        fontWeight?: string;
+        textAlign?: 'left' | 'center' | 'right' | 'justify';
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        isBold?: boolean;
+        isItalic?: boolean;
+        isUnderline?: boolean;
+        isStrikethrough?: boolean;
+        stroke?: boolean;
+        strokeColor?: string;
+        strokeWidth?: number;
+        dropShadow?: boolean;
+        shadowColor?: string;
+        shadowBlur?: number;
+        neonGlow?: boolean;
+        glowColor?: string;
+        background?: string;
+        bgRadius?: number;
+        bgPadding?: number;
+        opacity?: number;
+        posY?: number;
+      }>).detail;
+      if (!detail) return;
+      if (detail.track === 'caption' && typeof detail.index === 'number') {
+        setLocalClips((prev) =>
+          prev.map((c, idx) =>
+            idx === detail.index
+              ? {
+                  ...c,
+                  color: detail.color ?? c.color,
+                  captionPresetColor: detail.color ?? c.captionPresetColor,
+                  fontFamily: detail.fontFamily ?? c.fontFamily,
+                  fontSize: detail.fontSize ?? c.fontSize,
+                  fontWeight: detail.fontWeight ?? c.fontWeight,
+                  textAlign: detail.textAlign ?? c.textAlign,
+                  textTransform: detail.textTransform ?? c.textTransform,
+                  isBold: detail.isBold ?? c.isBold,
+                  isItalic: detail.isItalic ?? c.isItalic,
+                  isUnderline: detail.isUnderline ?? c.isUnderline,
+                  isStrikethrough: detail.isStrikethrough ?? c.isStrikethrough,
+                  stroke: detail.stroke ?? c.stroke,
+                  strokeColor: detail.strokeColor ?? c.strokeColor,
+                  strokeWidth: detail.strokeWidth ?? c.strokeWidth,
+                  dropShadow: detail.dropShadow ?? c.dropShadow,
+                  shadowColor: detail.shadowColor ?? c.shadowColor,
+                  shadowBlur: detail.shadowBlur ?? c.shadowBlur,
+                  neonGlow: detail.neonGlow ?? c.neonGlow,
+                  glowColor: detail.glowColor ?? c.glowColor,
+                  background: detail.background ?? c.background,
+                  bgRadius: detail.bgRadius ?? c.bgRadius,
+                  bgPadding: detail.bgPadding ?? c.bgPadding,
+                  opacity: detail.opacity ?? c.opacity,
+                  posY: detail.posY ?? c.posY,
+                  animation: detail.animation ?? c.animation,
+                }
+              : c
+          )
+        );
+        return;
+      }
+      if (!detail.clipId) return;
+      if (detail.track === 'video') {
+        setVideoClips((prev) =>
+          prev.map((c) =>
+            c.id === detail.clipId
+              ? {
+                  ...c,
+                  filterSettings: detail.filterSettings ? { ...(c.filterSettings || {}), ...detail.filterSettings } : c.filterSettings,
+                  transform: detail.transform ? { ...(c.transform || {}), ...detail.transform } : c.transform,
+                  animation: detail.animation ?? c.animation,
+                  colorLabel: detail.colorLabel ?? c.colorLabel,
+                }
+              : c
+          )
+        );
+      } else if (detail.track === 'image') {
+        setImageClips((prev) =>
+          prev.map((c) =>
+            c.id === detail.clipId
+              ? {
+                  ...c,
+                  filterSettings: detail.filterSettings ? { ...(c.filterSettings || {}), ...detail.filterSettings } : c.filterSettings,
+                  transform: detail.transform ? { ...(c.transform || {}), ...detail.transform } : c.transform,
+                  animation: detail.animation ?? c.animation,
+                  colorLabel: detail.colorLabel ?? c.colorLabel,
+                }
+              : c
+          )
+        );
+      }
+    };
+    const handleUpdateClipText = (e: Event) => {
+      const detail = (e as CustomEvent<{ track: string; index: number; text: string; words?: any[] }>).detail;
+      if (!detail || detail.track !== 'caption' || typeof detail.index !== 'number') return;
+      setLocalClips((prev) =>
+        prev.map((c, idx) =>
+          idx === detail.index
+            ? { ...c, text: detail.text, words: detail.words ?? c.words }
+            : c
+        )
+      );
+    };
+    window.addEventListener('workspace:update-clip-timing', handleUpdateClipTiming);
+    window.addEventListener('workspace:update-clip-properties', handleUpdateClipProperties);
+    window.addEventListener('workspace:update-clip-text', handleUpdateClipText);
+    return () => {
+      window.removeEventListener('workspace:update-clip-timing', handleUpdateClipTiming);
+      window.removeEventListener('workspace:update-clip-properties', handleUpdateClipProperties);
+      window.removeEventListener('workspace:update-clip-text', handleUpdateClipText);
+    };
+  }, []);
+
+  // Broadcast selected clip details to inspectors whenever selection or clips update
+  useEffect(() => {
+    if (!selectedClip) {
+      window.dispatchEvent(
+        new CustomEvent('workspace:selected-clip-details', {
+          detail: { selectedClip: null, details: null },
+        })
+      );
+      return;
+    }
+    let details: { start: number; duration: number; name: string } | null = null;
+    if (selectedClip.track === 'video') {
+      const found = videoClips.find((c) => c.id === selectedClip.clipId) || videoClips[0];
+      details = found
+        ? { start: found.start, duration: found.duration, name: found.name }
+        : { start: videoStart, duration: videoDuration, name: 'Video Backdrop' };
+    } else if (selectedClip.track === 'image') {
+      const found = imageClips.find((c) => c.id === selectedClip.clipId) || imageClips[0];
+      details = found
+        ? { start: found.start, duration: found.duration, name: found.name }
+        : { start: imageStart, duration: imageDuration, name: 'Image Backdrop' };
+    } else if (selectedClip.track === 'caption' && typeof selectedClip.index === 'number') {
+      const found = localClips[selectedClip.index];
+      if (found) {
+        details = { start: found.start, duration: found.duration || 1.5, name: found.text };
+      }
+    } else if (selectedClip.track === 'overlay') {
+      const found = overlayClips.find((c) => c.id === selectedClip.clipId) || overlayClips[0];
+      if (found) details = { start: found.start, duration: found.duration, name: found.name };
+    } else if (selectedClip.track === 'voice') {
+      const found = voiceClips.find((c) => c.id === selectedClip.clipId) || voiceClips[0];
+      if (found) details = { start: found.start, duration: found.duration, name: found.name };
+    } else if (selectedClip.track === 'music') {
+      const found = musicClips.find((c) => c.id === selectedClip.clipId) || musicClips[0];
+      if (found) details = { start: found.start, duration: found.duration, name: found.name };
+    } else if (selectedClip.track === 'sfx') {
+      const found = sfxClips.find((c) => c.id === selectedClip.clipId) || sfxClips[0];
+      if (found) details = { start: found.start, duration: found.duration, name: found.name };
+    } else if (selectedClip.track === 'title') {
+      details = { start: titleStart, duration: titleDuration, name: script.title || 'Video Title' };
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('workspace:selected-clip-details', {
+        detail: { selectedClip, details },
+      })
+    );
+  }, [
+    selectedClip,
+    videoClips,
+    videoStart,
+    videoDuration,
+    imageClips,
+    imageStart,
+    imageDuration,
+    localClips,
+    overlayClips,
+    voiceClips,
+    musicClips,
+    sfxClips,
+    titleStart,
+    titleDuration,
+    script.title,
+  ]);
   const [editingClipIndex, setEditingClipIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState<string>('');
 
@@ -259,11 +697,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       : (Number.isFinite(duration) && duration > 0 ? duration : (Number(timelineDuration) || 0))
   );
   const projectDuration = Number.isFinite(rawProjectDuration) && rawProjectDuration > 0 ? rawProjectDuration : 0;
-  const maxActiveTime = Math.max(contentEnd, currentTime, projectDuration);
-  // Dynamic non-hardcoded runway: 0 when empty, smoothly expanding to match active media + headroom
+  // Stable timeline runway (no dependency on currentTime to prevent jumping/rubber-banding while scrubbing)
   const totalDuration = projectDuration > 0
-    ? Math.max(projectDuration, Math.ceil((maxActiveTime + 1) / 5) * 5)
-    : 0;
+    ? Math.max(projectDuration, Math.ceil(projectDuration / 5) * 5 + 5)
+    : 30;
   const progressPercent = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
   const timelineScale = Math.max(0.25, Number.isFinite(zoomLevel) ? zoomLevel : 1);
 
@@ -323,6 +760,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const laneHeight = 32;
   const laneGap = 4;
   const captionTrackHeight = Math.max(40, (captionMaxLane + 1) * (laneHeight + laneGap) + 4);
+  const titleTrackHeight = 40;
 
   // Dynamic Lane Stacking for Media & Audio Tracks (overlapping clips automatically move above & below!)
   const { lanes: videoLanes, maxLane: videoMaxLane } = computeClipLanes(videoClips);
@@ -492,29 +930,32 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           duration: clipDuration,
         });
 
-        if (scene.sfxUrl) {
+        // Intelligently place purposeful SFX cues (opening whoosh, mid impact, climax drop)
+        // Ensure at least 2.2s separation so clips don't collide or stack into chaotic dominoes
+        if (scene.sfxUrl && (newSfxClips.length === 0 || !newSfxClips.some((c) => Math.abs(c.start - clipStart) < 2.2))) {
           newSfxClips.push({
             id: `sfx-${scene.sceneNumber || idx + 1}-${Date.now()}`,
             type: 'sfx',
             url: scene.sfxUrl,
-            name: scene.sfx || 'Impact Whoosh',
+            name: scene.sfx || 'Whoosh',
             start: clipStart,
-            duration: 1.5,
+            duration: 1.2,
           });
         }
       });
 
-      // Layered Sound Design: Add standalone SFX events (transitions, climax drops, risers)
+      // Standalone Sound Design: Only add if there is a real acoustic gap (>= 2.5s) and limit to max 4 SFX
       const soundDesignEvents = (detail as any).soundDesign?.sfxEvents || [];
       soundDesignEvents.forEach((evt: any, i: number) => {
-        if (evt.sfxUrl && !newSfxClips.some((c) => Math.abs(c.start - evt.time) < 0.2)) {
+        const evtTime = typeof evt.time === 'number' && Number.isFinite(evt.time) ? evt.time : i * 3.0;
+        if (newSfxClips.length < 4 && evt.sfxUrl && !newSfxClips.some((c) => Math.abs(c.start - evtTime) < 2.5)) {
           newSfxClips.push({
             id: `sfx-evt-${i}-${Date.now()}`,
             type: 'sfx',
             url: evt.sfxUrl,
-            name: evt.label || 'SFX Event',
-            start: typeof evt.time === 'number' && Number.isFinite(evt.time) ? evt.time : i * 2.5,
-            duration: 1.8,
+            name: evt.label || 'Impact',
+            start: evtTime,
+            duration: 1.2,
           });
         }
       });
@@ -528,10 +969,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         setIsCollapsed(false);
       }
       if (detail.captions && detail.captions.length > 0) {
-        setLocalClips(detail.captions);
+        const grouped = groupMicroCaptionsIntoPhrases(detail.captions);
+        setLocalClips(grouped);
         setEnabledTracks((prev) => ({ ...prev, captions: true }));
         setCaptionsTrackLocked(false);
-        onUpdateSubtitles?.(detail.captions);
+        onUpdateSubtitles?.(grouped);
       }
       if (detail.duration && detail.duration > 0) {
         onTimelineDurationChange?.(detail.duration);
@@ -758,19 +1200,32 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   // Sync script subtitles into local clips (from subtitles or storyboard)
   useEffect(() => {
     if (script.subtitles && script.subtitles.length > 0) {
-      setLocalClips(script.subtitles);
+      const totalWords = script.subtitles.reduce((sum, c) => sum + (c.text ? c.text.trim().split(/\s+/).length : 1), 0);
+      const avgWords = totalWords / script.subtitles.length;
+      const avgDuration = script.subtitles.reduce((sum, c) => sum + (c.duration || 1), 0) / script.subtitles.length;
+      // Only group if incoming subtitles are raw micro-captions (<= 2 words and < 1.4s per cue)
+      if (avgWords <= 2 && avgDuration < 1.4 && script.subtitles.length > 5) {
+        const grouped = groupMicroCaptionsIntoPhrases(script.subtitles);
+        setLocalClips(grouped);
+        onUpdateSubtitles?.(grouped);
+      } else {
+        setLocalClips(script.subtitles);
+      }
     } else if (script.storyboard && script.storyboard.length > 0) {
-      setLocalClips(
-        script.storyboard
-          .filter((sc) => sc.subtitleText)
-          .map((sc) => ({
-            text: sc.subtitleText || '',
-            start: sc.start,
-            duration: sc.duration,
-            captionPresetClass: sc.captionPresetClass,
-            captionPresetColor: sc.captionPresetColor,
-          }))
-      );
+      const generated = script.storyboard
+        .filter((sc) => sc.subtitleText)
+        .map((sc) => ({
+          text: sc.subtitleText || '',
+          start: sc.start,
+          duration: sc.duration,
+          captionPresetClass: sc.captionPresetClass,
+          captionPresetColor: sc.captionPresetColor,
+        }));
+      const grouped = groupMicroCaptionsIntoPhrases(generated);
+      setLocalClips(grouped);
+      if (!script.subtitles || script.subtitles.length === 0) {
+        onUpdateSubtitles?.(grouped);
+      }
     } else {
       setLocalClips([]);
     }
@@ -965,31 +1420,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     if (!target) return;
     const rect = target.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    let rawTime = ratio * totalDuration;
-
-    if (snapEnabled) {
-      const pxPerSec = rect.width / (totalDuration || 1);
-      const toleranceSec = Math.max(0.35, 14 / pxPerSec);
-      const snapPoints = [
-        0,
-        ...videoClips.flatMap((c) => [c.start, c.start + c.duration]),
-        ...imageClips.flatMap((c) => [c.start, c.start + c.duration]),
-        ...voiceClips.flatMap((c) => [c.start, c.start + c.duration]),
-        ...musicClips.flatMap((c) => [c.start, c.start + c.duration]),
-        ...sfxClips.flatMap((c) => [c.start, c.start + c.duration]),
-        ...overlayClips.flatMap((c) => [c.start, c.start + c.duration]),
-        ...localClips.flatMap((c) => [c.start, c.start + (c.duration || 3)]),
-      ];
-      const snapRes = calculateSnap(rawTime, snapPoints, toleranceSec);
-      if (snapRes.snapped) {
-        rawTime = snapRes.value;
-        setSnapGuideTime(snapRes.snapPoint!);
-      } else {
-        setSnapGuideTime(null);
-      }
-    } else {
-      setSnapGuideTime(null);
-    }
+    const rawTime = ratio * totalDuration;
     onSeek(rawTime);
   };
 
@@ -999,9 +1430,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     compound?: 'video' | 'text' | 'voice' | 'music' | 'overlay'
   ) => {
     setSelectedClip(clip);
+    onSelectClipProp?.(clip);
     if (compound) {
       onSelectCompound?.(compound);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: compound }));
+      window.dispatchEvent(
+        new CustomEvent('workspace:select-compound', {
+          detail: { compound, selectedClip: clip },
+        })
+      );
     }
   };
 
@@ -1414,6 +1850,35 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             setDragTooltip(`▶ SFX Delay: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
           }
         }
+      } else if (activeDrag.kind === 'title') {
+        const { mode, origStart, origDuration } = activeDrag;
+        if (mode === 'move') {
+          const rawStart = origStart + deltaSec;
+          const snapRes = snapClipMove(rawStart, origDuration, snapPoints, snapToleranceSec);
+          const nextStart = Math.max(0, Math.min(maxTimelineBound - origDuration, snapRes.newStart));
+          setTitleStart(parseFloat(nextStart.toFixed(2)));
+          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+          setDragTooltip(
+            `▶ Title • Start: ${nextStart.toFixed(1)}s • Dur: ${origDuration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+          );
+        } else if (mode === 'trim-left') {
+          const rawStart = origStart + deltaSec;
+          const snapRes = calculateSnap(rawStart, snapPoints, snapToleranceSec);
+          const nextStart = Math.max(0, Math.min(origStart + origDuration - 0.5, snapRes.value));
+          const nextDuration = origDuration - (nextStart - origStart);
+          setTitleStart(parseFloat(nextStart.toFixed(2)));
+          setTitleDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
+          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+          setDragTooltip(`◀ Title Trim In: ${nextStart.toFixed(1)}s • Dur: ${nextDuration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+        } else if (mode === 'trim-right') {
+          const rawEnd = origStart + origDuration + deltaSec;
+          const snapRes = calculateSnap(rawEnd, snapPoints, snapToleranceSec);
+          const nextEnd = Math.max(titleStart + 0.5, Math.min(maxTimelineBound, snapRes.value));
+          const nextDuration = nextEnd - titleStart;
+          setTitleDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
+          setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
+          setDragTooltip(`▶ Title Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${nextDuration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+        }
       }
     };
 
@@ -1472,7 +1937,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   // Split selected clip at current playhead time
   const handleSplitClip = () => {
     if (!selectedClip) return;
-    if (selectedClip.track === 'caption' && !captionsTrackLocked) {
+    if (selectedClip.track === 'caption' && typeof selectedClip.index === 'number' && !captionsTrackLocked) {
       const clip = localClips[selectedClip.index];
       if (!clip) return;
       const clipEnd = clip.start + (clip.duration || 3);
@@ -1515,7 +1980,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   // Duplicate selected clip
   const handleDuplicateClip = () => {
     if (!selectedClip) return;
-    if (selectedClip.track === 'caption') {
+    if (selectedClip.track === 'caption' && typeof selectedClip.index === 'number') {
       if (captionsTrackLocked) return;
       const clip = localClips[selectedClip.index];
       if (!clip) return;
@@ -2370,6 +2835,1098 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     (_, index) => index * tickInterval
   );
 
+
+  // ── Dynamic Track Lane Renderers ─────────────────────────────────────
+  const renderVideoTrackLane = () => (
+    <React.Fragment key="track-lane-video">
+                {/* ── Track 1: Video Backdrop Clip Block (Moveable & Trimmable) ───── */}
+                {enabledTracks.video && (
+                  hasVideo ? (
+                    <VideoTrackClip
+                      clips={videoLanes}
+                      trackHeight={videoTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={videoMaxLane}
+                      videoStart={videoClips[0]?.start ?? videoStart}
+                      videoDuration={videoClips[0]?.duration ?? videoDuration}
+                      totalDuration={totalDuration}
+                      selectedClip={selectedClip}
+                      videoTrackVisible={videoTrackVisible}
+                      backdropName={activeBackdrop?.name || 'Video Clip'}
+                      mediaUrl={customVideoUrl || activeBackdrop?.imageUrl}
+                      posterUrl={customImageUrl || activeBackdrop?.imageUrl}
+                      onSelectClip={(clipId) => handleSelectClip({ track: 'video', clipId, all: false }, 'video')}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'video', clipId: clip.id, all: false }, 'video');
+                        setActiveDrag({
+                          kind: 'video',
+                          clipId: clip.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'video', clipId: clip.id, all: false }, 'video');
+                        setActiveDrag({
+                          kind: 'video',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'video', clipId: clip.id, all: false }, 'video');
+                        setActiveDrag({
+                          kind: 'video',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteVideoClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateVideoClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitVideoClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'video' }, 'video')}
+                      onPointerDownMove={(e) => {
+                        const first = videoClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'video',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimLeft={(e) => {
+                        e.stopPropagation();
+                        const first = videoClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'video',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimRight={(e) => {
+                        e.stopPropagation();
+                        const first = videoClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'video',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
+                      }}
+                      onDelete={() => handleDeleteVideoClip()}
+                      onDuplicate={() => handleDuplicateVideoClip()}
+                      onSplit={() => handleSplitVideoClip()}
+                      onHide={() => setVideoTrackVisible(!videoTrackVisible)}
+                      onZoomToClip={handleVideoZoom}
+                    />
+                  ) : (
+                    <div
+                      onClick={() => {
+                        onSelectCompound?.('video');
+                        window.dispatchEvent(new CustomEvent('workspace:open-pane', { detail: 'video' }));
+                      }}
+                      style={{ height: `${videoTrackHeight}px` }}
+                      className="box-border border-b border-[#242426] p-1 relative flex items-center cursor-pointer group/empty w-full"
+                      title="Click to open Motion Video Catalog and add video clips"
+                    >
+                      <div className="w-full h-8 rounded-md border border-dashed border-amber-500/35 hover:border-amber-400 bg-amber-500/5 hover:bg-amber-500/10 flex items-center justify-center gap-2 text-zinc-400 hover:text-amber-200 transition-all">
+                        <Film className="w-3.5 h-3.5 text-amber-400/80 group-hover/empty:scale-110 transition-transform" />
+                        <span className="text-[10px] font-medium text-amber-300/80 group-hover/empty:text-amber-200">
+                          + Add Video Clip (Click to browse Motion Catalog)
+                        </span>
+                      </div>
+                    </div>
+                  )
+                )}
+
+
+    </React.Fragment>
+  );
+
+  const renderImageTrackLane = () => (
+    <React.Fragment key="track-lane-image">
+                {/* ── Track 2: Image Backdrop Clip Block ────────────────────── */}
+                {enabledTracks.image && (
+                  hasImage ? (
+                    <ImageTrackClip
+                      clips={imageLanes}
+                      trackHeight={imageTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={imageMaxLane}
+                      imageStart={imageClips[0]?.start ?? imageStart}
+                      imageDuration={imageClips[0]?.duration ?? imageDuration}
+                      totalDuration={totalDuration}
+                      selectedClip={selectedClip}
+                      imageTrackVisible={imageTrackVisible}
+                      imageUrl={customImageUrl || activeBackdrop?.imageUrl}
+                      imageName={customImageUrl ? 'Custom Image Graphic' : `${activeBackdrop?.name || 'Image'}`}
+                      onSelectClip={(clipId) => handleSelectClip({ track: 'image', clipId, all: false }, 'video')}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'image', clipId: clip.id, all: false }, 'video');
+                        setActiveDrag({
+                          kind: 'image',
+                          clipId: clip.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'image', clipId: clip.id, all: false }, 'video');
+                        setActiveDrag({
+                          kind: 'image',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'image', clipId: clip.id, all: false }, 'video');
+                        setActiveDrag({
+                          kind: 'image',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteImageClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateImageClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitImageClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'image' }, 'video')}
+                      onPointerDownMove={(e) => {
+                        const first = imageClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'image',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimLeft={(e) => {
+                        e.stopPropagation();
+                        const first = imageClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'image',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimRight={(e) => {
+                        e.stopPropagation();
+                        const first = imageClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
+                          setActiveDrag({
+                            kind: 'image',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        }
+                      }}
+                      onDelete={() => handleDeleteImageClip()}
+                      onDuplicate={() => handleDuplicateImageClip()}
+                      onSplit={() => handleSplitImageClip()}
+                      onHide={() => setImageTrackVisible(!imageTrackVisible)}
+                      onZoomToClip={handleImageZoom}
+                    />
+                  ) : (
+                    <div
+                      style={{ height: `${titleTrackHeight}px` }}
+                      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
+                    />
+                  )
+                )}
+
+
+    </React.Fragment>
+  );
+
+  const renderOverlayTrackLane = () => (
+    <React.Fragment key="track-lane-overlay">
+                {/* ── Track 3: Overlays / Elements Clip Block ───────────────── */}
+                {enabledTracks.overlay && (
+                  hasOverlay ? (
+                    <OverlayTrackClip
+                      clips={overlayLanes}
+                      trackHeight={overlayTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={overlayMaxLane}
+                      overlayStart={overlayStart}
+                      overlayDuration={overlayDuration}
+                      totalDuration={totalDuration}
+                      selectedClip={selectedClip}
+                      overlayTrackVisible={overlayTrackVisible}
+                      label={activeElementOverlay?.label || activeElementOverlay?.name}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'overlay', clipId: clip.id, all: false }, 'overlay');
+                        setActiveDrag({
+                          kind: 'overlay',
+                          clipId: clip.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'overlay', clipId: clip.id, all: false }, 'overlay');
+                        setActiveDrag({
+                          kind: 'overlay',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'overlay', clipId: clip.id, all: false }, 'overlay');
+                        setActiveDrag({
+                          kind: 'overlay',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteOverlayClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateOverlayClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitOverlayClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'overlay' }, 'overlay')}
+                      onPointerDownMove={(e) => {
+                        const first = overlayClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'overlay' }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: overlayStart,
+                            origDuration: overlayDuration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimLeft={(e) => {
+                        e.stopPropagation();
+                        const first = overlayClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'overlay' }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: overlayStart,
+                            origDuration: overlayDuration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimRight={(e) => {
+                        e.stopPropagation();
+                        const first = overlayClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'overlay' }, 'overlay');
+                          setActiveDrag({
+                            kind: 'overlay',
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: overlayStart,
+                            origDuration: overlayDuration,
+                          });
+                        }
+                      }}
+                      onDelete={() => handleDeleteOverlayClip()}
+                      onDuplicate={() => handleDuplicateOverlayClip()}
+                      onSplit={() => handleSplitOverlayClip()}
+                      onHide={() => setOverlayTrackVisible(!overlayTrackVisible)}
+                      onZoomToClip={handleOverlayZoom}
+                    />
+                  ) : (
+                    <div
+                      style={{ height: `${titleTrackHeight}px` }}
+                      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
+                    />
+                  )
+                )}
+
+
+    </React.Fragment>
+  );
+
+  const renderCaptionsTrackLane = () => (
+    <React.Fragment key="track-lane-captions">
+                {/* ── Track 4: Subtitle & Kinetic Caption Clips (Moveable, Trimmable, Stacking Lanes) ────── */}
+                {enabledTracks.captions && (
+                  captionLanes.length > 0 ? (
+                    <CaptionTrackClips
+                      captionLanes={captionLanes}
+                      captionMaxLane={captionMaxLane}
+                      captionTrackHeight={captionTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      totalDuration={totalDuration}
+                      selectedClip={selectedClip}
+                      captionsTrackLocked={captionsTrackLocked}
+                      editingClipIndex={editingClipIndex}
+                      editingText={editingText}
+                      setEditingText={setEditingText}
+                      onSelectClip={(index, start) => {
+                        handleSelectClip({ track: 'caption', index, all: false }, 'text');
+                        onSeek(start);
+                      }}
+                      onDoubleClickClip={(index, text) => {
+                        if (captionsTrackLocked) return;
+                        setEditingClipIndex(index);
+                        setEditingText(text);
+                      }}
+                      onSaveInlineText={handleSaveInlineText}
+                      onCancelInlineEdit={() => setEditingClipIndex(null)}
+                      onPointerDownMove={(e, index, start, dur) => {
+                        if (captionsTrackLocked || editingClipIndex === index) return;
+                        handleSelectClip({ track: 'caption', index, all: false }, 'text');
+                        setActiveDrag({
+                          kind: 'subtitle',
+                          index,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: start,
+                          origDuration: dur,
+                        });
+                      }}
+                      onPointerDownTrimLeft={(e, index, start, dur) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'caption', index, all: false }, 'text');
+                        setActiveDrag({
+                          kind: 'subtitle',
+                          index,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: start,
+                          origDuration: dur,
+                        });
+                      }}
+                      onPointerDownTrimRight={(e, index, start, dur) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'caption', index, all: false }, 'text');
+                        setActiveDrag({
+                          kind: 'subtitle',
+                          index,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: start,
+                          origDuration: dur,
+                        });
+                      }}
+                      onDeleteCaption={handleDeleteCaptionByIndex}
+                      onDuplicateCaption={handleDuplicateCaptionByIndex}
+                      onSplitCaption={handleSplitCaptionByIndex}
+                      onEditCaption={handleEditCaptionByIndex}
+                    />
+                  ) : (
+                    <div
+                      className="relative box-border border-b border-[#242426] w-full"
+                      style={{ height: `${captionTrackHeight}px` }}
+                    >
+                      <div className="absolute inset-x-0 top-0 h-px bg-[#2D2D2D]" />
+                    </div>
+                  )
+                )}
+
+
+    </React.Fragment>
+  );
+
+  const renderTitleTrackLane = () => (
+    <React.Fragment key="track-lane-title">
+                {/* ── Track 5: Title / Hook Overlay Clip Block ──────────────── */}
+                {enabledTracks.title && (
+                  hasTitle ? (
+                    <div
+                      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full transition-all"
+                      style={{ height: `${titleTrackHeight}px` }}
+                    >
+                      <div
+                        onClick={() => handleSelectClip({ track: 'title' }, 'text')}
+                        onPointerDown={(e) => {
+                          handleSelectClip({ track: 'title' });
+                          setActiveDrag({
+                            kind: 'title',
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: titleStart,
+                            origDuration: titleDuration,
+                          });
+                        }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          handleSelectClip({ track: 'title' });
+                          setTitleContextMenu({ x: e.clientX, y: e.clientY });
+                        }}
+                        className={`timeline-clip-card absolute rounded-md px-1.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-all overflow-hidden shadow-xs ${selectedClip?.track === 'title'
+                            ? 'bg-[#0E2A44] border-sky-300 text-white z-20 ring-2 ring-sky-300/80 shadow-lg'
+                            : 'bg-[#0A1A2A]/90 hover:bg-[#0E2338] border-sky-500/35 text-sky-100 hover:border-sky-400/70 z-10'
+                          }`}
+                        style={{
+                          left: `${(titleStart / totalDuration) * 100}%`,
+                          width: `${Math.min(100, (titleDuration / totalDuration) * 100)}%`,
+                          minWidth: '44px',
+                          top: '4px',
+                          height: '32px',
+                          ...(titleColorLabel ? { boxShadow: `inset 0 0 0 2px ${titleColorLabel}40, 0 0 0 1px ${titleColorLabel}` } : {}),
+                        }}
+                      >
+                        {/* Color Label Strip */}
+                        {titleColorLabel && (
+                          <div
+                            className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
+                            style={{ background: titleColorLabel }}
+                          />
+                        )}
+
+                        {/* Left Trim Handle */}
+                        {!titleTrackLocked && (
+                          <div
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              handleSelectClip({ track: 'title' }, 'text');
+                              setActiveDrag({
+                                kind: 'title',
+                                mode: 'trim-left',
+                                startX: e.clientX,
+                                origStart: titleStart,
+                                origDuration: titleDuration,
+                              });
+                            }}
+                            className="timeline-trim-handle-left bg-sky-400/40 hover:bg-sky-400 opacity-0 group-hover:opacity-100 transition-opacity z-30"
+                            title="Drag to trim Title start time"
+                          >
+                            <div className="w-0.5 h-3 bg-white rounded-full" />
+                          </div>
+                        )}
+
+                        {/* Clean Box Content: Icon + Title + Duration + 3-Dot Button */}
+                        <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1 select-none z-10">
+                          <Type className="w-3 h-3 text-sky-300/90 shrink-0 pointer-events-none" />
+                          <span className="text-[10px] font-bold text-sky-100 truncate tracking-tight flex-1 min-w-0 pointer-events-none">
+                            "{script.title || 'Untitled'}"
+                          </span>
+                          {(titleDuration >= 0.5) && (
+                            <span className="text-[8px] font-mono-studio text-sky-300/90 shrink-0 bg-black/60 border border-sky-500/20 px-1.5 py-0.5 rounded font-bold pointer-events-none">
+                              {titleDuration.toFixed(1)}s
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectClip({ track: 'title' });
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setTitleContextMenu({ x: rect.left, y: rect.bottom + 4 });
+                            }}
+                            className="text-sky-300/70 hover:text-white hover:bg-white/10 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                            title="Title options"
+                            aria-label="Title options"
+                          >
+                            <MoreVertical className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        {/* Right Trim Handle */}
+                        {!titleTrackLocked && (
+                          <div
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              handleSelectClip({ track: 'title' }, 'text');
+                              setActiveDrag({
+                                kind: 'title',
+                                mode: 'trim-right',
+                                startX: e.clientX,
+                                origStart: titleStart,
+                                origDuration: titleDuration,
+                              });
+                            }}
+                            className="timeline-trim-handle-right bg-sky-400/40 hover:bg-sky-400 opacity-0 group-hover:opacity-100 transition-opacity z-30"
+                            title="Drag to trim Title duration"
+                          >
+                            <div className="w-0.5 h-3 bg-white rounded-full" />
+                          </div>
+                        )}
+                      </div>
+                      {/* Title track right-click context menu */}
+                      <TimelineClipContextMenu
+                        x={titleContextMenu?.x ?? 0}
+                        y={titleContextMenu?.y ?? 0}
+                        trackType="title"
+                        isVisible={titleContextMenu !== null}
+                        onClose={() => setTitleContextMenu(null)}
+                        onDelete={handleTitleDelete}
+                        onSplit={handleSplitClip}
+                        onZoomToClip={handleTitleZoom}
+                        onColorLabel={(c) => setTitleColorLabel(c)}
+                        onCopyTimings={() => {
+                          const text = `Start: ${titleStart.toFixed(2)}s | Duration: ${titleDuration.toFixed(2)}s | Title: "${script.title || 'Untitled'}"`;
+                          navigator.clipboard.writeText(text).catch(() => { });
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{ height: `${titleTrackHeight}px` }}
+                      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
+                    />
+                  )
+                )}
+
+
+    </React.Fragment>
+  );
+
+  const renderVoiceTrackLane = () => (
+    <React.Fragment key="track-lane-voice">
+                {/* ── Track 6: Voiceover Audio (With Full-Width Dynamic Audio Waves) ───── */}
+                {enabledTracks.voice && (
+                  hasVoice ? (
+                    <AudioTrackClip
+                      type="voice"
+                      clips={voiceLanes}
+                      trackHeight={voiceTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={voiceMaxLane}
+                      start={voiceStart}
+                      duration={voiceDuration}
+                      totalDuration={totalDuration}
+                      selectedClip={selectedClip}
+                      isMuted={voiceTrackMuted}
+                      label={voiceLabel}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'voice', clipId: clip.id, all: false }, 'voice');
+                        setActiveDrag({
+                          kind: 'voice',
+                          clipId: clip.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'voice', clipId: clip.id, all: false }, 'voice');
+                        setActiveDrag({
+                          kind: 'voice',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'voice', clipId: clip.id, all: false }, 'voice');
+                        setActiveDrag({
+                          kind: 'voice',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteVoiceClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateVoiceClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitVoiceClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'voice' }, 'voice')}
+                      onPointerDownMove={(e) => {
+                        const first = voiceClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'voice' }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: voiceStart,
+                            origDuration: voiceDuration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimLeft={(e) => {
+                        e.stopPropagation();
+                        const first = voiceClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'voice' }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: voiceStart,
+                            origDuration: voiceDuration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimRight={(e) => {
+                        e.stopPropagation();
+                        const first = voiceClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'voice' }, 'voice');
+                          setActiveDrag({
+                            kind: 'voice',
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: voiceStart,
+                            origDuration: voiceDuration,
+                          });
+                        }
+                      }}
+                      onDelete={() => handleDeleteVoiceClip()}
+                      onDuplicate={() => handleDuplicateVoiceClip()}
+                      onMute={() => setVoiceTrackMuted(!voiceTrackMuted)}
+                      onSplit={() => handleSplitVoiceClip()}
+                      onZoomToClip={handleVoiceZoom}
+                    />
+                  ) : (
+                    <div
+                      style={{ height: `${titleTrackHeight}px` }}
+                      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
+                    />
+                  )
+                )}
+
+
+    </React.Fragment>
+  );
+
+  const renderMusicTrackLane = () => (
+    <React.Fragment key="track-lane-music">
+                {/* ── Track 7: Background Music Soundtrack (With Full-Width Dynamic Music Waves) ───── */}
+                {enabledTracks.music && (
+                  hasMusic ? (
+                    <AudioTrackClip
+                      type="music"
+                      clips={musicLanes}
+                      trackHeight={musicTrackHeight}
+                      laneHeight={laneHeight}
+                      laneGap={laneGap}
+                      maxLane={musicMaxLane}
+                      start={musicStart}
+                      duration={musicDuration}
+                      totalDuration={totalDuration}
+                      selectedClip={selectedClip}
+                      isMuted={musicTrackMuted}
+                      label={musicLabel}
+                      subLabel={musicSubLabel}
+                      onPointerDownMoveClip={(e, clip) => {
+                        handleSelectClip({ track: 'music', clipId: clip.id, all: false }, 'music');
+                        setActiveDrag({
+                          kind: 'music',
+                          clipId: clip.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimLeftClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'music', clipId: clip.id, all: false }, 'music');
+                        setActiveDrag({
+                          kind: 'music',
+                          clipId: clip.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onPointerDownTrimRightClip={(e, clip) => {
+                        e.stopPropagation();
+                        handleSelectClip({ track: 'music', clipId: clip.id, all: false }, 'music');
+                        setActiveDrag({
+                          kind: 'music',
+                          clipId: clip.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: clip.start,
+                          origDuration: clip.duration,
+                        });
+                      }}
+                      onDeleteClip={(clipId) => handleDeleteMusicClip(clipId)}
+                      onDuplicateClip={(clipId) => handleDuplicateMusicClip(clipId)}
+                      onSplitClip={(clipId) => handleSplitMusicClip(clipId)}
+                      onSelect={() => handleSelectClip({ track: 'music' }, 'music')}
+                      onPointerDownMove={(e) => {
+                        const first = musicClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            clipId: first.id,
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'music' }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            mode: 'move',
+                            startX: e.clientX,
+                            origStart: musicStart,
+                            origDuration: musicDuration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimLeft={(e) => {
+                        e.stopPropagation();
+                        const first = musicClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            clipId: first.id,
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'music' }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            mode: 'trim-left',
+                            startX: e.clientX,
+                            origStart: musicStart,
+                            origDuration: musicDuration,
+                          });
+                        }
+                      }}
+                      onPointerDownTrimRight={(e) => {
+                        e.stopPropagation();
+                        const first = musicClips[0];
+                        if (first) {
+                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            clipId: first.id,
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: first.start,
+                            origDuration: first.duration,
+                          });
+                        } else {
+                          handleSelectClip({ track: 'music' }, 'music');
+                          setActiveDrag({
+                            kind: 'music',
+                            mode: 'trim-right',
+                            startX: e.clientX,
+                            origStart: musicStart,
+                            origDuration: musicDuration,
+                          });
+                        }
+                      }}
+                      onDelete={() => handleDeleteMusicClip()}
+                      onDuplicate={() => handleDuplicateMusicClip()}
+                      onMute={() => setMusicTrackMuted(!musicTrackMuted)}
+                      onSplit={() => handleSplitMusicClip()}
+                      onZoomToClip={handleMusicZoom}
+                    />
+                  ) : (
+                    <div
+                      style={{ height: `${musicTrackHeight}px` }}
+                      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
+                    />
+                  )
+                )}
+
+
+    </React.Fragment>
+  );
+
+  const renderSfxTrackLane = () => (
+    <React.Fragment key="track-lane-sfx">
+                {/* ── Track 8: Sound FX Track ──────────────────────────────── */}
+                {enabledTracks.sfx && (
+                  hasSfx ? (
+                    <AudioTrackClip
+                    type="sfx"
+                    clips={sfxLanes}
+                    trackHeight={sfxTrackHeight}
+                    laneHeight={laneHeight}
+                    laneGap={laneGap}
+                    maxLane={sfxMaxLane}
+                    start={sfxStart}
+                    duration={sfxDuration}
+                    totalDuration={totalDuration}
+                    selectedClip={selectedClip}
+                    isMuted={sfxTrackMuted}
+                    label={selectedSfx ? `SFX: ${selectedSfx.name}` : 'Sound FX'}
+                    onPointerDownMoveClip={(e, clip) => {
+                      handleSelectClip({ track: 'sfx', clipId: clip.id, all: false }, 'music');
+                      setActiveDrag({
+                        kind: 'sfx',
+                        clipId: clip.id,
+                        mode: 'move',
+                        startX: e.clientX,
+                        origStart: clip.start,
+                        origDuration: clip.duration,
+                      });
+                    }}
+                    onPointerDownTrimLeftClip={(e, clip) => {
+                      e.stopPropagation();
+                      handleSelectClip({ track: 'sfx', clipId: clip.id, all: false }, 'music');
+                      setActiveDrag({
+                        kind: 'sfx',
+                        clipId: clip.id,
+                        mode: 'trim-left',
+                        startX: e.clientX,
+                        origStart: clip.start,
+                        origDuration: clip.duration,
+                      });
+                    }}
+                    onPointerDownTrimRightClip={(e, clip) => {
+                      e.stopPropagation();
+                      handleSelectClip({ track: 'sfx', clipId: clip.id, all: false }, 'music');
+                      setActiveDrag({
+                        kind: 'sfx',
+                        clipId: clip.id,
+                        mode: 'trim-right',
+                        startX: e.clientX,
+                        origStart: clip.start,
+                        origDuration: clip.duration,
+                      });
+                    }}
+                    onDeleteClip={(clipId) => handleDeleteSfxClip(clipId)}
+                    onDuplicateClip={(clipId) => handleDuplicateSfxClip(clipId)}
+                    onSplitClip={(clipId) => handleSplitSfxClip(clipId)}
+                    onSelect={() => handleSelectClip({ track: 'sfx' }, 'music')}
+                    onPointerDownMove={(e) => {
+                      const first = sfxClips[0];
+                      if (first) {
+                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: first.id,
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: first.start,
+                          origDuration: first.duration,
+                        });
+                      } else {
+                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: 'sfx-default',
+                          mode: 'move',
+                          startX: e.clientX,
+                          origStart: sfxStart,
+                          origDuration: sfxDuration,
+                        });
+                      }
+                    }}
+                    onPointerDownTrimLeft={(e) => {
+                      e.stopPropagation();
+                      const first = sfxClips[0];
+                      if (first) {
+                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: first.id,
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: first.start,
+                          origDuration: first.duration,
+                        });
+                      } else {
+                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: 'sfx-default',
+                          mode: 'trim-left',
+                          startX: e.clientX,
+                          origStart: sfxStart,
+                          origDuration: sfxDuration,
+                        });
+                      }
+                    }}
+                    onPointerDownTrimRight={(e) => {
+                      e.stopPropagation();
+                      const first = sfxClips[0];
+                      if (first) {
+                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: first.id,
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: first.start,
+                          origDuration: first.duration,
+                        });
+                      } else {
+                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
+                        setActiveDrag({
+                          kind: 'sfx',
+                          clipId: 'sfx-default',
+                          mode: 'trim-right',
+                          startX: e.clientX,
+                          origStart: sfxStart,
+                          origDuration: sfxDuration,
+                        });
+                      }
+                    }}
+                    onDelete={() => handleDeleteSfxClip()}
+                    onDuplicate={() => handleDuplicateSfxClip()}
+                    onMute={() => setSfxTrackMuted(!sfxTrackMuted)}
+                    onSplit={() => handleSplitSfxClip()}
+                  />
+                ) : (
+                  <div
+                    style={{ height: `${sfxTrackHeight}px` }}
+                    className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
+                  />
+                )
+              )}
+
+
+    </React.Fragment>
+  );
+
+  const renderTrackLane = (trackId: TrackId) => {
+    if (!enabledTracks[trackId]) return null;
+    switch (trackId) {
+      case 'video':
+        return renderVideoTrackLane();
+      case 'image':
+        return renderImageTrackLane();
+      case 'overlay':
+        return renderOverlayTrackLane();
+      case 'captions':
+        return renderCaptionsTrackLane();
+      case 'title':
+        return renderTitleTrackLane();
+      case 'voice':
+        return renderVoiceTrackLane();
+      case 'music':
+        return renderMusicTrackLane();
+      case 'sfx':
+        return renderSfxTrackLane();
+      default:
+        return null;
+    }
+  };
   return (
     <div className="w-full bg-[#121212] border border-[#3A3A3A] rounded-2xl overflow-hidden shadow-2xl transition-all font-sans-studio select-none relative group/timeline-card">
       {/* ── Top Header Bar / Timeline Toolbar ──────────────────────── */}
@@ -2508,6 +4065,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 className="relative shrink-0 flex flex-col bg-[#141416]"
               >
                 <TimelineTrackHeaders
+                  trackOrder={trackOrder}
+                  onMoveTrack={handleMoveTrack}
+                  onReorderTracks={handleReorderTracks}
                   width={trackHeadersWidth}
                   showCornerHeader={false}
                   enabledTracks={enabledTracks}
@@ -2531,6 +4091,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   onToggleCaptionsTrackLocked={() => setCaptionsTrackLocked(!captionsTrackLocked)}
                   captionTrackHeight={captionTrackHeight}
                   captionMaxLane={captionMaxLane}
+                  titleTrackHeight={titleTrackHeight}
                   titleTrackLocked={titleTrackLocked}
                   onToggleTitleTrackLocked={() => setTitleTrackLocked(!titleTrackLocked)}
                   voiceTrackMuted={voiceTrackMuted}
@@ -2580,943 +4141,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 style={{ width: `${trackContentWidthPx}px` }}
                 className="relative shrink-0 cursor-crosshair select-none"
               >
-                {/* ── Magnetic Snapping Guideline (Laser Line) ──────── */}
-                {snapGuideTime !== null && (
-                  <div
-                    className="timeline-snap-guide-line"
-                    style={{ left: `${(snapGuideTime / totalDuration) * 100}%` }}
-                  />
-                )}
 
-                {/* ── Track 1: Video Backdrop Clip Block (Moveable & Trimmable) ───── */}
-                {enabledTracks.video && (
-                  hasVideo ? (
-                    <VideoTrackClip
-                      clips={videoLanes}
-                      trackHeight={videoTrackHeight}
-                      laneHeight={laneHeight}
-                      laneGap={laneGap}
-                      maxLane={videoMaxLane}
-                      videoStart={videoClips[0]?.start ?? videoStart}
-                      videoDuration={videoClips[0]?.duration ?? videoDuration}
-                      totalDuration={totalDuration}
-                      selectedClip={selectedClip}
-                      videoTrackVisible={videoTrackVisible}
-                      backdropName={activeBackdrop?.name || 'Video Clip'}
-                      mediaUrl={customVideoUrl || activeBackdrop?.imageUrl}
-                      posterUrl={customImageUrl || activeBackdrop?.imageUrl}
-                      onSelectClip={(clipId) => handleSelectClip({ track: 'video', clipId }, 'video')}
-                      onPointerDownMoveClip={(e, clip) => {
-                        handleSelectClip({ track: 'video', clipId: clip.id }, 'video');
-                        setActiveDrag({
-                          kind: 'video',
-                          clipId: clip.id,
-                          mode: 'move',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimLeftClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'video', clipId: clip.id }, 'video');
-                        setActiveDrag({
-                          kind: 'video',
-                          clipId: clip.id,
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimRightClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'video', clipId: clip.id }, 'video');
-                        setActiveDrag({
-                          kind: 'video',
-                          clipId: clip.id,
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onDeleteClip={(clipId) => handleDeleteVideoClip(clipId)}
-                      onDuplicateClip={(clipId) => handleDuplicateVideoClip(clipId)}
-                      onSplitClip={(clipId) => handleSplitVideoClip(clipId)}
-                      onSelect={() => handleSelectClip({ track: 'video' }, 'video')}
-                      onPointerDownMove={(e) => {
-                        const first = videoClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
-                          setActiveDrag({
-                            kind: 'video',
-                            clipId: first.id,
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimLeft={(e) => {
-                        e.stopPropagation();
-                        const first = videoClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
-                          setActiveDrag({
-                            kind: 'video',
-                            clipId: first.id,
-                            mode: 'trim-left',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimRight={(e) => {
-                        e.stopPropagation();
-                        const first = videoClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'video', clipId: first.id }, 'video');
-                          setActiveDrag({
-                            kind: 'video',
-                            clipId: first.id,
-                            mode: 'trim-right',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        }
-                      }}
-                      onDelete={() => handleDeleteVideoClip()}
-                      onDuplicate={() => handleDuplicateVideoClip()}
-                      onSplit={() => handleSplitVideoClip()}
-                      onHide={() => setVideoTrackVisible(!videoTrackVisible)}
-                      onZoomToClip={handleVideoZoom}
-                    />
-                  ) : (
-                    <div
-                      onClick={() => {
-                        onSelectCompound?.('video');
-                        window.dispatchEvent(new CustomEvent('workspace:open-pane', { detail: 'video' }));
-                      }}
-                      className="h-10 border-b border-[#262626] p-1 relative flex items-center cursor-pointer group/empty"
-                      title="Click to open Motion Video Catalog and add video clips"
-                    >
-                      <div className="w-full h-8 rounded-md border border-dashed border-amber-500/35 hover:border-amber-400 bg-amber-500/5 hover:bg-amber-500/10 flex items-center justify-center gap-2 text-zinc-400 hover:text-amber-200 transition-all">
-                        <Film className="w-3.5 h-3.5 text-amber-400/80 group-hover/empty:scale-110 transition-transform" />
-                        <span className="text-[10px] font-medium text-amber-300/80 group-hover/empty:text-amber-200">
-                          + Add Video Clip (Click to browse Motion Catalog)
-                        </span>
-                      </div>
-                    </div>
-                  )
-                )}
 
-                {/* ── Track 2: Image Backdrop Clip Block ────────────────────── */}
-                {enabledTracks.image && (
-                  hasImage ? (
-                    <ImageTrackClip
-                      clips={imageLanes}
-                      trackHeight={imageTrackHeight}
-                      laneHeight={laneHeight}
-                      laneGap={laneGap}
-                      maxLane={imageMaxLane}
-                      imageStart={imageClips[0]?.start ?? imageStart}
-                      imageDuration={imageClips[0]?.duration ?? imageDuration}
-                      totalDuration={totalDuration}
-                      selectedClip={selectedClip}
-                      imageTrackVisible={imageTrackVisible}
-                      imageUrl={customImageUrl || activeBackdrop?.imageUrl}
-                      imageName={customImageUrl ? 'Custom Image Graphic' : `${activeBackdrop?.name || 'Image'}`}
-                      onSelectClip={(clipId) => handleSelectClip({ track: 'image', clipId }, 'video')}
-                      onPointerDownMoveClip={(e, clip) => {
-                        handleSelectClip({ track: 'image', clipId: clip.id }, 'video');
-                        setActiveDrag({
-                          kind: 'image',
-                          clipId: clip.id,
-                          mode: 'move',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimLeftClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'image', clipId: clip.id }, 'video');
-                        setActiveDrag({
-                          kind: 'image',
-                          clipId: clip.id,
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimRightClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'image', clipId: clip.id }, 'video');
-                        setActiveDrag({
-                          kind: 'image',
-                          clipId: clip.id,
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onDeleteClip={(clipId) => handleDeleteImageClip(clipId)}
-                      onDuplicateClip={(clipId) => handleDuplicateImageClip(clipId)}
-                      onSplitClip={(clipId) => handleSplitImageClip(clipId)}
-                      onSelect={() => handleSelectClip({ track: 'image' }, 'video')}
-                      onPointerDownMove={(e) => {
-                        const first = imageClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
-                          setActiveDrag({
-                            kind: 'image',
-                            clipId: first.id,
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimLeft={(e) => {
-                        e.stopPropagation();
-                        const first = imageClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
-                          setActiveDrag({
-                            kind: 'image',
-                            clipId: first.id,
-                            mode: 'trim-left',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimRight={(e) => {
-                        e.stopPropagation();
-                        const first = imageClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'image', clipId: first.id }, 'video');
-                          setActiveDrag({
-                            kind: 'image',
-                            clipId: first.id,
-                            mode: 'trim-right',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        }
-                      }}
-                      onDelete={() => handleDeleteImageClip()}
-                      onDuplicate={() => handleDuplicateImageClip()}
-                      onSplit={() => handleSplitImageClip()}
-                      onHide={() => setImageTrackVisible(!imageTrackVisible)}
-                      onZoomToClip={handleImageZoom}
-                    />
-                  ) : (
-                    <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
-                  )
-                )}
-
-                {/* ── Track 3: Overlays / Elements Clip Block ───────────────── */}
-                {enabledTracks.overlay && (
-                  hasOverlay ? (
-                    <OverlayTrackClip
-                      clips={overlayLanes}
-                      trackHeight={overlayTrackHeight}
-                      laneHeight={laneHeight}
-                      laneGap={laneGap}
-                      maxLane={overlayMaxLane}
-                      overlayStart={overlayStart}
-                      overlayDuration={overlayDuration}
-                      totalDuration={totalDuration}
-                      selectedClip={selectedClip}
-                      overlayTrackVisible={overlayTrackVisible}
-                      label={activeElementOverlay?.label || activeElementOverlay?.name}
-                      onPointerDownMoveClip={(e, clip) => {
-                        handleSelectClip({ track: 'overlay', clipId: clip.id }, 'overlay');
-                        setActiveDrag({
-                          kind: 'overlay',
-                          clipId: clip.id,
-                          mode: 'move',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimLeftClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'overlay', clipId: clip.id }, 'overlay');
-                        setActiveDrag({
-                          kind: 'overlay',
-                          clipId: clip.id,
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimRightClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'overlay', clipId: clip.id }, 'overlay');
-                        setActiveDrag({
-                          kind: 'overlay',
-                          clipId: clip.id,
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onDeleteClip={(clipId) => handleDeleteOverlayClip(clipId)}
-                      onDuplicateClip={(clipId) => handleDuplicateOverlayClip(clipId)}
-                      onSplitClip={(clipId) => handleSplitOverlayClip(clipId)}
-                      onSelect={() => handleSelectClip({ track: 'overlay' }, 'overlay')}
-                      onPointerDownMove={(e) => {
-                        const first = overlayClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
-                          setActiveDrag({
-                            kind: 'overlay',
-                            clipId: first.id,
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'overlay' }, 'overlay');
-                          setActiveDrag({
-                            kind: 'overlay',
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: overlayStart,
-                            origDuration: overlayDuration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimLeft={(e) => {
-                        e.stopPropagation();
-                        const first = overlayClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
-                          setActiveDrag({
-                            kind: 'overlay',
-                            clipId: first.id,
-                            mode: 'trim-left',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'overlay' }, 'overlay');
-                          setActiveDrag({
-                            kind: 'overlay',
-                            mode: 'trim-left',
-                            startX: e.clientX,
-                            origStart: overlayStart,
-                            origDuration: overlayDuration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimRight={(e) => {
-                        e.stopPropagation();
-                        const first = overlayClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'overlay', clipId: first.id }, 'overlay');
-                          setActiveDrag({
-                            kind: 'overlay',
-                            clipId: first.id,
-                            mode: 'trim-right',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'overlay' }, 'overlay');
-                          setActiveDrag({
-                            kind: 'overlay',
-                            mode: 'trim-right',
-                            startX: e.clientX,
-                            origStart: overlayStart,
-                            origDuration: overlayDuration,
-                          });
-                        }
-                      }}
-                      onDelete={() => handleDeleteOverlayClip()}
-                      onDuplicate={() => handleDuplicateOverlayClip()}
-                      onSplit={() => handleSplitOverlayClip()}
-                      onHide={() => setOverlayTrackVisible(!overlayTrackVisible)}
-                      onZoomToClip={handleOverlayZoom}
-                    />
-                  ) : (
-                    <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
-                  )
-                )}
-
-                {/* ── Track 4: Subtitle & Kinetic Caption Clips (Moveable, Trimmable, Stacking Lanes) ────── */}
-                {enabledTracks.captions && (
-                  captionLanes.length > 0 ? (
-                    <CaptionTrackClips
-                      captionLanes={captionLanes}
-                      captionMaxLane={captionMaxLane}
-                      captionTrackHeight={captionTrackHeight}
-                      laneHeight={laneHeight}
-                      laneGap={laneGap}
-                      totalDuration={totalDuration}
-                      selectedClip={selectedClip}
-                      captionsTrackLocked={captionsTrackLocked}
-                      editingClipIndex={editingClipIndex}
-                      editingText={editingText}
-                      setEditingText={setEditingText}
-                      onSelectClip={(index, start) => {
-                        handleSelectClip({ track: 'caption', index }, 'text');
-                        onSeek(start);
-                      }}
-                      onDoubleClickClip={(index, text) => {
-                        if (captionsTrackLocked) return;
-                        setEditingClipIndex(index);
-                        setEditingText(text);
-                      }}
-                      onSaveInlineText={handleSaveInlineText}
-                      onCancelInlineEdit={() => setEditingClipIndex(null)}
-                      onPointerDownMove={(e, index, start, dur) => {
-                        if (captionsTrackLocked || editingClipIndex === index) return;
-                        handleSelectClip({ track: 'caption', index });
-                        setActiveDrag({
-                          kind: 'subtitle',
-                          index,
-                          mode: 'move',
-                          startX: e.clientX,
-                          origStart: start,
-                          origDuration: dur,
-                        });
-                      }}
-                      onPointerDownTrimLeft={(e, index, start, dur) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'caption', index });
-                        setActiveDrag({
-                          kind: 'subtitle',
-                          index,
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: start,
-                          origDuration: dur,
-                        });
-                      }}
-                      onPointerDownTrimRight={(e, index, start, dur) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'caption', index });
-                        setActiveDrag({
-                          kind: 'subtitle',
-                          index,
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: start,
-                          origDuration: dur,
-                        });
-                      }}
-                      onDeleteCaption={handleDeleteCaptionByIndex}
-                      onDuplicateCaption={handleDuplicateCaptionByIndex}
-                      onSplitCaption={handleSplitCaptionByIndex}
-                      onEditCaption={handleEditCaptionByIndex}
-                    />
-                  ) : (
-                    <div
-                      className="relative border-b border-[#262626]"
-                      style={{ height: captionTrackHeight }}
-                    >
-                      <div className="absolute inset-x-0 top-0 h-px bg-[#2D2D2D]" />
-                    </div>
-                  )
-                )}
-
-                {/* ── Track 5: Title / Hook Overlay Clip Block ──────────────── */}
-                {enabledTracks.title && (
-                  hasTitle ? (
-                    <div className="h-10 border-b border-[#262626] p-1 relative flex items-center">
-                      <div
-                        onClick={() => handleSelectClip({ track: 'title' }, 'text')}
-                        onPointerDown={(e) => {
-                          handleSelectClip({ track: 'title' });
-                          setActiveDrag({
-                            kind: 'title',
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: titleStart,
-                            origDuration: titleDuration,
-                          });
-                        }}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          handleSelectClip({ track: 'title' });
-                          setTitleContextMenu({ x: e.clientX, y: e.clientY });
-                        }}
-                        className={`h-full rounded-md px-2.5 flex items-center justify-between border cursor-grab active:cursor-grabbing select-none group transition-colors relative overflow-hidden ${selectedClip?.track === 'title'
-                            ? 'bg-sky-950/90 border-sky-400 ring-1 ring-sky-400/60 text-white z-20 shadow-md'
-                            : 'bg-sky-950/40 border-sky-500/30 text-sky-200 hover:border-sky-400 z-10'
-                          }`}
-                        style={{
-                          left: `${(titleStart / totalDuration) * 100}%`,
-                          width: `${Math.min(100, (titleDuration / totalDuration) * 100)}%`,
-                          ...(titleColorLabel ? { boxShadow: `inset 0 0 0 2px ${titleColorLabel}40, 0 0 0 1px ${titleColorLabel}` } : {}),
-                        }}
-                      >
-                        {/* Color Label Strip */}
-                        {titleColorLabel && (
-                          <div
-                            className="absolute top-0 left-0 right-0 h-0.5 z-30 rounded-t-md"
-                            style={{ background: titleColorLabel }}
-                          />
-                        )}
-                        <div className="flex items-center gap-1.5 z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
-                          <Type className="w-3 h-3 text-sky-400 shrink-0" />
-                          <span className="text-[10px] font-mono-studio truncate font-medium pointer-events-none">
-                            Title: "{script.title || 'Untitled'}"
-                          </span>
-                        </div>
-                        <span className="text-[8px] font-mono-studio text-sky-300 font-bold pr-1 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
-                          {formatTime(titleDuration)}
-                        </span>
-                      </div>
-                      {/* Title track right-click context menu */}
-                      <TimelineClipContextMenu
-                        x={titleContextMenu?.x ?? 0}
-                        y={titleContextMenu?.y ?? 0}
-                        trackType="title"
-                        isVisible={titleContextMenu !== null}
-                        onClose={() => setTitleContextMenu(null)}
-                        onDelete={handleTitleDelete}
-                        onSplit={handleSplitClip}
-                        onZoomToClip={handleTitleZoom}
-                        onColorLabel={(c) => setTitleColorLabel(c)}
-                        onCopyTimings={() => {
-                          const text = `Start: ${titleStart.toFixed(2)}s | Duration: ${titleDuration.toFixed(2)}s | Title: "${script.title || 'Untitled'}"`;
-                          navigator.clipboard.writeText(text).catch(() => { });
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
-                  )
-                )}
-
-                {/* ── Track 6: Voiceover Audio (With Full-Width Dynamic Audio Waves) ───── */}
-                {enabledTracks.voice && (
-                  hasVoice ? (
-                    <AudioTrackClip
-                      type="voice"
-                      clips={voiceLanes}
-                      trackHeight={voiceTrackHeight}
-                      laneHeight={laneHeight}
-                      laneGap={laneGap}
-                      maxLane={voiceMaxLane}
-                      start={voiceStart}
-                      duration={voiceDuration}
-                      totalDuration={totalDuration}
-                      selectedClip={selectedClip}
-                      isMuted={voiceTrackMuted}
-                      label={voiceLabel}
-                      onPointerDownMoveClip={(e, clip) => {
-                        handleSelectClip({ track: 'voice', clipId: clip.id }, 'voice');
-                        setActiveDrag({
-                          kind: 'voice',
-                          clipId: clip.id,
-                          mode: 'move',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimLeftClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'voice', clipId: clip.id }, 'voice');
-                        setActiveDrag({
-                          kind: 'voice',
-                          clipId: clip.id,
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimRightClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'voice', clipId: clip.id }, 'voice');
-                        setActiveDrag({
-                          kind: 'voice',
-                          clipId: clip.id,
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onDeleteClip={(clipId) => handleDeleteVoiceClip(clipId)}
-                      onDuplicateClip={(clipId) => handleDuplicateVoiceClip(clipId)}
-                      onSplitClip={(clipId) => handleSplitVoiceClip(clipId)}
-                      onSelect={() => handleSelectClip({ track: 'voice' }, 'voice')}
-                      onPointerDownMove={(e) => {
-                        const first = voiceClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
-                          setActiveDrag({
-                            kind: 'voice',
-                            clipId: first.id,
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'voice' }, 'voice');
-                          setActiveDrag({
-                            kind: 'voice',
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: voiceStart,
-                            origDuration: voiceDuration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimLeft={(e) => {
-                        e.stopPropagation();
-                        const first = voiceClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
-                          setActiveDrag({
-                            kind: 'voice',
-                            clipId: first.id,
-                            mode: 'trim-left',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'voice' }, 'voice');
-                          setActiveDrag({
-                            kind: 'voice',
-                            mode: 'trim-left',
-                            startX: e.clientX,
-                            origStart: voiceStart,
-                            origDuration: voiceDuration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimRight={(e) => {
-                        e.stopPropagation();
-                        const first = voiceClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'voice', clipId: first.id }, 'voice');
-                          setActiveDrag({
-                            kind: 'voice',
-                            clipId: first.id,
-                            mode: 'trim-right',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'voice' }, 'voice');
-                          setActiveDrag({
-                            kind: 'voice',
-                            mode: 'trim-right',
-                            startX: e.clientX,
-                            origStart: voiceStart,
-                            origDuration: voiceDuration,
-                          });
-                        }
-                      }}
-                      onDelete={() => handleDeleteVoiceClip()}
-                      onDuplicate={() => handleDuplicateVoiceClip()}
-                      onMute={() => setVoiceTrackMuted(!voiceTrackMuted)}
-                      onSplit={() => handleSplitVoiceClip()}
-                      onZoomToClip={handleVoiceZoom}
-                    />
-                  ) : (
-                    <div className="h-10 border-b border-[#262626] p-1 relative flex items-center" />
-                  )
-                )}
-
-                {/* ── Track 7: Background Music Soundtrack (With Full-Width Dynamic Music Waves) ───── */}
-                {enabledTracks.music && (
-                  hasMusic ? (
-                    <AudioTrackClip
-                      type="music"
-                      clips={musicLanes}
-                      trackHeight={musicTrackHeight}
-                      laneHeight={laneHeight}
-                      laneGap={laneGap}
-                      maxLane={musicMaxLane}
-                      start={musicStart}
-                      duration={musicDuration}
-                      totalDuration={totalDuration}
-                      selectedClip={selectedClip}
-                      isMuted={musicTrackMuted}
-                      label={musicLabel}
-                      subLabel={musicSubLabel}
-                      onPointerDownMoveClip={(e, clip) => {
-                        handleSelectClip({ track: 'music', clipId: clip.id }, 'music');
-                        setActiveDrag({
-                          kind: 'music',
-                          clipId: clip.id,
-                          mode: 'move',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimLeftClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'music', clipId: clip.id }, 'music');
-                        setActiveDrag({
-                          kind: 'music',
-                          clipId: clip.id,
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onPointerDownTrimRightClip={(e, clip) => {
-                        e.stopPropagation();
-                        handleSelectClip({ track: 'music', clipId: clip.id }, 'music');
-                        setActiveDrag({
-                          kind: 'music',
-                          clipId: clip.id,
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: clip.start,
-                          origDuration: clip.duration,
-                        });
-                      }}
-                      onDeleteClip={(clipId) => handleDeleteMusicClip(clipId)}
-                      onDuplicateClip={(clipId) => handleDuplicateMusicClip(clipId)}
-                      onSplitClip={(clipId) => handleSplitMusicClip(clipId)}
-                      onSelect={() => handleSelectClip({ track: 'music' }, 'music')}
-                      onPointerDownMove={(e) => {
-                        const first = musicClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
-                          setActiveDrag({
-                            kind: 'music',
-                            clipId: first.id,
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'music' }, 'music');
-                          setActiveDrag({
-                            kind: 'music',
-                            mode: 'move',
-                            startX: e.clientX,
-                            origStart: musicStart,
-                            origDuration: musicDuration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimLeft={(e) => {
-                        e.stopPropagation();
-                        const first = musicClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
-                          setActiveDrag({
-                            kind: 'music',
-                            clipId: first.id,
-                            mode: 'trim-left',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'music' }, 'music');
-                          setActiveDrag({
-                            kind: 'music',
-                            mode: 'trim-left',
-                            startX: e.clientX,
-                            origStart: musicStart,
-                            origDuration: musicDuration,
-                          });
-                        }
-                      }}
-                      onPointerDownTrimRight={(e) => {
-                        e.stopPropagation();
-                        const first = musicClips[0];
-                        if (first) {
-                          handleSelectClip({ track: 'music', clipId: first.id }, 'music');
-                          setActiveDrag({
-                            kind: 'music',
-                            clipId: first.id,
-                            mode: 'trim-right',
-                            startX: e.clientX,
-                            origStart: first.start,
-                            origDuration: first.duration,
-                          });
-                        } else {
-                          handleSelectClip({ track: 'music' }, 'music');
-                          setActiveDrag({
-                            kind: 'music',
-                            mode: 'trim-right',
-                            startX: e.clientX,
-                            origStart: musicStart,
-                            origDuration: musicDuration,
-                          });
-                        }
-                      }}
-                      onDelete={() => handleDeleteMusicClip()}
-                      onDuplicate={() => handleDuplicateMusicClip()}
-                      onMute={() => setMusicTrackMuted(!musicTrackMuted)}
-                      onSplit={() => handleSplitMusicClip()}
-                      onZoomToClip={handleMusicZoom}
-                    />
-                  ) : (
-                    <div className={`h-10 ${enabledTracks.sfx ? 'border-b border-[#262626]' : ''} p-1 relative flex items-center`} />
-                  )
-                )}
-
-                {/* ── Track 8: Sound FX Track ──────────────────────────────── */}
-                {enabledTracks.sfx && hasSfx && (
-                  <AudioTrackClip
-                    type="sfx"
-                    clips={sfxLanes}
-                    trackHeight={sfxTrackHeight}
-                    laneHeight={laneHeight}
-                    laneGap={laneGap}
-                    maxLane={sfxMaxLane}
-                    start={sfxStart}
-                    duration={sfxDuration}
-                    totalDuration={totalDuration}
-                    selectedClip={selectedClip}
-                    isMuted={sfxTrackMuted}
-                    label={selectedSfx ? `SFX: ${selectedSfx.name}` : 'Sound FX'}
-                    onPointerDownMoveClip={(e, clip) => {
-                      handleSelectClip({ track: 'sfx', clipId: clip.id }, 'music');
-                      setActiveDrag({
-                        kind: 'sfx',
-                        clipId: clip.id,
-                        mode: 'move',
-                        startX: e.clientX,
-                        origStart: clip.start,
-                        origDuration: clip.duration,
-                      });
-                    }}
-                    onPointerDownTrimLeftClip={(e, clip) => {
-                      e.stopPropagation();
-                      handleSelectClip({ track: 'sfx', clipId: clip.id }, 'music');
-                      setActiveDrag({
-                        kind: 'sfx',
-                        clipId: clip.id,
-                        mode: 'trim-left',
-                        startX: e.clientX,
-                        origStart: clip.start,
-                        origDuration: clip.duration,
-                      });
-                    }}
-                    onPointerDownTrimRightClip={(e, clip) => {
-                      e.stopPropagation();
-                      handleSelectClip({ track: 'sfx', clipId: clip.id }, 'music');
-                      setActiveDrag({
-                        kind: 'sfx',
-                        clipId: clip.id,
-                        mode: 'trim-right',
-                        startX: e.clientX,
-                        origStart: clip.start,
-                        origDuration: clip.duration,
-                      });
-                    }}
-                    onDeleteClip={(clipId) => handleDeleteSfxClip(clipId)}
-                    onDuplicateClip={(clipId) => handleDuplicateSfxClip(clipId)}
-                    onSplitClip={(clipId) => handleSplitSfxClip(clipId)}
-                    onSelect={() => handleSelectClip({ track: 'sfx' }, 'music')}
-                    onPointerDownMove={(e) => {
-                      const first = sfxClips[0];
-                      if (first) {
-                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
-                        setActiveDrag({
-                          kind: 'sfx',
-                          clipId: first.id,
-                          mode: 'move',
-                          startX: e.clientX,
-                          origStart: first.start,
-                          origDuration: first.duration,
-                        });
-                      } else {
-                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
-                        setActiveDrag({
-                          kind: 'sfx',
-                          clipId: 'sfx-default',
-                          mode: 'move',
-                          startX: e.clientX,
-                          origStart: sfxStart,
-                          origDuration: sfxDuration,
-                        });
-                      }
-                    }}
-                    onPointerDownTrimLeft={(e) => {
-                      e.stopPropagation();
-                      const first = sfxClips[0];
-                      if (first) {
-                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
-                        setActiveDrag({
-                          kind: 'sfx',
-                          clipId: first.id,
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: first.start,
-                          origDuration: first.duration,
-                        });
-                      } else {
-                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
-                        setActiveDrag({
-                          kind: 'sfx',
-                          clipId: 'sfx-default',
-                          mode: 'trim-left',
-                          startX: e.clientX,
-                          origStart: sfxStart,
-                          origDuration: sfxDuration,
-                        });
-                      }
-                    }}
-                    onPointerDownTrimRight={(e) => {
-                      e.stopPropagation();
-                      const first = sfxClips[0];
-                      if (first) {
-                        handleSelectClip({ track: 'sfx', clipId: first.id }, 'music');
-                        setActiveDrag({
-                          kind: 'sfx',
-                          clipId: first.id,
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: first.start,
-                          origDuration: first.duration,
-                        });
-                      } else {
-                        handleSelectClip({ track: 'sfx', clipId: 'sfx-default' }, 'music');
-                        setActiveDrag({
-                          kind: 'sfx',
-                          clipId: 'sfx-default',
-                          mode: 'trim-right',
-                          startX: e.clientX,
-                          origStart: sfxStart,
-                          origDuration: sfxDuration,
-                        });
-                      }
-                    }}
-                    onDelete={() => handleDeleteSfxClip()}
-                    onDuplicate={() => handleDuplicateSfxClip()}
-                    onMute={() => setSfxTrackMuted(!sfxTrackMuted)}
-                    onSplit={() => handleSplitSfxClip()}
-                  />
-                )}
+                {/* ── Dynamic Order Track Lanes ─────────────────────────────── */}
+                {trackOrder.map((trackId) => renderTrackLane(trackId))}
 
                 {/* ── Playhead indicator line across all tracks ────── */}
                 <div

@@ -12,8 +12,9 @@ export interface TimelineWaveformProps {
 export const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
   type,
   color,
-  barsCount = 75,
+  barsCount: propBarsCount,
 }) => {
+  const barsCount = propBarsCount ?? (type === 'sfx' ? 24 : 64);
   const bars = useMemo(() => {
     const list: number[] = [];
     for (let i = 0; i < barsCount; i++) {
@@ -36,17 +37,18 @@ export const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
         const synthMelody = Math.sin(i * 0.28) * 14;
         list.push(Math.min(98, Math.max(22, base + synthMelody)));
       } else {
-        // SFX: exponential rise, transient hit, smooth tail decay
-        const phase = i % 25;
-        const burst = phase < 6 ? phase * 15 : Math.max(12, 90 - (phase - 6) * 5);
-        list.push(burst);
+        // SFX: punchy attack-decay transient burst
+        const pos = i / Math.max(1, barsCount - 1);
+        const envelope = pos < 0.22 ? pos / 0.22 : Math.exp(-(pos - 0.22) * 5.0);
+        const wave = 18 + envelope * 78;
+        list.push(Math.min(96, Math.max(14, Math.round(wave))));
       }
     }
     return list;
   }, [type, barsCount]);
 
   return (
-    <div className="absolute inset-0 flex items-center justify-between gap-[2px] px-2 opacity-55 pointer-events-none overflow-hidden select-none">
+    <div className="absolute inset-0 flex items-center justify-between gap-[2px] px-2 opacity-35 pointer-events-none overflow-hidden select-none">
       {bars.map((h, i) => (
         <div
           key={i}

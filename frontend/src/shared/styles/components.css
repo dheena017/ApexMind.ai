@@ -215,17 +215,7 @@ select option {
   box-shadow: 0 0 0 2px #C084FC !important;
 }
 
-/* Magnetic Snapping Guideline (Vertical crisp guide line) */
-.timeline-snap-guide-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #38BDF8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.95), 0 0 3px rgba(255, 255, 255, 0.9);
-  z-index: 45;
-  pointer-events: none;
-}
+
 
 /* Trim Pill Handles */
 .timeline-trim-handle-left,
@@ -267,7 +257,7 @@ select option {
     0 0 60px -10px rgba(59, 130, 246, 0.08);
   min-width: 200px;
   max-width: 240px;
-  overflow: hidden;
+  /* allow submenu flyout without clipping */
   backdrop-filter: blur(24px) saturate(1.5);
   animation: ctx-menu-in 0.12s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: top left;

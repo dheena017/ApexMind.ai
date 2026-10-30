@@ -13,10 +13,16 @@ import {
   EyeOff,
   Lock,
   Unlock,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
-import { EnabledTracks, SelectedClip } from './timelineTypes';
+import { EnabledTracks, SelectedClip, TrackId, DEFAULT_TRACK_ORDER } from './timelineTypes';
 
 export interface TimelineTrackHeadersProps {
+  trackOrder?: TrackId[];
+  onMoveTrack?: (trackId: TrackId, direction: 'up' | 'down') => void;
+  onReorderTracks?: (newOrder: TrackId[]) => void;
   enabledTracks: EnabledTracks;
   selectedClip?: SelectedClip | null;
   onSelectClip: (clip: SelectedClip, compound?: 'video' | 'text' | 'voice' | 'music' | 'overlay') => void;
@@ -52,6 +58,7 @@ export interface TimelineTrackHeadersProps {
 
   titleTrackLocked: boolean;
   onToggleTitleTrackLocked: () => void;
+  titleTrackHeight?: number;
   titleTrackVisible?: boolean;
   onToggleTitleTrackVisible?: () => void;
 
@@ -91,6 +98,9 @@ export interface TimelineTrackHeadersProps {
 }
 
 export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
+  trackOrder,
+  onMoveTrack,
+  onReorderTracks,
   enabledTracks,
   selectedClip,
   onSelectClip,
@@ -126,6 +136,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
 
   titleTrackLocked,
   onToggleTitleTrackLocked,
+  titleTrackHeight = 40,
   titleTrackVisible = true,
   onToggleTitleTrackVisible,
 
@@ -168,8 +179,154 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
   const [localOverlayLocked, setLocalOverlayLocked] = useState(false);
   const [localCaptionsVisible, setLocalCaptionsVisible] = useState(true);
 
+  // Local fallback track ordering
+  const [internalOrder, setInternalOrder] = useState<TrackId[]>(DEFAULT_TRACK_ORDER);
+  const activeOrder = trackOrder || internalOrder;
+
+  // Drag and drop reordering states
+  const [draggedTrackId, setDraggedTrackId] = useState<TrackId | null>(null);
+  const [dragOverTrackId, setDragOverTrackId] = useState<TrackId | null>(null);
+
   // Active track count for header indicator
   const activeTrackCount = Object.values(enabledTracks).filter(Boolean).length;
+  const visibleEnabledTracks = activeOrder.filter((t) => enabledTracks[t]);
+
+  const handleMove = (trackId: TrackId, direction: 'up' | 'down') => {
+    if (onMoveTrack) {
+      onMoveTrack(trackId, direction);
+      return;
+    }
+    const currIdx = visibleEnabledTracks.indexOf(trackId);
+    if (currIdx === -1) return;
+    const targetIdx = direction === 'up' ? currIdx - 1 : currIdx + 1;
+    if (targetIdx < 0 || targetIdx >= visibleEnabledTracks.length) return;
+    const targetTrackId = visibleEnabledTracks[targetIdx];
+    const newOrder = [...activeOrder];
+    const fromIdx = newOrder.indexOf(trackId);
+    const toIdx = newOrder.indexOf(targetTrackId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, trackId);
+    setInternalOrder(newOrder);
+    onReorderTracks?.(newOrder);
+  };
+
+  const handleDrop = (targetTrackId: TrackId) => {
+    const sourceId = draggedTrackId;
+    if (!sourceId || sourceId === targetTrackId) {
+      setDraggedTrackId(null);
+      setDragOverTrackId(null);
+      return;
+    }
+    if (onReorderTracks) {
+      const newOrder = [...activeOrder];
+      const fromIdx = newOrder.indexOf(sourceId);
+      const toIdx = newOrder.indexOf(targetTrackId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        newOrder.splice(fromIdx, 1);
+        newOrder.splice(toIdx, 0, sourceId);
+        onReorderTracks(newOrder);
+      }
+    } else {
+      const newOrder = [...activeOrder];
+      const fromIdx = newOrder.indexOf(sourceId);
+      const toIdx = newOrder.indexOf(targetTrackId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        newOrder.splice(fromIdx, 1);
+        newOrder.splice(toIdx, 0, sourceId);
+        setInternalOrder(newOrder);
+      }
+    }
+    setDraggedTrackId(null);
+    setDragOverTrackId(null);
+  };
+
+  const getDropProps = (trackId: TrackId) => ({
+    onDragOver: (e: React.DragEvent) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragOverTrackId !== trackId) {
+        setDragOverTrackId(trackId);
+      }
+    },
+    onDragLeave: () => {
+      if (dragOverTrackId === trackId) {
+        setDragOverTrackId(null);
+      }
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      handleDrop(trackId);
+    },
+  });
+
+  // ── Render Move Controls (Drag Handle + Up / Down Arrows) ─────────────
+  const renderMoveControls = (trackId: TrackId) => {
+    const isFirst = visibleEnabledTracks[0] === trackId;
+    const isLast = visibleEnabledTracks[visibleEnabledTracks.length - 1] === trackId;
+
+    return (
+      <div className="flex items-center gap-0.5 shrink-0 -ml-0.5 mr-0.5">
+        {/* Drag Reorder Handle */}
+        <div
+          draggable
+          onDragStart={(e) => {
+            e.stopPropagation();
+            e.dataTransfer.setData('text/plain', trackId);
+            e.dataTransfer.effectAllowed = 'move';
+            setDraggedTrackId(trackId);
+          }}
+          onDragEnd={() => {
+            setDraggedTrackId(null);
+            setDragOverTrackId(null);
+          }}
+          className="text-zinc-500 hover:text-white cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-white/10 transition-colors"
+          title="Drag up or down to reorder track"
+          aria-label={`Drag to reorder ${trackId} track`}
+        >
+          <GripVertical className="w-3 h-3" />
+        </div>
+
+        {/* Move Up / Down Buttons */}
+        <div className="flex flex-col items-center justify-center -space-y-1">
+          <button
+            type="button"
+            disabled={isFirst}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMove(trackId, 'up');
+            }}
+            title={isFirst ? 'Already at top' : 'Move track up'}
+            aria-label={`Move ${trackId} track up`}
+            className={`p-0.2 rounded transition-colors ${
+              isFirst
+                ? 'opacity-20 cursor-not-allowed text-zinc-600'
+                : 'text-zinc-400 hover:text-white hover:bg-white/15 cursor-pointer active:scale-90'
+            }`}
+          >
+            <ChevronUp className="w-2.5 h-2.5" />
+          </button>
+          <button
+            type="button"
+            disabled={isLast}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMove(trackId, 'down');
+            }}
+            title={isLast ? 'Already at bottom' : 'Move track down'}
+            aria-label={`Move ${trackId} track down`}
+            className={`p-0.2 rounded transition-colors ${
+              isLast
+                ? 'opacity-20 cursor-not-allowed text-zinc-600'
+                : 'text-zinc-400 hover:text-white hover:bg-white/15 cursor-pointer active:scale-90'
+            }`}
+          >
+            <ChevronDown className="w-2.5 h-2.5" />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   // ── Render standard Visibility Button (Eye) ──────────────────────────
   const renderEyeButton = (isVisible: boolean, onToggle: () => void, label: string) => (
@@ -231,6 +388,332 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     </button>
   );
 
+  // ── Track Header Renderers ───────────────────────────────────────────
+  const renderVideoHeader = () => (
+    <div
+      key="track-header-video"
+      {...getDropProps('video')}
+      onClick={() => onSelectClip({ track: 'video', all: true }, 'video')}
+      style={{ height: `${videoTrackHeight}px` }}
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+        dragOverTrackId === 'video' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+      } ${draggedTrackId === 'video' ? 'opacity-40' : ''} ${
+        selectedClip?.track === 'video'
+          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F59E0B]'
+          : 'hover:bg-white/[0.03] border-l-2 border-l-[#F59E0B]/50'
+      }`}
+      title="V1 Video Track • Click to inspect & adjust (Drag or click arrows to move up/down)"
+    >
+      <div className="flex items-center gap-1 min-w-0 pr-1">
+        {renderMoveControls('video')}
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+          V1
+        </span>
+        <Video className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
+          Video
+        </span>
+        {videoMaxLane > 0 && (
+          <span className="text-[8px] font-mono-studio text-amber-300 bg-amber-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
+            {videoMaxLane + 1}L
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {renderEyeButton(videoTrackVisible, onToggleVideoTrackVisible, 'Video')}
+        {renderLockButton(
+          onToggleVideoTrackLocked ? videoTrackLocked : localVideoLocked,
+          () => (onToggleVideoTrackLocked ? onToggleVideoTrackLocked() : setLocalVideoLocked((p) => !p)),
+          'Video'
+        )}
+      </div>
+    </div>
+  );
+
+  const renderImageHeader = () => (
+    <div
+      key="track-header-image"
+      {...getDropProps('image')}
+      onClick={() => onSelectClip({ track: 'image', all: true }, 'video')}
+      style={{ height: `${imageTrackHeight}px` }}
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+        dragOverTrackId === 'image' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+      } ${draggedTrackId === 'image' ? 'opacity-40' : ''} ${
+        selectedClip?.track === 'image'
+          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F43F5E]'
+          : 'hover:bg-white/[0.03] border-l-2 border-l-[#F43F5E]/50'
+      }`}
+      title="V2 Image Track • Click to inspect & adjust (Drag or click arrows to move up/down)"
+    >
+      <div className="flex items-center gap-1 min-w-0 pr-1">
+        {renderMoveControls('image')}
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 shrink-0">
+          V2
+        </span>
+        <ImageIcon className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+        <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
+          Image
+        </span>
+        {imageMaxLane > 0 && (
+          <span className="text-[8px] font-mono-studio text-rose-300 bg-rose-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
+            {imageMaxLane + 1}L
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {renderEyeButton(imageTrackVisible, onToggleImageTrackVisible, 'Image')}
+        {renderLockButton(
+          onToggleImageTrackLocked ? imageTrackLocked : localImageLocked,
+          () => (onToggleImageTrackLocked ? onToggleImageTrackLocked() : setLocalImageLocked((p) => !p)),
+          'Image'
+        )}
+      </div>
+    </div>
+  );
+
+  const renderOverlayHeader = () => (
+    <div
+      key="track-header-overlay"
+      {...getDropProps('overlay')}
+      onClick={() => onSelectClip({ track: 'overlay', all: true }, 'overlay')}
+      style={{ height: `${overlayTrackHeight}px` }}
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+        dragOverTrackId === 'overlay' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+      } ${draggedTrackId === 'overlay' ? 'opacity-40' : ''} ${
+        selectedClip?.track === 'overlay'
+          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#8B5CF6]'
+          : 'hover:bg-white/[0.03] border-l-2 border-l-[#8B5CF6]/50'
+      }`}
+      title="O1 Overlays Track • Stickers, motion graphics, and watermarks (Drag or click arrows to move up/down)"
+    >
+      <div className="flex items-center gap-1 min-w-0 pr-1">
+        {renderMoveControls('overlay')}
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 shrink-0">
+          O1
+        </span>
+        <Layers className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+        <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
+          Overlays
+        </span>
+        {overlayMaxLane > 0 && (
+          <span className="text-[8px] font-mono-studio text-purple-300 bg-purple-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
+            {overlayMaxLane + 1}L
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {renderEyeButton(overlayTrackVisible, onToggleOverlayTrackVisible, 'Overlays')}
+        {renderLockButton(
+          onToggleOverlayTrackLocked ? overlayTrackLocked : localOverlayLocked,
+          () => (onToggleOverlayTrackLocked ? onToggleOverlayTrackLocked() : setLocalOverlayLocked((p) => !p)),
+          'Overlays'
+        )}
+      </div>
+    </div>
+  );
+
+  const renderCaptionsHeader = () => (
+    <div
+      key="track-header-captions"
+      {...getDropProps('captions')}
+      onClick={() => onSelectClip({ track: 'caption', all: true }, 'text')}
+      style={{ height: `${captionTrackHeight}px` }}
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+        dragOverTrackId === 'captions' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+      } ${draggedTrackId === 'captions' ? 'opacity-40' : ''} ${
+        selectedClip?.track === 'caption'
+          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#06B6D4]'
+          : 'hover:bg-white/[0.03] border-l-2 border-l-[#06B6D4]/50'
+      }`}
+      title="T1 Captions Track • Synced typography and dynamic subtitles (Drag or click arrows to move up/down)"
+    >
+      <div className="flex items-center gap-1 min-w-0 pr-1">
+        {renderMoveControls('captions')}
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shrink-0">
+          T1
+        </span>
+        <Type className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+        <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
+          Captions
+        </span>
+        {captionMaxLane > 0 && (
+          <span className="text-[8px] font-mono-studio text-cyan-300 bg-cyan-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
+            {captionMaxLane + 1}L
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {renderEyeButton(
+          onToggleCaptionsTrackVisible ? captionsTrackVisible : localCaptionsVisible,
+          () =>
+            onToggleCaptionsTrackVisible
+              ? onToggleCaptionsTrackVisible()
+              : setLocalCaptionsVisible((p) => !p),
+          'Captions'
+        )}
+        {renderLockButton(captionsTrackLocked, onToggleCaptionsTrackLocked, 'Captions')}
+      </div>
+    </div>
+  );
+
+  const renderTitleHeader = () => (
+    <div
+      key="track-header-title"
+      {...getDropProps('title')}
+      onClick={() => onSelectClip({ track: 'title', all: true }, 'text')}
+      style={{ height: `${titleTrackHeight}px` }}
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+        dragOverTrackId === 'title' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+      } ${draggedTrackId === 'title' ? 'opacity-40' : ''} ${
+        selectedClip?.track === 'title'
+          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#38BDF8]'
+          : 'hover:bg-white/[0.03] border-l-2 border-l-[#38BDF8]/50'
+      }`}
+      title="T2 Titles Track • Main video headlines & hook titles (Drag or click arrows to move up/down)"
+    >
+      <div className="flex items-center gap-1 min-w-0 pr-1">
+        {renderMoveControls('title')}
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0">
+          T2
+        </span>
+        <Type className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+        <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
+          Titles
+        </span>
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {renderEyeButton(
+          titleTrackVisible,
+          () => onToggleTitleTrackVisible?.(),
+          'Titles'
+        )}
+        {renderLockButton(titleTrackLocked, onToggleTitleTrackLocked, 'Titles')}
+      </div>
+    </div>
+  );
+
+  const renderVoiceHeader = () => (
+    <div
+      key="track-header-voice"
+      {...getDropProps('voice')}
+      onClick={() => onSelectClip({ track: 'voice', all: true }, 'voice')}
+      style={{ height: `${voiceTrackHeight}px` }}
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+        dragOverTrackId === 'voice' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+      } ${draggedTrackId === 'voice' ? 'opacity-40' : ''} ${
+        selectedClip?.track === 'voice'
+          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#10B981]'
+          : 'hover:bg-white/[0.03] border-l-2 border-l-[#10B981]/50'
+      }`}
+      title="A1 Voiceover Track • 24kHz studio voice narration (Drag or click arrows to move up/down)"
+    >
+      <div className="flex items-center gap-1 min-w-0 pr-1">
+        {renderMoveControls('voice')}
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+          A1
+        </span>
+        <Mic className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
+          Voice
+        </span>
+        {voiceMaxLane > 0 && (
+          <span className="text-[8px] font-mono-studio text-emerald-300 bg-emerald-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
+            {voiceMaxLane + 1}L
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {renderMuteButton(voiceTrackMuted, onToggleVoiceTrackMuted, 'Voiceover')}
+        {renderLockButton(
+          voiceTrackLocked,
+          () => onToggleVoiceTrackLocked?.(),
+          'Voiceover'
+        )}
+      </div>
+    </div>
+  );
+
+  const renderMusicHeader = () => (
+    <div
+      key="track-header-music"
+      {...getDropProps('music')}
+      onClick={() => onSelectClip({ track: 'music', all: true }, 'music')}
+      style={{ height: `${musicTrackHeight}px` }}
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+        dragOverTrackId === 'music' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+      } ${draggedTrackId === 'music' ? 'opacity-40' : ''} ${
+        selectedClip?.track === 'music'
+          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#D946EF]'
+          : 'hover:bg-white/[0.03] border-l-2 border-l-[#D946EF]/50'
+      }`}
+      title="A2 Music Track • Background soundtrack & beat ducking (Drag or click arrows to move up/down)"
+    >
+      <div className="flex items-center gap-1 min-w-0 pr-1">
+        {renderMoveControls('music')}
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-fuchsia-500/15 text-fuchsia-400 border border-fuchsia-500/30 shrink-0">
+          A2
+        </span>
+        <Music className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
+        <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
+          Music
+        </span>
+        {musicMaxLane > 0 && (
+          <span className="text-[8px] font-mono-studio text-fuchsia-300 bg-fuchsia-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
+            {musicMaxLane + 1}L
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {renderMuteButton(musicTrackMuted, onToggleMusicTrackMuted, 'Music')}
+        {renderLockButton(
+          musicTrackLocked,
+          () => onToggleMusicTrackLocked?.(),
+          'Music'
+        )}
+      </div>
+    </div>
+  );
+
+  const renderSfxHeader = () => (
+    <div
+      key="track-header-sfx"
+      {...getDropProps('sfx')}
+      onClick={() => onSelectClip({ track: 'sfx', all: true }, 'music')}
+      style={{ height: `${sfxTrackHeight}px` }}
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+        dragOverTrackId === 'sfx' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+      } ${draggedTrackId === 'sfx' ? 'opacity-40' : ''} ${
+        selectedClip?.track === 'sfx'
+          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F97316]'
+          : 'hover:bg-white/[0.03] border-l-2 border-l-[#F97316]/50'
+      }`}
+      title="A3 Sound FX Track • Transition whooshes, impacts, and risers (Drag or click arrows to move up/down)"
+    >
+      <div className="flex items-center gap-1 min-w-0 pr-1">
+        {renderMoveControls('sfx')}
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30 shrink-0">
+          A3
+        </span>
+        <Sparkles className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+        <span className="text-[11px] font-bold text-zinc-200 group-hover:text-white truncate">
+          SFX
+        </span>
+        {sfxMaxLane > 0 && (
+          <span className="text-[8px] font-mono-studio text-orange-300 bg-orange-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
+            {sfxMaxLane + 1}L
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {renderMuteButton(sfxTrackMuted, onToggleSfxTrackMuted, 'Sound FX')}
+        {renderLockButton(
+          sfxTrackLocked,
+          () => onToggleSfxTrackLocked?.(),
+          'Sound FX'
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -252,300 +735,30 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         </div>
       )}
 
-      {/* ── Track 1: V1 Video Backdrop ──────────────────────────────── */}
-      {enabledTracks.video && (
-        <div
-          onClick={() => onSelectClip({ track: 'video' }, 'video')}
-          style={{ height: `${videoTrackHeight}px` }}
-          className={`group relative border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
-            selectedClip?.track === 'video'
-              ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F59E0B]'
-              : 'hover:bg-white/[0.03] border-l-2 border-l-[#F59E0B]/50'
-          }`}
-          title="V1 Video Track • Click to inspect & adjust"
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
-              V1
-            </span>
-            <Video className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
-              Video
-            </span>
-            {videoMaxLane > 0 && (
-              <span className="text-[8px] font-mono-studio text-amber-300 bg-amber-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
-                {videoMaxLane + 1}L
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {renderEyeButton(videoTrackVisible, onToggleVideoTrackVisible, 'Video')}
-            {renderLockButton(
-              onToggleVideoTrackLocked ? videoTrackLocked : localVideoLocked,
-              () => (onToggleVideoTrackLocked ? onToggleVideoTrackLocked() : setLocalVideoLocked((p) => !p)),
-              'Video'
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Track 2: V2 Image Graphic ───────────────────────────────── */}
-      {enabledTracks.image && (
-        <div
-          onClick={() => onSelectClip({ track: 'image' }, 'video')}
-          style={{ height: `${imageTrackHeight}px` }}
-          className={`group relative border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
-            selectedClip?.track === 'image'
-              ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F43F5E]'
-              : 'hover:bg-white/[0.03] border-l-2 border-l-[#F43F5E]/50'
-          }`}
-          title="V2 Image Track • Click to inspect & adjust"
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 shrink-0">
-              V2
-            </span>
-            <ImageIcon className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-            <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
-              Image
-            </span>
-            {imageMaxLane > 0 && (
-              <span className="text-[8px] font-mono-studio text-rose-300 bg-rose-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
-                {imageMaxLane + 1}L
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {renderEyeButton(imageTrackVisible, onToggleImageTrackVisible, 'Image')}
-            {renderLockButton(
-              onToggleImageTrackLocked ? imageTrackLocked : localImageLocked,
-              () => (onToggleImageTrackLocked ? onToggleImageTrackLocked() : setLocalImageLocked((p) => !p)),
-              'Image'
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Track 3: O1 Overlays / Elements ─────────────────────────── */}
-      {enabledTracks.overlay && (
-        <div
-          onClick={() => onSelectClip({ track: 'overlay' }, 'overlay')}
-          style={{ height: `${overlayTrackHeight}px` }}
-          className={`group relative border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
-            selectedClip?.track === 'overlay'
-              ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#8B5CF6]'
-              : 'hover:bg-white/[0.03] border-l-2 border-l-[#8B5CF6]/50'
-          }`}
-          title="O1 Overlays Track • Stickers, motion graphics, and watermarks"
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 shrink-0">
-              O1
-            </span>
-            <Layers className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-            <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
-              Overlays
-            </span>
-            {overlayMaxLane > 0 && (
-              <span className="text-[8px] font-mono-studio text-purple-300 bg-purple-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
-                {overlayMaxLane + 1}L
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {renderEyeButton(overlayTrackVisible, onToggleOverlayTrackVisible, 'Overlays')}
-            {renderLockButton(
-              onToggleOverlayTrackLocked ? overlayTrackLocked : localOverlayLocked,
-              () => (onToggleOverlayTrackLocked ? onToggleOverlayTrackLocked() : setLocalOverlayLocked((p) => !p)),
-              'Overlays'
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Track 4: T1 Subtitles & Captions ─────────────────────────── */}
-      {enabledTracks.captions && (
-        <div
-          onClick={() => onSelectClip({ track: 'caption', index: 0 }, 'text')}
-          style={{ height: `${captionTrackHeight}px` }}
-          className={`group relative border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
-            selectedClip?.track === 'caption'
-              ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#06B6D4]'
-              : 'hover:bg-white/[0.03] border-l-2 border-l-[#06B6D4]/50'
-          }`}
-          title="T1 Captions Track • Synced typography and dynamic subtitles"
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shrink-0">
-              T1
-            </span>
-            <Type className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
-              Captions
-            </span>
-            {captionMaxLane > 0 && (
-              <span className="text-[8px] font-mono-studio text-cyan-300 bg-cyan-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
-                {captionMaxLane + 1}L
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {renderEyeButton(
-              onToggleCaptionsTrackVisible ? captionsTrackVisible : localCaptionsVisible,
-              () =>
-                onToggleCaptionsTrackVisible
-                  ? onToggleCaptionsTrackVisible()
-                  : setLocalCaptionsVisible((p) => !p),
-              'Captions'
-            )}
-            {renderLockButton(captionsTrackLocked, onToggleCaptionsTrackLocked, 'Captions')}
-          </div>
-        </div>
-      )}
-
-      {/* ── Track 5: T2 Titles Overlay ───────────────────────────────── */}
-      {enabledTracks.title && (
-        <div
-          onClick={() => onSelectClip({ track: 'title' }, 'text')}
-          className={`group relative h-10 border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
-            selectedClip?.track === 'title'
-              ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#38BDF8]'
-              : 'hover:bg-white/[0.03] border-l-2 border-l-[#38BDF8]/50'
-          }`}
-          title="T2 Titles Track • Main video headlines & hook titles"
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0">
-              T2
-            </span>
-            <Type className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-            <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
-              Titles
-            </span>
-          </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {renderEyeButton(
-              titleTrackVisible,
-              () => onToggleTitleTrackVisible?.(),
-              'Titles'
-            )}
-            {renderLockButton(titleTrackLocked, onToggleTitleTrackLocked, 'Titles')}
-          </div>
-        </div>
-      )}
-
-      {/* ── Track 6: A1 Voiceover Audio ─────────────────────────────── */}
-      {enabledTracks.voice && (
-        <div
-          onClick={() => onSelectClip({ track: 'voice' }, 'voice')}
-          style={{ height: `${voiceTrackHeight}px` }}
-          className={`group relative border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
-            selectedClip?.track === 'voice'
-              ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#10B981]'
-              : 'hover:bg-white/[0.03] border-l-2 border-l-[#10B981]/50'
-          }`}
-          title="A1 Voiceover Track • 24kHz studio voice narration"
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
-              A1
-            </span>
-            <Mic className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
-              Voice
-            </span>
-            {voiceMaxLane > 0 && (
-              <span className="text-[8px] font-mono-studio text-emerald-300 bg-emerald-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
-                {voiceMaxLane + 1}L
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {renderMuteButton(voiceTrackMuted, onToggleVoiceTrackMuted, 'Voiceover')}
-            {renderLockButton(
-              voiceTrackLocked,
-              () => onToggleVoiceTrackLocked?.(),
-              'Voiceover'
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Track 7: A2 Background Music ─────────────────────────────── */}
-      {enabledTracks.music && (
-        <div
-          onClick={() => onSelectClip({ track: 'music' }, 'music')}
-          style={{ height: `${musicTrackHeight}px` }}
-          className={`group relative ${
-            enabledTracks.sfx ? 'border-b border-[#242426]' : ''
-          } flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
-            selectedClip?.track === 'music'
-              ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#D946EF]'
-              : 'hover:bg-white/[0.03] border-l-2 border-l-[#D946EF]/50'
-          }`}
-          title="A2 Music Track • Background soundtrack & beat ducking"
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-fuchsia-500/15 text-fuchsia-400 border border-fuchsia-500/30 shrink-0">
-              A2
-            </span>
-            <Music className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
-            <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
-              Music
-            </span>
-            {musicMaxLane > 0 && (
-              <span className="text-[8px] font-mono-studio text-fuchsia-300 bg-fuchsia-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
-                {musicMaxLane + 1}L
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {renderMuteButton(musicTrackMuted, onToggleMusicTrackMuted, 'Music')}
-            {renderLockButton(
-              musicTrackLocked,
-              () => onToggleMusicTrackLocked?.(),
-              'Music'
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Track 8: A3 Sound Effects ────────────────────────────────── */}
-      {enabledTracks.sfx && (
-        <div
-          onClick={() => onSelectClip({ track: 'sfx' }, 'music')}
-          style={{ height: `${sfxTrackHeight}px` }}
-          className={`group relative flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
-            selectedClip?.track === 'sfx'
-              ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F97316]'
-              : 'hover:bg-white/[0.03] border-l-2 border-l-[#F97316]/50'
-          }`}
-          title="A3 Sound FX Track • Transition whooshes, impacts, and risers"
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30 shrink-0">
-              A3
-            </span>
-            <Sparkles className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-            <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
-              Sound FX
-            </span>
-            {sfxMaxLane > 0 && (
-              <span className="text-[8px] font-mono-studio text-orange-300 bg-orange-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
-                {sfxMaxLane + 1}L
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {renderMuteButton(sfxTrackMuted, onToggleSfxTrackMuted, 'Sound FX')}
-            {renderLockButton(
-              sfxTrackLocked,
-              () => onToggleSfxTrackLocked?.(),
-              'Sound FX'
-            )}
-          </div>
-        </div>
-      )}
+      {/* ── Dynamic Order Track Headers ────────────────────────────── */}
+      {activeOrder.map((trackId) => {
+        if (!enabledTracks[trackId]) return null;
+        switch (trackId) {
+          case 'video':
+            return renderVideoHeader();
+          case 'image':
+            return renderImageHeader();
+          case 'overlay':
+            return renderOverlayHeader();
+          case 'captions':
+            return renderCaptionsHeader();
+          case 'title':
+            return renderTitleHeader();
+          case 'voice':
+            return renderVoiceHeader();
+          case 'music':
+            return renderMusicHeader();
+          case 'sfx':
+            return renderSfxHeader();
+          default:
+            return null;
+        }
+      })}
     </div>
   );
 };

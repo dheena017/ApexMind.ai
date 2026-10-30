@@ -4,8 +4,9 @@ FastAPI route endpoints for workspace: script generation, TTS, memory, and media
 """
 
 import logging
-from typing import Optional
-from fastapi import APIRouter, HTTPException, status, Query
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, status, Query, UploadFile, File, Form
 from .schemas import (
     GenerateScriptRequest,
     GenerateScriptResponse,
@@ -503,4 +504,64 @@ def post_studio_generate_captions(payload: StudioCaptionsRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Caption generation failed: {e}",
+        )
+
+class RenderVideoApiRequest(BaseModel):
+    title: str = "apexmind-video"
+    aspectRatio: str = "9:16"
+    duration: float = 15.0
+    audioUrl: Optional[str] = None
+    musicUrl: Optional[str] = None
+    backdropUrl: Optional[str] = None
+    backdropType: str = "image"
+    subtitles: List[Dict[str, Any]] = []
+    captionColor: str = "#FACC15"
+
+
+@router.post(
+    "/api/workspace/render-video",
+    summary="Render Full HD broadcast-quality MP4 using native FFmpeg",
+    tags=["Workspace Studio"],
+)
+def post_render_video(payload: RenderVideoApiRequest):
+    from .video_render_service import render_studio_video
+    try:
+        result = render_studio_video(
+            title=payload.title,
+            aspect_ratio=payload.aspectRatio,
+            duration=payload.duration,
+            audio_url=payload.audioUrl,
+            music_url=payload.musicUrl,
+            backdrop_url=payload.backdropUrl,
+            backdrop_type=payload.backdropType,
+            subtitles=payload.subtitles,
+            caption_color=payload.captionColor,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"[Workspace/RenderVideo] Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Video rendering failed: {e}",
+        )
+
+
+@router.post(
+    "/api/workspace/convert-to-mp4",
+    summary="Transcode WebM blob to Full HD MP4 with AAC audio",
+    tags=["Workspace Studio"],
+)
+async def post_convert_to_mp4(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form("apexmind-video"),
+):
+    from .video_render_service import convert_webm_to_mp4
+    try:
+        content = await file.read()
+        return convert_webm_to_mp4(content, filename_base=filename or "apexmind-video")
+    except Exception as e:
+        logger.error(f"[Workspace/ConvertToMp4] Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Conversion failed: {e}",
         )

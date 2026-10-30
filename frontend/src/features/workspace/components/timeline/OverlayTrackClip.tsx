@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Zap, Move } from 'lucide-react';
+import { Layers, Zap, Move, MoreVertical } from 'lucide-react';
 import { formatTime, SelectedClip, TimelineOverlayClip } from './timelineTypes';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
@@ -97,11 +97,13 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
 
   return (
     <div
-      className="border-b border-[#262626] p-1 relative flex items-center w-full transition-all"
+      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full transition-all"
       style={{ height: `${actualTrackHeight}px` }}
     >
       {effectiveClips.map((clip) => {
-        const isSelected = selectedClip?.track === 'overlay' && (!selectedClip.clipId || selectedClip.clipId === clip.id);
+        const isAllSelected = selectedClip?.track === 'overlay' && Boolean(selectedClip.all);
+        const isSingleSelected = selectedClip?.track === 'overlay' && !selectedClip.all && (selectedClip.clipId === clip.id || (!selectedClip.clipId && effectiveClips.length === 1));
+        const isSelected = isAllSelected || isSingleSelected;
         const colorLabel = colorLabels[clip.id] || '';
         const clipLane = clip.lane ?? 0;
         const topPos = 4 + clipLane * (laneHeight + laneGap);
@@ -125,11 +127,11 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
               else onSelect?.();
               setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
             }}
-            className={`timeline-clip-card rounded-md px-2.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
+            className={`timeline-clip-card rounded-md px-1.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden shadow-xs ${
               isSelected
-                ? 'bg-[#1E293B] border-[#3A3A3A] text-white z-20'
+                ? 'bg-[#0E2038] border-indigo-300 text-white z-20 ring-2 ring-indigo-300/80 shadow-lg'
                 : overlayTrackVisible
-                ? 'bg-[#1A1A1A]/85 border-[#2F2F2F] text-[#E5E5E5] hover:border-[#3A3A3A] z-10'
+                ? 'bg-[#0A1424]/90 hover:bg-[#0E1B31] border-indigo-500/35 text-indigo-100 hover:border-indigo-400/70 z-10'
                 : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
             }`}
             style={{
@@ -163,13 +165,33 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
               <div className="w-0.5 h-3 bg-indigo-200 rounded-full" />
             </div>
 
-            {/* Clean Overlay Clip Label & Duration */}
-            <span className="text-[10px] font-mono-studio truncate leading-tight pointer-events-none pl-1.5 text-white/90 z-10 font-medium">
-              {clip.label || clip.name || 'Overlay Element'}
-            </span>
-            <span className="text-[8.5px] font-mono-studio text-indigo-300 shrink-0 ml-auto pointer-events-none pr-1.5 font-bold z-10">
-              {(Number(clip.duration) || 0).toFixed(1)}s
-            </span>
+            {/* Clean Box Content: Icon + Title + Duration + 3-Dot Button */}
+            <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1 select-none z-10">
+              <Layers className="w-3 h-3 text-indigo-300/90 shrink-0 pointer-events-none" />
+              <span className="text-[10px] font-bold text-indigo-100 truncate tracking-tight flex-1 min-w-0 pointer-events-none">
+                {clip.label || clip.name || 'Overlay Element'}
+              </span>
+              {(clip.duration >= 0.5) && (
+                <span className="text-[8px] font-mono-studio text-indigo-300/90 shrink-0 bg-black/60 border border-indigo-500/20 px-1.5 py-0.5 rounded font-bold pointer-events-none">
+                  {(Number(clip.duration) || 0).toFixed(1)}s
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onSelectClip) onSelectClip(clip.id);
+                  else onSelect?.();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setContextMenu({ x: rect.left, y: rect.bottom + 4, clipId: clip.id });
+                }}
+                className="text-indigo-300/70 hover:text-white hover:bg-white/10 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                title="Overlay options"
+                aria-label="Overlay options"
+              >
+                <MoreVertical className="w-3 h-3" />
+              </button>
+            </div>
 
             {/* Right Trim Handle */}
             <div
