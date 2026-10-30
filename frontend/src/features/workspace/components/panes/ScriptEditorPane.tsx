@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import confetti from 'canvas-confetti';
 import { motion } from 'motion/react';
 import {
   Volume2,
@@ -10,18 +9,13 @@ import {
   RefreshCw,
   Wand2,
   Plus,
-  Copy,
   Check,
   FileText,
-  Download,
   ArrowLeftRight,
   Clock,
   Sparkles,
   Type,
   AlignLeft,
-  Flame,
-  Shield,
-  Zap,
 } from 'lucide-react';
 import { GeneratedScript, ScriptSubtitle } from '../../types';
 
@@ -38,8 +32,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   onSwitchToAgent,
   onStartNewVideo,
 }) => {
-  const [activeTab, setActiveTab] = useState<'content' | 'subtitles' | 'ai-tools' | 'export'>('content');
-  const [copyState, setCopyState] = useState(false);
+  const [activeTab, setActiveTab] = useState<'content' | 'subtitles'>('content');
   const hookRef = useRef<HTMLTextAreaElement | null>(null);
   const quoteRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -111,67 +104,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
       duration: durationPerCue,
     }));
     updateField('subtitles', rebalanced);
-  };
-
-  // AI Polish Presets
-  const applyScriptPolish = (mode: 'punchy' | 'stoic' | 'shorten') => {
-    if (mode === 'punchy') {
-      updateField('hook', (script.hook || '').toUpperCase());
-      updateField('quote', (script.quote || '').replace(/,\s*/g, '. ').replace(/\s+and\s+/gi, '. '));
-    } else if (mode === 'stoic') {
-      updateField('hook', 'Observe everything. Speak on nothing.');
-      updateField('quote', `${script.quote || 'True power does not shout.'} Forge your character in the dark.`);
-    } else if (mode === 'shorten') {
-      const words = (script.quote || '').split(/\s+/).slice(0, 18).join(' ');
-      updateField('quote', `${words}.`);
-    }
-  };
-
-  // Subtitle Export Generators
-  const generateSrt = (): string => {
-    const subs = script.subtitles || [];
-    return subs
-      .map((sub, idx) => {
-        const startSec = sub.start;
-        const endSec = sub.start + sub.duration;
-        const formatTime = (sec: number) => {
-          const h = Math.floor(sec / 3600);
-          const m = Math.floor((sec % 3600) / 60);
-          const s = Math.floor(sec % 60);
-          const ms = Math.floor((sec % 1) * 1000);
-          return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
-        };
-        return `${idx + 1}\n${formatTime(startSec)} --> ${formatTime(endSec)}\n${sub.text}\n`;
-      })
-      .join('\n');
-  };
-
-  const generateVtt = (): string => {
-    const subs = script.subtitles || [];
-    const cues = subs
-      .map((sub) => {
-        const startSec = sub.start;
-        const endSec = sub.start + sub.duration;
-        const formatTime = (sec: number) => {
-          const m = Math.floor(sec / 60);
-          const s = Math.floor(sec % 60);
-          const ms = Math.floor((sec % 1) * 1000);
-          return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
-        };
-        return `${formatTime(startSec)} --> ${formatTime(endSec)}\n${sub.text}\n`;
-      })
-      .join('\n');
-    return `WEBVTT\n\n${cues}`;
-  };
-
-  const downloadFile = (content: string, filename: string, type: string) => {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const totalWords = [script.hook, script.quote, script.cta]
@@ -251,92 +183,10 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             {script.subtitles?.length || 0}
           </span>
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('ai-tools')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1 ${
-            activeTab === 'ai-tools'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sparkles className="w-3 h-3 text-[#60A5FA]" />
-          AI Polish
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('export')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'export'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Export
-        </button>
       </div>
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
-        {/* ── Tab: AI Script Polish ── */}
-        {activeTab === 'ai-tools' && (
-          <div className="flex flex-col gap-3">
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
-                Script Rewriter &amp; Punchiness Optimizer
-              </span>
-              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
-                Transform your draft into high-converting reel copy with one click.
-              </p>
-
-              <div className="grid grid-cols-1 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => applyScriptPolish('punchy')}
-                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#141417] hover:bg-[#202026] text-left flex items-center gap-3 transition-colors cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
-                    <Zap className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Punchy Viral Delivery</p>
-                    <p className="text-[10px] text-[#A1A1AA]">Caps lock hook, short bullet sentences</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyScriptPolish('stoic')}
-                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#141417] hover:bg-[#202026] text-left flex items-center gap-3 transition-colors cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center shrink-0">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Marcus Aurelius Stoic Vibe</p>
-                    <p className="text-[10px] text-[#A1A1AA]">Philosophical gravity, silent action emphasis</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyScriptPolish('shorten')}
-                  className="p-3 rounded-xl border border-[#2A2A30] bg-[#141417] hover:bg-[#202026] text-left flex items-center gap-3 transition-colors cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">
-                    <Flame className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Shorten for 15s Blitz Reel</p>
-                    <p className="text-[10px] text-[#A1A1AA]">Truncate to top punchy words for rapid TikToks</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* ── Tab 1: Script Content ── */}
         {activeTab === 'content' && (
           <div className="flex flex-col gap-3">
@@ -633,73 +483,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 ))}
               </div>
             )}
-          </div>
-        )}
-
-        {/* ── Tab 4: Export ── */}
-        {activeTab === 'export' && (
-          <div className="flex flex-col gap-3">
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-4 flex flex-col gap-3">
-              <span className="text-xs font-bold text-white">Export Captions &amp; Scripts</span>
-              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
-                Download broadcast-standard subtitle files for CapCut, Premiere, or YouTube Studio.
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    downloadFile(
-                      generateSrt(),
-                      `${(script.title || 'subtitles').replace(/\s+/g, '_')}.srt`,
-                      'text/plain'
-                    );
-                    try {
-                      confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
-                    } catch {}
-                  }}
-                  className="bg-[#2A2A32] hover:bg-[#34343E] text-white rounded-xl py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 border border-[#3A3A44] cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5 text-[#60A5FA]" />
-                  Download .SRT
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    downloadFile(
-                      generateVtt(),
-                      `${(script.title || 'subtitles').replace(/\s+/g, '_')}.vtt`,
-                      'text/vtt'
-                    );
-                    try {
-                      confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
-                    } catch {}
-                  }}
-                  className="bg-[#2A2A32] hover:bg-[#34343E] text-white rounded-xl py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 border border-[#3A3A44] cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5 text-[#10B981]" />
-                  Download .VTT
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const fullText = `TITLE: ${script.title}\n\nHOOK: ${script.hook}\n\nQUOTE: ${script.quote}\n\nCTA: ${script.cta}\n\nTAGS: ${(script.hashtags || []).join(' ')}`;
-                  navigator.clipboard.writeText(fullText);
-                  setCopyState(true);
-                  try {
-                    confetti({ particleCount: 35, spread: 60, origin: { y: 0.7 } });
-                  } catch {}
-                  setTimeout(() => setCopyState(false), 1500);
-                }}
-                className="mt-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-[#3B82F6]/20 cursor-pointer"
-              >
-                {copyState ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copyState ? 'Copied Full Script to Clipboard' : 'Copy Full Script'}
-              </button>
-            </div>
           </div>
         )}
       </div>
