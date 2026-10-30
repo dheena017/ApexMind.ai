@@ -2,6 +2,7 @@ import { Film, Sparkles } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
+import { mediaCacheService } from '../../services/mediaCacheService';
 
 // Timeline state broadcast from StudioTimelinePane
 interface TimelineState {
@@ -1244,43 +1245,99 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const currentVideoSrc = activeTransition ? (activeTransition.clipA?.url || activeVideo) : activeVideo;
   const transitionVideoSrc = activeTransition?.clipB?.url;
 
+  // Media Cache Engine: Resolve remote URLs into local zero-latency ObjectURLs (blob:)
+  const [cachedVideoSrc, setCachedVideoSrc] = useState<string>(currentVideoSrc || '');
+  const [cachedTransitionSrc, setCachedTransitionSrc] = useState<string>(transitionVideoSrc || '');
+
+  // Proactively prefetch upcoming timeline clips into CacheStorage
+  useEffect(() => {
+    const prefetchList: string[] = [];
+    if (currentVideoSrc) prefetchList.push(currentVideoSrc);
+    if (transitionVideoSrc) prefetchList.push(transitionVideoSrc);
+    if (nextVideoClip?.url) prefetchList.push(nextVideoClip.url);
+    if (timelineState.videoClips) {
+      for (const c of timelineState.videoClips) {
+        if (c.url) prefetchList.push(c.url);
+      }
+    }
+    if (prefetchList.length > 0) {
+      mediaCacheService.preloadMedia(prefetchList);
+    }
+  }, [currentVideoSrc, transitionVideoSrc, nextVideoClip?.url, timelineState.videoClips]);
+
+  // Resolve main video source
+  useEffect(() => {
+    let isCurrent = true;
+    if (!currentVideoSrc) {
+      setCachedVideoSrc('');
+      return;
+    }
+    mediaCacheService.getCachedMediaUrl(currentVideoSrc).then((resolved) => {
+      if (isCurrent && resolved) {
+        setCachedVideoSrc(resolved);
+      }
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, [currentVideoSrc]);
+
+  // Resolve transition incoming Clip B source
+  useEffect(() => {
+    let isCurrent = true;
+    if (!transitionVideoSrc) {
+      setCachedTransitionSrc('');
+      return;
+    }
+    mediaCacheService.getCachedMediaUrl(transitionVideoSrc).then((resolved) => {
+      if (isCurrent && resolved) {
+        setCachedTransitionSrc(resolved);
+      }
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, [transitionVideoSrc]);
+
+  const effectiveVideoSrc = cachedVideoSrc || currentVideoSrc;
+  const effectiveTransitionSrc = cachedTransitionSrc || transitionVideoSrc;
+
   // Auto-reload video element only when active source changes
   useEffect(() => {
     const video = videoElementRef.current;
-    const tVideo = transitionVideoRef.current;
-    if (!video || !currentVideoSrc) return;
+    if (!video || !effectiveVideoSrc) return;
     const currentAttr = video.getAttribute('src');
-    if (currentAttr === currentVideoSrc) return;
+    if (currentAttr === effectiveVideoSrc) return;
     try {
-      if (new URL(currentVideoSrc, window.location.href).href === video.src) return;
+      if (new URL(effectiveVideoSrc, window.location.href).href === video.src) return;
     } catch {}
 
     isSeekingOrSwitchingRef.current = true;
-    video.src = currentVideoSrc;
+    video.src = effectiveVideoSrc;
     video.load();
     if (!isPlayingRef.current && !video.paused) {
       video.pause();
     }
     // Do not force currentTime immediately before metadata is ready
-  }, [currentVideoSrc]);
+  }, [effectiveVideoSrc]);
 
   // Auto-sync incoming transition video source
   useEffect(() => {
     const tVideo = transitionVideoRef.current;
-    if (!tVideo || !transitionVideoSrc) return;
+    if (!tVideo || !effectiveTransitionSrc) return;
     const currentAttr = tVideo.getAttribute('src');
-    if (currentAttr === transitionVideoSrc) return;
+    if (currentAttr === effectiveTransitionSrc) return;
     try {
-      if (new URL(transitionVideoSrc, window.location.href).href === tVideo.src) return;
+      if (new URL(effectiveTransitionSrc, window.location.href).href === tVideo.src) return;
     } catch {}
 
-    tVideo.src = transitionVideoSrc;
+    tVideo.src = effectiveTransitionSrc;
     tVideo.load();
     tVideo.muted = true;
     if (!isPlayingRef.current && !tVideo.paused) {
       tVideo.pause();
     }
-  }, [transitionVideoSrc]);
+  }, [effectiveTransitionSrc]);
 
   // Synchronize playback & seek without thrashing video decoders during continuous play
   useEffect(() => {
@@ -1643,7 +1700,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             >
               <video
               ref={videoElementRef}
-              src={currentVideoSrc}
+              src={effectiveVideoSrc}
               poster={activeVideoClip?.posterUrl || activeVideoClip?.thumbnailUrl || activeStoryboardScene?.posterUrl}
               muted={videoTrackVolume === 0}
               playsInline
@@ -1701,7 +1758,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               >
                   <video
                   ref={transitionVideoRef}
-                  src={activeTransition.clipB.url}
+                  src={effectiveTransitionSrc || activeTransition.clipB.url}
                   poster={activeTransition.clipB.url}
                   muted
                   playsInline

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Type, Play, Pause, Film, MoreVertical } from 'lucide-react';
+import { Type, Play, Pause, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptSubtitle } from '../../types';
 import {
@@ -29,6 +29,7 @@ import { OverlayTrackClip } from './OverlayTrackClip';
 import { CaptionTrackClips } from './CaptionTrackClips';
 import { AudioTrackClip } from './AudioTrackClip';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
+import { mediaCacheService } from '../../services/mediaCacheService';
 
 export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   currentTime,
@@ -308,6 +309,20 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const [musicClips, setMusicClips] = useState<TimelineAudioClip[]>([]);
   const [sfxClips, setSfxClips] = useState<TimelineAudioClip[]>([]);
   const [overlayClips, setOverlayClips] = useState<TimelineOverlayClip[]>([]);
+
+  // Proactively pre-cache all project clips into local browser CacheStorage to prevent lag
+  useEffect(() => {
+    const urls: string[] = [];
+    for (const c of videoClips) {
+      if (c.url) urls.push(c.url);
+    }
+    for (const c of imageClips) {
+      if (c.url) urls.push(c.url);
+    }
+    if (urls.length > 0) {
+      mediaCacheService.preloadMedia(urls);
+    }
+  }, [videoClips, imageClips]);
 
   // Moveable / trimmable timing states for fallback non-multi-clip tracks
   const [videoStart, setVideoStart] = useState<number>(0);
@@ -2997,21 +3012,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     />
                   ) : (
                     <div
-                      onClick={() => {
-                        onSelectCompound?.('video');
-                        window.dispatchEvent(new CustomEvent('workspace:open-pane', { detail: 'video' }));
-                      }}
                       style={{ height: `${videoTrackHeight}px` }}
-                      className="box-border border-b border-[#242426] p-1 relative flex items-center cursor-pointer group/empty w-full"
-                      title="Click to open Motion Video Catalog and add video clips"
-                    >
-                      <div className="w-full h-8 rounded-md border border-dashed border-amber-500/35 hover:border-amber-400 bg-amber-500/5 hover:bg-amber-500/10 flex items-center justify-center gap-2 text-zinc-400 hover:text-amber-200 transition-all">
-                        <Film className="w-3.5 h-3.5 text-amber-400/80 group-hover/empty:scale-110 transition-transform" />
-                        <span className="text-[10px] font-medium text-amber-300/80 group-hover/empty:text-amber-200">
-                          + Add Video Clip (Click to browse Motion Catalog)
-                        </span>
-                      </div>
-                    </div>
+                      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
+                    />
                   )
                 )}
 
