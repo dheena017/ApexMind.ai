@@ -87,8 +87,6 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
     animationOutDuration?: number;
   }>>({});
 
-  
-
   // Sync transition updates from workspace events
   useEffect(() => {
     const handleUpdate = (e: Event) => {
@@ -127,47 +125,6 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
     return () => window.removeEventListener('workspace:update-clip-props', handleUpdate);
   }, [effectiveClips]);
 
-  const handleApplyTransition = (params: {
-    clipId: string;
-    transition?: string;
-    transitionDuration?: number;
-    animationIn?: string;
-    animationInDuration?: number;
-    animationOut?: string;
-    animationOutDuration?: number;
-    applyToAll?: boolean;
-  }) => {
-    setTransitionOverrides((prev) => {
-      if (params.applyToAll && params.transition) {
-        const nextState = { ...prev };
-        effectiveClips.forEach((c) => {
-          nextState[c.id] = {
-            ...nextState[c.id],
-            transition: params.transition,
-            transitionDuration: params.transitionDuration ?? 0.5,
-          };
-        });
-        return nextState;
-      }
-      return {
-        ...prev,
-        [params.clipId]: {
-          ...prev[params.clipId],
-          ...params,
-        },
-      };
-    });
-
-    window.dispatchEvent(
-      new CustomEvent('workspace:update-clip-props', {
-        detail: {
-          track: 'image',
-          ...params,
-        },
-      })
-    );
-  };
-
   const actualTrackHeight = trackHeight ?? 64;
 
   return (
@@ -182,19 +139,6 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
         const colorLabel = clip.colorLabel || colorLabels[clip.id] || '';
         const clipLane = clip.lane ?? 0;
         const topPos = 4 + clipLane * (laneHeight + laneGap);
-
-        const overrides = transitionOverrides[clip.id] || {};
-        const activeTransition = overrides.transition !== undefined ? overrides.transition : clip.transition;
-        const activeTransitionDuration = overrides.transitionDuration !== undefined ? overrides.transitionDuration : (clip.transitionDuration || 0.6);
-        const activeAnimationIn = overrides.animationIn !== undefined ? overrides.animationIn : clip.animationIn;
-        const activeAnimationInDuration = overrides.animationInDuration !== undefined ? overrides.animationInDuration : (clip.animationInDuration || 0.6);
-
-        const prevClip = effectiveClips[idx - 1];
-        const prevOverrides = prevClip ? (transitionOverrides[prevClip.id] || {}) : {};
-        const prevTransition = prevOverrides.transition !== undefined ? prevOverrides.transition : prevClip?.transition;
-        const prevTransitionDuration = prevOverrides.transitionDuration !== undefined ? prevOverrides.transitionDuration : (prevClip?.transitionDuration || 0.6);
-
-        const nextClip = effectiveClips[idx + 1];
 
         return (
           <div
@@ -215,11 +159,11 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               else onSelect?.();
               setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
             }}
-            className={`timeline-clip-card rounded-[7px] flex items-center justify-between transition-all group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
+            className={`timeline-clip-card rounded-md flex items-center justify-between transition-all group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
               isSelected
-                ? 'bg-[#380E21] border-[2px] border-[#FACC15] text-white z-20 shadow-lg'
+                ? 'bg-[#380E21] border-[1.5px] border-rose-400 text-white z-20 shadow-md ring-1 ring-rose-400/20'
                 : imageTrackVisible
-                ? 'bg-[#240A14]/90 hover:bg-[#310E1D] border border-rose-500/35 text-rose-100 hover:border-rose-400/70 z-10'
+                ? 'bg-[#240A14]/90 hover:bg-[#310E1D] border border-rose-500/30 text-rose-100 hover:border-rose-400/70 z-10'
                 : 'bg-[#181818] border border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
             }`}
             style={{
@@ -236,76 +180,19 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               imageUrl={clip.posterUrl || clip.thumbnailUrl || clip.url || imageUrl}
             />
 
-            {/* ── 1. In-Animation / Entrance Highlight Zone (Exact Match to Image 2!) ── */}
-            {activeAnimationIn && activeAnimationIn !== 'none' && (
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onSelectClip) onSelectClip(clip.id); else onSelect?.();
-                  window.dispatchEvent(new CustomEvent('workspace:open-inspector-tab', { detail: { compound: 'video', subTab: 'transitions', clipId: clip.id } }));
-                  onOpenTransition?.(clip, undefined, 'in');
-                }}
-                style={{
-                  width: `${Math.min(42, Math.max(14, (activeAnimationInDuration / (clip.duration || 1)) * 100))}%`,
-                }}
-                className="absolute left-0 top-0 bottom-0 z-15 bg-gradient-to-r from-amber-400/50 via-amber-400/35 to-amber-400/20 border-r border-amber-300/80 flex items-center pl-3.5 cursor-pointer hover:brightness-110 transition-all select-none"
-                title={`Entrance In-Animation: ${activeAnimationIn} (${activeAnimationInDuration.toFixed(1)}s) • Click to edit`}
-              >
-                {/* Stepped gradient progression matching Image 2 */}
-                <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-amber-400/20 pointer-events-none" />
-              </div>
-            )}
-
-            {/* ── 2. Incoming Transition Overlap Wash from Preceding Clip (Exact Match to Image 1!) ── */}
-            {prevClip && prevTransition && prevTransition !== 'none' && (
-              <div
-                style={{
-                  width: `${Math.min(42, Math.max(14, (prevTransitionDuration / (clip.duration || 1)) * 100))}%`,
-                }}
-                className="absolute left-0 top-0 bottom-0 z-15 bg-amber-400/35 border-r border-amber-300/60 pointer-events-none transition-all select-none"
-                title={`Incoming ${prevTransition} transition from ${prevClip.name}`}
-              />
-            )}
-
-            {/* ── 3. Out-Transition Overlap Zone (Exact Match to Image 1!) ── */}
-            {activeTransition && activeTransition !== 'none' && (
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onSelectClip) onSelectClip(clip.id); else onSelect?.();
-                  window.dispatchEvent(new CustomEvent('workspace:open-inspector-tab', { detail: { compound: 'video', subTab: 'transitions', clipId: clip.id } }));
-                  onOpenTransition?.(clip, nextClip, 'transition');
-                }}
-                style={{
-                  width: `${Math.min(45, Math.max(15, (activeTransitionDuration / (clip.duration || 1)) * 100))}%`,
-                }}
-                className="absolute right-0 top-0 bottom-0 z-15 bg-amber-400/45 border-l border-amber-300/80 flex items-center justify-end pr-3.5 cursor-pointer hover:brightness-110 transition-all select-none"
-                title={`Scene Transition: ${activeTransition} (${activeTransitionDuration.toFixed(1)}s) • Click to edit`}
-              >
-                {/* Diagonal ramp notch at bottom-left corner matching Image 1 */}
-                <div
-                  className="absolute left-0 bottom-0 w-3 h-3 border-b-[2.5px] border-amber-300/90 pointer-events-none"
-                  style={{ transform: 'rotate(-45deg) translate(-2px, 3px)' }}
-                />
-              </div>
-            )}
-
-            {/* ── 4. Left Trim Handle (Exact Match to Image 2!) ── */}
+            {/* ── Left Trim Handle (Clean, Native Website Theme) ── */}
             <div
               onPointerDown={(e) => {
                 e.stopPropagation();
                 if (onPointerDownTrimLeftClip) onPointerDownTrimLeftClip(e, clip);
                 else onPointerDownTrimLeft?.(e);
               }}
-              className={`absolute left-0 top-0 bottom-0 w-3 flex items-center justify-center cursor-ew-resize rounded-l-[5px] z-30 select-none transition-all ${
-                isSelected
-                  ? 'bg-[#FACC15] shadow-sm opacity-100'
-                  : 'bg-[#FACC15]/90 hover:bg-[#FACC15] opacity-0 group-hover:opacity-100'
-              }`}
+              className="absolute left-0 top-0 bottom-0 w-2.5 hover:w-3 flex items-center justify-center cursor-ew-resize z-25 group/handle select-none transition-all"
               title="Drag to trim image start point"
             >
-              {/* Dark centered capsule slot matching Image 2 */}
-              <div className="w-[2.5px] h-3.5 bg-[#18181B] rounded-full shrink-0" />
+              <div className={`w-[2px] h-3.5 rounded-full transition-colors ${
+                isSelected ? 'bg-rose-300' : 'bg-white/60 group-hover:bg-rose-300'
+              }`} />
             </div>
 
             {/* Clean Box Content: Icon + Title */}
@@ -316,28 +203,25 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               </span>
             </div>
 
-            {/* ── 5. Right Trim Handle (Exact Match to Image 2!) ── */}
+            {/* ── Right Trim Handle (Clean, Native Website Theme) ── */}
             <div
               onPointerDown={(e) => {
                 e.stopPropagation();
                 if (onPointerDownTrimRightClip) onPointerDownTrimRightClip(e, clip);
                 else onPointerDownTrimRight?.(e);
               }}
-              className={`absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center cursor-ew-resize rounded-r-[5px] z-30 select-none transition-all ${
-                isSelected
-                  ? 'bg-[#FACC15] shadow-sm opacity-100'
-                  : 'bg-[#FACC15]/90 hover:bg-[#FACC15] opacity-0 group-hover:opacity-100'
-              }`}
+              className="absolute right-0 top-0 bottom-0 w-2.5 hover:w-3 flex items-center justify-center cursor-ew-resize z-25 group/handle select-none transition-all"
               title="Drag to trim image end point"
             >
-              {/* Dark centered capsule slot matching Image 2 */}
-              <div className="w-[2.5px] h-3.5 bg-[#18181B] rounded-full shrink-0" />
+              <div className={`w-[2px] h-3.5 rounded-full transition-colors ${
+                isSelected ? 'bg-rose-300' : 'bg-white/60 group-hover:bg-rose-300'
+              }`} />
             </div>
           </div>
         );
       })}
 
-      {/* ── 6. Transition Seam Buttons Between Consecutive Clips (Exact Match to Image 1 & Image 2!) ── */}
+      {/* ── Transition Seam Buttons Between Consecutive Clips ── */}
       {effectiveClips.map((clip, idx) => {
         const nextClip = effectiveClips[idx + 1];
         if (!nextClip) return null;
@@ -365,8 +249,6 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
           />
         );
       })}
-
-
 
       {/* Right-click Context Menu */}
       {contextMenu && (() => {

@@ -15,7 +15,6 @@ export type VideoInspectorTab =
   | 'style'
   | 'adjust'
   | 'transitions'
-  | 'animations'
   | 'lut'
   | 'speed'
   | 'audio'
@@ -101,31 +100,8 @@ const TRANSITION_PRESETS = [
   },
 ];
 
-const IN_ANIM_PRESETS = [
-  { id: 'fade-in', label: 'Fade In', desc: 'Gradual opacity rise from black' },
-  { id: 'zoom-in', label: 'Zoom In', desc: 'Scale smoothly from 90% to 100%' },
-  { id: 'slide-up', label: 'Slide Up', desc: 'Upward gentle reveal' },
-  { id: 'none', label: 'None', desc: 'No entrance animation' },
-];
 
-const OUT_ANIM_PRESETS = [
-  { id: 'fade-out', label: 'Fade Out', desc: 'Gradual opacity dip to black' },
-  { id: 'zoom-out', label: 'Zoom Out', desc: 'Scale down smoothly' },
-  { id: 'slide-down', label: 'Slide Down', desc: 'Downward exit motion' },
-  { id: 'none', label: 'None', desc: 'No exit animation' },
-];
 
-const ANIMATION_PRESETS = [
-  { id: 'none', label: 'Static (No Motion)', desc: 'Fixed frame' },
-  { id: 'kenburns', label: 'Ken Burns Pan & Zoom', desc: 'Subtle slow movement' },
-  { id: 'zoom', label: 'Subtle Zoom In', desc: 'Focuses slowly into scene' },
-  { id: 'zoom-out', label: 'Dynamic Zoom Out', desc: 'Reveals broader context' },
-  { id: 'pan-left', label: 'Slow Pan Left', desc: 'Cinematic tracking right-to-left' },
-  { id: 'pan-right', label: 'Slow Pan Right', desc: 'Cinematic tracking left-to-right' },
-  { id: 'glitch', label: 'Glitch Shutter', desc: 'Fast digital micro-shakes' },
-  { id: 'float', label: 'Floating Breathing', desc: 'Organic gentle rise and fall' },
-  { id: 'slide', label: 'Vertical Slide', desc: 'Dramatic vertical camera rise' },
-];
 
 const CANVAS_BG_PRESETS = [
   { label: 'Pure Black', value: '#000000' },
@@ -441,8 +417,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   };
 
   const tabs: VideoInspectorTab[] = isImageMode
-    ? ['transform', 'style', 'adjust', 'transitions', 'animations', 'lut', 'time']
-    : ['transform', 'style', 'adjust', 'transitions', 'animations', 'lut', 'speed', 'audio', 'time'];
+    ? ['transform', 'style', 'adjust', 'transitions', 'lut', 'time']
+    : ['transform', 'style', 'adjust', 'transitions', 'lut', 'speed', 'audio', 'time'];
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
@@ -929,112 +905,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               </div>
             </div>
 
-            {/* In-Animation (Entrance) Section */}
-            <div className="mt-2 pt-3 border-t border-[#26262B] flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-amber-300 uppercase font-bold tracking-wider">In-Animation (Entrance)</span>
-                <span className="text-[9px] font-mono-studio text-neutral-400">{animationInDuration.toFixed(1)}s</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {IN_ANIM_PRESETS.map((anim) => {
-                  const isSelected = animationIn === anim.id;
-                  return (
-                    <button
-                      key={anim.id}
-                      type="button"
-                      onClick={() => handleInAnimChange(anim.id)}
-                      className={`p-2 rounded-lg border text-left text-xs cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-amber-500/15 border-amber-400 text-white font-bold'
-                          : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
-                      }`}
-                    >
-                      <span className="block truncate">{anim.label}</span>
-                      <span className="text-[9px] text-[#71717A] block truncate">{anim.desc}</span>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
-
-            {/* Out-Animation (Exit) Section */}
-            <div className="mt-1 pt-3 border-t border-[#26262B] flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-purple-300 uppercase font-bold tracking-wider">Out-Animation (Exit)</span>
-                <span className="text-[9px] font-mono-studio text-neutral-400">{animationOutDuration.toFixed(1)}s</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {OUT_ANIM_PRESETS.map((anim) => {
-                  const isSelected = animationOut === anim.id;
-                  return (
-                    <button
-                      key={anim.id}
-                      type="button"
-                      onClick={() => handleOutAnimChange(anim.id)}
-                      className={`p-2 rounded-lg border text-left text-xs cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-purple-500/15 border-purple-400 text-white font-bold'
-                          : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
-                      }`}
-                    >
-                      <span className="block truncate">{anim.label}</span>
-                      <span className="text-[9px] text-[#71717A] block truncate">{anim.desc}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── ANIMATIONS TAB ── */}
-        {activeSubTab === 'animations' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Camera Motion Presets</span>
-            <div className="flex flex-col gap-1.5">
-              {ANIMATION_PRESETS.map((anim) => (
-                <button
-                  key={anim.id}
-                  type="button"
-                  onClick={() => setAnimation(anim.id)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
-                    animation === anim.id
-                      ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                      : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
-                  }`}
-                >
-                  <div>
-                    <span className="text-xs font-semibold text-white block">{anim.label}</span>
-                    <span className="text-[10px] text-[#71717A]">{anim.desc}</span>
-                  </div>
-                  {animation === anim.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
-                </button>
-              ))}
-            </div>
-
-            {animation !== 'none' && (
-              <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-[#A1A1AA]">Motion Velocity</span>
-                  <span className="font-mono-studio text-white">{animSpeed}x</span>
-                </div>
-                <div className="flex gap-1.5">
-                  {(['0.5', '1', '1.5', '2'] as const).map((spd) => (
-                    <button
-                      key={spd}
-                      type="button"
-                      onClick={() => setAnimSpeed(spd)}
-                      className={`flex-1 py-1 rounded-lg text-xs font-semibold border cursor-pointer ${
-                        animSpeed === spd ? 'bg-[#3B82F6] border-transparent text-white' : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
-                      }`}
-                    >
-                      {spd}x
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
         )}
 
         {/* ── LUT COLOR GRADING TAB ── */}
