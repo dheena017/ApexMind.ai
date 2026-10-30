@@ -455,6 +455,13 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         filterSettings?: any;
         transform?: any;
         animation?: string;
+        transition?: string;
+        transitionDuration?: number;
+        animationIn?: string;
+        animationInDuration?: number;
+        animationOut?: string;
+        animationOutDuration?: number;
+        applyToAll?: boolean;
         colorLabel?: string;
         color?: string;
         fontFamily?: string;
@@ -529,10 +536,19 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   transform: detail.transform ? { ...(c.transform || {}), ...detail.transform } : c.transform,
                   animation: detail.animation ?? c.animation,
                   colorLabel: detail.colorLabel ?? c.colorLabel,
+                  transition: detail.transition !== undefined ? detail.transition : c.transition,
+                  transitionDuration: detail.transitionDuration !== undefined ? detail.transitionDuration : c.transitionDuration,
+                  animationIn: detail.animationIn !== undefined ? detail.animationIn : c.animationIn,
+                  animationInDuration: detail.animationInDuration !== undefined ? detail.animationInDuration : c.animationInDuration,
+                  animationOut: detail.animationOut !== undefined ? detail.animationOut : c.animationOut,
+                  animationOutDuration: detail.animationOutDuration !== undefined ? detail.animationOutDuration : c.animationOutDuration,
                 }
               : c
           )
         );
+        if (detail.applyToAll && detail.transition !== undefined) {
+          setVideoClips((prev) => prev.map((c) => ({ ...c, transition: detail.transition, transitionDuration: detail.transitionDuration ?? 0.5 })));
+        }
       } else if (detail.track === 'image') {
         setImageClips((prev) =>
           prev.map((c) =>
@@ -543,10 +559,19 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   transform: detail.transform ? { ...(c.transform || {}), ...detail.transform } : c.transform,
                   animation: detail.animation ?? c.animation,
                   colorLabel: detail.colorLabel ?? c.colorLabel,
+                  transition: detail.transition !== undefined ? detail.transition : c.transition,
+                  transitionDuration: detail.transitionDuration !== undefined ? detail.transitionDuration : c.transitionDuration,
+                  animationIn: detail.animationIn !== undefined ? detail.animationIn : c.animationIn,
+                  animationInDuration: detail.animationInDuration !== undefined ? detail.animationInDuration : c.animationInDuration,
+                  animationOut: detail.animationOut !== undefined ? detail.animationOut : c.animationOut,
+                  animationOutDuration: detail.animationOutDuration !== undefined ? detail.animationOutDuration : c.animationOutDuration,
                 }
               : c
           )
         );
+        if (detail.applyToAll && detail.transition !== undefined) {
+          setImageClips((prev) => prev.map((c) => ({ ...c, transition: detail.transition, transitionDuration: detail.transitionDuration ?? 0.5 })));
+        }
       }
     };
     const handleUpdateClipText = (e: Event) => {

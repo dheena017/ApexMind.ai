@@ -14,6 +14,7 @@ export type VideoInspectorTab =
   | 'transform'
   | 'style'
   | 'adjust'
+  | 'transitions'
   | 'animations'
   | 'lut'
   | 'speed'
@@ -42,6 +43,76 @@ const LUT_PRESETS = [
   { id: 'matrix-green', label: 'Matrix Acid Green', desc: 'Sci-fi cyberpunk tint' },
   { id: 'sepia-classic', label: 'Sepia Archival', desc: 'Antique historic warm tint' },
   { id: 'tokyo-drift', label: 'Tokyo Night Drive', desc: 'Neon cyan & magenta' },
+];
+
+
+const TRANSITION_PRESETS = [
+  {
+    id: 'dissolve',
+    label: 'Cross Dissolve',
+    desc: 'Smooth cinematic blend between cuts',
+    icon: (
+      <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-amber-400 shrink-0">
+        <polygon points="3,3 10,10 3,17" />
+        <polygon points="17,3 10,10 17,17" />
+      </svg>
+    ),
+  },
+  {
+    id: 'fade',
+    label: 'Fade to Black',
+    desc: 'Dip through black between cuts',
+    icon: <div className="w-3 h-3 rounded-full bg-gradient-to-tr from-black to-zinc-500 border border-white/20 shrink-0" />,
+  },
+  {
+    id: 'wipe-left',
+    label: 'Wipe Left',
+    desc: 'Linear horizontal wipe',
+    icon: (
+      <div className="w-3.5 h-2.5 rounded-xs border border-white/30 flex overflow-hidden shrink-0">
+        <div className="w-1/2 bg-amber-400" />
+        <div className="w-1/2 bg-zinc-700" />
+      </div>
+    ),
+  },
+  {
+    id: 'slide',
+    label: 'Push Slide',
+    desc: 'Next scene pushes the current one',
+    icon: <span className="text-[11px] font-bold text-amber-300 shrink-0">➔</span>,
+  },
+  {
+    id: 'zoom',
+    label: 'Zoom Blur',
+    desc: 'Dynamic forward focal plunge',
+    icon: <span className="text-[10px] font-mono text-cyan-300 font-bold shrink-0">⤢</span>,
+  },
+  {
+    id: 'glitch',
+    label: 'Digital Glitch',
+    desc: 'Cyberpunk chromatic aberration',
+    icon: <Sparkles className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />,
+  },
+  {
+    id: 'none',
+    label: 'Cut (None)',
+    desc: 'Instant hard cut between clips',
+    icon: <div className="w-[2.5px] h-3 bg-neutral-300 rounded-full shrink-0" />,
+  },
+];
+
+const IN_ANIM_PRESETS = [
+  { id: 'fade-in', label: 'Fade In', desc: 'Gradual opacity rise from black' },
+  { id: 'zoom-in', label: 'Zoom In', desc: 'Scale smoothly from 90% to 100%' },
+  { id: 'slide-up', label: 'Slide Up', desc: 'Upward gentle reveal' },
+  { id: 'none', label: 'None', desc: 'No entrance animation' },
+];
+
+const OUT_ANIM_PRESETS = [
+  { id: 'fade-out', label: 'Fade Out', desc: 'Gradual opacity dip to black' },
+  { id: 'zoom-out', label: 'Zoom Out', desc: 'Scale down smoothly' },
+  { id: 'slide-down', label: 'Slide Down', desc: 'Downward exit motion' },
+  { id: 'none', label: 'None', desc: 'No exit animation' },
 ];
 
 const ANIMATION_PRESETS = [
@@ -167,6 +238,78 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   const [blur, setBlur] = useState(0);
   const [grain, setGrain] = useState(0);
   const [activeStyle, setActiveStyle] = useState('Natural');
+
+  const [activeTransition, setActiveTransition] = useState('dissolve');
+  const [transitionDuration, setTransitionDuration] = useState(0.5);
+  const [animationIn, setAnimationIn] = useState('none');
+  const [animationInDuration, setAnimationInDuration] = useState(0.5);
+  const [animationOut, setAnimationOut] = useState('none');
+  const [animationOutDuration, setAnimationOutDuration] = useState(0.5);
+
+  // Sync transition broadcast
+  const handleTransitionChange = (newTrans: string, dur?: number) => {
+    setActiveTransition(newTrans);
+    const d = dur ?? transitionDuration;
+    const isSingleVideoClip = Boolean(selectedClip && (selectedClip.track === 'video' || selectedClip.track === 'image') && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
+    const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-props', {
+        detail: {
+          track: isImageMode ? 'image' : 'video',
+          clipId,
+          transition: newTrans,
+          transitionDuration: d,
+        },
+      })
+    );
+  };
+
+  const handleApplyToAllTransitions = () => {
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-props', {
+        detail: {
+          track: isImageMode ? 'image' : 'video',
+          transition: activeTransition,
+          transitionDuration,
+          applyToAll: true,
+        },
+      })
+    );
+  };
+
+  const handleInAnimChange = (anim: string, dur?: number) => {
+    setAnimationIn(anim);
+    const d = dur ?? animationInDuration;
+    const isSingleVideoClip = Boolean(selectedClip && (selectedClip.track === 'video' || selectedClip.track === 'image') && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
+    const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-props', {
+        detail: {
+          track: isImageMode ? 'image' : 'video',
+          clipId,
+          animationIn: anim,
+          animationInDuration: d,
+        },
+      })
+    );
+  };
+
+  const handleOutAnimChange = (anim: string, dur?: number) => {
+    setAnimationOut(anim);
+    const d = dur ?? animationOutDuration;
+    const isSingleVideoClip = Boolean(selectedClip && (selectedClip.track === 'video' || selectedClip.track === 'image') && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
+    const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-props', {
+        detail: {
+          track: isImageMode ? 'image' : 'video',
+          clipId,
+          animationOut: anim,
+          animationOutDuration: d,
+        },
+      })
+    );
+  };
 
   // Audio & Animation states
   const [videoVolume, setVideoVolume] = useState(100);
@@ -298,8 +441,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   };
 
   const tabs: VideoInspectorTab[] = isImageMode
-    ? ['transform', 'style', 'adjust', 'animations', 'lut', 'time']
-    : ['transform', 'style', 'adjust', 'animations', 'lut', 'speed', 'audio', 'time'];
+    ? ['transform', 'style', 'adjust', 'transitions', 'animations', 'lut', 'time']
+    : ['transform', 'style', 'adjust', 'transitions', 'animations', 'lut', 'speed', 'audio', 'time'];
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
@@ -695,6 +838,152 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 />
               </div>
             ))}
+          </div>
+        )}
+
+        
+        {/* ── TRANSITIONS TAB ── */}
+        {activeSubTab === 'transitions' && (
+          <div className="flex flex-col gap-4 pt-0.5">
+            {/* Header banner */}
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-[5px] bg-[#FACC15] border border-[#18181B] flex items-center justify-center shrink-0">
+                  <svg viewBox="0 0 20 20" className="w-3 h-3 fill-[#18181B]">
+                    <polygon points="3,3 10,10 3,17" />
+                    <polygon points="17,3 10,10 17,17" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-amber-200 block">Cut & Seam Transitions</span>
+                  <span className="text-[10px] text-amber-300/70">Styled to match timeline in/out overlap</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyToAllTransitions}
+                className="px-2 py-1 rounded-md bg-amber-400 text-black font-bold text-[10px] hover:bg-amber-300 transition-colors cursor-pointer shrink-0 shadow-xs"
+                title="Apply this transition style to every cut on this track"
+              >
+                Apply to All
+              </button>
+            </div>
+
+            {/* Transition Duration */}
+            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#A1A1AA]">Transition Duration</span>
+                <span className="font-mono-studio text-amber-300 font-bold">{transitionDuration.toFixed(1)}s</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1">
+                {[0.3, 0.5, 0.8, 1.0, 1.5].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => {
+                      setTransitionDuration(d);
+                      handleTransitionChange(activeTransition, d);
+                    }}
+                    className={`py-1 rounded-lg text-xs font-mono font-medium border cursor-pointer transition-colors ${
+                      Math.abs(transitionDuration - d) < 0.05
+                        ? 'bg-amber-400 text-black border-amber-300 font-bold shadow-xs'
+                        : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                    }`}
+                  >
+                    {d}s
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Transition Styles */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Transition Presets</span>
+              <div className="grid grid-cols-1 gap-1.5">
+                {TRANSITION_PRESETS.map((t) => {
+                  const isSelected = activeTransition === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleTransitionChange(t.id)}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-amber-500/15 border-amber-400/80 text-white shadow-sm ring-1 ring-amber-400/30'
+                          : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center shrink-0">
+                          {t.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-semibold text-white block truncate">{t.label}</span>
+                          <span className="text-[10px] text-[#71717A] truncate block">{t.desc}</span>
+                        </div>
+                      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* In-Animation (Entrance) Section */}
+            <div className="mt-2 pt-3 border-t border-[#26262B] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-amber-300 uppercase font-bold tracking-wider">In-Animation (Entrance)</span>
+                <span className="text-[9px] font-mono-studio text-neutral-400">{animationInDuration.toFixed(1)}s</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {IN_ANIM_PRESETS.map((anim) => {
+                  const isSelected = animationIn === anim.id;
+                  return (
+                    <button
+                      key={anim.id}
+                      type="button"
+                      onClick={() => handleInAnimChange(anim.id)}
+                      className={`p-2 rounded-lg border text-left text-xs cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-amber-500/15 border-amber-400 text-white font-bold'
+                          : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
+                      }`}
+                    >
+                      <span className="block truncate">{anim.label}</span>
+                      <span className="text-[9px] text-[#71717A] block truncate">{anim.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Out-Animation (Exit) Section */}
+            <div className="mt-1 pt-3 border-t border-[#26262B] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-purple-300 uppercase font-bold tracking-wider">Out-Animation (Exit)</span>
+                <span className="text-[9px] font-mono-studio text-neutral-400">{animationOutDuration.toFixed(1)}s</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {OUT_ANIM_PRESETS.map((anim) => {
+                  const isSelected = animationOut === anim.id;
+                  return (
+                    <button
+                      key={anim.id}
+                      type="button"
+                      onClick={() => handleOutAnimChange(anim.id)}
+                      className={`p-2 rounded-lg border text-left text-xs cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-purple-500/15 border-purple-400 text-white font-bold'
+                          : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
+                      }`}
+                    >
+                      <span className="block truncate">{anim.label}</span>
+                      <span className="text-[9px] text-[#71717A] block truncate">{anim.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 

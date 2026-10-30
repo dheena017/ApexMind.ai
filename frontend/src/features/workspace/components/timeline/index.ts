@@ -13,3 +13,5 @@ export * from './OverlayTrackClip';
 export * from './CaptionTrackClips';
 export * from './AudioTrackClip';
 export * from './WaveformAudioPlayer';
+export * from './TimelineClipContextMenu';
+export * from './TimelineTransitionButton';

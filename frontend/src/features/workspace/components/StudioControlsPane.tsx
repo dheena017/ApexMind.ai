@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { VoiceProfile, VisualBackdrop, MusicTrack, GeneratedScript, ScriptSubtitle, DEFAULT_VISUAL_BACKDROPS } from '../types';
+import { VideoInspectorTab } from './inspectors';
 import { SelectedClip } from './timeline/timelineTypes';
 import {
   VideoCompoundInspector,
@@ -138,7 +139,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   const effectiveCategory = category || (script?.tags?.[0]) || 'General';
   // Current active compound page (defaults to home, reacts to timeline / canvas clicks)
   const [activeCompound, setActiveCompound] = useState<CompoundType>(propCompound || 'home');
-  const [videoInspectorTab, setVideoInspectorTab] = useState<'transform' | 'style'>('transform');
+  const [videoInspectorTab, setVideoInspectorTab] = useState<VideoInspectorTab>('transform');
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
   // Sync prop changes
@@ -147,6 +148,27 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
       setActiveCompound(propCompound);
     }
   }, [propCompound]);
+
+
+  // Listen to open-inspector-tab events from timeline buttons/zones
+  useEffect(() => {
+    const handleOpenTab = (e: Event) => {
+      const detail = (e as CustomEvent<{ compound?: CompoundType; subTab?: VideoInspectorTab; clipId?: string }>).detail;
+      if (!detail) return;
+      if (detail.compound) {
+        setActiveCompound(detail.compound);
+        onSelectCompound?.(detail.compound);
+      }
+      if (detail.subTab) {
+        setVideoInspectorTab(detail.subTab);
+      }
+      if (detail.clipId) {
+        setLocalSelectedClip({ track: detail.compound === 'video' ? 'video' : 'video', clipId: detail.clipId, all: false });
+      }
+    };
+    window.addEventListener('workspace:open-inspector-tab', handleOpenTab);
+    return () => window.removeEventListener('workspace:open-inspector-tab', handleOpenTab);
+  }, [onSelectCompound]);
 
   // Listen to global compound selection events
   useEffect(() => {
@@ -203,7 +225,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
 
   const CurrentIcon = compoundMetadata.icon;
 
-  const handleSwitchCompound = (type: CompoundType, videoTab?: 'transform' | 'style') => {
+  const handleSwitchCompound = (type: CompoundType, videoTab?: VideoInspectorTab) => {
     setActiveCompound(type);
     if (type === 'video') setVideoInspectorTab(videoTab || 'transform');
     onSelectCompound?.(type);
