@@ -129,7 +129,7 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
             }}
             className={`timeline-clip-card rounded-md px-1.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden shadow-xs ${
               isSelected
-                ? 'bg-[#0E2038] border-indigo-300 text-white z-20 ring-2 ring-indigo-300/80 shadow-lg'
+                ? 'bg-[#0E2038] border-indigo-300 text-white z-20'
                 : overlayTrackVisible
                 ? 'bg-[#0A1424]/90 hover:bg-[#0E1B31] border-indigo-500/35 text-indigo-100 hover:border-indigo-400/70 z-10'
                 : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'

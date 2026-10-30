@@ -112,7 +112,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
             }}
             className={`timeline-clip-card rounded-md px-1.5 flex items-center justify-between transition-all border group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden shadow-xs ${
               isSelected
-                ? 'bg-[#380E21] border-rose-300 text-white z-20 ring-2 ring-rose-300/80 shadow-lg'
+                ? 'bg-[#380E21] border-rose-300 text-white z-20'
                 : imageTrackVisible
                 ? 'bg-[#240A14]/90 hover:bg-[#310E1D] border-rose-500/35 text-rose-100 hover:border-rose-400/70 z-10'
                 : 'bg-[#181818] border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'

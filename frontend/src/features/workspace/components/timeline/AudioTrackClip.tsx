@@ -157,7 +157,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
 
   return (
     <div
-      className="box-border border-b border-[#242426] p-1 relative flex items-center w-full transition-all"
+      className="box-border border-b border-[#242426] relative w-full transition-all"
       style={{ height: `${actualTrackHeight}px` }}
     >
       {effectiveClips.map((clip) => {
@@ -197,7 +197,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
             style={{
               left: `${(clip.start / totalDuration) * 100}%`,
               width: `${Math.max(0.01, Math.min(100, (clip.duration / totalDuration) * 100))}%`,
-              minWidth: type === 'sfx' ? '64px' : '36px',
+              minWidth: '28px',
               top: `${topPos}px`,
               height: `${laneHeight}px`,
             }}

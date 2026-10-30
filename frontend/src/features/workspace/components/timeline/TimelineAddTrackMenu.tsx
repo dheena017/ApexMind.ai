@@ -136,7 +136,7 @@ export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
   enabledTracks,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ top: 0, left: 0, maxHeight: 440, openAbove: true });
+  const [position, setPosition] = useState<{ top?: number; bottom?: number; left: number; maxHeight: number; openAbove: boolean }>({ left: 0, maxHeight: 440, openAbove: true });
 
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -147,16 +147,13 @@ export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
       const rect = anchor.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom - 12;
       const spaceAbove = rect.top - 12;
-      const requiredHeight = 410;
-      // Because timeline is docked near the bottom, open above whenever upper space is available
-      const openAbove = spaceBelow < requiredHeight && spaceAbove >= spaceBelow;
+      const openAbove = spaceBelow < 380 && spaceAbove >= 200;
       const maxHeight = Math.min(460, openAbove ? spaceAbove : spaceBelow);
-      const measuredHeight = menuRef.current?.offsetHeight || requiredHeight;
-      const menuHeight = Math.min(measuredHeight, maxHeight);
 
       setPosition({
-        top: openAbove ? Math.max(12, rect.top - menuHeight - 6) : rect.bottom + 6,
-        left: Math.max(12, Math.min(rect.left, window.innerWidth - 264)),
+        top: openAbove ? undefined : rect.bottom + 6,
+        bottom: openAbove ? (window.innerHeight - rect.top + 6) : undefined,
+        left: Math.max(12, Math.min(rect.left, window.innerWidth - 270)),
         maxHeight,
         openAbove,
       });
@@ -203,7 +200,8 @@ export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
       ref={menuRef}
       className="fixed w-64 overflow-y-auto bg-[#16161B] border border-[#2B2B36] shadow-2xl p-2 z-[99999] flex flex-col gap-1 rounded-xl select-none"
       style={{
-        top: `${position.top}px`,
+        ...(position.top !== undefined ? { top: `${position.top}px` } : {}),
+        ...(position.bottom !== undefined ? { bottom: `${position.bottom}px` } : {}),
         left: `${position.left}px`,
         maxHeight: `${position.maxHeight}px`,
       }}

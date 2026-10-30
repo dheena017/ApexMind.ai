@@ -199,21 +199,7 @@ select option {
    7. Pro Studio Multi-Track Timeline & Moveable Compounds Styling
    -------------------------------------------------------------------------- */
 
-.timeline-clip-selected-amber {
-  box-shadow: 0 0 0 2px #F59E0B !important;
-}
 
-.timeline-clip-selected-blue {
-  box-shadow: 0 0 0 2px #60A5FA !important;
-}
-
-.timeline-clip-selected-emerald {
-  box-shadow: 0 0 0 2px #34D399 !important;
-}
-
-.timeline-clip-selected-purple {
-  box-shadow: 0 0 0 2px #C084FC !important;
-}
 
 
 

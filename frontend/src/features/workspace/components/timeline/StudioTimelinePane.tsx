@@ -3923,6 +3923,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         onToggleAddTrackMenu={() => setAddTrackMenuOpen(!addTrackMenuOpen)}
         onCloseAddTrackMenu={() => setAddTrackMenuOpen(false)}
         onEnableTrack={handleEnableTrack}
+        enabledTracks={enabledTracks}
         onSeek={onSeek}
         isPlaying={isPlaying}
         onTogglePlay={onTogglePlay}

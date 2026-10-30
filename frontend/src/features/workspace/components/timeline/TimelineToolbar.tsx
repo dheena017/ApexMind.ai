@@ -40,6 +40,7 @@ export interface TimelineToolbarProps {
   addTrackMenuOpen: boolean;
   onToggleAddTrackMenu: () => void;
   onCloseAddTrackMenu: () => void;
+  enabledTracks?: EnabledTracks;
   onEnableTrack: (trackKey: keyof EnabledTracks, selected: SelectedClip, compound: 'video' | 'text' | 'voice' | 'music' | 'overlay') => void;
   onSeek: (time: number) => void;
   isPlaying: boolean;
@@ -75,6 +76,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   addTrackMenuOpen,
   onToggleAddTrackMenu,
   onCloseAddTrackMenu,
+  enabledTracks,
   onEnableTrack,
   onSeek,
   isPlaying,
@@ -245,6 +247,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             onClose={onCloseAddTrackMenu}
             anchorRef={addTrackAnchorRef}
             onEnableTrack={onEnableTrack}
+            enabledTracks={enabledTracks}
           />
         </div>
 
