@@ -19,18 +19,6 @@ import {
 
 export type ContextMenuTrackType = 'video' | 'image' | 'overlay' | 'voice' | 'music' | 'sfx' | 'caption' | 'title';
 
-export interface ClipContextMenuAction {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  shortcut?: string;
-  danger?: boolean;
-  disabled?: boolean;
-  separator?: boolean;
-  submenu?: ClipContextMenuAction[];
-  onClick: () => void;
-}
-
 export interface TimelineClipContextMenuProps {
   x: number;
   y: number;
@@ -86,53 +74,33 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
   onDetach,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const colorLabelButtonRef = useRef<HTMLButtonElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorPickerPos, setColorPickerPos] = useState<{ x: number; y: number } | null>(null);
+  const colorPickerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Pre-calculate initial position to prevent any 1-frame position jump/clipping
+  // Measure synchronously before browser paint to guarantee 100% viewport fit
   const [adjustedPos, setAdjustedPos] = useState(() => {
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
     const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
-    const estW = 210;
-    const estH = 280;
-    let initX = x;
-    let initY = y;
-    let flippedUp = false;
-    let flippedLeft = false;
-
-    if (y + estH > vh - 12) {
-      if (y - estH >= 12) {
-        initY = y - estH;
-        flippedUp = true;
-      } else {
-        initY = Math.max(12, vh - estH - 12);
-        flippedUp = initY < y;
-      }
-    }
-    if (x + estW > vw - 12) {
-      if (x - estW >= 12) {
-        initX = x - estW;
-        flippedLeft = true;
-      } else {
-        initX = Math.max(12, vw - estW - 12);
-        flippedLeft = initX < x;
-      }
-    }
-    return { x: initX, y: initY, flippedUp, flippedLeft };
+    const estW = 224;
+    const estH = 260;
+    const initX = Math.max(12, Math.min(x, vw - estW - 12));
+    const initY = Math.max(12, y + estH > vh - 12 ? Math.max(12, y - estH) : y);
+    return { x: initX, y: initY, flippedUp: y + estH > vh - 12 };
   });
 
-  // Measure synchronously before browser paint to guarantee 100% viewport fit
   useLayoutEffect(() => {
     if (!isVisible || !menuRef.current) return;
     const menu = menuRef.current;
-    const width = menu.offsetWidth || 210;
-    const height = menu.offsetHeight || 280;
+    const width = menu.offsetWidth || 224;
+    const height = menu.offsetHeight || 260;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
     let nx = x;
     let ny = y;
     let flippedUp = false;
-    let flippedLeft = false;
 
     // Flip upwards if extending below viewport boundary
     if (y + height > vh - 12) {
@@ -145,25 +113,53 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
       }
     }
 
-    // Flip leftwards if extending beyond right window boundary
+    // Keep within horizontal boundaries
     if (x + width > vw - 12) {
-      if (x - width >= 12) {
-        nx = x - width;
-        flippedLeft = true;
-      } else {
-        nx = Math.max(12, vw - width - 12);
-        flippedLeft = nx < x;
-      }
+      nx = Math.max(12, vw - width - 12);
+    } else {
+      nx = Math.max(12, x);
     }
 
-    setAdjustedPos({ x: nx, y: ny, flippedUp, flippedLeft });
+    setAdjustedPos({ x: nx, y: ny, flippedUp });
   }, [isVisible, x, y]);
+
+  // Handle color label hover
+  const handleColorLabelMouseEnter = () => {
+    if (colorPickerTimeoutRef.current) clearTimeout(colorPickerTimeoutRef.current);
+    if (!colorLabelButtonRef.current) return;
+    const rect = colorLabelButtonRef.current.getBoundingClientRect();
+    const pickerW = 180;
+    const pickerH = 120;
+    const openLeft = rect.right + pickerW > window.innerWidth - 12;
+    const openX = openLeft ? Math.max(12, rect.left - pickerW - 4) : Math.min(window.innerWidth - pickerW - 12, rect.right + 4);
+    const openY = Math.max(12, Math.min(rect.top - 4, window.innerHeight - pickerH - 12));
+    setColorPickerPos({ x: openX, y: openY });
+    setShowColorPicker(true);
+  };
+
+  const handleColorLabelMouseLeave = () => {
+    colorPickerTimeoutRef.current = setTimeout(() => {
+      setShowColorPicker(false);
+    }, 150);
+  };
+
+  const handlePickerMouseEnter = () => {
+    if (colorPickerTimeoutRef.current) clearTimeout(colorPickerTimeoutRef.current);
+  };
+
+  const handlePickerMouseLeave = () => {
+    setShowColorPicker(false);
+  };
 
   // Close on outside click, window resize, timeline scroll, or Escape key
   useEffect(() => {
     if (!isVisible) return;
     const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement)?.closest?.('.timeline-color-picker-portal')
+      ) {
         onClose();
       }
     };
@@ -171,7 +167,11 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
       if (e.key === 'Escape') onClose();
     };
     const handleScroll = (e: Event) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement)?.closest?.('.timeline-color-picker-portal')
+      ) {
         onClose();
       }
     };
@@ -182,6 +182,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     window.addEventListener('scroll', handleScroll, true);
 
     return () => {
+      if (colorPickerTimeoutRef.current) clearTimeout(colorPickerTimeoutRef.current);
       document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('keydown', handleKey);
       window.removeEventListener('resize', onClose);
@@ -210,9 +211,6 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  const submenuOpensLeft = typeof window !== 'undefined' && adjustedPos.x + 210 + 175 > window.innerWidth;
-  const submenuOpensUp = typeof window !== 'undefined' && adjustedPos.y + 160 > window.innerHeight;
-
   const menuContent = (
     <div
       ref={menuRef}
@@ -222,13 +220,12 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         left: `${adjustedPos.x}px`,
         top: `${adjustedPos.y}px`,
         zIndex: 99999,
-        transformOrigin: `${adjustedPos.flippedUp ? 'bottom' : 'top'} ${adjustedPos.flippedLeft ? 'right' : 'left'}`,
-        maxHeight: 'calc(100vh - 24px)',
+        transformOrigin: adjustedPos.flippedUp ? 'bottom left' : 'top left',
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
       {/* Header / Track Badge */}
-      <div className="px-3 py-2 border-b border-white/10 flex items-center gap-2 rounded-t-[9px] bg-black/40">
+      <div className="px-3 py-2 border-b border-white/10 flex items-center gap-2 rounded-t-[11px] bg-black/40">
         <div
           className="w-2 h-2 rounded-full shrink-0"
           style={{
@@ -243,13 +240,13 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
                             : '#6366F1',
           }}
         />
-        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest select-none truncate">
+        <span className="text-[10px] font-mono text-neutral-300 uppercase tracking-widest select-none truncate font-bold">
           {trackLabel[trackType]}
         </span>
       </div>
 
-      {/* Menu Items Container */}
-      <div className="py-1 max-h-[calc(100vh-80px)] overflow-y-auto custom-scrollbar rounded-b-[9px]">
+      {/* Menu Items Container - No Scrollbars, No Overflow Clipping */}
+      <div className="py-1 flex flex-col">
         {/* ── Edit / Rename ── */}
         {onRename && (
           <ContextMenuItem
@@ -291,7 +288,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         )}
 
         {(onRename || onDuplicate || onSplit || onCopyTimings) && (
-          <div className="my-1 border-t border-white/5" />
+          <div className="my-1 border-t border-white/[0.08]" />
         )}
 
         {/* ── Visibility (Video/Image/Overlay) ── */}
@@ -340,59 +337,23 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {/* ── Color Label Submenu ── */}
+        {/* ── Color Label Item (Portaled Submenu) ── */}
         {onColorLabel && (
-          <div className="relative">
-            <button
-              className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[11px] text-neutral-200 hover:bg-white/8 transition-colors rounded-sm group"
-              onMouseEnter={() => setShowColorPicker(true)}
-              onMouseLeave={() => setShowColorPicker(false)}
-            >
-              <Tag className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-              <span className="flex-1 truncate">Color Label</span>
-              <ChevronRight className="w-3 h-3 text-neutral-500 shrink-0" />
-            </button>
-            {showColorPicker && (
-              <div
-                className={`absolute ${submenuOpensLeft ? 'right-full mr-1' : 'left-full ml-1'} ${submenuOpensUp ? 'bottom-0' : 'top-0'} bg-[#1A1A1A] border border-white/10 rounded-lg p-2 shadow-2xl z-50`}
-                style={{ minWidth: 160 }}
-                onMouseEnter={() => setShowColorPicker(true)}
-                onMouseLeave={() => setShowColorPicker(false)}
-              >
-                <p className="text-[9px] text-neutral-500 uppercase tracking-widest px-1 mb-1.5 select-none">
-                  Label Color
-                </p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {COLOR_LABELS.map((c) => (
-                    <button
-                      key={c.value}
-                      title={c.name}
-                      className="w-6 h-6 rounded-full border-2 border-transparent hover:border-white/60 transition-all hover:scale-110"
-                      style={{ background: c.value }}
-                      onClick={() => {
-                        onColorLabel(c.value);
-                        onClose();
-                      }}
-                    />
-                  ))}
-                  <button
-                    title="Clear label"
-                    className="w-6 h-6 rounded-full border-2 border-neutral-600 hover:border-white/60 transition-all text-neutral-500 text-[9px] flex items-center justify-center hover:scale-110"
-                    onClick={() => {
-                      onColorLabel('');
-                      onClose();
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <button
+            ref={colorLabelButtonRef}
+            type="button"
+            onMouseEnter={handleColorLabelMouseEnter}
+            onMouseLeave={handleColorLabelMouseLeave}
+            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[11px] text-neutral-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer select-none rounded-sm group"
+          >
+            <Tag className="w-3.5 h-3.5 text-neutral-400 group-hover:text-amber-400 shrink-0" />
+            <span className="flex-1 truncate font-medium">Color Label</span>
+            <ChevronRight className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300 shrink-0" />
+          </button>
         )}
 
         {/* ── Danger Zone Separator ── */}
-        {onDelete && <div className="my-1 border-t border-white/5" />}
+        {onDelete && <div className="my-1 border-t border-white/[0.08]" />}
 
         {/* ── Delete ── */}
         {onDelete && (
@@ -405,6 +366,57 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
       </div>
+
+      {/* Portaled Color Label Submenu - Floating freely outside parent */}
+      {showColorPicker && colorPickerPos && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: `${colorPickerPos.x}px`,
+            top: `${colorPickerPos.y}px`,
+            zIndex: 100000,
+            minWidth: 176,
+          }}
+          className="timeline-color-picker-portal bg-[#18181D] border border-[#33333F] rounded-xl p-2.5 shadow-2xl backdrop-blur-xl animate-fade-in select-none"
+          onMouseEnter={handlePickerMouseEnter}
+          onMouseLeave={handlePickerMouseLeave}
+        >
+          <div className="flex items-center justify-between px-1 mb-2">
+            <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-wider font-bold">
+              Color Label
+            </span>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {COLOR_LABELS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                title={c.name}
+                className="w-7 h-7 rounded-lg border border-white/20 hover:border-white hover:scale-110 active:scale-95 transition-all shadow-sm cursor-pointer"
+                style={{ background: c.value }}
+                onClick={() => {
+                  onColorLabel?.(c.value);
+                  setShowColorPicker(false);
+                  onClose();
+                }}
+              />
+            ))}
+            <button
+              type="button"
+              title="Clear label"
+              className="w-7 h-7 rounded-lg border border-neutral-700 hover:border-neutral-400 bg-white/5 hover:bg-white/10 transition-all text-neutral-400 hover:text-white text-xs flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95"
+              onClick={() => {
+                onColorLabel?.('');
+                setShowColorPicker(false);
+                onClose();
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 
@@ -430,18 +442,19 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({
   onClick,
 }) => (
   <button
+    type="button"
     disabled={disabled}
     onClick={onClick}
-    className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[11px] transition-colors rounded-sm
+    className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[11px] transition-colors rounded-sm cursor-pointer select-none group
       ${disabled ? 'opacity-40 cursor-not-allowed text-neutral-500' : ''}
-      ${danger && !disabled ? 'text-red-400 hover:bg-red-500/15' : ''}
-      ${!danger && !disabled ? 'text-neutral-200 hover:bg-white/8' : ''}
+      ${danger && !disabled ? 'text-red-400 hover:bg-red-500/15 hover:text-red-300' : ''}
+      ${!danger && !disabled ? 'text-neutral-200 hover:bg-white/10 hover:text-white' : ''}
     `}
   >
-    <span className={`shrink-0 ${danger ? 'text-red-400' : 'text-neutral-400'}`}>{icon}</span>
-    <span className="flex-1 truncate">{label}</span>
+    <span className={`shrink-0 ${danger ? 'text-red-400' : 'text-neutral-400 group-hover:text-white'}`}>{icon}</span>
+    <span className="flex-1 truncate font-medium">{label}</span>
     {shortcut && (
-      <span className="text-[9px] text-neutral-600 font-mono tabular-nums shrink-0">{shortcut}</span>
+      <span className="text-[10px] text-neutral-500 group-hover:text-neutral-400 font-mono tabular-nums shrink-0 ml-auto pl-2">{shortcut}</span>
     )}
   </button>
 );
