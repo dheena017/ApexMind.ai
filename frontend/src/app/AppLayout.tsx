@@ -180,30 +180,30 @@ export default function AppLayout({
         </>
       ) : (
         <>
-          {/* Standard Top Bar Header */}
+          {/* Standard Top Bar Header (Compact Sleek Height) */}
           <header
-            className={`h-16 shrink-0 z-30 w-full bg-[#121212]/98 border-b border-[#2F2F2F] px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 sm:gap-5 transition-all duration-300 ${
+            className={`h-11 shrink-0 z-30 w-full bg-[#111111]/98 border-b border-[#242424] px-3 sm:px-4 lg:px-6 flex items-center justify-between gap-3 transition-all duration-300 ${
               sidebarOpen ? 'filter blur-[2px] opacity-60 pointer-events-none' : ''
             }`}
           >
             {/* Left: Open/Close Sidebar Toggle + Brand */}
-            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className={`h-10 px-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 border ${
+                className={`h-7.5 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border text-xs font-medium ${
                   sidebarOpen
-                    ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50'
-                    : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] border-[#2F2F2F] hover:border-[#4A4A4A]'
+                    ? 'bg-[#1C1C1C] text-white border-[#3B82F6]/50 shadow-sm'
+                    : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1A1A1A] border-[#2A2A2A] hover:border-[#3D3D3D]'
                 }`}
                 aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
                 title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               >
                 {sidebarOpen ? (
-                  <X className="w-5 h-5 text-[#60A5FA]" />
+                  <X className="w-3.5 h-3.5 text-[#60A5FA]" />
                 ) : (
-                  <Menu className="w-5 h-5 text-[#60A5FA]" />
+                  <Menu className="w-3.5 h-3.5 text-[#60A5FA]" />
                 )}
-                <span className="text-xs font-semibold hidden sm:inline text-[#E5E5E5]">
+                <span className="text-[11px] font-semibold hidden sm:inline text-[#E5E5E5]">
                   {sidebarOpen ? 'Close' : 'Menu'}
                 </span>
               </button>
@@ -211,26 +211,27 @@ export default function AppLayout({
               {/* Brand Logo */}
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="text-base lg:text-lg font-extrabold tracking-tight flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer"
+                className="text-sm sm:text-base font-extrabold tracking-tight flex items-center gap-2 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer"
                 aria-label="ApexMind Studio home"
               >
-                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white border border-[#60A5FA]/30">
-                  <Sparkles className="w-4 h-4 lg:w-5 lg:h-5" />
+                <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white border border-[#60A5FA]/30 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5" />
                 </div>
                 <span className="text-gradient-brand">ApexMind Studio</span>
               </button>
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <NotificationDropdown
                 unreadCount={unreadCount}
                 onNavigate={onNavigate}
+                buttonClassName="h-7.5 w-7.5 !p-1.5 rounded-lg border-[#2A2A2A] hover:border-[#3D3D3D]"
               />
 
               <button
                 onClick={() => onNavigate('profile')}
-                className="h-10 w-10 rounded-xl border border-[#2F2F2F] bg-[#171717] hover:bg-[#1E1E1E] hover:border-[#4A4A4A] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/40"
+                className="h-7.5 w-7.5 rounded-lg border border-[#2A2A2A] bg-[#161616] hover:bg-[#1E1E1E] hover:border-[#3D3D3D] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/40"
                 title={user ? `${user.name} (${user.email})` : 'Profile & Badges'}
                 aria-label="Open profile"
               >
@@ -238,10 +239,10 @@ export default function AppLayout({
                   <img
                     src={user.avatarUrl}
                     alt={user.name}
-                    className="w-8 h-8 rounded-lg bg-[#1E1E1E] object-cover"
+                    className="w-6 h-6 rounded-md bg-[#1E1E1E] object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-[#60A5FA]">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-[#60A5FA]">
                     {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AM'}
                   </div>
                 )}
