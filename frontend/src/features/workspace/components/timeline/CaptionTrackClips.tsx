@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Check, Type, MoreVertical } from 'lucide-react';
+import { Check, Type } from 'lucide-react';
 import { LaneSubtitle, SelectedClip } from './timelineTypes';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
@@ -15,7 +15,7 @@ export interface CaptionTrackClipsProps {
   editingClipIndex: number | null;
   editingText: string;
   setEditingText: (text: string) => void;
-  onSelectClip: (index: number, start: number) => void;
+  onSelectClip: (index: number) => void;
   onDoubleClickClip: (index: number, text: string) => void;
   onSaveInlineText: (index: number) => void;
   onCancelInlineEdit: () => void;
@@ -56,10 +56,10 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; index: number } | null>(null);
   const [colorLabels, setColorLabels] = useState<Record<number, string>>({});
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, index: number, start: number) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, index: number) => {
     e.preventDefault();
     e.stopPropagation();
-    onSelectClip(index, start);
+    onSelectClip(index);
     setContextMenu({ x: e.clientX, y: e.clientY, index });
   }, [onSelectClip]);
 
@@ -93,10 +93,10 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
         return (
           <div
             key={`${index}-${clip.start.toFixed(2)}`}
-            onClick={() => onSelectClip(index, clip.start)}
+            onClick={() => onSelectClip(index)}
             onDoubleClick={() => onDoubleClickClip(index, clip.text)}
             onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clipDur)}
-            onContextMenu={(e) => handleContextMenu(e, index, clip.start)}
+            onContextMenu={(e) => handleContextMenu(e, index)}
             className={`timeline-clip-card absolute rounded-md px-1.5 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden shadow-xs ${isSingleSelected
                 ? 'bg-[#0E3538] border-teal-300 text-white z-20 ring-2 ring-teal-300/80 shadow-lg'
                 : isAllSelected
@@ -162,30 +162,11 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1 select-none">
+              <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1.5 select-none">
                 <Type className="w-3 h-3 text-teal-300/90 shrink-0 pointer-events-none" />
                 <span className="text-[10px] font-bold text-teal-100 truncate tracking-tight flex-1 min-w-0 pointer-events-none">
                   {clip.text}
                 </span>
-                {clipDur >= 1.2 && (
-                  <span className="text-[8px] font-mono-studio text-teal-300/90 shrink-0 bg-black/60 border border-teal-500/20 px-1.5 py-0.5 rounded font-bold pointer-events-none">
-                    {clipDur.toFixed(1)}s
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectClip(index, clip.start);
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setContextMenu({ x: rect.left, y: rect.bottom + 4, index });
-                  }}
-                  className="text-teal-300/70 hover:text-white hover:bg-white/10 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
-                  title="Caption options"
-                  aria-label="Caption options"
-                >
-                  <MoreVertical className="w-3 h-3" />
-                </button>
               </div>
             )}
 

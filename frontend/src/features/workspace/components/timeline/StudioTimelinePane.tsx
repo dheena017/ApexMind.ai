@@ -3252,9 +3252,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       editingClipIndex={editingClipIndex}
                       editingText={editingText}
                       setEditingText={setEditingText}
-                      onSelectClip={(index, start) => {
+                      onSelectClip={(index) => {
                         handleSelectClip({ track: 'caption', index, all: false }, 'text');
-                        onSeek(start);
                       }}
                       onDoubleClickClip={(index, text) => {
                         if (captionsTrackLocked) return;
@@ -3386,31 +3385,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           </div>
                         )}
 
-                        {/* Clean Box Content: Icon + Title + Duration + 3-Dot Button */}
-                        <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1 select-none z-10">
+                        {/* Clean Box Content: Icon + Title */}
+                        <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1.5 select-none z-10">
                           <Type className="w-3 h-3 text-sky-300/90 shrink-0 pointer-events-none" />
                           <span className="text-[10px] font-bold text-sky-100 truncate tracking-tight flex-1 min-w-0 pointer-events-none">
                             "{script.title || 'Untitled'}"
                           </span>
-                          {(titleDuration >= 0.5) && (
-                            <span className="text-[8px] font-mono-studio text-sky-300/90 shrink-0 bg-black/60 border border-sky-500/20 px-1.5 py-0.5 rounded font-bold pointer-events-none">
-                              {titleDuration.toFixed(1)}s
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectClip({ track: 'title' });
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setTitleContextMenu({ x: rect.left, y: rect.bottom + 4 });
-                            }}
-                            className="text-sky-300/70 hover:text-white hover:bg-white/10 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
-                            title="Title options"
-                            aria-label="Title options"
-                          >
-                            <MoreVertical className="w-3 h-3" />
-                          </button>
                         </div>
 
                         {/* Right Trim Handle */}

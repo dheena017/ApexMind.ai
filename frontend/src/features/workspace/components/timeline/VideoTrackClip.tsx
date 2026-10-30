@@ -169,29 +169,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               <Film className="w-2.5 h-2.5 text-amber-300" />
             </div>
 
-            {/* Floating Right: Duration Badge + 3-Dot Options Button (No words!) */}
-            <div className="z-10 mr-1.5 ml-auto flex items-center gap-1 bg-black/80 hover:bg-black/95 px-1.5 py-0.5 rounded-md border border-white/20 backdrop-blur-xs shadow-md select-none">
-              {(clip.duration >= 0.5) && (
-                <span className="text-[8px] font-mono-studio text-amber-300 font-bold pointer-events-none">
-                  {(Number(clip.duration) || 0).toFixed(1)}s
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onSelectClip) onSelectClip(clip.id);
-                  else onSelect?.();
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setContextMenu({ x: rect.left, y: rect.bottom + 4, clipId: clip.id });
-                }}
-                className="text-amber-300/80 hover:text-white p-0.5 rounded hover:bg-white/20 transition-colors shrink-0 cursor-pointer"
-                title="Video options"
-                aria-label="Video options"
-              >
-                <MoreVertical className="w-3 h-3" />
-              </button>
-            </div>
+
 
             {/* Right Trim Handle */}
             <div

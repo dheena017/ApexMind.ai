@@ -165,32 +165,12 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
               <div className="w-0.5 h-3 bg-indigo-200 rounded-full" />
             </div>
 
-            {/* Clean Box Content: Icon + Title + Duration + 3-Dot Button */}
-            <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1 select-none z-10">
+            {/* Clean Box Content: Icon + Title */}
+            <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden px-1.5 select-none z-10">
               <Layers className="w-3 h-3 text-indigo-300/90 shrink-0 pointer-events-none" />
               <span className="text-[10px] font-bold text-indigo-100 truncate tracking-tight flex-1 min-w-0 pointer-events-none">
                 {clip.label || clip.name || 'Overlay Element'}
               </span>
-              {(clip.duration >= 0.5) && (
-                <span className="text-[8px] font-mono-studio text-indigo-300/90 shrink-0 bg-black/60 border border-indigo-500/20 px-1.5 py-0.5 rounded font-bold pointer-events-none">
-                  {(Number(clip.duration) || 0).toFixed(1)}s
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onSelectClip) onSelectClip(clip.id);
-                  else onSelect?.();
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setContextMenu({ x: rect.left, y: rect.bottom + 4, clipId: clip.id });
-                }}
-                className="text-indigo-300/70 hover:text-white hover:bg-white/10 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
-                title="Overlay options"
-                aria-label="Overlay options"
-              >
-                <MoreVertical className="w-3 h-3" />
-              </button>
             </div>
 
             {/* Right Trim Handle */}
