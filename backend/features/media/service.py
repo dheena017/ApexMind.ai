@@ -7,6 +7,7 @@ URL validation, and duplicate prevention.
 import os
 import time
 import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Set
 
@@ -61,6 +62,7 @@ def _resolve_single_scene_internal(
     item: SceneResolveItem,
     aspect_ratio: str,
     excluded_urls: Set[str],
+    lock: Optional[Any] = None,
 ) -> ResolvedSceneResult:
     """Resolves one scene cut using Google CSE, Pexels, Pixabay, and Wikimedia with fallback tiers."""
     # Disallowed low-quality clipart / green-screen / CTA overlay patterns
@@ -118,7 +120,18 @@ def _resolve_single_scene_internal(
             # Semantic Negative Filtering & Aesthetic Prioritization
             ranked_cands, _ = filter_and_rank_candidates(raw_cands, target_query=q)
             for cand in ranked_cands:
-                if cand.url not in excluded_urls:
+                cand_accepted = False
+                if lock:
+                    with lock:
+                        if cand.url not in excluded_urls:
+                            excluded_urls.add(cand.url)
+                            cand_accepted = True
+                else:
+                    if cand.url not in excluded_urls:
+                        excluded_urls.add(cand.url)
+                        cand_accepted = True
+
+                if cand_accepted:
                     logger.info(
                         f"Scene {item.sceneNumber} picked '{cand.title[:35]}' | "
                         f"Score: {cand.extraMetadata.get('aestheticScore')} | "
@@ -154,7 +167,18 @@ def _resolve_single_scene_internal(
             # Semantic Negative Filtering & Aesthetic Prioritization
             ranked_img_cands, _ = filter_and_rank_candidates(raw_img_cands, target_query=q)
             for cand in ranked_img_cands:
-                if cand.url not in excluded_urls:
+                cand_accepted = False
+                if lock:
+                    with lock:
+                        if cand.url not in excluded_urls:
+                            excluded_urls.add(cand.url)
+                            cand_accepted = True
+                else:
+                    if cand.url not in excluded_urls:
+                        excluded_urls.add(cand.url)
+                        cand_accepted = True
+
+                if cand_accepted:
                     return ResolvedSceneResult(
                         sceneNumber=item.sceneNumber,
                         status="resolved",
@@ -171,12 +195,24 @@ def _resolve_single_scene_internal(
             style="cinematic",
             scene_number=item.sceneNumber,
         )
-        if ai_media and _is_valid_cand(ai_media, excluded_urls):
-            return ResolvedSceneResult(
-                sceneNumber=item.sceneNumber,
-                status="resolved",
-                media=ai_media,
-            )
+        if ai_media:
+            ai_accepted = False
+            if lock:
+                with lock:
+                    if _is_valid_cand(ai_media, excluded_urls):
+                        excluded_urls.add(ai_media.url)
+                        ai_accepted = True
+            else:
+                if _is_valid_cand(ai_media, excluded_urls):
+                    excluded_urls.add(ai_media.url)
+                    ai_accepted = True
+
+            if ai_accepted:
+                return ResolvedSceneResult(
+                    sceneNumber=item.sceneNumber,
+                    status="resolved",
+                    media=ai_media,
+                )
     except Exception as ai_err:
         logger.warning(f"AI image fallback failed for scene {item.sceneNumber}: {ai_err}")
 
@@ -193,29 +229,31 @@ def resolve_scenes_batch(
     aspect_ratio: str = "9:16",
     excluded_urls: Optional[List[str]] = None,
 ) -> BatchResolveData:
-    """Resolves media assets for all storyboard scenes while strictly enforcing uniqueness across all cuts."""
+    """Resolves media assets for all storyboard scenes concurrently while strictly enforcing uniqueness across all cuts."""
     results: List[ResolvedSceneResult] = []
     used_urls: Set[str] = set(excluded_urls or [])
+    url_lock = threading.Lock()
 
     # Sort scenes by sceneNumber
     sorted_scenes = sorted(scenes, key=lambda s: s.sceneNumber)
 
-    # Process scenes sequentially to guarantee each scene gets a distinct, non-repeating video
-    for sc in sorted_scenes:
+    def _worker(sc: SceneResolveItem) -> ResolvedSceneResult:
         try:
-            res = _resolve_single_scene_internal(sc, aspect_ratio, used_urls)
-            if res.status == "resolved" and res.media and res.media.url:
-                used_urls.add(res.media.url)
-            results.append(res)
+            return _resolve_single_scene_internal(sc, aspect_ratio, used_urls, lock=url_lock)
         except Exception as e:
             logger.warning(f"Failed to resolve scene {sc.sceneNumber}: {e}")
-            results.append(
-                ResolvedSceneResult(
-                    sceneNumber=sc.sceneNumber,
-                    status="unresolved",
-                    message=str(e),
-                )
+            return ResolvedSceneResult(
+                sceneNumber=sc.sceneNumber,
+                status="unresolved",
+                message=str(e),
             )
+
+    # Process scenes in parallel across worker pool
+    max_workers = min(8, max(1, len(sorted_scenes)))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_scene = {executor.submit(_worker, sc): sc for sc in sorted_scenes}
+        for future in as_completed(future_to_scene):
+            results.append(future.result())
 
     results.sort(key=lambda r: r.sceneNumber)
     resolved_count = sum(1 for r in results if r.status == "resolved")

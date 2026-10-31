@@ -124,6 +124,7 @@ def generate_script(
     output_format: str | None = None,
     creative_context: dict | None = None,
     available_assets: dict | None = None,
+    user_prompt: str | None = None,
 ) -> Dict[str, Any]:
     aspect_ratio = aspect_ratio or "9:16"
     logger.debug(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
@@ -150,6 +151,7 @@ def generate_script(
         output_format=output_format,
         creative_context=creative_context,
         available_assets=merged_assets,
+        user_prompt=user_prompt,
     )
     if data.get("title") and data.get("quote"):
         save_quote(

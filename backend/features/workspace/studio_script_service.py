@@ -74,6 +74,7 @@ def run_studio_script(
         output_format=output_format,
         creative_context=creative_context,
         available_assets=available_assets,
+        user_prompt=user_prompt,
     )
 
     logger.info(

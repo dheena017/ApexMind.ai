@@ -37,7 +37,7 @@ DEFAULT_SCRIPT_MODEL = "gemini-2.5-flash"
 SUPPORTED_SCRIPT_MODELS: dict[str, str] = {
     # Actively available Google Gemini models
     "gemini-2.5-flash": "gemini-2.5-flash",
-    "gemini-2.5-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-2.5-flash-lite": "gemini-3.5-flash-lite",
     "gemini-2.5-pro": "gemini-2.5-pro",
     "gemini-3.8-flash": "gemini-3.8-flash",
     "gemini-3.5-flash": "gemini-3.5-flash",
@@ -48,7 +48,7 @@ SUPPORTED_SCRIPT_MODELS: dict[str, str] = {
     "gemini-pro-latest": "gemini-2.5-pro",
     # Legacy aliases safely mapped to active models
     "gemini-2.0-flash": "gemini-2.5-flash",
-    "gemini-2.0-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-2.0-flash-lite": "gemini-3.5-flash-lite",
     "gemini-1.5-flash": "gemini-2.5-flash",
     "gemini-1.5-pro": "gemini-2.5-pro",
     "claude-3-7-sonnet": "gemini-2.5-pro",
@@ -187,6 +187,7 @@ def generate_gemini_script(
     output_format: str | None = None,
     creative_context: dict | None = None,
     available_assets: dict | None = None,
+    user_prompt: str | None = None,
 ) -> dict[str, Any]:
     """Generates viral motivational quote scripts via Gemini with memory deduplication and multi-scene media planning."""
     memory_snippets = "\n".join([
@@ -282,8 +283,22 @@ def generate_gemini_script(
 
     context_block = "\n".join(selected_context) if selected_context else "No specific creative preferences were selected. Let the strongest concept emerge naturally from the prompt."
 
+    user_prompt_clean = (user_prompt or "").strip()
+    user_prompt_section = ""
+    if user_prompt_clean:
+        user_prompt_section = f"""
+================================================================================
+USER'S SPECIFIC CREATIVE DIRECTION & PROMPT (ABSOLUTE HIGHEST PRIORITY):
+================================================================================
+THE USER HAS EXPLICITLY DIRECTED:
+"{user_prompt_clean}"
+
+CRITICAL MANDATE: You MUST give absolute top priority to the user's specific prompt, narrative ideas, talking points, metaphors, character tone, and creative vision. Weave their exact instructions into the script, opening hook, and scene visual metaphors while maintaining viral retention standards!
+"""
+
     prompt = f"""You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer for viral YouTube Shorts, Instagram Reels, and TikTok.
 Produce an inspiring, punchy, retention-optimized motivational video plan with full script, 3 viral hook variations, 5-layer sound design, and a multi-scene video storyboard with word-level karaoke timing.
+{user_prompt_section}
 
 TARGET ASPECT RATIO: {target_aspect_ratio}
 ASPECT RATIO & COMPOSITION RULES:
@@ -332,37 +347,71 @@ WEBSITE MEDIA & STYLE ASSET CATALOG (CHOOSE FREELY FROM THESE COMPLETE ASSETS):
 {voice_summary}
 
 ================================================================================
-MANDATORY 100% PURE CINEMATIC NATURE VIDEO & SOUND DESIGN DIRECTIVES:
+VIRALITY & RETENTION ARCHITECTURE (ENGINEERED FOR 85%+ COMPLETION RATE):
 ================================================================================
-- Do NOT use static images or photos! Every single scene MUST be a moving, cinematic VIDEO ("mediaType": "video").
-- STRICT 100% NATURE FOOTAGE DIRECTIVE: Every single scene cut MUST feature majestic, cinematic NATURE footage.
-  Allowed nature environments: misty mountain summits, alpine peaks, lush pine forests, cascading waterfalls, dramatic ocean storm waves, winding rivers, northern lights (aurora borealis), starry night sky over mountain ridges, dramatic storm clouds, golden hour sunsets, or desert sand dunes.
-  NEVER use gym, fitness, workout, athletes, urban city, cars, traffic, buildings, office interiors, technology, screens, or talking humans.
-- You MUST design a sequential, multi-scene video plan ('storyboard') consisting of majestic, high-energy nature video clips (typically 5 to 8 distinct scenes/shots across a 30s-60s timeline).
-- CINEMATIC SCENE DURATION: Each video scene clip should comfortably sustain for 3.5s to 6.0s (minimum 3.0s, ideal 4.0s - 5.0s) so viewers can absorb the majestic visuals without jarring micro-cuts.
-- ZERO DUPLICATE VIDEOS: Every scene MUST use a DIFFERENT, UNIQUE high-quality nature video clip.
-- MULTI-HOOK VARIATION: Provide 3 distinct hook variations in "hooks" with different psychological angles (e.g. Brutal Truth/Negative, Curiosity Gap, Direct Challenge) and a virality score (85-99).
-- SOUND DESIGN:
-  - Select "soundtrackTrackId" from the AVAILABLE SOUNDTRACKS.
-  - Define "ducking" (voiceActiveVolume ~0.18, pauseSwellVolume ~0.72).
-  - Add layered "sfxEvents" matching scene transitions and climax drops (using IDs from AVAILABLE SOUND EFFECTS, e.g. "sfx-whoosh-fast", "sfx-impact-subdrop", "sfx-riser-cinematic", "sfx-notif-cash").
-- SEARCH ENGINE OPTIMIZATION: For every scene, provide a "googleSearchQuery" (e.g. 'misty mountain peak sunrise clouds vertical 9:16') and "fallbackQueries" for Google Video Search / Pexels / Pixabay.
-- NEGATIVE TERMS: For every scene, explicitly specify negativeTerms: ["gym", "fitness", "workout", "city", "building", "urban", "office", "car", "technology", "phone", "smiling", "interview", "talking", "cartoon"].
-- KARAOKE WORD TIMING: For every scene, provide a "words" array breaking the scene's subtitle line into individual words with exact relative timestamps ("start", "end") and mark power words with "emphasis": true and "highlightColor" (e.g. "#FACC15" or "#38BDF8").
-- MANDATORY AI VOICE TONE & EMOTION MODULATION DIRECTIVES:
-  * Dynamic Cadence Across Story Beats:
-    - Opening Hook ("beat": "hook"): Fast, urgent delivery ("speechRate": 1.05, "tone": "urgent", "emotion": "Fast, urgent delivery"). Delivers immediate, high-converting momentum in the first 2-3 seconds.
-    - Escalation / Transition ("beat": "escalation"): Engaging momentum ("speechRate": 1.00, "tone": "motivational", "emotion": "Focused, engaging pace").
-    - Wisdom Quote ("beat": "quote"): Slower, heavier cadence ("speechRate": 0.90, "tone": "reverent", "emotion": "Slower, heavier cadence"). Grounded, stoic gravitas giving profound weight to the philosophical insight.
-    - Closing Call to Action ("beat": "cta"): Firm, decisive pace ("speechRate": 1.00, "tone": "decisive", "emotion": "Firm, decisive pace"). Commanding and authoritative.
-- MANDATORY 100% SCRIPT-STORYBOARD CC PARITY & CINEMATIC PACING:
-  * Scene 1 MUST ALWAYS be the HOOK ("beat": "hook"). Scene 1's "subtitleText" MUST match the "hook" text verbatim!
-  * Scenes 2 through N-1 MUST divide the monologue / "quote" sentence-by-sentence with zero omitted words.
-  * The final Scene MUST be the closing call-to-action ("beat": "cta"). Its "subtitleText" MUST match the "cta" text verbatim!
-  * The combined "subtitleText" across all scenes MUST EXACTLY EQUAL the spoken narrative ("hook" + "quote" + "cta").
-  * PACING & DURATION: Total spoken monologue words must comfortably match the target length (~2.5 words per second).
-  * CINEMATIC SCENE BREATH: Every scene duration MUST be at least 3.5s to 6.0s (never under 3.5s).
-  * CRITICAL FINAL SCENE (CTA) NATURE MANDATE: The final scene's visualQuery and googleSearchQuery MUST STILL BE A BREATHTAKING NATURE VIDEO (e.g. 'golden hour mountain summit sunset vertical 9:16' or 'dramatic ocean waves crashing rocks at dusk'). NEVER put 'subscribe', 'button', 'cta', 'like', 'follow', 'youtube', or 'bell' in any scene's visualQuery! The CTA text only appears as a subtitle overlay OVER epic nature footage!
+1. THE 0-2.5s PATTERN INTERRUPT HOOK:
+   - Must STOP the thumb scroll instantly in the first 1.5 seconds.
+   - Strictly 4 to 8 words. No warmups ("Hey guys", "In this video", "Listen up").
+   - Employ one of three psychological hooks:
+     * Brutal Truth / Negative Bias: "Stop waking up waiting for motivation."
+     * Curiosity Gap / Contrarian: "The quiet rule Marcus Aurelius never broke."
+     * Direct Identity Challenge: "If you cannot master silence, you conquer nothing."
+
+2. NATURAL MONOLOGUE PACING (2.4 - 2.6 WORDS PER SECOND):
+   - Every sentence clause must be crisp, rhythmic, and resonant.
+   - Strictly budget spoken monologue words to target duration:
+     * 15s Short: ~35-40 words total (4 scenes)
+     * 30s Short: ~70-78 words total (6-7 scenes)
+     * 45s Short: ~105-115 words total (8-9 scenes)
+     * 60s Short: ~140-150 words total (10-12 scenes)
+   - Every scene duration MUST be 3.2s to 5.5s (never under 3.0s), allowing footage to breathe without visual chaos.
+
+3. 100% PURE CINEMATIC NATURE & STOIC VISUAL DIRECTIVE:
+   - Do NOT use static images or photos! Every single scene MUST be a moving, cinematic VIDEO ("mediaType": "video").
+   - Allowed environments: misty mountain summits, alpine peaks, ancient pine forests, cascading waterfalls, dramatic ocean storm waves, winding rivers, northern lights (aurora borealis), starry cosmos/nebula over ridges, volumetric storm clouds, golden hour sunsets, or desert dunes.
+   - ABSOLUTELY FORBIDDEN: Gyms, workout rooms, treadmills, bodybuilders, city traffic, cars, laptops, office cubicles, corporate desks, or talking humans.
+   - ZERO DUPLICATE CLIPS: Every scene cut MUST use a DISTINCT, UNIQUE visual query and search expression.
+   - CAMERA CHOREOGRAPHY: Assign dynamic camera movement to every scene in "cameraMotion":
+     * "slow-push-in" (Hook / Urgency)
+     * "panoramic-drift-left" (Wisdom / Vastness)
+     * "slow-pull-out" (Contemplation / Perspective)
+     * "orbital-reveal" (Transformation / Apex)
+     * "punch-zoom-in" (Power Word Impact)
+   - SEAMLESS TRANSITIONS: Assign purposeful cinematic transitions in "transition":
+     * "whip-pan-left", "luma-fade", "glitch", "soft-rotate", "rgb-split", "zoom-in", or "fade".
+
+4. SEARCH ENGINE & SEMANTIC DISCOVERY PROMPTING:
+   - For every scene, provide high-precision sensory queries:
+     * "googleSearchQuery": include lighting and resolution tags, e.g., 'misty alpine mountain peak sunrise volumetric rays 4k vertical 9:16'
+     * "visualQuery": clean semantic keywords, e.g., 'misty mountain peak sunrise clouds volumetric'
+     * "fallbackQueries": 2 viable alternatives, e.g., ['foggy pine forest aerial drone landscape', 'mountain ridge storm clouds timelapse']
+     * "negativeTerms": ["gym", "fitness", "workout", "city", "building", "urban", "office", "car", "technology", "phone", "smiling", "interview", "talking", "cartoon"]
+
+5. 5-LAYER BROADCAST SOUND DESIGN & SIDECHAIN DUCKING:
+   - Soundtrack: Select "soundtrackTrackId" from AVAILABLE SOUNDTRACKS matching the emotional arc.
+   - Dynamic Acoustic Ducking: Set "ducking" with exact parameters:
+     { "active": true, "threshold": 0.045, "ratio": 4.5, "attackMs": 25, "releaseMs": 320, "voiceActiveVolume": 0.18, "pauseSwellVolume": 0.72 }
+   - SFX Layering: Align "sfxEvents" to narrative beats:
+     * Hook impact boom (t=0.0s): "sfx-impact-subdrop"
+     * Scene transitions (t=seams): "sfx-whoosh-fast" or "sfx-whoosh-swish"
+     * Climax drop / CTA: "sfx-notif-cash" or "sfx-riser-cinematic"
+
+6. DYNAMIC SPEECH RATE & EMOTION MODULATION:
+   - Opening Hook ("beat": "hook"): Fast, urgent delivery ("speechRate": 1.05, "tone": "urgent", "emotion": "Urgent, arresting warning").
+   - Escalation ("beat": "escalation"): Focused momentum ("speechRate": 1.00, "tone": "motivational", "emotion": "Steely resolve, focused pace").
+   - Wisdom Quote ("beat": "quote"): Deliberate, stoic gravitas ("speechRate": 0.90, "tone": "reverent", "emotion": "Deep philosophical weight, deliberate pause").
+   - Closing CTA ("beat": "cta"): Authoritative command ("speechRate": 1.02, "tone": "decisive", "emotion": "Commanding, resolute closing").
+
+7. KEYWORD EMPHASIS & VIRAL HIGHLIGHTS:
+   - Identify 1-2 high-impact power words per scene to emphasize (e.g. core verbs, warnings, or mindsets).
+   - Highlighting is automatically styled with viral colors ("#FACC15" electric yellow, "#38BDF8" sky blue, "#EF4444" crimson).
+   - To maximize generation speed, you do NOT need to generate word-level timestamp arrays; the studio alignment engine computes exact speech timings automatically.
+
+8. SCRIPT-STORYBOARD CC PARITY & CLEAN CTA OVERLAY:
+   - Scene 1 "subtitleText" MUST match "hook" verbatim.
+   - Scenes 2..N-1 MUST divide the "quote" sentence-by-sentence with zero omitted words.
+   - The final Scene MUST be the "cta" text verbatim.
+   - The final CTA Scene MUST STILL FEATURE BREATHTAKING NATURE (e.g., 'golden hour mountain summit sunset vertical 9:16'). NEVER put 'subscribe' or 'cta' in the visualQuery!
 
 CRITICAL MEMORY & UNIQUENESS CONSTRAINT:
 Your script MUST NOT repeat, paraphrase, or borrow metaphors from any of these previously saved quotes:
@@ -444,13 +493,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "visualQuery": "misty mountain peak sunrise clouds nature",
       "fallbackQueries": ["foggy pine forest aerial landscape", "mountain ridge clouds timelapse"],
       "negativeTerms": ["indoor", "gym", "city", "people", "interview", "talking", "cartoon"],
-      "subtitleText": "Stop waiting for motivation.",
-      "words": [
-        {{ "word": "STOP", "start": 0.0, "end": 0.4, "emphasis": true, "highlightColor": "#EF4444" }},
-        {{ "word": "WAITING", "start": 0.4, "end": 1.1, "emphasis": false }},
-        {{ "word": "FOR", "start": 1.1, "end": 1.4, "emphasis": false }},
-        {{ "word": "MOTIVATION.", "start": 1.4, "end": 2.3, "emphasis": true, "highlightColor": "#FACC15" }}
-      ]
+      "subtitleText": "Stop waiting for motivation."
     }},
     {{
       "sceneNumber": 2,
@@ -474,15 +517,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "visualQuery": "cascading waterfall deep pine forest nature",
       "fallbackQueries": ["river rapids rocky forest nature", "lush green woodland waterfall"],
       "negativeTerms": ["indoor", "gym", "building", "urban", "office", "car"],
-      "subtitleText": "Action creates the energy you need.",
-      "words": [
-        {{ "word": "ACTION", "start": 2.5, "end": 3.1, "emphasis": true, "highlightColor": "#38BDF8" }},
-        {{ "word": "CREATES", "start": 3.1, "end": 3.7, "emphasis": false }},
-        {{ "word": "THE", "start": 3.7, "end": 3.9, "emphasis": false }},
-        {{ "word": "ENERGY", "start": 3.9, "end": 4.6, "emphasis": true, "highlightColor": "#38BDF8" }},
-        {{ "word": "YOU", "start": 4.6, "end": 4.9, "emphasis": false }},
-        {{ "word": "NEED.", "start": 4.9, "end": 5.4, "emphasis": true, "highlightColor": "#FACC15" }}
-      ]
+      "subtitleText": "Action creates the energy you need."
     }},
     {{
       "sceneNumber": 3,
@@ -506,16 +541,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "visualQuery": "dramatic ocean storm waves coastline nature",
       "fallbackQueries": ["pacific ocean breakers rocks nature", "stormy sea dark clouds"],
       "negativeTerms": ["swimming", "beach resort", "boat", "people", "city", "gym"],
-      "subtitleText": "Build your discipline in the quiet moments.",
-      "words": [
-        {{ "word": "BUILD", "start": 5.5, "end": 6.0, "emphasis": true, "highlightColor": "#FACC15" }},
-        {{ "word": "YOUR", "start": 6.0, "end": 6.3, "emphasis": false }},
-        {{ "word": "DISCIPLINE", "start": 6.3, "end": 7.2, "emphasis": true, "highlightColor": "#F5F5F4" }},
-        {{ "word": "IN", "start": 7.2, "end": 7.4, "emphasis": false }},
-        {{ "word": "THE", "start": 7.4, "end": 7.6, "emphasis": false }},
-        {{ "word": "QUIET", "start": 7.6, "end": 8.2, "emphasis": true, "highlightColor": "#38BDF8" }},
-        {{ "word": "MOMENTS.", "start": 8.2, "end": 8.9, "emphasis": false }}
-      ]
+      "subtitleText": "Build your discipline in the quiet moments."
     }},
     {{
       "sceneNumber": 4,
@@ -539,15 +565,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "visualQuery": "aurora borealis northern lights mountain nature",
       "fallbackQueries": ["starry night sky mountain timelapse nature", "green aurora night landscape"],
       "negativeTerms": ["city skyline", "neon", "indoor", "cartoon", "gym"],
-      "subtitleText": "Save this reel and start now.",
-      "words": [
-        {{ "word": "SAVE", "start": 9.0, "end": 9.5, "emphasis": true, "highlightColor": "#38BDF8" }},
-        {{ "word": "THIS", "start": 9.5, "end": 9.8, "emphasis": false }},
-        {{ "word": "REEL", "start": 9.8, "end": 10.3, "emphasis": true, "highlightColor": "#FACC15" }},
-        {{ "word": "AND", "start": 10.3, "end": 10.6, "emphasis": false }},
-        {{ "word": "START", "start": 10.6, "end": 11.2, "emphasis": true, "highlightColor": "#EF4444" }},
-        {{ "word": "NOW.", "start": 11.2, "end": 11.8, "emphasis": true, "highlightColor": "#38BDF8" }}
-      ]
+      "subtitleText": "Save this reel and start now."
     }}
   ]
 }}
@@ -565,10 +583,9 @@ Output MUST be a single raw JSON object matching this exact schema:
         models_to_try = [target_model]
         for alt_model in [
             "gemini-2.5-flash",
-            "gemini-2.5-flash-lite",
+            "gemini-3.5-flash-lite",
             "gemini-3.8-flash",
             "gemini-3.5-flash",
-            "gemini-3.5-flash-lite",
             "gemini-2.5-pro",
             "gemini-3.1-pro-preview",
             "gemini-3-flash-preview",
@@ -579,21 +596,36 @@ Output MUST be a single raw JSON object matching this exact schema:
         response = None
         last_err = None
         used_model = target_model
+        system_instruction = (
+            "You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer "
+            "for viral YouTube Shorts, Instagram Reels, and TikTok. Produce high-retention motivational "
+            "short video plans with 3 viral hook variations, 100% pure cinematic nature footage queries, "
+            "5-layer broadcast sound design with dynamic sidechain ducking. "
+            "Strictly output only valid JSON matching the exact schema."
+        )
+
         for attempt_model in models_to_try:
             try:
-                chat = gemini_client.chats.create(
+                gen_config = {
+                    "system_instruction": system_instruction,
+                    "temperature": 0.6,
+                    "response_mime_type": "application/json",
+                }
+                # Disable thinking budget on models that support it to eliminate 100s+ reasoning delays
+                if hasattr(types, "ThinkingConfig"):
+                    gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+
+                response = gemini_client.models.generate_content(
                     model=attempt_model,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                    )
+                    contents=prompt,
+                    config=types.GenerateContentConfig(**gen_config),
                 )
-                response = chat.send_message(prompt)
                 used_model = attempt_model
                 break
             except Exception as e:
                 last_err = e
                 logger.debug(f"Model '{attempt_model}' unavailable ({e}), trying next model...")
-                time.sleep(1.0)
+                time.sleep(0.5)
 
         if response is None:
             raise RuntimeError(f"All Gemini models exhausted: {last_err}")
