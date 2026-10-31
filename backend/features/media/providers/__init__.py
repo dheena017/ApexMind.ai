@@ -10,6 +10,7 @@ from .video_wikimedia import WikimediaVideoProvider
 from .image_unsplash import UnsplashImageProvider
 from .image_gemini import GeminiImageProvider
 from .audio_jamendo import JamendoAudioProvider
+from .audio_wikimedia import WikimediaAudioProvider
 from .sfx_freesound import SfxProvider
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     "UnsplashImageProvider",
     "GeminiImageProvider",
     "JamendoAudioProvider",
+    "WikimediaAudioProvider",
     "SfxProvider",
 ]

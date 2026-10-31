@@ -84,6 +84,13 @@ def run_studio_voice(
     from .audio_aligner import align_storyboard_to_audio
 
     duration = float(result.get("duration") or result.get("durationSeconds") or 0.0)
+    if duration <= 0.0:
+        if target_duration_seconds and target_duration_seconds > 0:
+            duration = float(target_duration_seconds)
+        elif storyboard:
+            duration = sum(float(s.get("duration") or 3.5) for s in storyboard)
+        else:
+            duration = 30.0
     mime_type = result.get("mimeType", "audio/wav")
 
     raw_audio_bytes = None

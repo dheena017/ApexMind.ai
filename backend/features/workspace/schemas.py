@@ -518,3 +518,51 @@ class StudioCaptionsResponse(BaseModel):
     stageId: str = "captions"
     data: StudioCaptionsData
     generatedAt: str = ""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Visual Elements & Overlays
+# ══════════════════════════════════════════════════════════════════════════════
+
+class VisualElementItem(BaseModel):
+    id: str
+    name: str
+    category: str
+    label: Optional[str] = None
+    desc: Optional[str] = None
+    color: Optional[str] = None
+    iconName: Optional[str] = None
+    symbol: Optional[str] = None
+    type: str = "badge"
+    tags: List[str] = []
+
+
+class ElementsCatalogResponse(BaseModel):
+    success: bool = True
+    total: int = 0
+    category: str = "all"
+    categories: List[Dict[str, Any]] = []
+    elements: List[VisualElementItem] = []
+
+
+class RecommendedElementsRequest(BaseModel):
+    category: str
+    topic: Optional[str] = None
+    tone: Optional[str] = None
+
+
+class RecommendedElementsResponse(BaseModel):
+    success: bool = True
+    category: str
+    recommended: List[VisualElementItem] = []
+
+
+class CreateCustomBadgeRequest(BaseModel):
+    text: str
+    gradient: Optional[str] = None
+    icon: Optional[str] = None
+
+
+class CreateCustomBadgeResponse(BaseModel):
+    success: bool = True
+    element: VisualElementItem

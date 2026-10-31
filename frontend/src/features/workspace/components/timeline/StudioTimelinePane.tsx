@@ -2,7 +2,7 @@ import { alignAudioVisualCuts } from '../../utils/cutSyncEngine';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Type, Play, Pause, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
-import { ScriptSubtitle } from '../../types';
+import { ScriptSubtitle, DEFAULT_VISUAL_BACKDROPS } from '../../types';
 import {
   StudioTimelinePaneProps,
   groupMicroCaptionsIntoPhrases,
@@ -1090,7 +1090,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         runningStart = parseFloat((clipStart + clipDuration).toFixed(2));
 
         // Enforce pure video cuts on the timeline for every storyboard scene
-        const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || '';
+        const fallbackBackdrop = DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length];
+        const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || fallbackBackdrop.videoUrl;
         const aiMotionPatterns = [
           { in: 'zoom-in', inDur: 0.35, out: 'slide-fade', outDur: 0.35, trans: 'whip-pan-left', transDur: 0.35 },
           { in: 'slide-left', inDur: 0.4, out: 'soft-reveal', outDur: 0.4, trans: 'luma-fade', transDur: 0.45 },
@@ -1438,7 +1439,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       let runningStart = 0;
       const initialVideos: TimelineMediaClip[] = [];
       script.storyboard.forEach((scene: any, idx: number) => {
-        const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || '';
+        const fallbackBackdrop = DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length];
+        const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || fallbackBackdrop.videoUrl;
         const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
         const parsedDuration = typeof scene.duration === 'number' && Number.isFinite(scene.duration) ? scene.duration : parseFloat(scene.duration);
         const clipDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 2.5;

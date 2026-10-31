@@ -1,6 +1,7 @@
 """
 backend/features/media/providers/sfx_freesound.py
 Sound effects provider adapter querying high-impact transitions, whooshes, and sub-drops.
+Powered by Mixkit open audio CDN with zero authentication requirements.
 """
 
 from typing import List, Dict, Any
@@ -17,10 +18,10 @@ OPEN_SFX_CATALOG = [
     },
     {
         "id": "sfx_whoosh_heavy_02",
-        "title": "Subtle Heavy Swoosh",
+        "title": "Deep Sub Swoosh Transition",
         "category": "whoosh",
         "duration": 1.2,
-        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3",
     },
     {
         "id": "sfx_sub_drop_01",
@@ -44,11 +45,39 @@ OPEN_SFX_CATALOG = [
         "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2871/2871-preview.mp3",
     },
     {
+        "id": "sfx_impact_boom_02",
+        "title": "Sub Heavy Cinematic Boom",
+        "category": "impact",
+        "duration": 2.1,
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3",
+    },
+    {
+        "id": "sfx_impact_metal_01",
+        "title": "Heavy Steel Metal Hit",
+        "category": "impact",
+        "duration": 1.4,
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2872/2872-preview.mp3",
+    },
+    {
         "id": "sfx_glitch_digital_01",
         "title": "Quick Digital HUD Glitch",
         "category": "glitch",
         "duration": 0.6,
         "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3",
+    },
+    {
+        "id": "sfx_camera_shutter_01",
+        "title": "Camera Shutter Click Snap",
+        "category": "click",
+        "duration": 0.4,
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3",
+    },
+    {
+        "id": "sfx_bell_chime_01",
+        "title": "Success Notification Bell Chime",
+        "category": "notification",
+        "duration": 1.1,
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3",
     },
 ]
 

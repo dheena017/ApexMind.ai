@@ -30,6 +30,11 @@ from .schemas import (
     StudioBackgroundInfo,
     StudioCaptionsRequest,
     StudioCaptionsResponse,
+    ElementsCatalogResponse,
+    RecommendedElementsRequest,
+    RecommendedElementsResponse,
+    CreateCustomBadgeRequest,
+    CreateCustomBadgeResponse,
 )
 from .service import (
     get_memory_list,
@@ -326,6 +331,57 @@ async def get_open_quotes_route(
     from .open_media_service import search_open_quotes
     return search_open_quotes(query=q, category=category, author=author, page=page, limit=limit)
 
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STUDIO ELEMENTS & OVERLAYS SERVICE
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get(
+    "/api/workspace/elements",
+    response_model=ElementsCatalogResponse,
+    summary="Get studio visual elements catalog",
+    description="Retrieve all available badges, frames, stickers, social tags, progress bars, and emojis."
+)
+def get_elements_route(
+    category: Optional[str] = Query(default=None, description="Filter by category: badges, fx, social, frames, progress, emojis, or all"),
+    q: Optional[str] = Query(default=None, description="Search term across name, label, and tags")
+):
+    from .elements_service import get_elements_catalog
+    return get_elements_catalog(category=category, search=q)
+
+
+@router.post(
+    "/api/workspace/elements/recommend",
+    response_model=RecommendedElementsResponse,
+    summary="Get AI-recommended elements for video context",
+    description="Intelligently scores and recommends the top viral badges, scrubbers, and stickers matching theme, topic, and delivery tone."
+)
+def post_recommended_elements_route(payload: RecommendedElementsRequest):
+    from .elements_service import get_recommended_elements
+    return get_recommended_elements(
+        category=payload.category,
+        topic=payload.topic,
+        tone=payload.tone
+    )
+
+
+@router.post(
+    "/api/workspace/elements/custom",
+    response_model=CreateCustomBadgeResponse,
+    summary="Create custom creator badge element",
+    description="Generates a customized viral badge with gradient, styling, and text."
+)
+def post_create_custom_badge_route(payload: CreateCustomBadgeRequest):
+    from .elements_service import create_custom_badge
+    try:
+        return create_custom_badge(
+            text=payload.text,
+            gradient=payload.gradient,
+            icon=payload.icon
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
 
 
 # ══════════════════════════════════════════════════════════════════════════════

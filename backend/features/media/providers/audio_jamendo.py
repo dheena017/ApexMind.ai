@@ -18,7 +18,7 @@ class JamendoAudioProvider:
     name: str = "jamendo"
 
     def is_configured(self) -> bool:
-        return bool(os.getenv("JAMENDO_CLIENT_ID"))
+        return bool(os.getenv("JAMENDO_CLIENT_ID", "56d30c95"))
 
     def search(
         self,

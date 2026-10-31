@@ -1,6 +1,6 @@
 import { Film, Sparkles } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle } from '../../types';
+import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle, DEFAULT_VISUAL_BACKDROPS } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
 import { mediaCacheService } from '../../services/mediaCacheService';
 
@@ -518,22 +518,72 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             detail: { exporting: true, message: 'Rendering broadcast-quality Full HD video with FFmpeg...' },
           }));
 
-          const vClips = (timelineState.videoClips || []).filter((c) => Boolean(c.url)).map((c) => ({
+          const defaultBackdrop = DEFAULT_VISUAL_BACKDROPS[0];
+          const resolvedBackdropUrl = customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || activeStoryboardVideo || activeStoryboardImage || defaultBackdrop.videoUrl;
+          const resolvedBackdropType = (customVideoUrl || (!customImageUrl && (activeBackdrop?.videoUrl || activeStoryboardVideo || !activeBackdrop?.imageUrl))) ? 'video' : 'image';
+
+          const backfillUrl = (c: any, idx: number) => {
+            if (c.url && typeof c.url === 'string' && c.url.trim()) return c.url.trim();
+            const sbMatch = script.storyboard?.[idx];
+            const sbUrl = sbMatch?.mediaUrl || (sbMatch as any)?.videoUrl || sbMatch?.posterUrl;
+            if (sbUrl && typeof sbUrl === 'string' && sbUrl.trim()) return sbUrl.trim();
+            const fallbackBackdrop = DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length];
+            return resolvedBackdropUrl || fallbackBackdrop.videoUrl;
+          };
+
+          const rawVClips = (timelineState.videoClips || []).map((c, idx) => ({
             ...c,
-            transition: c.transition || 'fade',
-            transitionDuration: c.transitionDuration || 0.45,
-            cameraMotion: c.cameraMotion || c.animationIn || 'slow-zoom',
+            url: backfillUrl(c, idx),
+            transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
+            transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
+            cameraMotion: c.cameraMotion || c.animationIn || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
             animationIn: c.animationIn || 'zoom-in',
+            animationInDuration: typeof c.animationInDuration === 'number' ? c.animationInDuration : 0.5,
             animationOut: c.animationOut || 'fade',
-          }));
-          const iClips = (timelineState.imageClips || []).filter((c) => Boolean(c.url)).map((c) => ({
+            animationOutDuration: typeof c.animationOutDuration === 'number' ? c.animationOutDuration : 0.45,
+          })).filter((c) => Boolean(c.url));
+
+          const rawIClips = (timelineState.imageClips || []).map((c, idx) => ({
             ...c,
-            transition: c.transition || 'fade',
-            transitionDuration: c.transitionDuration || 0.45,
-            cameraMotion: c.cameraMotion || c.animationIn || 'slow-zoom',
+            url: backfillUrl(c, idx),
+            transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
+            transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
+            cameraMotion: c.cameraMotion || c.animationIn || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
             animationIn: c.animationIn || 'zoom-in',
+            animationInDuration: typeof c.animationInDuration === 'number' ? c.animationInDuration : 0.5,
             animationOut: c.animationOut || 'fade',
-          }));
+            animationOutDuration: typeof c.animationOutDuration === 'number' ? c.animationOutDuration : 0.45,
+          })).filter((c) => Boolean(c.url));
+
+          // Multi-clip fallback: If timeline tracks are empty, pull directly from effectiveVisualClips (e.g. Studio storyboard)
+          let vClips = rawVClips;
+          let iClips = rawIClips;
+          if (vClips.length === 0 && iClips.length === 0 && effectiveVisualClips.length > 0) {
+            vClips = effectiveVisualClips.filter((c) => c.type === 'video').map((c, idx) => ({
+              ...c,
+              url: backfillUrl(c, idx),
+              transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
+              transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
+              cameraMotion: (c as any).cameraMotion || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
+              animationIn: (c as any).animationIn || 'zoom-in',
+              animationInDuration: typeof (c as any).animationInDuration === 'number' ? (c as any).animationInDuration : 0.5,
+              animationOut: (c as any).animationOut || 'fade',
+              animationOutDuration: typeof (c as any).animationOutDuration === 'number' ? (c as any).animationOutDuration : 0.45,
+            })).filter((c) => Boolean(c.url));
+
+            iClips = effectiveVisualClips.filter((c) => c.type === 'image').map((c, idx) => ({
+              ...c,
+              url: backfillUrl(c, idx),
+              transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
+              transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
+              cameraMotion: (c as any).cameraMotion || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
+              animationIn: (c as any).animationIn || 'zoom-in',
+              animationInDuration: typeof (c as any).animationInDuration === 'number' ? (c as any).animationInDuration : 0.5,
+              animationOut: (c as any).animationOut || 'fade',
+              animationOutDuration: typeof (c as any).animationOutDuration === 'number' ? (c as any).animationOutDuration : 0.45,
+            })).filter((c) => Boolean(c.url));
+          }
+
           const sClips = (timelineState.sfxClips || []).filter((c) => Boolean(c.url));
           const sfxPayload = !timelineState.sfxMuted && sClips.length > 0 ? sClips : undefined;
           const maxClipEnd = Math.max(
@@ -542,9 +592,22 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             ...iClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0))
           );
 
+          const exportSubtitles = (timelineState.captionClips && timelineState.captionClips.length > 0)
+            ? timelineState.captionClips
+            : ((script.subtitles && script.subtitles.length > 0)
+              ? script.subtitles
+              : ((script as any).storyboard || []).map((s: any) => ({
+                  start: Number(s.start) || 0,
+                  duration: Number(s.duration) || 2.5,
+                  text: s.subtitleText || s.text || '',
+                  words: s.words,
+                  captionPresetColor: s.captionPresetColor,
+                  captionPresetClass: s.captionPresetClass,
+                })).filter((s: any) => Boolean(s.text)));
+
           const maxSubEnd = Math.max(
             0,
-            ...(script.subtitles || []).map((s) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
+            ...exportSubtitles.map((s: any) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
           );
 
           // If timeline has clips, use exact clip timeline end without artificial stretching
@@ -563,20 +626,22 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             exactDuration: exactTimelineDuration > 0 ? exactTimelineDuration : undefined,
             audioUrl: audioUrl || null,
             musicUrl: musicUrl || null,
-            backdropUrl: customVideoUrl || customImageUrl || activeBackdrop?.imageUrl || null,
-            backdropType: customVideoUrl ? 'video' : 'image',
+            backdropUrl: resolvedBackdropUrl,
+            backdropType: resolvedBackdropType,
             videoClips: vClips.length > 0 ? vClips : undefined,
             imageClips: iClips.length > 0 ? iClips : undefined,
             sfxClips: sfxPayload,
-            subtitles: (script.subtitles || []).map((s) => ({
-              start: s.start,
-              duration: s.duration,
-              text: s.text,
-              words: s.words,
-              emphasis: (s as any).emphasis,
-              captionPresetClass: s.captionPresetClass,
-              captionPresetColor: s.captionPresetColor,
-            })),
+            subtitles: exportSubtitles
+              .filter((s: any) => Boolean((s.text || s.subtitleText || '').trim()))
+              .map((s: any) => ({
+                start: Number(s.start) || 0,
+                duration: Number(s.duration) || 2.5,
+                text: (s.text || s.subtitleText || '').trim(),
+                words: s.words,
+                emphasis: s.emphasis,
+                captionPresetClass: s.captionPresetClass,
+                captionPresetColor: s.captionPresetColor,
+              })),
             captionColor: captionPresetColor || '#FACC15',
             captionFont: captionPresetFontFamily || 'Impact',
             captionTransform: captionPresetTextTransform || 'uppercase',
@@ -1026,11 +1091,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     // 4. Storyboard fallback
     if (script.storyboard && script.storyboard.length >= 2) {
       let runStart = 0;
+      const motions = ['push-in', 'zoom-out', 'pan-right', 'slow-zoom', 'orbital'];
+      const transList = ['fade', 'circleopen', 'directional-left', 'zoom', 'dissolve', 'wipeleft'];
       return script.storyboard.map((sc, idx) => {
         const start = typeof sc.start === 'number' ? sc.start : runStart;
         const dur = typeof sc.duration === 'number' ? sc.duration : 3;
         runStart = start + dur;
-        const clipUrl = sc.mediaUrl || (sc as any).videoUrl || sc.posterUrl || '';
+        const fallbackBackdrop = DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length];
+        const clipUrl = sc.mediaUrl || (sc as any).videoUrl || sc.posterUrl || customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || fallbackBackdrop.videoUrl;
         return {
           id: `sb-${idx}`,
           type: (sc.mediaType === 'image' || isImageMedia(clipUrl)) ? ('image' as const) : ('video' as const),
@@ -1040,8 +1108,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           name: `Scene ${idx + 1}`,
           start,
           duration: dur,
-          transition: (timelineState.videoClips?.[idx]?.transition) || (sc as any).transition,
-          transitionDuration: (timelineState.videoClips?.[idx]?.transitionDuration) || (sc as any).transitionDuration || 0.5,
+          cameraMotion: (sc as any).cameraMotion || (timelineState.videoClips?.[idx] as any)?.cameraMotion || motions[idx % motions.length],
+          animationIn: (sc as any).animationIn || (timelineState.videoClips?.[idx] as any)?.animationIn || (idx % 2 === 0 ? 'zoom-in' : 'fade'),
+          animationOut: (sc as any).animationOut || (timelineState.videoClips?.[idx] as any)?.animationOut || 'fade',
+          transition: (timelineState.videoClips?.[idx]?.transition) || (sc as any).transition || (idx > 0 ? transList[idx % transList.length] : undefined),
+          transitionDuration: (timelineState.videoClips?.[idx]?.transitionDuration) || (sc as any).transitionDuration || 0.45,
         };
       });
     }

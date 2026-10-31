@@ -6,6 +6,7 @@ with pristine H.264 High Profile, AAC stereo audio, color grading filters, and b
 """
 
 import base64
+import hashlib
 import json
 import logging
 import os
@@ -24,19 +25,25 @@ logger = logging.getLogger("ApexMind.features.video_render")
 RENDER_DIR = Path("backend/data/rendered_shorts")
 RENDER_DIR.mkdir(parents=True, exist_ok=True)
 
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "*/*",
+}
+
 XFADE_MAP: Dict[str, str] = {
     # Fades, Blurs & Glitches
     "fade": "fade",
     "crossfade": "fade",
-    "dissolve": "fade",
+    "dissolve": "dissolve",
     "fade-black": "fadeblack",
     "fade-white": "fadewhite",
     "flash": "fadewhite",
-    "luma-fade": "fade",
+    "luma-fade": "fadegrays",
     "blur-crossfade": "hblur",
     "hblur": "hblur",
     "soft-rotate": "radial",
-    "rgb-split": "fade",
+    "radial": "radial",
+    "rgb-split": "pixelize",
     "glitch": "pixelize",
     "pixelize": "pixelize",
     "match-cut": "fade",
@@ -45,18 +52,20 @@ XFADE_MAP: Dict[str, str] = {
     "slide-right": "slideright",
     "slide-up": "slideup",
     "slide-down": "slidedown",
-    "push-left": "slideleft",
-    "push-right": "slideright",
-    "push-up": "slideup",
-    "push-down": "slidedown",
+    "push-left": "coverleft",
+    "push-right": "coverright",
+    "push-up": "coverup",
+    "push-down": "coverdown",
     "whip-pan-left": "slideleft",
     "whip-pan-right": "slideright",
+    "directional-left": "slideleft",
+    "directional-right": "slideright",
     # Zooms & Scales
-    "zoom": "smoothup",
-    "zoom-in": "smoothup",
+    "zoom": "zoomin",
+    "zoom-in": "zoomin",
     "zoom-out": "smoothdown",
-    "smooth-zoom": "smoothup",
-    "slow-zoom": "smoothup",
+    "smooth-zoom": "zoomin",
+    "slow-zoom": "zoomin",
     # Wipes & Shapes
     "wipe": "wipeleft",
     "wipe-left": "wipeleft",
@@ -66,8 +75,13 @@ XFADE_MAP: Dict[str, str] = {
     "circle-wipe": "circlecrop",
     "circle": "circlecrop",
     "circlecrop": "circlecrop",
-    "split-reveal": "wipeleft",
-    "radial": "radial",
+    "circleopen": "circleopen",
+    "circleclose": "circleclose",
+    "split-reveal": "horzopen",
+    "vertopen": "vertopen",
+    "vertclose": "vertclose",
+    "horzopen": "horzopen",
+    "horzclose": "horzclose",
     "none": "fade",
 }
 
@@ -137,23 +151,58 @@ def save_audio_payload(url_or_data: str, temp_dir: Path) -> Optional[Path]:
             if cand.exists():
                 return cand
 
-    # 3. Remote HTTP URL
+    # 3. Remote HTTP/HTTPS Audio URL (Mixkit, Incompetech, Wikimedia Commons)
     if url_or_data.startswith("http://") or url_or_data.startswith("https://"):
+        # Check local audio cache by URL hash
+        cache_dir = Path("backend/data/cache/audio")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        url_hash = hashlib.md5(url_or_data.encode("utf-8")).hexdigest()
+        cached_file = cache_dir / f"sfx_{url_hash}.mp3"
+        if cached_file.exists() and cached_file.stat().st_size > 512:
+            return cached_file
+
         try:
-            out_file = temp_dir / f"remote_audio_{int(time.time()*1000)}.mp3"
-            req = urllib.request.Request(url_or_data, headers={"User-Agent": "ApexMindStudio/2.0"})
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                with open(out_file, "wb") as f:
-                    f.write(resp.read())
-            return out_file
+            req = urllib.request.Request(url_or_data, headers=BROWSER_HEADERS)
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                data = resp.read()
+                if len(data) > 512:
+                    with open(cached_file, "wb") as f:
+                        f.write(data)
+                    return cached_file
         except Exception as e:
-            logger.warning(f"Could not download remote audio from {url_or_data}: {e}")
-            return None
+            logger.info(f"Remote audio fetch ({e}), synthesizing dynamic cinematic SFX via FFmpeg lavfi")
+
+        # High-Fidelity Synthetic SFX Fallback via FFmpeg lavfi
+        try:
+            url_lower = url_or_data.lower()
+            synth_file = temp_dir / f"synth_sfx_{url_hash}.mp3"
+
+            if any(k in url_lower for k in ["drop", "bass", "sub"]):
+                lavfi_filter = "sine=f=70:d=1.4:r=48000,afade=t=in:ss=0:d=0.04,afade=t=out:st=0.2:d=1.2"
+            elif any(k in url_lower for k in ["whoosh", "swish", "transition"]):
+                lavfi_filter = "anoisesrc=d=0.6:c=pink:r=48000:a=0.55,bandpass=f=1300:w=850,afade=t=in:ss=0:d=0.15,afade=t=out:st=0.2:d=0.4"
+            elif any(k in url_lower for k in ["boom", "hit", "impact", "clang"]):
+                lavfi_filter = "anoisesrc=d=1.0:c=brown:r=48000:a=0.7,lowpass=f=220,afade=t=out:st=0.08:d=0.9"
+            elif any(k in url_lower for k in ["riser", "tension"]):
+                lavfi_filter = "sine=f=220:d=1.8:r=48000,afade=t=in:ss=0:d=1.2,afade=t=out:st=1.5:d=0.3"
+            else:
+                lavfi_filter = "anoisesrc=d=0.5:c=pink:r=48000:a=0.4,bandpass=f=1100:w=700,afade=t=in:ss=0:d=0.1,afade=t=out:st=0.15:d=0.35"
+
+            res = subprocess.run([
+                "ffmpeg", "-y", "-f", "lavfi", "-i", lavfi_filter,
+                "-c:a", "libmp3lame", "-b:a", "192k", str(synth_file.resolve())
+            ], capture_output=True)
+            if res.returncode == 0 and synth_file.exists():
+                return synth_file
+        except Exception as synth_err:
+            logger.warning(f"Synthetic SFX fallback error: {synth_err}")
+
+        return None
 
     return None
 
 
-def save_backdrop_payload(url_or_data: str, temp_dir: Path) -> tuple[Optional[Path], str]:
+def save_backdrop_payload(url_or_data: str, temp_dir: Path, expected_type: Optional[str] = None) -> tuple[Optional[Path], str]:
     """Saves image or video backdrop to a local temporary path. Returns (path, 'image'|'video')."""
     if not url_or_data:
         return None, "none"
@@ -162,7 +211,7 @@ def save_backdrop_payload(url_or_data: str, temp_dir: Path) -> tuple[Optional[Pa
     if url_or_data.startswith("data:"):
         try:
             header, encoded = url_or_data.split(",", 1)
-            is_video = "video" in header
+            is_video = "video" in header or expected_type == "video"
             ext = "mp4" if is_video else "jpg"
             out_file = temp_dir / f"backdrop_{int(time.time()*1000)}.{ext}"
             with open(out_file, "wb") as f:
@@ -172,9 +221,10 @@ def save_backdrop_payload(url_or_data: str, temp_dir: Path) -> tuple[Optional[Pa
             logger.warning(f"Could not decode backdrop data URL: {e}")
             return None, "none"
 
-    # Local Path
-    is_video_ext = any(url_or_data.lower().endswith(ext) for ext in [".mp4", ".webm", ".mov", ".mkv"])
-    media_type = "video" if is_video_ext else "image"
+    # Clean URL path without query string for robust extension checks
+    clean_url = url_or_data.split("?")[0].lower()
+    is_video_ext = any(clean_url.endswith(ext) for ext in [".mp4", ".webm", ".mov", ".mkv", ".m4v"])
+    media_type = "video" if (is_video_ext or expected_type == "video") else "image"
 
     if url_or_data.startswith("/") or not url_or_data.startswith("http"):
         clean_path = url_or_data.lstrip("/")
@@ -186,10 +236,16 @@ def save_backdrop_payload(url_or_data: str, temp_dir: Path) -> tuple[Optional[Pa
     # Remote HTTP URL
     if url_or_data.startswith("http://") or url_or_data.startswith("https://"):
         try:
-            ext = "mp4" if media_type == "video" else "jpg"
-            out_file = temp_dir / f"backdrop_{int(time.time()*1000)}.{ext}"
-            req = urllib.request.Request(url_or_data, headers={"User-Agent": "ApexMindStudio/2.0"})
+            req = urllib.request.Request(url_or_data, headers=BROWSER_HEADERS)
             with urllib.request.urlopen(req, timeout=18) as resp:
+                content_type = str(resp.headers.get("Content-Type", "")).lower()
+                if "video" in content_type:
+                    media_type = "video"
+                elif "image" in content_type:
+                    media_type = "image"
+                
+                ext = "mp4" if media_type == "video" else "jpg"
+                out_file = temp_dir / f"backdrop_{int(time.time()*1000)}.{ext}"
                 with open(out_file, "wb") as f:
                     f.write(resp.read())
             return out_file, media_type
@@ -223,7 +279,10 @@ def generate_ass_subtitle_file(
         vert_margin = int(round(height * 0.12))
         title_vert_margin = int(round(height * 0.08))
 
-    font_family = (caption_font or "Impact").strip()
+    raw_font = (caption_font or "Impact").strip()
+    clean_font = raw_font.split(",")[0].replace("'", "").replace('"', '').strip()
+    if clean_font.lower() in ["sans-serif", "serif", "monospace", "system-ui"] or not clean_font:
+        clean_font = "Impact"
 
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -233,8 +292,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Subtitle,{font_family},Impact,Arial Black,Montserrat,{font_size},{caption_color_ass},&H00FFFFFF,&H00000000,&HC0000000,-1,0,0,0,100,100,1,0,1,6.0,4.0,2,40,40,{vert_margin},1
-Style: Title,Arial Black,Impact,Montserrat,{title_font_size},&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,100,100,1,0,1,5.0,3.0,8,40,40,{title_vert_margin},1
+Style: Subtitle,{clean_font},{font_size},{caption_color_ass},&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,1,0,1,6.0,3.0,2,40,40,{vert_margin},1
+Style: Title,Arial Black,{title_font_size},&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,100,100,1,0,1,5.0,3.0,8,40,40,{title_vert_margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -281,11 +340,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 is_emp = bool(w.get("emphasis"))
                 if hl_color:
                     hl_ass = hex_to_ass_color(hl_color)
-                    k_parts.append(f"{{\\k{cs}\\c{hl_ass}\\b1}}{w_str}{{\\c{caption_color_ass}\\b0}}")
+                    k_parts.append(f"{{\\kf{cs}\\c{hl_ass}\\b1}}{w_str}{{\\c{caption_color_ass}\\b0}}")
                 elif is_emp:
-                    k_parts.append(f"{{\\k{cs}\\b1}}{w_str}{{\\b0}}")
+                    k_parts.append(f"{{\\kf{cs}\\b1\\fscx112\\fscy112}}{w_str}{{\\fscx100\\fscy100\\b0}}")
                 else:
-                    k_parts.append(f"{{\\k{cs}}}{w_str}")
+                    k_parts.append(f"{{\\kf{cs}}}{w_str}")
 
             if k_parts:
                 k_text = " ".join(k_parts)
@@ -464,12 +523,13 @@ def render_studio_video(
             clip_inputs = []
             for idx, clip in enumerate(all_clips):
                 c_url = clip.get("url")
-                c_file, c_type = save_backdrop_payload(c_url, temp_dir) if c_url else (None, "none")
+                expected_t = clip.get("type", "video")
+                c_file, c_type = save_backdrop_payload(c_url, temp_dir, expected_type=expected_t) if c_url else (None, "none")
                 if not c_file or not c_file.exists():
                     c_file = temp_dir / f"fallback_{idx}.mp4"
                     subprocess.run([
                         "ffmpeg", "-y", "-f", "lavfi",
-                        "-i", f"color=c=#0B0F19:s={width}x{height}:r={render_fps}:d=5",
+                        "-i", f"gradients=s={width}x{height}:r={render_fps}:c0=0x0a0f2c:c1=0x111a45:c2=0x1a0a3a:c3=0x08070f:nb_colors=4:speed=0.005:type=linear:d=5",
                         "-t", "5", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(c_file.resolve())
                     ], capture_output=True)
                     c_type = "video"
@@ -484,30 +544,64 @@ def render_studio_video(
             num_clips = len(clip_inputs)
             input_count = num_clips
 
-            # Format each clip to exact canvas dimension, target FPS, and trimmed duration with cinematic camera motion & animations
+            # Format each clip to exact canvas dimension, target FPS, matching yuv420p, and trimmed duration with cinematic camera motion & animations
             for i, (_, _, clip) in enumerate(clip_inputs):
                 dur_i = max(0.1, float(clip.get("duration", 3.0)))
-                motion = str(
+                cam_motion = str(
                     clip.get("cameraMotion")
-                    or clip.get("animationIn")
-                    or clip.get("animation")
+                    or clip.get("motion")
                     or ""
                 ).lower()
+                anim_in = str(clip.get("animationIn") or "").lower()
+                anim_in_dur = max(0.05, min(float(clip.get("animationInDuration") or 0.45), dur_i * 0.45))
+                anim_out = str(clip.get("animationOut") or "").lower()
+                anim_out_dur = max(0.05, min(float(clip.get("animationOutDuration") or 0.45), dur_i * 0.45))
 
-                base_scale = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps={render_fps}"
+                clip_filters = [
+                    f"trim=duration={dur_i:.3f}",
+                    "setpts=PTS-STARTPTS",
+                    f"scale={width}:{height}:force_original_aspect_ratio=increase",
+                    f"crop={width}:{height}",
+                    "setsar=1",
+                    f"fps={render_fps}",
+                    "format=pix_fmts=yuv420p",
+                ]
 
-                if any(k in motion for k in ["push", "zoom-in", "slow-zoom", "orbital", "apex", "in"]):
-                    motion_filter = f"scale=eval=frame:w='{width}*(1+0.09*t/{dur_i:.3f})':h='{height}*(1+0.09*t/{dur_i:.3f})',crop={width}:{height}"
-                elif any(k in motion for k in ["pull", "zoom-out", "slow-pull", "out"]):
-                    motion_filter = f"scale=eval=frame:w='{width}*(1.09-0.09*t/{dur_i:.3f})':h='{height}*(1.09-0.09*t/{dur_i:.3f})',crop={width}:{height}"
-                elif any(k in motion for k in ["pan", "drift", "right", "left"]):
-                    motion_filter = f"scale=eval=frame:w='{width}*1.08':h='{height}*1.08',crop={width}:{height}:x='(in_w-{width})*(t/{dur_i:.3f})':y='(in_h-{height})/2'"
+                # Camera motion & curves
+                if any(k in cam_motion for k in ["push", "zoom-in", "slow-zoom", "orbital", "apex", "in"]):
+                    clip_filters.append(
+                        f"scale=eval=frame:w='trunc({width}*(1+0.08*t/{dur_i:.3f})/2)*2':h='trunc({height}*(1+0.08*t/{dur_i:.3f})/2)*2',crop={width}:{height}"
+                    )
+                elif any(k in cam_motion for k in ["pull", "zoom-out", "slow-pull", "out"]):
+                    clip_filters.append(
+                        f"scale=eval=frame:w='trunc({width}*(1.08-0.08*t/{dur_i:.3f})/2)*2':h='trunc({height}*(1.08-0.08*t/{dur_i:.3f})/2)*2',crop={width}:{height}"
+                    )
+                elif any(k in cam_motion for k in ["pan-right", "drift-right", "right"]):
+                    clip_filters.append(
+                        f"scale=eval=frame:w='trunc({width}*1.08/2)*2':h='trunc({height}*1.08/2)*2',crop={width}:{height}:x='(in_w-{width})*(t/{dur_i:.3f})':y='(in_h-{height})/2'"
+                    )
+                elif any(k in cam_motion for k in ["pan-left", "drift-left", "left"]):
+                    clip_filters.append(
+                        f"scale=eval=frame:w='trunc({width}*1.08/2)*2':h='trunc({height}*1.08/2)*2',crop={width}:{height}:x='(in_w-{width})*(1-t/{dur_i:.3f})':y='(in_h-{height})/2'"
+                    )
                 else:
-                    motion_filter = f"scale=eval=frame:w='{width}*(1+0.04*t/{dur_i:.3f})':h='{height}*(1+0.04*t/{dur_i:.3f})',crop={width}:{height}"
+                    clip_filters.append(
+                        f"scale=eval=frame:w='trunc({width}*(1+0.04*t/{dur_i:.3f})/2)*2':h='trunc({height}*(1+0.04*t/{dur_i:.3f})/2)*2',crop={width}:{height}"
+                    )
 
-                video_filters.append(
-                    f"[{i}:v]{base_scale},{motion_filter},trim=duration={dur_i:.3f},setpts=PTS-STARTPTS[v_clip_{i}]"
-                )
+                # In-Animation
+                if anim_in in ["fade", "blur", "soft-reveal", "slide-fade"]:
+                    clip_filters.append(f"fade=t=in:st=0:d={anim_in_dur:.3f}")
+                elif anim_in == "flash":
+                    clip_filters.append(f"eq=brightness='if(lt(t,{anim_in_dur:.3f}),0.25*(1-t/{anim_in_dur:.3f}),0)':eval=frame")
+
+                # Out-Animation
+                if anim_out in ["fade", "blur", "slide-fade"]:
+                    clip_filters.append(f"fade=t=out:st={(dur_i - anim_out_dur):.3f}:d={anim_out_dur:.3f}")
+                elif anim_out == "flash":
+                    clip_filters.append(f"eq=brightness='if(gt(t,{(dur_i - anim_out_dur):.3f}),0.25*(t-{(dur_i - anim_out_dur):.3f})/{anim_out_dur:.3f},0)':eval=frame")
+
+                video_filters.append(f"[{i}:v]{','.join(clip_filters)}[v_clip_{i}]")
 
             if num_clips == 1:
                 last_video_tag = "v_clip_0"
@@ -517,19 +611,32 @@ def render_studio_video(
                 for i in range(1, num_clips):
                     clip_prev = clip_inputs[i - 1][2]
                     clip_curr = clip_inputs[i][2]
-                    trans_raw = str(clip_prev.get("transition") or clip_curr.get("transition") or "fade").lower()
-                    xfade_type = XFADE_MAP.get(trans_raw) or "fade"
+                    raw_p_trans = str(clip_prev.get("transition") or "").strip().lower()
+                    raw_c_trans = str(clip_curr.get("transition") or "").strip().lower()
+                    trans_raw = raw_p_trans if raw_p_trans and raw_p_trans != "none" else (raw_c_trans if raw_c_trans and raw_c_trans != "none" else "")
                     prev_dur = max(0.1, float(clip_prev.get("duration", 3.0)))
                     curr_dur = max(0.1, float(clip_curr.get("duration", 3.0)))
-                    t_dur = float(clip_prev.get("transitionDuration") or clip_curr.get("transitionDuration") or 0.45)
-                    t_dur = max(0.1, min(t_dur, prev_dur * 0.4, curr_dur * 0.4, 0.6))
-                    offset = max(0.01, curr_offset - t_dur)
+
                     out_tag = f"v_xfade_{i}"
-                    video_filters.append(
-                        f"[{prev_tag}][v_clip_{i}]xfade=transition={xfade_type}:duration={t_dur:.3f}:offset={offset:.3f}[{out_tag}]"
-                    )
-                    prev_tag = out_tag
-                    curr_offset = offset + curr_dur
+                    if not trans_raw or trans_raw in ["none", "cut"]:
+                        # Frame-accurate hard cut (0.001s instant xfade)
+                        t_dur = 0.001
+                        offset = curr_offset
+                        video_filters.append(
+                            f"[{prev_tag}][v_clip_{i}]xfade=transition=fade:duration={t_dur:.3f}:offset={offset:.3f}[{out_tag}]"
+                        )
+                        prev_tag = out_tag
+                        curr_offset = offset + curr_dur
+                    else:
+                        xfade_type = XFADE_MAP.get(trans_raw) or "fade"
+                        t_dur = float(clip_prev.get("transitionDuration") or clip_curr.get("transitionDuration") or 0.45)
+                        t_dur = max(0.1, min(t_dur, prev_dur * 0.4, curr_dur * 0.4, 0.6))
+                        offset = max(0.01, curr_offset - t_dur)
+                        video_filters.append(
+                            f"[{prev_tag}][v_clip_{i}]xfade=transition={xfade_type}:duration={t_dur:.3f}:offset={offset:.3f}[{out_tag}]"
+                        )
+                        prev_tag = out_tag
+                        curr_offset = offset + curr_dur
                 last_video_tag = prev_tag
 
             # Color grading filters
@@ -552,11 +659,11 @@ def render_studio_video(
             else:
                 cmd.extend([
                     "-f", "lavfi",
-                    "-i", f"color=c=#0B0F19:s={width}x{height}:r={render_fps}:d={safe_duration}"
+                    "-i", f"gradients=s={width}x{height}:r={render_fps}:c0=0x0a0f2c:c1=0x111a45:c2=0x1a0a3a:c3=0x08070f:nb_colors=4:speed=0.005:type=linear:d={safe_duration}"
                 ])
             input_count = 1
             video_filters.append(
-                f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps={render_fps}[scaled]"
+                f"[0:v]trim=duration={safe_duration:.3f},setpts=PTS-STARTPTS,scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps={render_fps},format=pix_fmts=yuv420p,scale=eval=frame:w='trunc({width}*(1+0.04*t/{safe_duration:.3f})/2)*2':h='trunc({height}*(1+0.04*t/{safe_duration:.3f})/2)*2',crop={width}:{height}[scaled]"
             )
             last_v = "scaled"
             color_filters = build_color_filter_chain(filter_settings)

@@ -219,6 +219,10 @@ export function useStudioPipeline() {
             })),
             model: params.model,
             speechStyle: scriptData.speechStyle,
+            targetDurationSeconds: (() => {
+              const m = String(params.length || '').match(/(\d+)/);
+              return m ? parseInt(m[1], 10) : 30;
+            })(),
           }),
 
           // Stage 3: Media resolution
@@ -261,6 +265,15 @@ export function useStudioPipeline() {
 
         // Process media result — merge resolved URLs back into storyboard
         let resolvedStoryboard = [...storyboard];
+
+        const requestedTargetSec = (() => {
+          const m = String(params.length || '').match(/(\d+)/);
+          return m ? parseInt(m[1], 10) : 30;
+        })();
+        if (durationSeconds <= 0) {
+          const sbTotal = resolvedStoryboard.reduce((sum: number, s: any) => sum + (Number(s.duration) || 0), 0);
+          durationSeconds = sbTotal > 0 ? parseFloat(sbTotal.toFixed(2)) : requestedTargetSec;
+        }
         if (mediaResult.status === 'fulfilled') {
           pipelineResult.media = mediaResult.value;
           setResult((prev) => ({ ...prev, media: mediaResult.value }));
@@ -376,6 +389,31 @@ export function useStudioPipeline() {
         }
 
         // ── AI Audio-Visual Cut Sync: Align Cuts to Voice Pauses & Music Beat ──
+        const effectiveDuration = durationSeconds >= requestedTargetSec * 0.85 ? durationSeconds : requestedTargetSec;
+        
+        // Ensure storyboard scene cuts span the entire selected target duration
+        if (durationSeconds < requestedTargetSec * 0.85 && resolvedStoryboard.length > 0) {
+          const totalSbDuration = resolvedStoryboard.reduce((sum: number, s: any) => sum + (Number(s.duration) || 3.0), 0);
+          if (totalSbDuration > 0) {
+            let runningStart = 0;
+            resolvedStoryboard = resolvedStoryboard.map((s: any, idx: number) => {
+              const isLast = idx === resolvedStoryboard.length - 1;
+              const origDur = Number(s.duration) || 3.0;
+              const proportionalDur = isLast
+                ? Math.max(0.4, parseFloat((requestedTargetSec - runningStart).toFixed(2)))
+                : Math.max(0.4, parseFloat(((origDur / totalSbDuration) * requestedTargetSec).toFixed(2)));
+              const start = parseFloat(runningStart.toFixed(2));
+              runningStart = parseFloat((runningStart + proportionalDur).toFixed(2));
+              return {
+                ...s,
+                start,
+                duration: proportionalDur,
+              };
+            });
+            durationSeconds = requestedTargetSec;
+          }
+        }
+
         const bpm = scriptData.soundDesign?.bpm || 140;
         const sfxDrops = (scriptData.soundDesign?.sfxEvents || [])
           .map((e: any) => e.time)
@@ -384,7 +422,7 @@ export function useStudioPipeline() {
         try {
           const cutSynced = alignAudioVisualCuts({
             storyboard: resolvedStoryboard,
-            totalDuration: durationSeconds > 0 ? durationSeconds : 30,
+            totalDuration: effectiveDuration,
             bpm,
             sfxDrops,
           });
@@ -409,7 +447,7 @@ export function useStudioPipeline() {
               hooks: scriptData.hooks,
               // Stage 2 — inject captions from Stage 4 directly as LocalClips
               captions: captionsResult?.timelineClips ?? [],
-              duration: durationSeconds,
+              duration: effectiveDuration,
             },
           })
         );

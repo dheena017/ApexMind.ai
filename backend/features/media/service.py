@@ -31,6 +31,7 @@ from .providers import (
     UnsplashImageProvider,
     GeminiImageProvider,
     JamendoAudioProvider,
+    WikimediaAudioProvider,
     SfxProvider,
 )
 
@@ -44,6 +45,7 @@ wikimedia_video = WikimediaVideoProvider()
 unsplash_image = UnsplashImageProvider()
 gemini_image = GeminiImageProvider()
 jamendo_audio = JamendoAudioProvider()
+wikimedia_audio = WikimediaAudioProvider()
 sfx_provider = SfxProvider()
 
 
@@ -374,23 +376,60 @@ def search_media(
 
 
 def search_audio(query: str = "", genre: str = "", limit: int = 20) -> AudioSearchData:
-    """Queries royalty-free audio tracks."""
-    tracks = jamendo_audio.search(query=query, genre=genre, limit=limit)
+    """Queries royalty-free audio tracks concurrently from Jamendo and Wikimedia Commons Audio."""
+    tracks: List[Any] = []
+    
+    # 1. Try Jamendo API if configured
+    if jamendo_audio.is_configured():
+        tracks.extend(jamendo_audio.search(query=query, genre=genre, limit=limit))
+    
+    # 2. Query open Wikimedia Commons Audio API
+    if len(tracks) < limit:
+        remaining = limit - len(tracks)
+        wm_tracks = wikimedia_audio.search_music(query=query, genre=genre, limit=remaining)
+        tracks.extend(wm_tracks)
+        
+    # Deduplicate tracks by audioUrl
+    seen_urls = set()
+    unique_tracks = []
+    for t in tracks:
+        if t.audioUrl not in seen_urls:
+            seen_urls.add(t.audioUrl)
+            unique_tracks.append(t)
+
     return AudioSearchData(
         query=query,
         genre=genre,
-        total=len(tracks),
-        items=tracks,
+        total=len(unique_tracks),
+        items=unique_tracks[:limit],
     )
 
 
 def search_sfx(query: str = "whoosh", limit: int = 20) -> SfxSearchData:
-    """Queries sound effects catalog."""
-    effects = sfx_provider.search(query=query, limit=limit)
+    """Queries sound effects catalog from Mixkit open audio and Wikimedia Commons."""
+    effects: List[Any] = []
+    
+    # 1. Search Mixkit curated catalog
+    curated = sfx_provider.search(query=query, limit=limit)
+    effects.extend(curated)
+    
+    # 2. Search open Wikimedia SFX API
+    if len(effects) < limit:
+        remaining = limit - len(effects)
+        wm_effects = wikimedia_audio.search_sfx(query=query, limit=remaining)
+        effects.extend(wm_effects)
+
+    seen_urls = set()
+    unique_effects = []
+    for e in effects:
+        if e.audioUrl not in seen_urls:
+            seen_urls.add(e.audioUrl)
+            unique_effects.append(e)
+
     return SfxSearchData(
         query=query,
-        total=len(effects),
-        items=effects,
+        total=len(unique_effects),
+        items=unique_effects[:limit],
     )
 
 
@@ -425,6 +464,13 @@ def get_providers_status() -> ProvidersStatusData:
             authRequired=False,
             latencyMs=380,
         ),
+        "wikimedia_audio": ProviderInfo(
+            status="active",
+            type=["audio"],
+            hasKey=False,
+            authRequired=False,
+            latencyMs=210,
+        ),
         "unsplash": ProviderInfo(
             status="active" if unsplash_image.is_configured() else "missing_key",
             type=["image"],
@@ -433,7 +479,7 @@ def get_providers_status() -> ProvidersStatusData:
             latencyMs=210,
         ),
         "jamendo": ProviderInfo(
-            status="active",
+            status="active" if jamendo_audio.is_configured() else "fallback_active",
             type=["audio"],
             hasKey=jamendo_audio.is_configured(),
             authRequired=False,
@@ -445,6 +491,13 @@ def get_providers_status() -> ProvidersStatusData:
             hasKey=gemini_image.is_configured(),
             authRequired=False,
             latencyMs=1200,
+        ),
+        "open_sfx": ProviderInfo(
+            status="active",
+            type=["audio"],
+            hasKey=False,
+            authRequired=False,
+            latencyMs=95,
         ),
     }
 

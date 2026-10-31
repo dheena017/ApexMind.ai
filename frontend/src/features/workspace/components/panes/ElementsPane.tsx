@@ -31,6 +31,7 @@ export interface ElementsPaneProps {
 import { toast } from 'sonner';
 import { addWorkspaceNotification } from '../../utils/workspaceNotificationManager';
 import { VISUAL_ELEMENTS, VisualElementItem } from '../../data/mediaCatalogData';
+import { elementsApi } from '../../api/elementsApi';
 
 const BADGES = VISUAL_ELEMENTS.filter((e) => e.category === 'badges').map((e) => ({
   id: e.id,
@@ -129,10 +130,19 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
     handleApply(pendingElement.id, pendingElement.name, pendingElement.type, pendingElement.value);
   };
 
-  const handleCreateCustomBadge = () => {
+  const handleCreateCustomBadge = async () => {
     if (!customBadgeText.trim()) return;
     const text = customBadgeText.trim().toUpperCase();
-    handleApply(`custom-badge-${Date.now()}`, text, 'badge', text);
+    try {
+      const res = await elementsApi.createCustomBadge({ text, gradient: customBadgeGradient });
+      if (res?.element) {
+        handleApply(res.element.id, res.element.name, 'badge', res.element.label || res.element.name);
+      } else {
+        handleApply(`custom-badge-${Date.now()}`, text, 'badge', text);
+      }
+    } catch {
+      handleApply(`custom-badge-${Date.now()}`, text, 'badge', text);
+    }
     setCustomBadgeText('');
   };
 

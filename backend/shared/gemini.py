@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import re
 import struct
 import time
 from typing import Any
@@ -167,6 +168,114 @@ def calculate_audio_duration(audio_bytes: bytes, mime_type: str = "audio/wav") -
     return round(data_len / 48000.0, 2)
 
 
+def parse_target_seconds(length_str: str | None) -> int:
+    """Parse target duration in seconds from user selection (e.g. '60 seconds', '60s', '45s', '15s')."""
+    if not length_str:
+        return 30
+    s = str(length_str).lower().strip()
+    match = re.search(r"(\d+)", s)
+    if match:
+        val = int(match.group(1))
+        if "min" in s:
+            return val * 60
+        return val
+    return 30
+
+
+def expand_storyboard_to_target_duration(
+    storyboard: list[dict[str, Any]],
+    target_seconds: int,
+    category: str,
+    topic: str,
+    target_aspect_ratio: str = "9:16",
+) -> list[dict[str, Any]]:
+    """Guarantees the storyboard contains sufficient sequential scenes and spoken words to fill the selected duration (e.g. 60s, 45s)."""
+    target_scenes = max(3, round(target_seconds / 4.8))
+    target_words = round(target_seconds * 2.35)
+    
+    current_words = sum(len((s.get("subtitleText") or "").split()) for s in storyboard)
+    if len(storyboard) >= target_scenes and current_words >= target_words * 0.8:
+        return storyboard
+
+    narrative_templates = [
+        ("Most people spend their entire lives waiting for conditions that never arrive.", "emerald deep pine forest river rapids aerial", "Fast River Rapids in Emerald Forest", "push-in"),
+        ("Comfort whispers that tomorrow will be easier, but comfort is the silent trap.", "stormy ocean breakers crashing cliffs volumetric", "Dramatic Ocean Breakers & Sea Spray", "panoramic-drift-left"),
+        ("A mountain never yields to wishes; it surrenders only to daily relentless climbing.", "cascading waterfall deep alpine canyon mist", "Cascading Canyon Waterfall & Mist", "slow-zoom"),
+        ("Stop looking for an effortless path through terrain specifically engineered to test your grit.", "sunbeams piercing ancient redwood pine forest", "Sunbeams Through Ancient Redwoods", "push-in"),
+        ("True power is never announced in public; it is forged in the silence when no one watches.", "golden hour desert sand dunes vast shadows", "Vast Golden Hour Desert Dunes", "orbital-reveal"),
+        ("In the quiet hours of early dawn, your daily choices quietly carve your destiny.", "high alpine glacier mountain panoramic drift", "High Alpine Glacier Mountain Range", "slow-pull-out"),
+        ("Do not ask for lighter burdens; forge the inner character capable of carrying giants.", "dark volumetric storm clouds rolling over mountain ridge", "Volumetric Storm Clouds Over Ridge", "slow-zoom"),
+        ("Every single quiet act of discipline compounds into an unshakable psychological fortress.", "crystal clear alpine lake reflection mountain sunrise", "Alpine Lake Reflection At Dawn", "push-in"),
+        ("When resistance feels heaviest, understand that is the exact point breakthrough occurs.", "winding glacial turquoise river canyon aerial", "Glacial Turquoise River Canyon", "pan-right"),
+        ("Demand more from yourself every single morning than anyone else would dare ask.", "crimson sunset glow mountain summit silhouette", "Crimson Sunset Mountain Summit", "slow-zoom"),
+    ]
+
+    hook_scene = dict(storyboard[0]) if storyboard else {
+        "sceneNumber": 1,
+        "beat": "hook",
+        "subtitleText": f"Stop waiting to feel ready for {topic or 'this'}.",
+        "visualQuery": "misty mountain peak sunrise clouds volumetric",
+        "googleSearchQuery": "misty mountain peak sunrise clouds vertical 9:16",
+        "mediaName": "Atmospheric Mountain Ridge & Mist",
+        "mediaType": "video",
+        "speechRate": 1.05,
+        "tone": "urgent",
+        "emotion": "Fast, urgent delivery",
+        "transition": "glitch",
+        "cameraMotion": "push-in",
+    }
+    
+    cta_scene = dict(storyboard[-1]) if len(storyboard) > 1 else {
+        "sceneNumber": target_scenes,
+        "beat": "cta",
+        "subtitleText": "Save this reel, silence the noise, and start now.",
+        "visualQuery": "aurora borealis northern lights mountain nature",
+        "googleSearchQuery": "northern lights aurora borealis mountain night sky 9:16",
+        "mediaName": "Celestial Aurora Borealis Over Peaks",
+        "mediaType": "video",
+        "speechRate": 1.00,
+        "tone": "decisive",
+        "emotion": "Firm, decisive pace",
+        "transition": "fade",
+        "cameraMotion": "static",
+    }
+
+    existing_middle = [dict(s) for s in (storyboard[1:-1] if len(storyboard) > 2 else [])]
+    needed_middle = target_scenes - 2
+    final_middle = list(existing_middle)
+
+    tpl_idx = 0
+    while len(final_middle) < needed_middle:
+        tpl_text, tpl_query, tpl_name, tpl_motion = narrative_templates[tpl_idx % len(narrative_templates)]
+        final_middle.append({
+            "beat": "quote",
+            "subtitleText": tpl_text,
+            "visualQuery": f"{tpl_query} 9:16",
+            "googleSearchQuery": f"{tpl_query} vertical 9:16",
+            "fallbackQueries": [f"{tpl_query} 4k nature", "cinematic landscape aerial drone 9:16"],
+            "negativeTerms": ["indoor", "gym", "building", "urban", "office", "car"],
+            "mediaName": tpl_name,
+            "mediaType": "video",
+            "speechRate": 0.90,
+            "tone": "reverent",
+            "emotion": "Slower, heavier cadence",
+            "transition": "luma-fade" if tpl_idx % 2 == 0 else "whip-pan-left",
+            "cameraMotion": tpl_motion,
+            "captionPresetClass": hook_scene.get("captionPresetClass", "font-black tracking-tight text-yellow-400 uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)] bg-black/85 px-3 py-1 rounded-md border border-yellow-400/30"),
+            "captionPresetColor": hook_scene.get("captionPresetColor", "#FACC15"),
+            "captionPresetFontFamily": hook_scene.get("captionPresetFontFamily", "Impact, sans-serif"),
+        })
+        tpl_idx += 1
+
+    expanded = [hook_scene] + final_middle[:needed_middle] + [cta_scene]
+    for idx, sc in enumerate(expanded):
+        sc["sceneNumber"] = idx + 1
+        sc["aspectRatio"] = target_aspect_ratio
+        sc["mediaStatus"] = "resolved" if sc.get("mediaUrl") and str(sc["mediaUrl"]).startswith("http") else "unresolved"
+
+    return expanded
+
+
 def generate_gemini_script(
     category: str,
     topic: str,
@@ -296,9 +405,38 @@ THE USER HAS EXPLICITLY DIRECTED:
 CRITICAL MANDATE: You MUST give absolute top priority to the user's specific prompt, narrative ideas, talking points, metaphors, character tone, and creative vision. Weave their exact instructions into the script, opening hook, and scene visual metaphors while maintaining viral retention standards!
 """
 
+    target_seconds = parse_target_seconds(length)
+    target_scenes = max(3, round(target_seconds / 4.8))
+    min_scenes = max(3, target_scenes - 1)
+    max_scenes = target_scenes + 2
+    target_words = round(target_seconds * 2.45)
+    min_words = round(target_seconds * 2.25)
+    max_words = round(target_seconds * 2.65)
+
+    duration_enforcement_section = f"""
+================================================================================
+CRITICAL TARGET DURATION & SCENE COUNT ENFORCEMENT (ABSOLUTE REQUIREMENT):
+================================================================================
+TARGET DURATION: EXACTLY {target_seconds} SECONDS (User explicitly selected '{length or f"{target_seconds}s"}')
+REQUIRED SCENE COUNT: EXACTLY {min_scenes} to {max_scenes} DISTINCT SEQUENTIAL SCENES IN "storyboard".
+REQUIRED SPOKEN WORD COUNT: EXACTLY {min_words} to {max_words} WORDS TOTAL ACROSS MONOLOGUE.
+
+STRICT ENFORCEMENT RULES FOR THIS {target_seconds}-SECOND VIDEO:
+1. DO NOT GENERATE ONLY 4 SCENES! A 4-scene video only lasts 15-20 seconds and violates the user's explicit {target_seconds}s choice.
+2. For this {target_seconds}-second video, you MUST generate ALL {min_scenes} to {max_scenes} sequential scenes in the "storyboard" array (Scene 1 to Scene {target_scenes}).
+3. The spoken monologue in "quote" MUST have genuine philosophical depth and substance ({min_words} to {max_words} total words) so that when read aloud at normal cadence, it fills the complete {target_seconds} seconds!
+4. Story Arc Structure across the {min_scenes}-{max_scenes} scenes:
+   - Scene 1: Pattern Interrupt Hook (3-4s, 6-9 words)
+   - Scene 2 to Scene {target_scenes - 1}: Multi-Part Wisdom Monologue with escalating tension, real-world stoic metaphors, and philosophical depth (approx. 4.0s - 5.5s and 10-14 words per scene).
+   - Final Scene {target_scenes}: Decisive Closing Call to Action (4-5s, 8-12 words).
+5. Every single scene MUST feature a unique cinematic 100% nature footage query and distinct subtitleText.
+6. The sum of all scene durations in "storyboard" MUST EQUAL EXACTLY {target_seconds}.0 seconds!
+"""
+
     prompt = f"""You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer for viral YouTube Shorts, Instagram Reels, and TikTok.
 Produce an inspiring, punchy, retention-optimized motivational video plan with full script, 3 viral hook variations, 5-layer sound design, and a multi-scene video storyboard with word-level karaoke timing.
 {user_prompt_section}
+{duration_enforcement_section}
 
 TARGET ASPECT RATIO: {target_aspect_ratio}
 ASPECT RATIO & COMPOSITION RULES:
@@ -420,8 +558,8 @@ Your script MUST NOT repeat, paraphrase, or borrow metaphors from any of these p
 Output MUST be a single raw JSON object matching this exact schema:
 {{
   "title": "A viral Shorts title with punch under 60 chars",
-  "hook": "Unforgettable opening hook spoken in first 2 seconds",
-  "quote": "A powerful 2-3 sentence motivational monologue",
+  "hook": "Unforgettable opening hook spoken in first 2-3 seconds",
+  "quote": "A rich, profound motivational monologue containing approx {target_words - 18} spoken words divided across scenes 2..{target_scenes - 1}",
   "cta": "A sharp 1-sentence closing call-to-action",
   "aspectRatio": "{target_aspect_ratio}",
   "recommendedVoice": "Best voice matching the tone from the catalog",
@@ -471,6 +609,7 @@ Output MUST be a single raw JSON object matching this exact schema:
     ]
   }},
   "storyboard": [
+    /* MUST GENERATE ALL {min_scenes} TO {max_scenes} SEQUENTIAL SCENES (Scene 1 to Scene {target_scenes}) TO COMPLETE THE FULL {target_seconds} SECONDS! */
     {{
       "sceneNumber": 1,
       "beat": "hook",
@@ -488,7 +627,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "transition": "glitch",
       "cameraMotion": "push-in",
       "sfx": "Fast Cinematic Whoosh",
-      "sfxUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_27529fa22a.mp3?filename=fast-whoosh-10901.mp3",
+      "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
       "googleSearchQuery": "misty mountain peak sunrise clouds vertical 9:16",
       "visualQuery": "misty mountain peak sunrise clouds nature",
       "fallbackQueries": ["foggy pine forest aerial landscape", "mountain ridge clouds timelapse"],
@@ -560,7 +699,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "transition": "fade",
       "cameraMotion": "static",
       "sfx": "Cash Register Cha-Ching",
-      "sfxUrl": "https://cdn.pixabay.com/download/audio/2021/08/09/audio_732a101292.mp3?filename=cash-register-98214.mp3",
+      "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3",
       "googleSearchQuery": "northern lights aurora borealis mountain night sky 9:16",
       "visualQuery": "aurora borealis northern lights mountain nature",
       "fallbackQueries": ["starry night sky mountain timelapse nature", "green aurora night landscape"],
@@ -674,9 +813,6 @@ Output MUST be a single raw JSON object matching this exact schema:
                 sc["tone"] = sc.get("tone") or "motivational"
                 sc["emotion"] = sc.get("emotion") or "Focused, engaging pace"
 
-            if "duration" in sc:
-                sc["duration"] = min(6.0, max(3.5, float(sc.get("duration", 4.5))))
-
             # Force final scene (CTA) to always feature breathtaking nature, never green-screen button clipart
             is_cta = sc.get("beat") == "cta" or any(t in str(sc.get("visualQuery", "")).lower() for t in cta_terms)
             if is_cta:
@@ -687,7 +823,6 @@ Output MUST be a single raw JSON object matching this exact schema:
                     "majestic ocean dusk horizon twilight vertical 9:16",
                     "aurora borealis northern lights night sky vertical 9:16",
                 ]
-                sc["duration"] = max(4.0, float(sc.get("duration", 4.5)))
 
             primary_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
             google_q = sc.get("googleSearchQuery") or f"{primary_query} vertical 9:16"
@@ -698,6 +833,25 @@ Output MUST be a single raw JSON object matching this exact schema:
             sc["fallbackQueries"] = fallback_list
             sc["aspectRatio"] = target_aspect_ratio
             sc["mediaStatus"] = "resolved" if sc.get("mediaUrl") and str(sc["mediaUrl"]).startswith("http") else "unresolved"
+
+        # ── Guarantees Storyboard Fills the Full Target Duration (e.g. 60s, 45s) ──
+        storyboard = expand_storyboard_to_target_duration(
+            storyboard=storyboard,
+            target_seconds=target_seconds,
+            category=category,
+            topic=topic,
+            target_aspect_ratio=target_aspect_ratio,
+        )
+
+        # Update the overall quote text so it reflects the complete assembled monologue
+        if len(storyboard) > 2:
+            middle_text = " ".join(
+                (s.get("subtitleText") or "").strip()
+                for s in storyboard[1:-1]
+                if (s.get("subtitleText") or "").strip()
+            )
+            if middle_text:
+                result["quote"] = middle_text
 
         # ── Multi-Hook Resolution (Ensure dynamic hook angles are available) ──
         hooks_data = result.get("hooks") or []
@@ -745,17 +899,31 @@ Output MUST be a single raw JSON object matching this exact schema:
         sound_design["sfxEvents"] = sfx_events
         result["soundDesign"] = sound_design
 
-        # ── Word-Level Dynamic Karaoke Subtitles Synchronization ──
+        # ── Word-Level Dynamic Karaoke Subtitles Synchronization & Exact Duration Scaling ──
         # Recompute continuous scene boundaries and natural speech durations
-        curr_timeline_time = 0.0
+        raw_scene_durations = []
         for sc in storyboard:
             txt = (sc.get("subtitleText") or "").strip()
             w_count = max(1, len(txt.split()))
             rate = float(sc.get("speechRate") or 1.0)
-            natural_dur = max(3.0, min(6.0, round((w_count * 0.45 / rate) + 1.5, 1)))
-            sc["duration"] = natural_dur
+            natural_dur = round((w_count / (2.4 * rate)) + 1.2, 1)
+            raw_scene_durations.append(max(2.8, natural_dur))
+
+        # Scale scene durations proportionally to EXACTLY match the user's selected target_seconds!
+        total_raw_dur = sum(raw_scene_durations)
+        scale_factor = (target_seconds / total_raw_dur) if total_raw_dur > 0 else 1.0
+
+        curr_timeline_time = 0.0
+        for idx, sc in enumerate(storyboard):
+            is_last = (idx == len(storyboard) - 1)
+            raw_dur = raw_scene_durations[idx]
+            if is_last:
+                final_dur = max(2.5, round(target_seconds - curr_timeline_time, 2))
+            else:
+                final_dur = max(2.5, round(raw_dur * scale_factor, 2))
+            sc["duration"] = final_dur
             sc["start"] = round(curr_timeline_time, 2)
-            curr_timeline_time = round(curr_timeline_time + natural_dur, 2)
+            curr_timeline_time = round(curr_timeline_time + final_dur, 2)
 
         synced_subtitles = []
         for sc in storyboard:
@@ -804,6 +972,9 @@ Output MUST be a single raw JSON object matching this exact schema:
         result["storyboard"] = storyboard
         result["subtitles"] = synced_subtitles
         result["aspectRatio"] = target_aspect_ratio
+        result["targetDurationSeconds"] = target_seconds
+        result["durationSeconds"] = target_seconds
+        result["estimatedDuration"] = f"{target_seconds}s"
         if not result.get("outputFormat"):
             result["outputFormat"] = f"{target_aspect_ratio} Vertical Video (1080x1920)" if target_aspect_ratio == "9:16" else f"{target_aspect_ratio} Video"
 

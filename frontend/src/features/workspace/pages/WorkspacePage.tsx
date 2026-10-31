@@ -757,7 +757,12 @@ export default function WorkspacePage({
         }
         if (pipelineRes.voice?.audioUrl) {
           setAudioUrl(pipelineRes.voice.audioUrl);
-          setDuration(pipelineRes.voice.durationSeconds);
+          const reqSec = parseInt(targetLength.match(/\d+/)?.[0] || '30', 10);
+          const effectiveDur = pipelineRes.voice.durationSeconds >= reqSec * 0.85
+            ? pipelineRes.voice.durationSeconds
+            : reqSec;
+          setDuration(effectiveDur);
+          setTimelineDuration(effectiveDur);
         }
         setScriptSubPane('editor');
         onPaneChange('editor');
@@ -1556,7 +1561,19 @@ export default function WorkspacePage({
                 category={category}
                 onCategoryChange={setCategory}
                 targetLength={targetLength}
-                onTargetLengthChange={setTargetLength}
+                onTargetLengthChange={(val) => {
+                  setTargetLength(val);
+                  const match = val.match(/(\d+)\s*(second|sec|minute|min)?/i);
+                  if (match) {
+                    const num = parseInt(match[1], 10);
+                    const isMin = match[2]?.toLowerCase().startsWith('min');
+                    const sec = isMin ? num * 60 : num;
+                    if (sec > 0) {
+                      setTimelineDuration(sec);
+                      setDuration(sec);
+                    }
+                  }
+                }}
                 aspectRatio={canvasAspectRatio}
                 onAspectRatioChange={handleCanvasAspectRatioChange}
                 agentError={agentError}

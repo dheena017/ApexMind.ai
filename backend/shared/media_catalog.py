@@ -1,4 +1,4 @@
-"""
+﻿"""
 backend/shared/media_catalog.py
 Curated, high-fidelity royalty-free media library assets:
 - 24kHz Gemini AI Vocal Profiles
@@ -349,7 +349,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 140,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=phonk-drift-10291.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Volatile%20Reaction.mp3",
         "frequencyData": [30, 45, 85, 95, 100, 80, 65, 90, 95, 85, 60, 75, 90, 80, 40],
     },
     {
@@ -360,7 +360,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 142,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3?filename=dark-drift-phonk-12345.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Industrial%20Cinematic.mp3",
         "frequencyData": [40, 60, 70, 80, 90, 95, 80, 70, 85, 90, 100, 85, 70, 60, 30],
     },
     {
@@ -371,7 +371,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 145,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2023/04/18/audio_106756cbe0.mp3?filename=phonk-147321.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/The%20Complex.mp3",
         "frequencyData": [45, 70, 85, 95, 100, 90, 75, 85, 95, 100, 90, 75, 65, 50, 35],
     },
     {
@@ -382,7 +382,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 92,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=epic-cinematic-trailer-113981.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Impact%20Moderato.mp3",
         "frequencyData": [20, 35, 50, 75, 90, 60, 45, 80, 95, 70, 40, 60, 85, 90, 50],
     },
     {
@@ -393,7 +393,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 110,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_b722cf1180.mp3?filename=epic-hollywood-trailer-9489.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Hero%20Down.mp3",
         "frequencyData": [25, 45, 70, 90, 95, 80, 65, 85, 95, 90, 65, 75, 85, 70, 45],
     },
     {
@@ -404,7 +404,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 80,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=lofi-study-112191.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Carefree.mp3",
         "frequencyData": [15, 25, 40, 55, 60, 50, 45, 65, 70, 55, 40, 50, 60, 40, 20],
     },
     {
@@ -415,7 +415,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 85,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cinematic-time-lapse-115672.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Heartbreaking.mp3",
         "frequencyData": [20, 30, 45, 60, 70, 60, 50, 65, 75, 60, 45, 55, 65, 50, 25],
     },
     {
@@ -426,7 +426,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 118,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/09/06/audio_9a65646ff5.mp3?filename=synthwave-80s-9564.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Decisions.mp3",
         "frequencyData": [35, 50, 65, 85, 90, 80, 70, 85, 90, 95, 80, 70, 65, 50, 30],
     },
     {
@@ -437,7 +437,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 124,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_c350699279.mp3?filename=cyberpunk-2099-10701.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Anxiety.mp3",
         "frequencyData": [40, 60, 75, 90, 95, 85, 75, 90, 95, 100, 85, 75, 70, 55, 35],
     },
     {
@@ -448,7 +448,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 65,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/24/audio_34b3f3b97b.mp3?filename=meditation-ambient-110823.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Lightless%20Dawn.mp3",
         "frequencyData": [10, 15, 25, 35, 40, 45, 40, 35, 40, 50, 45, 30, 25, 20, 10],
     },
     {
@@ -459,7 +459,7 @@ MEDIA_TRACKS: List[Dict[str, Any]] = [
         "bpm": 60,
         "copyrightFree": True,
         "license": "Creative Commons CC0 / Free Commercial",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3?filename=deep-meditation-116345.mp3",
+        "audioUrl": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sneaky%20Snitch.mp3",
         "frequencyData": [10, 12, 20, 30, 35, 40, 35, 30, 38, 45, 40, 28, 22, 18, 8],
     },
 ]
@@ -471,21 +471,21 @@ CURATED_SFX: List[Dict[str, Any]] = [
         "name": "Fast Cinematic Whoosh",
         "category": "whoosh",
         "duration": "0.8s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_27529fa22a.mp3?filename=fast-whoosh-10901.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
     },
     {
         "id": "sfx-whoosh-swish",
         "name": "High-Velocity Swish Pan",
         "category": "whoosh",
         "duration": "0.5s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_51a2d48c8b.mp3?filename=swish-whoosh-10702.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3",
     },
     {
         "id": "sfx-whoosh-heavy",
         "name": "Deep Sub Bass Whoosh Pass",
         "category": "whoosh",
         "duration": "1.2s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_2c9497e872.mp3?filename=heavy-whoosh-9488.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3",
     },
     # â”€â”€ 2. Cinematic Impact Drops & Booms â”€â”€
     {
@@ -493,28 +493,28 @@ CURATED_SFX: List[Dict[str, Any]] = [
         "name": "Cinematic Sub Bass Drop 808",
         "category": "impact",
         "duration": "2.5s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_40df037703.mp3?filename=bass-drop-10902.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3",
     },
     {
         "id": "sfx-impact-boom",
         "name": "Trailer Cinematic Boom Hit",
         "category": "impact",
         "duration": "2.0s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d086f685f4.mp3?filename=cinematic-boom-hit-9487.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2871/2871-preview.mp3",
     },
     {
         "id": "sfx-impact-metal",
         "name": "Heavy Steel Iron Clang",
         "category": "impact",
         "duration": "1.4s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3?filename=metal-hit-6304.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2872/2872-preview.mp3",
     },
     {
         "id": "sfx-impact-glitch",
         "name": "Digital Cyber Glitch Snap",
         "category": "impact",
         "duration": "0.6s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_145d2919aa.mp3?filename=glitch-distortion-10903.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3",
     },
     # â”€â”€ 3. Tension Risers & Sweeps â”€â”€
     {
@@ -522,14 +522,14 @@ CURATED_SFX: List[Dict[str, Any]] = [
         "name": "Cinematic Tension Riser",
         "category": "riser",
         "duration": "3.2s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_82cba9a613.mp3?filename=cinematic-riser-10904.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2875/2875-preview.mp3",
     },
     {
         "id": "sfx-riser-pitch",
         "name": "Dark Synth Pitch Riser",
         "category": "riser",
         "duration": "2.8s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_f551b8c199.mp3?filename=synth-riser-sweep-9486.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2875/2875-preview.mp3",
     },
     # â”€â”€ 4. Atmospheric Foley & Environmental Beds â”€â”€
     {
@@ -537,21 +537,21 @@ CURATED_SFX: List[Dict[str, Any]] = [
         "name": "Distant Thunder Storm Rumble",
         "category": "foley",
         "duration": "4.5s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2022/05/16/audio_2d0d08a4bb.mp3?filename=thunder-rumble-113980.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3",
     },
     {
         "id": "sfx-foley-rain",
         "name": "Cinematic Night City Rain",
         "category": "foley",
         "duration": "5.0s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/09/06/audio_34b223405c.mp3?filename=rain-night-street-9563.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3",
     },
     {
         "id": "sfx-heartbeat-thump",
         "name": "Intense Adrenaline Heartbeat",
         "category": "foley",
         "duration": "3.0s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/08/04/audio_51bf64c57b.mp3?filename=heartbeat-thump-6303.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3",
     },
     # â”€â”€ 5. UI, Punctuation & Conversion Clicks â”€â”€
     {
@@ -559,14 +559,14 @@ CURATED_SFX: List[Dict[str, Any]] = [
         "name": "Cash Register Cha-Ching",
         "category": "notification",
         "duration": "1.1s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/08/09/audio_732a101292.mp3?filename=cash-register-98214.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3",
     },
     {
         "id": "sfx-click-camera",
         "name": "Camera Shutter Mechanical Snap",
         "category": "click",
         "duration": "0.4s",
-        "audioUrl": "https://cdn.pixabay.com/download/audio/2021/08/04/audio_349d9c79d1.mp3?filename=camera-shutter-6305.mp3",
+        "audioUrl": "https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3",
     },
 ]
 
