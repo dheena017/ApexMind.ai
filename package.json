@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "python script/frontend.py --with-backend",
-    "backend": "python -u script/backend.py --reload",
+    "backend": "python -u -W ignore::FutureWarning script/backend.py --reload",
     "frontend": "python script/frontend.py",
     "build": "vite build frontend --config frontend/vite.config.ts",
     "preview": "vite preview frontend --config frontend/vite.config.ts",

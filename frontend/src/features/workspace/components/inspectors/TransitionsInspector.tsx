@@ -1,16 +1,8 @@
-import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
 import {
-  Wand2,
-  Zap,
-  Sparkles,
   Check,
   Play,
-  Film,
-  Image as ImageIcon,
   Clock,
-  Shuffle,
-  Layers,
 } from 'lucide-react';
 import { VisualBackdrop } from '../../types';
 import { SelectedClip } from '../timeline/timelineTypes';
@@ -59,25 +51,6 @@ export interface TransitionsInspectorProps {
 }
 
 
-const AI_TRANSITION_POOLS: Record<string, { transitions: string[]; duration: number }> = {
-  cinematic: {
-    transitions: ['blur-crossfade', 'dissolve', 'luma-fade', 'soft-rotate', 'fade-black'],
-    duration: 0.7,
-  },
-  viral: {
-    transitions: ['zoom-in', 'whip-pan-left', 'flash', 'whip-pan-right', 'rgb-split', 'push-left'],
-    duration: 0.35,
-  },
-  camera: {
-    transitions: ['slide-left', 'slide-right', 'smooth-zoom', 'push-up', 'push-down'],
-    duration: 0.5,
-  },
-  creative: {
-    transitions: ['split-reveal', 'circle-wipe', 'soft-rotate', 'zoom-out', 'flash'],
-    duration: 0.5,
-  },
-};
-
 export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
   selectedClip,
   customImageUrl,
@@ -90,41 +63,6 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
   const [targetClipId, setTargetClipId] = useState<string | undefined>(
     selectedClip && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all ? selectedClip.clipId : undefined
   );
-    const [aiTransitionMood, setAiTransitionMood] = useState<'cinematic' | 'viral' | 'camera' | 'creative'>('cinematic');
-  const [isAiMatching, setIsAiMatching] = useState(false);
-
-  const handleAiMatchCurrentCut = () => {
-    setIsAiMatching(true);
-    const pool = AI_TRANSITION_POOLS[aiTransitionMood] || AI_TRANSITION_POOLS.cinematic;
-    const chosen = pool.transitions[Math.floor(Math.random() * pool.transitions.length)];
-    const dur = pool.duration;
-
-    setTimeout(() => {
-      setIsAiMatching(false);
-      handleTransitionChange(chosen, dur);
-      toast.success(`✨ AI Matched Cut: ${TRANSITION_PRESETS.find((p) => p.id === chosen)?.label || chosen}`, {
-        description: `Optimized for ${aiTransitionMood.toUpperCase()} pacing at ${dur}s.`,
-      });
-    }, 450);
-  };
-
-  const handleAiAutoTransitionAll = () => {
-    setIsAiMatching(true);
-    setTimeout(() => {
-      setIsAiMatching(false);
-      window.dispatchEvent(
-        new CustomEvent('workspace:ai-smart-transitions', {
-          detail: {
-            mood: aiTransitionMood,
-            track: targetTrack,
-          },
-        })
-      );
-      toast.success(`✨ AI Smart Transitions Applied`, {
-        description: `Sequenced complementary ${aiTransitionMood.toUpperCase()} transitions across all cuts on the timeline!`,
-      });
-    }, 500);
-  };
 
   const [appliedNotice, setAppliedNotice] = useState(false);
 
@@ -268,136 +206,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-y-auto custom-scrollbar p-3 gap-3.5">
-      {/* ── AI Smart Transition Director Card ── */}
-      <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-950/40 via-[#1D1818] to-purple-950/30 border border-amber-500/30 shadow-lg shadow-amber-950/20 flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-white tracking-wide flex items-center gap-1.5">
-                AI Smart Transition Director
-              </span>
-              <p className="text-[10px] text-zinc-400">Intelligently sequence cuts based on scene rhythm</p>
-            </div>
-          </div>
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-            AI BEAT
-          </span>
-        </div>
 
-        {/* Mood Selector */}
-        <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-black/40 border border-white/5">
-          {[
-            { id: 'cinematic' as const, label: 'Cinematic', icon: '🎬' },
-            { id: 'viral' as const, label: 'Viral / Fast', icon: '⚡' },
-            { id: 'camera' as const, label: 'Camera Flow', icon: '🌊' },
-            { id: 'creative' as const, label: 'Creative', icon: '🎨' },
-          ].map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setAiTransitionMood(m.id)}
-              className={`py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
-                aiTransitionMood === m.id
-                  ? 'bg-amber-600 text-white shadow-xs font-bold'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <span>{m.icon}</span>
-              <span className="leading-tight text-center">{m.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-0.5">
-          <button
-            type="button"
-            onClick={handleAiMatchCurrentCut}
-            disabled={isAiMatching}
-            className="py-2 px-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-md shadow-amber-600/25 border border-amber-400/30 transition-all cursor-pointer disabled:opacity-50"
-          >
-            <Wand2 className={`w-3.5 h-3.5 ${isAiMatching ? 'animate-spin' : ''}`} />
-            <span>{isAiMatching ? 'Analyzing...' : 'AI Match Current Cut'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleAiAutoTransitionAll}
-            disabled={isAiMatching}
-            className="py-2 px-2 rounded-xl bg-[#231D19] hover:bg-[#2C231E] border border-amber-400/30 text-amber-200 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>AI Transition All Cuts</span>
-          </button>
-        </div>
-      </div>
-      {/* ── Context & Target Scope Bar ── */}
-      <div className="p-2.5 rounded-xl bg-[#18181D] border border-[#26262E] flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-[#A1A1AA] font-medium flex items-center gap-1.5">
-            <Shuffle className="w-3.5 h-3.5 text-amber-400" />
-            Active Target
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                setTargetTrack('video');
-                setTargetClipId(undefined);
-              }}
-              className={`px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors border ${
-                targetTrack === 'video'
-                  ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
-                  : 'bg-[#141417] text-[#71717A] border-[#2A2A30] hover:text-white'
-              }`}
-            >
-              <Film className="w-2.5 h-2.5" />
-              <span>V1 Video</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTargetTrack('image');
-                setTargetClipId(undefined);
-              }}
-              className={`px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors border ${
-                targetTrack === 'image'
-                  ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
-                  : 'bg-[#141417] text-[#71717A] border-[#2A2A30] hover:text-white'
-              }`}
-            >
-              <ImageIcon className="w-2.5 h-2.5" />
-              <span>V2 Image</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-[11px] bg-[#131316] px-2.5 py-1.5 rounded-lg border border-[#222228]">
-          <span className="text-zinc-300 font-medium truncate">
-            {targetClipId ? (
-              <span className="flex items-center gap-1 text-sky-400 font-mono text-[10.5px]">
-                <Layers className="w-3 h-3 text-sky-400" />
-                Cut Seam on Clip ({targetClipId.slice(0, 8)}...)
-              </span>
-            ) : (
-              <span className="text-zinc-400">
-                Editing All Cut Seams on Track <strong className="text-white">{targetTrack === 'video' ? 'V1 Video' : 'V2 Image'}</strong>
-              </span>
-            )}
-          </span>
-          {targetClipId && (
-            <button
-              type="button"
-              onClick={() => setTargetClipId(undefined)}
-              className="text-[10px] text-zinc-400 hover:text-white underline cursor-pointer shrink-0 ml-1"
-            >
-              Clear selection
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* ── Transition Duration Slider & Quick Presets ── */}
       <div className="p-3 rounded-xl bg-[#18181D] border border-[#26262E] flex flex-col gap-2.5">

@@ -3,6 +3,13 @@ ApexMind Studio - Python Backend Entrypoint
 Powered by FastAPI, Uvicorn, SQLite, and Google Gemini
 """
 
+import os
+import warnings
+
+# Suppress harmless Google API Core Python EOL FutureWarnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+os.environ.setdefault("PYTHONWARNINGS", "ignore::FutureWarning")
+
 import uvicorn
 from backend.app.factory import create_app
 from backend.shared.config import settings

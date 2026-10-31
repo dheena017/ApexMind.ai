@@ -841,7 +841,52 @@ def main() -> int:
 
     print_frontend_banner(display_host, port, node_version, args.with_backend, ansi)
 
-    # 4. Launch Vite server process
+    # 4. Launch Backend first if requested so APIs are warm and reachable before frontend boots
+    if args.with_backend:
+        backend_py = PROJECT_ROOT / "script" / "backend.py"
+        if not backend_py.exists():
+            print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} backend.py not found at {backend_py}", file=sys.stderr)
+            stop_all(1)
+
+        backend_host = args.backend_host or env.get("BACKEND_HOST") or env.get("HOST") or "127.0.0.1"
+        backend_port = args.backend_port or int(env.get("BACKEND_PORT") or env.get("PORT") or "8000")
+        backend_display_host = "127.0.0.1" if backend_host in ("0.0.0.0", "::", "") else backend_host
+        python_exec = resolve_python_executable()
+        backend_env = env.copy()
+        backend_env["PYTHONWARNINGS"] = "ignore::FutureWarning"
+        if args.no_color:
+            backend_env["NO_COLOR"] = "1"
+        backend_cmd = [
+            python_exec,
+            str(backend_py),
+            "--host",
+            backend_host,
+            "--port",
+            str(backend_port),
+            "--reload",
+        ]
+
+        try:
+            backend_process = subprocess.Popen(
+                backend_cmd,
+                cwd=str(PROJECT_ROOT),
+                env=backend_env,
+                stdin=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+            )
+        except Exception as exc:
+            print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Failed to start backend process: {exc}", file=sys.stderr)
+            stop_all(1)
+
+        print(format_log("Server", f"Backend launch started on http://{backend_display_host}:{backend_port}/api/docs", ansi=ansi))
+
+        try:
+            wait_for_backend(backend_host, backend_port, timeout_seconds=25)
+            print(format_log("Server", f"Backend ready: http://{backend_display_host}:{backend_port}/api/docs", level="OK", ansi=ansi))
+        except TimeoutError:
+            print(format_log("Server", "FastAPI backend is taking longer to start; proceeding with frontend.", level="WARN", ansi=ansi))
+
+    # 5. Launch Vite server process
     vite_command = [
         "node",
         str(VITE_BIN),
@@ -910,7 +955,8 @@ def main() -> int:
                     print(format_log("Server", f"Local: http://{display_host}:{port}/", ansi=ansi))
                     print(format_log("App", "Client runtime active: React 19 + TailwindCSS v4", ansi=ansi))
                     print(format_log("App", "Features active: Workspace • YouTube • Notifications • Dashboard", ansi=ansi))
-                continue
+                    if args.with_backend:
+                        print(format_log("App", "Frontend and backend are both ready. Open the app to begin.", level="OK", ansi=ansi))
 
             if "Local:" in clean or "Network:" in clean:
                 continue
@@ -952,50 +998,6 @@ def main() -> int:
         print(format_log("Server", f"Opening {url} in your default browser...", ansi=ansi))
         webbrowser.open(url)
 
-    # 6. Launch Backend if requested
-    if args.with_backend:
-        backend_py = PROJECT_ROOT / "script" / "backend.py"
-        if not backend_py.exists():
-            print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} backend.py not found at {backend_py}", file=sys.stderr)
-            stop_all(1)
-
-        backend_host = args.backend_host or env.get("BACKEND_HOST") or env.get("HOST") or "127.0.0.1"
-        backend_port = args.backend_port or int(env.get("BACKEND_PORT") or env.get("PORT") or "8000")
-        backend_display_host = "127.0.0.1" if backend_host in ("0.0.0.0", "::", "") else backend_host
-        python_exec = resolve_python_executable()
-        backend_env = env.copy()
-        if args.no_color:
-            backend_env["NO_COLOR"] = "1"
-        backend_cmd = [
-            python_exec,
-            str(backend_py),
-            "--host",
-            backend_host,
-            "--port",
-            str(backend_port),
-            "--reload",
-        ]
-
-        try:
-            backend_process = subprocess.Popen(
-                backend_cmd,
-                cwd=str(PROJECT_ROOT),
-                env=backend_env,
-                stdin=subprocess.DEVNULL,
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-            )
-        except Exception as exc:
-            print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Failed to start backend process: {exc}", file=sys.stderr)
-            stop_all(1)
-
-        print(format_log("Server", f"Backend launch started on http://{backend_display_host}:{backend_port}/api/docs", ansi=ansi))
-
-        try:
-            wait_for_backend(backend_host, backend_port, timeout_seconds=20)
-            print(format_log("Server", f"Backend ready: http://{backend_display_host}:{backend_port}/api/docs", level="OK", ansi=ansi))
-            print(format_log("App", "Frontend and backend are both ready. Open the app to begin.", level="OK", ansi=ansi))
-        except TimeoutError:
-            print(format_log("Server", "FastAPI backend is still starting or unavailable.", level="WARN", ansi=ansi))
 
     # 7. Supervision loop
     try:

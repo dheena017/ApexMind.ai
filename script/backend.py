@@ -7,6 +7,14 @@ dependency verification, structured error handling, and clean process lifecycle.
 
 from __future__ import annotations
 
+import os
+import sys
+import warnings
+
+# Suppress harmless Google API Core Python 3.11 EOL FutureWarnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+os.environ["PYTHONWARNINGS"] = "ignore::FutureWarning"
+
 import argparse
 import ctypes
 from ctypes import wintypes

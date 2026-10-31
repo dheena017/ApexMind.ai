@@ -41,7 +41,6 @@ async def lifespan(app: FastAPI):
     # Initialize SQLite tables on startup
     init_db()
     logger.info("SQLite DB connected: backend/data/apexmind.db")
-    logger.info("Features active: Dashboard • Workspace • Videos • YouTube • Notifications • Auth • Settings")
     yield
     logger.info("ApexMind Studio stopped gracefully.")
 

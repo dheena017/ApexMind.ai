@@ -2,6 +2,12 @@ import { GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../ty
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
 
+let mediaLibraryPromise: Promise<{
+  musicTracks: MusicTrack[];
+  visualBackdrops: VisualBackdrop[];
+  voiceProfiles: VoiceProfile[];
+}> | null = null;
+
 export const workspaceApi = {
   // Generate motivational quote script via Gemini
   async generateScript(params: {
@@ -118,22 +124,35 @@ export const workspaceApi = {
     };
   },
 
-  // Fetch non-copyright media library
-  async getMediaLibrary(): Promise<{
+  // Fetch non-copyright media library (deduplicated in-flight & cached)
+  async getMediaLibrary(forceRefresh = false): Promise<{
     musicTracks: MusicTrack[];
     visualBackdrops: VisualBackdrop[];
     voiceProfiles: VoiceProfile[];
   }> {
-    const start = performance.now();
-    const res = await fetch(apiUrl('/api/media-library'), { cache: 'no-store' });
-    const duration = performance.now() - start;
-    consoleLogger.api('GET', '/api/media-library', res.status, duration);
-    const data = await res.json();
-    consoleLogger.info(
-      'Studio',
-      `Media library loaded (${data.data?.musicTracks?.length || 0} tracks, ${data.data?.visualBackdrops?.length || 0} backdrops)`
-    );
-    return data.data;
+    if (mediaLibraryPromise && !forceRefresh) {
+      return mediaLibraryPromise;
+    }
+
+    mediaLibraryPromise = (async () => {
+      try {
+        const start = performance.now();
+        const res = await fetch(apiUrl('/api/media-library'), { cache: 'no-store' });
+        const duration = performance.now() - start;
+        consoleLogger.api('GET', '/api/media-library', res.status, duration);
+        const data = await res.json();
+        consoleLogger.info(
+          'Studio',
+          `Media library loaded (${data.data?.musicTracks?.length || 0} tracks, ${data.data?.visualBackdrops?.length || 0} backdrops)`
+        );
+        return data.data;
+      } catch (err) {
+        mediaLibraryPromise = null;
+        throw err;
+      }
+    })();
+
+    return mediaLibraryPromise;
   },
 
   // Fetch quote memory catalog to avoid repetition
