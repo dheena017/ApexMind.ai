@@ -390,7 +390,7 @@ VIRALITY & RETENTION ARCHITECTURE (ENGINEERED FOR 85%+ COMPLETION RATE):
 5. 5-LAYER BROADCAST SOUND DESIGN & SIDECHAIN DUCKING:
    - Soundtrack: Select "soundtrackTrackId" from AVAILABLE SOUNDTRACKS matching the emotional arc.
    - Dynamic Acoustic Ducking: Set "ducking" with exact parameters:
-     { "active": true, "threshold": 0.045, "ratio": 4.5, "attackMs": 25, "releaseMs": 320, "voiceActiveVolume": 0.18, "pauseSwellVolume": 0.72 }
+     {{ "active": true, "threshold": 0.045, "ratio": 4.5, "attackMs": 25, "releaseMs": 320, "voiceActiveVolume": 0.18, "pauseSwellVolume": 0.72 }}
    - SFX Layering: Align "sfxEvents" to narrative beats:
      * Hook impact boom (t=0.0s): "sfx-impact-subdrop"
      * Scene transitions (t=seams): "sfx-whoosh-fast" or "sfx-whoosh-swish"
