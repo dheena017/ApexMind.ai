@@ -15,6 +15,7 @@ import {
   Trash2,
   Copy,
   Keyboard,
+  Sparkles,
 } from 'lucide-react';
 import { formatTime, SelectedClip, EnabledTracks, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM } from './timelineTypes';
 import { TimelineAddTrackMenu } from './TimelineAddTrackMenu';
@@ -166,6 +167,19 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             aria-label="Delete selected clip"
           >
             <Trash2 className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'transitions' }));
+            }}
+            className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-[#333340] bg-[#16161E] text-[#D4D4D8] hover:bg-[#22222D] hover:text-white hover:border-amber-400/50 shadow-sm transition-all cursor-pointer text-[10.5px] font-semibold"
+            title="Open Transitions Studio"
+            aria-label="Open Transitions Studio"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Transitions</span>
           </button>
         </div>
 

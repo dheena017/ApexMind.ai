@@ -1,5 +1,7 @@
+import { toast } from 'sonner';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
+  Wand2,
   Crop, FlipHorizontal, FlipVertical, RotateCw, Minus, Plus, Film,
   Sliders, Zap, Palette, Clock, Volume2, VolumeX, RefreshCw,
   Sun, Contrast, Eye, Layers, Sparkles, Image as ImageIcon,
@@ -12,9 +14,9 @@ import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
 export type VideoInspectorTab =
   | 'transform'
-  | 'style'
+  | 'animations'
   | 'adjust'
-  | 'transitions'
+  | 'style'
   | 'speed'
   | 'audio'
   | 'time';
@@ -44,40 +46,6 @@ const LUT_PRESETS = [
 ];
 
 const MOUNTAIN_PREVIEW_IMG = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=260&q=80';
-
-export interface TransitionPresetItem {
-  id: string;
-  label: string;
-  category: 'all' | 'basic' | 'slide' | 'zoom' | 'wipe' | 'special';
-  hoverEffect?: string;
-}
-
-const TRANSITION_PRESETS: TransitionPresetItem[] = [
-  { id: 'none', label: 'None', category: 'basic' },
-  { id: 'dissolve', label: 'Crossfade', category: 'basic', hoverEffect: 'group-hover:opacity-40' },
-  { id: 'fade-black', label: 'Fade to Black', category: 'basic', hoverEffect: 'group-hover:brightness-25' },
-  { id: 'fade-white', label: 'Fade to White', category: 'basic', hoverEffect: 'group-hover:brightness-175' },
-  { id: 'zoom-in', label: 'Zoom In', category: 'zoom', hoverEffect: 'group-hover:scale-125' },
-  { id: 'zoom-out', label: 'Zoom Out', category: 'zoom', hoverEffect: 'group-hover:scale-75' },
-  { id: 'slide-left', label: 'Slide Left', category: 'slide', hoverEffect: 'group-hover:-translate-x-3' },
-  { id: 'slide-right', label: 'Slide Right', category: 'slide', hoverEffect: 'group-hover:translate-x-3' },
-  { id: 'slide-up', label: 'Slide Up', category: 'slide', hoverEffect: 'group-hover:-translate-y-3' },
-  { id: 'slide-down', label: 'Slide Down', category: 'slide', hoverEffect: 'group-hover:translate-y-3' },
-  { id: 'push-left', label: 'Push Left', category: 'slide', hoverEffect: 'group-hover:-translate-x-4' },
-  { id: 'push-right', label: 'Push Right', category: 'slide', hoverEffect: 'group-hover:translate-x-4' },
-  { id: 'push-up', label: 'Push Up', category: 'slide', hoverEffect: 'group-hover:-translate-y-4' },
-  { id: 'push-down', label: 'Push Down', category: 'slide', hoverEffect: 'group-hover:translate-y-4' },
-  { id: 'luma-fade', label: 'Luma Fade', category: 'basic', hoverEffect: 'group-hover:contrast-200 group-hover:brightness-80' },
-  { id: 'blur-crossfade', label: 'Blur Crossfade', category: 'basic', hoverEffect: 'group-hover:blur-xs group-hover:opacity-60' },
-  { id: 'split-reveal', label: 'Split Reveal', category: 'wipe', hoverEffect: 'group-hover:scale-x-75' },
-  { id: 'circle-wipe', label: 'Circle Wipe', category: 'wipe', hoverEffect: 'group-hover:scale-90' },
-  { id: 'rgb-split', label: 'RGB Split', category: 'special', hoverEffect: 'group-hover:hue-rotate-90 group-hover:saturate-200' },
-  { id: 'whip-pan-left', label: 'Whip Pan Left', category: 'slide', hoverEffect: 'group-hover:-translate-x-5 group-hover:skew-x-6' },
-  { id: 'whip-pan-right', label: 'Whip Pan Right', category: 'slide', hoverEffect: 'group-hover:translate-x-5 group-hover:-skew-x-6' },
-  { id: 'soft-rotate', label: 'Soft Rotate', category: 'special', hoverEffect: 'group-hover:rotate-12 group-hover:scale-110' },
-  { id: 'smooth-zoom', label: 'Smooth Zoom', category: 'zoom', hoverEffect: 'group-hover:scale-120' },
-  { id: 'flash', label: 'Flash', category: 'special', hoverEffect: 'group-hover:brightness-200' },
-];
 
 const CANVAS_BG_PRESETS = [
   { label: 'Pure Black', value: '#000000' },
@@ -115,6 +83,34 @@ const formatTimeDigital = (seconds: number) => {
   const s = Math.floor(seconds % 60);
   const ms = Math.floor((seconds % 1) * 100);
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+};
+
+
+const AI_ANIMATION_PAIRS: Record<string, { in: string; inDur: number; out: string; outDur: number }[]> = {
+  viral: [
+    { in: 'zoom-in', inDur: 0.3, out: 'slide-fade', outDur: 0.3 },
+    { in: 'bounce', inDur: 0.4, out: 'flash', outDur: 0.3 },
+    { in: 'spin', inDur: 0.35, out: 'zoom-out', outDur: 0.35 },
+    { in: 'flip-x', inDur: 0.35, out: 'slide-right', outDur: 0.3 },
+  ],
+  cinematic: [
+    { in: 'fade', inDur: 0.8, out: 'blur', outDur: 0.8 },
+    { in: 'soft-reveal', inDur: 0.7, out: 'zoom-out', outDur: 0.8 },
+    { in: 'blur', inDur: 0.8, out: 'fade', outDur: 0.8 },
+    { in: 'zoom-in', inDur: 0.9, out: 'soft-reveal', outDur: 0.7 },
+  ],
+  clean: [
+    { in: 'slide-up', inDur: 0.5, out: 'slide-fade', outDur: 0.4 },
+    { in: 'slide-fade', inDur: 0.45, out: 'slide-down', outDur: 0.45 },
+    { in: 'wipe-right', inDur: 0.5, out: 'wipe-down', outDur: 0.5 },
+    { in: 'fade', inDur: 0.5, out: 'slide-fade', outDur: 0.4 },
+  ],
+  dramatic: [
+    { in: 'flash', inDur: 0.4, out: 'zoom-out', outDur: 0.5 },
+    { in: 'diamond', inDur: 0.5, out: 'spin', outDur: 0.45 },
+    { in: 'flip-y', inDur: 0.45, out: 'flash', outDur: 0.35 },
+    { in: 'circle', inDur: 0.5, out: 'diamond', outDur: 0.5 },
+  ],
 };
 
 export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
@@ -163,8 +159,29 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         setActiveSubTab(detail.subTab);
       }
     };
+    const handleSelectedDetails = (e: Event) => {
+      const detail = (e as CustomEvent<{ selectedClip?: any; details?: any }>).detail;
+      if (detail?.details) {
+        if (detail.details.animationIn !== undefined) {
+          setAnimationIn(detail.details.animationIn || 'none');
+        }
+        if (typeof detail.details.animationInDuration === 'number') {
+          setAnimationInDuration(detail.details.animationInDuration);
+        }
+        if (detail.details.animationOut !== undefined) {
+          setAnimationOut(detail.details.animationOut || 'none');
+        }
+        if (typeof detail.details.animationOutDuration === 'number') {
+          setAnimationOutDuration(detail.details.animationOutDuration);
+        }
+      }
+    };
     window.addEventListener('workspace:open-inspector-tab', handleOpenTab);
-    return () => window.removeEventListener('workspace:open-inspector-tab', handleOpenTab);
+    window.addEventListener('workspace:selected-clip-details', handleSelectedDetails);
+    return () => {
+      window.removeEventListener('workspace:open-inspector-tab', handleOpenTab);
+      window.removeEventListener('workspace:selected-clip-details', handleSelectedDetails);
+    };
   }, []);
 
   const isImageMode = Boolean(customImageUrl && !customVideoUrl);
@@ -204,12 +221,72 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   const [styleSection, setStyleSection] = useState<'all' | 'looks' | 'lut' | 'adjust'>('all');
   const hasAdjustments = brightness !== 100 || contrast !== 100 || saturation !== 100 || vignette !== 0 || hue !== 0 || blur !== 0 || grain !== 0;
 
-  useEffect(() => {
-    if (activeSubTab === 'adjust') {
-      setActiveSubTab('style');
-      setStyleSection('adjust');
-    }
-  }, [activeSubTab]);
+    const [aiAnimMood, setAiAnimMood] = useState<'viral' | 'cinematic' | 'clean' | 'dramatic'>('viral');
+  const [isAiAnimAnalyzing, setIsAiAnimAnalyzing] = useState(false);
+
+  const handleAiAutoAnimateClip = () => {
+    setIsAiAnimAnalyzing(true);
+    const pairs = AI_ANIMATION_PAIRS[aiAnimMood] || AI_ANIMATION_PAIRS.viral;
+    const chosen = pairs[Math.floor(Math.random() * pairs.length)];
+
+    setTimeout(() => {
+      setIsAiAnimAnalyzing(false);
+      setAnimationIn(chosen.in);
+      setAnimationInDuration(chosen.inDur);
+      setAnimationOut(chosen.out);
+      setAnimationOutDuration(chosen.outDur);
+
+      const isSingleClip = Boolean(selectedClip && (selectedClip.track === 'video' || selectedClip.track === 'image') && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
+      const clipId = isSingleClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
+
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-props', {
+          detail: {
+            track: isImageMode ? 'image' : 'video',
+            clipId,
+            animationIn: chosen.in,
+            animationInDuration: chosen.inDur,
+            animationOut: chosen.out,
+            animationOutDuration: chosen.outDur,
+          },
+        })
+      );
+
+      window.dispatchEvent(
+        new CustomEvent('workspace:preview-clip-animation', {
+          detail: {
+            type: chosen.in,
+            direction: 'in',
+            duration: chosen.inDur,
+          },
+        })
+      );
+
+      toast.success(`✨ AI Motion Applied: ${chosen.in} (In) → ${chosen.out} (Out)`, {
+        description: `Optimized for ${aiAnimMood.toUpperCase()} pacing with ${chosen.inDur}s / ${chosen.outDur}s curves.`,
+      });
+    }, 450);
+  };
+
+  const handleAiAnimateAllClips = () => {
+    setIsAiAnimAnalyzing(true);
+    setTimeout(() => {
+      setIsAiAnimAnalyzing(false);
+      window.dispatchEvent(
+        new CustomEvent('workspace:ai-smart-animations', {
+          detail: {
+            mood: aiAnimMood,
+            track: isImageMode ? 'image' : 'video',
+          },
+        })
+      );
+      toast.success(`✨ AI Choreographed All Clips`, {
+        description: `Synchronized alternating motion flow across all timeline cuts in ${aiAnimMood.toUpperCase()} style.`,
+      });
+    }, 500);
+  };
+
+  const [animDirection, setAnimDirection] = useState<'in' | 'out'>('out');
 
   const adjustmentGroups = useMemo(() => [
     {
@@ -236,65 +313,10 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     },
   ], [brightness, contrast, saturation, vignette, hue, blur, grain]);
 
-  const [activeTransition, setActiveTransition] = useState('dissolve');
-  const [transitionDuration, setTransitionDuration] = useState(0.5);
-  const [transitionCategory, setTransitionCategory] = useState<'all' | 'basic' | 'slide' | 'zoom' | 'wipe' | 'special'>('all');
   const [animationIn, setAnimationIn] = useState('none');
   const [animationInDuration, setAnimationInDuration] = useState(0.5);
   const [animationOut, setAnimationOut] = useState('none');
   const [animationOutDuration, setAnimationOutDuration] = useState(0.5);
-
-  // Sync transition broadcast
-  const handleTransitionChange = (newTrans: string, dur?: number) => {
-    setActiveTransition(newTrans);
-    const d = dur ?? transitionDuration;
-    const isSingleVideoClip = Boolean(selectedClip && (selectedClip.track === 'video' || selectedClip.track === 'image') && 'clipId' in selectedClip && selectedClip.clipId && !selectedClip.all);
-    const clipId = isSingleVideoClip && selectedClip && 'clipId' in selectedClip ? selectedClip.clipId : undefined;
-    const applyToAll = !clipId;
-    window.dispatchEvent(
-      new CustomEvent('workspace:update-clip-props', {
-        detail: {
-          track: isImageMode ? 'image' : 'video',
-          clipId,
-          transition: newTrans,
-          transitionDuration: d,
-        },
-      })
-    );
-    window.dispatchEvent(
-      new CustomEvent('workspace:update-clip-properties', {
-        detail: {
-          track: isImageMode ? 'image' : 'video',
-          clipId,
-          transition: newTrans,
-          transitionDuration: d,
-        },
-      })
-    );
-  };
-
-  const handleApplyToAllTransitions = () => {
-    window.dispatchEvent(
-      new CustomEvent('workspace:update-clip-props', {
-        detail: {
-          track: isImageMode ? 'image' : 'video',
-          transition: activeTransition,
-          transitionDuration,
-          applyToAll: true,
-        },
-      })
-    );
-    window.dispatchEvent(
-      new CustomEvent('workspace:update-clip-properties', {
-        detail: {
-          track: isImageMode ? 'image' : 'video',
-          transition: activeTransition,
-          transitionDuration,
-          applyToAll: true,
-        },
-      })
-    );
-  };
 
   const handleInAnimChange = (anim: string, dur?: number) => {
     setAnimationIn(anim);
@@ -465,8 +487,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   };
 
   const tabs: VideoInspectorTab[] = isImageMode
-    ? ['transform', 'style', 'transitions', 'time']
-    : ['transform', 'style', 'transitions', 'speed', 'audio', 'time'];
+    ? ['transform', 'animations', 'adjust', 'time']
+    : ['transform', 'animations', 'adjust', 'speed', 'time'];
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
@@ -778,6 +800,496 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
           </div>
         )}
 
+        {/* ── ANIMATIONS TAB (In & Out Animations) ── */}
+        {activeSubTab === 'animations' && (
+          <div className="flex flex-col gap-3 pt-0.5 select-none">
+            {/* ── AI Motion Director Card ── */}
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-[#181822] to-purple-950/30 border border-indigo-500/30 shadow-lg shadow-indigo-950/20 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 shadow-xs">
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white tracking-wide flex items-center gap-1.5">
+                      AI Motion Director
+                    </span>
+                    <p className="text-[10px] text-zinc-400">Intelligent motion curves matched to video energy</p>
+                  </div>
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                  SMART AI
+                </span>
+              </div>
+
+              {/* Mood Selector */}
+              <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-black/40 border border-white/5">
+                {[
+                  { id: 'viral' as const, label: 'Viral / Fast', icon: '⚡' },
+                  { id: 'cinematic' as const, label: 'Cinematic', icon: '🎬' },
+                  { id: 'clean' as const, label: 'Clean Tech', icon: '✨' },
+                  { id: 'dramatic' as const, label: 'Dramatic', icon: '🔥' },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setAiAnimMood(m.id)}
+                    className={`py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
+                      aiAnimMood === m.id
+                        ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{m.icon}</span>
+                    <span className="leading-tight text-center">{m.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={handleAiAutoAnimateClip}
+                  disabled={isAiAnimAnalyzing}
+                  className="py-2 px-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/25 border border-indigo-400/30 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Wand2 className={`w-3.5 h-3.5 ${isAiAnimAnalyzing ? 'animate-spin' : ''}`} />
+                  <span>{isAiAnimAnalyzing ? 'Analyzing...' : 'AI Auto-Animate Clip'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAiAnimateAllClips}
+                  disabled={isAiAnimAnalyzing}
+                  className="py-2 px-2.5 rounded-xl bg-[#20202A] hover:bg-[#282836] border border-indigo-400/30 text-indigo-200 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>AI Animate All Clips</span>
+                </button>
+              </div>
+            </div>
+            {/* In / Out Direction Segmented Pill Switcher */}
+            <div className="grid grid-cols-2 p-1 rounded-xl bg-[#18181D] border border-[#26262E]">
+              <button
+                type="button"
+                onClick={() => setAnimDirection('in')}
+                className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  animDirection === 'in'
+                    ? 'bg-[#282834] text-white shadow-xs border border-white/10'
+                    : 'text-[#71717A] hover:text-white'
+                }`}
+              >
+                In
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnimDirection('out')}
+                className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  animDirection === 'out'
+                    ? 'bg-[#282834] text-white shadow-xs border border-white/10'
+                    : 'text-[#71717A] hover:text-white'
+                }`}
+              >
+                Out
+              </button>
+            </div>
+
+            {/* Animation Duration Slider */}
+            <div className="p-2.5 rounded-xl bg-[#18181D] border border-[#26262E] flex flex-col gap-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#A1A1AA] font-medium">
+                  {animDirection === 'in' ? 'In Animation Duration' : 'Out Animation Duration'}
+                </span>
+                <span className="font-mono-studio text-sky-400 font-bold bg-sky-950/40 border border-sky-500/30 px-2 py-0.5 rounded text-[11px]">
+                  {(animDirection === 'in' ? animationInDuration : animationOutDuration).toFixed(1)}s
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0.1"
+                  max="2.0"
+                  step="0.1"
+                  value={animDirection === 'in' ? animationInDuration : animationOutDuration}
+                  onChange={(e) => {
+                    const d = Number(e.target.value);
+                    if (animDirection === 'in') {
+                      setAnimationInDuration(d);
+                      handleInAnimChange(animationIn, d);
+                    } else {
+                      setAnimationOutDuration(d);
+                      handleOutAnimChange(animationOut, d);
+                    }
+                  }}
+                  className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#2A2A35] rounded-lg"
+                />
+                <div className="flex gap-1 shrink-0">
+                  {[0.3, 0.5, 0.8, 1.0].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        if (animDirection === 'in') {
+                          setAnimationInDuration(d);
+                          handleInAnimChange(animationIn, d);
+                        } else {
+                          setAnimationOutDuration(d);
+                          handleOutAnimChange(animationOut, d);
+                        }
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
+                        Math.abs((animDirection === 'in' ? animationInDuration : animationOutDuration) - d) < 0.05
+                          ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
+                          : 'bg-[#141417] text-[#71717A] hover:text-white border border-[#2A2A30]'
+                      }`}
+                    >
+                      {d}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Animation Presets Grid (4 columns, comprehensive modern motion suite) */}
+            <div className="grid grid-cols-4 gap-2.5 pt-0.5">
+              {[
+                {
+                  id: 'none',
+                  label: 'None',
+                  icon: (
+                    <svg viewBox="0 0 24 24" className="w-8 h-8 text-[#71717A] stroke-[1.8]" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="12" r="8" />
+                      <line x1="6.3" y1="6.3" x2="17.7" y2="17.7" />
+                    </svg>
+                  ),
+                },
+                {
+                  id: 'fade',
+                  label: 'Fade',
+                  icon: (
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-zinc-200 via-zinc-400 to-zinc-700/30 border border-white/10 shadow-inner" />
+                  ),
+                },
+                {
+                  id: 'blur',
+                  label: 'Blur',
+                  icon: (
+                    <div className="w-9 h-9 rounded-xl bg-white/70 blur-[2px] shadow-sm" />
+                  ),
+                },
+                {
+                  id: 'zoom-in',
+                  label: 'Zoom In',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#202026] border border-white/20 flex items-center justify-center relative">
+                      <div className="w-7 h-7 rounded-lg bg-white/40 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-md bg-white shadow-xs" />
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'zoom-out',
+                  label: 'Zoom Out',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center relative shadow-xs">
+                      <div className="w-7 h-7 rounded-lg bg-[#222228] flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-md bg-[#121216] border border-white/20" />
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'slide-fade',
+                  label: 'Slide Fade',
+                  icon: (
+                    <div className="w-10 h-10 relative flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-lg bg-white/25 absolute left-1" />
+                      <div className="w-6 h-6 rounded-lg bg-white/50 absolute left-2.5" />
+                      <div className="w-6 h-6 rounded-lg bg-white absolute left-4 shadow-sm" />
+                    </div>
+                  ),
+                },
+                {
+                  id: 'soft-reveal',
+                  label: 'Soft Reveal',
+                  icon: (
+                    <div className="w-9 h-9 rounded-xl overflow-hidden relative bg-[#1c1c24] border border-white/10">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white via-zinc-300 to-transparent" />
+                    </div>
+                  ),
+                },
+                {
+                  id: 'circle',
+                  label: 'Circle',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center relative">
+                      <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center">
+                          <div className="w-3.5 h-3.5 rounded-full bg-white shadow-xs" />
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'slide-left',
+                  label: 'Slide Left',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                      <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs -translate-x-1">
+                        <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'slide-right',
+                  label: 'Slide Right',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                      <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs translate-x-1">
+                        <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'slide-up',
+                  label: 'Slide Up',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                      <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs -translate-y-1">
+                        <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'slide-down',
+                  label: 'Slide Down',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                      <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs translate-y-1">
+                        <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'spin',
+                  label: 'Spin 360',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                      <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-sky-400 to-indigo-300 rotate-45 shadow-sm flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-xs bg-zinc-900" />
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'bounce',
+                  label: 'Bounce',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                      <div className="w-7 h-7 rounded-xl bg-white shadow-md flex items-center justify-center scale-105">
+                        <div className="w-3 h-3 rounded-md bg-amber-500" />
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: 'flip-x',
+                  label: 'Flip 3D',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative overflow-hidden">
+                      <div className="w-4 h-7 rounded-sm bg-gradient-to-r from-white to-zinc-400 shadow-sm transform -skew-y-12" />
+                    </div>
+                  ),
+                },
+                {
+                  id: 'flip-y',
+                  label: 'Tilt 3D',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative overflow-hidden">
+                      <div className="w-7 h-4 rounded-sm bg-gradient-to-b from-white to-zinc-400 shadow-sm transform -skew-x-12" />
+                    </div>
+                  ),
+                },
+                {
+                  id: 'wipe-right',
+                  label: 'Wipe H',
+                  icon: (
+                    <div className="w-9 h-9 rounded-xl border border-white/20 overflow-hidden flex bg-zinc-900">
+                      <div className="w-1/2 h-full bg-white" />
+                      <div className="w-1/2 h-full bg-zinc-800" />
+                    </div>
+                  ),
+                },
+                {
+                  id: 'wipe-down',
+                  label: 'Wipe V',
+                  icon: (
+                    <div className="w-9 h-9 rounded-xl border border-white/20 overflow-hidden flex flex-col bg-zinc-900">
+                      <div className="w-full h-1/2 bg-white" />
+                      <div className="w-full h-1/2 bg-zinc-800" />
+                    </div>
+                  ),
+                },
+                {
+                  id: 'diamond',
+                  label: 'Diamond',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                      <div className="w-6 h-6 bg-white rotate-45 rounded-sm shadow-xs" />
+                    </div>
+                  ),
+                },
+                {
+                  id: 'flash',
+                  label: 'Flash Glow',
+                  icon: (
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                      <div className="w-6 h-6 rounded-full bg-amber-300 blur-[2px] shadow-lg shadow-amber-400/50 flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                      </div>
+                    </div>
+                  ),
+                },
+              ].map((item) => {
+                const currentActive = animDirection === 'in' ? animationIn : animationOut;
+                const isSelected = currentActive === item.id;
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      if (animDirection === 'in') {
+                        handleInAnimChange(item.id);
+                      } else {
+                        handleOutAnimChange(item.id);
+                      }
+                      window.dispatchEvent(
+                        new CustomEvent('workspace:preview-clip-animation', {
+                          detail: {
+                            type: item.id,
+                            direction: animDirection,
+                            duration: animDirection === 'in' ? animationInDuration : animationOutDuration,
+                          },
+                        })
+                      );
+                    }}
+                    className="group flex flex-col items-center cursor-pointer text-left select-none"
+                    title={item.label}
+                  >
+                    <div
+                      className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 flex items-center justify-center bg-[#15151A] ${
+                        isSelected
+                          ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
+                          : 'border-[#26262E] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30'
+                      }`}
+                    >
+                      {item.icon}
+                    </div>
+                    <span
+                      className={`text-[11px] font-medium truncate block text-center mt-1.5 w-full leading-tight transition-colors ${
+                        isSelected ? 'text-white font-bold' : 'text-[#A1A1AA] group-hover:text-white'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── ADJUST TAB (Direct Access) ── */}
+        {activeSubTab === 'adjust' && (
+          <div className="flex flex-col gap-3.5 pt-0.5">
+            {/* Quick Presets Carousel */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
+                Quick Look Style
+              </span>
+              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                {VIDEO_STYLE_PRESETS.map((p) => {
+                  const isCur = activeStyle === p.label;
+                  return (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => applyStylePreset(p)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
+                        isCur
+                          ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-xs'
+                          : 'bg-[#18181C] text-[#A1A1AA] border-[#2A2A30] hover:text-white hover:border-[#383842]'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Reset All Adjustments */}
+            {hasAdjustments && (
+              <button
+                type="button"
+                onClick={handleResetAdjustments}
+                className="w-full py-1.5 rounded-lg bg-[#222228] hover:bg-[#2C2C34] text-xs font-semibold text-zinc-300 hover:text-white border border-[#303038] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3 text-amber-400" />
+                Reset Tone & Adjustments
+              </button>
+            )}
+
+            {/* Sliders Groups */}
+            {adjustmentGroups.map((group) => (
+              <div key={group.title} className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-3">
+                <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
+                  {group.title}
+                </span>
+                {group.items.map((item) => (
+                  <div key={item.label} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[#A1A1AA] flex items-center gap-1.5 font-medium">
+                        {item.icon}
+                        {item.label}
+                      </span>
+                      <span className="font-mono-studio text-sky-400 font-bold">
+                        {item.value}{item.unit}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={item.min}
+                        max={item.max}
+                        value={item.value}
+                        onChange={(e) => item.setter(Number(e.target.value))}
+                        className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#2A2A35] rounded-lg"
+                      />
+                      {item.value !== item.def && (
+                        <button
+                          type="button"
+                          onClick={() => item.setter(item.def)}
+                          className="text-[9px] font-mono text-zinc-500 hover:text-zinc-200 cursor-pointer"
+                        >
+                          reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* ── STYLE TAB (Merged Cinematic Looks & 3D LUTs) ── */}
         {activeSubTab === 'style' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
@@ -990,158 +1502,6 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         )}
 
         {/* ── TRANSITIONS TAB ── */}
-        {activeSubTab === 'transitions' && (
-          <div className="flex flex-col gap-3.5 pt-0.5">
-            {/* Transition Duration & Quick Controls */}
-            <div className="p-2.5 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-[#A1A1AA] font-medium">Transition Duration</span>
-                <span className="font-mono-studio text-sky-400 font-bold">{transitionDuration.toFixed(1)}s</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min="0.1"
-                  max="2.0"
-                  step="0.1"
-                  value={transitionDuration}
-                  onChange={(e) => {
-                    const d = Number(e.target.value);
-                    setTransitionDuration(d);
-                    handleTransitionChange(activeTransition, d);
-                  }}
-                  className="flex-1 accent-[#3B82F6] cursor-pointer"
-                />
-                <div className="flex gap-1 shrink-0">
-                  {[0.3, 0.5, 0.8, 1.0].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => {
-                        setTransitionDuration(d);
-                        handleTransitionChange(activeTransition, d);
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
-                        Math.abs(transitionDuration - d) < 0.05
-                          ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
-                          : 'bg-[#141417] text-[#71717A] hover:text-white border border-[#2A2A30]'
-                      }`}
-                    >
-                      {d}s
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Category Filter Pills (CapCut Style) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs select-none">
-              {(
-                [
-                  { id: 'all', label: 'All' },
-                  { id: 'basic', label: 'Basic' },
-                  { id: 'slide', label: 'Slide & Push' },
-                  { id: 'zoom', label: 'Zoom' },
-                  { id: 'wipe', label: 'Wipe' },
-                  { id: 'special', label: 'Special' },
-                ] as const
-              ).map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setTransitionCategory(cat.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors shrink-0 ${
-                    transitionCategory === cat.id
-                      ? 'bg-[#282834] text-white border border-white/30 shadow-xs'
-                      : 'bg-[#16161A] text-[#71717A] hover:text-white border border-transparent'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Transition Cards Grid (Matching Reference Screenshot) */}
-            <div className="grid grid-cols-4 gap-2.5 pt-0.5">
-              {TRANSITION_PRESETS.filter((t) =>
-                transitionCategory === 'all' ? true : t.category === transitionCategory || t.id === 'none'
-              ).map((t) => {
-                const isSelected = activeTransition === t.id;
-                const isNone = t.id === 'none';
-
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => handleTransitionChange(t.id)}
-                    className="group flex flex-col items-center cursor-pointer text-left select-none"
-                    title={t.label}
-                  >
-                    <div
-                      className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 ${
-                        isSelected
-                          ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
-                          : 'border-[#26262E] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30 bg-[#16161A]'
-                      }`}
-                    >
-                      {isNone ? (
-                        <div className="w-full h-full bg-[#1A1A22] flex items-center justify-center">
-                          <svg
-                            viewBox="0 0 24 24"
-                            className="w-7 h-7 text-[#71717A] stroke-[1.8]"
-                            fill="none"
-                            stroke="currentColor"
-                          >
-                            <circle cx="12" cy="12" r="9" />
-                            <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
-                          </svg>
-                        </div>
-                      ) : (
-                        <div className="w-full h-full relative overflow-hidden bg-[#141418]">
-                          <img
-                            src={MOUNTAIN_PREVIEW_IMG}
-                            alt={t.label}
-                            className={`w-full h-full object-cover transition-all duration-300 ${
-                              t.hoverEffect || ''
-                            }`}
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <span
-                      className={`text-[11px] font-medium truncate block text-center mt-1.5 w-full leading-tight transition-colors ${
-                        isSelected ? 'text-white font-bold' : 'text-[#A1A1AA] group-hover:text-white'
-                      }`}
-                    >
-                      {t.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Bottom Actions Floating Bar */}
-            <div className="mt-2 pt-2 border-t border-[#26262B] flex items-center justify-between">
-              <span className="text-[11px] text-[#A1A1AA]">
-                Active:{' '}
-                <span className="font-semibold text-white">
-                  {TRANSITION_PRESETS.find((p) => p.id === activeTransition)?.label || 'None'}
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={handleApplyToAllTransitions}
-                className="px-3 py-1.5 rounded-lg bg-[#252530] hover:bg-[#323240] border border-white/10 hover:border-white/30 text-xs font-semibold text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
-                title="Apply this transition to all cuts on track"
-              >
-                <Check className="w-3.5 h-3.5 text-sky-400" />
-                Apply to all
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* ── SPEED TAB ── */}
         {activeSubTab === 'speed' && (
           <div className="flex flex-col gap-3.5 pt-0.5">

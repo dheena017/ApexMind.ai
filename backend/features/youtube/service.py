@@ -46,20 +46,37 @@ def publish_video_to_shorts(
     real_video_id = None
     live_uploaded = False
 
+    # Clean up broken ANSI escape codes like 97m from title
+    clean_title = re.sub(r'(\x1b\[[0-9;]*[a-zA-Z]|[0-9]{1,2}m)', '', str(title)).strip() or "Untitled Short"
+
     # Check if Google OAuth authorized YouTube channel is active
     yt_client = get_authenticated_youtube_client()
     if yt_client:
         try:
-            logger.info(f"Rendering vertical 9:16 video for live YouTube upload: '{title}'")
-            video_file = render_vertical_short(
-                title=title,
-                quote=quote,
-                cover_image_url=kwargs.get("coverImageUrl") or kwargs.get("visualTheme"),
-                duration_seconds=15,
-            )
+            logger.info(f"Rendering vertical 9:16 video for live YouTube upload: '{clean_title}'")
+            
+            # Prefer already rendered studio MP4 if available
+            direct_video = kwargs.get("videoUrl") or kwargs.get("video_url")
+            video_file = None
+            if direct_video and isinstance(direct_video, str):
+                if direct_video.startswith("/api/videos/"):
+                    cand = Path("backend/data/rendered_shorts") / direct_video.rsplit("/", 1)[-1]
+                    if cand.exists():
+                        video_file = str(cand.resolve())
+                elif Path(direct_video).exists():
+                    video_file = str(Path(direct_video).resolve())
+
+            if not video_file:
+                video_file = render_vertical_short(
+                    title=clean_title,
+                    quote=quote,
+                    cover_image_url=kwargs.get("coverImageUrl") or kwargs.get("visualTheme"),
+                    duration_seconds=15,
+                )
+
             upload_result = upload_video_to_live_youtube(
                 video_path=video_file,
-                title=title,
+                title=clean_title,
                 description=quote,
                 tags=kwargs.get("tags"),
             )
@@ -71,7 +88,7 @@ def publish_video_to_shorts(
             logger.error(f"Live YouTube upload encounter error ({e}), storing in studio catalog with fallback link.")
 
     created = insert_video(
-        title=title,
+        title=clean_title,
         quote=quote,
         voice=voice,
         category=category,

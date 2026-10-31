@@ -354,7 +354,7 @@ export function useStudioPipeline() {
         }
 
         // ── Populate Timeline ──────────────────────────────────────────────
-        setStage('done', 100, 'Timeline Ready!');
+        setStage('done', 100, 'Timeline Ready with AI Motion & Transitions!');
 
         window.dispatchEvent(
           new CustomEvent('workspace:set-timeline-storyboard', {
@@ -381,7 +381,7 @@ export function useStudioPipeline() {
 
         addWorkspaceNotification({
           title: 'Studio Pipeline Complete',
-          message: `${resolvedStoryboard.length} scenes, ${captionsResult?.timelineClips.length ?? 0} captions ready.`,
+          message: `${resolvedStoryboard.length} scenes with AI-choreographed animations & transitions, ${captionsResult?.timelineClips.length ?? 0} captions ready.`,
           category: 'timeline',
           type: 'ai',
           targetPane: 'canvas',

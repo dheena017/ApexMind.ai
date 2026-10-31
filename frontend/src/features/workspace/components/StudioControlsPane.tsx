@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Home,
   Image as ImageIcon,
+  Sparkles,
 } from 'lucide-react';
 import { VoiceProfile, VisualBackdrop, MusicTrack, GeneratedScript, ScriptSubtitle, DEFAULT_VISUAL_BACKDROPS } from '../types';
 import { VideoInspectorTab } from './inspectors';
@@ -19,9 +20,10 @@ import {
   AudioCompoundInspector,
   OverlayCompoundInspector,
   HomeCompoundInspector,
+  TransitionsInspector,
 } from './inspectors';
 
-export type CompoundType = 'home' | 'project' | 'video' | 'text' | 'voice' | 'music' | 'overlay';
+export type CompoundType = 'home' | 'project' | 'video' | 'text' | 'voice' | 'music' | 'overlay' | 'transitions';
 
 export interface StudioControlsPaneProps {
   voices: VoiceProfile[];
@@ -207,7 +209,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     home: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' },
     project: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' },
     video: {
-      label: customImageUrl ? 'Image Inspector (V1)' : 'Video Backdrop (V1)',
+      label: customImageUrl ? 'Image Inspector (V2)' : 'Video Backdrop (V1)',
       icon: customImageUrl ? ImageIcon : Film,
       color: 'text-amber-400',
     },
@@ -215,6 +217,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     voice: { label: `Voice: ${selectedVoice || 'Fenrir'} (A1)`, icon: Mic, color: 'text-emerald-400' },
     music: { label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-purple-400' },
     overlay: { label: 'Overlay Sticker / Badge', icon: Layers, color: 'text-indigo-400' },
+    transitions: { label: 'Transitions Studio', icon: Sparkles, color: 'text-amber-400' },
   }[activeCompound] || { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' };
 
   const isAllClipsMode = Boolean(
@@ -277,11 +280,12 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
               <div className="absolute right-0 top-full mt-1.5 w-52 bg-[#18181C] border border-[#2E2E36] rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-scale-up">
                 {[
                   { id: 'home' as CompoundType, label: 'Home (Project Studio)', icon: Home },
-                  { id: 'video' as CompoundType, label: customImageUrl ? 'Image Inspector (V1)' : 'Video Backdrop (V1)', icon: customImageUrl ? ImageIcon : Film },
+                  { id: 'video' as CompoundType, label: customImageUrl ? 'Image Inspector (V2)' : 'Video Backdrop (V1)', icon: customImageUrl ? ImageIcon : Film },
                   { id: 'text' as CompoundType, label: 'Captions & Title (T1)', icon: Type },
                   { id: 'voice' as CompoundType, label: 'Voiceover Audio (A1)', icon: Mic },
                   { id: 'music' as CompoundType, label: 'Soundtrack Audio (A2)', icon: Music },
                   { id: 'overlay' as CompoundType, label: 'Overlays & Badges', icon: Layers },
+                  { id: 'transitions' as CompoundType, label: 'Transitions Studio', icon: Sparkles },
                 ].map((c) => {
                   const Icon = c.icon;
                   const isCurrent = activeCompound === c.id;
@@ -359,6 +363,15 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
         {activeCompound === 'overlay' && (
           <OverlayCompoundInspector
             activeOverlay={activeElementOverlay}
+          />
+        )}
+
+        {activeCompound === 'transitions' && (
+          <TransitionsInspector
+            selectedClip={localSelectedClip}
+            customImageUrl={customImageUrl}
+            customVideoUrl={customVideoUrl}
+            activeBackdrop={activeBackdropObj}
           />
         )}
 

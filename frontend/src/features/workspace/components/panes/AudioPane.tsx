@@ -223,8 +223,20 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const handleSelectSoundtrack = (trackId: string) => {
     if (onSelectMusic) {
       onSelectMusic(trackId);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
       const track = soundtracks.find((t) => t.id === trackId);
+
+      window.dispatchEvent(
+        new CustomEvent('workspace:add-timeline-clip', {
+          detail: {
+            type: 'music',
+            url: track?.audioUrl || '',
+            name: track?.title || 'Soundtrack',
+            duration: track?.duration || 15.0,
+          },
+        })
+      );
+      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
+
       const name = track?.title || 'Soundtrack';
       toast.success(`Applied "${name}"`);
       addWorkspaceNotification({

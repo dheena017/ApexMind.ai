@@ -69,6 +69,20 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   // Playback & Filter settings
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [colorMood, setColorMood] = useState<'normal' | 'dark' | 'bw' | 'cyber'>('normal');
+  const [timelineVideoUrls, setTimelineVideoUrls] = useState<Set<string>>(new Set());
+  const [hideUsed, setHideUsed] = useState<boolean>(false);
+
+  // Sync timeline video clips to detect used assets and allow 1-click removal
+  useEffect(() => {
+    const handleTimelineState = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.videoClips) {
+        setTimelineVideoUrls(new Set((detail.videoClips as any[]).map((c) => c.url).filter(Boolean)));
+      }
+    };
+    window.addEventListener('workspace:timeline-state', handleTimelineState);
+    return () => window.removeEventListener('workspace:timeline-state', handleTimelineState);
+  }, []);
 
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -202,6 +216,23 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     toast.success(`Applied "${vid.title}"`);
   };
 
+  const handleAddToTimeline = (vid: StockVideoItem, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedId(vid.id);
+    window.dispatchEvent(
+      new CustomEvent('workspace:add-timeline-clip', {
+        detail: {
+          type: 'video',
+          url: vid.videoUrl,
+          posterUrl: vid.posterUrl,
+          name: vid.title,
+          duration: 4.0,
+        },
+      })
+    );
+    toast.success(`Added "${vid.title}" to Timeline Track (V1)`);
+  };
+
   const handleStageVideo = (vid: StockVideoItem) => setSelectedId(vid.id);
 
   const handleAddCustomUrl = (saveToFavorites = false) => {
@@ -245,7 +276,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
   const sourceList = activeTab === 'saved' ? savedVideos : videos;
 
-  const filteredVideos =
+  const baseFiltered =
     activeTab === 'saved'
       ? sourceList.filter((vid) => {
           const matchesCategory = selectedCategory === 'all' || vid.category === selectedCategory;
@@ -257,6 +288,8 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
           return matchesCategory && matchesQuery;
         })
       : videos;
+
+  const filteredVideos = baseFiltered.filter((vid) => !hideUsed || !timelineVideoUrls.has(vid.videoUrl));
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
@@ -332,6 +365,23 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       {/* ── Category Filter Chips (In Catalog Mode) ── */}
       {activeTab === 'catalog' && (
         <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
+          <button
+            type="button"
+            onClick={() => setHideUsed(!hideUsed)}
+            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+              hideUsed
+                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-xs'
+                : 'bg-[#1C1C22] text-[#A1A1AA] hover:text-white hover:bg-[#26262E] border border-[#2A2A32]'
+            }`}
+            title="Filter out videos already in project so they cannot be reused"
+          >
+            <span>{hideUsed ? '🚫 Used Hidden' : '👁️ Hide Used'}</span>
+            {timelineVideoUrls.size > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-[9px] font-mono">
+                {timelineVideoUrls.size}
+              </span>
+            )}
+          </button>
           {(
             [
               { id: 'all', label: '✨ All Free Loops' },
@@ -678,19 +728,51 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                           {vid.title}
                         </p>
 
-                        <div className="flex items-center justify-between gap-1 pt-0.5">
-                          <span className="text-[9px] text-zinc-400 font-mono flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                            Loop
-                          </span>
+                        {(() => {
+                          const isUsedInTimeline = timelineVideoUrls.has(vid.videoUrl);
+                          return (
+                            <div className="flex items-center justify-between gap-1 pt-0.5">
+                              <span className="text-[9px] text-zinc-400 font-mono flex items-center gap-1">
+                                <span className={`w-1.5 h-1.5 rounded-full ${isUsedInTimeline ? 'bg-amber-400' : 'bg-emerald-400'} inline-block animate-pulse`} />
+                                {isUsedInTimeline ? 'In Project' : 'Stock'}
+                              </span>
 
-                          {isSelected && (
-                            <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
-                              <Check className="w-2.5 h-2.5 stroke-[3]" />
-                              Active
-                            </span>
-                          )}
-                        </div>
+                              <div className="flex items-center gap-1">
+                                {isUsedInTimeline ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.dispatchEvent(new CustomEvent('workspace:remove-clip-by-url', { detail: { url: vid.videoUrl } }));
+                                      toast.success(`Removed "${vid.title}" from Timeline`);
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-rose-500/25 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-[9px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                                    title="Remove this video from Timeline Track"
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5 stroke-[2.5]" />
+                                    Remove
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleAddToTimeline(vid, e)}
+                                    className="px-2 py-0.5 rounded bg-amber-500/25 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 text-[9px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                                    title="Add to Timeline Track V1"
+                                  >
+                                    <Plus className="w-2.5 h-2.5 stroke-[3]" />
+                                    Track
+                                  </button>
+                                )}
+                                {isSelected && (
+                                  <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   );

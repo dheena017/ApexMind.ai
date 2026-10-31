@@ -54,6 +54,40 @@ const DEFAULT_TIMELINE_STATE: TimelineState = {
   titleDuration: 30,
 };
 
+export const TRANSITION_NAMES: Record<string, string> = {
+  none: 'None',
+  dissolve: 'Crossfade',
+  crossfade: 'Crossfade',
+  'fade-black': 'Fade to Black',
+  'fade-white': 'Fade to White',
+  'zoom-in': 'Zoom In',
+  'zoom-out': 'Zoom Out',
+  'slide-left': 'Slide Left',
+  'slide-right': 'Slide Right',
+  'slide-up': 'Slide Up',
+  'slide-down': 'Slide Down',
+  'push-left': 'Push Left',
+  'push-right': 'Push Right',
+  'push-up': 'Push Up',
+  'push-down': 'Push Down',
+  'luma-fade': 'Luma Fade',
+  'blur-crossfade': 'Blur Crossfade',
+  'split-reveal': 'Split Reveal',
+  'circle-wipe': 'Circle Wipe',
+  'rgb-split': 'RGB Split',
+  'whip-pan-left': 'Whip Pan Left',
+  'whip-pan-right': 'Whip Pan Right',
+  'soft-rotate': 'Soft Rotate',
+  'smooth-zoom': 'Smooth Zoom',
+  flash: 'Flash',
+};
+
+const isImageMedia = (url?: string, type?: string) => {
+  if (!url) return false;
+  if (type === 'image') return true;
+  return /\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i.test(url) || url.startsWith('data:image/');
+};
+
 const getTransitionStyles = (type: string, progress: number): { styleA: React.CSSProperties; styleB: React.CSSProperties } => {
   const p = Math.max(0, Math.min(1, progress));
 
@@ -61,19 +95,21 @@ const getTransitionStyles = (type: string, progress: number): { styleA: React.CS
     case 'dissolve':
     case 'crossfade':
       return {
-        styleA: { opacity: 1 - p },
-        styleB: { opacity: p },
+        styleA: { opacity: 1 - p, zIndex: 1 },
+        styleB: { opacity: p, zIndex: 2 },
       };
 
     case 'fade-black':
       return {
         styleA: {
           opacity: p < 0.5 ? 1 : 0,
-          filter: `brightness(${Math.max(0, (0.5 - p) * 2)})`,
+          filter: `brightness(${Math.max(0, 1 - p * 2)})`,
+          zIndex: 1,
         },
         styleB: {
           opacity: p >= 0.5 ? 1 : 0,
-          filter: `brightness(${Math.max(0, (p - 0.5) * 2)})`,
+          filter: `brightness(${Math.min(1, (p - 0.5) * 2)})`,
+          zIndex: 2,
         },
       };
 
@@ -81,60 +117,62 @@ const getTransitionStyles = (type: string, progress: number): { styleA: React.CS
       return {
         styleA: {
           opacity: p < 0.5 ? 1 : 0,
-          filter: `brightness(${1 + p * 6})`,
+          filter: `brightness(${1 + p * 10})`,
+          zIndex: 1,
         },
         styleB: {
           opacity: p >= 0.5 ? 1 : 0,
-          filter: `brightness(${1 + (1 - p) * 6})`,
+          filter: `brightness(${1 + (1 - p) * 10})`,
+          zIndex: 2,
         },
       };
 
     case 'slide-left':
       return {
-        styleA: { transform: `translateX(-${p * 100}%)` },
-        styleB: { transform: `translateX(${(1 - p) * 100}%)` },
+        styleA: { transform: `translateX(${-p * 25}%)`, zIndex: 1 },
+        styleB: { transform: `translateX(${(1 - p) * 100}%)`, zIndex: 2, boxShadow: '-12px 0 28px rgba(0,0,0,0.6)' },
       };
 
     case 'slide-right':
       return {
-        styleA: { transform: `translateX(${p * 100}%)` },
-        styleB: { transform: `translateX(-${(1 - p) * 100}%)` },
+        styleA: { transform: `translateX(${p * 25}%)`, zIndex: 1 },
+        styleB: { transform: `translateX(${-(1 - p) * 100}%)`, zIndex: 2, boxShadow: '12px 0 28px rgba(0,0,0,0.6)' },
       };
 
     case 'slide-up':
       return {
-        styleA: { transform: `translateY(-${p * 100}%)` },
-        styleB: { transform: `translateY(${(1 - p) * 100}%)` },
+        styleA: { transform: `translateY(${-p * 25}%)`, zIndex: 1 },
+        styleB: { transform: `translateY(${(1 - p) * 100}%)`, zIndex: 2, boxShadow: '0 -12px 28px rgba(0,0,0,0.6)' },
       };
 
     case 'slide-down':
       return {
-        styleA: { transform: `translateY(${p * 100}%)` },
-        styleB: { transform: `translateY(-${(1 - p) * 100}%)` },
+        styleA: { transform: `translateY(${p * 25}%)`, zIndex: 1 },
+        styleB: { transform: `translateY(${-(1 - p) * 100}%)`, zIndex: 2, boxShadow: '0 12px 28px rgba(0,0,0,0.6)' },
       };
 
     case 'push-left':
       return {
-        styleA: { transform: `translateX(-${p * 100}%)` },
-        styleB: { transform: `translateX(${(1 - p) * 100}%)` },
+        styleA: { transform: `translateX(${-p * 100}%)`, zIndex: 1 },
+        styleB: { transform: `translateX(${(1 - p) * 100}%)`, zIndex: 2 },
       };
 
     case 'push-right':
       return {
-        styleA: { transform: `translateX(${p * 100}%)` },
-        styleB: { transform: `translateX(-${(1 - p) * 100}%)` },
+        styleA: { transform: `translateX(${p * 100}%)`, zIndex: 1 },
+        styleB: { transform: `translateX(${-(1 - p) * 100}%)`, zIndex: 2 },
       };
 
     case 'push-up':
       return {
-        styleA: { transform: `translateY(-${p * 100}%)` },
-        styleB: { transform: `translateY(${(1 - p) * 100}%)` },
+        styleA: { transform: `translateY(${-p * 100}%)`, zIndex: 1 },
+        styleB: { transform: `translateY(${(1 - p) * 100}%)`, zIndex: 2 },
       };
 
     case 'push-down':
       return {
-        styleA: { transform: `translateY(${p * 100}%)` },
-        styleB: { transform: `translateY(-${(1 - p) * 100}%)` },
+        styleA: { transform: `translateY(${p * 100}%)`, zIndex: 1 },
+        styleB: { transform: `translateY(${-(1 - p) * 100}%)`, zIndex: 2 },
       };
 
     case 'circle-wipe':
@@ -142,8 +180,8 @@ const getTransitionStyles = (type: string, progress: number): { styleA: React.CS
         styleA: { zIndex: 1 },
         styleB: {
           zIndex: 2,
-          clipPath: `circle(${p * 150}% at 50% 50%)`,
-          WebkitClipPath: `circle(${p * 150}% at 50% 50%)`,
+          clipPath: `circle(${p * 142}% at 50% 50%)`,
+          WebkitClipPath: `circle(${p * 142}% at 50% 50%)`,
         },
       };
 
@@ -159,74 +197,76 @@ const getTransitionStyles = (type: string, progress: number): { styleA: React.CS
 
     case 'zoom-in':
       return {
-        styleA: { transform: `scale(${1 + p * 0.3})`, opacity: 1 - p },
-        styleB: { transform: `scale(${0.7 + p * 0.3})`, opacity: p },
+        styleA: { transform: `scale(${1 + p * 0.45})`, opacity: 1 - p, zIndex: 1 },
+        styleB: { transform: `scale(${0.7 + p * 0.3})`, opacity: p, zIndex: 2 },
       };
 
     case 'zoom-out':
       return {
-        styleA: { transform: `scale(${1 - p * 0.3})`, opacity: 1 - p },
-        styleB: { transform: `scale(${1.3 - p * 0.3})`, opacity: p },
+        styleA: { transform: `scale(${1 - p * 0.3})`, opacity: 1 - p, zIndex: 1 },
+        styleB: { transform: `scale(${1.4 - p * 0.4})`, opacity: p, zIndex: 2 },
       };
 
     case 'smooth-zoom':
       return {
-        styleA: { transform: `scale(${1 + p * 0.5})`, opacity: 1 - p * 0.8 },
-        styleB: { transform: `scale(${0.6 + p * 0.4})`, opacity: p },
+        styleA: { transform: `scale(${1 + p * 0.8})`, filter: `blur(${p * 8}px)`, opacity: 1 - p * 0.8, zIndex: 1 },
+        styleB: { transform: `scale(${0.5 + p * 0.5})`, filter: `blur(${(1 - p) * 8}px)`, opacity: p, zIndex: 2 },
       };
 
     case 'soft-rotate':
       return {
-        styleA: { transform: `rotate(-${p * 20}deg) scale(${1 - p * 0.2})`, opacity: 1 - p },
-        styleB: { transform: `rotate(${(1 - p) * 20}deg) scale(${0.8 + p * 0.2})`, opacity: p },
+        styleA: { transform: `rotate(${-p * 22}deg) scale(${1 - p * 0.25})`, opacity: 1 - p, zIndex: 1 },
+        styleB: { transform: `rotate(${(1 - p) * 22}deg) scale(${0.75 + p * 0.25})`, opacity: p, zIndex: 2 },
       };
 
     case 'flash':
       return {
         styleA: {
           opacity: p < 0.5 ? 1 : 0,
-          filter: `brightness(${1 + p * 8})`,
+          filter: `brightness(${1 + (p < 0.5 ? p * 12 : (1 - p) * 12)})`,
+          zIndex: 1,
         },
         styleB: {
           opacity: p >= 0.5 ? 1 : 0,
-          filter: `brightness(${1 + (1 - p) * 8})`,
+          filter: `brightness(${1 + (p < 0.5 ? p * 12 : (1 - p) * 12)})`,
+          zIndex: 2,
         },
       };
 
     case 'blur-crossfade':
       return {
-        styleA: { filter: `blur(${p * 16}px)`, opacity: 1 - p },
-        styleB: { filter: `blur(${(1 - p) * 16}px)`, opacity: p },
+        styleA: { filter: `blur(${p * 18}px)`, opacity: 1 - p, zIndex: 1 },
+        styleB: { filter: `blur(${(1 - p) * 18}px)`, opacity: p, zIndex: 2 },
       };
 
     case 'luma-fade':
       return {
-        styleA: { filter: `contrast(${100 + p * 150}%) brightness(${Math.max(0, 1 - p * 1.5)})`, opacity: 1 - p },
-        styleB: { filter: `contrast(${100 + (1 - p) * 150}%) brightness(${Math.min(1, p * 1.5)})`, opacity: p },
+        styleA: { filter: `contrast(${100 + p * 150}%) brightness(${Math.max(0, 1 - p * 1.5)})`, opacity: 1 - p, zIndex: 1 },
+        styleB: { filter: `contrast(${100 + (1 - p) * 150}%) brightness(${Math.min(1, p * 1.5)})`, opacity: p, zIndex: 2 },
       };
 
     case 'rgb-split':
       return {
-        styleA: { filter: `hue-rotate(${p * 120}deg) saturate(${100 + p * 100}%)`, opacity: 1 - p },
-        styleB: { filter: `hue-rotate(${(1 - p) * -120}deg) saturate(${100 + (1 - p) * 100}%)`, opacity: p },
+        styleA: { filter: `hue-rotate(${p * 120}deg) saturate(${100 + p * 120}%)`, opacity: 1 - p, zIndex: 1 },
+        styleB: { filter: `hue-rotate(${(1 - p) * -120}deg) saturate(${100 + (1 - p) * 120}%)`, opacity: p, zIndex: 2 },
       };
 
     case 'whip-pan-left':
       return {
-        styleA: { transform: `translateX(-${p * 120}%) skewX(${p * 12}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 10}px)` },
-        styleB: { transform: `translateX(${(1 - p) * 120}%) skewX(-${(1 - p) * 12}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 10}px)` },
+        styleA: { transform: `translateX(${-p * 100}%) skewX(${p * 14}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 12}px)`, zIndex: 1 },
+        styleB: { transform: `translateX(${(1 - p) * 100}%) skewX(${-(1 - p) * 14}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 12}px)`, zIndex: 2 },
       };
 
     case 'whip-pan-right':
       return {
-        styleA: { transform: `translateX(${p * 120}%) skewX(-${p * 12}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 10}px)` },
-        styleB: { transform: `translateX(${(1 - p) * 120}%) skewX(${(1 - p) * 12}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 10}px)` },
+        styleA: { transform: `translateX(${p * 100}%) skewX(${-p * 14}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 12}px)`, zIndex: 1 },
+        styleB: { transform: `translateX(${-(1 - p) * 100}%) skewX(${(1 - p) * 14}deg)`, filter: `blur(${Math.sin(p * Math.PI) * 12}px)`, zIndex: 2 },
       };
 
     default:
       return {
-        styleA: { opacity: 1 - p },
-        styleB: { opacity: p },
+        styleA: { opacity: 1 - p, zIndex: 1 },
+        styleB: { opacity: p, zIndex: 2 },
       };
   }
 };
@@ -478,32 +518,51 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             detail: { exporting: true, message: 'Rendering broadcast-quality Full HD video with FFmpeg...' },
           }));
 
+          const vClips = (timelineState.videoClips || []).filter((c) => Boolean(c.url));
+          const iClips = (timelineState.imageClips || []).filter((c) => Boolean(c.url));
+          const maxClipEnd = Math.max(
+            0,
+            ...vClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0)),
+            ...iClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0))
+          );
+
           const maxSubEnd = Math.max(
             0,
             ...(script.subtitles || []).map((s) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
           );
-          const fullRenderDuration = Math.max(
-            Number(exportDuration) || 0,
-            Number(duration) || 0,
-            Number(playbackDuration) || 0,
-            maxSubEnd,
-            15
-          );
+
+          // If timeline has clips, use exact clip timeline end without artificial stretching
+          const exactTimelineDuration = maxClipEnd > 0
+            ? maxClipEnd
+            : (Number(duration) > 0 ? Number(duration) : (Number(playbackDuration) > 0 ? Number(playbackDuration) : (maxSubEnd > 0 ? maxSubEnd : 0)));
+
+          const fullRenderDuration = exactTimelineDuration > 0
+            ? exactTimelineDuration
+            : Math.max(Number(exportDuration) || 0, 15);
 
           const renderPayload = {
             title: script.title || exportFileName || 'apexmind-video',
             aspectRatio: canvasAspectRatio,
             duration: fullRenderDuration,
+            exactDuration: exactTimelineDuration > 0 ? exactTimelineDuration : undefined,
             audioUrl: audioUrl || null,
             musicUrl: musicUrl || null,
             backdropUrl: customVideoUrl || customImageUrl || activeBackdrop?.imageUrl || null,
             backdropType: customVideoUrl ? 'video' : 'image',
+            videoClips: vClips.length > 0 ? vClips : undefined,
+            imageClips: iClips.length > 0 ? iClips : undefined,
             subtitles: (script.subtitles || []).map((s) => ({
               start: s.start,
               duration: s.duration,
               text: s.text,
             })),
             captionColor: captionPresetColor || '#FACC15',
+            captionFont: captionPresetFontFamily || 'Impact',
+            captionTransform: captionPresetTextTransform || 'uppercase',
+            filterSettings: filterSettings || undefined,
+            voiceVolume: typeof volume === 'number' ? volume : 1.0,
+            musicVolume: 0.65,
+            fps: 30,
           };
 
           const res = await fetch('/api/workspace/render-video', {
@@ -794,17 +853,30 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         recorder.start(500);
 
         const exportStartedAt = performance.now();
+        const vClips = timelineState.videoClips || [];
+        const iClips = timelineState.imageClips || [];
+        const maxClipEnd = Math.max(
+          0,
+          ...vClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0)),
+          ...iClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0))
+        );
         const maxSubEnd = Math.max(
           0,
           ...(script.subtitles || []).map((s) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
         );
-        const effectiveDuration = Math.max(
-          Number(exportDuration) || 0,
-          Number(duration) || 0,
-          Number(playbackDuration) || 0,
-          maxSubEnd,
-          15
-        );
+        const exactTimelineDuration = maxClipEnd > 0
+          ? maxClipEnd
+          : (Number(duration) > 0 ? Number(duration) : (Number(playbackDuration) > 0 ? Number(playbackDuration) : (maxSubEnd > 0 ? maxSubEnd : 0)));
+
+        const effectiveDuration = exactTimelineDuration > 0
+          ? exactTimelineDuration
+          : Math.max(
+              Number(exportDuration) || 0,
+              Number(duration) || 0,
+              Number(playbackDuration) || 0,
+              maxSubEnd,
+              15
+            );
         const exportLength = Math.max(1, effectiveDuration) * 1000;
         let lastReportedPercent = 0;
 
@@ -868,19 +940,35 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     const handleClipPropUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (!detail) return;
-      if (detail.transition !== undefined || detail.transitionDuration !== undefined) {
+      if (
+        detail.transition !== undefined ||
+        detail.transitionDuration !== undefined ||
+        detail.animationIn !== undefined ||
+        detail.animationInDuration !== undefined ||
+        detail.animationOut !== undefined ||
+        detail.animationOutDuration !== undefined
+      ) {
         setTimelineState((prev) => {
-          const updatedClips = (prev.videoClips || []).map((c) => {
-            if (detail.applyToAll || (detail.clipId && c.id === detail.clipId)) {
-              return {
-                ...c,
-                transition: detail.transition ?? c.transition,
-                transitionDuration: detail.transitionDuration ?? c.transitionDuration,
-              };
-            }
-            return c;
-          });
-          return { ...prev, videoClips: updatedClips };
+          const updateTrack = (clips?: TimelineMediaClip[]) =>
+            (clips || []).map((c) => {
+              if (detail.applyToAll || (detail.clipId && c.id === detail.clipId) || !detail.clipId) {
+                return {
+                  ...c,
+                  transition: detail.transition !== undefined ? detail.transition : c.transition,
+                  transitionDuration: detail.transitionDuration !== undefined ? detail.transitionDuration : c.transitionDuration,
+                  animationIn: detail.animationIn !== undefined ? detail.animationIn : c.animationIn,
+                  animationInDuration: detail.animationInDuration !== undefined ? detail.animationInDuration : c.animationInDuration,
+                  animationOut: detail.animationOut !== undefined ? detail.animationOut : c.animationOut,
+                  animationOutDuration: detail.animationOutDuration !== undefined ? detail.animationOutDuration : c.animationOutDuration,
+                };
+              }
+              return c;
+            });
+          return {
+            ...prev,
+            videoClips: detail.track === 'image' ? prev.videoClips : updateTrack(prev.videoClips),
+            imageClips: detail.track === 'video' ? prev.imageClips : updateTrack(prev.imageClips),
+          };
         });
       }
     };
@@ -892,59 +980,288 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     };
   }, []);
 
+  // Multi-clip visual stream (handles video clips, image clips, or storyboard scenes)
+  const effectiveVisualClips = useMemo(() => {
+    const vClips = (timelineState.videoClips || []).filter((c) => Boolean(c.url)).slice().sort((a, b) => (Number(a.start) || 0) - (Number(b.start) || 0));
+    const iClips = (timelineState.imageClips || []).filter((c) => Boolean(c.url)).slice().sort((a, b) => (Number(a.start) || 0) - (Number(b.start) || 0));
+
+    const iHasTrans = iClips.some((c) => c.transition && c.transition !== 'none');
+    const vHasTrans = vClips.some((c) => c.transition && c.transition !== 'none');
+
+    // 1. If currently selected track is 'image' or image track has transitions, prioritize image clips
+    if (iClips.length >= 2 && (timelineState.selectedTrack === 'image' || (iHasTrans && !vHasTrans) || vClips.length < 2)) {
+      return iClips;
+    }
+    // 2. If video track has >= 2 clips
+    if (vClips.length >= 2) {
+      return vClips;
+    }
+    // 3. If image track has >= 2 clips
+    if (iClips.length >= 2) {
+      return iClips;
+    }
+    // 4. Storyboard fallback
+    if (script.storyboard && script.storyboard.length >= 2) {
+      let runStart = 0;
+      return script.storyboard.map((sc, idx) => {
+        const start = typeof sc.start === 'number' ? sc.start : runStart;
+        const dur = typeof sc.duration === 'number' ? sc.duration : 3;
+        runStart = start + dur;
+        const clipUrl = sc.mediaUrl || (sc as any).videoUrl || sc.posterUrl || '';
+        return {
+          id: `sb-${idx}`,
+          type: (sc.mediaType === 'image' || isImageMedia(clipUrl)) ? ('image' as const) : ('video' as const),
+          url: clipUrl,
+          posterUrl: sc.posterUrl || clipUrl,
+          thumbnailUrl: (sc as any).thumbnailUrl || sc.posterUrl,
+          name: `Scene ${idx + 1}`,
+          start,
+          duration: dur,
+          transition: (timelineState.videoClips?.[idx]?.transition) || (sc as any).transition,
+          transitionDuration: (timelineState.videoClips?.[idx]?.transitionDuration) || (sc as any).transitionDuration || 0.5,
+        };
+      });
+    }
+    if (vClips.length > 0) return vClips;
+    if (iClips.length > 0) return iClips;
+    return [];
+  }, [timelineState.videoClips, timelineState.imageClips, timelineState.selectedTrack, script.storyboard]);
+
   const isCustomImage = Boolean(customImageUrl);
   const isCustomVideo = Boolean(customVideoUrl);
 
-  // Active clip resolution based on currentTime (exact bounds with graceful fallback)
+  // Active clip resolution based strictly on currentTime within clip bounds
   const activeVideoClip = (timelineState.videoClips || []).find((c) => {
     const start = Number(c.start) || 0;
-    const dur = Number(c.duration) || 3;
+    const dur = Number(c.duration) || 0;
     return currentTime >= start && currentTime < start + dur;
-  }) || (timelineState.videoClips || []).filter((c) => currentTime >= (Number(c.start) || 0)).slice(-1)[0]
-    || (timelineState.videoClips && timelineState.videoClips[0]);
+  });
 
   const activeImageClip = (timelineState.imageClips || []).find((c) => {
     const start = Number(c.start) || 0;
-    const dur = Number(c.duration) || 3;
-    return currentTime >= start - 0.05 && currentTime < start + dur + 0.05;
-  }) || (timelineState.imageClips || []).reduce<any>((closest, c) => {
-    if (currentTime >= c.start && (!closest || c.start > closest.start)) return c;
-    return closest;
-  }, undefined) || (timelineState.imageClips && timelineState.imageClips[0]);
+    const dur = Number(c.duration) || 0;
+    return currentTime >= start && currentTime < start + dur;
+  });
 
-  // Detect if playhead is currently within an active cut transition between two video clips
-  const activeTransition = useMemo(() => {
-    const clips = (timelineState.videoClips || []).slice().sort((a, b) => (Number(a.start) || 0) - (Number(b.start) || 0));
-    if (clips.length < 2) return null;
+  // Live interactive preview triggered when clicking any transition preset in inspector
+  const [livePreview, setLivePreview] = useState<{
+    type: string;
+    duration: number;
+    progress: number;
+    clipA?: any;
+    clipB?: any;
+  } | null>(null);
 
-    for (let i = 0; i < clips.length - 1; i++) {
-      const clipA = clips[i];
-      const clipB = clips[i + 1];
-      const transType = (clipA.transition && clipA.transition !== 'none') ? clipA.transition : ((clipB.transition && clipB.transition !== 'none') ? clipB.transition : null);
-      if (!transType || transType === 'none') continue;
+  useEffect(() => {
+    let animId: number;
+    let timerId: any;
 
-      const cutTime = (Number(clipB.start) !== undefined && Number(clipB.start) > 0) ? Number(clipB.start) : ((Number(clipA.start) || 0) + (Number(clipA.duration) || 3));
-      const transDuration = Math.max(0.1, Math.min(Number(clipA.transitionDuration || clipB.transitionDuration) || 0.5, 2.0));
-      const transStart = cutTime - transDuration / 2;
-      const transEnd = cutTime + transDuration / 2;
+    const handlePreview = (e: Event) => {
+      const detail = (e as CustomEvent<{ transition: string; transitionDuration?: number; clipId?: string }>).detail;
+      if (!detail || !detail.transition || detail.transition === 'none') {
+        setLivePreview(null);
+        return;
+      }
+      const dur = Math.max(0.2, Math.min(detail.transitionDuration ?? 0.5, 2.0));
 
-      if (currentTime >= transStart && currentTime <= transEnd) {
-        const progress = Math.max(0, Math.min(1, (currentTime - transStart) / transDuration));
-        return {
-          isActive: true,
-          type: transType,
-          duration: transDuration,
-          progress,
-          clipA,
-          clipB,
-          cutTime,
+      let pClipA: any = null;
+      let pClipB: any = null;
+
+      if (effectiveVisualClips.length >= 2) {
+        const targetIdx = detail.clipId ? effectiveVisualClips.findIndex((c) => c.id === detail.clipId) : -1;
+        const idxA = targetIdx >= 0 ? targetIdx : 0;
+        pClipA = effectiveVisualClips[idxA];
+        pClipB = effectiveVisualClips[idxA + 1] || effectiveVisualClips[0];
+      }
+
+      if (!pClipA) {
+        pClipA = {
+          url: customVideoUrl || customImageUrl || activeBackdrop?.imageUrl || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+          type: customVideoUrl ? 'video' : 'image',
         };
       }
-    }
-    return null;
-  }, [timelineState.videoClips, currentTime]);
+      if (!pClipB) {
+        pClipB = {
+          url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
+          type: 'image',
+        };
+      }
 
-  const activeOverlayClip = (timelineState.overlayClips || [])
+      const startTime = performance.now();
+      const totalMs = dur * 1000;
+
+      const animate = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / totalMs);
+        setLivePreview({
+          type: detail.transition,
+          duration: dur,
+          progress,
+          clipA: pClipA,
+          clipB: pClipB,
+        });
+
+        if (progress < 1) {
+          animId = requestAnimationFrame(animate);
+        } else {
+          timerId = setTimeout(() => {
+            setLivePreview(null);
+          }, 450);
+        }
+      };
+
+      if (animId) cancelAnimationFrame(animId);
+      if (timerId) clearTimeout(timerId);
+      animId = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('workspace:preview-transition', handlePreview);
+    return () => {
+      window.removeEventListener('workspace:preview-transition', handlePreview);
+      if (animId) cancelAnimationFrame(animId);
+      if (timerId) clearTimeout(timerId);
+    };
+  }, [effectiveVisualClips, customVideoUrl, customImageUrl, activeBackdrop?.imageUrl]);
+
+  // Live interactive preview triggered when clicking any animation preset in inspector
+  const [liveAnimPreview, setLiveAnimPreview] = useState<{
+    direction: 'in' | 'out';
+    animation: string;
+    duration: number;
+    progress: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let animId: number;
+    let timerId: any;
+
+    const handleAnimPreview = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        type?: string;
+        animation?: string;
+        direction?: 'in' | 'out';
+        duration?: number;
+      }>).detail;
+      const animType = detail?.animation || detail?.type || 'none';
+      if (!detail || animType === 'none') {
+        setLiveAnimPreview(null);
+        return;
+      }
+      const dir = detail.direction || 'in';
+      const dur = Math.max(0.2, Math.min(detail.duration ?? 0.5, 2.0));
+      const startTime = performance.now();
+      const totalMs = dur * 1000;
+
+      const animate = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / totalMs);
+        setLiveAnimPreview({
+          direction: dir,
+          animation: animType,
+          duration: dur,
+          progress,
+        });
+
+        if (progress < 1) {
+          animId = requestAnimationFrame(animate);
+        } else {
+          timerId = setTimeout(() => {
+            setLiveAnimPreview(null);
+          }, 250);
+        }
+      };
+
+      if (animId) cancelAnimationFrame(animId);
+      if (timerId) clearTimeout(timerId);
+      animId = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('workspace:preview-clip-animation', handleAnimPreview);
+    return () => {
+      window.removeEventListener('workspace:preview-clip-animation', handleAnimPreview);
+      if (animId) cancelAnimationFrame(animId);
+      if (timerId) clearTimeout(timerId);
+    };
+  }, []);
+
+  // Detect cut transition at current playhead between consecutive clips
+  const activeCutTransition = useMemo(() => {
+    const evalTrack = (clips?: TimelineMediaClip[]) => {
+      if (!clips || clips.length < 2) return null;
+      const sorted = clips.slice().sort((a, b) => (Number(a.start) || 0) - (Number(b.start) || 0));
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const clipA = sorted[i];
+        const clipB = sorted[i + 1];
+        if (!clipA.transition || clipA.transition === 'none') continue;
+        const transType = clipA.transition;
+
+        const cutTime = (Number(clipB.start) !== undefined && Number(clipB.start) > 0)
+          ? Number(clipB.start)
+          : ((Number(clipA.start) || 0) + (Number(clipA.duration) || 3));
+        const transDuration = Math.max(0.1, Math.min(Number(clipA.transitionDuration || clipB.transitionDuration) || 0.5, 3.0));
+        const transStart = cutTime - transDuration / 2;
+        const transEnd = cutTime + transDuration / 2;
+        const handoffDuration = 0.35;
+        const clipBDuration = Number(clipB.duration) || 8;
+        const handoffEnd = Math.min(transEnd + handoffDuration, cutTime + clipBDuration - 0.05);
+
+        // Phase 1: Active Transitioning Animation
+        if (currentTime >= transStart - 0.01 && currentTime <= transEnd + 0.01) {
+          const rawProgress = (currentTime - transStart) / transDuration;
+          const progress = Math.max(0, Math.min(1, rawProgress));
+          return {
+            isActive: true,
+            isTransitioning: true,
+            type: transType,
+            duration: transDuration,
+            progress,
+            clipA,
+            clipB,
+            cutTime,
+          };
+        }
+
+        // Phase 2: Post-Transition Handoff Protection (Synchronous Hold)
+        // Holds Layer B with Clip B synchronously on top so Layer A never flashes the previous clip or black
+        if (currentTime > transEnd + 0.01 && currentTime <= handoffEnd) {
+          return {
+            isActive: true,
+            isTransitioning: false,
+            type: transType,
+            duration: transDuration,
+            progress: 1.0,
+            clipA,
+            clipB,
+            cutTime,
+          };
+        }
+      }
+      return null;
+    };
+
+    // Check track with active transition or selected track first
+    if (timelineState.selectedTrack === 'image') {
+      const imgTrans = evalTrack(timelineState.imageClips);
+      if (imgTrans) return imgTrans;
+    }
+    const checkImageFirst = (timelineState.imageClips || []).some((c) => c.transition && c.transition !== 'none');
+    if (checkImageFirst) {
+      const imgTrans = evalTrack(timelineState.imageClips);
+      if (imgTrans) return imgTrans;
+    }
+
+        const vidTrans = evalTrack(timelineState.videoClips);
+    if (vidTrans) return vidTrans;
+
+    const imgTrans = evalTrack(timelineState.imageClips);
+    if (imgTrans) return imgTrans;
+
+    return evalTrack(effectiveVisualClips);
+  }, [timelineState.videoClips, timelineState.imageClips, timelineState.selectedTrack, effectiveVisualClips, currentTime]);
+
+    const activeTransition = livePreview || activeCutTransition;
+
+    const activeOverlayClip = (timelineState.overlayClips || [])
     .filter((c) => currentTime >= c.start && currentTime <= c.start + c.duration)
     .slice(-1)[0];
 
@@ -965,24 +1282,31 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const captionsEnabled = timelineState.captionsVisible !== false;
 
   // ── Frame-Accurate Playhead Sync: Check which clip is active under currentTime ──
+  const hasTimelineVideoClips = Array.isArray(timelineState.videoClips) && timelineState.videoClips.length > 0;
+  const hasTimelineImageClips = Array.isArray(timelineState.imageClips) && timelineState.imageClips.length > 0;
+
   const isVideoTimeActive = videoEnabled && (
-    (Array.isArray(timelineState.videoClips) && timelineState.videoClips.length > 0)
-      ? Boolean(activeVideoClip?.url || script.storyboard?.some((s) => s.mediaUrl))
-      : (
-          currentTime >= timelineState.videoStart &&
-          currentTime <= (timelineState.videoStart + (timelineState.videoDuration || 30))
-        )
+    hasTimelineVideoClips
+      ? Boolean(activeVideoClip?.url)
+      : hasTimelineImageClips
+        ? false
+        : (
+            currentTime >= timelineState.videoStart &&
+            currentTime < (timelineState.videoStart + (timelineState.videoDuration || 30))
+          )
   );
 
   const imageStart = timelineState.imageStart ?? 0;
   const imageDuration = timelineState.imageDuration ?? 30;
   const isImageTimeActive = imageEnabled && (
-    (Array.isArray(timelineState.imageClips) && timelineState.imageClips.length > 0)
+    hasTimelineImageClips
       ? Boolean(activeImageClip?.url)
-      : (
-          currentTime >= imageStart &&
-          currentTime <= (imageStart + imageDuration)
-        )
+      : hasTimelineVideoClips
+        ? false
+        : (
+            currentTime >= imageStart &&
+            currentTime < (imageStart + imageDuration)
+          )
   );
 
   const isOverlayTimeActive = Boolean(activeOverlayClip) || (
@@ -1174,36 +1498,40 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const theme = (activeBackdrop?.id && BACKDROP_THEMES[activeBackdrop.id]) || null;
   const activeStoryboardVideo = (script.storyboard || []).find(
-    (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3) && sc.mediaType === 'video' && sc.mediaUrl
-  )?.mediaUrl || (script.storyboard && script.storyboard[0]?.mediaType === 'video' ? script.storyboard[0]?.mediaUrl : undefined);
+    (sc) => currentTime >= sc.start && currentTime < sc.start + (sc.duration || 3) && sc.mediaType === 'video' && sc.mediaUrl
+  )?.mediaUrl;
 
   const activeStoryboardImage = (script.storyboard || []).find(
-    (sc) => currentTime >= sc.start && currentTime <= sc.start + (sc.duration || 3) && sc.mediaType === 'image' && sc.mediaUrl
-  )?.mediaUrl || (script.storyboard && script.storyboard[0]?.mediaType === 'image' ? script.storyboard[0]?.mediaUrl : undefined);
+    (sc) => currentTime >= sc.start && currentTime < sc.start + (sc.duration || 3) && sc.mediaType === 'image' && sc.mediaUrl
+  )?.mediaUrl;
 
   const activeVideo = !videoEnabled
     ? undefined
-    : (activeVideoClip && activeVideoClip.url)
-      ? activeVideoClip.url
-      : (activeStoryboardVideo
-          ? activeStoryboardVideo
-          : (isCustomVideo
-              ? customVideoUrl
-              : (!isCustomImage
-                  ? activeBackdrop?.videoUrl
-                  : undefined)));
+    : hasTimelineVideoClips
+      ? (activeVideoClip ? activeVideoClip.url : undefined)
+      : hasTimelineImageClips
+        ? undefined
+        : (activeStoryboardVideo
+            ? activeStoryboardVideo
+            : (isCustomVideo
+                ? customVideoUrl
+                : (!isCustomImage
+                    ? activeBackdrop?.videoUrl
+                    : undefined)));
 
   const activeImage = !imageEnabled
     ? undefined
-    : (activeImageClip && activeImageClip.url)
-      ? activeImageClip.url
-      : (activeStoryboardImage
-          ? activeStoryboardImage
-          : (isCustomImage
-              ? customImageUrl
-              : (!isCustomVideo
-                  ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || undefined)
-                  : undefined)));
+    : hasTimelineImageClips
+      ? (activeImageClip ? activeImageClip.url : undefined)
+      : hasTimelineVideoClips
+        ? undefined
+        : (activeStoryboardImage
+            ? activeStoryboardImage
+            : (isCustomImage
+                ? customImageUrl
+                : (!isCustomVideo
+                    ? (filterSettings.customImageUrl || activeBackdrop?.imageUrl || undefined)
+                    : undefined)));
 
   // Determine whether video or image layer is shown under the current playhead
   const showVideoLayer = ((Boolean(activeVideo) && isVideoTimeActive) || Boolean(activeTransition)) && videoEnabled;
@@ -1235,15 +1563,26 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   };
 
   // Next upcoming clip for background preloading
-  const currentClipIndex = (timelineState.videoClips || []).findIndex(
+  const currentClipIndex = effectiveVisualClips.findIndex(
     (c) => c.url === activeVideo || (c.start <= currentTime && currentTime < c.start + (c.duration || 3))
   );
-  const nextVideoClip = currentClipIndex >= 0 && timelineState.videoClips
-    ? timelineState.videoClips[currentClipIndex + 1]
+  const nextVideoClip = currentClipIndex >= 0 && effectiveVisualClips
+    ? effectiveVisualClips[currentClipIndex + 1]
     : undefined;
 
-  const currentVideoSrc = activeTransition ? (activeTransition.clipA?.url || activeVideo) : activeVideo;
-  const transitionVideoSrc = activeTransition?.clipB?.url;
+  const isTransitionVideoA = Boolean(activeTransition?.clipA && !isImageMedia(activeTransition.clipA.url, activeTransition.clipA.type));
+  const isTransitionVideoB = Boolean(activeTransition?.clipB && !isImageMedia(activeTransition.clipB.url, activeTransition.clipB.type));
+
+  const isTransitioning = Boolean((activeTransition as any)?.isTransitioning ?? true);
+
+  const currentVideoSrc = activeTransition
+    ? (isTransitioning
+        ? (isTransitionVideoA ? activeTransition.clipA?.url : activeVideo)
+        : (isTransitionVideoB ? activeTransition.clipB?.url : activeVideo))
+    : activeVideo;
+  const transitionVideoSrc = activeTransition
+    ? (isTransitionVideoB ? activeTransition.clipB?.url : nextVideoClip?.url)
+    : nextVideoClip?.url;
 
   // Media Cache Engine: Resolve remote URLs into local zero-latency ObjectURLs (blob:)
   const [cachedVideoSrc, setCachedVideoSrc] = useState<string>(currentVideoSrc || '');
@@ -1360,8 +1699,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       tVideo.playbackRate = playbackRate;
     }
 
-    const clipA = activeTransition ? activeTransition.clipA : activeVideoClip;
-    const clipStart = clipA ? (Number(clipA.start) || 0) : (timelineState.videoStart || 0);
+    const isTrans = Boolean((activeTransition as any)?.isTransitioning ?? true);
+    const syncClip = activeTransition
+      ? (isTrans ? activeTransition.clipA : (activeVideoClip || activeTransition.clipB))
+      : activeVideoClip;
+    const clipStart = syncClip ? (Number(syncClip.start) || 0) : (timelineState.videoStart || 0);
     const rawOffset = Math.max(0, currentTime - clipStart);
     const videoDuration = video.duration && Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
     const offset = videoDuration > 0 ? (rawOffset % videoDuration) : rawOffset;
@@ -1534,9 +1876,166 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     }
   }
 
-  const animationOpacity = backdropAnimation === 'fade'
-    ? Math.min(1, backdropProgress * 4)
-    : 1;
+  // Clip In / Out Animation calculations
+  const activeVisualClipForAnim = (hasTimelineImageClips ? activeImageClip : activeVideoClip) || activeVideoClip || activeImageClip;
+  const clipAnimStart = Number(activeVisualClipForAnim?.start) || 0;
+  const clipAnimDur = Number(activeVisualClipForAnim?.duration) || 3;
+  const clipElapsed = Math.max(0, currentTime - clipAnimStart);
+  const clipRemaining = Math.max(0, (clipAnimStart + clipAnimDur) - currentTime);
+
+  // Resolution with optional live preview override
+  const rawInAnim = activeVisualClipForAnim?.animationIn || 'none';
+  const inDur = Math.max(0.1, Number(activeVisualClipForAnim?.animationInDuration) || 0.5);
+  const rawInProg = Math.min(1, Math.max(0, clipElapsed / inDur));
+
+  const rawOutAnim = activeVisualClipForAnim?.animationOut || 'none';
+  const outDur = Math.max(0.1, Number(activeVisualClipForAnim?.animationOutDuration) || 0.5);
+  const rawOutProg = Math.min(1, Math.max(0, clipRemaining / outDur));
+
+  const isLiveIn = liveAnimPreview?.direction === 'in';
+  const isLiveOut = liveAnimPreview?.direction === 'out';
+
+  const inAnim = isLiveIn ? liveAnimPreview.animation : rawInAnim;
+  const inProg = isLiveIn ? liveAnimPreview.progress : rawInProg;
+  const isInActive = isLiveIn || (inAnim !== 'none' && clipElapsed < inDur);
+
+  const outAnim = isLiveOut ? liveAnimPreview.animation : rawOutAnim;
+  const outProg = isLiveOut ? (1 - liveAnimPreview.progress) : rawOutProg;
+  const isOutActive = isLiveOut || (outAnim !== 'none' && clipRemaining < outDur);
+
+  let inTransform = '';
+  let inOpacity = 1;
+  let inBlur = 0;
+  let inBrightness = 100;
+  let inClipPath: string | undefined = undefined;
+
+  if (inAnim !== 'none' && isInActive) {
+    if (inAnim === 'fade') {
+      inOpacity = inProg;
+    } else if (inAnim === 'blur') {
+      inOpacity = inProg;
+      inBlur = (1 - inProg) * 14;
+    } else if (inAnim === 'zoom-in') {
+      inOpacity = inProg;
+      inTransform = `scale(${0.75 + inProg * 0.25})`;
+    } else if (inAnim === 'zoom-out') {
+      inOpacity = inProg;
+      inTransform = `scale(${1.25 - inProg * 0.25})`;
+    } else if (inAnim === 'slide-fade') {
+      inOpacity = inProg;
+      inTransform = `translateY(${(1 - inProg) * 15}%)`;
+    } else if (inAnim === 'soft-reveal') {
+      inOpacity = inProg;
+      inTransform = `scale(${0.9 + inProg * 0.1})`;
+    } else if (inAnim === 'circle') {
+      inClipPath = `circle(${inProg * 75}% at 50% 50%)`;
+    } else if (inAnim === 'slide-left') {
+      inOpacity = inProg;
+      inTransform = `translateX(${(1 - inProg) * 35}%)`;
+    } else if (inAnim === 'slide-right') {
+      inOpacity = inProg;
+      inTransform = `translateX(${(1 - inProg) * -35}%)`;
+    } else if (inAnim === 'slide-up') {
+      inOpacity = inProg;
+      inTransform = `translateY(${(1 - inProg) * 35}%)`;
+    } else if (inAnim === 'slide-down') {
+      inOpacity = inProg;
+      inTransform = `translateY(${(1 - inProg) * -35}%)`;
+    } else if (inAnim === 'spin') {
+      inOpacity = inProg;
+      inTransform = `rotate(${(1 - inProg) * -180}deg) scale(${0.7 + inProg * 0.3})`;
+    } else if (inAnim === 'bounce') {
+      inOpacity = inProg;
+      const bounceScale = inProg >= 1 ? 1 : 1 + Math.sin(inProg * Math.PI) * 0.22;
+      inTransform = `scale(${bounceScale})`;
+    } else if (inAnim === 'flip-x') {
+      inOpacity = inProg;
+      inTransform = `perspective(600px) rotateY(${(1 - inProg) * 75}deg)`;
+    } else if (inAnim === 'flip-y') {
+      inOpacity = inProg;
+      inTransform = `perspective(600px) rotateX(${(1 - inProg) * -75}deg)`;
+    } else if (inAnim === 'wipe-right') {
+      inClipPath = `inset(0 ${(1 - inProg) * 100}% 0 0)`;
+    } else if (inAnim === 'wipe-down') {
+      inClipPath = `inset(0 0 ${(1 - inProg) * 100}% 0)`;
+    } else if (inAnim === 'diamond') {
+      const p = inProg * 50;
+      inClipPath = `polygon(50% ${50 - p}%, ${50 + p}% 50%, 50% ${50 + p}%, ${50 - p}% 50%)`;
+    } else if (inAnim === 'flash') {
+      inOpacity = inProg;
+      inBrightness = 100 + (1 - inProg) * 160;
+    }
+  }
+
+  let outTransform = '';
+  let outOpacity = 1;
+  let outBlur = 0;
+  let outBrightness = 100;
+  let outClipPath: string | undefined = undefined;
+
+  if (outAnim !== 'none' && isOutActive) {
+    if (outAnim === 'fade') {
+      outOpacity = outProg;
+    } else if (outAnim === 'blur') {
+      outOpacity = outProg;
+      outBlur = (1 - outProg) * 14;
+    } else if (outAnim === 'zoom-in') {
+      outOpacity = outProg;
+      outTransform = `scale(${1.25 - outProg * 0.25})`;
+    } else if (outAnim === 'zoom-out') {
+      outOpacity = outProg;
+      outTransform = `scale(${0.75 + outProg * 0.25})`;
+    } else if (outAnim === 'slide-fade') {
+      outOpacity = outProg;
+      outTransform = `translateY(${(1 - outProg) * -15}%)`;
+    } else if (outAnim === 'soft-reveal') {
+      outOpacity = outProg;
+      outTransform = `scale(${0.9 + outProg * 0.1})`;
+    } else if (outAnim === 'circle') {
+      outClipPath = `circle(${outProg * 75}% at 50% 50%)`;
+    } else if (outAnim === 'slide-left') {
+      outOpacity = outProg;
+      outTransform = `translateX(${(1 - outProg) * -35}%)`;
+    } else if (outAnim === 'slide-right') {
+      outOpacity = outProg;
+      outTransform = `translateX(${(1 - outProg) * 35}%)`;
+    } else if (outAnim === 'slide-up') {
+      outOpacity = outProg;
+      outTransform = `translateY(${(1 - outProg) * -35}%)`;
+    } else if (outAnim === 'slide-down') {
+      outOpacity = outProg;
+      outTransform = `translateY(${(1 - outProg) * 35}%)`;
+    } else if (outAnim === 'spin') {
+      outOpacity = outProg;
+      outTransform = `rotate(${(1 - outProg) * 180}deg) scale(${0.7 + outProg * 0.3})`;
+    } else if (outAnim === 'bounce') {
+      outOpacity = outProg;
+      const bounceScale = Math.max(0, 1 - (1 - outProg) * 0.35);
+      outTransform = `scale(${bounceScale})`;
+    } else if (outAnim === 'flip-x') {
+      outOpacity = outProg;
+      outTransform = `perspective(600px) rotateY(${(1 - outProg) * -75}deg)`;
+    } else if (outAnim === 'flip-y') {
+      outOpacity = outProg;
+      outTransform = `perspective(600px) rotateX(${(1 - outProg) * 75}deg)`;
+    } else if (outAnim === 'wipe-right') {
+      outClipPath = `inset(0 0 0 ${(1 - outProg) * 100}%)`;
+    } else if (outAnim === 'wipe-down') {
+      outClipPath = `inset(${(1 - outProg) * 100}% 0 0 0)`;
+    } else if (outAnim === 'diamond') {
+      const p = outProg * 50;
+      outClipPath = `polygon(50% ${50 - p}%, ${50 + p}% 50%, 50% ${50 + p}%, ${50 - p}% 50%)`;
+    } else if (outAnim === 'flash') {
+      outOpacity = outProg;
+      outBrightness = 100 + (1 - outProg) * 160;
+    }
+  }
+
+  const animationOpacity = Math.min(
+    backdropAnimation === 'fade' ? Math.min(1, backdropProgress * 4) : 1,
+    inOpacity,
+    outOpacity
+  );
 
   const backdropTransform = [
     (backdropPosX !== 50 || backdropPosY !== 50) ? `translate(${(backdropPosX - 50) * 0.8}%, ${(backdropPosY - 50) * 0.8}%)` : '',
@@ -1545,7 +2044,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     backdropFlipH ? 'scaleX(-1)' : '',
     backdropFlipV ? 'scaleY(-1)' : '',
     animationTransform,
+    inTransform,
+    outTransform,
   ].filter(Boolean).join(' ') || undefined;
+
+  const clipAnimClipPath = inClipPath || outClipPath;
 
   const activeClipFilter = (activeVideoClip && perClipFilters[activeVideoClip.id]) || (activeImageClip && perClipFilters[activeImageClip.id]) || filterSettings;
 
@@ -1554,12 +2057,14 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     if (activeClipFilter.presetFilter && activeClipFilter.presetFilter !== 'none') {
       parts.push(activeClipFilter.presetFilter);
     }
-    const effectiveBrightness = Math.round((activeClipFilter.brightness / 100) * cutImpactBrightness);
+    const animBrightnessMult = (inBrightness / 100) * (outBrightness / 100);
+    const effectiveBrightness = Math.round((activeClipFilter.brightness / 100) * cutImpactBrightness * animBrightnessMult);
     if (effectiveBrightness !== 100) parts.push(`brightness(${effectiveBrightness}%)`);
     if (activeClipFilter.contrast !== 100) parts.push(`contrast(${activeClipFilter.contrast}%)`);
     if (activeClipFilter.saturate !== 100) parts.push(`saturate(${activeClipFilter.saturate}%)`);
     if (activeClipFilter.hue && activeClipFilter.hue !== 0) parts.push(`hue-rotate(${activeClipFilter.hue}deg)`);
-    if (activeClipFilter.blur && activeClipFilter.blur !== 0) parts.push(`blur(${activeClipFilter.blur}px)`);
+    const totalBlur = Math.max(activeClipFilter.blur || 0, inBlur, outBlur);
+    if (totalBlur > 0) parts.push(`blur(${totalBlur}px)`);
     if (activeClipFilter.lut && activeClipFilter.lut !== 'none') {
       const intensity = (activeClipFilter.lutIntensity ?? 80) / 100;
       if (activeClipFilter.lut === 'fuji-eterna') parts.push(`sepia(${20 * intensity}%) hue-rotate(${-10 * intensity}deg)`);
@@ -1679,8 +2184,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           }}
         />
 
-        {/* Layer 1b: Video Layer (V1) - strictly visible when playhead is in video clip */}
-        {(currentVideoSrc || activeVideo) && showVideoLayer && (
+        {/* Layer 1b: Video & Transition Layer (Unified V1/V2 with Dual Clip Pipeline) */}
+        {(currentVideoSrc || activeVideo || activeImage || activeTransition) && (showVideoLayer || Boolean(activeTransition) || showImageLayer) && (
           <div
             ref={backdropRef}
             onClick={(e) => handleSelectLayer(e, 'backdrop')}
@@ -1691,160 +2196,195 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             style={{
               opacity: animationOpacity,
               pointerEvents: 'auto',
+              clipPath: clipAnimClipPath,
             }}
-            title="Video Layer (V1) • Click to select"
+            title="Visual Media Layer • Click to select"
           >
-            <div
-              className="absolute inset-0 w-full h-full overflow-hidden"
-              /* outgoing A */ style={activeTransition ? getTransitionStyles(activeTransition.type, activeTransition.progress).styleA : undefined}
-            >
-              <video
-              ref={videoElementRef}
-              src={effectiveVideoSrc}
-              poster={activeVideoClip?.posterUrl || activeVideoClip?.thumbnailUrl || activeStoryboardScene?.posterUrl}
-              muted={videoTrackVolume === 0}
-              playsInline
-              loop
-              crossOrigin="anonymous"
-              preload="auto"
-              onWaiting={handleWaiting}
-              onPlaying={handlePlayingOrCanPlay}
-              onCanPlay={handlePlayingOrCanPlay}
-              onLoadedData={handlePlayingOrCanPlay}
-              onSeeked={handlePlayingOrCanPlay}
-              onLoadedMetadata={(e) => {
-                handlePlayingOrCanPlay();
-                const target = e.currentTarget;
-                const clipStart = activeVideoClipRef.current ? activeVideoClipRef.current.start : 0;
-                const rawOffset = Math.max(0, currentTimeRef.current - clipStart);
-                const vDur = target.duration && Number.isFinite(target.duration) && target.duration > 0 ? target.duration : 0;
-                const offset = vDur > 0 ? (rawOffset % vDur) : rawOffset;
-                try {
-                  const diff = Math.abs(target.currentTime - offset);
-                  const circularDiff = vDur > 0 ? Math.min(diff, Math.abs(vDur - diff)) : diff;
-                  if (circularDiff > 0.15) {
-                    target.currentTime = offset;
-                  }
-                } catch {}
-                if (isPlayingRef.current) {
-                  if (target.paused) target.play().catch(() => {});
-                } else {
-                  if (!target.paused) target.pause();
-                }
-                setTimeout(() => {
-                  isSeekingOrSwitchingRef.current = false;
-                }, 150);
-              }}
-              onError={() => {
-                if (bufferingTimeoutRef.current) clearTimeout(bufferingTimeoutRef.current);
-                setIsVideoBuffering(false);
-                isSeekingOrSwitchingRef.current = false;
-              }}
-              className={`w-full h-full pointer-events-none ${
-                backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
-              } object-center opacity-100`}
-              style={{
-                transform: backdropTransform,
-                filter: computedBackdropFilter,
-              }}
-            />
-            </div>
+            {/* ── Layer A (Primary Visual & Playback Layer) ── */}
+            {(() => {
+              let layerASrc: string | undefined = undefined;
+              let isLayerAImg = false;
+              const isLayerATransitioning = Boolean((activeTransition as any)?.isTransitioning ?? true);
 
-            {/* Layer B (Incoming Transition Layer) */}
-            {activeTransition && activeTransition.clipB?.url && (
-              <div
-                className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
-                style={getTransitionStyles(activeTransition.type, activeTransition.progress).styleB}
-              >
-                  <video
-                  ref={transitionVideoRef}
-                  src={effectiveTransitionSrc || activeTransition.clipB.url}
-                  poster={activeTransition.clipB.url}
-                  muted
-                  playsInline
-                  loop
-                  crossOrigin="anonymous"
-                  preload="auto"
-                  className={`w-full h-full pointer-events-none ${
-                    backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
-                  } object-center opacity-100`}
-                  style={{
-                    transform: backdropTransform,
-                    filter: computedBackdropFilter,
-                  }}
-                />
+              if (activeTransition && isLayerATransitioning) {
+                layerASrc = activeTransition.clipA?.url || (hasTimelineImageClips ? activeImage : (effectiveVideoSrc || activeImage));
+                isLayerAImg = isImageMedia(layerASrc, activeTransition.clipA?.type) || (!activeVideo && Boolean(activeImage));
+              } else {
+                if (hasTimelineImageClips && activeImageClip?.url) {
+                  layerASrc = activeImageClip.url;
+                  isLayerAImg = true;
+                } else if (hasTimelineVideoClips && activeVideoClip?.url) {
+                  layerASrc = effectiveVideoSrc || activeVideoClip.url;
+                  isLayerAImg = false;
+                } else if (activeTransition && activeTransition.clipB?.url) {
+                  layerASrc = activeTransition.clipB.url;
+                  isLayerAImg = isImageMedia(layerASrc, activeTransition.clipB?.type);
+                } else if (timelineState.selectedTrack === 'image' && activeImage) {
+                  layerASrc = activeImage;
+                  isLayerAImg = true;
+                } else {
+                  layerASrc = effectiveVideoSrc || activeImage;
+                  isLayerAImg = isImageMedia(layerASrc, activeImageClip?.type) || (!activeVideo && Boolean(activeImage));
+                }
+              }
+
+              const layerAStyle: React.CSSProperties = (activeTransition && isLayerATransitioning)
+                ? getTransitionStyles(activeTransition.type, activeTransition.progress).styleA
+                : { zIndex: 1, opacity: 1, transform: 'none' };
+
+              return (
+                <div
+                  className="absolute inset-0 w-full h-full overflow-hidden"
+                  style={layerAStyle}
+                >
+                  {isLayerAImg ? (
+                    <img
+                      key={layerASrc}
+                      src={layerASrc}
+                      alt="Layer A"
+                      crossOrigin="anonymous"
+                      className={`w-full h-full pointer-events-none ${
+                        backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
+                      } object-center opacity-100`}
+                      style={{
+                        transform: backdropTransform,
+                        filter: computedBackdropFilter,
+                      }}
+                      loading="eager"
+                      decoding="async"
+                    />
+                  ) : (
+                    <video
+                      ref={videoElementRef}
+                      src={effectiveVideoSrc}
+                      poster={activeVideoClip?.posterUrl || activeVideoClip?.thumbnailUrl || activeStoryboardScene?.posterUrl}
+                      muted={videoTrackVolume === 0}
+                      playsInline
+                      loop
+                      crossOrigin="anonymous"
+                      preload="auto"
+                      onWaiting={handleWaiting}
+                      onPlaying={handlePlayingOrCanPlay}
+                      onCanPlay={handlePlayingOrCanPlay}
+                      onLoadedData={handlePlayingOrCanPlay}
+                      onSeeked={handlePlayingOrCanPlay}
+                      onLoadedMetadata={(e) => {
+                        handlePlayingOrCanPlay();
+                        const target = e.currentTarget;
+                        const clipStart = activeVideoClipRef.current ? activeVideoClipRef.current.start : 0;
+                        const rawOffset = Math.max(0, currentTimeRef.current - clipStart);
+                        const vDur = target.duration && Number.isFinite(target.duration) && target.duration > 0 ? target.duration : 0;
+                        const offset = vDur > 0 ? (rawOffset % vDur) : rawOffset;
+                        try {
+                          const diff = Math.abs(target.currentTime - offset);
+                          const circularDiff = vDur > 0 ? Math.min(diff, Math.abs(vDur - diff)) : diff;
+                          if (circularDiff > 0.15) {
+                            target.currentTime = offset;
+                          }
+                        } catch {}
+                        if (isPlayingRef.current) {
+                          if (target.paused) target.play().catch(() => {});
+                        } else {
+                          if (!target.paused) target.pause();
+                        }
+                        setTimeout(() => {
+                          isSeekingOrSwitchingRef.current = false;
+                        }, 150);
+                      }}
+                      onError={() => {
+                        if (bufferingTimeoutRef.current) clearTimeout(bufferingTimeoutRef.current);
+                        setIsVideoBuffering(false);
+                        isSeekingOrSwitchingRef.current = false;
+                      }}
+                      className={`w-full h-full pointer-events-none ${
+                        backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
+                      } object-center opacity-100`}
+                      style={{
+                        transform: backdropTransform,
+                        filter: computedBackdropFilter,
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── Layer B (Incoming Transition Clip: Seamless Continuous Display) ── */}
+            {(() => {
+              if (!activeTransition) return null;
+              const isLayerBTransitioning = Boolean((activeTransition as any)?.isTransitioning ?? true);
+              const layerBSrc = activeTransition.clipB?.url || (typeof activeTransition.clipB === 'string' ? activeTransition.clipB : '') || effectiveTransitionSrc;
+              if (!layerBSrc) return null;
+
+              const isLayerBImg = isImageMedia(layerBSrc, activeTransition.clipB?.type);
+
+              const layerBStyle: React.CSSProperties = isLayerBTransitioning
+                ? getTransitionStyles(activeTransition.type, activeTransition.progress).styleB
+                : { zIndex: 2, opacity: 1, transform: 'none' };
+
+              return (
+                <div
+                  className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
+                  style={layerBStyle}
+                >
+                  {isLayerBImg ? (
+                    <img
+                      key={layerBSrc}
+                      src={layerBSrc}
+                      alt="Layer B"
+                      crossOrigin="anonymous"
+                      className={`w-full h-full pointer-events-none ${
+                        backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
+                      } object-center opacity-100`}
+                      style={{
+                        transform: backdropTransform,
+                        filter: computedBackdropFilter,
+                      }}
+                      loading="eager"
+                      decoding="async"
+                    />
+                  ) : (
+                    <video
+                      ref={transitionVideoRef}
+                      src={effectiveTransitionSrc || layerBSrc}
+                      poster={activeTransition?.clipB?.posterUrl || layerBSrc}
+                      muted
+                      playsInline
+                      loop
+                      crossOrigin="anonymous"
+                      preload="auto"
+                      className={`w-full h-full pointer-events-none ${
+                        backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
+                      } object-center opacity-100`}
+                      style={{
+                        transform: backdropTransform,
+                        filter: computedBackdropFilter,
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Transition HUD Indicator Pill (Feedback when transition is active or previewing) */}
+            {activeTransition && Boolean((activeTransition as any).isTransitioning ?? true) && (
+              <div className="absolute top-3 left-3 z-30 px-2.5 py-1 rounded-lg bg-black/85 backdrop-blur-md border border-white/20 text-white text-[10px] font-semibold flex items-center gap-1.5 shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-150">
+                <Sparkles className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+                <span className="font-medium text-white/90">
+                  Transition: <strong className="text-white font-bold">{TRANSITION_NAMES[activeTransition.type] || activeTransition.type}</strong>
+                </span>
+                <span className="px-1 py-0.2 rounded bg-sky-500/25 text-sky-300 font-mono text-[9px] border border-sky-400/30">
+                  {Math.round(activeTransition.progress * 100)}%
+                </span>
               </div>
             )}
 
-            {/* Background preloader for next video clip to ensure seamless cut transitions */}
-            {nextVideoClip?.url && nextVideoClip.url !== activeVideo && (
-
-              <video
-                key={nextVideoClip.url}
-                src={nextVideoClip.url}
-                preload="auto"
-                muted
-                playsInline
-                className="hidden pointer-events-none"
-                style={{ display: 'none' }}
-              />
-            )}
             {/* Subtle Buffering Pulse Indicator */}
             {isVideoBuffering && isPlaying && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 bg-black/25 backdrop-blur-[1px] transition-opacity">
                 <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin shadow-lg" />
               </div>
             )}
-            {/* Vignette Depth */}
-            {filterSettings.vignette > 0 && (
-              <div
-                className="absolute inset-0 pointer-events-none transition-opacity"
-                style={{
-                  background: `radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,${filterSettings.vignette / 100}) 100%)`,
-                }}
-              />
-            )}
-            {/* Film Grain Texture */}
-            {Boolean(filterSettings.grain) && (
-              <div
-                className="absolute inset-0 pointer-events-none opacity-25 mix-blend-overlay"
-                style={{
-                  backgroundImage: `radial-gradient(circle, #fff 10%, transparent 12%)`,
-                  backgroundSize: '3px 3px',
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Layer 1c: Image Layer (V2) - strictly visible when playhead is in image clip */}
-        {activeImage && (
-          <div
-            onClick={(e) => handleSelectLayer(e, 'backdrop')}
-            onDoubleClick={handleResetBackdrop}
-            className={`absolute inset-0 overflow-hidden cursor-default select-none transition-opacity duration-150 ${
-              timelineState.selectedTrack === 'image' ? 'z-20' : 'z-10'
-            }`}
-            style={{
-              opacity: showImageLayer ? animationOpacity : 0,
-              pointerEvents: showImageLayer ? 'auto' : 'none',
-            }}
-            title="Image Layer (V2) • Click to select"
-          >
-            <img
-              src={activeImage}
-              alt={activeBackdrop?.name || 'Visual Backdrop'}
-              referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
-              className={`w-full h-full pointer-events-none ${
-                backdropFitMode === 'fit' ? 'object-contain' : 'object-cover'
-              } object-center opacity-100`}
-              style={{
-                transform: backdropTransform,
-                filter: computedBackdropFilter,
-              }}
-              loading="eager"
-            />
             {/* Vignette Depth */}
             {filterSettings.vignette > 0 && (
               <div

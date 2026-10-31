@@ -83,16 +83,8 @@ def _resolve_single_scene_internal(
             clean_q = " ".join([w for w in q.split() if w.lower() not in cta_words]).strip()
             queries_to_try.append(clean_q if len(clean_q) > 3 else q)
 
-    # Ambient nature loops if all specific queries fail
-    ambient_fallbacks = [
-        "dramatic golden hour sunset mountain summit vertical 9:16",
-        "misty mountain forest vertical 9:16",
-        "dramatic ocean waves sunset coastline 9:16",
-        "alpine glacial lake mountain reflections 9:16",
-        "aurora borealis northern lights night sky 9:16",
-    ]
-
-    all_queries = queries_to_try + ambient_fallbacks
+    # Only query scene-specific search terms; do not fall back to generic ambient loops
+    all_queries = [q for q in queries_to_try if q]
 
     if item.mediaType == "video":
         for q in all_queries:
@@ -199,45 +191,39 @@ def _resolve_single_scene_internal(
         sceneNumber=item.sceneNumber,
         status="unresolved",
         media=None,
-        message="No available stock media matched the scene visual queries.",
+        message=f"Error: No matching {item.mediaType} found for '{item.visualQuery}'.",
     )
 
 
 def resolve_scenes_batch(
     scenes: List[SceneResolveItem],
     aspect_ratio: str = "9:16",
+    excluded_urls: Optional[List[str]] = None,
 ) -> BatchResolveData:
-    """Concurrently resolves media assets for all storyboard scenes while enforcing uniqueness."""
+    """Resolves media assets for all storyboard scenes while strictly enforcing uniqueness across all cuts."""
     results: List[ResolvedSceneResult] = []
-    used_urls: Set[str] = set()
+    used_urls: Set[str] = set(excluded_urls or [])
 
     # Sort scenes by sceneNumber
     sorted_scenes = sorted(scenes, key=lambda s: s.sceneNumber)
 
-    # Process scenes concurrently with ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=min(len(sorted_scenes) or 1, 6)) as executor:
-        future_to_scene = {
-            executor.submit(_resolve_single_scene_internal, sc, aspect_ratio, used_urls): sc
-            for sc in sorted_scenes
-        }
-        for future in as_completed(future_to_scene):
-            try:
-                res = future.result()
-                if res.status == "resolved" and res.media:
-                    used_urls.add(res.media.url)
-                results.append(res)
-            except Exception as e:
-                sc = future_to_scene[future]
-                logger.warning(f"Failed to resolve scene {sc.sceneNumber}: {e}")
-                results.append(
-                    ResolvedSceneResult(
-                        sceneNumber=sc.sceneNumber,
-                        status="unresolved",
-                        message=str(e),
-                    )
+    # Process scenes sequentially to guarantee each scene gets a distinct, non-repeating video
+    for sc in sorted_scenes:
+        try:
+            res = _resolve_single_scene_internal(sc, aspect_ratio, used_urls)
+            if res.status == "resolved" and res.media and res.media.url:
+                used_urls.add(res.media.url)
+            results.append(res)
+        except Exception as e:
+            logger.warning(f"Failed to resolve scene {sc.sceneNumber}: {e}")
+            results.append(
+                ResolvedSceneResult(
+                    sceneNumber=sc.sceneNumber,
+                    status="unresolved",
+                    message=str(e),
                 )
+            )
 
-    # Sort back into scene order
     results.sort(key=lambda r: r.sceneNumber)
     resolved_count = sum(1 for r in results if r.status == "resolved")
 

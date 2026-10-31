@@ -101,6 +101,17 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
     if (onInsertElement) {
       onInsertElement({ id, name, type, value, label: name });
     }
+    window.dispatchEvent(
+      new CustomEvent('workspace:add-timeline-clip', {
+        detail: {
+          type: 'overlay',
+          elementType: type,
+          value,
+          name,
+          duration: 4.5,
+        },
+      })
+    );
     toast.success(`Applied "${name}"`);
     addWorkspaceNotification({
       title: 'Element Applied',

@@ -209,6 +209,7 @@ export const workspaceApi = {
     voice: string;
     visualTheme: string;
     category: string;
+    videoUrl?: string;
   }): Promise<any> {
     consoleLogger.info('YouTube', `Publishing Short: "${payload.title}"...`, payload);
     const start = performance.now();

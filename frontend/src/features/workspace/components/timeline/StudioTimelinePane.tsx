@@ -552,15 +552,15 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         );
         return;
       }
-      if (!detail.clipId && !detail.applyToAll) {
+      if (!detail.clipId || detail.applyToAll) {
         if (detail.transition !== undefined) {
           if (detail.track === 'video') {
-            setVideoClips((prev) => prev.map((c, idx) => idx === 0 ? { ...c, transition: detail.transition, transitionDuration: detail.transitionDuration ?? 0.5 } : c));
+            setVideoClips((prev) => prev.map((c) => ({ ...c, transition: detail.transition, transitionDuration: detail.transitionDuration ?? 0.5 })));
           } else if (detail.track === 'image') {
-            setImageClips((prev) => prev.map((c, idx) => idx === 0 ? { ...c, transition: detail.transition, transitionDuration: detail.transitionDuration ?? 0.5 } : c));
+            setImageClips((prev) => prev.map((c) => ({ ...c, transition: detail.transition, transitionDuration: detail.transitionDuration ?? 0.5 })));
           }
         }
-        return;
+        if (!detail.clipId) return;
       }
       if (detail.track === 'video') {
         setVideoClips((prev) =>
@@ -624,12 +624,89 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     window.addEventListener('workspace:update-clip-timing', handleUpdateClipTiming);
     window.addEventListener('workspace:update-clip-properties', handleUpdateClipProperties);
     window.addEventListener('workspace:update-clip-props', handleUpdateClipProperties);
+    
+    const handleAiSmartTransitions = (e: Event) => {
+      const detail = (e as CustomEvent<{ mood?: string; track?: 'video' | 'image' }>).detail;
+      const mood = detail?.mood || 'cinematic';
+      const pools: Record<string, { transitions: string[]; duration: number }> = {
+        cinematic: { transitions: ['blur-crossfade', 'dissolve', 'luma-fade', 'soft-rotate', 'fade-black'], duration: 0.7 },
+        viral: { transitions: ['zoom-in', 'whip-pan-left', 'flash', 'whip-pan-right', 'rgb-split', 'push-left'], duration: 0.35 },
+        camera: { transitions: ['slide-left', 'slide-right', 'smooth-zoom', 'push-up', 'push-down'], duration: 0.5 },
+        creative: { transitions: ['split-reveal', 'circle-wipe', 'soft-rotate', 'zoom-out', 'flash'], duration: 0.5 },
+      };
+      const pool = pools[mood] || pools.cinematic;
+
+      const applyTransitions = (clips: any[]) => {
+        if (clips.length <= 1) return clips;
+        return clips.map((c, idx) => {
+          if (idx === clips.length - 1) return { ...c, transition: 'none' };
+          const trans = pool.transitions[idx % pool.transitions.length];
+          return { ...c, transition: trans, transitionDuration: pool.duration };
+        });
+      };
+
+      setVideoClips((prev) => applyTransitions(prev));
+      setImageClips((prev) => applyTransitions(prev));
+    };
+
+    const handleAiSmartAnimations = (e: Event) => {
+      const detail = (e as CustomEvent<{ mood?: string; track?: 'video' | 'image' }>).detail;
+      const mood = detail?.mood || 'viral';
+      const pairs: Record<string, { in: string; inDur: number; out: string; outDur: number }[]> = {
+        viral: [
+          { in: 'zoom-in', inDur: 0.3, out: 'slide-fade', outDur: 0.3 },
+          { in: 'bounce', inDur: 0.4, out: 'flash', outDur: 0.3 },
+          { in: 'spin', inDur: 0.35, out: 'zoom-out', outDur: 0.35 },
+          { in: 'flip-x', inDur: 0.35, out: 'slide-right', outDur: 0.3 },
+        ],
+        cinematic: [
+          { in: 'fade', inDur: 0.8, out: 'blur', outDur: 0.8 },
+          { in: 'soft-reveal', inDur: 0.7, out: 'zoom-out', outDur: 0.8 },
+          { in: 'blur', inDur: 0.8, out: 'fade', outDur: 0.8 },
+          { in: 'zoom-in', inDur: 0.9, out: 'soft-reveal', outDur: 0.7 },
+        ],
+        clean: [
+          { in: 'slide-up', inDur: 0.5, out: 'slide-fade', outDur: 0.4 },
+          { in: 'slide-fade', inDur: 0.45, out: 'slide-down', outDur: 0.45 },
+          { in: 'wipe-right', inDur: 0.5, out: 'wipe-down', outDur: 0.5 },
+          { in: 'fade', inDur: 0.5, out: 'slide-fade', outDur: 0.4 },
+        ],
+        dramatic: [
+          { in: 'flash', inDur: 0.4, out: 'zoom-out', outDur: 0.5 },
+          { in: 'diamond', inDur: 0.5, out: 'spin', outDur: 0.45 },
+          { in: 'flip-y', inDur: 0.45, out: 'flash', outDur: 0.35 },
+          { in: 'circle', inDur: 0.5, out: 'diamond', outDur: 0.5 },
+        ],
+      };
+      const moodPairs = pairs[mood] || pairs.viral;
+
+      const applyAnims = (clips: any[]) => {
+        return clips.map((c, idx) => {
+          const pair = moodPairs[idx % moodPairs.length];
+          return {
+            ...c,
+            animationIn: pair.in,
+            animationInDuration: pair.inDur,
+            animationOut: pair.out,
+            animationOutDuration: pair.outDur,
+          };
+        });
+      };
+
+      setVideoClips((prev) => applyAnims(prev));
+      setImageClips((prev) => applyAnims(prev));
+    };
+
+    window.addEventListener('workspace:ai-smart-transitions', handleAiSmartTransitions);
+    window.addEventListener('workspace:ai-smart-animations', handleAiSmartAnimations);
     window.addEventListener('workspace:update-clip-text', handleUpdateClipText);
     return () => {
       window.removeEventListener('workspace:update-clip-timing', handleUpdateClipTiming);
       window.removeEventListener('workspace:update-clip-properties', handleUpdateClipProperties);
       window.removeEventListener('workspace:update-clip-props', handleUpdateClipProperties);
       window.removeEventListener('workspace:update-clip-text', handleUpdateClipText);
+      window.removeEventListener('workspace:ai-smart-transitions', handleAiSmartTransitions);
+      window.removeEventListener('workspace:ai-smart-animations', handleAiSmartAnimations);
     };
   }, []);
 
@@ -643,16 +720,46 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       );
       return;
     }
-    let details: { start: number; duration: number; name: string } | null = null;
+    let details: {
+      start: number;
+      duration: number;
+      name: string;
+      transition?: string;
+      transitionDuration?: number;
+      animationIn?: string;
+      animationInDuration?: number;
+      animationOut?: string;
+      animationOutDuration?: number;
+    } | null = null;
     if (selectedClip.track === 'video') {
       const found = videoClips.find((c) => c.id === selectedClip.clipId) || videoClips[0];
       details = found
-        ? { start: found.start, duration: found.duration, name: found.name }
+        ? {
+            start: found.start,
+            duration: found.duration,
+            name: found.name,
+            transition: found.transition,
+            transitionDuration: found.transitionDuration,
+            animationIn: found.animationIn,
+            animationInDuration: found.animationInDuration,
+            animationOut: found.animationOut,
+            animationOutDuration: found.animationOutDuration,
+          }
         : { start: videoStart, duration: videoDuration, name: 'Video Backdrop' };
     } else if (selectedClip.track === 'image') {
       const found = imageClips.find((c) => c.id === selectedClip.clipId) || imageClips[0];
       details = found
-        ? { start: found.start, duration: found.duration, name: found.name }
+        ? {
+            start: found.start,
+            duration: found.duration,
+            name: found.name,
+            transition: found.transition,
+            transitionDuration: found.transitionDuration,
+            animationIn: found.animationIn,
+            animationInDuration: found.animationInDuration,
+            animationOut: found.animationOut,
+            animationOutDuration: found.animationOutDuration,
+          }
         : { start: imageStart, duration: imageDuration, name: 'Image Backdrop' };
     } else if (selectedClip.track === 'caption' && typeof selectedClip.index === 'number') {
       const found = localClips[selectedClip.index];
@@ -983,6 +1090,16 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
         // Enforce pure video cuts on the timeline for every storyboard scene
         const resolvedUrl = scene.mediaUrl || scene.videoUrl || scene.previewUrl || '';
+        const aiMotionPatterns = [
+          { in: 'zoom-in', inDur: 0.35, out: 'slide-fade', outDur: 0.35, trans: 'whip-pan-left', transDur: 0.35 },
+          { in: 'slide-left', inDur: 0.4, out: 'soft-reveal', outDur: 0.4, trans: 'luma-fade', transDur: 0.45 },
+          { in: 'bounce', inDur: 0.4, out: 'zoom-out', outDur: 0.4, trans: 'soft-rotate', transDur: 0.4 },
+          { in: 'flip-x', inDur: 0.35, out: 'flash', outDur: 0.3, trans: 'rgb-split', transDur: 0.35 },
+          { in: 'soft-reveal', inDur: 0.5, out: 'fade', outDur: 0.5, trans: 'blur-crossfade', transDur: 0.5 },
+        ];
+        const motionPattern = aiMotionPatterns[idx % aiMotionPatterns.length];
+        const isLastScene = idx === (detail.storyboard?.length ?? 1) - 1;
+
         newVideoClips.push({
           id: clipId,
           type: 'video',
@@ -992,6 +1109,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           name: clipName,
           start: clipStart,
           duration: clipDuration,
+          animationIn: scene.animationIn || motionPattern.in,
+          animationInDuration: scene.animationInDuration || motionPattern.inDur,
+          animationOut: scene.animationOut || motionPattern.out,
+          animationOutDuration: scene.animationOutDuration || motionPattern.outDur,
+          transition: isLastScene ? 'none' : (scene.transition || motionPattern.trans),
+          transitionDuration: isLastScene ? 0.5 : (scene.transitionDuration || motionPattern.transDur),
         });
 
         // Intelligently place purposeful SFX cues (opening whoosh, mid impact, climax drop)
@@ -1084,13 +1207,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   }, [customImageUrl]);
 
-  // Auto-enable Video track and sync if customVideoUrl is chosen
+  // Auto-enable Video track and sync if customVideoUrl is chosen (only if timeline has 0 video clips)
   useEffect(() => {
     if (customVideoUrl) {
       setVideoClips((prev) => {
-        if (prev.some((c) => c.url === customVideoUrl)) return prev;
+        if (prev.length > 0) return prev; // Do not auto-append duplicate clips
         return [
-          ...prev,
           {
             id: `vid-${Date.now()}`,
             type: 'video',
@@ -1108,6 +1230,18 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       setSelectedClip({ track: 'video' });
     }
   }, [customVideoUrl, duration]);
+
+  // Listen for direct removal of video clip by URL
+  useEffect(() => {
+    const handleRemoveClipByUrl = (e: Event) => {
+      const detail = (e as CustomEvent<{ url: string }>).detail;
+      if (!detail?.url) return;
+      setVideoClips((prev) => prev.filter((c) => c.url !== detail.url));
+      setImageClips((prev) => prev.filter((c) => c.url !== detail.url));
+    };
+    window.addEventListener('workspace:remove-clip-by-url', handleRemoveClipByUrl);
+    return () => window.removeEventListener('workspace:remove-clip-by-url', handleRemoveClipByUrl);
+  }, []);
 
   const lastBackdropIdRef = useRef<string | undefined>(undefined);
   const lastMusicIdRef = useRef<string | undefined>(undefined);
@@ -1308,6 +1442,16 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const clipStart = Number.isFinite(parsedStart) ? parsedStart : runningStart;
         runningStart = parseFloat((clipStart + clipDuration).toFixed(2));
 
+        const aiMotionPatterns = [
+          { in: 'zoom-in', inDur: 0.35, out: 'slide-fade', outDur: 0.35, trans: 'whip-pan-left', transDur: 0.35 },
+          { in: 'slide-left', inDur: 0.4, out: 'soft-reveal', outDur: 0.4, trans: 'luma-fade', transDur: 0.45 },
+          { in: 'bounce', inDur: 0.4, out: 'zoom-out', outDur: 0.4, trans: 'soft-rotate', transDur: 0.4 },
+          { in: 'flip-x', inDur: 0.35, out: 'flash', outDur: 0.3, trans: 'rgb-split', transDur: 0.35 },
+          { in: 'soft-reveal', inDur: 0.5, out: 'fade', outDur: 0.5, trans: 'blur-crossfade', transDur: 0.5 },
+        ];
+        const isLastScene = idx === (script.storyboard?.length ?? 1) - 1;
+        const motionPattern = aiMotionPatterns[idx % aiMotionPatterns.length];
+
         initialVideos.push({
           id: `sb-${scene.sceneNumber || idx + 1}-${Date.now()}`,
           type: 'video',
@@ -1317,6 +1461,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           name: scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`,
           start: clipStart,
           duration: clipDuration,
+          animationIn: scene.animationIn || motionPattern.in,
+          animationInDuration: scene.animationInDuration || motionPattern.inDur,
+          animationOut: scene.animationOut || motionPattern.out,
+          animationOutDuration: scene.animationOutDuration || motionPattern.outDur,
+          transition: isLastScene ? 'none' : (scene.transition || motionPattern.trans),
+          transitionDuration: isLastScene ? 0.5 : (scene.transitionDuration || motionPattern.transDur),
         });
       });
 
@@ -2800,13 +2950,13 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setEnabledTracks((prev) => {
       const next = {
         video: true, // Primary video track is always visible at starting
-        image: hasImage,
-        overlay: hasOverlay,
-        captions: hasCaptions,
-        title: hasTitle,
-        voice: hasVoice,
-        music: hasMusic,
-        sfx: hasSfx,
+        image: prev.image || hasImage,
+        overlay: prev.overlay || hasOverlay,
+        captions: prev.captions || hasCaptions,
+        title: prev.title || hasTitle,
+        voice: prev.voice || hasVoice,
+        music: prev.music || hasMusic,
+        sfx: prev.sfx || hasSfx,
       };
       if (
         prev.video === next.video &&
@@ -3132,7 +3282,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     />
                   ) : (
                     <div
-                      style={{ height: `${titleTrackHeight}px` }}
+                      style={{ height: `${imageTrackHeight}px` }}
                       className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
                     />
                   )
@@ -3277,7 +3427,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     />
                   ) : (
                     <div
-                      style={{ height: `${titleTrackHeight}px` }}
+                      style={{ height: `${overlayTrackHeight}px` }}
                       className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
                     />
                   )
@@ -3622,7 +3772,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                     />
                   ) : (
                     <div
-                      style={{ height: `${titleTrackHeight}px` }}
+                      style={{ height: `${voiceTrackHeight}px` }}
                       className="box-border border-b border-[#242426] p-1 relative flex items-center w-full"
                     />
                   )

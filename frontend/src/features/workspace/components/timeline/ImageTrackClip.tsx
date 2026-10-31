@@ -86,13 +86,14 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
   const [transitionOverrides, setTransitionOverrides] = useState<Record<string, {
     transition?: string;
     transitionDuration?: number;
+    animation?: string;
     animationIn?: string;
     animationInDuration?: number;
     animationOut?: string;
     animationOutDuration?: number;
   }>>({});
 
-  // Sync transition updates from workspace events
+  // Sync transition and animation updates from workspace events
   useEffect(() => {
     const handleUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -102,23 +103,26 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
           ...prev,
           [detail.clipId]: {
             ...prev[detail.clipId],
-            transition: detail.transition,
-            transitionDuration: detail.transitionDuration,
-            animationIn: detail.animationIn,
-            animationInDuration: detail.animationInDuration,
-            animationOut: detail.animationOut,
-            animationOutDuration: detail.animationOutDuration,
+            transition: detail.transition !== undefined ? detail.transition : prev[detail.clipId]?.transition,
+            transitionDuration: detail.transitionDuration !== undefined ? detail.transitionDuration : prev[detail.clipId]?.transitionDuration,
+            animationIn: detail.animationIn !== undefined ? detail.animationIn : prev[detail.clipId]?.animationIn,
+            animationInDuration: detail.animationInDuration !== undefined ? detail.animationInDuration : prev[detail.clipId]?.animationInDuration,
+            animationOut: detail.animationOut !== undefined ? detail.animationOut : prev[detail.clipId]?.animationOut,
+            animationOutDuration: detail.animationOutDuration !== undefined ? detail.animationOutDuration : prev[detail.clipId]?.animationOutDuration,
           },
         }));
-      }
-      if (detail.applyToAll && detail.transition) {
+      } else {
         setTransitionOverrides((prev) => {
           const updated = { ...prev };
           effectiveClips.forEach((c) => {
             updated[c.id] = {
               ...updated[c.id],
-              transition: detail.transition,
-              transitionDuration: detail.transitionDuration ?? 0.5,
+              transition: detail.transition !== undefined ? detail.transition : updated[c.id]?.transition,
+              transitionDuration: detail.transitionDuration !== undefined ? detail.transitionDuration : updated[c.id]?.transitionDuration,
+              animationIn: detail.animationIn !== undefined ? detail.animationIn : updated[c.id]?.animationIn,
+              animationInDuration: detail.animationInDuration !== undefined ? detail.animationInDuration : updated[c.id]?.animationInDuration,
+              animationOut: detail.animationOut !== undefined ? detail.animationOut : updated[c.id]?.animationOut,
+              animationOutDuration: detail.animationOutDuration !== undefined ? detail.animationOutDuration : updated[c.id]?.animationOutDuration,
             };
           });
           return updated;
@@ -126,9 +130,30 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
       }
     };
 
+    const handlePreviewAnim = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || !detail.type) return;
+      const targetClipId = (selectedClip && 'clipId' in selectedClip && selectedClip.clipId) ? selectedClip.clipId : effectiveClips[0]?.id;
+      if (!targetClipId) return;
+
+      setTransitionOverrides((prev) => ({
+        ...prev,
+        [targetClipId]: {
+          ...prev[targetClipId],
+          ...(detail.direction === 'in'
+            ? { animationIn: detail.type, animationInDuration: detail.duration ?? 0.5 }
+            : { animationOut: detail.type, animationOutDuration: detail.duration ?? 0.5 }),
+        },
+      }));
+    };
+
     window.addEventListener('workspace:update-clip-props', handleUpdate);
-    return () => window.removeEventListener('workspace:update-clip-props', handleUpdate);
-  }, [effectiveClips]);
+    window.addEventListener('workspace:preview-clip-animation', handlePreviewAnim);
+    return () => {
+      window.removeEventListener('workspace:update-clip-props', handleUpdate);
+      window.removeEventListener('workspace:preview-clip-animation', handlePreviewAnim);
+    };
+  }, [effectiveClips, selectedClip]);
 
   const actualTrackHeight = trackHeight ?? 64;
 
@@ -163,6 +188,20 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
         const incomingWidth = hasIncomingTrans ? Math.min(45, Math.max(8, ((prevDuration / 2) / (clip.duration || 1)) * 100)) : 0;
         const incomingStyle = hasIncomingTrans ? getTransitionWingStyle(prevTransition) : null;
 
+        // ── Animation In / Out / Combo Overlays (CapCut Style Visual Indicators) ──
+        const animInType = overrides.animationIn !== undefined ? overrides.animationIn : clip.animationIn;
+        const animInDuration = overrides.animationInDuration !== undefined ? overrides.animationInDuration : (clip.animationInDuration ?? 0.5);
+        const hasAnimIn = Boolean(animInType && animInType !== 'none');
+        const animInWidth = hasAnimIn ? Math.min(100, Math.max(1, (Number(animInDuration) / (Number(clip.duration) || 1)) * 100)) : 0;
+
+        const animOutType = overrides.animationOut !== undefined ? overrides.animationOut : clip.animationOut;
+        const animOutDuration = overrides.animationOutDuration !== undefined ? overrides.animationOutDuration : (clip.animationOutDuration ?? 0.5);
+        const hasAnimOut = Boolean(animOutType && animOutType !== 'none');
+        const animOutWidth = hasAnimOut ? Math.min(100, Math.max(1, (Number(animOutDuration) / (Number(clip.duration) || 1)) * 100)) : 0;
+
+        const animComboType = overrides.animation !== undefined ? overrides.animation : clip.animation;
+        const hasAnimCombo = Boolean(animComboType && animComboType !== 'none' && !hasAnimIn && !hasAnimOut);
+
         return (
           <div
             key={clip.id}
@@ -184,7 +223,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
             }}
             className={`timeline-clip-card rounded-md flex items-center justify-between transition-all group select-none cursor-grab active:cursor-grabbing absolute overflow-hidden ${
               isSelected
-                ? 'bg-[#380E21] border-[1.5px] border-rose-400 text-white z-20 shadow-md ring-1 ring-rose-400/20'
+                ? 'bg-[#38260A] border-2 border-yellow-400 text-white z-20 shadow-lg ring-1 ring-yellow-400/30'
                 : imageTrackVisible
                 ? 'bg-[#240A14]/90 hover:bg-[#310E1D] border border-rose-500/30 text-rose-100 hover:border-rose-400/70 z-10'
                 : 'bg-[#181818] border border-[#2F2F2F] text-[#6B7280] opacity-40 z-10'
@@ -229,19 +268,55 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               </div>
             )}
 
-            {/* ── Left Trim Handle (Clean, Native Website Theme) ── */}
+{/* ── Animation In Indicator (Amber/Yellow Highlight Band from Left) ── */}
+            {hasAnimIn && (
+              <div
+                style={{ width: `${animInWidth}%` }}
+                className="absolute left-0 top-0 bottom-0 pointer-events-none select-none z-12 bg-amber-500/40 border-r border-amber-300/80 flex items-center overflow-hidden transition-all backdrop-brightness-110"
+                title={`In Animation: ${animInType} (${Number(animInDuration).toFixed(1)}s)`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-amber-400/30 to-amber-500/40" />
+                <div className="absolute right-0 top-0 bottom-0 w-[1.5px] bg-amber-300 shadow-[0_0_4px_rgba(251,191,36,0.8)]" />
+              </div>
+            )}
+
+            {/* ── Animation Out Indicator (Amber/Yellow Highlight Band from Right) ── */}
+            {hasAnimOut && (
+              <div
+                style={{ width: `${animOutWidth}%` }}
+                className="absolute right-0 top-0 bottom-0 pointer-events-none select-none z-12 bg-amber-500/40 border-l border-amber-300/80 flex items-center justify-end overflow-hidden transition-all backdrop-brightness-110"
+                title={`Out Animation: ${animOutType} (${Number(animOutDuration).toFixed(1)}s)`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-l from-amber-400/20 via-amber-400/30 to-amber-500/40" />
+                <div className="absolute right-0 top-0 bottom-0 w-[1.5px] bg-amber-300 shadow-[0_0_4px_rgba(251,191,36,0.8)]" />
+              </div>
+            )}
+
+            {/* ── Combo Animation Indicator (Amber/Yellow Full Clip Overlay) ── */}
+            {hasAnimCombo && (
+              <div
+                className="absolute inset-0 pointer-events-none select-none z-12 bg-amber-500/25 border-x border-amber-300/60 overflow-hidden transition-all backdrop-brightness-105"
+                title={`Animation: ${animComboType}`}
+              />
+            )}
+
+            {/* ── Left Trim Handle (Capsule handle with center notch when selected) ── */}
             <div
               onPointerDown={(e) => {
                 e.stopPropagation();
                 if (onPointerDownTrimLeftClip) onPointerDownTrimLeftClip(e, clip);
                 else onPointerDownTrimLeft?.(e);
               }}
-              className="absolute left-0 top-0 bottom-0 w-2.5 hover:w-3 flex items-center justify-center cursor-ew-resize z-25 group/handle select-none transition-all"
+              className="absolute left-0 top-0 bottom-0 w-3 hover:w-3.5 flex items-center justify-center cursor-ew-resize z-25 group/handle select-none transition-all"
               title="Drag to trim image start point"
             >
-              <div className={`w-[2px] h-3.5 rounded-full transition-colors ${
-                isSelected ? 'bg-rose-300' : 'bg-white/60 group-hover:bg-rose-300'
-              }`} />
+              {isSelected ? (
+                <div className="w-1.5 h-6 rounded-full bg-slate-100 border border-black/30 shadow-md flex items-center justify-center">
+                  <div className="w-[1px] h-2.5 bg-slate-500 rounded-full" />
+                </div>
+              ) : (
+                <div className="w-[2px] h-3.5 rounded-full bg-white/60 group-hover:bg-amber-300 transition-colors" />
+              )}
             </div>
 
             {/* Clean Box Content: Icon + Title */}
@@ -252,19 +327,23 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               </span>
             </div>
 
-            {/* ── Right Trim Handle (Clean, Native Website Theme) ── */}
+{/* ── Right Trim Handle (Capsule handle with center notch when selected) ── */}
             <div
               onPointerDown={(e) => {
                 e.stopPropagation();
                 if (onPointerDownTrimRightClip) onPointerDownTrimRightClip(e, clip);
                 else onPointerDownTrimRight?.(e);
               }}
-              className="absolute right-0 top-0 bottom-0 w-2.5 hover:w-3 flex items-center justify-center cursor-ew-resize z-25 group/handle select-none transition-all"
+              className="absolute right-0 top-0 bottom-0 w-3 hover:w-3.5 flex items-center justify-center cursor-ew-resize z-25 group/handle select-none transition-all"
               title="Drag to trim image end point"
             >
-              <div className={`w-[2px] h-3.5 rounded-full transition-colors ${
-                isSelected ? 'bg-rose-300' : 'bg-white/60 group-hover:bg-rose-300'
-              }`} />
+              {isSelected ? (
+                <div className="w-1.5 h-6 rounded-full bg-slate-100 border border-black/30 shadow-md flex items-center justify-center">
+                  <div className="w-[1px] h-2.5 bg-slate-500 rounded-full" />
+                </div>
+              ) : (
+                <div className="w-[2px] h-3.5 rounded-full bg-white/60 group-hover:bg-amber-300 transition-colors" />
+              )}
             </div>
           </div>
         );

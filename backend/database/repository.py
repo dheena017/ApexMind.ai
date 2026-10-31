@@ -271,23 +271,26 @@ def get_videos() -> List[Dict[str, Any]]:
     rows = cursor.fetchall()
     conn.close()
     logger.debug(f"Queried published Shorts catalog -> Found {len(rows)} video(s)")
-    return [
-        {
+    result = []
+    for r in rows:
+        raw_url = r["video_url"] or ""
+        is_fake_url = "youtube.com/shorts/" in raw_url and raw_url.rstrip("/").split("/")[-1].isdigit()
+        clean_url = "" if is_fake_url else raw_url
+        result.append({
             "id": r["id"],
             "title": r["title"],
             "quote": r["quote"],
             "views": r["views"],
             "likes": r["likes"],
             "publishedAt": r["published_at"],
-            "status": r["status"],
+            "status": "draft" if is_fake_url else r["status"],
             "duration": r["duration"],
             "channelId": r["channel_id"],
-            "videoUrl": r["video_url"],
+            "videoUrl": clean_url,
             "category": r["category"],
             "voice": r["voice"],
-        }
-        for r in rows
-    ]
+        })
+    return result
 
 def publish_video(
     title: str,
@@ -302,7 +305,9 @@ def publish_video(
     cursor = conn.cursor()
     vid_id = custom_id or f"yt_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
     timestamp = datetime.now(timezone.utc).isoformat()
-    final_video_url = video_url or f"https://youtube.com/shorts/{int(datetime.now(timezone.utc).timestamp())}"
+    # Do not generate fake 404 YouTube links when video is stored locally in Studio
+    final_video_url = video_url if (video_url and not ("youtube.com/shorts/" in video_url and video_url.rstrip("/").split("/")[-1].isdigit())) else ""
+    status_label = "published" if final_video_url else "draft"
     views = 0
     likes = 0
 
@@ -320,7 +325,7 @@ def publish_video(
     cursor.execute("""
     INSERT INTO published_videos (id, title, quote, views, likes, published_at, status, duration, channel_id, video_url, category, voice)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (vid_id, title, quote, views, likes, timestamp, "published", "00:30", target_channel_id, final_video_url, category, voice))
+    """, (vid_id, title, quote, views, likes, timestamp, status_label, "00:30", target_channel_id, final_video_url, category, voice))
 
     # Increment video count on the channel if channel exists
     if target_channel_id:

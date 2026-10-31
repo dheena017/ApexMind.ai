@@ -287,6 +287,16 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   const handleApply = (img: StockImageItem) => {
     setSelectedId(img.id);
     onSelectImage(img.url);
+    window.dispatchEvent(
+      new CustomEvent('workspace:add-timeline-clip', {
+        detail: {
+          type: 'image',
+          url: img.url,
+          name: img.title || 'Image Graphic',
+          duration: 4.0,
+        },
+      })
+    );
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
     toast.success(`Applied "${img.title}"`);
 

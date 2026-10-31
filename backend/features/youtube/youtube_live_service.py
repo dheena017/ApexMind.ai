@@ -1201,62 +1201,79 @@ def render_vertical_short(
     audio_path: Optional[str] = None,
     duration_seconds: int = 15,
 ) -> str:
-    """Renders a vertical 9:16 (1080x1920) MP4 video ready for YouTube Shorts upload."""
-    import moviepy.editor as mp
+    """Renders a vertical 9:16 (1080x1920) MP4 video ready for YouTube Shorts upload using native FFmpeg."""
     from pathlib import Path
+    import subprocess
+    import tempfile
+    import urllib.request
+    import shutil
 
     output_dir = Path("backend/data/rendered_shorts")
     output_dir.mkdir(parents=True, exist_ok=True)
-    out_file = output_dir / f"short_{int(time.time() * 1000)}.mp4"
+    out_file = output_dir / f"yt_short_{int(time.time() * 1000)}.mp4"
 
-    img_url = cover_image_url or ""
-    if img_url.startswith("/api/media/") or img_url.startswith("/api/videos/"):
-        filename = img_url.rsplit("/", 1)[-1]
-        for candidate in [Path("backend/data/media") / filename, Path("backend/data/rendered_shorts") / filename]:
-            if candidate.exists():
-                local_img_path = candidate
-                break
-
+    temp_dir = Path(tempfile.mkdtemp(prefix="yt_render_"))
     try:
-        if local_img_path.exists():
-            clip = mp.ImageClip(str(local_img_path)).set_duration(duration_seconds).resize((1080, 1920))
-        elif img_url.startswith("http"):
-            req = urllib.request.Request(img_url, headers={"User-Agent": "ApexMindStudio/2.0"})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                with open(local_img_path, "wb") as f:
-                    f.write(resp.read())
-            clip = mp.ImageClip(str(local_img_path)).set_duration(duration_seconds).resize((1080, 1920))
+        img_url = (cover_image_url or "").strip()
+        media_input = None
+        is_video = False
+
+        if img_url.startswith("/api/media/") or img_url.startswith("/api/videos/"):
+            filename = img_url.rsplit("/", 1)[-1]
+            for candidate in [Path("backend/data/media") / filename, Path("backend/data/rendered_shorts") / filename]:
+                if candidate.exists():
+                    media_input = candidate
+                    is_video = any(str(candidate).lower().endswith(ext) for ext in [".mp4", ".webm", ".mov"])
+                    break
+        elif img_url.startswith("http://") or img_url.startswith("https://"):
+            try:
+                is_video = any(img_url.lower().endswith(ext) for ext in [".mp4", ".webm", ".mov"])
+                ext = "mp4" if is_video else "jpg"
+                dl_path = temp_dir / f"input_media.{ext}"
+                req = urllib.request.Request(img_url, headers={"User-Agent": "ApexMindStudio/2.0"})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    with open(dl_path, "wb") as f:
+                        f.write(resp.read())
+                if dl_path.exists() and dl_path.stat().st_size > 0:
+                    media_input = dl_path
+            except Exception as dl_err:
+                logger.warning(f"Could not download YouTube cover media: {dl_err}")
+
+        cmd = ["ffmpeg", "-y"]
+
+        if media_input and media_input.exists():
+            if is_video:
+                cmd.extend(["-stream_loop", "-1", "-i", str(media_input.resolve())])
+            else:
+                cmd.extend(["-loop", "1", "-i", str(media_input.resolve())])
         else:
-            clip = mp.ColorClip(size=(1080, 1920), color=(15, 18, 25), duration=duration_seconds)
-    except Exception as e:
-        logger.warning(f"Could not load custom backdrop ({e}), creating color canvas.")
-        clip = mp.ColorClip(size=(1080, 1920), color=(15, 18, 25), duration=duration_seconds)
+            cmd.extend([
+                "-f", "lavfi",
+                "-i", f"color=c=#0B0F19:s=1080x1920:r=30:d={duration_seconds}"
+            ])
 
-    if audio_path and os.path.exists(audio_path):
-        try:
-            audio_clip = mp.AudioFileClip(audio_path)
-            clip = clip.set_audio(audio_clip)
-            clip = clip.set_duration(min(audio_clip.duration, duration_seconds))
-        except Exception as e:
-            logger.warning(f"Could not attach audio track: {e}")
+        if audio_path and Path(audio_path).exists():
+            cmd.extend(["-i", str(Path(audio_path).resolve())])
+        else:
+            cmd.extend(["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"])
 
-    try:
-        clip.write_videofile(
-            str(out_file),
-            fps=24,
-            codec="libx264",
-            audio_codec="aac",
-            preset="ultrafast",
-            threads=2,
-            logger=None,
-        )
+        vf = "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v_out]"
+        cmd.extend([
+            "-filter_complex", vf,
+            "-map", "[v_out]",
+            "-map", "1:a",
+            "-t", str(duration_seconds),
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-movflags", "+faststart",
+            str(out_file.resolve()),
+        ])
+
+        subprocess.run(cmd, capture_output=True, check=True)
+        return str(out_file.resolve())
     finally:
-        try:
-            clip.close()
-            if local_img_path.exists():
-                local_img_path.unlink()
-        except Exception:
-            pass
-
-    return str(out_file)
+        shutil.rmtree(temp_dir, ignore_errors=True)
 

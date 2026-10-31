@@ -510,12 +510,21 @@ class RenderVideoApiRequest(BaseModel):
     title: str = "apexmind-video"
     aspectRatio: str = "9:16"
     duration: float = 15.0
+    exactDuration: Optional[float] = None
     audioUrl: Optional[str] = None
     musicUrl: Optional[str] = None
     backdropUrl: Optional[str] = None
     backdropType: str = "image"
+    videoClips: Optional[List[Dict[str, Any]]] = None
+    imageClips: Optional[List[Dict[str, Any]]] = None
     subtitles: List[Dict[str, Any]] = []
     captionColor: str = "#FACC15"
+    captionFont: Optional[str] = "Impact"
+    captionTransform: Optional[str] = "uppercase"
+    filterSettings: Optional[Dict[str, Any]] = None
+    voiceVolume: Optional[float] = 1.0
+    musicVolume: Optional[float] = 0.65
+    fps: int = 30
 
 
 @router.post(
@@ -530,12 +539,21 @@ def post_render_video(payload: RenderVideoApiRequest):
             title=payload.title,
             aspect_ratio=payload.aspectRatio,
             duration=payload.duration,
+            exact_duration=payload.exactDuration,
             audio_url=payload.audioUrl,
             music_url=payload.musicUrl,
             backdrop_url=payload.backdropUrl,
             backdrop_type=payload.backdropType,
+            video_clips=payload.videoClips,
+            image_clips=payload.imageClips,
             subtitles=payload.subtitles,
             caption_color=payload.captionColor,
+            caption_font=payload.captionFont,
+            caption_transform=payload.captionTransform,
+            filter_settings=payload.filterSettings,
+            voice_volume=payload.voiceVolume,
+            music_volume=payload.musicVolume,
+            fps=payload.fps,
         )
         return result
     except Exception as e:

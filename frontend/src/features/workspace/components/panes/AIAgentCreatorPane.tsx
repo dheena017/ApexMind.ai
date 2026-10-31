@@ -539,7 +539,16 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       </div>
 
       {/* ── Bottom Action Footer ── */}
-      <div className="px-3.5 py-2.5 border-t border-[#26262B] bg-[#17171A] shrink-0">
+      <div className="px-3.5 py-2.5 border-t border-[#26262B] bg-[#17171A] shrink-0 flex flex-col gap-1.5">
+        <div className="flex items-center justify-between text-[10px] text-zinc-400 font-medium px-0.5">
+          <span className="flex items-center gap-1 text-sky-400">
+            <Sparkles className="w-3 h-3 text-sky-400" />
+            AI Motion & Transitions Included
+          </span>
+          <span className="text-[9px] bg-sky-950/60 border border-sky-500/30 text-sky-300 px-1.5 py-0.2 rounded font-mono">
+            AUTO-DIRECTED
+          </span>
+        </div>
         <Button
           size="sm"
           onClick={() => {

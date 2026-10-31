@@ -707,6 +707,9 @@ export default function WorkspacePage({
         setScriptSubPane('editor');
         onPaneChange('editor');
         setShowTimeline(true);
+        toast.success('✨ Viral Reel Generated & AI Directed', {
+          description: `Assembled ${pipelineRes.script.storyboard?.length || 0} scenes with AI motion animations & smart cut transitions.`,
+        });
         return true;
       }
       return false;
@@ -971,6 +974,7 @@ export default function WorkspacePage({
         voice: selectedVoice,
         visualTheme: selectedBackdrop,
         category,
+        videoUrl: customBackdropVideo || script.storyboard?.find((s) => s.mediaType === 'video' && s.mediaUrl)?.mediaUrl || undefined,
       });
       // Also save to website video library automatically
       const resolvedVideoUrl =
@@ -1001,19 +1005,33 @@ export default function WorkspacePage({
       setPublishedSuccess(true);
       const isLive = Boolean(publishedShort?.liveUploaded);
       const videoLink = publishedShort?.videoUrl || publishedShort?.url;
-      toast.success(isLive ? 'Uploaded LIVE to YouTube Shorts!' : 'Published video to YouTube!', {
-        description: videoLink || script.title || 'Live on YouTube',
-      });
-      addWorkspaceNotification({
-        title: isLive ? 'Live YouTube Short Broadcast' : 'Published to YouTube Shorts',
-        message: isLive
-          ? `"${script.title}" uploaded directly to your channel: ${videoLink}`
-          : `"${script.title}" broadcast to connected YouTube channel.`,
-        category: 'export',
-        type: 'success',
-        targetPane: 'canvas',
-        actionLabel: 'View Preview',
-      });
+      const hasRealLink = isLive && Boolean(videoLink) && !videoLink.split('/').pop()?.match(/^\d+$/);
+
+      if (hasRealLink) {
+        toast.success('Uploaded LIVE to YouTube Shorts!', {
+          description: videoLink,
+        });
+        addWorkspaceNotification({
+          title: 'Live YouTube Short Broadcast',
+          message: `"${script.title}" uploaded directly to your channel: ${videoLink}`,
+          category: 'export',
+          type: 'success',
+          targetPane: 'canvas',
+          actionLabel: 'View on YouTube',
+        });
+      } else {
+        toast.info('Video saved to Studio Library!', {
+          description: 'Connect your YouTube channel in settings to publish directly to YouTube.',
+        });
+        addWorkspaceNotification({
+          title: 'Saved to Studio Library',
+          message: `"${script.title}" rendered and cataloged in Studio Library. Connect YouTube to publish live.`,
+          category: 'export',
+          type: 'info',
+          targetPane: 'canvas',
+          actionLabel: 'View in Library',
+        });
+      }
       setTimeout(() => {
         onNavigate('youtube');
       }, 1500);
@@ -1797,32 +1815,10 @@ export default function WorkspacePage({
             ) : activePane === 'video' ? (
               <VideoStockPane
                 onSelectVideo={(url, posterUrl) => {
-                  setShowTimeline(true);
                   setActiveCompound('video');
                   setCustomBackdropVideo(url);
                   setCustomBackdropImage('');
-                  window.dispatchEvent(
-                    new CustomEvent('workspace:add-timeline-clip', {
-                      detail: {
-                        type: 'video',
-                        url,
-                        posterUrl,
-                        thumbnailUrl: posterUrl,
-                        name: 'Stock Video',
-                        duration: 10,
-                        start: currentTime,
-                      },
-                    })
-                  );
                   window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
-                  addWorkspaceNotification({
-                    title: 'Stock Video Added',
-                    message: 'Video added to timeline at playhead. Drag freely anywhere on the timeline.',
-                    category: 'media',
-                    type: 'info',
-                    targetPane: 'video',
-                    actionLabel: 'Preview',
-                  });
                 }}
                 activeVideoUrl={customBackdropVideo}
               />
