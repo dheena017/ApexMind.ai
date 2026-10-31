@@ -12,6 +12,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+STAGE_ID: str = "media"
+DEFAULT_ASPECT_RATIO: str = "9:16"
+DEFAULT_SFX_QUERY: str = "whoosh impact"
+DEFAULT_SFX_LIMIT: int = 3
+DEFAULT_SFX_DURATION: float = 1.5
+DEFAULT_VISUAL_QUERY: str = "cinematic landscape"
+
 logger = logging.getLogger("ApexMind.Studio.Media")
 
 
@@ -31,9 +42,9 @@ def _resolve_sfx_events(sfx_events: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
     resolved = []
     for event in sfx_events:
-        query = event.get("searchQuery") or event.get("label") or "whoosh impact"
+        query = event.get("searchQuery") or event.get("label") or DEFAULT_SFX_QUERY
         try:
-            result = search_sfx(query=query, limit=3)
+            result = search_sfx(query=query, limit=DEFAULT_SFX_LIMIT)
             item = result.items[0] if result and result.items else None
             if item and item.audioUrl:
                 resolved.append({
@@ -42,7 +53,7 @@ def _resolve_sfx_events(sfx_events: List[Dict[str, Any]]) -> List[Dict[str, Any]
                     "label": event.get("label", ""),
                     "status": "resolved",
                     "sfxUrl": item.audioUrl,
-                    "durationSeconds": item.duration or 1.5,
+                    "durationSeconds": item.duration or DEFAULT_SFX_DURATION,
                     "provider": item.provider,
                 })
             else:
@@ -61,7 +72,7 @@ def _build_scene_resolve_items(scenes: List[Dict[str, Any]]):
     for s in scenes:
         items.append(SceneResolveItem(
             sceneNumber=s.get("sceneNumber", 1),
-            visualQuery=s.get("visualQuery") or s.get("subtitleText") or "cinematic landscape",
+            visualQuery=s.get("visualQuery") or s.get("subtitleText") or DEFAULT_VISUAL_QUERY,
             googleSearchQuery=s.get("googleSearchQuery"),
             fallbackQueries=s.get("fallbackQueries") or [],
             mediaType=s.get("mediaType") or "video",
@@ -71,7 +82,7 @@ def _build_scene_resolve_items(scenes: List[Dict[str, Any]]):
 
 def run_studio_media(
     scenes: List[Dict[str, Any]],
-    aspect_ratio: str = "9:16",
+    aspect_ratio: str = DEFAULT_ASPECT_RATIO,
     sfx_events: Optional[List[Dict[str, Any]]] = None,
     backdrop_id: Optional[str] = None,
     resolve_background: bool = True,
@@ -90,7 +101,7 @@ def run_studio_media(
     if not scenes:
         return {
             "success": True,
-            "stageId": "media",
+            "stageId": STAGE_ID,
             "data": {
                 "scenes": [],
                 "sfxEvents": [],
@@ -168,18 +179,6 @@ def run_studio_media(
         "particleEffect": None,
         "previewColor": None,
     }
-    if backdrop_id and resolve_background:
-        try:
-            from backend.shared.media_catalog import VISUAL_BACKDROPS
-            match = next((b for b in VISUAL_BACKDROPS if b.get("id") == backdrop_id), None)
-            if match:
-                background_info.update({
-                    "backgroundUrl": match.get("videoUrl") or match.get("imageUrl"),
-                    "particleEffect": match.get("particleEffect"),
-                    "previewColor": match.get("previewColor"),
-                })
-        except Exception:
-            pass  # Backdrop catalog not critical; silently skip
 
     elapsed_ms = int((time.perf_counter() - t0) * 1000)
     logger.info(

@@ -7,6 +7,14 @@ viewport safe-zone line wrapping (max 3-4 words per line for 9:16), SRT, and Web
 import re
 from typing import List, Dict, Any
 
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+DEFAULT_DURATION_SECONDS: float = 5.0
+DEFAULT_STYLE_PRESET: str = "sub-hormozi"
+DEFAULT_MAX_WORDS_PER_SEGMENT: int = 4
+
 
 def _format_srt_time(seconds: float) -> str:
     millis = int((seconds - int(seconds)) * 1000)
@@ -28,9 +36,9 @@ def _format_vtt_time(seconds: float) -> str:
 
 def generate_closed_captions(
     text: str,
-    duration_seconds: float = 5.0,
-    style_preset: str = "sub-hormozi",
-    max_words_per_segment: int = 4,
+    duration_seconds: float = DEFAULT_DURATION_SECONDS,
+    style_preset: str = DEFAULT_STYLE_PRESET,
+    max_words_per_segment: int = DEFAULT_MAX_WORDS_PER_SEGMENT,
 ) -> Dict[str, Any]:
     """
     Generates word-level timed captions distributed across duration_seconds,

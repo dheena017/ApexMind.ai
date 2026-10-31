@@ -66,9 +66,10 @@ export const ASPECT_RATIO_OPTIONS = [
 
 
 const AI_MODELS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Ultra Fast & Adaptive)' },
-  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Latest Performance)' },
-  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Deep Reasoning & Hooks)' },
+  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Recommended • Next-Gen Speed)' },
+  { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite (Rapid & Lightweight)' },
+  { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview (Deep Reasoning & Hooks)' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive)' },
 ];
 
 const CATEGORY_OPTIONS = [

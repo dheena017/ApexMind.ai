@@ -2,7 +2,6 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
-from backend.shared.media_catalog import get_static_media_catalog
 from .connection import get_connection
 
 logger = logging.getLogger("ApexMind.Database")
@@ -528,7 +527,20 @@ def toggle_automation(job_id: str) -> List[Dict[str, Any]]:
     return get_automations()
 
 def get_media_library() -> Dict[str, Any]:
-    return get_static_media_catalog()
+    return {
+        "musicTracks": [],
+        "visualBackdrops": [],
+        "stockVideos": [],
+        "textPresets": [],
+        "voiceProfiles": [
+            {"id": "Kore", "name": "Kore", "gender": "Female", "style": "Clear, Inspiring, Authoritative"},
+            {"id": "Fenrir", "name": "Fenrir", "gender": "Male", "style": "Deep, Powerful, Stoic Leader"},
+            {"id": "Puck", "name": "Puck", "gender": "Male", "style": "Energetic, High-Octane Motivational"},
+            {"id": "Zephyr", "name": "Zephyr", "gender": "Female", "style": "Smooth, Calming Wisdom and Meditation"},
+            {"id": "Charon", "name": "Charon", "gender": "Male", "style": "Grit and Relentless Focus"},
+        ],
+        "soundEffects": [],
+    }
 
 
 def upsert_user(

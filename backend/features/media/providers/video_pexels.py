@@ -8,7 +8,18 @@ import logging
 from typing import List, Dict, Any
 import requests
 
+from backend.shared.config import settings
 from backend.features.media.base import BaseMediaProvider, MediaAsset
+
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+PEXELS_VIDEOS_ENDPOINT: str = "https://api.pexels.com/videos/search"
+PEXELS_PHOTOS_ENDPOINT: str = "https://api.pexels.com/v1/search"
+DEFAULT_SEARCH_LIMIT: int = 10
+DEFAULT_ASPECT_RATIO: str = "9:16"
+DEFAULT_REQUEST_TIMEOUT: int = 8
 
 logger = logging.getLogger("ApexMind.media.pexels")
 

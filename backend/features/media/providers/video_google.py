@@ -11,7 +11,20 @@ import logging
 from typing import List, Dict, Any, Optional
 import requests
 
+from backend.shared.config import settings
 from backend.features.media.base import BaseMediaProvider, MediaAsset
+
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+GOOGLE_SEARCH_API_ENDPOINT: str = "https://www.googleapis.com/customsearch/v1"
+DEFAULT_DOMAINS_FILTER: str = "(site:pexels.com/video OR site:pixabay.com/videos OR site:coverr.co OR site:mixkit.co OR site:videvo.net)"
+DEFAULT_FALLBACK_QUERY: str = "cinematic nature landscape vertical loop"
+DEFAULT_REQUEST_TIMEOUT: int = 6
+COOLDOWN_SECONDS: int = 3600
+DEFAULT_SEARCH_LIMIT: int = 10
+DEFAULT_ASPECT_RATIO: str = "9:16"
 
 logger = logging.getLogger("ApexMind.media.google")
 

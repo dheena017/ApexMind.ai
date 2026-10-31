@@ -10,7 +10,20 @@ from .repository import (
     fetch_media_library,
 )
 from backend.shared.gemini import generate_gemini_script, generate_gemini_voiceover
+from backend.shared.config import settings
 from backend.database.repository import add_notification
+
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+DEFAULT_SCRIPT_MODEL: str = settings.DEFAULT_SCRIPT_MODEL
+DEFAULT_ASPECT_RATIO: str = "9:16"
+DEFAULT_MEMORY_LIMIT: int = 50
+DEFAULT_SCRIPT_MEMORY_LIMIT: int = 5
+DEFAULT_UNIQUENESS_MIN: int = 70
+DEFAULT_UNIQUENESS_MAX: int = 100
+DEFAULT_SORT_ORDER: str = "newest"
 
 logger = logging.getLogger("ApexMind.Workspace")
 
@@ -110,7 +123,7 @@ def generate_script(
     topic: str,
     tone: str = "",
     length: str = "",
-    model: str = "gemini-2.5-flash",
+    model: str = DEFAULT_SCRIPT_MODEL,
     audio_mood: str | None = None,
     background_style: str | None = None,
     text_style: str | None = None,
@@ -126,9 +139,9 @@ def generate_script(
     available_assets: dict | None = None,
     user_prompt: str | None = None,
 ) -> Dict[str, Any]:
-    aspect_ratio = aspect_ratio or "9:16"
+    aspect_ratio = aspect_ratio or DEFAULT_ASPECT_RATIO
     logger.debug(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
-    memory = fetch_quote_memory(limit=5)
+    memory = fetch_quote_memory(limit=DEFAULT_SCRIPT_MEMORY_LIMIT)
     merged_assets = dict(available_assets or {})
 
     data = generate_gemini_script(

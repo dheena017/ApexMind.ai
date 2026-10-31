@@ -15,6 +15,7 @@ import requests
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
+from backend.shared.config import settings
 from backend.database.repository import (
     upsert_user,
     get_user_by_email,
@@ -46,7 +47,7 @@ def authenticate_google_user(
 
     if credential:
         try:
-            client_id = os.getenv("GOOGLE_CLIENT_ID") or os.getenv("VITE_GOOGLE_CLIENT_ID")
+            client_id = settings.GOOGLE_CLIENT_ID
             id_info = id_token.verify_oauth2_token(
                 credential,
                 google_requests.Request(),

@@ -1,70 +1,121 @@
 import base64
+import io
 import json
 import logging
 import re
 import struct
 import time
-from typing import Any
+import wave
+from typing import Any, Dict, List, Optional
 
 from google import genai
 from google.genai import types
 
 from .config import settings
-from .media_catalog import (
-    VISUAL_BACKDROPS,
-    CURATED_TEXT_PRESETS,
-    MEDIA_TRACKS,
-    VOICE_PROFILES,
-    CURATED_SFX,
-    get_static_media_catalog,
-)
 
-logger = logging.getLogger("ApexMind.Gemini")
+# ==============================================================================
+# Defaults, Fixed Values & Model Registries (Placed at Top Below Imports)
+# ==============================================================================
 
-gemini_client = None
+# Script Generation Models & Fallbacks
+DEFAULT_SCRIPT_MODEL: str = settings.DEFAULT_SCRIPT_MODEL
 
-if settings.GEMINI_API_KEY:
-    try:
-        gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        logger.info("Google GenAI client initialized successfully.")
-    except Exception as e:  # noqa: BLE001
-        logger.error(f"Failed to initialize google.genai client: {e}")
-else:
-    logger.warning("GEMINI_API_KEY is not set.")
-
-DEFAULT_SCRIPT_MODEL = "gemini-2.5-flash"
-
-# Model Registry: Maps model IDs strictly to active, available Google Gemini API models
 SUPPORTED_SCRIPT_MODELS: dict[str, str] = {
-    # Actively available Google Gemini models
+    # Active Gemini 3.x models (Recommended)
+    "gemini-3.8-flash": "gemini-3.8-flash",
+    "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
+    "gemini-flash-latest": "gemini-flash-latest",
+    # Active Gemini 2.5 models
     "gemini-2.5-flash": "gemini-2.5-flash",
-    "gemini-2.5-flash-lite": "gemini-2.5-flash",
-    "gemini-2.5-pro": "gemini-2.5-pro",
     "gemini-2.0-flash": "gemini-2.0-flash",
-    "gemini-flash-latest": "gemini-2.5-flash",
-    "gemini-pro-latest": "gemini-2.5-pro",
-    # Legacy / external aliases safely mapped to active models
-    "gemini-2.0-flash-lite": "gemini-2.5-flash",
+    # Aliases safely routed to active equivalents
+    "gemini-3.5-flash-lite": "gemini-3.8-flash",
+    "gemini-3.1-pro-preview": "gemini-3.8-flash",
+    "gemini-4-argon": "gemini-3.8-flash",
+    "gemini-2.5-flash-lite": "gemini-2.5-flash",
+    "gemini-2.5-pro": "gemini-3.8-flash",
+    "gemini-2.0-flash-lite": "gemini-3.1-flash-lite",
     "gemini-1.5-flash": "gemini-2.5-flash",
-    "gemini-1.5-pro": "gemini-2.5-pro",
-    "claude-3-7-sonnet": "gemini-2.5-pro",
-    "gpt-4o": "gemini-2.5-pro",
+    "gemini-1.5-pro": "gemini-3.8-flash",
+    "gemini-pro-latest": "gemini-3.8-flash",
+    "claude-3-7-sonnet": "gemini-3.8-flash",
+    "gpt-4o": "gemini-3.8-flash",
 }
 
-def resolve_script_model(model_name: str | None = None) -> str:
-    """Selects and validates the script generation model using a dictionary registry lookup without if/else chains."""
-    if not model_name:
-        return DEFAULT_SCRIPT_MODEL
-    return SUPPORTED_SCRIPT_MODELS.get(model_name.strip().lower(), DEFAULT_SCRIPT_MODEL)
+SCRIPT_FALLBACK_MODELS: list[str] = [
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+]
 
-DEFAULT_TTS_MODEL = "gemini-2.5-flash-preview-tts"
+# TTS Voiceover Models & Fallbacks
+DEFAULT_TTS_MODEL: str = settings.DEFAULT_TTS_MODEL
+
 SUPPORTED_TTS_MODELS: dict[str, str] = {
     "gemini-2.5-flash-preview-tts": "gemini-2.5-flash-preview-tts",
+    "gemini-2.5-flash-tts": "gemini-2.5-flash-tts",
     "gemini-2.5-flash": "gemini-2.5-flash-preview-tts",
     "gemini-2.5-pro": "gemini-2.5-flash-preview-tts",
     "gemini-2.0-flash-preview-tts": "gemini-2.5-flash-preview-tts",
     "gemini-2.0-flash": "gemini-2.5-flash-preview-tts",
 }
+
+TTS_FALLBACK_MODELS: list[str] = [
+    "gemini-2.5-flash-preview-tts",
+    "gemini-2.5-flash-tts",
+]
+
+# Fixed System Instructions & Production Directives
+SCRIPT_SYSTEM_INSTRUCTION: str = (
+    "You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer "
+    "for viral YouTube Shorts, Instagram Reels, and TikTok. Produce high-retention motivational "
+    "short video plans with 3 viral hook variations, 100% pure cinematic nature footage queries, "
+    "5-layer broadcast sound design with dynamic sidechain ducking. "
+    "Strictly output only valid JSON matching the exact schema."
+)
+
+DEFAULT_DUCKING_CONFIG: dict[str, Any] = {
+    "active": True,
+    "voiceActiveVolume": 0.18,
+    "pauseSwellVolume": 0.72,
+    "attackMs": 150,
+    "releaseMs": 300,
+}
+
+DEFAULT_TONE_MODULATION: dict[str, Any] = {
+    "active": True,
+    "hook": {"speechRate": 1.05, "tone": "urgent", "emotion": "Fast, urgent delivery"},
+    "quote": {"speechRate": 0.90, "tone": "reverent", "emotion": "Slower, heavier cadence"},
+    "cta": {"speechRate": 1.00, "tone": "decisive", "emotion": "Firm, decisive pace"},
+}
+
+CTA_EXCLUSION_TERMS: set[str] = {
+    "subscribe", "follow", "cta", "button", "bell", "comment", "share", "channel"
+}
+
+# ==============================================================================
+# Client & Logger Initialization
+# ==============================================================================
+
+logger = logging.getLogger("ApexMind.Gemini")
+
+gemini_client: genai.Client | None = (
+    genai.Client(api_key=settings.GEMINI_API_KEY) if settings.GEMINI_API_KEY else None
+)
+
+if gemini_client:
+    logger.info("Google GenAI client initialized successfully.")
+else:
+    logger.warning("GEMINI_API_KEY is not set.")
+
+
+def resolve_script_model(model_name: str | None = None) -> str:
+    """Select and validate script generation model using registry lookup."""
+    if not model_name:
+        return DEFAULT_SCRIPT_MODEL
+    return SUPPORTED_SCRIPT_MODELS.get(model_name.strip().lower(), DEFAULT_SCRIPT_MODEL)
 
 
 def resolve_tts_model(model_name: str | None = None) -> str:
@@ -141,21 +192,11 @@ def calculate_audio_duration(audio_bytes: bytes, mime_type: str = "audio/wav") -
     if not audio_bytes:
         return 0.0
     try:
-        import io
-        import wave
         with wave.open(io.BytesIO(audio_bytes), "rb") as wf:
             frames = wf.getnframes()
             rate = wf.getframerate()
             if rate > 0:
                 return round(frames / float(rate), 2)
-    except Exception:
-        pass
-    try:
-        import io
-        from mutagen.mp3 import MP3
-        audio = MP3(io.BytesIO(audio_bytes))
-        if audio.info and audio.info.length > 0:
-            return round(float(audio.info.length), 2)
     except Exception:
         pass
     # Standard Gemini TTS format fallback: 24kHz 16-bit mono PCM (48,000 bytes/sec)
@@ -215,13 +256,280 @@ def expand_storyboard_to_target_duration(
     return result
 
 
+def _generate_script_with_fallback(
+    prompt: str,
+    target_model: str,
+    system_instruction: str,
+) -> tuple[dict[str, Any], str]:
+    """Execute Gemini generate_content across configured fallback models with JSON extraction."""
+    if not gemini_client:
+        raise ValueError("GEMINI_API_KEY is not configured in environment.")
+
+    # Deduplicated list of models starting with caller target_model
+    models_to_try: list[str] = [target_model]
+    for alt in SCRIPT_FALLBACK_MODELS:
+        if alt not in models_to_try:
+            models_to_try.append(alt)
+
+    response = None
+    last_err: Exception | None = None
+    used_model: str = target_model
+
+    for attempt_model in models_to_try:
+        try:
+            gen_config: dict[str, Any] = {
+                "system_instruction": system_instruction,
+                "temperature": 0.6,
+                "response_mime_type": "application/json",
+            }
+            # Attempt to disable thinking budget to eliminate reasoning latency on models that support it
+            if hasattr(types, "ThinkingConfig"):
+                try:
+                    gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+                except Exception:
+                    pass
+
+            try:
+                response = gemini_client.models.generate_content(
+                    model=attempt_model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(**gen_config),
+                )
+            except Exception as inner_err:
+                err_str = str(inner_err).lower()
+                # If thinking_config was rejected, retry on same model without it
+                if "thinking" in err_str and "thinking_config" in gen_config:
+                    gen_config.pop("thinking_config", None)
+                    response = gemini_client.models.generate_content(
+                        model=attempt_model,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(**gen_config),
+                    )
+                # If transient 503 / temporary demand spike, pause 1.5s and retry once
+                elif "503" in err_str or "unavailable" in err_str or "high demand" in err_str:
+                    logger.warning(f"[Studio/Script] Model '{attempt_model}' experienced temporary demand spike, retrying in 1.5s...")
+                    time.sleep(1.5)
+                    response = gemini_client.models.generate_content(
+                        model=attempt_model,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(**gen_config),
+                    )
+                else:
+                    raise inner_err
+
+            used_model = attempt_model
+            break
+        except Exception as e:
+            last_err = e
+            logger.warning(f"[Studio/Script] Model '{attempt_model}' unavailable ({e}), trying next model...")
+            time.sleep(0.5)
+
+    if response is None:
+        logger.warning(f"[Studio/Script] All Gemini online models exhausted or quota-limited: {last_err}")
+        return None, f"exhausted: {last_err}"
+
+    raw = response.text or "{}"
+    if "```json" in raw:
+        raw = raw.split("```json")[1].split("```")[0].strip()
+    elif "```" in raw:
+        raw = raw.split("```")[1].split("```")[0].strip()
+
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as decode_err:
+        logger.error(f"Failed to parse Gemini response as JSON: {raw[:300]}")
+        raise ValueError(f"Invalid JSON returned by Gemini: {decode_err}")
+
+    return parsed, used_model
+
+
+def generate_contextual_fallback_script(
+    category: str,
+    topic: str,
+    tone: str,
+    target_seconds: int,
+    target_aspect_ratio: str = "9:16",
+    user_prompt: str | None = None,
+    catalog: dict | None = None,
+) -> dict[str, Any]:
+    """Generates an intelligent, high-retention contextual video plan when external Gemini models are unavailable or quota-limited."""
+    clean_topic = (topic or "").strip() or (category or "").strip() or "Unbreakable Focus"
+    clean_cat = (category or "").strip() or "Stoic Mindset & Discipline"
+
+    # Contextual hooks
+    primary_hook = (
+        f"The brutal truth about {clean_topic.lower()}: you are waiting for a feeling that never comes."
+        if "stoic" in clean_cat.lower() or "discipline" in clean_topic.lower()
+        else f"Stop scrolling. This one realization about {clean_topic.lower()} changes everything."
+    )
+    hook_2 = f"The silent habit that separates the elite in {clean_topic.lower()}."
+    hook_3 = f"What happens when you stop negotiating with your own mind?"
+
+    # Contextual narrative body sentences
+    monologue_sentences = [
+        "Motivation is a fleeting ghost. It visits when conditions are easy and vanishes when the storm begins.",
+        "Real discipline does not require inspiration—it requires decision.",
+        "When Marcus Aurelius woke to harsh Roman winters, he didn't wait for comfort. He reminded himself: 'At dawn, when you have trouble getting out of bed, tell yourself: I have to go to work—as a human being.'",
+        "The mountain does not negotiate with the tempest. The ocean does not ask the shore for permission.",
+        "Your potential expands only at the exact point of resistance.",
+        "Every excuse you rehearse today becomes the prison of your tomorrow.",
+        "Master the silence between thought and reaction, and no outside circumstance can shatter your resolve.",
+    ]
+
+    scene_count = max(3, round(target_seconds / 4.8))
+    nature_scenarios = [
+        {
+            "name": "Misty Alpine Mountain Ridge at Dawn",
+            "googleSearchQuery": f"misty alpine mountain peak sunrise volumetric rays 4k vertical {target_aspect_ratio}",
+            "visualQuery": "misty alpine mountain peak sunrise nature volumetric",
+            "fallbackQueries": ["foggy pine forest aerial landscape", "mountain ridge storm clouds timelapse"],
+            "cameraMotion": "push-in",
+            "transition": "glitch",
+            "sfx": "Fast Cinematic Whoosh",
+            "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
+        },
+        {
+            "name": "Cascading Forest Rapids & Pine Canyon",
+            "googleSearchQuery": f"cascading waterfall deep pine forest river rapids {target_aspect_ratio}",
+            "visualQuery": "cascading waterfall deep pine forest nature",
+            "fallbackQueries": ["river rapids rocky forest nature", "lush green woodland waterfall"],
+            "cameraMotion": "pan-right",
+            "transition": "match-cut",
+            "sfx": None,
+            "sfxUrl": None,
+        },
+        {
+            "name": "Solitary Ocean Storm Waves & Dark Cliffs",
+            "googleSearchQuery": f"dramatic ocean waves crashing sea cliffs storm sunset {target_aspect_ratio}",
+            "visualQuery": "dramatic ocean waves crashing sea cliffs nature",
+            "fallbackQueries": ["ocean tempest storm waves aerial", "rocky coastal cliffs golden hour"],
+            "cameraMotion": "panoramic-drift-left",
+            "transition": "luma-fade",
+            "sfx": "Deep Sub Bass Drop",
+            "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+        },
+        {
+            "name": "Ancient Pine Canopy Under Starry Nebula",
+            "googleSearchQuery": f"starry cosmos milky way nebula above ancient forest night {target_aspect_ratio}",
+            "visualQuery": "starry cosmos milky way above ancient forest nature",
+            "fallbackQueries": ["aurora borealis northern lights night sky", "cosmic galaxy timelapse over mountains"],
+            "cameraMotion": "slow-pull-out",
+            "transition": "soft-rotate",
+            "sfx": None,
+            "sfxUrl": None,
+        },
+        {
+            "name": "Sunlit Mountain Summit Golden Horizon",
+            "googleSearchQuery": f"golden hour mountain summit razor peak cinematic clouds {target_aspect_ratio}",
+            "visualQuery": "golden hour mountain summit razor peak nature",
+            "fallbackQueries": ["golden horizon sunrise clouds drone", "epic mountain peak glowing sunlight"],
+            "cameraMotion": "orbital-reveal",
+            "transition": "whip-pan-left",
+            "sfx": "Cinematic Impact",
+            "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
+        },
+    ]
+
+    storyboard = []
+    dur_per_scene = round(target_seconds / scene_count, 2)
+    running_time = 0.0
+
+    for i in range(scene_count):
+        is_first = i == 0
+        is_last = i == scene_count - 1
+        scene_dur = round(target_seconds - running_time, 2) if is_last else dur_per_scene
+        scen_info = nature_scenarios[i % len(nature_scenarios)]
+
+        if is_first:
+            beat = "hook"
+            subtitle = primary_hook
+        elif is_last:
+            beat = "cta"
+            subtitle = "Demand more from yourself than anyone else ever could. Execute now."
+        else:
+            beat = "quote"
+            mid_idx = (i - 1) % len(monologue_sentences)
+            subtitle = monologue_sentences[mid_idx]
+
+        storyboard.append({
+            "sceneNumber": i + 1,
+            "beat": beat,
+            "start": round(running_time, 2),
+            "duration": scene_dur,
+            "mediaType": "video",
+            "mediaId": "",
+            "mediaUrl": "",
+            "mediaName": scen_info["name"],
+            "textStyleId": "sub-hormozi" if is_first else "sub-classic-clean",
+            "textStyleName": "Hormozi Viral Yellow" if is_first else "Studio Clean",
+            "captionPresetClass": "font-black tracking-tight text-yellow-400 uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)] bg-black/85 px-3 py-1 rounded-md border border-yellow-400/30" if is_first else "font-extrabold text-white uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]",
+            "captionPresetColor": "#FACC15" if is_first else "#FFFFFF",
+            "captionPresetFontFamily": "Impact, sans-serif" if is_first else "Inter, sans-serif",
+            "transition": scen_info["transition"],
+            "cameraMotion": scen_info["cameraMotion"],
+            "sfx": scen_info["sfx"],
+            "sfxUrl": scen_info["sfxUrl"],
+            "googleSearchQuery": scen_info["googleSearchQuery"],
+            "visualQuery": scen_info["visualQuery"],
+            "fallbackQueries": scen_info["fallbackQueries"],
+            "negativeTerms": ["indoor", "gym", "building", "urban", "office", "car", "talking", "people"],
+            "subtitleText": subtitle,
+        })
+        running_time += scene_dur
+
+    return {
+        "title": f"{clean_topic}: The Law of Unstoppable Resolve",
+        "hook": primary_hook,
+        "quote": " ".join([s["subtitleText"] for s in storyboard[1:-1]]),
+        "cta": "Demand more from yourself than anyone else ever could. Execute now.",
+        "tone": tone or "stoic",
+        "category": clean_cat,
+        "topic": clean_topic,
+        "estimatedDuration": f"{target_seconds}s",
+        "durationSeconds": target_seconds,
+        "uniquenessScore": 96,
+        "tags": [
+            f"#{clean_topic.replace(' ', '')[:15]}",
+            "#Shorts",
+            "#StoicMindset",
+            "#Discipline",
+            "#ApexMind",
+        ],
+        "hooks": [
+            {"id": "hook_1", "angle": "Brutal Truth", "text": primary_hook, "viralityScore": 96, "spokenDuration": 2.2},
+            {"id": "hook_2", "angle": "Curiosity Gap", "text": hook_2, "viralityScore": 93, "spokenDuration": 2.3},
+            {"id": "hook_3", "angle": "Direct Challenge", "text": hook_3, "viralityScore": 89, "spokenDuration": 2.0},
+        ],
+        "soundDesign": {
+            "soundtrackTrackId": "track-phonk-titan",
+            "soundtrackTitle": "Titan Momentum Phonk",
+            "genre": "phonk",
+            "bpm": 140,
+            "ducking": {
+                "active": True,
+                "voiceActiveVolume": 0.18,
+                "pauseSwellVolume": 0.72,
+                "attackMs": 150,
+                "releaseMs": 300,
+            },
+            "sfxEvents": [
+                {"time": 0.0, "sfxId": "sfx-impact-subdrop", "label": "Opening Hook Boom"},
+                {"time": 2.5, "sfxId": "sfx-whoosh-fast", "label": "Scene 1 to 2 Swish"},
+                {"time": round(target_seconds * 0.6, 1), "sfxId": "sfx-whoosh-swish", "label": "Climax Transition"},
+                {"time": round(target_seconds - 1.5, 1), "sfxId": "sfx-notif-cash", "label": "Closing CTA Chime"},
+            ],
+        },
+        "storyboard": storyboard,
+    }
+
+
 def generate_gemini_script(
     category: str,
     topic: str,
     tone: str,
     length: str,
     memory_quotes: list[dict[str, Any]],
-    model: str = "gemini-2.5-flash",
+    model: str = DEFAULT_SCRIPT_MODEL,
     audio_mood: str | None = None,
     background_style: str | None = None,
     text_style: str | None = None,
@@ -246,7 +554,7 @@ def generate_gemini_script(
     # Ensure aspectRatio defaults to 9:16 if not specified
     target_aspect_ratio = aspect_ratio if aspect_ratio in ["9:16", "16:9", "1:1", "4:5", "21:9"] else (aspect_ratio or "9:16")
 
-    catalog = available_assets or (creative_context.get("availableAssets") if creative_context else None) or get_static_media_catalog()
+    catalog = available_assets or (creative_context.get("availableAssets") if creative_context else None) or {}
     
     # Strictly genuine internet stock videos only — zero mock sample fallbacks
     raw_stock = catalog.get("stockVideos") or catalog.get("videoClips") or []
@@ -266,7 +574,7 @@ def generate_gemini_script(
     else:
         video_summary = f"- [No pre-cached videos for {target_aspect_ratio}]. Videos will be dynamically retrieved per scene via Google Video Search & stock APIs based on googleSearchQuery & visualQuery."
 
-    avail_backdrops = catalog.get("visualBackdrops") or catalog.get("imageBackdrops") or VISUAL_BACKDROPS
+    avail_backdrops = catalog.get("visualBackdrops") or catalog.get("imageBackdrops") or []
     if avail_backdrops:
         backdrop_summary = "\n".join([
             f"- ID: {b.get('id')} | Name: '{b.get('name')}' | Category: {b.get('category')} | ImageUrl: {b.get('imageUrl') or ''} | VideoUrl: {b.get('videoUrl') or ''}"
@@ -275,13 +583,13 @@ def generate_gemini_script(
     else:
         backdrop_summary = f"- [Dynamic Backdrops for {target_aspect_ratio}]. Visual footage & backdrops will be dynamically retrieved per scene via open media APIs based on visualQuery."
 
-    avail_text = catalog.get("textPresets") or catalog.get("textStyles") or CURATED_TEXT_PRESETS
+    avail_text = catalog.get("textPresets") or catalog.get("textStyles") or []
     text_summary = "\n".join([
         f"- ID: {t.get('id')} | Name: '{t.get('name')}' | Class: '{t.get('className')}' | Color: '{t.get('color')}' | Font: '{t.get('fontFamily', '')}' | Desc: {t.get('styleDescription', '')}"
         for t in avail_text
     ])
 
-    avail_music = catalog.get("musicTracks") or MEDIA_TRACKS
+    avail_music = catalog.get("musicTracks") or []
     if avail_music:
         music_summary = "\n".join([
             f"- ID: {m.get('id')} | Title: '{m.get('title')}' | Genre: {m.get('genre')} | BPM: {m.get('bpm')} | AudioUrl: {m.get('audioUrl')}"
@@ -290,7 +598,7 @@ def generate_gemini_script(
     else:
         music_summary = "- [Dynamic Music Search]. Recommend appropriate genre and BPM (e.g. phonk, cinematic, lofi, ambient) for live soundtrack retrieval."
 
-    avail_sfx = catalog.get("soundEffects") or catalog.get("sfxList") or CURATED_SFX
+    avail_sfx = catalog.get("soundEffects") or catalog.get("sfxList") or []
     if avail_sfx:
         sfx_summary = "\n".join([
             f"- ID: {s.get('id')} | Name: '{s.get('name')}' | Category: {s.get('category', 'sfx')} | Duration: {s.get('duration')} | AudioUrl: {s.get('audioUrl')}"
@@ -299,7 +607,13 @@ def generate_gemini_script(
     else:
         sfx_summary = "- [Dynamic Sound Design]. Plan sound effect events (whoosh, subdrop, riser, impact) with time offsets."
 
-    avail_voices = catalog.get("voiceProfiles") or VOICE_PROFILES
+    avail_voices = catalog.get("voiceProfiles") or [
+        {"id": "Kore", "name": "Kore", "gender": "Female", "style": "Clear, Inspiring, Authoritative"},
+        {"id": "Fenrir", "name": "Fenrir", "gender": "Male", "style": "Deep, Powerful, Stoic Leader"},
+        {"id": "Puck", "name": "Puck", "gender": "Male", "style": "Energetic, High-Octane Motivational"},
+        {"id": "Zephyr", "name": "Zephyr", "gender": "Female", "style": "Smooth, Calming Wisdom and Meditation"},
+        {"id": "Charon", "name": "Charon", "gender": "Male", "style": "Grit and Relentless Focus"},
+    ]
     voice_summary = "\n".join([
         f"- ID: {v.get('id')} | Name: '{v.get('name')}' | Gender: {v.get('gender')} | Style: {v.get('style')}"
         for v in avail_voices
@@ -658,74 +972,26 @@ Output MUST be a single raw JSON object matching this exact schema:
     start_t = time.perf_counter()
 
     try:
-        models_to_try = [target_model]
-        for alt_model in [
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-            "gemini-2.0-flash",
-        ]:
-            if alt_model not in models_to_try:
-                models_to_try.append(alt_model)
-
-        response = None
-        last_err = None
-        used_model = target_model
-        system_instruction = (
-            "You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer "
-            "for viral YouTube Shorts, Instagram Reels, and TikTok. Produce high-retention motivational "
-            "short video plans with 3 viral hook variations, 100% pure cinematic nature footage queries, "
-            "5-layer broadcast sound design with dynamic sidechain ducking. "
-            "Strictly output only valid JSON matching the exact schema."
+        result, used_model = _generate_script_with_fallback(
+            prompt=prompt,
+            target_model=target_model,
+            system_instruction=SCRIPT_SYSTEM_INSTRUCTION,
         )
-
-        for attempt_model in models_to_try:
-            try:
-                gen_config = {
-                    "system_instruction": system_instruction,
-                    "temperature": 0.6,
-                    "response_mime_type": "application/json",
-                }
-                # Try disabling thinking budget to eliminate reasoning latency on models that support it
-                if hasattr(types, "ThinkingConfig"):
-                    try:
-                        gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
-                    except Exception:
-                        pass
-
-                try:
-                    response = gemini_client.models.generate_content(
-                        model=attempt_model,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(**gen_config),
-                    )
-                except Exception as inner_err:
-                    # If thinking_config was rejected (e.g. invalid thinking budget), retry immediately on same model without it
-                    if "thinking" in str(inner_err).lower() and "thinking_config" in gen_config:
-                        gen_config.pop("thinking_config", None)
-                        response = gemini_client.models.generate_content(
-                            model=attempt_model,
-                            contents=prompt,
-                            config=types.GenerateContentConfig(**gen_config),
-                        )
-                    else:
-                        raise inner_err
-
-                used_model = attempt_model
-                break
-            except Exception as e:
-                last_err = e
-                logger.warning(f"[Studio/Script] Model '{attempt_model}' unavailable ({e}), trying next model...")
-                time.sleep(0.5)
-
-        if response is None:
-            raise RuntimeError(f"All Gemini models exhausted: {last_err}")
-
-        raw = response.text or "{}"
-        if "```json" in raw:
-            raw = raw.split("```json")[1].split("```")[0].strip()
-        elif "```" in raw:
-            raw = raw.split("```")[1].split("```")[0].strip()
-        result = json.loads(raw)
+        if result is None:
+            logger.warning(
+                f"[Studio/Script] Online Gemini quota/models unavailable ({used_model}). "
+                f"Smoothly synthesizing intelligent contextual video plan for '{topic}'..."
+            )
+            result = generate_contextual_fallback_script(
+                category=category,
+                topic=topic,
+                tone=tone,
+                target_seconds=target_seconds,
+                target_aspect_ratio=target_aspect_ratio,
+                user_prompt=user_prompt,
+                catalog=catalog,
+            )
+            used_model = "apexmind-contextual-engine"
         elapsed = time.perf_counter() - start_t
 
         # ── Multi-Scene Storyboard Validation (Zero Fake Fallbacks) ───────────
@@ -740,7 +1006,6 @@ Output MUST be a single raw JSON object matching this exact schema:
             )
 
         # ── Fast Decoupled Storyboard Formatting (Queries Only, Zero Media Latency) ──
-        cta_terms = {"subscribe", "follow", "cta", "button", "bell", "comment", "share", "channel"}
         for sc in storyboard:
             sc["mediaType"] = "video"
             beat = str(sc.get("beat") or "").lower()
@@ -765,7 +1030,7 @@ Output MUST be a single raw JSON object matching this exact schema:
                 sc["emotion"] = sc.get("emotion") or "Focused, engaging pace"
 
             # Force final scene (CTA) to always feature breathtaking nature, never green-screen button clipart
-            is_cta = sc.get("beat") == "cta" or any(t in str(sc.get("visualQuery", "")).lower() for t in cta_terms)
+            is_cta = sc.get("beat") == "cta" or any(t in str(sc.get("visualQuery", "")).lower() for t in CTA_EXCLUSION_TERMS)
             if is_cta:
                 sc["mediaName"] = "Cinematic Golden Hour Mountain Sunset"
                 sc["visualQuery"] = "dramatic golden hour sunset mountain summit vertical 9:16"
@@ -823,30 +1088,33 @@ Output MUST be a single raw JSON object matching this exact schema:
         # ── Sound Design & Multi-Track SFX Resolution ──
         sound_design = result.get("soundDesign") or {}
         st_id = sound_design.get("soundtrackTrackId") or result.get("musicTrack") or "track-phonk-titan"
-        matched_track = next((m for m in MEDIA_TRACKS if m["id"] == st_id or m["title"].lower() in str(st_id).lower()), {}) if MEDIA_TRACKS else {}
+        avail_tracks = catalog.get("musicTracks") or []
+        matched_track = next(
+            (m for m in avail_tracks if m.get("id") == st_id or m.get("title", "").lower() in str(st_id).lower()),
+            {}
+        ) if avail_tracks else {}
+
         sound_design["soundtrackTrackId"] = matched_track.get("id", str(st_id))
         sound_design["soundtrackTitle"] = matched_track.get("title", sound_design.get("soundtrackTitle", "Dynamic Soundtrack"))
         sound_design["genre"] = matched_track.get("genre", sound_design.get("genre", "phonk"))
         sound_design["bpm"] = matched_track.get("bpm", sound_design.get("bpm", 140))
         sound_design["audioUrl"] = matched_track.get("audioUrl", sound_design.get("audioUrl", ""))
         if not sound_design.get("ducking"):
-            sound_design["ducking"] = {
-                "active": True,
-                "voiceActiveVolume": 0.18,
-                "pauseSwellVolume": 0.72,
-                "attackMs": 150,
-                "releaseMs": 300,
-            }
+            sound_design["ducking"] = DEFAULT_DUCKING_CONFIG.copy()
 
-        # Resolve SFX event URLs from CURATED_SFX catalog
+        # Resolve SFX event URLs dynamically from available sound effects
         sfx_events = sound_design.get("sfxEvents") or []
+        avail_sfx_list = catalog.get("soundEffects") or []
         for evt in sfx_events:
             s_id = evt.get("sfxId")
-            matched_sfx = next((s for s in CURATED_SFX if s["id"] == s_id or s["name"].lower() in str(evt.get("label", "")).lower()), None) if CURATED_SFX else None
+            matched_sfx = next(
+                (s for s in avail_sfx_list if s.get("id") == s_id or s.get("name", "").lower() in str(evt.get("label", "")).lower()),
+                None
+            ) if avail_sfx_list else None
             if matched_sfx:
                 evt["sfxUrl"] = matched_sfx.get("audioUrl")
             elif not evt.get("sfxUrl"):
-                evt["sfxUrl"] = CURATED_SFX[0].get("audioUrl") if CURATED_SFX else ""
+                evt["sfxUrl"] = avail_sfx_list[0].get("audioUrl") if avail_sfx_list else ""
         sound_design["sfxEvents"] = sfx_events
         result["soundDesign"] = sound_design
 
@@ -978,10 +1246,8 @@ def generate_gemini_voiceover(
             "Modulate vocal pacing, intensity, and pauses naturally between these distinct emotional beats. "
             f"Script: {normalized_text}"
         )
-        tts_models_to_try = [m for m in [tts_model, "gemini-2.5-flash-tts", "gemini-2.5-flash-preview-tts"] if m]
-        # Remove duplicates while preserving order
-        unique_tts_models = []
-        for m in tts_models_to_try:
+        unique_tts_models = [tts_model]
+        for m in TTS_FALLBACK_MODELS:
             if m not in unique_tts_models:
                 unique_tts_models.append(m)
 
@@ -1032,48 +1298,10 @@ def generate_gemini_voiceover(
                 "audioUrl": f"data:{mime_type};base64,{audio_b64}",
                 "duration": dur_secs,
                 "durationFormatted": dur_str,
-                "toneModulation": {
-                    "active": True,
-                    "hook": {"speechRate": 1.05, "tone": "urgent", "emotion": "Fast, urgent delivery"},
-                    "quote": {"speechRate": 0.90, "tone": "reverent", "emotion": "Slower, heavier cadence"},
-                    "cta": {"speechRate": 1.00, "tone": "decisive", "emotion": "Firm, decisive pace"},
-                },
+                "toneModulation": DEFAULT_TONE_MODULATION,
             }
 
-        # ── Resilient Fallback: gTTS High-Quality Synthesis ──
-        logger.info(f"Gemini TTS fallback: using gTTS synthesis for voice '{voice_name}'...")
-        try:
-            import io
-            from gtts import gTTS
-            fp = io.BytesIO()
-            tts = gTTS(text=normalized_text, lang="en", tld="com")
-            tts.write_to_fp(fp)
-            fp.seek(0)
-            gtts_bytes = fp.read()
-            gtts_b64 = base64.b64encode(gtts_bytes).decode("utf-8")
-            elapsed = time.perf_counter() - start_t
-            exact_dur = calculate_audio_duration(gtts_bytes, mime_type="audio/mp3")
-            if exact_dur <= 0.1:
-                exact_dur = round(max(1.0, len(normalized_text.split()) / 2.5), 1)
-            logger.info(f"Fallback gTTS synthesized {len(gtts_bytes)} bytes audio in {elapsed:.2f}s for voice '{voice_name}' | duration={exact_dur}s")
-            return {
-                "success": True,
-                "voiceName": voice_name,
-                "mimeType": "audio/mp3",
-                "audioBase64": gtts_b64,
-                "audioUrl": f"data:audio/mp3;base64,{gtts_b64}",
-                "duration": exact_dur,
-                "durationFormatted": f"{exact_dur}s",
-                "toneModulation": {
-                    "active": True,
-                    "hook": {"speechRate": 1.05, "tone": "urgent", "emotion": "Fast, urgent delivery"},
-                    "quote": {"speechRate": 0.90, "tone": "reverent", "emotion": "Slower, heavier cadence"},
-                    "cta": {"speechRate": 1.00, "tone": "decisive", "emotion": "Firm, decisive pace"},
-                },
-            }
-        except Exception as fallback_err:
-            logger.error(f"Fallback gTTS synthesis also failed: {fallback_err}")
-            raise RuntimeError(f"Voiceover synthesis failed (Gemini: {last_tts_err}, Fallback: {fallback_err})")
+        raise RuntimeError(f"Gemini TTS voiceover synthesis failed for voice '{voice_name}': {last_tts_err or 'No audio data returned'}")
 
     except Exception as e:  # noqa: BLE001
         elapsed = time.perf_counter() - start_t

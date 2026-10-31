@@ -138,6 +138,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       if (stored) setSavedImages(JSON.parse(stored));
       const recent = localStorage.getItem(RECENT_IMAGES_KEY);
       if (recent) setRecentImages(JSON.parse(recent));
+      const aiSaved = localStorage.getItem(AI_IMAGES_STORAGE_KEY);
+      if (aiSaved) setAiGeneratedList(JSON.parse(aiSaved));
     } catch {}
   }, []);
 
@@ -545,35 +547,54 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <ImageIcon className="w-4 h-4 shrink-0 text-blue-400" />
-          <span className="text-xs font-bold text-white truncate">
-            Stock Photos (100M+ Library)
-          </span>
+          {activeTab === 'ai-generator' ? (
+            <>
+              <Sparkles className="w-4 h-4 shrink-0 text-blue-400" />
+              <span className="text-xs font-bold text-white truncate">
+                AI Visual Studio
+              </span>
+            </>
+          ) : (
+            <>
+              <ImageIcon className="w-4 h-4 shrink-0 text-blue-400" />
+              <span className="text-xs font-bold text-white truncate">
+                Stock Photos (100M+ Library)
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {isLoadingLive && (
-            <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
+          {activeTab === 'ai-generator' ? (
+            <span className="text-[9.5px] font-mono font-bold text-blue-400 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
+              Google Imagen 3 &amp; Gemini AI
+            </span>
+          ) : (
+            <>
+              {isLoadingLive && (
+                <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
+              )}
+
+              {/* Provider API Key Status Pill */}
+              <button
+                type="button"
+                onClick={() => setShowKeyModal(true)}
+                className={`text-[9px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-pointer transition-colors ${
+                  activeKeyCount > 0
+                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40 hover:bg-emerald-900/50'
+                    : 'bg-[#222226] text-zinc-400 border-[#2F2F36] hover:text-white hover:border-zinc-500'
+                }`}
+                title="Configure Pexels, Pixabay, & Unsplash API keys"
+              >
+                <Key className="w-2.5 h-2.5" />
+                <span>{activeKeyCount > 0 ? `${activeKeyCount} APIs Active` : 'API Keys'}</span>
+              </button>
+
+              <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
+                {totalFound} Photos
+              </span>
+            </>
           )}
-
-          {/* Provider API Key Status Pill */}
-          <button
-            type="button"
-            onClick={() => setShowKeyModal(true)}
-            className={`text-[9px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-pointer transition-colors ${
-              activeKeyCount > 0
-                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40 hover:bg-emerald-900/50'
-                : 'bg-[#222226] text-zinc-400 border-[#2F2F36] hover:text-white hover:border-zinc-500'
-            }`}
-            title="Configure Pexels, Pixabay, & Unsplash API keys"
-          >
-            <Key className="w-2.5 h-2.5" />
-            <span>{activeKeyCount > 0 ? `${activeKeyCount} APIs Active` : 'API Keys'}</span>
-          </button>
-
-          <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
-            {totalFound} Photos
-          </span>
         </div>
       </div>
 

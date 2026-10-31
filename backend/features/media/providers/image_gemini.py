@@ -19,9 +19,17 @@ from google.genai import types
 from backend.shared.config import settings
 from ..base import BaseMediaProvider, MediaAsset
 
-logger = logging.getLogger("ApexMind.media.image_gemini")
+# ==============================================================================
+# Defaults, Fixed Constants & Dimensions (Placed at Top Below Imports)
+# ==============================================================================
 
-OUTPUT_DIR = Path("backend/data/generated_images")
+DEFAULT_IMAGE_MODEL: str = "imagen-3.0-generate-002"
+FAST_IMAGE_MODEL: str = "imagen-3.0-fast-generate-001"
+PROCEDURAL_SVG_MODEL: str = "procedural-svg"
+DEFAULT_STYLE: str = "cinematic"
+DEFAULT_ASPECT_RATIO: str = "9:16"
+
+OUTPUT_DIR: Path = Path("backend/data/generated_images")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Visual style prompt modifiers
@@ -63,6 +71,12 @@ ASPECT_RATIO_DIMENSIONS: dict[str, tuple[int, int]] = {
     "4:5": (1080, 1350),
     "21:9": (2560, 1080),
 }
+
+# ==============================================================================
+# Logger & Provider Implementation
+# ==============================================================================
+
+logger = logging.getLogger("ApexMind.media.image_gemini")
 
 
 class GeminiImageProvider(BaseMediaProvider):
@@ -108,13 +122,13 @@ class GeminiImageProvider(BaseMediaProvider):
         Generates an image via Gemini / Imagen Multimodal API and saves to backend/data/generated_images.
         Returns a complete MediaAsset.
         """
-        chosen_model = model or "imagen-3.0-generate-002"
+        chosen_model = model or DEFAULT_IMAGE_MODEL
         width, height = ASPECT_RATIO_DIMENSIONS.get(aspect_ratio, (1080, 1920))
         enhanced_prompt = self.enhance_prompt(prompt, style=style, aspect_ratio=aspect_ratio)
 
         image_bytes: Optional[bytes] = None
 
-        if chosen_model == "procedural-svg":
+        if chosen_model == PROCEDURAL_SVG_MODEL:
             logger.info("Direct generation: Stylized Procedural Vector Backdrop")
             image_bytes = self._generate_fallback_svg_bytes(prompt, style, width, height)
         elif self.is_configured() and self.client:
@@ -123,7 +137,7 @@ class GeminiImageProvider(BaseMediaProvider):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     # Try official Google Imagen 3 image generation
-                    target_imagen_model = "imagen-3.0-fast-generate-001" if "fast" in chosen_model else "imagen-3.0-generate-002"
+                    target_imagen_model = FAST_IMAGE_MODEL if "fast" in chosen_model else DEFAULT_IMAGE_MODEL
                     img_res = self.client.models.generate_images(
                         model=target_imagen_model,
                         prompt=enhanced_prompt,
@@ -138,6 +152,10 @@ class GeminiImageProvider(BaseMediaProvider):
                     logger.info(f"Successfully generated bespoke scene visual via {target_imagen_model}")
             except Exception as gen_err:
                 logger.debug(f"Imagen 3 ({chosen_model}) not available or quota exceeded ({gen_err})")
+
+        if not image_bytes:
+            logger.info("Generating stylized SVG visual backdrop fallback...")
+            image_bytes = self._generate_fallback_svg_bytes(prompt, style, width, height)
 
         if not image_bytes:
             return None
@@ -172,6 +190,33 @@ class GeminiImageProvider(BaseMediaProvider):
                 "height": height,
             },
         )
+
+    def _generate_fallback_svg_bytes(self, prompt: str, style: str, width: int, height: int) -> bytes:
+        """Create a stylized gradient backdrop SVG so the visual generator never fails."""
+        clean_prompt = prompt.replace("<", "").replace(">", "").replace("&", "&amp;")[:55]
+        grad_color1 = "#090A0F"
+        grad_color2 = "#1E1B4B" if style == "cyberpunk" else "#1F1D1B" if style == "stoic" else "#0F172A"
+        accent_color = "#EAB308" if style == "stoic" else "#06B6D4" if style == "cyberpunk" else "#3B82F6"
+
+        svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="{grad_color1}" />
+      <stop offset="50%" stop-color="{grad_color2}" />
+      <stop offset="100%" stop-color="{grad_color1}" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="{accent_color}" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="{accent_color}" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)" />
+  <circle cx="{width/2}" cy="{height*0.4}" r="{width*0.5}" fill="url(#glow)" />
+  <text x="50%" y="45%" text-anchor="middle" fill="{accent_color}" font-family="system-ui, sans-serif" font-size="28" font-weight="700" letter-spacing="2">APEXMIND STUDIO AI</text>
+  <text x="50%" y="52%" text-anchor="middle" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="20" font-weight="400">{clean_prompt}</text>
+  <text x="50%" y="58%" text-anchor="middle" fill="#64748B" font-family="system-ui, sans-serif" font-size="14" font-weight="500">[{style.upper()} SCENE BACKDROP]</text>
+</svg>"""
+        return svg_content.encode("utf-8")
 
     def search(self, query: str, aspect_ratio: str = "9:16", limit: int = 5) -> List[MediaAsset]:
         """Base search compatibility: triggers generation for query."""

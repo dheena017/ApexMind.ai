@@ -1009,7 +1009,31 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           start: clipStart,
           duration: clipDuration,
         };
-        setImageClips((prev) => [...prev, newClip]);
+        setImageClips((prev) => {
+          // If a clip with the exact same URL already exists at or near this start time, update it without adding a duplicate lane
+          const existingIdx = prev.findIndex(
+            (c) => c.url === detail.url && Math.abs(c.start - clipStart) < 0.25
+          );
+          if (existingIdx >= 0) {
+            const updated = [...prev];
+            updated[existingIdx] = {
+              ...updated[existingIdx],
+              name: detail.name || updated[existingIdx].name,
+              duration: clipDuration,
+            };
+            return updated;
+          }
+          // If a generic placeholder exists at this start time, replace it cleanly
+          const placeholderIdx = prev.findIndex(
+            (c) => (c.name === 'Image Graphic' || c.id.startsWith('img-default')) && Math.abs(c.start - clipStart) < 0.25
+          );
+          if (placeholderIdx >= 0) {
+            const updated = [...prev];
+            updated[placeholderIdx] = newClip;
+            return updated;
+          }
+          return [...prev, newClip];
+        });
         setEnabledTracks((prev) => ({ ...prev, image: true }));
         setImageTrackVisible(true);
         setSelectedClip({ track: 'image', clipId });
@@ -1199,7 +1223,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   useEffect(() => {
     if (customImageUrl) {
       setImageClips((prev) => {
-        if (prev.some((c) => c.url === customImageUrl)) return prev;
+        if (prev.length > 0 || prev.some((c) => c.url === customImageUrl)) return prev;
         return [
           ...prev,
           {

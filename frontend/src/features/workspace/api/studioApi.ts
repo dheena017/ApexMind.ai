@@ -80,7 +80,7 @@ export const studioApi = {
   async generateScript(params: GenerateScriptParams): Promise<ScriptStageResult> {
     consoleLogger.info(
       'Studio',
-      `[Stage 1] Generating script | category="${params.category}" model=${params.model || 'gemini-2.5-flash'}`
+      `[Stage 1] Generating script | category="${params.category}" model=${params.model || 'gemini-3.8-flash'}`
     );
     const envelope = await post<StudioScriptEnvelope>('/api/studio/generate-script', {
       category: params.category,
@@ -88,7 +88,7 @@ export const studioApi = {
       userPrompt: params.userPrompt || undefined,
       tone: params.tone || undefined,
       length: params.length || '30 seconds',
-      model: params.model || 'gemini-2.5-flash',
+      model: params.model || 'gemini-3.8-flash',
       aspectRatio: params.aspectRatio || '9:16',
       voiceName: params.voiceName || undefined,
       musicTrackId: params.musicTrackId || undefined,

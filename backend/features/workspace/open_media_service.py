@@ -22,11 +22,24 @@ from backend.features.media import (
     resolve_single_scene,
 )
 
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+DEFAULT_HTTP_TIMEOUT: int = 5
+DEFAULT_USER_AGENT: str = "ApexMindStudio/2.0"
+DEFAULT_PAGE: int = 1
+DEFAULT_PAGE_SIZE: int = 24
+DEFAULT_AUDIO_LIMIT: int = 20
+DEFAULT_SFX_LIMIT: int = 30
+DEFAULT_IMAGE_QUERY: str = "nature landscape"
+DEFAULT_VIDEO_QUERY: str = "cinematic nature 4k"
+
 logger = logging.getLogger("ApexMind.OpenMediaService")
 
 
-def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 5) -> Optional[Any]:
-    req = urllib.request.Request(url, headers=headers or {"User-Agent": "ApexMindStudio/2.0"})
+def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = DEFAULT_HTTP_TIMEOUT) -> Optional[Any]:
+    req = urllib.request.Request(url, headers=headers or {"User-Agent": DEFAULT_USER_AGENT})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response:
             return json.loads(response.read().decode("utf-8"))

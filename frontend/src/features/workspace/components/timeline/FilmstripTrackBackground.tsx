@@ -146,8 +146,8 @@ export const FilmstripTrackBackground: React.FC<FilmstripTrackBackgroundProps> =
               {frameSrc ? (
                 <img
                   src={frameSrc}
-                  alt={`video frame ${i + 1}`}
-                  crossOrigin="anonymous"
+                  alt=""
+
                   loading="lazy"
                   className="w-full h-full object-cover filter brightness-95 saturate-105 pointer-events-none select-none"
                 />

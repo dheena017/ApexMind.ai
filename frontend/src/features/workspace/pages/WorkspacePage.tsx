@@ -107,7 +107,7 @@ export default function WorkspacePage({
   // Navigation between separate AI Creator and Script Editor pages
 
   // AI Model & Script Generation
-  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-3.8-flash');
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
   const [targetLength, setTargetLength] = useState('30 seconds');

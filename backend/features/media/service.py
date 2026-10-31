@@ -35,6 +35,35 @@ from .providers import (
     SfxProvider,
 )
 
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+DEFAULT_ASPECT_RATIO: str = "9:16"
+DEFAULT_MEDIA_LIMIT: int = 24
+
+DISALLOWED_CLIPART: set[str] = {
+    "green screen", "chroma key", "subscribe button", "click button",
+    "red button", "isolated green", "subscribe animation", "subscribe like"
+}
+
+DISALLOWED_CTA_WORDS: set[str] = {
+    "subscribe", "like", "follow", "cta", "button", "bell", "comment", "share", "channel", "click"
+}
+
+SEARCH_NOISE_WORDS: set[str] = {
+    "vertical", "9:16", "16:9", "4k", "uhd", "hd", "1080p", "8k", "60fps", "120fps"
+}
+
+DEFAULT_FALLBACK_QUERIES: list[str] = [
+    "golden hour mountain sunset",
+    "dramatic ocean storm waves",
+]
+
+# ==============================================================================
+# Provider Singletons & Logger
+# ==============================================================================
+
 logger = logging.getLogger("ApexMind.media.service")
 
 # Provider singletons
@@ -47,12 +76,6 @@ gemini_image = GeminiImageProvider()
 jamendo_audio = JamendoAudioProvider()
 wikimedia_audio = WikimediaAudioProvider()
 sfx_provider = SfxProvider()
-
-
-DISALLOWED_CLIPART = {
-    "green screen", "chroma key", "subscribe button", "click button",
-    "red button", "isolated green", "subscribe animation", "subscribe like"
-}
 
 def _is_valid_cand(cand, excluded_urls: Set[str], target_query: str = "") -> bool:
     if not cand or not cand.url or cand.url in excluded_urls:
@@ -67,11 +90,6 @@ def _resolve_single_scene_internal(
     lock: Optional[Any] = None,
 ) -> ResolvedSceneResult:
     """Resolves one scene cut using Google CSE, Pexels, Pixabay, and Wikimedia with fallback tiers."""
-    # Disallowed low-quality clipart / green-screen / CTA overlay patterns
-    cta_words = {"subscribe", "like", "follow", "cta", "button", "bell", "comment", "share", "channel", "click"}
-    # Technical search noise words that break Wikimedia and stock video search relevance
-    noise_words = {"vertical", "9:16", "16:9", "4k", "uhd", "hd", "1080p", "8k", "60fps", "120fps"}
-
     raw_queries: List[str] = []
     if item.visualQuery:
         raw_queries.append(item.visualQuery)
@@ -85,11 +103,10 @@ def _resolve_single_scene_internal(
     for q in raw_queries:
         tokens = [w for w in q.replace(",", " ").replace("-", " ").split() if w.strip()]
         lower_tokens = set(t.lower() for t in tokens)
-        if lower_tokens & cta_words and len(lower_tokens - cta_words) <= 2:
-            queries_to_try.append("golden hour mountain sunset")
-            queries_to_try.append("dramatic ocean storm waves")
+        if lower_tokens & DISALLOWED_CTA_WORDS and len(lower_tokens - DISALLOWED_CTA_WORDS) <= 2:
+            queries_to_try.extend(DEFAULT_FALLBACK_QUERIES)
         else:
-            clean_tokens = [w for w in tokens if w.lower() not in cta_words and w.lower() not in noise_words]
+            clean_tokens = [w for w in tokens if w.lower() not in DISALLOWED_CTA_WORDS and w.lower() not in SEARCH_NOISE_WORDS]
             clean_q = " ".join(clean_tokens).strip()
             if len(clean_q) > 3 and clean_q not in queries_to_try:
                 queries_to_try.append(clean_q)

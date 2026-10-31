@@ -27,6 +27,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 
+from backend.shared.config import settings
+
 from backend.database.repository import (
     save_channel_oauth,
     get_oauth_channel,
@@ -36,6 +38,10 @@ from backend.database.repository import (
 logger = logging.getLogger("ApexMind.YouTubeLive")
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+GOOGLE_OAUTH_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_OAUTH_TOKEN_URI = "https://oauth2.googleapis.com/token"
+YOUTUBE_CHANNELS_API_URL = "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true"
+
 ATOM_NS = "{http://www.w3.org/2005/Atom}"
 YT_NS = "{http://www.youtube.com/xml/schemas/2015}"
 MEDIA_NS = "{http://search.yahoo.com/mrss/}"
@@ -868,8 +874,8 @@ def fetch_channel_live_streams(query: str) -> Dict[str, Any]:
 # ==============================================================================
 
 def get_google_oauth_config() -> Dict[str, str]:
-    client_id = os.getenv("GOOGLE_CLIENT_ID") or os.getenv("VITE_GOOGLE_CLIENT_ID") or ""
-    client_secret = os.getenv("GOOGLE_SECRET") or ""
+    client_id = settings.GOOGLE_CLIENT_ID
+    client_secret = settings.GOOGLE_SECRET
     return {
         "client_id": client_id,
         "client_secret": client_secret,

@@ -12,6 +12,15 @@ from typing import Any, Dict, Optional
 
 from .service import generate_script
 from .repository import fetch_quote_memory
+from backend.shared.config import settings
+
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+STAGE_ID: str = "script"
+DEFAULT_SCRIPT_MODEL: str = settings.DEFAULT_SCRIPT_MODEL
+DEFAULT_ASPECT_RATIO: str = "9:16"
 
 logger = logging.getLogger("ApexMind.Studio.Script")
 
@@ -21,8 +30,8 @@ def run_studio_script(
     topic: str,
     tone: str = "",
     length: str = "",
-    model: str = "gemini-2.5-flash",
-    aspect_ratio: str = "9:16",
+    model: str = DEFAULT_SCRIPT_MODEL,
+    aspect_ratio: str = DEFAULT_ASPECT_RATIO,
     voice_name: Optional[str] = None,
     music_track_id: Optional[str] = None,
     caption_style_preset: Optional[str] = None,
@@ -84,7 +93,7 @@ def run_studio_script(
 
     return {
         "success": True,
-        "stageId": "script",
+        "stageId": STAGE_ID,
         "data": result.get("data", {}),
         "memoryCount": result.get("memoryCount", 0),
         "generatedAt": datetime.now(timezone.utc).isoformat(),

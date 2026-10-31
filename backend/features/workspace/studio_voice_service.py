@@ -5,11 +5,24 @@ Synthesizes a full narration voiceover from storyboard subtitle texts
 using Gemini TTS. Returns audioUrl, durationSeconds, and word-level timestamps.
 """
 
+import base64
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from .audio_aligner import align_storyboard_to_audio
 from .service import synthesize_voiceover
+from backend.shared.config import settings
+
+# ==============================================================================
+# Defaults & Fixed Constants (Placed at Top Below Imports)
+# ==============================================================================
+
+STAGE_ID: str = "voice"
+DEFAULT_TTS_MODEL: str = settings.DEFAULT_TTS_MODEL
+DEFAULT_MIME_TYPE: str = "audio/wav"
+DEFAULT_BPM: float = 140.0
+DEFAULT_FALLBACK_DURATION: float = 30.0
 
 logger = logging.getLogger("ApexMind.Studio.Voice")
 
@@ -80,9 +93,6 @@ def run_studio_voice(
     )
 
     # Enrich with stage metadata and dynamic audio alignment
-    import base64
-    from .audio_aligner import align_storyboard_to_audio
-
     duration = float(result.get("duration") or result.get("durationSeconds") or 0.0)
     if duration <= 0.0:
         if target_duration_seconds and target_duration_seconds > 0:
@@ -90,8 +100,8 @@ def run_studio_voice(
         elif storyboard:
             duration = sum(float(s.get("duration") or 3.5) for s in storyboard)
         else:
-            duration = 30.0
-    mime_type = result.get("mimeType", "audio/wav")
+            duration = DEFAULT_FALLBACK_DURATION
+    mime_type = result.get("mimeType", DEFAULT_MIME_TYPE)
 
     raw_audio_bytes = None
     audio_b64 = result.get("audioBase64")
@@ -114,7 +124,7 @@ def run_studio_voice(
                 audio_bytes=raw_audio_bytes,
                 mime_type=mime_type,
                 total_duration_seconds=duration,
-                bpm=140.0,
+                bpm=DEFAULT_BPM,
                 sfx_drops=sfx_drops,
             )
             logger.info(
@@ -136,7 +146,7 @@ def run_studio_voice(
 
     return {
         "success": True,
-        "stageId": "voice",
+        "stageId": STAGE_ID,
         "voiceName": voice_name,
         "mimeType": mime_type,
         "audioUrl": result.get("audioUrl", ""),
