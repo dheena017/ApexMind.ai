@@ -113,54 +113,22 @@ class GeminiImageProvider(BaseMediaProvider):
         image_bytes: Optional[bytes] = None
 
         if self.is_configured() and self.client:
-            # Models to try in priority order
-            candidate_models = [
-                "gemini-nano-banana-2.1",
-                "gemini-3.1-flash-lite-image",
-                "gemini-3.1-flash-image",
-                "imagen-3.0-generate-002",
-            ]
-
-            for model_name in candidate_models:
-                try:
-                    logger.info(f"Generating visual with model '{model_name}' | Prompt: {prompt[:60]}...")
-                    # 1. Try Interactions API (Gemini Nano Banana)
-                    if "banana" in model_name or "flash" in model_name or "image" in model_name:
-                        try:
-                            interaction = self.client.interactions.create(
-                                model=model_name,
-                                input=enhanced_prompt,
-                            )
-                            output_img = getattr(interaction, "output_image", None)
-                            if output_img and getattr(output_img, "data", None):
-                                raw_data = output_img.data
-                                image_bytes = base64.b64decode(raw_data) if isinstance(raw_data, str) else raw_data
-                                logger.info(f"Successfully generated image via interaction with {model_name} ({len(image_bytes)} bytes)")
-                                break
-                        except Exception as int_err:
-                            logger.debug(f"Interactions API attempt with {model_name} failed: {int_err}")
-
-                    # 2. Try models.generate_images (Imagen API)
-                    if not image_bytes:
-                        try:
-                            img_res = self.client.models.generate_images(
-                                model=model_name if "imagen" in model_name else "imagen-3.0-generate-002",
-                                prompt=enhanced_prompt,
-                                config=dict(
-                                    number_of_images=1,
-                                    aspect_ratio="9:16" if aspect_ratio == "9:16" else "16:9",
-                                    output_mime_type="image/png",
-                                ),
-                            )
-                            if img_res and hasattr(img_res, "generated_images") and img_res.generated_images:
-                                image_bytes = img_res.generated_images[0].image.image_bytes
-                                logger.info(f"Successfully generated image via generate_images with {model_name}")
-                                break
-                        except Exception as gen_err:
-                            logger.debug(f"generate_images attempt with {model_name} failed: {gen_err}")
-
-                except Exception as model_err:
-                    logger.warning(f"Failed to generate visual with {model_name}: {model_err}")
+            try:
+                # Try official Google Imagen 3 image generation
+                img_res = self.client.models.generate_images(
+                    model="imagen-3.0-generate-002",
+                    prompt=enhanced_prompt,
+                    config=dict(
+                        number_of_images=1,
+                        aspect_ratio="9:16" if aspect_ratio == "9:16" else "16:9",
+                        output_mime_type="image/png",
+                    ),
+                )
+                if img_res and hasattr(img_res, "generated_images") and img_res.generated_images:
+                    image_bytes = img_res.generated_images[0].image.image_bytes
+                    logger.info("Successfully generated bespoke scene visual via Imagen 3")
+            except Exception as gen_err:
+                logger.debug(f"Imagen 3 not available or quota exceeded ({gen_err}); generating stylized visual backdrop.")
 
         # Fallback if unconfigured or API exhausted: generate high-res stylized SVG poster
         if not image_bytes:

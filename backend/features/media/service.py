@@ -67,26 +67,32 @@ def _resolve_single_scene_internal(
     """Resolves one scene cut using Google CSE, Pexels, Pixabay, and Wikimedia with fallback tiers."""
     # Disallowed low-quality clipart / green-screen / CTA overlay patterns
     cta_words = {"subscribe", "like", "follow", "cta", "button", "bell", "comment", "share", "channel", "click"}
-    
+    # Technical search noise words that break Wikimedia and stock video search relevance
+    noise_words = {"vertical", "9:16", "16:9", "4k", "uhd", "hd", "1080p", "8k", "60fps", "120fps"}
+
     raw_queries: List[str] = []
-    if item.googleSearchQuery:
-        raw_queries.append(item.googleSearchQuery)
-    if item.visualQuery and item.visualQuery not in raw_queries:
+    if item.visualQuery:
         raw_queries.append(item.visualQuery)
     for fq in item.fallbackQueries:
         if fq and fq not in raw_queries:
             raw_queries.append(fq)
+    if item.googleSearchQuery and item.googleSearchQuery not in raw_queries:
+        raw_queries.append(item.googleSearchQuery)
 
     queries_to_try: List[str] = []
     for q in raw_queries:
-        words = set(q.lower().replace(",", " ").replace("-", " ").split())
-        # If query is dominated by CTA words, replace with majestic closing scene nature footage
-        if words & cta_words and len(words - cta_words) <= 2:
-            queries_to_try.append("dramatic golden hour sunset mountain summit vertical 9:16")
-            queries_to_try.append("majestic ocean dusk horizon twilight vertical 9:16")
+        tokens = [w for w in q.replace(",", " ").replace("-", " ").split() if w.strip()]
+        lower_tokens = set(t.lower() for t in tokens)
+        if lower_tokens & cta_words and len(lower_tokens - cta_words) <= 2:
+            queries_to_try.append("golden hour mountain sunset")
+            queries_to_try.append("dramatic ocean storm waves")
         else:
-            clean_q = " ".join([w for w in q.split() if w.lower() not in cta_words]).strip()
-            queries_to_try.append(clean_q if len(clean_q) > 3 else q)
+            clean_tokens = [w for w in tokens if w.lower() not in cta_words and w.lower() not in noise_words]
+            clean_q = " ".join(clean_tokens).strip()
+            if len(clean_q) > 3 and clean_q not in queries_to_try:
+                queries_to_try.append(clean_q)
+            if q not in queries_to_try:
+                queries_to_try.append(q)
 
     # Only query scene-specific search terms; do not fall back to generic ambient loops
     all_queries = [q for q in queries_to_try if q]
