@@ -25,10 +25,22 @@ RENDER_DIR = Path("backend/data/rendered_shorts")
 RENDER_DIR.mkdir(parents=True, exist_ok=True)
 
 XFADE_MAP: Dict[str, str] = {
-    "dissolve": "fade",
+    # Fades, Blurs & Glitches
+    "fade": "fade",
     "crossfade": "fade",
+    "dissolve": "fade",
     "fade-black": "fadeblack",
     "fade-white": "fadewhite",
+    "flash": "fadewhite",
+    "luma-fade": "fade",
+    "blur-crossfade": "hblur",
+    "hblur": "hblur",
+    "soft-rotate": "radial",
+    "rgb-split": "fade",
+    "glitch": "pixelize",
+    "pixelize": "pixelize",
+    "match-cut": "fade",
+    # Slides & Pushes
     "slide-left": "slideleft",
     "slide-right": "slideright",
     "slide-up": "slideup",
@@ -37,18 +49,26 @@ XFADE_MAP: Dict[str, str] = {
     "push-right": "slideright",
     "push-up": "slideup",
     "push-down": "slidedown",
-    "circle-wipe": "circlecrop",
-    "zoom-in": "smoothup",
-    "zoom-out": "smoothdown",
-    "smooth-zoom": "fade",
-    "flash": "fadewhite",
-    "luma-fade": "fade",
-    "blur-crossfade": "fade",
-    "split-reveal": "wipeleft",
-    "rgb-split": "fade",
     "whip-pan-left": "slideleft",
     "whip-pan-right": "slideright",
-    "soft-rotate": "fade",
+    # Zooms & Scales
+    "zoom": "smoothup",
+    "zoom-in": "smoothup",
+    "zoom-out": "smoothdown",
+    "smooth-zoom": "smoothup",
+    "slow-zoom": "smoothup",
+    # Wipes & Shapes
+    "wipe": "wipeleft",
+    "wipe-left": "wipeleft",
+    "wipe-right": "wiperight",
+    "wipe-up": "wipeup",
+    "wipe-down": "wipedown",
+    "circle-wipe": "circlecrop",
+    "circle": "circlecrop",
+    "circlecrop": "circlecrop",
+    "split-reveal": "wipeleft",
+    "radial": "radial",
+    "none": "fade",
 }
 
 
@@ -213,8 +233,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Subtitle,{font_family},{font_size},{caption_color_ass},&H00FFFFFF,&H00000000,&HB0000000,-1,0,0,0,100,100,1,0,1,5.5,3.5,2,40,40,{vert_margin},1
-Style: Title,Arial Black,{title_font_size},&H00FFFFFF,&H000000FF,&H00000000,&H90000000,-1,0,0,0,100,100,1,0,1,4.5,2.5,8,40,40,{title_vert_margin},1
+Style: Subtitle,{font_family},Impact,Arial Black,Montserrat,{font_size},{caption_color_ass},&H00FFFFFF,&H00000000,&HC0000000,-1,0,0,0,100,100,1,0,1,6.0,4.0,2,40,40,{vert_margin},1
+Style: Title,Arial Black,Impact,Montserrat,{title_font_size},&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,100,100,1,0,1,5.0,3.0,8,40,40,{title_vert_margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -222,14 +242,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     dialogues = []
 
-    # Title Banner (visible for first 3.5s with subtle fade in/out)
+    # Title Banner (visible for first 3.2s with subtle fade in/out)
     clean_title = (title or "").strip().replace("\n", " ")
     if clean_title:
         dialogues.append(
-            f"Dialogue: 0,0:00:00.10,0:00:03.50,Title,,0,0,0,,{{\\fad(250,400)}}{clean_title}"
+            f"Dialogue: 0,0:00:00.10,0:00:03.20,Title,,0,0,0,,{{\\fad(200,350)}}{clean_title}"
         )
 
-    # Subtitles (with Frame-Accurate Karaoke Word Highlights)
+    # Subtitles (with Frame-Accurate Karaoke Word Highlights & Viral Styling)
     for sub in subtitles:
         raw_text = str(sub.get("text", "")).strip()
         if not raw_text:
@@ -255,16 +275,27 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     w_str = w_str.upper()
                 w_dur = float(w.get("duration", 0) or (float(w.get("end", 0)) - float(w.get("start", 0))))
                 cs = max(1, int(round(w_dur * 100)))
-                k_parts.append(f"{{\\k{cs}}}{w_str}")
+                
+                # Check for custom emphasis highlight color
+                hl_color = w.get("highlightColor")
+                is_emp = bool(w.get("emphasis"))
+                if hl_color:
+                    hl_ass = hex_to_ass_color(hl_color)
+                    k_parts.append(f"{{\\k{cs}\\c{hl_ass}\\b1}}{w_str}{{\\c{caption_color_ass}\\b0}}")
+                elif is_emp:
+                    k_parts.append(f"{{\\k{cs}\\b1}}{w_str}{{\\b0}}")
+                else:
+                    k_parts.append(f"{{\\k{cs}}}{w_str}")
+
             if k_parts:
                 k_text = " ".join(k_parts)
                 dialogues.append(
-                    f"Dialogue: 0,{start_fmt},{end_fmt},Subtitle,,0,0,0,,{{\\fad(80,80)}}{k_text}"
+                    f"Dialogue: 0,{start_fmt},{end_fmt},Subtitle,,0,0,0,,{{\\fad(90,90)}}{k_text}"
                 )
                 continue
 
         dialogues.append(
-            f"Dialogue: 0,{start_fmt},{end_fmt},Subtitle,,0,0,0,,{{\\fad(120,120)}}{text}"
+            f"Dialogue: 0,{start_fmt},{end_fmt},Subtitle,,0,0,0,,{{\\fad(100,100)}}{text}"
         )
 
     content = header + "\n".join(dialogues) + "\n"
@@ -325,6 +356,7 @@ def render_studio_video(
     backdrop_type: str = "image",
     video_clips: Optional[List[Dict[str, Any]]] = None,
     image_clips: Optional[List[Dict[str, Any]]] = None,
+    sfx_clips: Optional[List[Dict[str, Any]]] = None,
     subtitles: Optional[List[Dict[str, Any]]] = None,
     caption_color: str = "#FACC15",
     caption_font: Optional[str] = "Impact",
@@ -332,7 +364,10 @@ def render_studio_video(
     filter_settings: Optional[Dict[str, Any]] = None,
     voice_volume: Optional[float] = 1.0,
     music_volume: Optional[float] = 0.65,
+    sfx_volume: Optional[float] = 0.85,
+    ducking_settings: Optional[Dict[str, Any]] = None,
     fps: int = 30,
+    **kwargs,
 ) -> Dict[str, Any]:
     """Renders a broadcast-quality Full HD MP4 video using native FFmpeg.
     
@@ -449,44 +484,53 @@ def render_studio_video(
             num_clips = len(clip_inputs)
             input_count = num_clips
 
-            # Format each clip to exact canvas dimension, target FPS, and trimmed duration
+            # Format each clip to exact canvas dimension, target FPS, and trimmed duration with cinematic camera motion & animations
             for i, (_, _, clip) in enumerate(clip_inputs):
                 dur_i = max(0.1, float(clip.get("duration", 3.0)))
+                motion = str(
+                    clip.get("cameraMotion")
+                    or clip.get("animationIn")
+                    or clip.get("animation")
+                    or ""
+                ).lower()
+
+                base_scale = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps={render_fps}"
+
+                if any(k in motion for k in ["push", "zoom-in", "slow-zoom", "orbital", "apex", "in"]):
+                    motion_filter = f"scale=eval=frame:w='{width}*(1+0.09*t/{dur_i:.3f})':h='{height}*(1+0.09*t/{dur_i:.3f})',crop={width}:{height}"
+                elif any(k in motion for k in ["pull", "zoom-out", "slow-pull", "out"]):
+                    motion_filter = f"scale=eval=frame:w='{width}*(1.09-0.09*t/{dur_i:.3f})':h='{height}*(1.09-0.09*t/{dur_i:.3f})',crop={width}:{height}"
+                elif any(k in motion for k in ["pan", "drift", "right", "left"]):
+                    motion_filter = f"scale=eval=frame:w='{width}*1.08':h='{height}*1.08',crop={width}:{height}:x='(in_w-{width})*(t/{dur_i:.3f})':y='(in_h-{height})/2'"
+                else:
+                    motion_filter = f"scale=eval=frame:w='{width}*(1+0.04*t/{dur_i:.3f})':h='{height}*(1+0.04*t/{dur_i:.3f})',crop={width}:{height}"
+
                 video_filters.append(
-                    f"[{i}:v]scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps={render_fps},trim=duration={dur_i:.3f},setpts=PTS-STARTPTS[v_clip_{i}]"
+                    f"[{i}:v]{base_scale},{motion_filter},trim=duration={dur_i:.3f},setpts=PTS-STARTPTS[v_clip_{i}]"
                 )
 
             if num_clips == 1:
                 last_video_tag = "v_clip_0"
             else:
-                has_any_trans = any(
-                    (c.get("transition") and c.get("transition") != "none" and c.get("transition") in XFADE_MAP)
-                    for _, _, c in clip_inputs
-                )
-                if has_any_trans:
-                    prev_tag = "v_clip_0"
-                    curr_offset = max(0.1, float(clip_inputs[0][2].get("duration", 3.0)))
-                    for i in range(1, num_clips):
-                        clip_prev = clip_inputs[i - 1][2]
-                        clip_curr = clip_inputs[i][2]
-                        trans_raw = clip_prev.get("transition") or clip_curr.get("transition") or "none"
-                        xfade_type = XFADE_MAP.get(trans_raw) or "fade"
-                        prev_dur = max(0.1, float(clip_prev.get("duration", 3.0)))
-                        curr_dur = max(0.1, float(clip_curr.get("duration", 3.0)))
-                        t_dur = float(clip_prev.get("transitionDuration") or clip_curr.get("transitionDuration") or 0.5)
-                        t_dur = max(0.08, min(t_dur, prev_dur * 0.45, curr_dur * 0.45))
-                        offset = max(0.01, curr_offset - t_dur)
-                        out_tag = f"v_xfade_{i}"
-                        video_filters.append(
-                            f"[{prev_tag}][v_clip_{i}]xfade=transition={xfade_type}:duration={t_dur:.3f}:offset={offset:.3f}[{out_tag}]"
-                        )
-                        prev_tag = out_tag
-                        curr_offset = offset + curr_dur
-                    last_video_tag = prev_tag
-                else:
-                    concat_inputs = "".join(f"[v_clip_{i}]" for i in range(num_clips))
-                    video_filters.append(f"{concat_inputs}concat=n={num_clips}:v=1:a=0[v_concat]")
-                    last_video_tag = "v_concat"
+                prev_tag = "v_clip_0"
+                curr_offset = max(0.1, float(clip_inputs[0][2].get("duration", 3.0)))
+                for i in range(1, num_clips):
+                    clip_prev = clip_inputs[i - 1][2]
+                    clip_curr = clip_inputs[i][2]
+                    trans_raw = str(clip_prev.get("transition") or clip_curr.get("transition") or "fade").lower()
+                    xfade_type = XFADE_MAP.get(trans_raw) or "fade"
+                    prev_dur = max(0.1, float(clip_prev.get("duration", 3.0)))
+                    curr_dur = max(0.1, float(clip_curr.get("duration", 3.0)))
+                    t_dur = float(clip_prev.get("transitionDuration") or clip_curr.get("transitionDuration") or 0.45)
+                    t_dur = max(0.1, min(t_dur, prev_dur * 0.4, curr_dur * 0.4, 0.6))
+                    offset = max(0.01, curr_offset - t_dur)
+                    out_tag = f"v_xfade_{i}"
+                    video_filters.append(
+                        f"[{prev_tag}][v_clip_{i}]xfade=transition={xfade_type}:duration={t_dur:.3f}:offset={offset:.3f}[{out_tag}]"
+                    )
+                    prev_tag = out_tag
+                    curr_offset = offset + curr_dur
+                last_video_tag = prev_tag
 
             # Color grading filters
             color_filters = build_color_filter_chain(filter_settings)
@@ -537,24 +581,55 @@ def render_studio_video(
             music_input_idx = input_count
             input_count += 1
 
-        if voice_input_idx == -1 and music_input_idx == -1:
+        # ── SFX Track Inputs (Whooshes, Transitions, Impact Drops) ──
+        sfx_inputs: List[Tuple[int, float, float]] = []
+        if sfx_clips:
+            for sc in sfx_clips:
+                u = sc.get("url") or sc.get("audioUrl")
+                if not u:
+                    continue
+                sfx_f = save_audio_payload(u, temp_dir)
+                if sfx_f and sfx_f.exists():
+                    cmd.extend(["-i", str(sfx_f.resolve())])
+                    sc_start = max(0.0, float(sc.get("start", 0.0)))
+                    sc_vol = max(0.1, min(1.5, float(sc.get("volume", 0.85))))
+                    sfx_inputs.append((input_count, sc_start, sc_vol))
+                    input_count += 1
+
+        if voice_input_idx == -1 and music_input_idx == -1 and not sfx_inputs:
             cmd.extend(["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"])
             silent_audio_idx = input_count
             input_count += 1
         else:
             silent_audio_idx = -1
 
-        # ── Audio Mixing & Mastering ──
+        # ── Audio Mixing & Mastering with Sidechain Ducking & SFX ──
         audio_filters: List[str] = []
         v_vol = max(0.1, min(2.0, float(voice_volume if voice_volume is not None else 1.0)))
         m_vol = max(0.05, min(1.5, float(music_volume if music_volume is not None else 0.65)))
+        sfx_eff_vol = max(0.1, min(1.5, float(sfx_volume if sfx_volume is not None else 0.85)))
         fade_out_start = max(0.5, safe_duration - 1.2)
+
+        # Build SFX Layer
+        sfx_layer_tag = None
+        if sfx_inputs:
+            sfx_ch_tags = []
+            for j, (idx_sfx, start_s, vol_factor) in enumerate(sfx_inputs):
+                delay_ms = int(round(start_s * 1000))
+                eff_vol = sfx_eff_vol * vol_factor
+                audio_filters.append(
+                    f"[{idx_sfx}:a]volume={eff_vol:.2f},adelay={delay_ms}|{delay_ms},apad[sfx_ch_{j}]"
+                )
+                sfx_ch_tags.append(f"[sfx_ch_{j}]")
+            if len(sfx_ch_tags) > 1:
+                all_sfx_in = "".join(sfx_ch_tags)
+                audio_filters.append(f"{all_sfx_in}amix=inputs={len(sfx_ch_tags)}:dropout_transition=2[sfx_master]")
+                sfx_layer_tag = "[sfx_master]"
+            else:
+                sfx_layer_tag = sfx_ch_tags[0]
 
         if voice_input_idx != -1 and music_input_idx != -1:
             # ── Native FFmpeg Sidechain Audio Ducking ──
-            # When voiceover is active, background music ducks down smoothly.
-            # In speech pauses between sentences and during breathing intervals,
-            # background music organically swells back up to full listening level.
             ds = ducking_settings or {}
             threshold = float(ds.get("threshold", 0.045))
             ratio = float(ds.get("ratio", 4.5))
@@ -568,18 +643,35 @@ def render_studio_video(
             audio_filters.append(
                 f"[music_base][voice_ctrl]sidechaincompress=threshold={threshold:.3f}:ratio={ratio:.1f}:attack={attack_ms:.0f}:release={release_ms:.0f}:makeup={makeup:.1f}:detection=rms:link=average[music_ducked]"
             )
-            audio_filters.append(f"[voice_mix][music_ducked]amix=inputs=2:duration=first:dropout_transition=2[a_mixed]")
+
+            if sfx_layer_tag:
+                audio_filters.append(f"[voice_mix][music_ducked]{sfx_layer_tag}amix=inputs=3:duration=first:dropout_transition=2[a_mixed]")
+            else:
+                audio_filters.append(f"[voice_mix][music_ducked]amix=inputs=2:duration=first:dropout_transition=2[a_mixed]")
+
             audio_filters.append(
                 f"[a_mixed]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96:attack=5:release=50[a_out]"
             )
             audio_out_tag = "[a_out]"
         elif voice_input_idx != -1:
-            audio_filters.append(f"[{voice_input_idx}:a]volume={v_vol:.2f},apad[a_padded]")
-            audio_filters.append(f"[a_padded]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96[a_out]")
+            if sfx_layer_tag:
+                audio_filters.append(f"[{voice_input_idx}:a]volume={v_vol:.2f},apad[v_raw]")
+                audio_filters.append(f"[v_raw]{sfx_layer_tag}amix=inputs=2:duration=first:dropout_transition=2[a_mixed]")
+                audio_filters.append(f"[a_mixed]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96[a_out]")
+            else:
+                audio_filters.append(f"[{voice_input_idx}:a]volume={v_vol:.2f},apad[a_padded]")
+                audio_filters.append(f"[a_padded]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96[a_out]")
             audio_out_tag = "[a_out]"
         elif music_input_idx != -1:
-            audio_filters.append(f"[{music_input_idx}:a]volume={m_vol:.2f},afade=t=in:st=0:d=0.3,apad[a_padded]")
-            audio_filters.append(f"[a_padded]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96[a_out]")
+            audio_filters.append(f"[{music_input_idx}:a]volume={m_vol:.2f},afade=t=in:st=0:d=0.3,apad[m_raw]")
+            if sfx_layer_tag:
+                audio_filters.append(f"[m_raw]{sfx_layer_tag}amix=inputs=2:duration=first:dropout_transition=2[a_mixed]")
+                audio_filters.append(f"[a_mixed]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96[a_out]")
+            else:
+                audio_filters.append(f"[m_raw]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96[a_out]")
+            audio_out_tag = "[a_out]"
+        elif sfx_layer_tag:
+            audio_filters.append(f"{sfx_layer_tag}atrim=0:{safe_duration}[a_out]")
             audio_out_tag = "[a_out]"
         else:
             audio_filters.append(f"[{silent_audio_idx}:a]atrim=0:{safe_duration}[a_out]")
@@ -598,9 +690,13 @@ def render_studio_video(
             "-level", "4.2",
             "-crf", "18",
             "-pix_fmt", "yuv420p",
+            "-colorspace", "bt709",
+            "-color_primaries", "bt709",
+            "-color_trc", "bt709",
+            "-color_range", "tv",
             "-r", str(render_fps),
             "-c:a", "aac",
-            "-b:a", "192k",
+            "-b:a", "256k",
             "-ar", "48000",
             "-movflags", "+faststart",
             "-threads", "0",

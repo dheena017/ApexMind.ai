@@ -247,6 +247,7 @@ export interface TimelineMediaClip {
     posY?: number;
   };
   animation?: string;
+  cameraMotion?: string;
   transition?: string;
   transitionDuration?: number;
   animationIn?: string;

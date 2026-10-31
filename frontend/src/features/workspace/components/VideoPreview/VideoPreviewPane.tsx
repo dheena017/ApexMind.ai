@@ -518,8 +518,24 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             detail: { exporting: true, message: 'Rendering broadcast-quality Full HD video with FFmpeg...' },
           }));
 
-          const vClips = (timelineState.videoClips || []).filter((c) => Boolean(c.url));
-          const iClips = (timelineState.imageClips || []).filter((c) => Boolean(c.url));
+          const vClips = (timelineState.videoClips || []).filter((c) => Boolean(c.url)).map((c) => ({
+            ...c,
+            transition: c.transition || 'fade',
+            transitionDuration: c.transitionDuration || 0.45,
+            cameraMotion: c.cameraMotion || c.animationIn || 'slow-zoom',
+            animationIn: c.animationIn || 'zoom-in',
+            animationOut: c.animationOut || 'fade',
+          }));
+          const iClips = (timelineState.imageClips || []).filter((c) => Boolean(c.url)).map((c) => ({
+            ...c,
+            transition: c.transition || 'fade',
+            transitionDuration: c.transitionDuration || 0.45,
+            cameraMotion: c.cameraMotion || c.animationIn || 'slow-zoom',
+            animationIn: c.animationIn || 'zoom-in',
+            animationOut: c.animationOut || 'fade',
+          }));
+          const sClips = (timelineState.sfxClips || []).filter((c) => Boolean(c.url));
+          const sfxPayload = !timelineState.sfxMuted && sClips.length > 0 ? sClips : undefined;
           const maxClipEnd = Math.max(
             0,
             ...vClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0)),
@@ -551,10 +567,15 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             backdropType: customVideoUrl ? 'video' : 'image',
             videoClips: vClips.length > 0 ? vClips : undefined,
             imageClips: iClips.length > 0 ? iClips : undefined,
+            sfxClips: sfxPayload,
             subtitles: (script.subtitles || []).map((s) => ({
               start: s.start,
               duration: s.duration,
               text: s.text,
+              words: s.words,
+              emphasis: (s as any).emphasis,
+              captionPresetClass: s.captionPresetClass,
+              captionPresetColor: s.captionPresetColor,
             })),
             captionColor: captionPresetColor || '#FACC15',
             captionFont: captionPresetFontFamily || 'Impact',
@@ -562,6 +583,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             filterSettings: filterSettings || undefined,
             voiceVolume: typeof volume === 'number' ? volume : 1.0,
             musicVolume: 0.65,
+            sfxVolume: 0.85,
             duckingSettings: (script as any).soundDesign?.ducking || { active: true, threshold: 0.045, ratio: 4.5, attackMs: 25, releaseMs: 320 },
             fps: 30,
           };

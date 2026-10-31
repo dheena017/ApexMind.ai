@@ -517,6 +517,7 @@ class RenderVideoApiRequest(BaseModel):
     backdropType: str = "image"
     videoClips: Optional[List[Dict[str, Any]]] = None
     imageClips: Optional[List[Dict[str, Any]]] = None
+    sfxClips: Optional[List[Dict[str, Any]]] = None
     subtitles: List[Dict[str, Any]] = []
     captionColor: str = "#FACC15"
     captionFont: Optional[str] = "Impact"
@@ -524,6 +525,7 @@ class RenderVideoApiRequest(BaseModel):
     filterSettings: Optional[Dict[str, Any]] = None
     voiceVolume: Optional[float] = 1.0
     musicVolume: Optional[float] = 0.65
+    sfxVolume: Optional[float] = 0.85
     duckingSettings: Optional[Dict[str, Any]] = None
     fps: int = 30
 
@@ -547,6 +549,7 @@ def post_render_video(payload: RenderVideoApiRequest):
             backdrop_type=payload.backdropType,
             video_clips=payload.videoClips,
             image_clips=payload.imageClips,
+            sfx_clips=payload.sfxClips,
             subtitles=payload.subtitles,
             caption_color=payload.captionColor,
             caption_font=payload.captionFont,
@@ -554,6 +557,7 @@ def post_render_video(payload: RenderVideoApiRequest):
             filter_settings=payload.filterSettings,
             voice_volume=payload.voiceVolume,
             music_volume=payload.musicVolume,
+            sfx_volume=payload.sfxVolume,
             ducking_settings=payload.duckingSettings,
             fps=payload.fps,
         )
