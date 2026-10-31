@@ -413,6 +413,30 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
+  const handlePaste = () => {
+    if (onPaste) {
+      onPaste();
+    } else {
+      try {
+        const raw = localStorage.getItem('apexmind_clip_clipboard');
+        if (raw) {
+          const clipData = JSON.parse(raw);
+          window.dispatchEvent(
+            new CustomEvent('workspace:duplicate-clip', {
+              detail: { track: clipData.track || trackType, clipId: clipData.clipId },
+            })
+          );
+          toast.success('Pasted clip from clipboard');
+        } else {
+          toast.info('Clipboard is empty');
+        }
+      } catch {
+        toast.info('Clipboard is empty');
+      }
+    }
+    onClose();
+  };
+
   const handleCut = () => {
     handleCopy();
     if (onCut) {
@@ -966,14 +990,12 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           onClick={handleCopy}
         />
 
-        {onPaste && (
-          <ContextMenuItem
-            icon={<Copy className="w-3.5 h-3.5" />}
-            label="Paste"
-            shortcut="Ctrl+V"
-            onClick={() => handleAction(onPaste)}
-          />
-        )}
+        <ContextMenuItem
+          icon={<Copy className="w-3.5 h-3.5 text-blue-400/90" />}
+          label="Paste Clip"
+          shortcut="Ctrl+V"
+          onClick={handlePaste}
+        />
 
         <ContextMenuItem
           icon={<Copy className="w-3.5 h-3.5 text-amber-400/90" />}

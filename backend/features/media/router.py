@@ -47,6 +47,7 @@ def post_generate_image(payload: GenerateImageRequest):
             aspect_ratio=payload.aspectRatio,
             style=payload.style or "cinematic",
             scene_number=payload.sceneNumber,
+            model=payload.model,
         )
         if not asset:
             raise HTTPException(

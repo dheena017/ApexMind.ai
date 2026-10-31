@@ -140,6 +140,7 @@ class GenerateImageRequest(BaseModel):
     aspectRatio: str = Field("9:16", description="'9:16' | '16:9' | '1:1'")
     style: Optional[str] = Field("cinematic", description="Visual aesthetic: cinematic | stoic | cyberpunk | anime | 3d | vintage | minimal")
     sceneNumber: Optional[int] = Field(None, description="Optional scene number index")
+    model: Optional[str] = Field("imagen-3.0-generate-002", description="AI Image Generator Model: imagen-3.0-generate-002 | imagen-3.0-fast-generate-001 | gemini-2.5-flash | procedural-svg")
 
 
 class GenerateImageResponse(BaseModel):

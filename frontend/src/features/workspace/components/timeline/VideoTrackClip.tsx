@@ -204,6 +204,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
 
         const animComboType = overrides.animation !== undefined ? overrides.animation : clip.animation;
         const hasAnimCombo = Boolean(animComboType && animComboType !== 'none' && !hasAnimIn && !hasAnimOut);
+        const activeColorLabel = colorLabels[clip.id] || (clip as any).colorLabel;
 
         return (
           <div
@@ -242,6 +243,14 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
             }}
             title={`Video Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s.`}
           >
+            {/* Visual Color Label Top Accent Bar */}
+            {activeColorLabel && (
+              <div
+                className="absolute top-0 left-0 right-0 h-1.5 z-25 pointer-events-none shadow-sm"
+                style={{ backgroundColor: activeColorLabel }}
+              />
+            )}
+
             {/* Frame-by-frame Video Filmstrip across the box */}
             <FilmstripTrackBackground
               imageUrl={clip.posterUrl || clip.thumbnailUrl || clip.url || mediaUrl || posterUrl}
@@ -329,7 +338,11 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
 
             {/* Minimalist Floating Film Icon Badge */}
             <div className="z-15 ml-5 flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-black/65 border border-white/10 backdrop-blur-xs pointer-events-none select-none shadow-xs">
-              <Film className="w-2.5 h-2.5 text-amber-300 shrink-0" />
+              {activeColorLabel ? (
+                <div className="w-2 h-2 rounded-full shrink-0 shadow-xs ring-1 ring-white/30" style={{ backgroundColor: activeColorLabel }} />
+              ) : (
+                <Film className="w-2.5 h-2.5 text-amber-300 shrink-0" />
+              )}
               {typeof clip.aestheticScore === 'number' && clip.aestheticScore > 0 && (
                 <span className="text-[8px] font-bold font-mono text-emerald-300">
                   ★{Math.round(clip.aestheticScore)}
@@ -428,6 +441,11 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
             onZoomToClip={onZoomToClip}
             onColorLabel={(color) => {
               setColorLabels((prev) => ({ ...prev, [contextMenu.clipId]: color }));
+              window.dispatchEvent(
+                new CustomEvent('workspace:update-clip-properties', {
+                  detail: { track: 'video', clipId: contextMenu.clipId, colorLabel: color },
+                })
+              );
               onColorLabel?.(color);
             }}
             onCopyTimings={() => {

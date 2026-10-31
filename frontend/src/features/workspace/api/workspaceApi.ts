@@ -436,6 +436,7 @@ export const workspaceApi = {
     aspectRatio?: string;
     style?: string;
     sceneNumber?: number;
+    model?: string;
   }): Promise<any> {
     const start = performance.now();
     try {
@@ -447,6 +448,7 @@ export const workspaceApi = {
           aspectRatio: params.aspectRatio || '9:16',
           style: params.style || 'cinematic',
           sceneNumber: params.sceneNumber,
+          model: params.model,
         }),
       });
       const duration = performance.now() - start;

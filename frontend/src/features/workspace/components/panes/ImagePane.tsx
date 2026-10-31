@@ -545,13 +545,13 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           onClick={() => setActiveTab('ai-generator')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'ai-generator'
-              ? 'text-white border-purple-500'
+              ? 'text-white border-blue-500'
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
-          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 bg-clip-text text-transparent font-bold">
-            ✨ AI Visual Gen
+          <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+          <span className="font-semibold text-white">
+            AI Visual Gen
           </span>
         </button>
         <button
@@ -666,16 +666,16 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         {activeTab === 'ai-generator' ? (
           <div className="flex flex-col gap-4">
             {/* AI Generator Hero Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1F172E] via-[#161424] to-[#121217] border border-purple-500/30 p-4 shadow-xl flex flex-col gap-3">
+            <div className="relative overflow-hidden rounded-2xl bg-[#141416] border border-[#26262B] p-4 shadow-xl flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
-                    <Sparkles className="w-4 h-4 animate-spin text-purple-300" style={{ animationDuration: '6s' }} />
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <Sparkles className="w-4 h-4 text-blue-400" />
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
                       Gemini Multimodal Scene Generator
-                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-500/30">
+                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-400 border border-blue-500/30">
                         Nano Banana 2.1
                       </span>
                     </h3>
@@ -699,7 +699,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                     maxLength={300}
                     onChange={(e) => setAiPrompt(e.target.value)}
                     placeholder="Describe your scene in rich detail (e.g. Ancient Greek warrior standing on rainy summit under dramatic thunder, golden light, 8k cinematic)..."
-                    className="w-full bg-[#0E0D14] border border-[#2D283E] focus:border-purple-500/80 rounded-xl p-3 text-xs text-white placeholder:text-zinc-600 outline-none resize-none transition-colors"
+                    className="w-full bg-[#18181B] border border-[#27272A] focus:border-blue-500/70 rounded-xl p-3 text-xs text-white placeholder:text-zinc-500 outline-none resize-none transition-colors"
                   />
                   {aiPrompt && (
                     <button
@@ -715,8 +715,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
               {/* Quick Inspiration Chips */}
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-mono uppercase tracking-wider text-purple-300/80 flex items-center gap-1">
-                  <Wand2 className="w-2.5 h-2.5" /> Quick Inspiration Scenes
+                <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                  <Wand2 className="w-2.5 h-2.5 text-blue-400" /> Quick Inspiration Scenes
                 </span>
                 <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
                   {AI_INSPIRATIONS.map((chip, idx) => (
@@ -724,7 +724,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       key={`chip-${idx}`}
                       type="button"
                       onClick={() => setAiPrompt(chip.prompt)}
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap bg-[#231B36] hover:bg-[#2F244A] border border-purple-500/20 text-purple-200 transition-colors shrink-0 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] hover:border-blue-500/40 text-zinc-300 hover:text-white transition-colors shrink-0 cursor-pointer"
                     >
                       {chip.label}
                     </button>
@@ -747,13 +747,13 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                         onClick={() => setAiStyle(st.id as any)}
                         className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex flex-col gap-0.5 ${
                           isSelected
-                            ? 'bg-purple-950/60 border-purple-400 text-white shadow-md shadow-purple-950/40'
-                            : 'bg-[#15131C] border-[#292534] text-zinc-400 hover:bg-[#1C1826] hover:text-zinc-200'
+                            ? 'bg-blue-600/10 border-blue-500 text-white shadow-xs'
+                            : 'bg-[#18181B] border-[#27272A] text-zinc-400 hover:bg-[#202024] hover:text-zinc-200'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-white">{st.label}</span>
-                          {isSelected && <Check className="w-3 h-3 text-purple-400 shrink-0" />}
+                          {isSelected && <Check className="w-3 h-3 text-blue-400 shrink-0" />}
                         </div>
                         <span className="text-[9px] text-zinc-500 line-clamp-1 leading-snug">{st.desc}</span>
                       </button>
@@ -763,8 +763,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
 
               {/* Aspect Ratio Selector & Action Button */}
-              <div className="flex items-center justify-between gap-3 pt-1 border-t border-[#2D283E]">
-                <div className="flex items-center gap-1 bg-[#13111B] p-0.5 rounded-lg border border-[#2D283E]">
+              <div className="flex items-center justify-between gap-3 pt-1 border-t border-[#26262B]">
+                <div className="flex items-center gap-1 bg-[#18181B] p-0.5 rounded-lg border border-[#27272A]">
                   {(['9:16', '16:9', '1:1'] as const).map((r) => (
                     <button
                       key={r}
@@ -772,7 +772,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       onClick={() => setAiAspectRatio(r)}
                       className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-all cursor-pointer ${
                         aiAspectRatio === r
-                          ? 'bg-purple-600 text-white shadow-xs'
+                          ? 'bg-blue-600 text-white shadow-xs'
                           : 'text-zinc-400 hover:text-white'
                       }`}
                     >
@@ -785,7 +785,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   type="button"
                   onClick={handleGenerateAiVisual}
                   disabled={isGeneratingAi || !aiPrompt.trim()}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-950/50 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGeneratingAi ? (
                     <>
@@ -794,7 +794,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <Sparkles className="w-4 h-4 text-white" />
                       <span>Generate AI Visual</span>
                     </>
                   )}
@@ -806,7 +806,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-purple-400" />
+                  <Layers className="w-3.5 h-3.5 text-blue-400" />
                   Generated Scene Assets ({aiGeneratedList.length})
                 </span>
                 {aiGeneratedList.length > 0 && (
@@ -815,8 +815,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
 
               {aiGeneratedList.length === 0 ? (
-                <div className="p-8 rounded-xl bg-[#15131C] border border-[#262134] text-center text-xs text-zinc-500 flex flex-col items-center gap-2">
-                  <Sparkles className="w-8 h-8 text-purple-500/40 animate-pulse" />
+                <div className="p-8 rounded-xl bg-[#141416] border border-[#26262B] text-center text-xs text-zinc-500 flex flex-col items-center gap-2">
+                  <Sparkles className="w-8 h-8 text-blue-500/30" />
                   <p className="font-semibold text-zinc-400">No AI visuals generated yet</p>
                   <p className="text-[11px] max-w-xs text-zinc-600">
                     Type a scene prompt above or pick a quick inspiration scene to create high-definition 9:16 visuals.
@@ -833,7 +833,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleApply(item);
                       }}
-                      className="group relative rounded-xl overflow-hidden border border-[#2E283C] hover:border-purple-500/80 bg-[#15131C] aspect-[9/16] cursor-pointer shadow-md transition-all flex flex-col justify-end p-2.5"
+                      className="group relative rounded-xl overflow-hidden border border-[#26262B] hover:border-blue-500/80 bg-[#141416] aspect-[9/16] cursor-pointer shadow-md transition-all flex flex-col justify-end p-2.5"
                     >
                       <img
                         src={item.url}
@@ -845,7 +845,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
                       <div className="relative z-10 flex flex-col gap-1 text-left">
                         <div className="flex items-center gap-1">
-                          <span className="px-1.5 py-0.5 rounded bg-purple-950/80 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300">
+                          <span className="px-1.5 py-0.5 rounded bg-blue-950/80 border border-blue-500/40 text-[8px] font-mono font-bold text-blue-300">
                             {item.category?.toUpperCase() || 'AI GEN'}
                           </span>
                         </div>

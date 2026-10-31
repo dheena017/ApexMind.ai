@@ -102,33 +102,42 @@ class GeminiImageProvider(BaseMediaProvider):
         aspect_ratio: str = "9:16",
         style: str = "cinematic",
         scene_number: Optional[int] = None,
+        model: Optional[str] = None,
     ) -> Optional[MediaAsset]:
         """
-        Generates an image via Gemini Multimodal API and saves to backend/data/generated_images.
+        Generates an image via Gemini / Imagen Multimodal API and saves to backend/data/generated_images.
         Returns a complete MediaAsset.
         """
+        chosen_model = model or "imagen-3.0-generate-002"
         width, height = ASPECT_RATIO_DIMENSIONS.get(aspect_ratio, (1080, 1920))
         enhanced_prompt = self.enhance_prompt(prompt, style=style, aspect_ratio=aspect_ratio)
 
         image_bytes: Optional[bytes] = None
 
-        if self.is_configured() and self.client:
+        if chosen_model == "procedural-svg":
+            logger.info("Direct generation: Stylized Procedural Vector Backdrop")
+            image_bytes = self._generate_fallback_svg_bytes(prompt, style, width, height)
+        elif self.is_configured() and self.client:
             try:
-                # Try official Google Imagen 3 image generation
-                img_res = self.client.models.generate_images(
-                    model="imagen-3.0-generate-002",
-                    prompt=enhanced_prompt,
-                    config=dict(
-                        number_of_images=1,
-                        aspect_ratio="9:16" if aspect_ratio == "9:16" else "16:9",
-                        output_mime_type="image/png",
-                    ),
-                )
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    # Try official Google Imagen 3 image generation
+                    target_imagen_model = "imagen-3.0-fast-generate-001" if "fast" in chosen_model else "imagen-3.0-generate-002"
+                    img_res = self.client.models.generate_images(
+                        model=target_imagen_model,
+                        prompt=enhanced_prompt,
+                        config=dict(
+                            number_of_images=1,
+                            aspect_ratio="9:16" if aspect_ratio == "9:16" else "16:9",
+                            output_mime_type="image/png",
+                        ),
+                    )
                 if img_res and hasattr(img_res, "generated_images") and img_res.generated_images:
                     image_bytes = img_res.generated_images[0].image.image_bytes
-                    logger.info("Successfully generated bespoke scene visual via Imagen 3")
+                    logger.info(f"Successfully generated bespoke scene visual via {target_imagen_model}")
             except Exception as gen_err:
-                logger.debug(f"Imagen 3 not available or quota exceeded ({gen_err}); generating stylized visual backdrop.")
+                logger.debug(f"Imagen 3 ({chosen_model}) not available or quota exceeded ({gen_err}); generating stylized visual backdrop.")
 
         # Fallback if unconfigured or API exhausted: generate high-res stylized SVG poster
         if not image_bytes:
@@ -151,16 +160,22 @@ class GeminiImageProvider(BaseMediaProvider):
 
         return MediaAsset(
             id=asset_id,
+            mediaType="image",
             title=f"AI: {prompt[:40]}",
             url=asset_url,
-            thumbnail=asset_url,
+            previewUrl=asset_url,
+            thumbnailUrl=asset_url,
             duration=6.0,
-            aspect_ratio=aspect_ratio,
-            width=width,
-            height=height,
-            source="gemini_ai",
-            license="ApexMind Generated / SynthID Watermarked",
-            tags=["ai_generated", style, aspect_ratio],
+            resolution=f"{width}x{height}",
+            aspectRatio=aspect_ratio,
+            provider="gemini_ai",
+            extraMetadata={
+                "source": "gemini_ai",
+                "license": "ApexMind Generated / SynthID Watermarked",
+                "tags": ["ai_generated", style, aspect_ratio],
+                "width": width,
+                "height": height,
+            },
         )
 
     def _generate_fallback_svg_bytes(self, prompt: str, style: str, width: int, height: int) -> bytes:

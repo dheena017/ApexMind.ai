@@ -102,12 +102,6 @@ def _resolve_single_scene_internal(
     if item.mediaType == "video":
         for q in all_queries:
             raw_cands: List[MediaAsset] = []
-            if google_video.is_configured():
-                try:
-                    raw_cands.extend(google_video.search(query=q, aspect_ratio=aspect_ratio, limit=4))
-                except Exception as e:
-                    logger.debug(f"Google CSE error on scene {item.sceneNumber}: {e}")
-
             if pexels_video.is_configured():
                 try:
                     raw_cands.extend(pexels_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
@@ -120,10 +114,18 @@ def _resolve_single_scene_internal(
                 except Exception as e:
                     logger.debug(f"Pixabay error on scene {item.sceneNumber}: {e}")
 
-            try:
-                raw_cands.extend(wikimedia_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
-            except Exception as e:
-                logger.debug(f"Wikimedia error on scene {item.sceneNumber}: {e}")
+            # Fallback to Wikimedia / Google only if fast providers returned no candidates
+            if not raw_cands:
+                try:
+                    raw_cands.extend(wikimedia_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
+                except Exception as e:
+                    logger.debug(f"Wikimedia error on scene {item.sceneNumber}: {e}")
+
+            if not raw_cands and google_video.is_configured():
+                try:
+                    raw_cands.extend(google_video.search(query=q, aspect_ratio=aspect_ratio, limit=4))
+                except Exception as e:
+                    logger.debug(f"Google CSE error on scene {item.sceneNumber}: {e}")
 
             # Semantic Negative Filtering & Aesthetic Prioritization
             ranked_cands, _ = filter_and_rank_candidates(raw_cands, target_query=q)
@@ -167,10 +169,11 @@ def _resolve_single_scene_internal(
                 except Exception as e:
                     logger.debug(f"Pixabay photo error on scene {item.sceneNumber}: {e}")
 
-            try:
-                raw_img_cands.extend(wikimedia_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6))
-            except Exception as e:
-                logger.debug(f"Wikimedia photo error on scene {item.sceneNumber}: {e}")
+            if not raw_img_cands:
+                try:
+                    raw_img_cands.extend(wikimedia_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6))
+                except Exception as e:
+                    logger.debug(f"Wikimedia photo error on scene {item.sceneNumber}: {e}")
 
             # Semantic Negative Filtering & Aesthetic Prioritization
             ranked_img_cands, _ = filter_and_rank_candidates(raw_img_cands, target_query=q)
@@ -513,6 +516,7 @@ def generate_ai_image(
     aspect_ratio: str = "9:16",
     style: str = "cinematic",
     scene_number: Optional[int] = None,
+    model: Optional[str] = None,
 ) -> Optional[MediaAsset]:
     """Generates a bespoke visual asset using Gemini Multimodal Image Generation."""
     return gemini_image.generate(
@@ -520,4 +524,5 @@ def generate_ai_image(
         aspect_ratio=aspect_ratio,
         style=style,
         scene_number=scene_number,
+        model=model,
     )

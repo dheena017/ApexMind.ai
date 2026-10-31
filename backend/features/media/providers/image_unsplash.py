@@ -23,7 +23,8 @@ class UnsplashImageProvider(BaseMediaProvider):
         return ["image"]
 
     def is_configured(self) -> bool:
-        return bool(os.getenv("UNSPLASH_ACCESS_KEY"))
+        key = (os.getenv("UNSPLASH_ACCESS_KEY") or "").strip().strip('"').strip("'")
+        return bool(key) and not key.startswith("your_") and key != "..."
 
     def search(
         self,
@@ -34,7 +35,7 @@ class UnsplashImageProvider(BaseMediaProvider):
         page: int = 1,
         **kwargs,
     ) -> List[MediaAsset]:
-        access_key = os.getenv("UNSPLASH_ACCESS_KEY")
+        access_key = (os.getenv("UNSPLASH_ACCESS_KEY") or "").strip().strip('"').strip("'")
         if not access_key:
             return []
 

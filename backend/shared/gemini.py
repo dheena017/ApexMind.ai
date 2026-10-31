@@ -38,18 +38,13 @@ DEFAULT_SCRIPT_MODEL = "gemini-2.5-flash"
 SUPPORTED_SCRIPT_MODELS: dict[str, str] = {
     # Actively available Google Gemini models
     "gemini-2.5-flash": "gemini-2.5-flash",
-    "gemini-2.5-flash-lite": "gemini-3.5-flash-lite",
+    "gemini-2.5-flash-lite": "gemini-2.5-flash",
     "gemini-2.5-pro": "gemini-2.5-pro",
-    "gemini-3.8-flash": "gemini-3.8-flash",
-    "gemini-3.5-flash": "gemini-3.5-flash",
-    "gemini-3.5-flash-lite": "gemini-3.5-flash-lite",
-    "gemini-3.1-pro-preview": "gemini-3.1-pro-preview",
-    "gemini-3-flash-preview": "gemini-3-flash-preview",
+    "gemini-2.0-flash": "gemini-2.0-flash",
     "gemini-flash-latest": "gemini-2.5-flash",
     "gemini-pro-latest": "gemini-2.5-pro",
-    # Legacy aliases safely mapped to active models
-    "gemini-2.0-flash": "gemini-2.5-flash",
-    "gemini-2.0-flash-lite": "gemini-3.5-flash-lite",
+    # Legacy / external aliases safely mapped to active models
+    "gemini-2.0-flash-lite": "gemini-2.5-flash",
     "gemini-1.5-flash": "gemini-2.5-flash",
     "gemini-1.5-pro": "gemini-2.5-pro",
     "claude-3-7-sonnet": "gemini-2.5-pro",
@@ -722,12 +717,8 @@ Output MUST be a single raw JSON object matching this exact schema:
         models_to_try = [target_model]
         for alt_model in [
             "gemini-2.5-flash",
-            "gemini-3.5-flash-lite",
-            "gemini-3.8-flash",
-            "gemini-3.5-flash",
             "gemini-2.5-pro",
-            "gemini-3.1-pro-preview",
-            "gemini-3-flash-preview",
+            "gemini-2.0-flash",
         ]:
             if alt_model not in models_to_try:
                 models_to_try.append(alt_model)
@@ -750,20 +741,36 @@ Output MUST be a single raw JSON object matching this exact schema:
                     "temperature": 0.6,
                     "response_mime_type": "application/json",
                 }
-                # Disable thinking budget on models that support it to eliminate 100s+ reasoning delays
+                # Try disabling thinking budget to eliminate reasoning latency on models that support it
                 if hasattr(types, "ThinkingConfig"):
-                    gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+                    try:
+                        gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+                    except Exception:
+                        pass
 
-                response = gemini_client.models.generate_content(
-                    model=attempt_model,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(**gen_config),
-                )
+                try:
+                    response = gemini_client.models.generate_content(
+                        model=attempt_model,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(**gen_config),
+                    )
+                except Exception as inner_err:
+                    # If thinking_config was rejected (e.g. invalid thinking budget), retry immediately on same model without it
+                    if "thinking" in str(inner_err).lower() and "thinking_config" in gen_config:
+                        gen_config.pop("thinking_config", None)
+                        response = gemini_client.models.generate_content(
+                            model=attempt_model,
+                            contents=prompt,
+                            config=types.GenerateContentConfig(**gen_config),
+                        )
+                    else:
+                        raise inner_err
+
                 used_model = attempt_model
                 break
             except Exception as e:
                 last_err = e
-                logger.debug(f"Model '{attempt_model}' unavailable ({e}), trying next model...")
+                logger.warning(f"[Studio/Script] Model '{attempt_model}' unavailable ({e}), trying next model...")
                 time.sleep(0.5)
 
         if response is None:
@@ -1056,7 +1063,7 @@ def generate_gemini_voiceover(
                     break
             except Exception as e:
                 last_tts_err = e
-                logger.debug(f"TTS Model '{attempt_tts}' failed ({e}), trying next TTS model...")
+                logger.warning(f"[Studio/TTS] Model '{attempt_tts}' failed ({e}), trying next TTS model...")
 
         if tts_res is not None:
             raw_audio, mime_type = extract_voiceover_audio(tts_res)

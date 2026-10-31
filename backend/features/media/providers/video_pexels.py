@@ -23,7 +23,8 @@ class PexelsVideoProvider(BaseMediaProvider):
         return ["video", "image"]
 
     def is_configured(self) -> bool:
-        return bool(os.getenv("PEXELS_API_KEY"))
+        key = (os.getenv("PEXELS_API_KEY") or "").strip().strip('"').strip("'")
+        return bool(key) and not key.startswith("your_") and key != "..."
 
     def search(
         self,
@@ -34,7 +35,7 @@ class PexelsVideoProvider(BaseMediaProvider):
         page: int = 1,
         **kwargs,
     ) -> List[MediaAsset]:
-        api_key = os.getenv("PEXELS_API_KEY")
+        api_key = (os.getenv("PEXELS_API_KEY") or "").strip().strip('"').strip("'")
         if not api_key:
             return []
 
@@ -103,7 +104,9 @@ class PexelsVideoProvider(BaseMediaProvider):
         try:
             resp = requests.get(url, headers=headers, params=params, timeout=6)
             if resp.status_code == 401:
-                logger.warning("Pexels API returned 401 Unauthorized. Please verify PEXELS_API_KEY in .env.")
+                if not getattr(self, "_warned_401", False):
+                    self._warned_401 = True
+                    logger.warning("Pexels API returned 401 Unauthorized. Please verify PEXELS_API_KEY in .env (or leave empty to use Pixabay/Unsplash).")
                 return []
             elif resp.status_code != 200:
                 logger.warning(f"Pexels video API returned status {resp.status_code}")

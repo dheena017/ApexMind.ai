@@ -256,6 +256,11 @@ export interface TimelineMediaClip {
   animationOutDuration?: number;
   volume?: number;
   speed?: number;
+  reversed?: boolean;
+  audioFadeIn?: number;
+  audioFadeOut?: number;
+  normalizeAudio?: boolean;
+  denoise?: boolean;
 }
 
 export interface TimelineAudioClip {

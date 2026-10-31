@@ -128,7 +128,7 @@ def generate_script(
 ) -> Dict[str, Any]:
     aspect_ratio = aspect_ratio or "9:16"
     logger.debug(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
-    memory = fetch_quote_memory(limit=20)
+    memory = fetch_quote_memory(limit=5)
     merged_assets = dict(available_assets or {})
 
     data = generate_gemini_script(
