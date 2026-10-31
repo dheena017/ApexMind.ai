@@ -54,17 +54,24 @@ SCRIPT_FALLBACK_MODELS: list[str] = [
 DEFAULT_TTS_MODEL: str = settings.DEFAULT_TTS_MODEL
 
 SUPPORTED_TTS_MODELS: dict[str, str] = {
-    "gemini-2.5-flash-preview-tts": "gemini-2.5-flash-preview-tts",
-    "gemini-2.5-flash-tts": "gemini-2.5-flash-tts",
-    "gemini-2.5-flash": "gemini-2.5-flash-preview-tts",
-    "gemini-2.5-pro": "gemini-2.5-flash-preview-tts",
-    "gemini-2.0-flash-preview-tts": "gemini-2.5-flash-preview-tts",
-    "gemini-2.0-flash": "gemini-2.5-flash-preview-tts",
+    # Active Gemini 3.8 TTS Models (Primary)
+    "gemini-3.8-flash-tts": "gemini-3.8-flash-tts",
+    "gemini-3.8-flash-lite-tts": "gemini-3.8-flash-lite-tts",
+    "gemini-3.1-flash-tts": "gemini-3.8-flash-tts",
+    # Active Multimodal / GenerateContent models
+    "gemini-2.0-flash": "gemini-2.0-flash",
+    "gemini-2.5-flash": "gemini-3.8-flash-tts",
+    # Legacy fallbacks & aliases
+    "gemini-2.5-flash-tts": "gemini-3.8-flash-tts",
+    "gemini-2.5-flash-preview-tts": "gemini-3.8-flash-tts",
+    "gemini-2.5-pro": "gemini-3.8-flash-tts",
+    "gemini-2.0-flash-preview-tts": "gemini-3.8-flash-tts",
 }
 
 TTS_FALLBACK_MODELS: list[str] = [
-    "gemini-2.5-flash-preview-tts",
-    "gemini-2.5-flash-tts",
+    "gemini-3.8-flash-tts",
+    "gemini-3.8-flash-lite-tts",
+    "gemini-2.0-flash",
 ]
 
 # Fixed System Instructions & Production Directives
@@ -164,6 +171,17 @@ def extract_voiceover_audio(response: Any) -> tuple[bytes, str]:
     if response is None:
         raise RuntimeError("Gemini TTS returned no response payload.")
 
+    # 1. Interactions API format (e.g., gemini-3.8-flash-tts via client.interactions.create)
+    output_audio = getattr(response, "output_audio", None)
+    if output_audio is not None:
+        raw_audio = getattr(output_audio, "data", None)
+        mime_type = getattr(output_audio, "mime_type", "audio/wav") or "audio/wav"
+        if raw_audio is not None:
+            if isinstance(raw_audio, str):
+                raw_audio = base64.b64decode(raw_audio)
+            return raw_audio, mime_type
+
+    # 2. GenerateContent format (response.candidates[].content.parts[].inline_data)
     candidates = getattr(response, "candidates", []) or []
     for candidate in candidates:
         content = getattr(candidate, "content", None)
@@ -1254,6 +1272,36 @@ def generate_gemini_voiceover(
         tts_res = None
         last_tts_err = None
         for attempt_tts in unique_tts_models:
+            # 1. Try modern Interactions API (native for gemini-3.8-flash-tts / gemini-3.8-flash-lite-tts)
+            if hasattr(gemini_client, "interactions") and "tts" in attempt_tts.lower():
+                try:
+                    tts_res = gemini_client.interactions.create(
+                        model=attempt_tts,
+                        input=[{
+                            "type": "user_input",
+                            "content": [{
+                                "type": "text",
+                                "text": normalized_text,
+                                "annotations": [{
+                                    "type": "speech_metadata",
+                                    "style": "clear, authoritative, engaging motivational delivery",
+                                }],
+                            }],
+                        }],
+                        response_format={"type": "audio"},
+                        generation_config={
+                            "speech_config": [
+                                {"voice": voice_name},
+                            ]
+                        },
+                    )
+                    if tts_res and getattr(tts_res, "output_audio", None):
+                        break
+                except Exception as e:
+                    last_tts_err = e
+                    logger.warning(f"[Studio/TTS] Interactions API model '{attempt_tts}' failed ({e}), trying next option...")
+
+            # 2. Try models.generate_content (for multimodal audio models like gemini-2.0-flash)
             try:
                 tts_res = gemini_client.models.generate_content(
                     model=attempt_tts,

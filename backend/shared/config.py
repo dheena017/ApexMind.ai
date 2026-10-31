@@ -14,7 +14,7 @@ class Settings:
     # Google Gemini & AI Model Configuration
     GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
     DEFAULT_SCRIPT_MODEL: str = os.environ.get("DEFAULT_SCRIPT_MODEL", "gemini-3.8-flash")
-    DEFAULT_TTS_MODEL: str = os.environ.get("DEFAULT_TTS_MODEL", "gemini-2.5-flash-preview-tts")
+    DEFAULT_TTS_MODEL: str = os.environ.get("DEFAULT_TTS_MODEL", "gemini-3.8-flash-tts")
 
     # Server Networking
     PORT: int = int(os.environ.get("PORT", "8000"))

@@ -221,7 +221,7 @@ class VoiceProfileItem(BaseModel):
     name: str
     gender: str
     style: str
-    speed: str
+    speed: Optional[str] = "1.0x"
 
 class MediaLibraryData(BaseModel):
     musicTracks: List[MusicTrackItem]

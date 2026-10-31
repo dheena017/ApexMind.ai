@@ -533,11 +533,11 @@ def get_media_library() -> Dict[str, Any]:
         "stockVideos": [],
         "textPresets": [],
         "voiceProfiles": [
-            {"id": "Kore", "name": "Kore", "gender": "Female", "style": "Clear, Inspiring, Authoritative"},
-            {"id": "Fenrir", "name": "Fenrir", "gender": "Male", "style": "Deep, Powerful, Stoic Leader"},
-            {"id": "Puck", "name": "Puck", "gender": "Male", "style": "Energetic, High-Octane Motivational"},
-            {"id": "Zephyr", "name": "Zephyr", "gender": "Female", "style": "Smooth, Calming Wisdom and Meditation"},
-            {"id": "Charon", "name": "Charon", "gender": "Male", "style": "Grit and Relentless Focus"},
+            {"id": "Kore", "name": "Kore", "gender": "Female", "style": "Clear, Inspiring, Authoritative", "speed": "1.0x"},
+            {"id": "Fenrir", "name": "Fenrir", "gender": "Male", "style": "Deep, Powerful, Stoic Leader", "speed": "1.0x"},
+            {"id": "Puck", "name": "Puck", "gender": "Male", "style": "Energetic, High-Octane Motivational", "speed": "1.0x"},
+            {"id": "Zephyr", "name": "Zephyr", "gender": "Female", "style": "Smooth, Calming Wisdom and Meditation", "speed": "1.0x"},
+            {"id": "Charon", "name": "Charon", "gender": "Male", "style": "Grit and Relentless Focus", "speed": "1.0x"},
         ],
         "soundEffects": [],
     }
