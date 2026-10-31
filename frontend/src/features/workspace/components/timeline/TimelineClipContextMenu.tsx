@@ -68,6 +68,7 @@ export interface TimelineClipContextMenuProps {
   startTime?: number;
   duration?: number;
   currentSpeed?: number;
+  targetClip?: any;
   onClose: () => void;
 
   // Primary Edit & Clipboard
@@ -169,6 +170,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
   startTime,
   duration,
   currentSpeed = 1.0,
+  targetClip,
   onClose,
   onCut,
   onCopy,
@@ -402,6 +404,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         startTime,
         duration,
         speed: currentSpeed,
+        clipData: targetClip,
       };
       try {
         localStorage.setItem('apexmind_clip_clipboard', JSON.stringify(clipData));
@@ -422,8 +425,12 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         if (raw) {
           const clipData = JSON.parse(raw);
           window.dispatchEvent(
-            new CustomEvent('workspace:duplicate-clip', {
-              detail: { track: clipData.track || trackType, clipId: clipData.clipId },
+            new CustomEvent('workspace:paste-clip', {
+              detail: {
+                track: clipData.track || trackType,
+                clipId: clipData.clipId,
+                clipData: clipData.clipData,
+              },
             })
           );
           toast.success('Pasted clip from clipboard');
@@ -511,12 +518,12 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     } else {
       window.dispatchEvent(
         new CustomEvent('workspace:backdrop-transform', {
-          detail: { fitMode: 'fit', scale: 1, posX: 0, posY: 0 },
+          detail: { fitMode: 'fit', scale: 100, posX: 50, posY: 50 },
         })
       );
       window.dispatchEvent(
         new CustomEvent('workspace:update-clip-properties', {
-          detail: { track: trackType, clipId, transform: { fitMode: 'fit', scale: 1, x: 0, y: 0 } },
+          detail: { track: trackType, clipId, transform: { fitMode: 'fit', scale: 100, x: 50, y: 50 } },
         })
       );
     }
@@ -530,12 +537,12 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     } else {
       window.dispatchEvent(
         new CustomEvent('workspace:backdrop-transform', {
-          detail: { fitMode: 'fill', scale: 1.25 },
+          detail: { fitMode: 'fill', scale: 100, posX: 50, posY: 50 },
         })
       );
       window.dispatchEvent(
         new CustomEvent('workspace:update-clip-properties', {
-          detail: { track: trackType, clipId, transform: { fitMode: 'fill', scale: 1.25 } },
+          detail: { track: trackType, clipId, transform: { fitMode: 'fill', scale: 100, x: 50, y: 50 } },
         })
       );
     }
@@ -549,16 +556,16 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     } else {
       window.dispatchEvent(
         new CustomEvent('workspace:backdrop-transform', {
-          detail: { flipH: true },
+          detail: { toggleFlipH: true },
         })
       );
       window.dispatchEvent(
         new CustomEvent('workspace:update-clip-properties', {
-          detail: { track: trackType, clipId, transform: { flipH: true } },
+          detail: { track: trackType, clipId, transform: { toggleFlipH: true } },
         })
       );
     }
-    toast.success('Flipped horizontally');
+    toast.success('Toggled horizontal flip');
     onClose();
   };
 
@@ -568,16 +575,16 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     } else {
       window.dispatchEvent(
         new CustomEvent('workspace:backdrop-transform', {
-          detail: { flipV: true },
+          detail: { toggleFlipV: true },
         })
       );
       window.dispatchEvent(
         new CustomEvent('workspace:update-clip-properties', {
-          detail: { track: trackType, clipId, transform: { flipV: true } },
+          detail: { track: trackType, clipId, transform: { toggleFlipV: true } },
         })
       );
     }
-    toast.success('Flipped vertically');
+    toast.success('Toggled vertical flip');
     onClose();
   };
 
@@ -587,7 +594,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     } else {
       window.dispatchEvent(
         new CustomEvent('workspace:backdrop-transform', {
-          detail: { fitMode: 'contain', scale: 1, posX: 0, posY: 0, rotation: 0, flipH: false, flipV: false },
+          detail: { reset: true, fitMode: 'fill', scale: 100, posX: 50, posY: 50, rotation: 0, flipH: false, flipV: false },
         })
       );
       window.dispatchEvent(
@@ -595,7 +602,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           detail: {
             track: trackType,
             clipId,
-            transform: { fitMode: 'contain', scale: 1, x: 0, y: 0, rotation: 0, flipH: false, flipV: false },
+            transform: { fitMode: 'fill', scale: 100, x: 50, y: 50, rotation: 0, flipH: false, flipV: false },
           },
         })
       );
@@ -628,13 +635,14 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     if (onReverse) {
       onReverse();
     } else {
+      const nextReversed = !targetClip?.reversed;
       window.dispatchEvent(
         new CustomEvent('workspace:update-clip-properties', {
-          detail: { track: trackType, clipId, reversed: true },
+          detail: { track: trackType, clipId, reversed: nextReversed },
         })
       );
     }
-    toast.success('Reversed clip playback');
+    toast.success('Toggled clip reverse playback');
     onClose();
   };
 
@@ -659,12 +667,12 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     } else {
       window.dispatchEvent(
         new CustomEvent('workspace:select-compound', {
-          detail: { compound: 'voice', openInspector: true, clipId },
+          detail: { compound: 'video', openInspector: true, clipId },
         })
       );
       window.dispatchEvent(
         new CustomEvent('workspace:open-inspector-tab', {
-          detail: { tab: 'audio' },
+          detail: { compound: 'video', subTab: 'audio', tab: 'audio', clipId },
         })
       );
     }
@@ -924,7 +932,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
       );
       window.dispatchEvent(
         new CustomEvent('workspace:open-inspector-tab', {
-          detail: { tab: 'transform' },
+          detail: { compound, subTab: 'transform', tab: 'transform', clipId },
         })
       );
     }

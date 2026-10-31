@@ -1517,6 +1517,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         fitMode?: 'fill' | 'fit' | 'crop';
         flipH?: boolean;
         flipV?: boolean;
+        toggleFlipH?: boolean;
+        toggleFlipV?: boolean;
         rotation?: number;
         scale?: number;
         posX?: number;
@@ -1531,13 +1533,35 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       } else if (detail.fitMode === 'fit') {
         handleFitBackdrop();
       }
-      if (detail.flipH !== undefined) setBackdropFlipH(detail.flipH);
-      if (detail.flipV !== undefined) setBackdropFlipV(detail.flipV);
+      if (detail.toggleFlipH) setBackdropFlipH((prev) => !prev);
+      else if (detail.flipH !== undefined) setBackdropFlipH(detail.flipH);
+
+      if (detail.toggleFlipV) setBackdropFlipV((prev) => !prev);
+      else if (detail.flipV !== undefined) setBackdropFlipV(detail.flipV);
+
       if (detail.rotation !== undefined) setBackdropRotation(detail.rotation);
-      if (detail.scale !== undefined) setBackdropScale(detail.scale);
+      if (detail.scale !== undefined) {
+        const scalePct = detail.scale <= 5 ? detail.scale * 100 : detail.scale;
+        setBackdropScale(scalePct);
+      }
       if (detail.posX !== undefined) setBackdropPosX(detail.posX);
       if (detail.posY !== undefined) setBackdropPosY(detail.posY);
       if (detail.fitMode) setBackdropFitMode(detail.fitMode);
+    };
+
+    const handleAiEnhancePreview = (e: Event) => {
+      const detail = (e as CustomEvent<{ clipId?: string }>).detail;
+      if (detail?.clipId) {
+        setPerClipFilters((prev) => ({
+          ...prev,
+          [detail.clipId!]: {
+            ...filterSettings,
+            contrast: 115,
+            saturate: 112,
+            brightness: 104,
+          },
+        }));
+      }
     };
 
     const handleFilter = (e: Event) => {
@@ -1576,6 +1600,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
     window.addEventListener('workspace:backdrop-transform', handleTransform);
     window.addEventListener('workspace:backdrop-filter', handleFilter);
+    window.addEventListener('workspace:ai-enhance', handleAiEnhancePreview);
     window.addEventListener('workspace:caption-style-change', handleCaptionStyle);
     window.addEventListener('workspace:overlay-style-change', handleOverlayStyle);
     window.addEventListener('workspace:backdrop-animation', handleBackdropAnimation);
@@ -1583,6 +1608,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     return () => {
       window.removeEventListener('workspace:backdrop-transform', handleTransform);
       window.removeEventListener('workspace:backdrop-filter', handleFilter);
+      window.removeEventListener('workspace:ai-enhance', handleAiEnhancePreview);
       window.removeEventListener('workspace:caption-style-change', handleCaptionStyle);
       window.removeEventListener('workspace:overlay-style-change', handleOverlayStyle);
       window.removeEventListener('workspace:backdrop-animation', handleBackdropAnimation);
@@ -1780,7 +1806,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
     video.volume = videoTrackVolume / 100;
     video.muted = videoTrackVolume === 0;
-    video.playbackRate = playbackRate;
+    const currentClipSpeed = (activeVideoClip?.speed && typeof activeVideoClip.speed === 'number' && activeVideoClip.speed > 0)
+      ? activeVideoClip.speed
+      : playbackRate;
+    video.playbackRate = currentClipSpeed;
 
     if (!showVideoLayer) {
       if (!video.paused) video.pause();
@@ -1790,7 +1819,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     if (tVideo) {
       tVideo.volume = 0;
       tVideo.muted = true;
-      tVideo.playbackRate = playbackRate;
+      tVideo.playbackRate = (activeTransition?.clipB?.speed && typeof activeTransition.clipB.speed === 'number')
+        ? activeTransition.clipB.speed
+        : playbackRate;
     }
 
     const isTrans = Boolean((activeTransition as any)?.isTransitioning ?? true);
@@ -1800,7 +1831,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     const clipStart = syncClip ? (Number(syncClip.start) || 0) : (timelineState.videoStart || 0);
     const rawOffset = Math.max(0, currentTime - clipStart);
     const videoDuration = video.duration && Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
-    const offset = videoDuration > 0 ? (rawOffset % videoDuration) : rawOffset;
+    const isReversed = Boolean(syncClip?.reversed);
+    const effectiveOffset = isReversed && videoDuration > 0
+      ? Math.max(0, (syncClip?.duration || videoDuration) - rawOffset)
+      : rawOffset;
+    const offset = videoDuration > 0 ? (effectiveOffset % videoDuration) : effectiveOffset;
 
     // Transition Player B sync calculation
     let offsetB = 0;
@@ -2174,7 +2209,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const clipAnimClipPath = inClipPath || outClipPath;
 
-  const activeClipFilter = (activeVideoClip && perClipFilters[activeVideoClip.id]) || (activeImageClip && perClipFilters[activeImageClip.id]) || filterSettings;
+  const activeClipFilter =
+    (activeVideoClip && (perClipFilters[activeVideoClip.id] || (activeVideoClip as any).filterSettings)) ||
+    (activeImageClip && (perClipFilters[activeImageClip.id] || (activeImageClip as any).filterSettings)) ||
+    filterSettings;
 
   const computedBackdropFilter = (() => {
     const parts: string[] = [];

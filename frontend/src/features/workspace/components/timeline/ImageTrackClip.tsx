@@ -387,6 +387,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
             y={contextMenu.y}
             trackType="image"
             clipId={contextMenu.clipId}
+            targetClip={targetClip}
             currentSpeed={targetClip?.speed || 1.0}
             isVisible={true}
             isHidden={!imageTrackVisible}

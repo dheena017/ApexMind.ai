@@ -137,12 +137,7 @@ class GeminiImageProvider(BaseMediaProvider):
                     image_bytes = img_res.generated_images[0].image.image_bytes
                     logger.info(f"Successfully generated bespoke scene visual via {target_imagen_model}")
             except Exception as gen_err:
-                logger.debug(f"Imagen 3 ({chosen_model}) not available or quota exceeded ({gen_err}); generating stylized visual backdrop.")
-
-        # Fallback if unconfigured or API exhausted: generate high-res stylized SVG poster
-        if not image_bytes:
-            logger.info("Generating stylized SVG visual backdrop fallback...")
-            image_bytes = self._generate_fallback_svg_bytes(prompt, style, width, height)
+                logger.debug(f"Imagen 3 ({chosen_model}) not available or quota exceeded ({gen_err})")
 
         if not image_bytes:
             return None
@@ -177,33 +172,6 @@ class GeminiImageProvider(BaseMediaProvider):
                 "height": height,
             },
         )
-
-    def _generate_fallback_svg_bytes(self, prompt: str, style: str, width: int, height: int) -> bytes:
-        """Create a stylized gradient backdrop PNG/SVG so the video never turns black."""
-        clean_prompt = prompt.replace("<", "").replace(">", "").replace("&", "&amp;")[:50]
-        grad_color1 = "#090A0F"
-        grad_color2 = "#1E1B4B" if style == "cyberpunk" else "#1F1D1B" if style == "stoic" else "#0F172A"
-        accent_color = "#EAB308" if style == "stoic" else "#06B6D4" if style == "cyberpunk" else "#818CF8"
-
-        svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="{grad_color1}" />
-      <stop offset="50%" stop-color="{grad_color2}" />
-      <stop offset="100%" stop-color="{grad_color1}" />
-    </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="{accent_color}" stop-opacity="0.25" />
-      <stop offset="100%" stop-color="{accent_color}" stop-opacity="0" />
-    </radialGradient>
-  </defs>
-  <rect width="100%" height="100%" fill="url(#bg)" />
-  <circle cx="{width/2}" cy="{height*0.4}" r="{width*0.5}" fill="url(#glow)" />
-  <text x="50%" y="45%" text-anchor="middle" fill="{accent_color}" font-family="system-ui, sans-serif" font-size="28" font-weight="700" letter-spacing="2">APEXMIND STUDIO AI</text>
-  <text x="50%" y="52%" text-anchor="middle" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="20" font-weight="400">{clean_prompt}</text>
-  <text x="50%" y="58%" text-anchor="middle" fill="#64748B" font-family="system-ui, sans-serif" font-size="14" font-weight="500">[{style.upper()} SCENE BACKDROP]</text>
-</svg>"""
-        return svg_content.encode("utf-8")
 
     def search(self, query: str, aspect_ratio: str = "9:16", limit: int = 5) -> List[MediaAsset]:
         """Base search compatibility: triggers generation for query."""

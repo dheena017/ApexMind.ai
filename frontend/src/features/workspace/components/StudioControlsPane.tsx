@@ -162,8 +162,9 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
         setActiveCompound(detail.compound);
         onSelectCompound?.(detail.compound);
       }
-      if (detail.subTab) {
-        setVideoInspectorTab(detail.subTab);
+      const targetTab = detail.subTab || (detail as any).tab;
+      if (targetTab) {
+        setVideoInspectorTab(targetTab);
       }
       if (detail.clipId) {
         setLocalSelectedClip({ track: detail.compound === 'video' ? 'video' : 'video', clipId: detail.clipId, all: false });

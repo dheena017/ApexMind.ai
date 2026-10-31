@@ -415,6 +415,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
             y={contextMenu.y}
             trackType="video"
             clipId={contextMenu.clipId}
+            targetClip={targetClip}
             currentSpeed={targetClip?.speed || 1.0}
             isVisible={true}
             isHidden={!videoTrackVisible}

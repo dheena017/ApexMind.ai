@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { workspaceApi } from '../api/workspaceApi';
 import { useStudioPipeline } from '../hooks/useStudioPipeline';
 import { videosApi } from '@/src/features/videos/api/videosApi';
-import { DEFAULT_SOUNDTRACK_AUDIO_URL, DEFAULT_VISUAL_BACKDROPS, GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
+import { DEFAULT_VISUAL_BACKDROPS, GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { VideoPreviewPane } from '../components/VideoPreview';
 import { StudioControlsPane, CompoundType } from '../components/StudioControlsPane';
@@ -337,9 +337,7 @@ export default function WorkspacePage({
     const musicAudio = musicAudioRef.current;
     if (!musicAudio) return;
     const selectedTrack = musicTracks.find((track) => track.id === selectedMusic);
-    const sourceUrl = selectedTrack
-      ? selectedTrack.audioUrl || DEFAULT_SOUNDTRACK_AUDIO_URL
-      : '';
+    const sourceUrl = selectedTrack ? selectedTrack.audioUrl || '' : '';
     if (!sourceUrl) {
       musicAudio.pause();
       musicAudio.removeAttribute('src');
@@ -1730,29 +1728,6 @@ export default function WorkspacePage({
                   if (el.type === 'badge') {
                     setScript((prev) => ({ ...prev, title: prev.title ? `${el.value}: ${prev.title}` : el.value }));
                   }
-                  window.dispatchEvent(
-                    new CustomEvent('workspace:add-timeline-clip', {
-                      detail: {
-                        type: 'overlay',
-                        url: el.value || '',
-                        elementType: el.type,
-                        value: el.value,
-                        name: el.name || 'Overlay Element',
-                        label: el.label || el.name,
-                        duration: 4.5,
-                        start: currentTime,
-                      },
-                    })
-                  );
-                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'overlay' }));
-                  addWorkspaceNotification({
-                    title: `Overlay Added: ${el.name || el.type}`,
-                    message: 'Visual element attached to timeline at playhead.',
-                    category: 'media',
-                    type: 'info',
-                    targetPane: 'elements',
-                    actionLabel: 'View Overlay',
-                  });
                 }}
               />
             ) : activePane === 'audio' ? (
@@ -1762,32 +1737,12 @@ export default function WorkspacePage({
                   setActiveCompound('music');
                   setSelectedMusic(mId);
                   const track = musicTracks.find((t) => t.id === mId);
-                  const sourceUrl = track?.audioUrl || DEFAULT_SOUNDTRACK_AUDIO_URL;
+                  const sourceUrl = track?.audioUrl || '';
                   if (musicAudioRef.current) {
                     musicAudioRef.current.src = sourceUrl;
                     musicAudioRef.current.play().catch(() => {});
                     setIsPlaying(true);
                   }
-                  window.dispatchEvent(
-                    new CustomEvent('workspace:add-timeline-clip', {
-                      detail: {
-                        type: 'music',
-                        url: sourceUrl,
-                        name: track ? track.title : 'Soundtrack',
-                        duration: 15.0,
-                        start: currentTime,
-                      },
-                    })
-                  );
-                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
-                  addWorkspaceNotification({
-                    title: 'Soundtrack Added to Timeline',
-                    message: track ? `Loaded "${track.title}" at playhead.` : 'Soundtrack clip added.',
-                    category: 'voice',
-                    type: 'info',
-                    targetPane: 'audio',
-                    actionLabel: 'Audio Settings',
-                  });
                 }}
                 selectedMusic={selectedMusic}
                 onAddSfxToTimeline={(sfx) => {
@@ -1862,26 +1817,6 @@ export default function WorkspacePage({
                   setActiveCompound('video');
                   setCustomBackdropImage(url);
                   setCustomBackdropVideo('');
-                  window.dispatchEvent(
-                    new CustomEvent('workspace:add-timeline-clip', {
-                      detail: {
-                        type: 'image',
-                        url,
-                        name: 'Stock Photo',
-                        duration: 8,
-                        start: currentTime,
-                      },
-                    })
-                  );
-                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
-                  addWorkspaceNotification({
-                    title: 'Stock Photo Added',
-                    message: 'Image added to timeline at playhead. Drag freely anywhere on the timeline.',
-                    category: 'media',
-                    type: 'info',
-                    targetPane: 'image',
-                    actionLabel: 'Preview',
-                  });
                 }}
                 activeImageUrl={customBackdropImage}
               />

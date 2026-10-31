@@ -64,14 +64,6 @@ export const ASPECT_RATIO_OPTIONS = [
   { value: '21:9' as const, label: '21:9', desc: 'Cinematic Ultrawide', res: '2560×1080', icon: Monitor },
 ];
 
-const DEFAULT_FALLBACK_VOICES: VoiceProfile[] = [
-  { id: 'Fenrir', name: 'Fenrir', gender: 'Male', style: 'Deep, Powerful, Stoic Leader', speed: '1.0x' },
-  { id: 'Aura', name: 'Aura', gender: 'Female', style: 'Calm, Resilient, Inspiring', speed: '1.0x' },
-  { id: 'Kratos', name: 'Kratos', gender: 'Male', style: 'Gravelly, Intense, Raw Power', speed: '1.0x' },
-  { id: 'Nova', name: 'Nova', gender: 'Female', style: 'Direct, Energetic, Unapologetic', speed: '1.0x' },
-  { id: 'Marcus', name: 'Marcus', gender: 'Male', style: 'Philosophical, Measured, Timeless', speed: '0.95x' },
-  { id: 'Valkyrie', name: 'Valkyrie', gender: 'Female', style: 'Commanding, High Impact, Fierce', speed: '1.05x' },
-];
 
 const AI_MODELS = [
   { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Ultra Fast & Adaptive)' },
@@ -116,7 +108,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   onClearError,
   selectedVoice = 'Fenrir',
   onVoiceChange,
-  voices = DEFAULT_FALLBACK_VOICES,
+  voices = [],
   onTestVoice,
   testingVoiceId,
   loadingAgent,
@@ -132,7 +124,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   onModelChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'prompt' | 'voice'>('prompt');
-  const [liveVoices, setLiveVoices] = useState<VoiceProfile[]>(voices.length > 0 ? voices : DEFAULT_FALLBACK_VOICES);
+  const [liveVoices, setLiveVoices] = useState<VoiceProfile[]>(voices);
   const speechTone = (propTone as any) || 'authoritative';
   const handleSelectTone = (newTone: string) => {
     onToneChange?.(newTone);

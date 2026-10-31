@@ -154,9 +154,10 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
   useEffect(() => {
     const handleOpenTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ compound?: string; subTab?: VideoInspectorTab }>).detail;
-      if (detail && detail.subTab && (detail.compound === 'video' || !detail.compound)) {
-        setActiveSubTab(detail.subTab);
+      const detail = (e as CustomEvent<{ compound?: string; subTab?: VideoInspectorTab; tab?: VideoInspectorTab }>).detail;
+      const targetTab = detail?.subTab || detail?.tab;
+      if (detail && targetTab && (detail.compound === 'video' || !detail.compound)) {
+        setActiveSubTab(targetTab);
       }
     };
     const handleSelectedDetails = (e: Event) => {

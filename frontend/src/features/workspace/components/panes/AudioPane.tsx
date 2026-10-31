@@ -24,7 +24,7 @@ import {
   Gauge,
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
-import { DEFAULT_SOUNDTRACK_AUDIO_URL } from '../../types';
+
 import { toast } from 'sonner';
 import { addWorkspaceNotification } from '../../utils/workspaceNotificationManager';
 
@@ -130,7 +130,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             duration: m.duration || '2:00',
             bpm: m.bpm || 90,
             mood: m.genre || 'Epic Focus',
-            audioUrl: m.audioUrl || DEFAULT_SOUNDTRACK_AUDIO_URL,
+            audioUrl: m.audioUrl || '',
           }));
 
           if (apiTracks.length > 0) {

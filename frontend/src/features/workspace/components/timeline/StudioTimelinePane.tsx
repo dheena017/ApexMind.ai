@@ -1701,9 +1701,116 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           e.preventDefault();
           handleDuplicateClip();
         }
+      } else if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyC' || e.key === 'c') && !e.shiftKey) {
+        if (selectedClip) {
+          e.preventDefault();
+          const target = selectedClip.track === 'video'
+            ? videoClips.find((c) => c.id === selectedClip.clipId)
+            : selectedClip.track === 'image'
+            ? imageClips.find((c) => c.id === selectedClip.clipId)
+            : selectedClip.track === 'voice'
+            ? voiceClips.find((c) => c.id === selectedClip.clipId)
+            : undefined;
+          if (target) {
+            try {
+              localStorage.setItem('apexmind_clip_clipboard', JSON.stringify({
+                track: selectedClip.track,
+                clipId: target.id,
+                clipName: target.name,
+                startTime: target.start,
+                duration: target.duration,
+                clipData: target,
+              }));
+              toast.success(`Copied "${target.name || 'clip'}" to clipboard`);
+            } catch {}
+          }
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyX' || e.key === 'x')) {
+        if (selectedClip) {
+          e.preventDefault();
+          const target = selectedClip.track === 'video'
+            ? videoClips.find((c) => c.id === selectedClip.clipId)
+            : selectedClip.track === 'image'
+            ? imageClips.find((c) => c.id === selectedClip.clipId)
+            : undefined;
+          if (target) {
+            try {
+              localStorage.setItem('apexmind_clip_clipboard', JSON.stringify({
+                track: selectedClip.track,
+                clipId: target.id,
+                clipName: target.name,
+                startTime: target.start,
+                duration: target.duration,
+                clipData: target,
+              }));
+            } catch {}
+            handleDeleteClip();
+            toast.success(`Cut "${target.name || 'clip'}" to clipboard`);
+          }
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyV' || e.key === 'v')) {
+        e.preventDefault();
+        try {
+          const raw = localStorage.getItem('apexmind_clip_clipboard');
+          if (raw) {
+            const clipData = JSON.parse(raw);
+            window.dispatchEvent(
+              new CustomEvent('workspace:paste-clip', {
+                detail: {
+                  track: clipData.track || 'video',
+                  clipId: clipData.clipId,
+                  clipData: clipData.clipData,
+                },
+              })
+            );
+            toast.success('Pasted clip from clipboard');
+          }
+        } catch {}
       } else if (((e.ctrlKey || e.metaKey) && (e.code === 'KeyB' || e.key === 'b')) || e.code === 'KeyS') {
         e.preventDefault();
         handleSplitClip();
+      } else if (e.shiftKey && (e.code === 'KeyZ' || e.key === 'Z')) {
+        e.preventDefault();
+        const target = selectedClip?.track === 'video'
+          ? videoClips.find((c) => c.id === selectedClip.clipId)
+          : selectedClip?.track === 'image'
+          ? imageClips.find((c) => c.id === selectedClip.clipId)
+          : undefined;
+        if (target) {
+          onSeek(target.start);
+          setZoomLevel(1.5);
+          toast.success('Zoomed timeline to fit clip');
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === 'KeyC' || e.key === 'C')) {
+        e.preventDefault();
+        const target = selectedClip?.track === 'video'
+          ? videoClips.find((c) => c.id === selectedClip.clipId)
+          : selectedClip?.track === 'image'
+          ? imageClips.find((c) => c.id === selectedClip.clipId)
+          : undefined;
+        if (target) {
+          const text = `Start: ${target.start.toFixed(2)}s | Duration: ${target.duration.toFixed(2)}s | End: ${(target.start + target.duration).toFixed(2)}s`;
+          navigator.clipboard?.writeText(text).catch(() => {});
+          toast.success('Copied clip timings');
+        }
+      } else if (e.altKey && (e.code === 'Enter' || e.key === 'Enter')) {
+        e.preventDefault();
+        if (selectedClip) {
+          window.dispatchEvent(
+            new CustomEvent('workspace:select-compound', {
+              detail: {
+                compound: selectedClip.track === 'video' ? 'video' : selectedClip.track === 'image' ? 'image' : 'voice',
+                openInspector: true,
+                selectedClip,
+              },
+            })
+          );
+          window.dispatchEvent(
+            new CustomEvent('workspace:open-inspector-tab', {
+              detail: { compound: 'video', subTab: 'transform', tab: 'transform' },
+            })
+          );
+        }
       } else if (e.code === 'ArrowLeft') {
         e.preventDefault();
         onSeek(Math.max(0, currentTime - 0.1));
@@ -2509,23 +2616,28 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       setVideoClips((prev) => {
         const target = clipId
           ? prev.find((c) => c.id === clipId)
-          : (prev.find((c) => currentTime > c.start + 0.3 && currentTime < c.start + c.duration - 0.3) || prev[0]);
+          : (prev.find((c) => currentTime > c.start + 0.1 && currentTime < c.start + c.duration - 0.1) || prev[0]);
         if (!target) return prev;
         const clipEnd = target.start + target.duration;
-        if (currentTime > target.start + 0.3 && currentTime < clipEnd - 0.3) {
-          const leftDuration = parseFloat((currentTime - target.start).toFixed(2));
-          const rightDuration = parseFloat((clipEnd - currentTime).toFixed(2));
-          const updatedLeft = { ...target, duration: leftDuration };
-          const splitRight: TimelineMediaClip = {
-            ...target,
-            id: `vid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            name: `${target.name} (Part 2)`,
-            start: parseFloat(currentTime.toFixed(2)),
-            duration: rightDuration,
-          };
-          return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
+        let splitTime: number;
+        if (currentTime > target.start + 0.2 && currentTime < clipEnd - 0.2) {
+          splitTime = parseFloat(currentTime.toFixed(2));
+        } else {
+          splitTime = parseFloat((target.start + target.duration / 2).toFixed(2));
+          onSeek(splitTime);
         }
-        return prev;
+        const leftDuration = parseFloat((splitTime - target.start).toFixed(2));
+        const rightDuration = parseFloat((clipEnd - splitTime).toFixed(2));
+        if (leftDuration <= 0.1 || rightDuration <= 0.1) return prev;
+        const updatedLeft = { ...target, duration: leftDuration };
+        const splitRight: TimelineMediaClip = {
+          ...target,
+          id: `vid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `${target.name} (Part 2)`,
+          start: splitTime,
+          duration: rightDuration,
+        };
+        return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
       });
     } else {
       if (currentTime > videoStart + 0.5 && currentTime < videoStart + videoDuration - 0.5) {
@@ -2858,23 +2970,28 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       setImageClips((prev) => {
         const target = clipId
           ? prev.find((c) => c.id === clipId)
-          : (prev.find((c) => currentTime > c.start + 0.3 && currentTime < c.start + c.duration - 0.3) || prev[0]);
+          : (prev.find((c) => currentTime > c.start + 0.1 && currentTime < c.start + c.duration - 0.1) || prev[0]);
         if (!target) return prev;
         const clipEnd = target.start + target.duration;
-        if (currentTime > target.start + 0.3 && currentTime < clipEnd - 0.3) {
-          const leftDuration = parseFloat((currentTime - target.start).toFixed(2));
-          const rightDuration = parseFloat((clipEnd - currentTime).toFixed(2));
-          const updatedLeft = { ...target, duration: leftDuration };
-          const splitRight: TimelineMediaClip = {
-            ...target,
-            id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            name: `${target.name} (Part 2)`,
-            start: parseFloat(currentTime.toFixed(2)),
-            duration: rightDuration,
-          };
-          return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
+        let splitTime: number;
+        if (currentTime > target.start + 0.2 && currentTime < clipEnd - 0.2) {
+          splitTime = parseFloat(currentTime.toFixed(2));
+        } else {
+          splitTime = parseFloat((target.start + target.duration / 2).toFixed(2));
+          onSeek(splitTime);
         }
-        return prev;
+        const leftDuration = parseFloat((splitTime - target.start).toFixed(2));
+        const rightDuration = parseFloat((clipEnd - splitTime).toFixed(2));
+        if (leftDuration <= 0.1 || rightDuration <= 0.1) return prev;
+        const updatedLeft = { ...target, duration: leftDuration };
+        const splitRight: TimelineMediaClip = {
+          ...target,
+          id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `${target.name} (Part 2)`,
+          start: splitTime,
+          duration: rightDuration,
+        };
+        return prev.flatMap((c) => (c.id === target.id ? [updatedLeft, splitRight] : [c]));
       });
     } else {
       if (currentTime > imageStart + 0.5 && currentTime < imageStart + imageDuration - 0.5) {
@@ -2935,17 +3052,64 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const idx = list.findIndex((c) => c.id === clipId);
         if (idx < 0) return list;
         const next = [...list];
-        const item = next.splice(idx, 1)[0];
-        if (direction === 'front' || direction === 'up') {
-          next.push(item);
-        } else {
-          next.unshift(item);
+        let targetIdx = idx;
+        if (direction === 'front') {
+          targetIdx = next.length - 1;
+        } else if (direction === 'back') {
+          targetIdx = 0;
+        } else if (direction === 'up') {
+          targetIdx = Math.min(next.length - 1, idx + 1);
+        } else if (direction === 'down') {
+          targetIdx = Math.max(0, idx - 1);
         }
-        return next;
+        if (targetIdx === idx) return list;
+        const item = next.splice(idx, 1)[0];
+        next.splice(targetIdx, 0, item);
+
+        // Recalculate start times for sequential clips
+        let curTime = 0;
+        return next.map((c) => {
+          const updated = { ...c, start: parseFloat(curTime.toFixed(2)) };
+          curTime += c.duration;
+          return updated;
+        });
       };
       if (track === 'video') setVideoClips((prev) => rearrange(prev));
       else if (track === 'image') setImageClips((prev) => rearrange(prev));
       else if (track === 'overlay') setOverlayClips((prev) => rearrange(prev));
+    };
+
+    const handlePasteClipEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ track?: string; clipId?: string; clipData?: any }>).detail;
+      if (!detail) return;
+      const track = detail.track || 'video';
+      if (track === 'video') {
+        setVideoClips((prev) => {
+          const source = detail.clipData || prev.find((c) => c.id === detail.clipId) || prev[0];
+          if (!source) return prev;
+          const pasteStart = currentTime > 0 ? parseFloat(currentTime.toFixed(2)) : (prev.length > 0 ? prev[prev.length - 1].start + prev[prev.length - 1].duration : 0);
+          const newClip: TimelineMediaClip = {
+            ...source,
+            id: `vid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: `${source.name || 'Video Clip'} (Paste)`,
+            start: pasteStart,
+          };
+          return [...prev, newClip];
+        });
+      } else if (track === 'image') {
+        setImageClips((prev) => {
+          const source = detail.clipData || prev.find((c) => c.id === detail.clipId) || prev[0];
+          if (!source) return prev;
+          const pasteStart = currentTime > 0 ? parseFloat(currentTime.toFixed(2)) : (prev.length > 0 ? prev[prev.length - 1].start + prev[prev.length - 1].duration : 0);
+          const newClip: TimelineMediaClip = {
+            ...source,
+            id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: `${source.name || 'Image Clip'} (Paste)`,
+            start: pasteStart,
+          };
+          return [...prev, newClip];
+        });
+      }
     };
 
     const handleZoomToClipEvent = (e: Event) => {
@@ -3040,14 +3204,16 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
     const handleFreezeFrame = (e: Event) => {
       const detail = (e as CustomEvent<{ clipId?: string; startTime?: number }>).detail;
-      const targetTime = currentTime;
       setVideoClips((prev) => {
         const target = prev.find((c) =>
-          detail?.clipId ? c.id === detail.clipId : targetTime >= c.start && targetTime <= c.start + c.duration
-        );
+          detail?.clipId ? c.id === detail.clipId : currentTime >= c.start && currentTime <= c.start + c.duration
+        ) || prev[0];
         if (!target) return prev;
         const freezeDur = 2.0;
-        const splitPoint = Math.max(0.2, targetTime - target.start);
+        let splitPoint = currentTime - target.start;
+        if (splitPoint <= 0.2 || splitPoint >= target.duration - 0.2) {
+          splitPoint = parseFloat((target.duration / 2).toFixed(2));
+        }
         const firstPart = { ...target, duration: splitPoint };
         const freezeClip = {
           ...target,
@@ -3089,6 +3255,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             type: 'voice',
           },
         ]);
+        setVideoClips((prev) =>
+          prev.map((c) => (c.id === target.id ? { ...c, volume: 0 } : c))
+        );
         setEnabledTracks((prev) => ({ ...prev, voice: true }));
         setVoiceTrackMuted(false);
         toast.success('🔊 Audio detached to voice track');
@@ -3116,6 +3285,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       toast.success('✨ 4K AI Upscaling & Clarity Grade Applied');
     };
 
+    window.addEventListener('workspace:split-clip', handleSplitClipEvent);
+    window.addEventListener('workspace:duplicate-clip', handleDuplicateClipEvent);
+    window.addEventListener('workspace:paste-clip', handlePasteClipEvent);
+    window.addEventListener('workspace:delete-clip', handleDeleteClipEvent);
+    window.addEventListener('workspace:arrange-clip', handleArrangeClipEvent);
+    window.addEventListener('workspace:zoom-to-clip', handleZoomToClipEvent);
     window.addEventListener('workspace:ai-cut-sync', handleAiCutSync);
     window.addEventListener('workspace:playback-rate-change', handlePlaybackRateChange);
     window.addEventListener('workspace:freeze-frame', handleFreezeFrame);
@@ -3126,6 +3301,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     return () => {
       window.removeEventListener('workspace:split-clip', handleSplitClipEvent);
       window.removeEventListener('workspace:duplicate-clip', handleDuplicateClipEvent);
+      window.removeEventListener('workspace:paste-clip', handlePasteClipEvent);
       window.removeEventListener('workspace:delete-clip', handleDeleteClipEvent);
       window.removeEventListener('workspace:arrange-clip', handleArrangeClipEvent);
       window.removeEventListener('workspace:zoom-to-clip', handleZoomToClipEvent);
