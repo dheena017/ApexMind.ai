@@ -33,6 +33,8 @@ export interface StockVideoItem {
   resolution: string;
   source?: string;
   tags?: string[];
+  aestheticScore?: number;
+  aestheticBadges?: string[];
 }
 
 export interface VideoStockPaneProps {
@@ -126,6 +128,8 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             resolution: it.resolution || '1080x1920 HD',
             source: it.source || it.provider || 'stock',
             tags: it.tags || [],
+            aestheticScore: typeof it.aestheticScore === 'number' ? it.aestheticScore : undefined,
+            aestheticBadges: Array.isArray(it.aestheticBadges) ? it.aestheticBadges : [],
           }));
 
           setTotalClipsFound(res.total || formatted.length);
@@ -696,10 +700,32 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                             </span>
                           )}
                         </div>
-                        <span className="px-1.5 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-mono text-zinc-300 border border-white/10">
-                          {vid.duration}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {typeof vid.aestheticScore === 'number' && vid.aestheticScore > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-950/80 backdrop-blur-md text-[8.5px] font-bold text-emerald-300 border border-emerald-500/40 flex items-center gap-0.5">
+                              <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
+                              {Math.round(vid.aestheticScore)}
+                            </span>
+                          )}
+                          <span className="px-1.5 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-mono text-zinc-300 border border-white/10">
+                            {vid.duration}
+                          </span>
+                        </div>
                       </div>
+
+                      {/* Aesthetic & 60fps/120fps Quality Badges */}
+                      {vid.aestheticBadges && vid.aestheticBadges.length > 0 && (
+                        <div className="relative z-10 px-2 flex flex-wrap gap-1 pointer-events-none">
+                          {vid.aestheticBadges.slice(0, 2).map((badge: string) => (
+                            <span
+                              key={badge}
+                              className="px-1.5 py-0.5 rounded-full bg-amber-950/80 backdrop-blur-md text-[8px] font-bold text-amber-300 border border-amber-500/40 flex items-center gap-0.5"
+                            >
+                              <span>⚡</span> {badge}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Center Play Indicator */}
                       {!isHovered && (

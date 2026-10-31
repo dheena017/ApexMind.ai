@@ -56,30 +56,60 @@ def _generate_scene_captions(
     max_words: int,
     caption_color: str,
     caption_preset_class: str,
+    pre_aligned_words: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Distribute word-level timestamps proportionally within a scene's time window.
+    Distribute word-level timestamps proportionally within a scene's time window,
+    or use pre-aligned acoustic words when available from Stage 2 Voice synthesis.
     Returns a list of caption segment dicts ready for the timeline LocalClips[].
     """
     raw_words = [w for w in text.split() if w.strip()]
-    if not raw_words:
+    if not raw_words and not pre_aligned_words:
         return []
 
-    # Weight each word by character length + punctuation pause
-    weights = []
-    for w in raw_words:
-        wt = max(1.0, float(len(w)))
-        if any(p in w for p in [".", "!", "?", ";"]):
-            wt += 2.5
-        elif any(p in w for p in [",", "-", "—"]):
-            wt += 1.2
-        weights.append(wt)
+    chunk_size = max(1, min(max_words, 6))
+
+    # Path A: High-precision pre-aligned words from speech acoustic model
+    if pre_aligned_words and len(pre_aligned_words) > 0:
+        word_timings = [
+            {
+                "word": w.get("word", ""),
+                "start": float(w.get("start", scene_start)),
+                "end": float(w.get("end", scene_start + scene_duration)),
+                "emphasis": bool(w.get("emphasis", _is_emphasis(w.get("word", "")))),
+                "highlightColor": w.get("highlightColor") or (caption_color if w.get("emphasis") else None),
+            }
+            for w in pre_aligned_words
+            if str(w.get("word", "")).strip()
+        ]
+        if word_timings:
+            segments: List[Dict[str, Any]] = []
+            for i in range(0, len(word_timings), chunk_size):
+                chunk = word_timings[i : i + chunk_size]
+                segments.append({
+                    "sceneNumber": scene_number,
+                    "start": chunk[0]["start"],
+                    "end": chunk[-1]["end"],
+                    "duration": round(chunk[-1]["end"] - chunk[0]["start"], 3),
+                    "text": " ".join(c["word"] for c in chunk),
+                    "words": chunk,
+                    "captionPresetClass": caption_preset_class,
+                    "captionPresetColor": caption_color,
+                })
+            return segments
+
+    # Path B: Fallback phonetic syllable-weighted distribution
+    from .audio_aligner import compute_word_weight
+
+    weights = [
+        compute_word_weight(w, is_first=(i == 0), is_last=(i == len(raw_words) - 1))
+        for i, w in enumerate(raw_words)
+    ]
 
     total_weight = sum(weights) or 1.0
     available = max(0.1, scene_duration)
 
-    # Build per-word absolute timings within the scene window
-    word_timings: List[Dict[str, Any]] = []
+    word_timings = []
     cursor = scene_start
     for i, w in enumerate(raw_words):
         w_dur = (weights[i] / total_weight) * available
@@ -88,16 +118,14 @@ def _generate_scene_captions(
             "start": round(cursor, 3),
             "end": round(cursor + w_dur, 3),
             "emphasis": _is_emphasis(w),
+            "highlightColor": caption_color if _is_emphasis(w) else None,
         })
         cursor += w_dur
 
-    # Clamp last word to exact scene end
     if word_timings:
         word_timings[-1]["end"] = round(scene_start + scene_duration, 3)
 
-    # Chunk into viewport-safe segments (max_words per line)
-    chunk_size = max(1, min(max_words, 6))
-    segments: List[Dict[str, Any]] = []
+    segments = []
     for i in range(0, len(word_timings), chunk_size):
         chunk = word_timings[i : i + chunk_size]
         segments.append({
@@ -161,6 +189,7 @@ def run_studio_captions(
                 max_words=max_words_per_segment,
                 caption_color=scene.get("captionPresetColor") or caption_color,
                 caption_preset_class=scene.get("captionPresetClass") or style_preset,
+                pre_aligned_words=scene.get("words"),
             )
             all_segments.extend(segs)
 

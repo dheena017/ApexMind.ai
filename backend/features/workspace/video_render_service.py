@@ -213,7 +213,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Subtitle,{font_family},{font_size},{caption_color_ass},&H000000FF,&H00000000,&HB0000000,-1,0,0,0,100,100,1,0,1,5.5,3.5,2,40,40,{vert_margin},1
+Style: Subtitle,{font_family},{font_size},{caption_color_ass},&H00FFFFFF,&H00000000,&HB0000000,-1,0,0,0,100,100,1,0,1,5.5,3.5,2,40,40,{vert_margin},1
 Style: Title,Arial Black,{title_font_size},&H00FFFFFF,&H000000FF,&H00000000,&H90000000,-1,0,0,0,100,100,1,0,1,4.5,2.5,8,40,40,{title_vert_margin},1
 
 [Events]
@@ -229,7 +229,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             f"Dialogue: 0,0:00:00.10,0:00:03.50,Title,,0,0,0,,{{\\fad(250,400)}}{clean_title}"
         )
 
-    # Subtitles
+    # Subtitles (with Frame-Accurate Karaoke Word Highlights)
     for sub in subtitles:
         raw_text = str(sub.get("text", "")).strip()
         if not raw_text:
@@ -243,6 +243,26 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         end = start + duration
         start_fmt = format_ass_time(start)
         end_fmt = format_ass_time(end)
+
+        words = sub.get("words")
+        if words and isinstance(words, list) and len(words) > 0:
+            k_parts = []
+            for w in words:
+                w_str = str(w.get("word", "")).strip()
+                if not w_str:
+                    continue
+                if caption_transform == "uppercase":
+                    w_str = w_str.upper()
+                w_dur = float(w.get("duration", 0) or (float(w.get("end", 0)) - float(w.get("start", 0))))
+                cs = max(1, int(round(w_dur * 100)))
+                k_parts.append(f"{{\\k{cs}}}{w_str}")
+            if k_parts:
+                k_text = " ".join(k_parts)
+                dialogues.append(
+                    f"Dialogue: 0,{start_fmt},{end_fmt},Subtitle,,0,0,0,,{{\\fad(80,80)}}{k_text}"
+                )
+                continue
+
         dialogues.append(
             f"Dialogue: 0,{start_fmt},{end_fmt},Subtitle,,0,0,0,,{{\\fad(120,120)}}{text}"
         )
@@ -531,12 +551,27 @@ def render_studio_video(
         fade_out_start = max(0.5, safe_duration - 1.2)
 
         if voice_input_idx != -1 and music_input_idx != -1:
-            # Duck music under voiceover
-            ducked_vol = m_vol * 0.22
-            audio_filters.append(f"[{music_input_idx}:a]volume={ducked_vol:.3f},afade=t=in:st=0:d=0.3[music_ducked]")
-            audio_filters.append(f"[{voice_input_idx}:a]volume={v_vol:.2f},apad[voice_padded]")
-            audio_filters.append(f"[voice_padded][music_ducked]amix=inputs=2:duration=longest:dropout_transition=2,apad[a_mixed]")
-            audio_filters.append(f"[a_mixed]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96:attack=5:release=50[a_out]")
+            # ── Native FFmpeg Sidechain Audio Ducking ──
+            # When voiceover is active, background music ducks down smoothly.
+            # In speech pauses between sentences and during breathing intervals,
+            # background music organically swells back up to full listening level.
+            ds = ducking_settings or {}
+            threshold = float(ds.get("threshold", 0.045))
+            ratio = float(ds.get("ratio", 4.5))
+            attack_ms = float(ds.get("attackMs", 25))
+            release_ms = float(ds.get("releaseMs", 320))
+            makeup = float(ds.get("makeup", 1.0))
+
+            audio_filters.append(f"[{voice_input_idx}:a]volume={v_vol:.2f},apad[voice_master]")
+            audio_filters.append(f"[voice_master]asplit=2[voice_mix][voice_ctrl]")
+            audio_filters.append(f"[{music_input_idx}:a]volume={m_vol:.2f},afade=t=in:st=0:d=0.35,apad[music_base]")
+            audio_filters.append(
+                f"[music_base][voice_ctrl]sidechaincompress=threshold={threshold:.3f}:ratio={ratio:.1f}:attack={attack_ms:.0f}:release={release_ms:.0f}:makeup={makeup:.1f}:detection=rms:link=average[music_ducked]"
+            )
+            audio_filters.append(f"[voice_mix][music_ducked]amix=inputs=2:duration=first:dropout_transition=2[a_mixed]")
+            audio_filters.append(
+                f"[a_mixed]atrim=0:{safe_duration},afade=t=out:st={fade_out_start:.2f}:d=1.2,alimiter=limit=0.96:attack=5:release=50[a_out]"
+            )
             audio_out_tag = "[a_out]"
         elif voice_input_idx != -1:
             audio_filters.append(f"[{voice_input_idx}:a]volume={v_vol:.2f},apad[a_padded]")

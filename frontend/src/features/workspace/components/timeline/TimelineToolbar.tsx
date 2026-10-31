@@ -181,6 +181,19 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Transitions</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('workspace:ai-cut-sync'));
+            }}
+            className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-purple-500/40 bg-gradient-to-r from-purple-950/40 to-indigo-950/40 text-purple-200 hover:from-purple-900/60 hover:to-indigo-900/60 hover:text-white hover:border-purple-400 shadow-sm transition-all cursor-pointer text-[10.5px] font-semibold"
+            title="AI Audio-Visual Cut Sync (Align cuts to voice pauses & music beat drops)"
+            aria-label="AI Audio-Visual Cut Sync"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <span>AI Cut Sync</span>
+          </button>
         </div>
 
         <div className="h-4 w-px bg-[#262630] mx-0.5" />

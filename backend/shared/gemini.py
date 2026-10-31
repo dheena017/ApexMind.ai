@@ -349,6 +349,12 @@ MANDATORY 100% PURE CINEMATIC NATURE VIDEO & SOUND DESIGN DIRECTIVES:
 - SEARCH ENGINE OPTIMIZATION: For every scene, provide a "googleSearchQuery" (e.g. 'misty mountain peak sunrise clouds vertical 9:16') and "fallbackQueries" for Google Video Search / Pexels / Pixabay.
 - NEGATIVE TERMS: For every scene, explicitly specify negativeTerms: ["gym", "fitness", "workout", "city", "building", "urban", "office", "car", "technology", "phone", "smiling", "interview", "talking", "cartoon"].
 - KARAOKE WORD TIMING: For every scene, provide a "words" array breaking the scene's subtitle line into individual words with exact relative timestamps ("start", "end") and mark power words with "emphasis": true and "highlightColor" (e.g. "#FACC15" or "#38BDF8").
+- MANDATORY AI VOICE TONE & EMOTION MODULATION DIRECTIVES:
+  * Dynamic Cadence Across Story Beats:
+    - Opening Hook ("beat": "hook"): Fast, urgent delivery ("speechRate": 1.05, "tone": "urgent", "emotion": "Fast, urgent delivery"). Delivers immediate, high-converting momentum in the first 2-3 seconds.
+    - Escalation / Transition ("beat": "escalation"): Engaging momentum ("speechRate": 1.00, "tone": "motivational", "emotion": "Focused, engaging pace").
+    - Wisdom Quote ("beat": "quote"): Slower, heavier cadence ("speechRate": 0.90, "tone": "reverent", "emotion": "Slower, heavier cadence"). Grounded, stoic gravitas giving profound weight to the philosophical insight.
+    - Closing Call to Action ("beat": "cta"): Firm, decisive pace ("speechRate": 1.00, "tone": "decisive", "emotion": "Firm, decisive pace"). Commanding and authoritative.
 - MANDATORY 100% SCRIPT-STORYBOARD CC PARITY & CINEMATIC PACING:
   * Scene 1 MUST ALWAYS be the HOOK ("beat": "hook"). Scene 1's "subtitleText" MUST match the "hook" text verbatim!
   * Scenes 2 through N-1 MUST divide the monologue / "quote" sentence-by-sentence with zero omitted words.
@@ -615,6 +621,27 @@ Output MUST be a single raw JSON object matching this exact schema:
         cta_terms = {"subscribe", "follow", "cta", "button", "bell", "comment", "share", "channel"}
         for sc in storyboard:
             sc["mediaType"] = "video"
+            beat = str(sc.get("beat") or "").lower()
+            if beat == "hook" or sc.get("sceneNumber") == 1:
+                sc["beat"] = "hook"
+                sc["speechRate"] = 1.05
+                sc["tone"] = "urgent"
+                sc["emotion"] = "Fast, urgent delivery"
+            elif beat in ("quote", "wisdom"):
+                sc["beat"] = "quote"
+                sc["speechRate"] = 0.90
+                sc["tone"] = "reverent"
+                sc["emotion"] = "Slower, heavier cadence"
+            elif beat == "cta":
+                sc["beat"] = "cta"
+                sc["speechRate"] = 1.00
+                sc["tone"] = "decisive"
+                sc["emotion"] = "Firm, decisive pace"
+            else:
+                sc["speechRate"] = float(sc.get("speechRate") or 1.00)
+                sc["tone"] = sc.get("tone") or "motivational"
+                sc["emotion"] = sc.get("emotion") or "Focused, engaging pace"
+
             if "duration" in sc:
                 sc["duration"] = min(6.0, max(3.5, float(sc.get("duration", 4.5))))
 
@@ -692,7 +719,8 @@ Output MUST be a single raw JSON object matching this exact schema:
         for sc in storyboard:
             txt = (sc.get("subtitleText") or "").strip()
             w_count = max(1, len(txt.split()))
-            natural_dur = max(3.0, min(6.0, round(w_count * 0.45 + 1.5, 1)))
+            rate = float(sc.get("speechRate") or 1.0)
+            natural_dur = max(3.0, min(6.0, round((w_count * 0.45 / rate) + 1.5, 1)))
             sc["duration"] = natural_dur
             sc["start"] = round(curr_timeline_time, 2)
             curr_timeline_time = round(curr_timeline_time + natural_dur, 2)
@@ -758,7 +786,12 @@ Output MUST be a single raw JSON object matching this exact schema:
         raise RuntimeError(f"Gemini script generation failed: {e}")
 
 
-def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: str | None = None) -> dict[str, Any]:
+def generate_gemini_voiceover(
+    text: str,
+    voice_name: str | None = None,
+    model: str | None = None,
+    storyboard: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Generate a proper Gemini-based voiceover using the selected workspace voice.
 
     The TTS output is normalized, validated, and converted to a browser-safe WAV payload.
@@ -784,8 +817,11 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
 
     try:
         prompt = (
-            "Narrate this with a polished, cinematic, motivational delivery. "
-            "Keep the pacing natural, the tone charismatic, and the emphasis clear. "
+            "Narrate this motivational reel script with dynamic tone & emotion modulation across each story beat: "
+            "- Opening Hook: fast, urgent delivery (1.05x tempo), captivating attention with high energy in the first 2-3 seconds. "
+            "- Wisdom Quote: slower, heavier cadence (0.90x tempo), deep, grounded, stoic, and resonant, giving profound weight to the insight. "
+            "- Closing Call to Action: firm, decisive pace (1.00x tempo), commanding, confident, and crisp. "
+            "Modulate vocal pacing, intensity, and pauses naturally between these distinct emotional beats. "
             f"Script: {normalized_text}"
         )
         tts_models_to_try = [m for m in [tts_model, "gemini-2.5-flash-tts", "gemini-2.5-flash-preview-tts"] if m]
@@ -842,6 +878,12 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
                 "audioUrl": f"data:{mime_type};base64,{audio_b64}",
                 "duration": dur_secs,
                 "durationFormatted": dur_str,
+                "toneModulation": {
+                    "active": True,
+                    "hook": {"speechRate": 1.05, "tone": "urgent", "emotion": "Fast, urgent delivery"},
+                    "quote": {"speechRate": 0.90, "tone": "reverent", "emotion": "Slower, heavier cadence"},
+                    "cta": {"speechRate": 1.00, "tone": "decisive", "emotion": "Firm, decisive pace"},
+                },
             }
 
         # ── Resilient Fallback: gTTS High-Quality Synthesis ──
@@ -868,6 +910,12 @@ def generate_gemini_voiceover(text: str, voice_name: str | None = None, model: s
                 "audioUrl": f"data:audio/mp3;base64,{gtts_b64}",
                 "duration": exact_dur,
                 "durationFormatted": f"{exact_dur}s",
+                "toneModulation": {
+                    "active": True,
+                    "hook": {"speechRate": 1.05, "tone": "urgent", "emotion": "Fast, urgent delivery"},
+                    "quote": {"speechRate": 0.90, "tone": "reverent", "emotion": "Slower, heavier cadence"},
+                    "cta": {"speechRate": 1.00, "tone": "decisive", "emotion": "Firm, decisive pace"},
+                },
             }
         except Exception as fallback_err:
             logger.error(f"Fallback gTTS synthesis also failed: {fallback_err}")

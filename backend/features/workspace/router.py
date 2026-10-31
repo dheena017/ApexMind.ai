@@ -524,6 +524,7 @@ class RenderVideoApiRequest(BaseModel):
     filterSettings: Optional[Dict[str, Any]] = None
     voiceVolume: Optional[float] = 1.0
     musicVolume: Optional[float] = 0.65
+    duckingSettings: Optional[Dict[str, Any]] = None
     fps: int = 30
 
 
@@ -553,6 +554,7 @@ def post_render_video(payload: RenderVideoApiRequest):
             filter_settings=payload.filterSettings,
             voice_volume=payload.voiceVolume,
             music_volume=payload.musicVolume,
+            ducking_settings=payload.duckingSettings,
             fps=payload.fps,
         )
         return result

@@ -1,3 +1,4 @@
+import { alignAudioVisualCuts } from '../utils/cutSyncEngine';
 /**
  * frontend/src/features/workspace/hooks/useStudioPipeline.ts
  *
@@ -56,6 +57,7 @@ export interface VoiceStageResult {
   mimeType: string;
   voiceName: string;
   wordTimestamps: any[];
+  alignedStoryboard?: any[];
 }
 
 export interface MediaStageResult {
@@ -292,8 +294,27 @@ export function useStudioPipeline() {
           consoleLogger.warn('Studio', `[Pipeline] Stage 3 failed: ${mediaResult.reason}`);
         }
 
-        // ── Voice Audio is Master Clock: Proportional Scene Alignment to Exact Audio Duration ──
-        if (durationSeconds > 0 && resolvedStoryboard.length > 0) {
+        // ── Voice Audio Master Clock: Dynamic Acoustic Speech & Syllable Alignment ──
+        const voiceVal = voiceResult.status === 'fulfilled' ? voiceResult.value : null;
+        if (voiceVal?.alignedStoryboard && voiceVal.alignedStoryboard.length > 0) {
+          const alignedMap = new Map<number, any>();
+          for (const s of voiceVal.alignedStoryboard) {
+            alignedMap.set(s.sceneNumber, s);
+          }
+          resolvedStoryboard = resolvedStoryboard.map((s: any) => {
+            const aligned = alignedMap.get(s.sceneNumber);
+            if (aligned) {
+              return {
+                ...s,
+                start: aligned.start,
+                duration: aligned.duration,
+                words: aligned.words && aligned.words.length > 0 ? aligned.words : s.words,
+              };
+            }
+            return s;
+          });
+          consoleLogger.info('Studio', `[Pipeline] Locked ${resolvedStoryboard.length} scenes to acoustic speech audio pauses (duration: ${durationSeconds}s)`);
+        } else if (durationSeconds > 0 && resolvedStoryboard.length > 0) {
           const totalSbDuration = resolvedStoryboard.reduce(
             (sum, s) => sum + (Number(s.duration) || 3.0),
             0
@@ -330,6 +351,7 @@ export function useStudioPipeline() {
             subtitleText: s.subtitleText,
             start: s.start,
             duration: s.duration,
+            words: s.words,
             captionPresetClass: s.captionPresetClass || params.captionStylePreset,
             captionPresetColor: s.captionPresetColor || params.captionColor,
           }));
@@ -351,6 +373,28 @@ export function useStudioPipeline() {
           );
         } catch (captionErr) {
           consoleLogger.warn('Studio', `[Pipeline] Stage 4 failed: ${captionErr}`);
+        }
+
+        // ── AI Audio-Visual Cut Sync: Align Cuts to Voice Pauses & Music Beat ──
+        const bpm = scriptData.soundDesign?.bpm || 140;
+        const sfxDrops = (scriptData.soundDesign?.sfxEvents || [])
+          .map((e: any) => e.time)
+          .filter((t: any) => typeof t === 'number' && t > 0);
+        
+        try {
+          const cutSynced = alignAudioVisualCuts({
+            storyboard: resolvedStoryboard,
+            totalDuration: durationSeconds > 0 ? durationSeconds : 30,
+            bpm,
+            sfxDrops,
+          });
+          resolvedStoryboard = resolvedStoryboard.map((s: any, idx: number) => {
+            const synced = cutSynced[idx];
+            return synced ? { ...s, start: synced.start, duration: synced.duration } : s;
+          });
+          consoleLogger.success('Studio', `[Pipeline] AI Cut Sync applied to ${resolvedStoryboard.length} scenes (BPM=${bpm})`);
+        } catch (syncErr) {
+          consoleLogger.warn('Studio', `[Pipeline] Cut sync notice: ${syncErr}`);
         }
 
         // ── Populate Timeline ──────────────────────────────────────────────

@@ -3,7 +3,7 @@ import {
   Volume2, Mic, Music, Headphones, Sliders, Radio,
   Play, Square, Download, Zap, RefreshCw,
   VolumeX, Volume1, ArrowRight, BarChart2, Clock,
-  Scissors, Layers, SkipBack, SkipForward, Check,
+  Scissors, Layers, SkipBack, SkipForward, Check, Sparkles, Waves,
 } from 'lucide-react';
 import { VoiceProfile, MusicTrack } from '../../types';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -25,6 +25,8 @@ export interface AudioCompoundInspectorProps {
   playbackRate?: number;
   onPlaybackRateChange?: (rate: number) => void;
   duration?: number;
+  currentTime?: number;
+  script?: any;
 }
 
 const REVERB_PRESETS = [
@@ -73,6 +75,8 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   playbackRate = 1,
   onPlaybackRateChange,
   duration = 15,
+  currentTime = 0,
+  script,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'audio' | 'eq' | 'effects' | 'sfx' | 'time'>('audio');
 
@@ -81,6 +85,65 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [voicePitch, setVoicePitch] = useState(0); // -12 to +12 semitones
   const [speakingRate, setSpeakingRate] = useState(playbackRate || 1);
+  const [dynamicCadenceEnabled, setDynamicCadenceEnabled] = useState<boolean>(() => {
+    try {
+      const s = localStorage.getItem('apexmind:dynamic-voice-cadence');
+      return s !== null ? s === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleCadence = (enabled: boolean) => {
+    setDynamicCadenceEnabled(enabled);
+    try {
+      localStorage.setItem('apexmind:dynamic-voice-cadence', String(enabled));
+    } catch {}
+    window.dispatchEvent(new CustomEvent('workspace:dynamic-cadence-toggle', { detail: { enabled } }));
+  };
+
+  // Determine current active beat based on currentTime and storyboard scenes
+  const currentScene = (script?.storyboard || []).find(
+    (s: any) => currentTime >= s.start && currentTime < s.start + s.duration
+  );
+  const currentBeat: 'hook' | 'quote' | 'cta' | 'other' = (() => {
+    if (currentScene) {
+      const b = String(currentScene.beat || '').toLowerCase();
+      if (b === 'hook' || currentScene.sceneNumber === 1) return 'hook';
+      if (b === 'quote' || b === 'wisdom') return 'quote';
+      if (b === 'cta') return 'cta';
+      return 'other';
+    }
+    const totalD = duration > 0 ? duration : 15;
+    const pct = currentTime / totalD;
+    if (pct < 0.25) return 'hook';
+    if (pct < 0.75) return 'quote';
+    return 'cta';
+  })();
+
+  const handleAuditionModulation = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    
+    // 1. Hook (1.05x urgent)
+    const uttHook = new SpeechSynthesisUtterance('Stop waiting for motivation!');
+    uttHook.rate = 1.05;
+    uttHook.pitch = 1.0;
+    
+    // 2. Quote (0.90x slower, heavier)
+    const uttQuote = new SpeechSynthesisUtterance('Build your discipline in the quiet moments.');
+    uttQuote.rate = 0.90;
+    uttQuote.pitch = 0.95;
+
+    // 3. CTA (1.00x firm, decisive)
+    const uttCta = new SpeechSynthesisUtterance('Save this reel and start now.');
+    uttCta.rate = 1.00;
+    uttCta.pitch = 0.98;
+
+    window.speechSynthesis.speak(uttHook);
+    window.speechSynthesis.speak(uttQuote);
+    window.speechSynthesis.speak(uttCta);
+  };
 
   // Equalizer
   const [activeEQ, setActiveEQ] = useState('flat');
@@ -327,6 +390,127 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             ) : (
               <div className="flex flex-col gap-2" />
             )}
+
+            {/* ── AI VOICE TONE & EMOTION MODULATION ── */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-b from-[#1E1B33] to-[#141418] border border-purple-500/30 flex flex-col gap-3 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-28 h-28 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      AI Voice Tone & Emotion Modulation
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+                        Active
+                      </span>
+                    </h4>
+                    <p className="text-[10px] text-neutral-400">
+                      Dynamic cadence modulation across script story beats
+                    </p>
+                  </div>
+                </div>
+
+                {/* Modulation Toggle */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleCadence(!dynamicCadenceEnabled)}
+                  className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
+                    dynamicCadenceEnabled ? 'bg-purple-600 justify-end' : 'bg-neutral-800 justify-start'
+                  }`}
+                  title="Toggle dynamic voice cadence modulation"
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+
+              {/* 3 Story Beat Cadence Status Cards */}
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
+                {/* 1. Opening Hook */}
+                <div
+                  className={`p-2 rounded-lg border transition-all flex flex-col gap-1 ${
+                    currentBeat === 'hook'
+                      ? 'bg-amber-500/20 border-amber-500/60 shadow-sm'
+                      : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-mono uppercase text-amber-400 font-bold flex items-center gap-1">
+                      ⚡ Hook
+                    </span>
+                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">
+                      1.05x
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-neutral-300 font-medium leading-tight">
+                    Fast, urgent delivery
+                  </span>
+                  {currentBeat === 'hook' && (
+                    <span className="text-[8px] text-amber-400 font-mono animate-pulse font-semibold">● Active Beat</span>
+                  )}
+                </div>
+
+                {/* 2. Wisdom Quote */}
+                <div
+                  className={`p-2 rounded-lg border transition-all flex flex-col gap-1 ${
+                    currentBeat === 'quote'
+                      ? 'bg-blue-500/20 border-blue-500/60 shadow-sm'
+                      : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-mono uppercase text-blue-400 font-bold flex items-center gap-1">
+                      📜 Quote
+                    </span>
+                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">
+                      0.90x
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-neutral-300 font-medium leading-tight">
+                    Slower, heavier cadence
+                  </span>
+                  {currentBeat === 'quote' && (
+                    <span className="text-[8px] text-blue-400 font-mono animate-pulse font-semibold">● Active Beat</span>
+                  )}
+                </div>
+
+                {/* 3. Call to Action */}
+                <div
+                  className={`p-2 rounded-lg border transition-all flex flex-col gap-1 ${
+                    currentBeat === 'cta'
+                      ? 'bg-emerald-500/20 border-emerald-500/60 shadow-sm'
+                      : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-mono uppercase text-emerald-400 font-bold flex items-center gap-1">
+                      🎯 CTA
+                    </span>
+                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold">
+                      1.00x
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-neutral-300 font-medium leading-tight">
+                    Firm, decisive pace
+                  </span>
+                  {currentBeat === 'cta' && (
+                    <span className="text-[8px] text-emerald-400 font-mono animate-pulse font-semibold">● Active Beat</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Audition Modulation Button */}
+              <button
+                type="button"
+                onClick={handleAuditionModulation}
+                className="w-full py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Waves className="w-3 h-3 text-purple-400" />
+                Audition Tone & Cadence Demo
+              </button>
+            </div>
 
             {/* Speaking Rate / Speed Multiplier */}
             <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">

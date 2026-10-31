@@ -32,6 +32,8 @@ export interface TypographyPresetItem {
   fontFamily: string;
   animationType?: 'pop' | 'typewriter' | 'karaoke' | 'word-bounce' | 'glow-pulse' | 'slide-up';
   tags: string[];
+  aestheticBadges?: string[];
+  aestheticScore?: number;
 }
 
 export const TYPOGRAPHY_PRESETS: TypographyPresetItem[] = MASTER_TYPOGRAPHY_PRESETS;

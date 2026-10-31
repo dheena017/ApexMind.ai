@@ -328,8 +328,18 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
             </div>
 
             {/* Minimalist Floating Film Icon Badge */}
-            <div className="z-15 ml-5 flex items-center justify-center p-1 rounded-sm bg-black/60 border border-white/10 backdrop-blur-xs pointer-events-none select-none shadow-xs">
-              <Film className="w-2.5 h-2.5 text-amber-300" />
+            <div className="z-15 ml-5 flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-black/65 border border-white/10 backdrop-blur-xs pointer-events-none select-none shadow-xs">
+              <Film className="w-2.5 h-2.5 text-amber-300 shrink-0" />
+              {typeof clip.aestheticScore === 'number' && clip.aestheticScore > 0 && (
+                <span className="text-[8px] font-bold font-mono text-emerald-300">
+                  ★{Math.round(clip.aestheticScore)}
+                </span>
+              )}
+              {clip.aestheticBadges && clip.aestheticBadges.length > 0 && (
+                <span className="text-[7.5px] font-bold text-amber-300/90 hidden sm:inline">
+                  {clip.aestheticBadges[0]}
+                </span>
+              )}
             </div>
 
 {/* ── Right Trim Handle (Capsule handle with center notch when selected) ── */}

@@ -104,6 +104,9 @@ export interface StoryboardScene {
   fallbackQueries?: string[];
   negativeTerms?: string[];
   words?: WordTimestamp[];
+  speechRate?: number;
+  tone?: string;
+  emotion?: string;
 }
 
 export interface GeneratedScript {

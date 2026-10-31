@@ -798,6 +798,12 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
+  const handleAiCutSync = () => {
+    window.dispatchEvent(new CustomEvent('workspace:ai-cut-sync'));
+    toast.success('🎬 AI Cut Sync: Aligning scene cuts to voice pauses & music beat');
+    onClose();
+  };
+
   const handleAiSmartTransition = () => {
     window.dispatchEvent(
       new CustomEvent('workspace:ai-smart-transitions', {
@@ -1397,6 +1403,13 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               <div className="px-3 py-1.5 border-b border-white/10 text-[9px] font-mono text-neutral-400 uppercase tracking-wider font-bold">
                 AI Magic Tools
               </div>
+              {isVisualTrack && (
+                <ContextMenuItem
+                  icon={<Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+                  label="⚡ AI Audio-Visual Cut Sync"
+                  onClick={handleAiCutSync}
+                />
+              )}
               {isVisualTrack && (
                 <ContextMenuItem
                   icon={<Sparkles className="w-3.5 h-3.5 text-amber-400" />}

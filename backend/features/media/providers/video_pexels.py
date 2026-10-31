@@ -151,11 +151,15 @@ class PexelsVideoProvider(BaseMediaProvider):
                 v_link = matched_file["link"]
                 v_width = matched_file.get("width", 1080)
                 v_height = matched_file.get("height", 1920)
+                v_fps = matched_file.get("fps") or 0.0
+                raw_slug = (it.get("url") or "").rstrip("/").split("/")[-1].replace("-", " ")
+                clean_tags = it.get("tags") or [w for w in raw_slug.split() if not w.isdigit()]
+                video_title = raw_slug.title() if raw_slug and len(raw_slug) > 3 else (it.get("user", {}).get("name") or "Pexels Video")
                 videos.append(
                     MediaAsset(
                         id=f"pexels_vid_{it.get('id')}",
                         mediaType="video",
-                        title=it.get("user", {}).get("name", "Pexels Video"),
+                        title=video_title,
                         url=v_link,
                         previewUrl=it.get("image") or it.get("video_pictures", [{}])[0].get("picture") or "",
                         thumbnailUrl=it.get("image") or "",
@@ -166,6 +170,9 @@ class PexelsVideoProvider(BaseMediaProvider):
                         extraMetadata={
                             "author": it.get("user", {}).get("name"),
                             "sourceUrl": it.get("url"),
+                            "fps": float(v_fps),
+                            "tags": clean_tags,
+                            "slug": raw_slug,
                         },
                     )
                 )

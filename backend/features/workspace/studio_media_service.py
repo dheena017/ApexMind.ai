@@ -137,6 +137,9 @@ def run_studio_media(
                 "duration": getattr(m, "duration", None),
                 "provider": m.provider,
                 "license": getattr(m, "license", "CC0"),
+                "aestheticScore": getattr(m, "extraMetadata", {}).get("aestheticScore", 0.0),
+                "aestheticBadges": getattr(m, "extraMetadata", {}).get("aestheticBadges", []),
+                "positiveMatches": getattr(m, "extraMetadata", {}).get("positiveMatches", []),
             }
             resolved_count += 1
         else:

@@ -1,3 +1,4 @@
+import { alignAudioVisualCuts } from '../../utils/cutSyncEngine';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Type, Play, Pause, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
@@ -1115,6 +1116,8 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           animationOutDuration: scene.animationOutDuration || motionPattern.outDur,
           transition: isLastScene ? 'none' : (scene.transition || motionPattern.trans),
           transitionDuration: isLastScene ? 0.5 : (scene.transitionDuration || motionPattern.transDur),
+          aestheticScore: scene.aestheticScore || scene.media?.aestheticScore,
+          aestheticBadges: scene.aestheticBadges || scene.media?.aestheticBadges,
         });
 
         // Intelligently place purposeful SFX cues (opening whoosh, mid impact, climax drop)
@@ -2960,6 +2963,57 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     window.addEventListener('workspace:delete-clip', handleDeleteClipEvent);
     window.addEventListener('workspace:arrange-clip', handleArrangeClipEvent);
     window.addEventListener('workspace:zoom-to-clip', handleZoomToClipEvent);
+    const handleAiCutSync = () => {
+      const bpm = script?.soundDesign?.bpm || 140;
+      const targetDuration = (voiceClips && voiceClips[0]?.duration) || duration || totalDuration;
+      const sfxDrops = (script?.soundDesign?.sfxEvents || [])
+        .map((e: any) => e.time)
+        .filter((t: any) => typeof t === 'number' && t > 0);
+
+      // Apply to video clips
+      setVideoClips((prev) => {
+        if (!prev || prev.length <= 1) return prev;
+        const aligned = alignAudioVisualCuts({
+          storyboard: prev.map((c, i) => ({
+            sceneNumber: i + 1,
+            subtitleText: script?.storyboard?.[i]?.subtitleText || c.name,
+            beat: script?.storyboard?.[i]?.beat || 'scene',
+            mediaName: c.name,
+          })),
+          totalDuration: targetDuration,
+          bpm,
+          sfxDrops,
+        });
+        return prev.map((c, i) => {
+          const match = aligned[i];
+          return match ? { ...c, start: match.start, duration: match.duration } : c;
+        });
+      });
+
+      // Apply to image clips
+      setImageClips((prev) => {
+        if (!prev || prev.length <= 1) return prev;
+        const aligned = alignAudioVisualCuts({
+          storyboard: prev.map((c, i) => ({
+            sceneNumber: i + 1,
+            subtitleText: script?.storyboard?.[i]?.subtitleText || c.name,
+            beat: script?.storyboard?.[i]?.beat || 'scene',
+            mediaName: c.name,
+          })),
+          totalDuration: targetDuration,
+          bpm,
+          sfxDrops,
+        });
+        return prev.map((c, i) => {
+          const match = aligned[i];
+          return match ? { ...c, start: match.start, duration: match.duration } : c;
+        });
+      });
+
+      toast.success(`🎬 AI Cut Sync: Video cuts aligned to voice pauses & ${bpm} BPM music beat`);
+    };
+
+    window.addEventListener('workspace:ai-cut-sync', handleAiCutSync);
     window.addEventListener('workspace:toggle-track-visibility', handleToggleTrackVisibility);
 
     return () => {
@@ -2968,6 +3022,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       window.removeEventListener('workspace:delete-clip', handleDeleteClipEvent);
       window.removeEventListener('workspace:arrange-clip', handleArrangeClipEvent);
       window.removeEventListener('workspace:zoom-to-clip', handleZoomToClipEvent);
+      window.removeEventListener('workspace:ai-cut-sync', handleAiCutSync);
       window.removeEventListener('workspace:toggle-track-visibility', handleToggleTrackVisibility);
     };
   }, []);

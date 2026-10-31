@@ -181,11 +181,11 @@ def generate_script(
 def clear_memory(quote_id: Optional[str] = None) -> Dict[str, Any]:
     return remove_quote(quote_id)
 
-def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = None) -> Dict[str, Any]:
+def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = None, storyboard: list | None = None) -> Dict[str, Any]:
     if not voice_name or not str(voice_name).strip():
         raise ValueError("Voice name is required. Please select a workspace voice before generating audio.")
     logger.debug(f"Synthesizing voiceover audio for voice '{voice_name}' | Length: {len(text)} characters | Model: {model or 'gemini'}")
-    result = generate_gemini_voiceover(text=text, voice_name=voice_name, model=model)
+    result = generate_gemini_voiceover(text=text, voice_name=voice_name, model=model, storyboard=storyboard)
     dur_display = result.get("durationFormatted") or (f"{result['duration']}s" if result.get("duration") else "0s")
     logger.debug(f"Voiceover audio ready: voice '{voice_name}' | Duration: {dur_display}")
     try:

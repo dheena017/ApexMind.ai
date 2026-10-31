@@ -562,6 +562,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             filterSettings: filterSettings || undefined,
             voiceVolume: typeof volume === 'number' ? volume : 1.0,
             musicVolume: 0.65,
+            duckingSettings: (script as any).soundDesign?.ducking || { active: true, threshold: 0.045, ratio: 4.5, attackMs: 25, releaseMs: 320 },
             fps: 30,
           };
 
@@ -1814,12 +1815,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const useCaptionPreset = hasCaptionPreset && !captionStyle.overridePreset;
   const visibleSubtitle = currentSubtitle;
 
-  // Auto-synthesized karaoke words so ANY scene/quote gets animated rhythm
+  // Acoustic & syllable-aligned karaoke words for frame-accurate animated subtitle rhythm
   const effectiveWords = useMemo(() => {
     if (activeSubtitleObj?.words && activeSubtitleObj.words.length > 0) {
-      const wordsJoined = activeSubtitleObj.words.map((w) => w.word).join(' ').trim().toLowerCase();
-      const currentText = (activeSubtitleObj.text || '').trim().toLowerCase();
-      if (wordsJoined === currentText) {
+      const clean = (s: string) => s.replace(/[^\w\s]/g, '').trim().toLowerCase();
+      const wordsJoined = activeSubtitleObj.words.map((w) => w.word).join(' ');
+      const currentText = activeSubtitleObj.text || '';
+      if (clean(wordsJoined) === clean(currentText) || wordsJoined.trim() === currentText.trim()) {
         return activeSubtitleObj.words;
       }
     }
@@ -1828,13 +1830,42 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     if (tokens.length === 0) return [];
     const subStart = activeSubtitleObj?.start ?? (activeStoryboardScene?.start ?? 0);
     const subDur = Math.max(0.6, activeSubtitleObj?.duration ?? (activeStoryboardScene?.duration ?? 3));
-    const step = subDur / tokens.length;
-    return tokens.map((word, i) => ({
-      word,
-      start: subStart + i * step,
-      end: subStart + (i + 1) * step,
-      highlightColor: activeSubtitleObj?.color || activeCaptionPresetColor || captionStyle.color || '#FACC15',
-    }));
+
+    // Syllable-aware speech pacing model for natural word cadence
+    const estSyllables = (w: string) => {
+      const c = w.toLowerCase().replace(/[^a-z]/g, '');
+      if (!c) return 1;
+      if (c.length <= 3) return 1;
+      const vowels = c.match(/[aeiouy]+/g);
+      let count = vowels ? vowels.length : 1;
+      if (c.endsWith('e') && !c.endsWith('le') && count > 1) count--;
+      return Math.max(1, count);
+    };
+
+    const weights = tokens.map((w) => {
+      const syl = estSyllables(w);
+      const isFunc = /^(a|an|the|is|it|in|of|to|at|by|for|on|and|or|so|as|be|we|my|he|she)$/i.test(w.replace(/[^\w]/g, ''));
+      let wt = syl * 1.8;
+      if (isFunc) wt *= 0.62;
+      if (/[.!?]$/.test(w)) wt += 2.4;
+      else if (/[,;—:]$/.test(w)) wt += 1.2;
+      return Math.max(0.8, wt);
+    });
+    const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
+
+    let cur = subStart;
+    return tokens.map((word, i) => {
+      const wDur = (weights[i] / totalWeight) * subDur;
+      const wStart = cur;
+      const wEnd = i === tokens.length - 1 ? subStart + subDur : cur + wDur;
+      cur = wEnd;
+      return {
+        word,
+        start: parseFloat(wStart.toFixed(3)),
+        end: parseFloat(wEnd.toFixed(3)),
+        highlightColor: activeSubtitleObj?.color || activeCaptionPresetColor || captionStyle.color || '#FACC15',
+      };
+    });
   }, [activeSubtitleObj, activeStoryboardScene, visibleSubtitle, activeCaptionPresetColor, captionStyle.color]);
 
   const effectiveDuration = Math.max(1, Number.isFinite(playbackDuration) && (playbackDuration ?? 0) > 0 ? playbackDuration! : (Number.isFinite(duration) && duration > 0 ? duration : 30));

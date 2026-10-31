@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Set
 
 from .base import MediaAsset
+from .semantic_filter import evaluate_clip, filter_and_rank_candidates
 from .schemas import (
     SceneResolveItem,
     ResolvedSceneResult,
@@ -50,11 +51,11 @@ DISALLOWED_CLIPART = {
     "red button", "isolated green", "subscribe animation", "subscribe like"
 }
 
-def _is_valid_cand(cand, excluded_urls: Set[str]) -> bool:
+def _is_valid_cand(cand, excluded_urls: Set[str], target_query: str = "") -> bool:
     if not cand or not cand.url or cand.url in excluded_urls:
         return False
-    title = (cand.title or "").lower()
-    return not any(d in title for d in DISALLOWED_CLIPART)
+    eval_res = evaluate_clip(cand, target_query=target_query)
+    return eval_res.is_accepted
 
 def _resolve_single_scene_internal(
     item: SceneResolveItem,
@@ -90,104 +91,75 @@ def _resolve_single_scene_internal(
 
     if item.mediaType == "video":
         for q in all_queries:
-            # 1. Try Google CSE if configured
+            raw_cands: List[MediaAsset] = []
             if google_video.is_configured():
                 try:
-                    candidates = google_video.search(query=q, aspect_ratio=aspect_ratio, limit=5)
-                    for cand in candidates:
-                        if _is_valid_cand(cand, excluded_urls):
-                            return ResolvedSceneResult(
-                                sceneNumber=item.sceneNumber,
-                                status="resolved",
-                                media=cand,
-                            )
+                    raw_cands.extend(google_video.search(query=q, aspect_ratio=aspect_ratio, limit=4))
                 except Exception as e:
                     logger.debug(f"Google CSE error on scene {item.sceneNumber}: {e}")
 
-            # 2. Try Pexels
             if pexels_video.is_configured():
                 try:
-                    candidates = pexels_video.search(query=q, aspect_ratio=aspect_ratio, limit=6)
-                    for cand in candidates:
-                        if _is_valid_cand(cand, excluded_urls):
-                            return ResolvedSceneResult(
-                                sceneNumber=item.sceneNumber,
-                                status="resolved",
-                                media=cand,
-                            )
+                    raw_cands.extend(pexels_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
                 except Exception as e:
                     logger.debug(f"Pexels error on scene {item.sceneNumber}: {e}")
 
-            # 3. Try Pixabay
             if pixabay_video.is_configured():
                 try:
-                    candidates = pixabay_video.search(query=q, aspect_ratio=aspect_ratio, limit=6)
-                    for cand in candidates:
-                        if _is_valid_cand(cand, excluded_urls):
-                            return ResolvedSceneResult(
-                                sceneNumber=item.sceneNumber,
-                                status="resolved",
-                                media=cand,
-                            )
+                    raw_cands.extend(pixabay_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
                 except Exception as e:
                     logger.debug(f"Pixabay error on scene {item.sceneNumber}: {e}")
 
-            # 4. Try Wikimedia Commons (Keyless)
             try:
-                candidates = wikimedia_video.search(query=q, aspect_ratio=aspect_ratio, limit=6)
-                for cand in candidates:
-                        if _is_valid_cand(cand, excluded_urls):
-                            return ResolvedSceneResult(
-                            sceneNumber=item.sceneNumber,
-                            status="resolved",
-                            media=cand,
-                        )
+                raw_cands.extend(wikimedia_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
             except Exception as e:
                 logger.debug(f"Wikimedia error on scene {item.sceneNumber}: {e}")
+
+            # Semantic Negative Filtering & Aesthetic Prioritization
+            ranked_cands, _ = filter_and_rank_candidates(raw_cands, target_query=q)
+            for cand in ranked_cands:
+                if cand.url not in excluded_urls:
+                    logger.info(
+                        f"Scene {item.sceneNumber} picked '{cand.title[:35]}' | "
+                        f"Score: {cand.extraMetadata.get('aestheticScore')} | "
+                        f"Badges: {cand.extraMetadata.get('aestheticBadges')}"
+                    )
+                    return ResolvedSceneResult(
+                        sceneNumber=item.sceneNumber,
+                        status="resolved",
+                        media=cand,
+                    )
 
     else:
         # Image search
         for q in all_queries:
-            # 1. Try Unsplash if configured
+            raw_img_cands: List[MediaAsset] = []
             if unsplash_image.is_configured():
                 try:
-                    candidates = unsplash_image.search(query=q, aspect_ratio=aspect_ratio, limit=5)
-                    for cand in candidates:
-                        if _is_valid_cand(cand, excluded_urls):
-                            return ResolvedSceneResult(
-                                sceneNumber=item.sceneNumber,
-                                status="resolved",
-                                media=cand,
-                            )
+                    raw_img_cands.extend(unsplash_image.search(query=q, aspect_ratio=aspect_ratio, limit=5))
                 except Exception as e:
                     logger.debug(f"Unsplash error on scene {item.sceneNumber}: {e}")
 
-            # 2. Try Pixabay Photos (configured with user API key)
             if pixabay_video.is_configured():
                 try:
-                    candidates = pixabay_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6)
-                    for cand in candidates:
-                        if _is_valid_cand(cand, excluded_urls):
-                            return ResolvedSceneResult(
-                                sceneNumber=item.sceneNumber,
-                                status="resolved",
-                                media=cand,
-                            )
+                    raw_img_cands.extend(pixabay_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6))
                 except Exception as e:
                     logger.debug(f"Pixabay photo error on scene {item.sceneNumber}: {e}")
 
-            # 3. Try Wikimedia Commons Photos (keyless public domain fallback)
             try:
-                candidates = wikimedia_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6)
-                for cand in candidates:
-                        if _is_valid_cand(cand, excluded_urls):
-                            return ResolvedSceneResult(
-                            sceneNumber=item.sceneNumber,
-                            status="resolved",
-                            media=cand,
-                        )
+                raw_img_cands.extend(wikimedia_video.search(query=q, media_type="image", aspect_ratio=aspect_ratio, limit=6))
             except Exception as e:
                 logger.debug(f"Wikimedia photo error on scene {item.sceneNumber}: {e}")
+
+            # Semantic Negative Filtering & Aesthetic Prioritization
+            ranked_img_cands, _ = filter_and_rank_candidates(raw_img_cands, target_query=q)
+            for cand in ranked_img_cands:
+                if cand.url not in excluded_urls:
+                    return ResolvedSceneResult(
+                        sceneNumber=item.sceneNumber,
+                        status="resolved",
+                        media=cand,
+                    )
 
         # 5. Multimodal AI Visual Generation: If stock media is unavailable, generate bespoke AI scene visual
     try:
@@ -344,13 +316,16 @@ def search_media(
             seen.add(it.url)
             deduped.append(it)
 
+    # Apply Semantic Negative Filter & Aesthetic Prioritization
+    ranked_items, _ = filter_and_rank_candidates(deduped, target_query=query, min_score_threshold=35.0)
+
     return MediaSearchData(
         query=query,
         mediaType=media_type,
         provider=provider,
-        total=len(deduped),
+        total=len(ranked_items),
         page=page,
-        items=deduped[:limit],
+        items=ranked_items[:limit],
     )
 
 

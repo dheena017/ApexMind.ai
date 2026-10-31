@@ -87,6 +87,7 @@ class PixabayVideoProvider(BaseMediaProvider):
                             "sourceUrl": hit.get("pageURL"),
                             "views": hit.get("views"),
                             "likes": hit.get("likes"),
+                            "tags": [t.strip() for t in str(hit.get("tags", "")).split(",") if t.strip()],
                         },
                     )
                 )

@@ -223,6 +223,8 @@ export interface TimelineMediaClip {
   posterUrl?: string;
   thumbnailUrl?: string;
   colorLabel?: string;
+  aestheticScore?: number;
+  aestheticBadges?: string[];
   filterSettings?: {
     brightness?: number;
     contrast?: number;

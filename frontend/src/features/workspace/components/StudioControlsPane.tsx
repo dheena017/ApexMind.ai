@@ -95,6 +95,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   duration,
   timelineDuration,
   onDurationChange,
+  currentTime = 0,
   playbackRate = 1,
   onPlaybackRateChange,
   volume = 1,
@@ -391,6 +392,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             playbackRate={playbackRate}
             onPlaybackRateChange={onPlaybackRateChange}
             duration={effectiveDuration}
+            currentTime={currentTime}
+            script={script}
           />
         )}
       </div>

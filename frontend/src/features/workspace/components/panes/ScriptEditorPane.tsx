@@ -61,11 +61,11 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
     updateField(field, nextValue);
   };
 
-  const playTextPreview = (text: string) => {
+  const playTextPreview = (text: string, rate: number = 1.0) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
+    utterance.rate = rate;
     utterance.pitch = 0.95;
     window.speechSynthesis.speak(utterance);
   };
@@ -207,7 +207,10 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             {/* Hook Field */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <span className="text-amber-400 font-bold">HOOK (FIRST 3 SECONDS)</span>
+                <div className="flex items-center gap-1.5">
+                    <span className="text-amber-400 font-bold">HOOK (FIRST 3 SECONDS)</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold">⚡ 1.05x Urgent</span>
+                  </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -218,7 +221,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => playTextPreview(script.hook)}
+                    onClick={() => playTextPreview(script.hook, 1.05)}
                     className="p-1 rounded bg-[#2A2A32] text-zinc-300 hover:text-white"
                     title="Audition TTS"
                   >
@@ -284,10 +287,13 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             {/* Core Quote */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <span className="text-[#60A5FA] font-bold">CORE MESSAGE &amp; QUOTE</span>
+                <div className="flex items-center gap-1.5">
+                    <span className="text-[#60A5FA] font-bold">CORE MESSAGE &amp; QUOTE</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-mono font-bold">📜 0.90x Slower Cadence</span>
+                  </div>
                 <button
                   type="button"
-                  onClick={() => playTextPreview(script.quote)}
+                  onClick={() => playTextPreview(script.quote, 0.90)}
                   className="p-1 rounded bg-[#2A2A32] text-zinc-300 hover:text-white"
                   title="Audition TTS"
                 >
@@ -306,9 +312,20 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
 
             {/* Call To Action */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">
-                Call To Action (CTA)
-              </label>
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-emerald-400 font-bold">CALL TO ACTION (CTA)</span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">🎯 1.00x Firm Pace</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => playTextPreview(script.cta, 1.00)}
+                  className="p-1 rounded bg-[#2A2A32] text-zinc-300 hover:text-white"
+                  title="Audition TTS"
+                >
+                  <Volume2 className="w-3 h-3" />
+                </button>
+              </div>
               <input
                 type="text"
                 value={script.cta || ''}

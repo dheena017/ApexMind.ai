@@ -68,6 +68,14 @@ ASPECT_RATIO_DIMENSIONS: dict[str, tuple[int, int]] = {
 class GeminiImageProvider(BaseMediaProvider):
     """Generates bespoke scene visuals using Google Gemini Multimodal Image Generation."""
 
+    @property
+    def name(self) -> str:
+        return "gemini_image"
+
+    @property
+    def supported_types(self) -> List[str]:
+        return ["image"]
+
     def __init__(self):
         super().__init__()
         self.api_key = settings.GEMINI_API_KEY

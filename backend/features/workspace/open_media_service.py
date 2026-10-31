@@ -79,6 +79,9 @@ def search_open_videos(
             "aspectRatio": it.aspectRatio,
             "source": it.provider,
             "provider": it.provider,
+            "aestheticBadges": it.extraMetadata.get("aestheticBadges", []),
+            "aestheticScore": it.extraMetadata.get("aestheticScore", 0.0),
+            "tags": it.extraMetadata.get("tags", []),
         }
         for it in res.items
     ]

@@ -106,6 +106,9 @@ class StoryboardSceneItem(BaseModel):
     fallbackQueries: Optional[List[str]] = None
     negativeTerms: Optional[List[str]] = None
     words: Optional[List[WordTimestampItem]] = None
+    speechRate: Optional[float] = 1.0
+    tone: Optional[str] = None
+    emotion: Optional[str] = None
 
 class GeneratedScriptData(BaseModel):
     title: str
@@ -150,6 +153,9 @@ class VoiceoverResponse(BaseModel):
     mimeType: str
     audioBase64: Optional[str] = None
     audioUrl: Optional[str] = None
+    duration: Optional[float] = None
+    durationFormatted: Optional[str] = None
+    toneModulation: Optional[dict] = None
     message: Optional[str] = None
 
 class QuoteMemoryItem(BaseModel):
@@ -346,6 +352,7 @@ class StudioVoiceResponse(BaseModel):
     sampleRate: int = 24000
     channels: int = 1
     wordTimestamps: List[StudioWordTimestamp] = []
+    toneModulation: Optional[dict] = None
     message: Optional[str] = None
     generatedAt: str = ""
 
@@ -451,6 +458,7 @@ class StudioCaptionSceneInput(BaseModel):
     duration: float = 3.0
     captionPresetClass: Optional[str] = None
     captionPresetColor: Optional[str] = None
+    words: Optional[List[Dict[str, Any]]] = None
 
 
 class StudioCaptionsRequest(BaseModel):

@@ -573,14 +573,69 @@ export default function WorkspacePage({
     };
   }, [duration, isExporting, isLooping, timelineDuration]);
 
+  // Dynamic AI Voice Tone & Emotion Cadence Modulation
+  const [dynamicCadenceEnabled, setDynamicCadenceEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('apexmind:dynamic-voice-cadence');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const getDynamicCadenceMultiplier = useCallback((time: number): number => {
+    if (!dynamicCadenceEnabled) return 1.0;
+    if (script.storyboard && script.storyboard.length > 0) {
+      const scene = script.storyboard.find(
+        (s) => time >= s.start && time < s.start + s.duration
+      );
+      if (scene) {
+        if (typeof scene.speechRate === 'number' && scene.speechRate > 0) {
+          return scene.speechRate;
+        }
+        const b = String(scene.beat || '').toLowerCase();
+        if (b === 'hook' || scene.sceneNumber === 1) return 1.05;
+        if (b === 'quote' || b === 'wisdom') return 0.90;
+        if (b === 'cta') return 1.00;
+      }
+    }
+    const totalD = duration > 0 ? duration : timelineDuration;
+    if (totalD > 0) {
+      const pct = time / totalD;
+      if (pct < 0.20) return 1.05;
+      if (pct >= 0.20 && pct < 0.80) return 0.90;
+      return 1.00;
+    }
+    return 1.0;
+  }, [dynamicCadenceEnabled, duration, script.storyboard, timelineDuration]);
+
+  useEffect(() => {
+    const handleCadenceToggle = (e: Event) => {
+      const detail = (e as CustomEvent<{ enabled: boolean }>).detail;
+      if (detail && typeof detail.enabled === 'boolean') {
+        setDynamicCadenceEnabled(detail.enabled);
+        try {
+          localStorage.setItem('apexmind:dynamic-voice-cadence', String(detail.enabled));
+        } catch {}
+      }
+    };
+    window.addEventListener('workspace:dynamic-cadence-toggle', handleCadenceToggle);
+    return () => window.removeEventListener('workspace:dynamic-cadence-toggle', handleCadenceToggle);
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.muted = isMuted;
     audio.volume = volume;
-    audio.playbackRate = playbackRate;
     audio.loop = isLooping;
-  }, [isLooping, isMuted, playbackRate, volume]);
+
+    const mult = getDynamicCadenceMultiplier(currentTime);
+    const targetRate = Math.max(0.5, Math.min(2.0, playbackRate * mult));
+    if (Math.abs(audio.playbackRate - targetRate) > 0.01) {
+      audio.playbackRate = targetRate;
+    }
+  }, [currentTime, getDynamicCadenceMultiplier, isLooping, isMuted, playbackRate, volume]);
 
   const getActiveCreativeBrief = () => {
     const selectedTrack = musicTracks.find((track) => track.id === selectedMusic);
@@ -797,7 +852,8 @@ export default function WorkspacePage({
     let animId: number;
 
     const tick = (now: number) => {
-      const deltaSec = ((now - lastTs) / 1000) * playbackRate;
+      const mult = getDynamicCadenceMultiplier(currentTime);
+      const deltaSec = ((now - lastTs) / 1000) * (playbackRate * mult);
       lastTs = now;
 
       const audio = audioRef.current;

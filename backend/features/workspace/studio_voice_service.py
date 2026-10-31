@@ -76,31 +76,70 @@ def run_studio_voice(
         text=narration,
         voice_name=voice_name,
         model=model,
+        storyboard=storyboard,
     )
 
-    # Enrich with stage metadata
-    duration = result.get("duration") or result.get("durationSeconds") or 0.0
-    word_timestamps = result.get("wordTimestamps") or result.get("words") or []
+    # Enrich with stage metadata and dynamic audio alignment
+    import base64
+    from .audio_aligner import align_storyboard_to_audio
+
+    duration = float(result.get("duration") or result.get("durationSeconds") or 0.0)
+    mime_type = result.get("mimeType", "audio/wav")
+
+    raw_audio_bytes = None
+    audio_b64 = result.get("audioBase64")
+    if audio_b64:
+        try:
+            raw_audio_bytes = base64.b64decode(audio_b64)
+        except Exception as b64_err:
+            logger.debug(f"[Studio/Voice] Could not decode base64 audio for energy alignment: {b64_err}")
+
+    aligned_storyboard = storyboard or []
+    word_timestamps: List[Dict[str, Any]] = []
+
+    if storyboard and duration > 0:
+        try:
+            # Convert storyboard items to plain dicts if they are pydantic models
+            raw_sb_dicts = [s if isinstance(s, dict) else s.model_dump() for s in storyboard]
+            sfx_drops = [float(s["start"]) for s in raw_sb_dicts if s.get("sfxUrl") and isinstance(s.get("start"), (int, float)) and s.get("start") > 0]
+            aligned_storyboard, word_timestamps = align_storyboard_to_audio(
+                storyboard=raw_sb_dicts,
+                audio_bytes=raw_audio_bytes,
+                mime_type=mime_type,
+                total_duration_seconds=duration,
+                bpm=140.0,
+                sfx_drops=sfx_drops,
+            )
+            logger.info(
+                f"[Studio/Voice] High-precision alignment complete: {len(aligned_storyboard)} scenes, "
+                f"{len(word_timestamps)} words aligned to audio duration {duration:.2f}s"
+            )
+        except Exception as align_err:
+            logger.warning(f"[Studio/Voice] Alignment fallback notice: {align_err}")
+            word_timestamps = result.get("wordTimestamps") or result.get("words") or []
+    else:
+        word_timestamps = result.get("wordTimestamps") or result.get("words") or []
 
     raw_url = result.get("audioUrl", "") or ""
     display_url = (raw_url[:35] + "... [base64 audio]") if raw_url.startswith("data:") else raw_url
     logger.info(
         f"[Studio/Voice] Stage 2 complete | voice='{voice_name}' "
-        f"duration={duration}s audioUrl={display_url}"
+        f"duration={duration:.2f}s audioUrl={display_url}"
     )
 
     return {
         "success": True,
         "stageId": "voice",
         "voiceName": voice_name,
-        "mimeType": result.get("mimeType", "audio/wav"),
+        "mimeType": mime_type,
         "audioUrl": result.get("audioUrl", ""),
         "audioBase64": result.get("audioBase64"),
         "durationSeconds": float(duration),
         "sampleRate": result.get("sampleRate", 24000),
         "channels": result.get("channels", 1),
         "wordTimestamps": word_timestamps,
-        "message": result.get("message", "Voiceover synthesized successfully"),
+        "alignedStoryboard": aligned_storyboard,
+        "message": result.get("message", "Voiceover synthesized and aligned successfully"),
         "generatedAt": datetime.now(timezone.utc).isoformat(),
     }
 
