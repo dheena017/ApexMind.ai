@@ -430,6 +430,38 @@ export const workspaceApi = {
     return { success: false };
   },
 
+  // Generate bespoke scene visual using Gemini Multimodal AI
+  async generateAiImage(params: {
+    prompt: string;
+    aspectRatio?: string;
+    style?: string;
+    sceneNumber?: number;
+  }): Promise<any> {
+    const start = performance.now();
+    try {
+      const res = await fetch(apiUrl('/api/media/generate-image'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: params.prompt,
+          aspectRatio: params.aspectRatio || '9:16',
+          style: params.style || 'cinematic',
+          sceneNumber: params.sceneNumber,
+        }),
+      });
+      const duration = performance.now() - start;
+      consoleLogger.api('POST', '/api/media/generate-image', res.status, duration);
+      if (res.ok) {
+        return await res.json();
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to generate visual with AI');
+    } catch (e: any) {
+      consoleLogger.error('MediaEngine', `AI image generation error: ${e.message || e}`);
+      throw e;
+    }
+  },
+
   // Generate Closed Captions (word-level karaoke timings, SRT, WebVTT)
   async generateCaptions(params: {
     text: string;
@@ -459,6 +491,5 @@ export const workspaceApi = {
     }
     return { success: false };
   },
+
 };
-
-

@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 import {
   Copy,
   Scissors,
@@ -13,7 +14,6 @@ import {
   Tag,
   ZoomIn,
   AlignLeft,
-  Pencil,
   ChevronRight,
   Maximize2,
   RotateCcw,
@@ -59,6 +59,7 @@ export interface TimelineClipContextMenuProps {
   y: number;
   trackType: ContextMenuTrackType;
   isVisible: boolean;
+  clipId?: string;
   isMuted?: boolean;
   isLocked?: boolean;
   isHidden?: boolean;
@@ -159,6 +160,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
   y,
   trackType,
   isVisible,
+  clipId,
   isMuted = false,
   isLocked = false,
   isHidden = false,
@@ -216,14 +218,6 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
   const [activeSubmenu, setActiveSubmenu] = useState<SubmenuType>(null);
   const [submenuPos, setSubmenuPos] = useState<{ x: number; y: number } | null>(null);
   const submenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 1800);
-  };
 
   // Measure synchronously before browser paint to guarantee 100% viewport fit
   const [adjustedPos, setAdjustedPos] = useState(() => {
@@ -248,18 +242,13 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     let ny = y;
     let flippedUp = false;
 
-    // Flip upwards if extending below viewport boundary
     if (y + height > vh - 12) {
-      if (y - height >= 12) {
-        ny = y - height;
-        flippedUp = true;
-      } else {
-        ny = Math.max(12, vh - height - 12);
-        flippedUp = ny < y;
-      }
+      ny = Math.max(12, y - height);
+      flippedUp = true;
+    } else {
+      ny = Math.max(12, y);
     }
 
-    // Keep within horizontal boundaries
     if (x + width > vw - 12) {
       nx = Math.max(12, vw - width - 12);
     } else {
@@ -334,7 +323,6 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
 
     return () => {
       if (submenuTimeoutRef.current) clearTimeout(submenuTimeoutRef.current);
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
       document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('keydown', handleKey);
       window.removeEventListener('resize', onClose);
@@ -402,36 +390,85 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  // Clipboard & default handlers
+  // ── Clipboard & Core Edit Handlers ──
   const handleCopy = () => {
     if (onCopy) {
       onCopy();
     } else {
+      const clipData = {
+        track: trackType,
+        clipId,
+        clipName,
+        startTime,
+        duration,
+        speed: currentSpeed,
+      };
+      try {
+        localStorage.setItem('apexmind_clip_clipboard', JSON.stringify(clipData));
+      } catch {}
       const summary = `[${trackLabel[trackType]}] ${clipName || ''} | Start: ${(startTime ?? 0).toFixed(2)}s | Dur: ${(duration ?? 0).toFixed(2)}s`;
       navigator.clipboard?.writeText(summary).catch(() => {});
-      showToast('Copied clip summary');
     }
+    toast.success('Copied clip to clipboard');
     onClose();
   };
 
   const handleCut = () => {
+    handleCopy();
     if (onCut) {
       onCut();
+    } else if (onDelete) {
+      onDelete();
     } else {
-      handleCopy();
-      onDelete?.();
+      window.dispatchEvent(
+        new CustomEvent('workspace:delete-clip', {
+          detail: { track: trackType, clipId },
+        })
+      );
     }
+    toast.success('Cut clip to clipboard');
     onClose();
   };
 
-  const handleCopyTimings = () => {
-    if (onCopyTimings) {
-      onCopyTimings();
+  const handleDuplicate = () => {
+    if (onDuplicate) {
+      onDuplicate();
     } else {
-      const text = `Start: ${(startTime ?? 0).toFixed(2)}s | Duration: ${(duration ?? 0).toFixed(2)}s | End: {((startTime ?? 0) + (duration ?? 0)).toFixed(2)}s`;
-      navigator.clipboard?.writeText(text).catch(() => {});
-      showToast('Timings copied');
+      window.dispatchEvent(
+        new CustomEvent('workspace:duplicate-clip', {
+          detail: { track: trackType, clipId },
+        })
+      );
     }
+    toast.success('Duplicated clip');
+    onClose();
+  };
+
+  const handleSplit = () => {
+    if (onSplit) {
+      onSplit();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:split-clip', {
+          detail: { track: trackType, clipId },
+        })
+      );
+    }
+    toast.success('Split clip at playhead');
+    onClose();
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:delete-clip', {
+          detail: { track: trackType, clipId },
+        })
+      );
+    }
+    toast.success('Deleted clip');
     onClose();
   };
 
@@ -439,8 +476,429 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     if (onRippleDelete) {
       onRippleDelete();
     } else {
-      onDelete?.();
+      handleDelete();
     }
+  };
+
+  // ── Visual Transform Handlers ──
+  const handleScaleToFit = () => {
+    if (onScaleToFit) {
+      onScaleToFit();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:backdrop-transform', {
+          detail: { fitMode: 'fit', scale: 1, posX: 0, posY: 0 },
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, transform: { fitMode: 'fit', scale: 1, x: 0, y: 0 } },
+        })
+      );
+    }
+    toast.success('Fitted to screen');
+    onClose();
+  };
+
+  const handleScaleToFill = () => {
+    if (onScaleToFill) {
+      onScaleToFill();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:backdrop-transform', {
+          detail: { fitMode: 'fill', scale: 1.25 },
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, transform: { fitMode: 'fill', scale: 1.25 } },
+        })
+      );
+    }
+    toast.success('Filled screen (crop)');
+    onClose();
+  };
+
+  const handleFlipHorizontal = () => {
+    if (onFlipHorizontal) {
+      onFlipHorizontal();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:backdrop-transform', {
+          detail: { flipH: true },
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, transform: { flipH: true } },
+        })
+      );
+    }
+    toast.success('Flipped horizontally');
+    onClose();
+  };
+
+  const handleFlipVertical = () => {
+    if (onFlipVertical) {
+      onFlipVertical();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:backdrop-transform', {
+          detail: { flipV: true },
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, transform: { flipV: true } },
+        })
+      );
+    }
+    toast.success('Flipped vertically');
+    onClose();
+  };
+
+  const handleResetTransform = () => {
+    if (onResetTransform) {
+      onResetTransform();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:backdrop-transform', {
+          detail: { fitMode: 'contain', scale: 1, posX: 0, posY: 0, rotation: 0, flipH: false, flipV: false },
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: {
+            track: trackType,
+            clipId,
+            transform: { fitMode: 'contain', scale: 1, x: 0, y: 0, rotation: 0, flipH: false, flipV: false },
+          },
+        })
+      );
+    }
+    toast.success('Reset transform');
+    onClose();
+  };
+
+  // ── Speed & Retime Handlers ──
+  const handleSetSpeed = (s: number) => {
+    if (onSetSpeed) {
+      onSetSpeed(s);
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:playback-rate-change', {
+          detail: { speed: s, clipId },
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, speed: s },
+        })
+      );
+    }
+    toast.success(`Speed set to ${s}x`);
+    onClose();
+  };
+
+  const handleReverse = () => {
+    if (onReverse) {
+      onReverse();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, reversed: true },
+        })
+      );
+    }
+    toast.success('Reversed clip playback');
+    onClose();
+  };
+
+  const handleFreezeFrame = () => {
+    if (onFreezeFrame) {
+      onFreezeFrame();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:freeze-frame', {
+          detail: { clipId, startTime },
+        })
+      );
+    }
+    toast.success('Freeze frame created at playhead');
+    onClose();
+  };
+
+  // ── Audio Enhancements Handlers ──
+  const handleAudioGain = () => {
+    if (onAudioGain) {
+      onAudioGain();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:select-compound', {
+          detail: { compound: 'voice', openInspector: true, clipId },
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('workspace:open-inspector-tab', {
+          detail: { tab: 'audio' },
+        })
+      );
+    }
+    toast.success('Opened Audio Gain Inspector');
+    onClose();
+  };
+
+  const handleFadeIn = () => {
+    if (onFadeIn) {
+      onFadeIn();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, audioFadeIn: 1.0 },
+        })
+      );
+    }
+    toast.success('Applied 1.0s Audio Fade In');
+    onClose();
+  };
+
+  const handleFadeOut = () => {
+    if (onFadeOut) {
+      onFadeOut();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, audioFadeOut: 1.0 },
+        })
+      );
+    }
+    toast.success('Applied 1.0s Audio Fade Out');
+    onClose();
+  };
+
+  const handleNormalizeAudio = () => {
+    if (onNormalizeAudio) {
+      onNormalizeAudio();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, normalizeAudio: true, volume: 90 },
+        })
+      );
+    }
+    toast.success('Normalized audio loudness to -14 LUFS');
+    onClose();
+  };
+
+  const handleNoiseReduction = () => {
+    if (onNoiseReduction) {
+      onNoiseReduction();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, denoise: true },
+        })
+      );
+    }
+    toast.success('Applied Voice Clarity & Denoise');
+    onClose();
+  };
+
+  const handleDetach = () => {
+    if (onDetach) {
+      onDetach();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:detach-audio', {
+          detail: { clipId, startTime, duration },
+        })
+      );
+    }
+    toast.success('Detached audio to separate track');
+    onClose();
+  };
+
+  // ── Arrange & Layer Handlers ──
+  const handleMoveUp = () => {
+    if (onMoveLaneUp) {
+      onMoveLaneUp();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:arrange-clip', {
+          detail: { track: trackType, clipId, direction: 'up' },
+        })
+      );
+    }
+    toast.success('Moved layer up');
+    onClose();
+  };
+
+  const handleMoveDown = () => {
+    if (onMoveLaneDown) {
+      onMoveLaneDown();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:arrange-clip', {
+          detail: { track: trackType, clipId, direction: 'down' },
+        })
+      );
+    }
+    toast.success('Moved layer down');
+    onClose();
+  };
+
+  const handleBringToFront = () => {
+    if (onBringToFront) {
+      onBringToFront();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:arrange-clip', {
+          detail: { track: trackType, clipId, direction: 'front' },
+        })
+      );
+    }
+    toast.success('Brought clip to front');
+    onClose();
+  };
+
+  const handleSendToBack = () => {
+    if (onSendToBack) {
+      onSendToBack();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:arrange-clip', {
+          detail: { track: trackType, clipId, direction: 'back' },
+        })
+      );
+    }
+    toast.success('Sent clip to back');
+    onClose();
+  };
+
+  // ── AI Magic Tools Handlers ──
+  const handleAiAutoAnimate = () => {
+    window.dispatchEvent(
+      new CustomEvent('workspace:preview-clip-animation', {
+        detail: { type: 'zoom-in', direction: 'in', duration: 0.5 },
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent('workspace:update-clip-props', {
+        detail: {
+          track: trackType === 'image' ? 'image' : 'video',
+          clipId,
+          animationIn: 'zoom-in',
+          animationInDuration: 0.5,
+          animationOut: 'slide-fade',
+          animationOutDuration: 0.4,
+        },
+      })
+    );
+    toast.success('✨ AI Auto-Animate: Motion choreography applied');
+    onClose();
+  };
+
+  const handleAiSmartTransition = () => {
+    window.dispatchEvent(
+      new CustomEvent('workspace:ai-smart-transitions', {
+        detail: { mood: 'viral', track: trackType === 'image' ? 'image' : 'video' },
+      })
+    );
+    toast.success('✨ AI Smart Transitions: Matched dynamic cut');
+    onClose();
+  };
+
+  const handleAiEnhance = () => {
+    if (onAiEnhance) {
+      onAiEnhance();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:ai-enhance', {
+          detail: { track: trackType, clipId },
+        })
+      );
+    }
+    toast.success('✨ AI Upscale & Enhance: 4K detail synthesis queued');
+    onClose();
+  };
+
+  const handleGenerateCaptions = () => {
+    if (onGenerateCaptions) {
+      onGenerateCaptions();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:select-compound', {
+          detail: { compound: 'text', openInspector: true },
+        })
+      );
+    }
+    toast.success('Opened Subtitle & Kinetic Caption Studio');
+    onClose();
+  };
+
+  // ── View, Metadata & Properties Handlers ──
+  const handleColorLabel = (color: string) => {
+    if (onColorLabel) {
+      onColorLabel(color);
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:update-clip-properties', {
+          detail: { track: trackType, clipId, colorLabel: color },
+        })
+      );
+    }
+    toast.success(color ? 'Color label updated' : 'Cleared color label');
+    onClose();
+  };
+
+  const handleZoomToFit = () => {
+    if (onZoomToClip) {
+      onZoomToClip();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('workspace:zoom-to-clip', {
+          detail: { startTime, duration },
+        })
+      );
+    }
+    toast.success('Zoomed timeline to fit clip');
+    onClose();
+  };
+
+  const handleCopyTimings = () => {
+    if (onCopyTimings) {
+      onCopyTimings();
+    } else {
+      const text = `Start: ${(startTime ?? 0).toFixed(2)}s | Duration: ${(duration ?? 0).toFixed(2)}s | End: ${((startTime ?? 0) + (duration ?? 0)).toFixed(2)}s`;
+      navigator.clipboard?.writeText(text).catch(() => {});
+    }
+    toast.success('Copied clip timings');
+    onClose();
+  };
+
+  const handleOpenProperties = () => {
+    if (onProperties) {
+      onProperties();
+    } else {
+      const compound = isVisualTrack
+        ? (isVideoTrack ? 'video' : 'image')
+        : (isAudioTrack ? 'voice' : 'text');
+      window.dispatchEvent(
+        new CustomEvent('workspace:select-compound', {
+          detail: {
+            compound,
+            openInspector: true,
+            selectedClip: { track: trackType, clipId },
+          },
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('workspace:open-inspector-tab', {
+          detail: { tab: 'transform' },
+        })
+      );
+    }
+    toast.success('Opened Clip Properties Inspector');
     onClose();
   };
 
@@ -472,31 +930,22 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           </span>
         </div>
         {duration !== undefined && (
-          <span className="text-[9px] font-mono text-neutral-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded shrink-0 tabular-nums">
-            {duration.toFixed(1)}s
+          <span className="text-[10px] font-mono text-neutral-400 bg-white/5 px-1.5 py-0.5 rounded shrink-0">
+            {formatSeconds(duration)}
           </span>
         )}
       </div>
 
-      {/* Optional Clip Name Banner */}
+      {/* Clip Name Subtitle */}
       {clipName && (
-        <div className="px-3 py-1 bg-white/[0.03] border-b border-white/[0.05] text-[10px] text-neutral-400 truncate select-none">
+        <div className="px-3 py-1 bg-white/[0.02] border-b border-white/[0.06] text-[10px] text-neutral-400 truncate font-sans">
           {clipName}
         </div>
       )}
 
-      {/* Menu Items Container */}
-      <div className="py-1 flex flex-col">
-        {/* ── Primary Edit Actions ── */}
-        {onRename && (
-          <ContextMenuItem
-            icon={<Pencil className="w-3.5 h-3.5" />}
-            label="Rename Clip"
-            shortcut="F2"
-            onClick={() => handleAction(onRename)}
-          />
-        )}
-
+      {/* Menu Actions */}
+      <div className="p-1 space-y-0.5">
+        {/* Primary Clipboard Operations */}
         <ContextMenuItem
           icon={<Scissors className="w-3.5 h-3.5" />}
           label="Cut Clip"
@@ -520,24 +969,19 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {onDuplicate && (
-          <ContextMenuItem
-            icon={<Copy className="w-3.5 h-3.5 text-amber-400/90" />}
-            label="Duplicate Clip"
-            shortcut="Ctrl+D"
-            onClick={() => handleAction(onDuplicate)}
-          />
-        )}
+        <ContextMenuItem
+          icon={<Copy className="w-3.5 h-3.5 text-amber-400/90" />}
+          label="Duplicate Clip"
+          shortcut="Ctrl+D"
+          onClick={handleDuplicate}
+        />
 
-        {/* ── Precision Trimming & Snapping ── */}
-        {onSplit && (
-          <ContextMenuItem
-            icon={<Split className="w-3.5 h-3.5 text-sky-400/90" />}
-            label="Split at Playhead"
-            shortcut="Ctrl+B"
-            onClick={() => handleAction(onSplit)}
-          />
-        )}
+        <ContextMenuItem
+          icon={<Split className="w-3.5 h-3.5 text-sky-400/90" />}
+          label="Split at Playhead"
+          shortcut="Ctrl+B"
+          onClick={handleSplit}
+        />
 
         {onTrimStartToPlayhead && (
           <ContextMenuItem
@@ -636,14 +1080,12 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         <div className="my-1 border-t border-white/[0.08]" />
 
         {/* ── View & Timings ── */}
-        {onZoomToClip && (
-          <ContextMenuItem
-            icon={<ZoomIn className="w-3.5 h-3.5" />}
-            label="Zoom to Fit Clip"
-            shortcut="Shift+Z"
-            onClick={() => handleAction(onZoomToClip)}
-          />
-        )}
+        <ContextMenuItem
+          icon={<ZoomIn className="w-3.5 h-3.5" />}
+          label="Zoom to Fit Clip"
+          shortcut="Shift+Z"
+          onClick={handleZoomToFit}
+        />
 
         <ContextMenuItem
           icon={<AlignLeft className="w-3.5 h-3.5" />}
@@ -660,6 +1102,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           isActive={activeSubmenu === 'properties'}
           onMouseEnter={(el) => openSubmenu('properties', el)}
           onMouseLeave={handleSubmenuTriggerLeave}
+          onClick={handleOpenProperties}
         />
 
         <div className="my-1 border-t border-white/[0.08]" />
@@ -674,19 +1117,41 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {onHide && !isAudioTrack && (
+        {!isAudioTrack && (
           <ContextMenuItem
             icon={isHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
             label={isHidden ? 'Show Track' : 'Hide Track'}
-            onClick={() => handleAction(onHide)}
+            onClick={() => {
+              if (onHide) {
+                handleAction(onHide);
+              } else {
+                window.dispatchEvent(
+                  new CustomEvent('workspace:toggle-track-visibility', {
+                    detail: { track: trackType },
+                  })
+                );
+                onClose();
+              }
+            }}
           />
         )}
 
-        {onMute && isAudioTrack && (
+        {isAudioTrack && (
           <ContextMenuItem
             icon={isMuted ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
             label={isMuted ? 'Unmute Track' : 'Mute Track'}
-            onClick={() => handleAction(onMute)}
+            onClick={() => {
+              if (onMute) {
+                handleAction(onMute);
+              } else {
+                window.dispatchEvent(
+                  new CustomEvent('workspace:toggle-track-visibility', {
+                    detail: { track: trackType },
+                  })
+                );
+                onClose();
+              }
+            }}
           />
         )}
 
@@ -699,7 +1164,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         )}
 
         {/* ── Danger Zone Separator ── */}
-        {(onRippleDelete || onDelete) && <div className="my-1 border-t border-white/[0.08]" />}
+        <div className="my-1 border-t border-white/[0.08]" />
 
         {onRippleDelete && (
           <ContextMenuItem
@@ -711,24 +1176,14 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {onDelete && (
-          <ContextMenuItem
-            icon={<Trash2 className="w-3.5 h-3.5" />}
-            label="Delete Clip"
-            shortcut="Del"
-            danger
-            onClick={() => handleAction(onDelete)}
-          />
-        )}
+        <ContextMenuItem
+          icon={<Trash2 className="w-3.5 h-3.5" />}
+          label="Delete Clip"
+          shortcut="Del"
+          danger
+          onClick={handleDelete}
+        />
       </div>
-
-      {/* Floating Toast inside Context Menu */}
-      {toastMessage && (
-        <div className="px-3 py-1.5 bg-emerald-500/20 border-t border-emerald-500/30 text-[10px] text-emerald-300 flex items-center justify-center gap-1.5 rounded-b-[11px] animate-fade-in font-medium">
-          <Check className="w-3 h-3 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* ── Portaled Flyout Submenus ── */}
       {activeSubmenu && submenuPos && (
@@ -755,20 +1210,14 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
                     title={c.name}
                     className="w-7 h-7 rounded-lg border border-white/20 hover:border-white hover:scale-110 active:scale-95 transition-all shadow-sm cursor-pointer"
                     style={{ background: c.value }}
-                    onClick={() => {
-                      onColorLabel?.(c.value);
-                      handleAction();
-                    }}
+                    onClick={() => handleColorLabel(c.value)}
                   />
                 ))}
                 <button
                   type="button"
                   title="Clear label"
                   className="w-7 h-7 rounded-lg border border-neutral-700 hover:border-neutral-400 bg-white/5 hover:bg-white/10 transition-all text-neutral-400 hover:text-white text-xs flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95"
-                  onClick={() => {
-                    onColorLabel?.('');
-                    handleAction();
-                  }}
+                  onClick={() => handleColorLabel('')}
                 >
                   ✕
                 </button>
@@ -785,22 +1234,22 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               <ContextMenuItem
                 icon={<Maximize2 className="w-3.5 h-3.5" />}
                 label="Fit to Screen"
-                onClick={() => handleAction(onScaleToFit)}
+                onClick={handleScaleToFit}
               />
               <ContextMenuItem
                 icon={<Crop className="w-3.5 h-3.5" />}
                 label="Fill Screen (Crop)"
-                onClick={() => handleAction(onScaleToFill)}
+                onClick={handleScaleToFill}
               />
               <ContextMenuItem
                 icon={<FlipHorizontal className="w-3.5 h-3.5" />}
                 label="Flip Horizontal"
-                onClick={() => handleAction(onFlipHorizontal)}
+                onClick={handleFlipHorizontal}
               />
               <ContextMenuItem
                 icon={<FlipVertical className="w-3.5 h-3.5" />}
                 label="Flip Vertical"
-                onClick={() => handleAction(onFlipVertical)}
+                onClick={handleFlipVertical}
               />
               {onCrop && (
                 <ContextMenuItem
@@ -813,7 +1262,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               <ContextMenuItem
                 icon={<RotateCcw className="w-3.5 h-3.5 text-amber-400" />}
                 label="Reset Transform"
-                onClick={() => handleAction(onResetTransform)}
+                onClick={handleResetTransform}
               />
             </div>
           )}
@@ -831,10 +1280,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
                     <button
                       key={s}
                       type="button"
-                      onClick={() => {
-                        onSetSpeed?.(s);
-                        handleAction();
-                      }}
+                      onClick={() => handleSetSpeed(s)}
                       className={`px-2 py-1 text-[11px] rounded font-mono transition-all flex items-center justify-center gap-1 cursor-pointer ${
                         isCurrent
                           ? 'bg-amber-500 text-black font-bold shadow-sm'
@@ -854,18 +1300,16 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
                   onClick={() => handleAction(onSpeedDuration)}
                 />
               )}
-              {onReverse && (
-                <ContextMenuItem
-                  icon={<RotateCcw className="w-3.5 h-3.5" />}
-                  label="Reverse Clip"
-                  onClick={() => handleAction(onReverse)}
-                />
-              )}
-              {onFreezeFrame && isVideoTrack && (
+              <ContextMenuItem
+                icon={<RotateCcw className="w-3.5 h-3.5" />}
+                label="Reverse Clip"
+                onClick={handleReverse}
+              />
+              {isVideoTrack && (
                 <ContextMenuItem
                   icon={<Clock className="w-3.5 h-3.5" />}
                   label="Freeze Frame at Playhead"
-                  onClick={() => handleAction(onFreezeFrame)}
+                  onClick={handleFreezeFrame}
                 />
               )}
             </div>
@@ -877,48 +1321,38 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               <div className="px-3 py-1.5 border-b border-white/10 text-[9px] font-mono text-neutral-400 uppercase tracking-wider font-bold">
                 Audio Processing
               </div>
-              {onAudioGain && (
-                <ContextMenuItem
-                  icon={<Sliders className="w-3.5 h-3.5 text-emerald-400" />}
-                  label="Audio Gain / Volume..."
-                  onClick={() => handleAction(onAudioGain)}
-                />
-              )}
-              {onFadeIn && (
-                <ContextMenuItem
-                  icon={<Waves className="w-3.5 h-3.5 text-sky-400" />}
-                  label="Fade In (1.0s)"
-                  onClick={() => handleAction(onFadeIn)}
-                />
-              )}
-              {onFadeOut && (
-                <ContextMenuItem
-                  icon={<Waves className="w-3.5 h-3.5 text-sky-400" />}
-                  label="Fade Out (1.0s)"
-                  onClick={() => handleAction(onFadeOut)}
-                />
-              )}
-              {onNormalizeAudio && (
-                <ContextMenuItem
-                  icon={<Sliders className="w-3.5 h-3.5 text-amber-400" />}
-                  label="Normalize Loudness"
-                  onClick={() => handleAction(onNormalizeAudio)}
-                />
-              )}
-              {onNoiseReduction && (
-                <ContextMenuItem
-                  icon={<Wand2 className="w-3.5 h-3.5 text-fuchsia-400" />}
-                  label="Voice Clarity & Denoise"
-                  onClick={() => handleAction(onNoiseReduction)}
-                />
-              )}
-              {onDetach && isVideoTrack && (
+              <ContextMenuItem
+                icon={<Sliders className="w-3.5 h-3.5 text-emerald-400" />}
+                label="Audio Gain / Volume..."
+                onClick={handleAudioGain}
+              />
+              <ContextMenuItem
+                icon={<Waves className="w-3.5 h-3.5 text-sky-400" />}
+                label="Fade In (1.0s)"
+                onClick={handleFadeIn}
+              />
+              <ContextMenuItem
+                icon={<Waves className="w-3.5 h-3.5 text-sky-400" />}
+                label="Fade Out (1.0s)"
+                onClick={handleFadeOut}
+              />
+              <ContextMenuItem
+                icon={<Sliders className="w-3.5 h-3.5 text-amber-400" />}
+                label="Normalize Loudness"
+                onClick={handleNormalizeAudio}
+              />
+              <ContextMenuItem
+                icon={<Wand2 className="w-3.5 h-3.5 text-fuchsia-400" />}
+                label="Voice Clarity & Denoise"
+                onClick={handleNoiseReduction}
+              />
+              {isVideoTrack && (
                 <>
                   <div className="my-1 border-t border-white/[0.08]" />
                   <ContextMenuItem
                     icon={<VolumeX className="w-3.5 h-3.5 text-orange-400" />}
                     label="Detach Audio to Track"
-                    onClick={() => handleAction(onDetach)}
+                    onClick={handleDetach}
                   />
                 </>
               )}
@@ -935,24 +1369,24 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
                 icon={<ArrowUp className="w-3.5 h-3.5 text-indigo-400" />}
                 label="Move Layer Up"
                 shortcut="Alt+Up"
-                onClick={() => handleAction(onMoveLaneUp || onBringToFront)}
+                onClick={handleMoveUp}
               />
               <ContextMenuItem
                 icon={<ArrowDown className="w-3.5 h-3.5 text-indigo-400" />}
                 label="Move Layer Down"
                 shortcut="Alt+Down"
-                onClick={() => handleAction(onMoveLaneDown || onSendToBack)}
+                onClick={handleMoveDown}
               />
               <div className="my-1 border-t border-white/[0.08]" />
               <ContextMenuItem
                 icon={<ArrowUp className="w-3.5 h-3.5 text-emerald-400" />}
                 label="Bring to Front"
-                onClick={() => handleAction(onBringToFront)}
+                onClick={handleBringToFront}
               />
               <ContextMenuItem
                 icon={<ArrowDown className="w-3.5 h-3.5 text-amber-400" />}
                 label="Send to Back"
-                onClick={() => handleAction(onSendToBack)}
+                onClick={handleSendToBack}
               />
             </div>
           )}
@@ -963,18 +1397,32 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               <div className="px-3 py-1.5 border-b border-white/10 text-[9px] font-mono text-neutral-400 uppercase tracking-wider font-bold">
                 AI Magic Tools
               </div>
-              {(hasAudioTrack || isCaptionTrack) && (
+              {isVisualTrack && (
                 <ContextMenuItem
-                  icon={<Type className="w-3.5 h-3.5 text-blue-400" />}
-                  label="Generate Subtitles from Audio"
-                  onClick={() => handleAction(onGenerateCaptions)}
+                  icon={<Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                  label="AI Auto-Animate Clip"
+                  onClick={handleAiAutoAnimate}
                 />
               )}
               {isVisualTrack && (
                 <ContextMenuItem
-                  icon={<Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                  icon={<Wand2 className="w-3.5 h-3.5 text-sky-400" />}
+                  label="AI Smart Transition"
+                  onClick={handleAiSmartTransition}
+                />
+              )}
+              {isVisualTrack && (
+                <ContextMenuItem
+                  icon={<Sparkles className="w-3.5 h-3.5 text-purple-400" />}
                   label="AI Enhance / Upscale"
-                  onClick={() => handleAction(onAiEnhance)}
+                  onClick={handleAiEnhance}
+                />
+              )}
+              {(hasAudioTrack || isCaptionTrack) && (
+                <ContextMenuItem
+                  icon={<Type className="w-3.5 h-3.5 text-blue-400" />}
+                  label="Generate Subtitles from Audio"
+                  onClick={handleGenerateCaptions}
                 />
               )}
             </div>
@@ -1032,15 +1480,13 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
                 </div>
               </div>
 
-              {onProperties && (
-                <button
-                  type="button"
-                  onClick={() => handleAction(onProperties)}
-                  className="mt-1 w-full py-1 rounded bg-white/10 hover:bg-white/15 text-white text-[10px] font-medium transition-colors"
-                >
-                  Open Full Inspector
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleOpenProperties}
+                className="mt-1 w-full py-1 rounded bg-white/10 hover:bg-white/15 text-white text-[10px] font-medium transition-colors cursor-pointer"
+              >
+                Open Full Inspector
+              </button>
             </div>
           )}
         </SubmenuPortal>
@@ -1100,6 +1546,7 @@ interface ContextMenuSubmenuTriggerProps {
   isActive: boolean;
   onMouseEnter: (el: HTMLElement) => void;
   onMouseLeave: () => void;
+  onClick?: () => void;
 }
 
 const ContextMenuSubmenuTrigger: React.FC<ContextMenuSubmenuTriggerProps> = ({
@@ -1110,9 +1557,11 @@ const ContextMenuSubmenuTrigger: React.FC<ContextMenuSubmenuTriggerProps> = ({
   isActive,
   onMouseEnter,
   onMouseLeave,
+  onClick,
 }) => (
   <button
     type="button"
+    onClick={onClick}
     onMouseEnter={(e) => onMouseEnter(e.currentTarget)}
     onMouseLeave={onMouseLeave}
     className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[11px] transition-colors rounded-sm cursor-pointer select-none group ${

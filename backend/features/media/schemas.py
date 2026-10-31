@@ -133,3 +133,16 @@ class ProvidersStatusResponse(BaseModel):
     success: bool = True
     data: ProvidersStatusData
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class GenerateImageRequest(BaseModel):
+    prompt: str = Field(..., description="Visual scene prompt description")
+    aspectRatio: str = Field("9:16", description="'9:16' | '16:9' | '1:1'")
+    style: Optional[str] = Field("cinematic", description="Visual aesthetic: cinematic | stoic | cyberpunk | anime | 3d | vintage | minimal")
+    sceneNumber: Optional[int] = Field(None, description="Optional scene number index")
+
+
+class GenerateImageResponse(BaseModel):
+    success: bool = True
+    data: MediaAsset
+    metadata: Dict[str, Any] = Field(default_factory=dict)

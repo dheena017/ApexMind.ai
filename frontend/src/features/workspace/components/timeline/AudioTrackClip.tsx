@@ -251,6 +251,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
           x={contextMenu.x}
           y={contextMenu.y}
           trackType={type}
+          clipId={contextMenu.clipId}
           isVisible={true}
           isMuted={isMuted}
           onClose={() => setContextMenu(null)}

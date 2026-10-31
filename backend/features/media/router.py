@@ -17,6 +17,8 @@ from .schemas import (
     AudioSearchResponse,
     SfxSearchResponse,
     ProvidersStatusResponse,
+    GenerateImageRequest,
+    GenerateImageResponse,
 )
 from .service import (
     resolve_scenes_batch,
@@ -25,10 +27,47 @@ from .service import (
     search_audio,
     search_sfx,
     get_providers_status,
+    generate_ai_image,
 )
 
 logger = logging.getLogger("ApexMind.features.media")
 router = APIRouter(tags=["Media Engine"])
+
+@router.post(
+    "/api/media/generate-image",
+    response_model=GenerateImageResponse,
+    summary="Generate bespoke scene visual using Gemini Multimodal AI",
+    description="Generates high-resolution vertical 9:16 or custom ratio visuals with style directives.",
+)
+def post_generate_image(payload: GenerateImageRequest):
+    t0 = time.perf_counter()
+    try:
+        asset = generate_ai_image(
+            prompt=payload.prompt,
+            aspect_ratio=payload.aspectRatio,
+            style=payload.style or "cinematic",
+            scene_number=payload.sceneNumber,
+        )
+        if not asset:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate AI visual.",
+            )
+        execution_ms = int((time.perf_counter() - t0) * 1000)
+        return GenerateImageResponse(
+            success=True,
+            data=asset,
+            metadata={"executionTimeMs": execution_ms},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating AI visual: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate AI visual: {e}",
+        )
+
 
 
 @router.post(

@@ -186,6 +186,7 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
           x={contextMenu.x}
           y={contextMenu.y}
           trackType="overlay"
+          clipId={contextMenu.clipId}
           isVisible={true}
           isHidden={!overlayTrackVisible}
           onClose={() => setContextMenu(null)}

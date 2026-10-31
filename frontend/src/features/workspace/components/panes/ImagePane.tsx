@@ -8,6 +8,9 @@ import {
   Trash2,
   ExternalLink,
   Sparkles,
+  Wand2,
+  Layers,
+  Download,
   Bookmark,
   RefreshCw,
   Sliders,
@@ -73,11 +76,19 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   onSelectImage,
   activeImageUrl,
 }) => {
-  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'filters' | 'saved'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'ai-generator' | 'url' | 'filters' | 'saved'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // ── AI Visual Generator (Gemini Multimodal Scene Generation) ──
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+  const [aiStyle, setAiStyle] = useState<'cinematic' | 'stoic' | 'cyberpunk' | 'anime' | '3d' | 'vintage' | 'minimal'>('cinematic');
+  const [aiAspectRatio, setAiAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
+  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
+  const [aiGeneratedList, setAiGeneratedList] = useState<StockImageItem[]>([]);
+  const AI_IMAGES_STORAGE_KEY = 'apexmind_ai_generated_images';
+
 
   // Images state
   const [images, setImages] = useState<StockImageItem[]>([]);
@@ -311,6 +322,71 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     });
   };
 
+
+  const AI_INSPIRATIONS = [
+    { label: '🏛️ Stoic Marble Statue', prompt: 'Classical Greek marble statue head in pouring rain, dramatic golden hour lightning, moody dark atmosphere, 8k cinematic' },
+    { label: '🧪 Neon Cyberpunk Lab', prompt: 'Futuristic cyberpunk scientist in a dark neon laboratory mixing glowing green potions with rising volumetric smoke, 8k' },
+    { label: '🌧️ Rainy Tokyo Streets', prompt: 'Melancholic rainy crosswalk in Tokyo at midnight, neon reflections on wet asphalt, cinematic bokeh 35mm' },
+    { label: '⛰️ Himalayan Summit', prompt: 'Lone adventurer standing on a razor-sharp snow mountain peak at sunrise, majestic orange sunlight, IMAX composition' },
+    { label: '🌌 Deep Space Nebula', prompt: 'Celestial stellar portal inside deep cosmic nebula, glowing turquoise and violet dust clouds, photorealistic NASA style' },
+    { label: '🔥 Molten Steel Forge', prompt: 'Blacksmith forging legendary blade with flying molten golden sparks, dark foundry, extreme high contrast lighting' },
+  ];
+
+  const AI_STYLE_PRESETS = [
+    { id: 'cinematic', label: '🎬 Cinematic', desc: '35mm anamorphic, volumetric lighting & 8k realism' },
+    { id: 'stoic', label: '🏛️ Dark Stoic', desc: 'Chiaroscuro, marble statues, moody gold & charcoal' },
+    { id: 'cyberpunk', label: '🏙️ Cyberpunk', desc: 'Neon cyan/magenta rim lighting, reflective wet asphalt' },
+    { id: 'anime', label: '🎨 Anime Art', desc: 'Makoto Shinkai style, vibrant sky & atmospheric light' },
+    { id: '3d', label: '🔮 3D Render', desc: 'Unreal Engine 5, raytraced subsurface scattering' },
+    { id: 'vintage', label: '📷 Vintage Film', desc: '1970s Kodachrome analog film grain & nostalgic hues' },
+  ] as const;
+
+  const handleGenerateAiVisual = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error('Please enter a scene prompt to generate a visual');
+      return;
+    }
+    setIsGeneratingAi(true);
+    try {
+      const res = await workspaceApi.generateAiImage({
+        prompt: aiPrompt.trim(),
+        aspectRatio: aiAspectRatio,
+        style: aiStyle,
+      });
+
+      if (res?.data) {
+        const newItem: StockImageItem = {
+          id: res.data.id || `ai-${Date.now()}`,
+          title: res.data.title || `AI: ${aiPrompt.slice(0, 32)}`,
+          category: aiStyle,
+          url: res.data.url,
+          thumbnail: res.data.thumbnail || res.data.url,
+          author: 'Gemini Multimodal AI',
+          resolution: `${res.data.width || 1080}×${res.data.height || 1920}`,
+          source: 'gemini_ai',
+          tags: res.data.tags || ['ai_generated', aiStyle],
+        };
+
+        const updated = [newItem, ...aiGeneratedList.filter((i) => i.id !== newItem.id)].slice(0, 30);
+        setAiGeneratedList(updated);
+        try {
+          localStorage.setItem(AI_IMAGES_STORAGE_KEY, JSON.stringify(updated));
+        } catch {}
+
+        handleApply(newItem);
+        toast.success('✨ AI Visual Generated & Placed on Timeline', {
+          description: `Rendered in ${aiStyle} style for ${aiAspectRatio} vertical short.`,
+        });
+      }
+    } catch (err: any) {
+      toast.error('AI Visual Generation Failed', {
+        description: err.message || 'Please check your GEMINI_API_KEY.',
+      });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
   const handleStageImage = (img: StockImageItem) => setSelectedId(img.id);
 
   const handleAddCustomUrl = (saveToFavorites = false) => {
@@ -466,6 +542,20 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab('ai-generator')}
+          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'ai-generator'
+              ? 'text-white border-purple-500'
+              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 bg-clip-text text-transparent font-bold">
+            ✨ AI Visual Gen
+          </span>
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('filters')}
           className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
             activeTab === 'filters'
@@ -572,6 +662,208 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
+                {/* ── Tab: AI Visual Generator (Gemini Multimodal Scene Generation) ── */}
+        {activeTab === 'ai-generator' ? (
+          <div className="flex flex-col gap-4">
+            {/* AI Generator Hero Card */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1F172E] via-[#161424] to-[#121217] border border-purple-500/30 p-4 shadow-xl flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
+                    <Sparkles className="w-4 h-4 animate-spin text-purple-300" style={{ animationDuration: '6s' }} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      Gemini Multimodal Scene Generator
+                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-500/30">
+                        Nano Banana 2.1
+                      </span>
+                    </h3>
+                    <p className="text-[10px] text-zinc-400">
+                      Generate bespoke vertical 9:16 cinematic visuals with high-detail lighting & style coherence.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prompt Input Box */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-400">
+                  <span>SCENE PROMPT</span>
+                  <span className="text-[9px] font-mono text-zinc-500">{aiPrompt.length}/300 chars</span>
+                </div>
+                <div className="relative">
+                  <textarea
+                    rows={3}
+                    value={aiPrompt}
+                    maxLength={300}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Describe your scene in rich detail (e.g. Ancient Greek warrior standing on rainy summit under dramatic thunder, golden light, 8k cinematic)..."
+                    className="w-full bg-[#0E0D14] border border-[#2D283E] focus:border-purple-500/80 rounded-xl p-3 text-xs text-white placeholder:text-zinc-600 outline-none resize-none transition-colors"
+                  />
+                  {aiPrompt && (
+                    <button
+                      type="button"
+                      onClick={() => setAiPrompt('')}
+                      className="absolute right-2.5 top-2.5 text-zinc-500 hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Inspiration Chips */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-purple-300/80 flex items-center gap-1">
+                  <Wand2 className="w-2.5 h-2.5" /> Quick Inspiration Scenes
+                </span>
+                <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                  {AI_INSPIRATIONS.map((chip, idx) => (
+                    <button
+                      key={`chip-${idx}`}
+                      type="button"
+                      onClick={() => setAiPrompt(chip.prompt)}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap bg-[#231B36] hover:bg-[#2F244A] border border-purple-500/20 text-purple-200 transition-colors shrink-0 cursor-pointer"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Visual Style Selector */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+                  Visual Aesthetic
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {AI_STYLE_PRESETS.map((st) => {
+                    const isSelected = aiStyle === st.id;
+                    return (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => setAiStyle(st.id as any)}
+                        className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex flex-col gap-0.5 ${
+                          isSelected
+                            ? 'bg-purple-950/60 border-purple-400 text-white shadow-md shadow-purple-950/40'
+                            : 'bg-[#15131C] border-[#292534] text-zinc-400 hover:bg-[#1C1826] hover:text-zinc-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-white">{st.label}</span>
+                          {isSelected && <Check className="w-3 h-3 text-purple-400 shrink-0" />}
+                        </div>
+                        <span className="text-[9px] text-zinc-500 line-clamp-1 leading-snug">{st.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Aspect Ratio Selector & Action Button */}
+              <div className="flex items-center justify-between gap-3 pt-1 border-t border-[#2D283E]">
+                <div className="flex items-center gap-1 bg-[#13111B] p-0.5 rounded-lg border border-[#2D283E]">
+                  {(['9:16', '16:9', '1:1'] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setAiAspectRatio(r)}
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-all cursor-pointer ${
+                        aiAspectRatio === r
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {r} {r === '9:16' ? '(Shorts)' : ''}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateAiVisual}
+                  disabled={isGeneratingAi || !aiPrompt.trim()}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-950/50 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGeneratingAi ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Synthesizing Scene Visual...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>Generate AI Visual</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* AI Generated History Gallery */}
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-purple-400" />
+                  Generated Scene Assets ({aiGeneratedList.length})
+                </span>
+                {aiGeneratedList.length > 0 && (
+                  <span className="text-[10px] text-zinc-500">1-click apply to active timeline</span>
+                )}
+              </div>
+
+              {aiGeneratedList.length === 0 ? (
+                <div className="p-8 rounded-xl bg-[#15131C] border border-[#262134] text-center text-xs text-zinc-500 flex flex-col items-center gap-2">
+                  <Sparkles className="w-8 h-8 text-purple-500/40 animate-pulse" />
+                  <p className="font-semibold text-zinc-400">No AI visuals generated yet</p>
+                  <p className="text-[11px] max-w-xs text-zinc-600">
+                    Type a scene prompt above or pick a quick inspiration scene to create high-definition 9:16 visuals.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2.5">
+                  {aiGeneratedList.map((item) => (
+                    <div
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleApply(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleApply(item);
+                      }}
+                      className="group relative rounded-xl overflow-hidden border border-[#2E283C] hover:border-purple-500/80 bg-[#15131C] aspect-[9/16] cursor-pointer shadow-md transition-all flex flex-col justify-end p-2.5"
+                    >
+                      <img
+                        src={item.url}
+                        alt={item.title}
+                        loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+
+                      <div className="relative z-10 flex flex-col gap-1 text-left">
+                        <div className="flex items-center gap-1">
+                          <span className="px-1.5 py-0.5 rounded bg-purple-950/80 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300">
+                            {item.category?.toUpperCase() || 'AI GEN'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-white line-clamp-2 leading-tight">
+                          {item.title}
+                        </p>
+                        <span className="text-[9px] text-zinc-400 flex items-center gap-1">
+                          Click to Add to Timeline
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
+
         {/* ── Tab 2: Color Filters & Backdrop Tuning ── */}
         {activeTab === 'filters' ? (
           <div className="flex flex-col gap-4">

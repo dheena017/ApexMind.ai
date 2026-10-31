@@ -252,6 +252,7 @@ export interface TimelineMediaClip {
   animationOut?: string;
   animationOutDuration?: number;
   volume?: number;
+  speed?: number;
 }
 
 export interface TimelineAudioClip {

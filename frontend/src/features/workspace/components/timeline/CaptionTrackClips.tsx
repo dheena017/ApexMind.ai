@@ -186,6 +186,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
             x={contextMenu.x}
             y={contextMenu.y}
             trackType="caption"
+            clipId={String(contextMenu.index)}
             isVisible
             isLocked={captionsTrackLocked}
             onClose={() => setContextMenu(null)}

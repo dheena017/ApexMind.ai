@@ -181,17 +181,45 @@ def create_app() -> FastAPI:
             return FileResponse(file_path, media_type="audio/wav")
         raise HTTPException(status_code=404, detail="Audio file not found")
 
+    @app.get("/api/media/generated/{filename}", tags=["Media"])
+    @app.get("/api/media/images/{filename}", tags=["Media"])
+    def get_generated_image_file(filename: str):
+        from fastapi.responses import FileResponse
+        from pathlib import Path
+        for folder in ["backend/data/generated_images", "backend/data/media", "backend/data"]:
+            file_path = Path(folder) / filename
+            if file_path.exists() and file_path.is_file():
+                if filename.endswith(".svg"):
+                    media_type = "image/svg+xml"
+                elif filename.endswith(".webp"):
+                    media_type = "image/webp"
+                elif filename.endswith(".jpg") or filename.endswith(".jpeg"):
+                    media_type = "image/jpeg"
+                else:
+                    media_type = "image/png"
+                return FileResponse(file_path, media_type=media_type)
+        raise HTTPException(status_code=404, detail="Generated image not found")
+
     @app.get("/api/videos/{filename}", tags=["Videos"])
     @app.get("/api/media/{filename}", tags=["Videos"])
     def get_video_file(filename: str):
         from fastapi.responses import FileResponse
         from pathlib import Path
-        for folder in ["backend/data/rendered_shorts", "backend/data/media", "backend/data"]:
+        for folder in ["backend/data/generated_images", "backend/data/rendered_shorts", "backend/data/media", "backend/data"]:
             file_path = Path(folder) / filename
             if file_path.exists() and file_path.is_file():
-                media_type = "video/mp4" if filename.endswith(".mp4") else "video/webm"
+                if filename.endswith(".png"):
+                    media_type = "image/png"
+                elif filename.endswith(".jpg") or filename.endswith(".jpeg"):
+                    media_type = "image/jpeg"
+                elif filename.endswith(".svg"):
+                    media_type = "image/svg+xml"
+                elif filename.endswith(".mp4"):
+                    media_type = "video/mp4"
+                else:
+                    media_type = "video/webm"
                 return FileResponse(file_path, media_type=media_type)
-        raise HTTPException(status_code=404, detail="Video file not found")
+        raise HTTPException(status_code=404, detail="Media file not found")
 
     # Set custom OpenAPI schema
     app.openapi = lambda: custom_openapi(app)

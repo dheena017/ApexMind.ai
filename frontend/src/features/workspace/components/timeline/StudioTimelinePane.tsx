@@ -2876,6 +2876,102 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     setZoomLevel(Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, 1 / ratio)));
   };
 
+  // Global Timeline Event Listeners for Context Menu Actions & Hotkeys
+  useEffect(() => {
+    const handleSplitClipEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ track?: string; clipId?: string }>).detail;
+      if (!detail) return;
+      if (detail.track === 'video') handleSplitVideoClip(detail.clipId);
+      else if (detail.track === 'image') handleSplitImageClip(detail.clipId);
+      else if (detail.track === 'overlay') handleSplitOverlayClip(detail.clipId);
+      else if (detail.track === 'voice') handleSplitVoiceClip(detail.clipId);
+      else if (detail.track === 'music') handleSplitMusicClip(detail.clipId);
+      else if (detail.track === 'sfx') handleSplitSfxClip(detail.clipId);
+      else handleSplitClip();
+    };
+
+    const handleDuplicateClipEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ track?: string; clipId?: string }>).detail;
+      if (!detail) return;
+      if (detail.track === 'video') handleDuplicateVideoClip(detail.clipId);
+      else if (detail.track === 'image') handleDuplicateImageClip(detail.clipId);
+      else if (detail.track === 'overlay') handleDuplicateOverlayClip(detail.clipId);
+      else if (detail.track === 'voice') handleDuplicateVoiceClip(detail.clipId);
+      else if (detail.track === 'music') handleDuplicateMusicClip(detail.clipId);
+      else if (detail.track === 'sfx') handleDuplicateSfxClip(detail.clipId);
+      else handleDuplicateClip();
+    };
+
+    const handleDeleteClipEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ track?: string; clipId?: string }>).detail;
+      if (!detail) return;
+      if (detail.track === 'video') handleDeleteVideoClip(detail.clipId);
+      else if (detail.track === 'image') handleDeleteImageClip(detail.clipId);
+      else if (detail.track === 'overlay') handleDeleteOverlayClip(detail.clipId);
+      else if (detail.track === 'voice') handleDeleteVoiceClip(detail.clipId);
+      else if (detail.track === 'music') handleDeleteMusicClip(detail.clipId);
+      else if (detail.track === 'sfx') handleDeleteSfxClip(detail.clipId);
+      else if (detail.track === 'caption' && detail.clipId) handleDeleteCaptionByIndex(Number(detail.clipId));
+      else handleDeleteClip();
+    };
+
+    const handleArrangeClipEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ track?: string; clipId?: string; direction?: 'up' | 'down' | 'front' | 'back' }>).detail;
+      if (!detail || !detail.clipId) return;
+      const { track, clipId, direction } = detail;
+      const rearrange = (list: any[]) => {
+        const idx = list.findIndex((c) => c.id === clipId);
+        if (idx < 0) return list;
+        const next = [...list];
+        const item = next.splice(idx, 1)[0];
+        if (direction === 'front' || direction === 'up') {
+          next.push(item);
+        } else {
+          next.unshift(item);
+        }
+        return next;
+      };
+      if (track === 'video') setVideoClips((prev) => rearrange(prev));
+      else if (track === 'image') setImageClips((prev) => rearrange(prev));
+      else if (track === 'overlay') setOverlayClips((prev) => rearrange(prev));
+    };
+
+    const handleZoomToClipEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ startTime?: number; duration?: number }>).detail;
+      if (detail && detail.startTime !== undefined) {
+        onSeek(detail.startTime);
+        setZoomLevel(1.5);
+      }
+    };
+
+    const handleToggleTrackVisibility = (e: Event) => {
+      const detail = (e as CustomEvent<{ track?: string }>).detail;
+      if (!detail || !detail.track) return;
+      if (detail.track === 'video') setVideoTrackVisible((v) => !v);
+      else if (detail.track === 'image') setImageTrackVisible((v) => !v);
+      else if (detail.track === 'overlay') setOverlayTrackVisible((v) => !v);
+      else if (detail.track === 'voice') setVoiceTrackMuted((m) => !m);
+      else if (detail.track === 'music') setMusicTrackMuted((m) => !m);
+      else if (detail.track === 'sfx') setSfxTrackMuted((m) => !m);
+    };
+
+    window.addEventListener('workspace:split-clip', handleSplitClipEvent);
+    window.addEventListener('workspace:duplicate-clip', handleDuplicateClipEvent);
+    window.addEventListener('workspace:delete-clip', handleDeleteClipEvent);
+    window.addEventListener('workspace:arrange-clip', handleArrangeClipEvent);
+    window.addEventListener('workspace:zoom-to-clip', handleZoomToClipEvent);
+    window.addEventListener('workspace:toggle-track-visibility', handleToggleTrackVisibility);
+
+    return () => {
+      window.removeEventListener('workspace:split-clip', handleSplitClipEvent);
+      window.removeEventListener('workspace:duplicate-clip', handleDuplicateClipEvent);
+      window.removeEventListener('workspace:delete-clip', handleDeleteClipEvent);
+      window.removeEventListener('workspace:arrange-clip', handleArrangeClipEvent);
+      window.removeEventListener('workspace:zoom-to-clip', handleZoomToClipEvent);
+      window.removeEventListener('workspace:toggle-track-visibility', handleToggleTrackVisibility);
+    };
+  }, []);
+
   // Title track
   const [titleContextMenu, setTitleContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [titleColorLabel, setTitleColorLabel] = useState<string>('');

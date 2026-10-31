@@ -1448,7 +1448,7 @@ export default function WorkspacePage({
         : getDefaultCanvasOutputSize(canvasAspectRatio);
       addWorkspaceNotification({
         title: 'Export Render Started',
-        message: `Rendering ${renderSize.width} Ã— ${renderSize.height} MP4 (${canvasAspectRatio}) with timeline audio...`,
+        message: `Rendering ${renderSize.width} × ${renderSize.height} MP4 (${canvasAspectRatio}) with timeline audio...`,
         category: 'export',
         type: 'render',
         targetPane: 'canvas',

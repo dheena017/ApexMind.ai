@@ -27,6 +27,7 @@ from .providers import (
     PixabayVideoProvider,
     WikimediaVideoProvider,
     UnsplashImageProvider,
+    GeminiImageProvider,
     JamendoAudioProvider,
     SfxProvider,
 )
@@ -39,6 +40,7 @@ pexels_video = PexelsVideoProvider()
 pixabay_video = PixabayVideoProvider()
 wikimedia_video = WikimediaVideoProvider()
 unsplash_image = UnsplashImageProvider()
+gemini_image = GeminiImageProvider()
 jamendo_audio = JamendoAudioProvider()
 sfx_provider = SfxProvider()
 
@@ -186,6 +188,25 @@ def _resolve_single_scene_internal(
                         )
             except Exception as e:
                 logger.debug(f"Wikimedia photo error on scene {item.sceneNumber}: {e}")
+
+        # 5. Multimodal AI Visual Generation: If stock media is unavailable, generate bespoke AI scene visual
+    try:
+        ai_prompt = item.visualQuery or f"Dramatic cinematic scene {item.sceneNumber}"
+        logger.info(f"Generating AI visual fallback for scene {item.sceneNumber}: '{ai_prompt[:50]}...'")
+        ai_media = gemini_image.generate(
+            prompt=ai_prompt,
+            aspect_ratio=aspect_ratio,
+            style="cinematic",
+            scene_number=item.sceneNumber,
+        )
+        if ai_media and _is_valid_cand(ai_media, excluded_urls):
+            return ResolvedSceneResult(
+                sceneNumber=item.sceneNumber,
+                status="resolved",
+                media=ai_media,
+            )
+    except Exception as ai_err:
+        logger.warning(f"AI image fallback failed for scene {item.sceneNumber}: {ai_err}")
 
     return ResolvedSceneResult(
         sceneNumber=item.sceneNumber,
@@ -399,10 +420,32 @@ def get_providers_status() -> ProvidersStatusData:
             authRequired=False,
             latencyMs=300,
         ),
+        "gemini_image": ProviderInfo(
+            status="active" if gemini_image.is_configured() else "fallback_active",
+            type=["image"],
+            hasKey=gemini_image.is_configured(),
+            authRequired=False,
+            latencyMs=1200,
+        ),
     }
 
     all_healthy = any(p.status == "active" for p in providers_info.values())
     return ProvidersStatusData(
         allHealthy=all_healthy,
         providers=providers_info,
+    )
+
+
+def generate_ai_image(
+    prompt: str,
+    aspect_ratio: str = "9:16",
+    style: str = "cinematic",
+    scene_number: Optional[int] = None,
+) -> Optional[MediaAsset]:
+    """Generates a bespoke visual asset using Gemini Multimodal Image Generation."""
+    return gemini_image.generate(
+        prompt=prompt,
+        aspect_ratio=aspect_ratio,
+        style=style,
+        scene_number=scene_number,
     )
