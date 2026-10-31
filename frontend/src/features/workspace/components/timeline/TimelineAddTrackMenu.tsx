@@ -110,10 +110,10 @@ const ALL_EIGHT_TRACKS: TrackMenuItem[] = [
     badge: 'A2',
     compound: 'music',
     selectedClip: { track: 'music' },
-    icon: <Music className="w-3.5 h-3.5 text-purple-400" />,
-    colorClass: 'text-purple-200',
+    icon: <Music className="w-3.5 h-3.5 text-blue-400" />,
+    colorClass: 'text-blue-200',
     bgHover: 'hover:bg-purple-500/15',
-    borderHover: 'hover:border-purple-500/30',
+    borderHover: 'hover:border-blue-500/30',
   },
   {
     key: 'sfx',

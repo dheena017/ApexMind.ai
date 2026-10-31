@@ -147,7 +147,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
                   onSelect={() => runAction(onToggleMute, 'Toggled Audio Mute')}
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
                 >
-                  <Volume2 className="w-4 h-4 text-purple-400" />
+                  <Volume2 className="w-4 h-4 text-blue-400" />
                   <span>Toggle Audio Volume Mute</span>
                 </Command.Item>
               )}
@@ -193,7 +193,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
                 onSelect={() => runAction(() => onSelectPane('media'), 'Switched to Project Media')}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
               >
-                <FolderOpen className="w-4 h-4 text-purple-400" />
+                <FolderOpen className="w-4 h-4 text-blue-400" />
                 <span>Project Media Assets Bin</span>
               </Command.Item>
 

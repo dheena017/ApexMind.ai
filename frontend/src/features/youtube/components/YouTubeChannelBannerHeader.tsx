@@ -90,14 +90,14 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
             className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.01]"
           />
         ) : isConnected ? (
-          <div className="w-full h-full flex items-center justify-between px-6 sm:px-12 bg-gradient-to-r from-blue-950/80 via-purple-950/60 to-black/90">
+          <div className="w-full h-full flex items-center justify-between px-6 sm:px-12 bg-gradient-to-r from-blue-950/80 via-blue-950/40 to-black/90">
             <div className="space-y-1">
               <span className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-400 uppercase">YouTube Official Creator Feed</span>
               <h2 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">{channelName}</h2>
               <p className="text-xs sm:text-sm text-gray-400">{handle} · Live Studio Hub</p>
             </div>
             <div className="hidden md:flex items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <Video className="w-6 h-6 text-purple-400" />
+              <Video className="w-6 h-6 text-blue-400" />
             </div>
           </div>
         ) : (

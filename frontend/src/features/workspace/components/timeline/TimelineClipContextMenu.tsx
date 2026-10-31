@@ -372,7 +372,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
       case 'voice':
         return <Mic className="w-3.5 h-3.5 text-green-400" />;
       case 'music':
-        return <Music className="w-3.5 h-3.5 text-purple-400" />;
+        return <Music className="w-3.5 h-3.5 text-blue-400" />;
       case 'sfx':
         return <Sparkles className="w-3.5 h-3.5 text-amber-300" />;
       case 'caption':
@@ -1031,7 +1031,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
 
         {onAlignToPlayhead && (
           <ContextMenuItem
-            icon={<Pin className="w-3.5 h-3.5 text-purple-400/90" />}
+            icon={<Pin className="w-3.5 h-3.5 text-blue-400/90" />}
             label="Snap to Playhead"
             shortcut="Ctrl+P"
             onClick={() => handleAction(onAlignToPlayhead)}
@@ -1427,7 +1427,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               </div>
               {isVisualTrack && (
                 <ContextMenuItem
-                  icon={<Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+                  icon={<Sparkles className="w-3.5 h-3.5 text-blue-400" />}
                   label="⚡ AI Audio-Visual Cut Sync"
                   onClick={handleAiCutSync}
                 />
@@ -1448,7 +1448,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               )}
               {isVisualTrack && (
                 <ContextMenuItem
-                  icon={<Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+                  icon={<Sparkles className="w-3.5 h-3.5 text-blue-400" />}
                   label="AI Enhance / Upscale"
                   onClick={handleAiEnhance}
                 />

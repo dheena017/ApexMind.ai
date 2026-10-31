@@ -216,7 +216,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     },
     text: { label: 'Captions & Title (T1)', icon: Type, color: 'text-blue-400' },
     voice: { label: `Voice: ${selectedVoice || 'Fenrir'} (A1)`, icon: Mic, color: 'text-emerald-400' },
-    music: { label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-purple-400' },
+    music: { label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-blue-400' },
     overlay: { label: 'Overlay Sticker / Badge', icon: Layers, color: 'text-indigo-400' },
     transitions: { label: 'Transitions Studio', icon: Sparkles, color: 'text-amber-400' },
   }[activeCompound] || { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' };

@@ -512,7 +512,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     setCustomUrlInput(e.target.value);
                     setUrlVideoValid(null);
                   }}
-                  placeholder="https://commondatastorage.googleapis.com/...mp4"
+                  placeholder="https://example.com/video.mp4"
                   className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
                 />
               </div>

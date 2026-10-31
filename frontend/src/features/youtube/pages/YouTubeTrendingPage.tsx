@@ -282,7 +282,7 @@ export const YouTubeTrendingPage: React.FC<YouTubeTrendingPageProps> = ({
         </div>
 
         <div className="p-3.5 rounded-2xl bg-[#141414] border border-[#2F2F2F] flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
             <Music className="w-4 h-4" />
           </div>
           <div>
@@ -477,7 +477,7 @@ export const YouTubeTrendingPage: React.FC<YouTubeTrendingPageProps> = ({
             onClick={() => handleNicheChange('Vault')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
               activeNiche === 'Vault'
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/25 scale-[1.02]'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 scale-[1.02]'
                 : 'bg-[#181818] text-[#9CA3AF] hover:text-white hover:bg-[#252525] border border-[#2A2A2A]'
             }`}
           >

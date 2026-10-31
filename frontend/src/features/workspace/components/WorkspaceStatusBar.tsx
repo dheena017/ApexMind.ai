@@ -141,11 +141,11 @@ const getNotificationTheme = (item: WorkspaceNotification): NotificationTheme =>
     titleLower.includes('sfx')
   ) {
     return {
-      iconBg: 'bg-purple-950/40 border border-purple-500/30',
-      iconColor: 'text-purple-400',
+      iconBg: 'bg-blue-950/40 border border-blue-500/30',
+      iconColor: 'text-blue-400',
       badge: {
         label: 'AUDIO',
-        className: 'bg-purple-500/10 text-purple-400 border border-purple-500/25',
+        className: 'bg-blue-500/10 text-blue-400 border border-blue-500/25',
       },
       progressBar: 'bg-purple-500',
     };

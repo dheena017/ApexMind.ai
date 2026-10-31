@@ -294,7 +294,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
       items: [
         { label: 'Brightness', icon: <Sun className="w-3.5 h-3.5 text-amber-400" />, value: brightness, setter: setBrightness, min: 20, max: 200, unit: '%', def: 100 },
         { label: 'Contrast', icon: <Contrast className="w-3.5 h-3.5 text-sky-400" />, value: contrast, setter: setContrast, min: 20, max: 200, unit: '%', def: 100 },
-        { label: 'Saturation', icon: <Palette className="w-3.5 h-3.5 text-purple-400" />, value: saturation, setter: setSaturation, min: 0, max: 200, unit: '%', def: 100 },
+        { label: 'Saturation', icon: <Palette className="w-3.5 h-3.5 text-blue-400" />, value: saturation, setter: setSaturation, min: 0, max: 200, unit: '%', def: 100 },
       ],
     },
     {

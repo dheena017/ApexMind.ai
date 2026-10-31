@@ -19,7 +19,7 @@ export default function ProfilePreferencesPage() {
     <div className="w-full space-y-5">
       <div className="flex items-center justify-between pb-4 border-b border-[#262626]">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-400">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-400">
             <Sliders className="h-5 w-5" />
           </div>
           <div>

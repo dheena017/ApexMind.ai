@@ -235,7 +235,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
     { id: 'video' as const, videoTab: 'style' as const, label: 'Video Looks & Grading', icon: Sparkles, color: 'text-sky-400', bg: 'bg-sky-400/10', badge: 'Looks' },
     { id: 'text' as const, label: 'Typography & Captions (T1)', icon: Type, color: 'text-blue-400', bg: 'bg-blue-400/10', badge: 'Captions' },
     { id: 'voice' as const, label: 'Voiceover Audio (A1)', icon: Mic, color: 'text-emerald-400', bg: 'bg-emerald-400/10', badge: 'Voice' },
-    { id: 'music' as const, label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-purple-400', bg: 'bg-purple-400/10', badge: 'Music' },
+    { id: 'music' as const, label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-blue-400', bg: 'bg-purple-400/10', badge: 'Music' },
     { id: 'overlay' as const, label: 'Stickers & Graphic Badges', icon: Layers, color: 'text-indigo-400', bg: 'bg-indigo-400/10', badge: 'Overlays' },
   ];
 

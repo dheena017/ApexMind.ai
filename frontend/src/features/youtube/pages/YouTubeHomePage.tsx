@@ -138,7 +138,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         </div>
 
         <div className="p-3.5 sm:p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] flex items-center gap-3.5 shadow-sm hover:border-[#3B82F6]/40 transition-colors">
-          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
+          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
             <Video className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -501,14 +501,14 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
               <Video className="w-4 h-4" />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
               <span>Videos</span>
               {feedLoading && videosFeed.length === 0 && (
-                <span className="text-[10px] text-purple-400 bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium animate-pulse">
-                  <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                <span className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium animate-pulse">
+                  <Loader2 className="w-3 h-3 animate-spin text-blue-400" />
                   Loading...
                 </span>
               )}

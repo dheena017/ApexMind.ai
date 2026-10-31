@@ -106,7 +106,7 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
       <Card className="bg-[#141414] border-[#2F2F2F] p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#262626]">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
               <Video className="w-5 h-5" />
             </div>
             <div>

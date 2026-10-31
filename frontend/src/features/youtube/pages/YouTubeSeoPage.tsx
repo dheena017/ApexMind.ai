@@ -84,7 +84,7 @@ export const YouTubeSeoPage: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in font-sans-studio text-[#E5E5E5]">
       {/* ── 1. Header Banner ── */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-950/40 via-purple-950/30 to-[#121212] border border-[#2F2F2F] shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-950/40 via-blue-950/40 to-[#121212] border border-[#2F2F2F] shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-blue-400 text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-4 h-4" />
@@ -183,7 +183,7 @@ export const YouTubeSeoPage: React.FC = () => {
         {/* ── 3. Competitor Video Tag Inspector ── */}
         <Card className="p-5 sm:p-6 bg-[#141414] border border-[#2F2F2F] rounded-2xl shadow-xl space-y-5">
           <div className="flex items-center gap-3 pb-3 border-b border-[#262626]">
-            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
               <Tag className="w-5 h-5" />
             </div>
             <div>
@@ -200,7 +200,7 @@ export const YouTubeSeoPage: React.FC = () => {
               value={videoUrlInput}
               onChange={(e) => setVideoUrlInput(e.target.value)}
               placeholder="Paste YouTube Video URL or ID..."
-              className="flex-1 bg-[#121212] border border-[#333] focus:border-purple-500 rounded-xl px-4 py-2.5 text-xs text-white placeholder-[#6B7280] outline-none transition-colors"
+              className="flex-1 bg-[#121212] border border-[#333] focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white placeholder-[#6B7280] outline-none transition-colors"
             />
             <Button
               type="submit"
@@ -222,7 +222,7 @@ export const YouTubeSeoPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => copyToClipboard(inspectedTags.join(', '), false)}
-                  className="text-purple-400 hover:text-purple-300 transition-colors"
+                  className="text-blue-400 hover:text-blue-300 transition-colors"
                 >
                   Copy All
                 </button>
@@ -240,7 +240,7 @@ export const YouTubeSeoPage: React.FC = () => {
                     key={idx}
                     type="button"
                     onClick={() => copyToClipboard(tag, false)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A1A1A] border border-[#2B2B2B] hover:border-purple-500/50 text-xs text-[#E5E5E5] hover:text-white transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A1A1A] border border-[#2B2B2B] hover:border-blue-500/50 text-xs text-[#E5E5E5] hover:text-white transition-all cursor-pointer"
                   >
                     <span>{tag}</span>
                     {copiedTag === tag ? (

@@ -104,8 +104,8 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
           {
             label: 'Total views',
             value: stats?.totalViews ?? 0,
-            icon: <Eye className="h-4 w-4 text-purple-400" />,
-            color: 'bg-purple-500/10 border border-purple-500/20',
+            icon: <Eye className="h-4 w-4 text-blue-400" />,
+            color: 'bg-blue-500/10 border border-blue-500/20',
           },
           {
             label: 'Total likes',

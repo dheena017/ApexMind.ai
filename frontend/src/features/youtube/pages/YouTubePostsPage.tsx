@@ -245,7 +245,7 @@ export const YouTubePostsPage: React.FC<YouTubePostsPageProps> = ({
                     <span>{post.likes} likes</span>
                   </div>
                   <div className="flex items-center gap-1.5 font-mono-studio text-[11px] text-[#9CA3AF]">
-                    <MessageCircle className="w-3.5 h-3.5 text-purple-400" />
+                    <MessageCircle className="w-3.5 h-3.5 text-blue-400" />
                     <span>{post.comments} comments</span>
                   </div>
                   <span className="ml-auto text-[10px] text-emerald-400 font-semibold">

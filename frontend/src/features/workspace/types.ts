@@ -187,7 +187,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#FFFFFF',
     particleEffect: 'glowing-dust',
     imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    videoUrl: '',
   },
   {
     id: 'v2',
@@ -198,7 +198,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#38BDF8',
     particleEffect: 'neon-grid',
     imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
+    videoUrl: '',
   },
   {
     id: 'v3',
@@ -209,7 +209,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#F59E0B',
     particleEffect: 'smoke-sparks',
     imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    videoUrl: '',
   },
   {
     id: 'v4',
@@ -220,7 +220,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#2DD4BF',
     particleEffect: 'water-ripples',
     imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    videoUrl: '',
   },
   {
     id: 'v5',
@@ -231,7 +231,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#FBBF24',
     particleEffect: 'sunflare-glow',
     imageUrl: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+    videoUrl: '',
   },
   {
     id: 'v6',
@@ -242,7 +242,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#A78BFA',
     particleEffect: 'neon-pulse',
     imageUrl: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    videoUrl: '',
   },
   {
     id: 'v7',
@@ -253,7 +253,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#F5F5F4',
     particleEffect: 'alpine-glow',
     imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    videoUrl: '',
   },
   {
     id: 'v8',
@@ -264,7 +264,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#34D399',
     particleEffect: 'ember-ripple',
     imageUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackSeeTheWorld.mp4',
+    videoUrl: '',
   },
   {
     id: 'v9',
@@ -275,7 +275,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#67E8F9',
     particleEffect: 'city-shimmer',
     imageUrl: 'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    videoUrl: '',
   },
   {
     id: 'v10',
@@ -286,7 +286,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#F9A8D4',
     particleEffect: 'soft-lux',
     imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    videoUrl: '',
   },
   {
     id: 'v11',
@@ -297,7 +297,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#60A5FA',
     particleEffect: 'signal-wave',
     imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
+    videoUrl: '',
   },
   {
     id: 'v12',
@@ -308,7 +308,7 @@ export const DEFAULT_VISUAL_BACKDROPS: VisualBackdrop[] = [
     textColor: '#7DD3FC',
     particleEffect: 'water-hush',
     imageUrl: 'https://images.unsplash.com/photo-1439853941329-a99ce049f08c?auto=format&fit=crop&w=720&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    videoUrl: '',
   },
 ];
 

@@ -45,7 +45,7 @@ export const VideoMetricsBar: React.FC<VideoMetricsBarProps> = ({ videos }) => {
           <span className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider">
             Total Content Runtime
           </span>
-          <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
             <Clock className="w-4 h-4" />
           </div>
         </div>
@@ -53,7 +53,7 @@ export const VideoMetricsBar: React.FC<VideoMetricsBarProps> = ({ videos }) => {
           {`~${Math.max(1, Math.round(videos.length * 0.5))} mins`}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-[#9CA3AF] mt-1.5">
-          <Layers className="w-3.5 h-3.5 text-purple-400" />
+          <Layers className="w-3.5 h-3.5 text-blue-400" />
           <span>Full HD 9:16 Short Formats</span>
         </div>
       </Card>

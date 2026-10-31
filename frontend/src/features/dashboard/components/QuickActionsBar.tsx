@@ -58,8 +58,8 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({ onNavigate }) 
       title: 'Creator Profile & Badges',
       description: 'Niche, audience & achievement badges',
       icon: User,
-      iconColor: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
+      iconColor: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
       target: 'profile',
     },
     {

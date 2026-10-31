@@ -461,7 +461,7 @@ ${video.tags || ''}
                 
                 {/* Ambient dynamic glow particle effect */}
                 <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#3B82F6]/20 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
               </div>
             )}
 
@@ -714,7 +714,7 @@ ${video.tags || ''}
                 Format
               </span>
               <span className="text-xs font-bold text-white flex items-center gap-1 mt-0.5">
-                <Layers className="w-3 h-3 text-purple-400" />
+                <Layers className="w-3 h-3 text-blue-400" />
                 {video.aspectRatio || '9:16'} Vertical
               </span>
             </div>

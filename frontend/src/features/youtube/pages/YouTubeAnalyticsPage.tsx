@@ -83,7 +83,7 @@ export const YouTubeAnalyticsPage: React.FC<YouTubeAnalyticsPageProps> = ({
           {/* Channel Analytics Header Badge */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] shadow-lg">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
                 <BarChart3 className="w-5 h-5" />
               </div>
               <div>
@@ -127,7 +127,7 @@ export const YouTubeAnalyticsPage: React.FC<YouTubeAnalyticsPageProps> = ({
             <div className="p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] shadow-sm hover:border-[#3B82F6]/40 transition-colors">
               <div className="flex items-center justify-between text-[#9CA3AF]">
                 <span className="text-[11px] font-semibold uppercase tracking-wider">Avg. Retention Rate</span>
-                <BarChart3 className="w-4 h-4 text-purple-400" />
+                <BarChart3 className="w-4 h-4 text-blue-400" />
               </div>
               <p className="text-2xl font-extrabold text-white mt-2 font-mono-studio">{retention}%</p>
               <p className="text-[11px] text-[#C084FC] font-medium mt-1">High Shorts loop completion</p>
@@ -206,7 +206,7 @@ export const YouTubeAnalyticsPage: React.FC<YouTubeAnalyticsPageProps> = ({
               </div>
 
               <div className="p-3.5 rounded-xl bg-[#121212] border border-[#2F2F2F] space-y-1">
-                <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Evening Prime</span>
+                <span className="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Evening Prime</span>
                 <p className="text-sm font-extrabold text-white font-mono-studio">06:00 PM – 08:30 PM EST</p>
                 <p className="text-[11px] text-[#9CA3AF]">Peak Shorts feed velocity and comment interactions</p>
               </div>

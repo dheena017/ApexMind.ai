@@ -11,7 +11,7 @@ export default function NotFoundPage({ onNavigate, currentPath }: NotFoundPagePr
   const pathDisplay = currentPath || (typeof window !== 'undefined' ? window.location.pathname : '/unknown');
 
   const popularRoutes = [
-    { id: 'workspace', label: 'AI Video Studio', icon: <Wand2 className="w-4 h-4 text-purple-400" /> },
+    { id: 'workspace', label: 'AI Video Studio', icon: <Wand2 className="w-4 h-4 text-blue-400" /> },
     { id: 'videos', label: 'My Videos', icon: <Sparkles className="w-4 h-4 text-[#60A5FA]" /> },
     { id: 'youtube', label: 'YouTube Manager', icon: <Youtube className="w-4 h-4 text-red-400" /> },
   ];

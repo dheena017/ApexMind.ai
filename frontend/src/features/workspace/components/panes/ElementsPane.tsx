@@ -151,7 +151,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <Shapes className="w-4 h-4 shrink-0 text-purple-400" />
+          <Shapes className="w-4 h-4 shrink-0 text-blue-400" />
           <span className="text-xs font-bold text-white truncate">
             Studio Elements &amp; Overlays
           </span>

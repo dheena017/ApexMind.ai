@@ -520,15 +520,15 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('overlay')}
-        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 shrink-0">
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-purple-500/15 text-blue-400 border border-blue-500/30 shrink-0">
           O1
         </span>
-        <Layers className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+        <Layers className="w-3.5 h-3.5 text-blue-400 shrink-0" />
         <span className="text-[11px] font-medium text-zinc-200 group-hover:text-white truncate">
           Overlays
         </span>
         {overlayMaxLane > 0 && (
-          <span className="text-[8px] font-mono-studio text-purple-300 bg-purple-500/20 px-1 py-0.2 rounded shrink-0 font-bold">
+          <span className="text-[8px] font-mono-studio text-blue-300 bg-blue-500/10 px-1 py-0.2 rounded shrink-0 font-bold">
             {overlayMaxLane + 1}L
           </span>
         )}

@@ -44,8 +44,8 @@ export default function RecentStudioActivityPage({ onNavigate }: RecentStudioAct
       label: 'Total YouTube views',
       value: totalViews.toLocaleString(),
       subtext: 'Across all active shorts',
-      icon: <Eye className="h-5 w-5 text-purple-400" />,
-      badgeColor: 'bg-purple-500/10 border-purple-500/25',
+      icon: <Eye className="h-5 w-5 text-blue-400" />,
+      badgeColor: 'bg-blue-500/10 border-blue-500/25',
     },
     {
       label: 'Total audience likes',

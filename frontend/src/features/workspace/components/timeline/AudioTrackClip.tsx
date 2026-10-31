@@ -125,12 +125,12 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
     music: {
       color: 'bg-purple-400',
       text: 'text-purple-100',
-      accent: 'text-purple-300',
-      box: 'bg-[#1A0A24]/90 hover:bg-[#230E31] border-purple-500/35',
+      accent: 'text-blue-300',
+      box: 'bg-[#1A0A24]/90 hover:bg-[#230E31] border-blue-500/35',
       selectedRing: 'bg-[#280E38] border-purple-300 text-white z-20',
       handle: 'bg-purple-400/40 hover:bg-purple-400',
       handlePip: 'bg-white',
-      icon: <Music className="w-3 h-3 text-purple-300/90 shrink-0 pointer-events-none" />,
+      icon: <Music className="w-3 h-3 text-blue-300/90 shrink-0 pointer-events-none" />,
     },
     sfx: {
       color: 'bg-amber-400',

@@ -81,7 +81,7 @@ export const SystemHealthWidget: React.FC<SystemHealthWidgetProps> = ({
           <div className="p-3 rounded-xl bg-[#181818] border border-[#242424]">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-[#A0A0A0]">
-                <Music className="w-3.5 h-3.5 text-purple-400" />
+                <Music className="w-3.5 h-3.5 text-blue-400" />
                 Audio Cache
               </div>
             </div>

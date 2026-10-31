@@ -447,7 +447,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
               : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
           }`}
         >
-          <Bookmark className="w-3.5 h-3.5 text-purple-400" />
+          <Bookmark className="w-3.5 h-3.5 text-blue-400" />
           <span>Saved ({savedSnippets.length})</span>
         </button>
       </div>
@@ -946,7 +946,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           <div className="flex flex-col gap-3">
             <div className="bg-[#18181C] border border-[#26262B] rounded-xl p-3.5 flex flex-col gap-2.5">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Bookmark className="w-3.5 h-3.5 text-purple-400" />
+                <Bookmark className="w-3.5 h-3.5 text-blue-400" />
                 Save Custom Hook or Quote
               </span>
               <textarea

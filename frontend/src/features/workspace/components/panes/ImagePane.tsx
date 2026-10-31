@@ -22,6 +22,8 @@ import {
   Key,
   ChevronDown,
   Cpu,
+  Eye,
+  Copy,
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -38,6 +40,10 @@ export interface StockImageItem {
   resolution: string;
   source?: 'pexels' | 'pixabay' | 'unsplash' | 'wikimedia' | 'curated' | string;
   tags?: string[];
+  prompt?: string;
+  model?: string;
+  aspectRatio?: string;
+  createdAt?: number;
 }
 
 export interface ImagePaneProps {
@@ -374,10 +380,14 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           category: aiStyle,
           url: res.data.url,
           thumbnail: res.data.thumbnail || res.data.url,
-          author: 'Gemini Multimodal AI',
+          author: aiModel.includes('imagen') ? 'Google Imagen 3' : 'Gemini Multimodal AI',
           resolution: `${res.data.width || 1080}×${res.data.height || 1920}`,
           source: 'gemini_ai',
           tags: res.data.tags || ['ai_generated', aiStyle],
+          prompt: aiPrompt.trim(),
+          model: aiModel,
+          aspectRatio: aiAspectRatio,
+          createdAt: Date.now(),
         };
 
         const updated = [newItem, ...aiGeneratedList.filter((i) => i.id !== newItem.id)].slice(0, 30);
@@ -398,6 +408,33 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     } finally {
       setIsGeneratingAi(false);
     }
+  };
+
+  const handleDeleteAiImage = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = aiGeneratedList.filter((img) => img.id !== id);
+    setAiGeneratedList(updated);
+    try {
+      localStorage.setItem(AI_IMAGES_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+    toast.success('Removed visual from history');
+  };
+
+  const handleDownloadAiImage = (url: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success('Downloading AI visual PNG');
+  };
+
+  const handleCopyPrompt = (promptText: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(promptText);
+    toast.success('Prompt copied to clipboard');
   };
 
   const handleStageImage = (img: StockImageItem) => setSelectedId(img.id);
@@ -763,7 +800,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   >
                     {AI_MODEL_OPTIONS.map((m) => (
                       <option key={m.id} value={m.id} className="bg-[#121215] text-white py-1">
-                        {m.name} ({m.badge})
+                        {m.name}
                       </option>
                     ))}
                   </select>
@@ -798,27 +835,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   </select>
                   <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-              </div>
-
-              {/* Visual Style Preset Quick Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
-                {AI_STYLE_PRESETS.map((st) => {
-                  const isSelected = aiStyle === st.id;
-                  return (
-                    <button
-                      key={st.id}
-                      type="button"
-                      onClick={() => setAiStyle(st.id as any)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap border transition-all shrink-0 cursor-pointer ${
-                        isSelected
-                          ? 'bg-blue-600/20 border-blue-500 text-white shadow-xs'
-                          : 'bg-[#18181B] border-[#27272A] text-zinc-400 hover:bg-[#202024] hover:text-zinc-200'
-                      }`}
-                    >
-                      {st.label}
-                    </button>
-                  );
-                })}
               </div>
 
               {/* Aspect Ratio Selector & Action Button */}
@@ -862,69 +878,167 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             </div>
 
             {/* AI Generated History Gallery */}
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-blue-400" />
                   Generated Scene Assets ({aiGeneratedList.length})
                 </span>
                 {aiGeneratedList.length > 0 && (
-                  <span className="text-[10px] text-zinc-500">1-click apply to active timeline</span>
+                  <span className="text-[10px] text-zinc-400 font-medium">1-click apply to active timeline</span>
                 )}
               </div>
 
               {aiGeneratedList.length === 0 ? (
-                <div className="p-8 rounded-xl bg-[#141416] border border-[#26262B] text-center text-xs text-zinc-500 flex flex-col items-center gap-2">
-                  <Sparkles className="w-8 h-8 text-blue-500/30" />
-                  <p className="font-semibold text-zinc-400">No AI visuals generated yet</p>
-                  <p className="text-[11px] max-w-xs text-zinc-600">
-                    Type a scene prompt above or pick a quick inspiration scene to create high-definition 9:16 visuals.
-                  </p>
+                <div className="p-8 rounded-2xl bg-[#141416] border border-[#26262B] text-center text-xs text-zinc-400 flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <p className="font-bold text-white text-sm">No AI Visuals Generated Yet</p>
+                    <p className="text-[11px] max-w-xs text-zinc-500 leading-relaxed">
+                      Type a scene prompt above or click an inspiration scene below to create high-definition visuals.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                    {AI_INSPIRATIONS.slice(0, 3).map((chip, idx) => (
+                      <button
+                        key={`empty-chip-${idx}`}
+                        type="button"
+                        onClick={() => {
+                          setAiPrompt(chip.prompt);
+                          toast.info(`Prompt set: "${chip.label}" — click Generate to create visual`);
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#1C1C20] hover:bg-[#25252C] border border-[#2A2A32] text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2.5">
-                  {aiGeneratedList.map((item) => (
-                    <div
-                      key={item.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleApply(item)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleApply(item);
-                      }}
-                      className="group relative rounded-xl overflow-hidden border border-[#26262B] hover:border-blue-500/80 bg-[#141416] aspect-[9/16] cursor-pointer shadow-md transition-all flex flex-col justify-end p-2.5"
-                    >
-                      <img
-                        src={item.url}
-                        alt={item.title}
-                        loading="lazy"
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+                <div className="grid grid-cols-2 gap-3">
+                  {aiGeneratedList.map((item) => {
+                    const isActive = activeImageUrl === item.url;
+                    const modelLabel = item.model
+                      ? item.model.includes('fast')
+                        ? 'Imagen 3 Fast'
+                        : item.model.includes('imagen')
+                        ? 'Imagen 3'
+                        : item.model.includes('flash')
+                        ? 'Gemini 2.5'
+                        : item.model.includes('svg')
+                        ? 'Vector SVG'
+                        : 'AI Gen'
+                      : (item.category?.toUpperCase() || 'AI GEN');
 
-                      <div className="relative z-10 flex flex-col gap-1 text-left">
-                        <div className="flex items-center gap-1">
-                          <span className="px-1.5 py-0.5 rounded bg-blue-950/80 border border-blue-500/40 text-[8px] font-mono font-bold text-blue-300">
-                            {item.category?.toUpperCase() || 'AI GEN'}
-                          </span>
+                    return (
+                      <div
+                        key={item.id}
+                        className={`group relative rounded-2xl overflow-hidden border transition-all aspect-[9/16] bg-[#121214] flex flex-col justify-between p-2.5 shadow-md hover:shadow-xl hover:shadow-blue-950/20 ${
+                          isActive
+                            ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-blue-500/20'
+                            : 'border-[#26262B] hover:border-blue-500/60'
+                        }`}
+                      >
+                        {/* Background Visual Asset */}
+                        <img
+                          src={item.url}
+                          alt={item.title}
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+
+                        {/* Cinematic Multi-stop Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-black/60 pointer-events-none" />
+
+                        {/* Top Metadata Header: Engine Badge & Quick Action Buttons */}
+                        <div className="relative z-10 flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full bg-blue-950/90 border border-blue-400/40 text-[9px] font-mono font-bold text-blue-200 shadow-sm backdrop-blur-xs flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5 text-blue-400" />
+                              {modelLabel}
+                            </span>
+                            {item.aspectRatio && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-black/70 border border-white/10 text-[8.5px] font-mono text-zinc-300">
+                                {item.aspectRatio}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Top-Right Quick Action Overlay (Download & Delete) */}
+                          <div className="flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={(e) => handleDownloadAiImage(item.url, item.title, e)}
+                              title="Download High-Res PNG"
+                              className="w-6 h-6 rounded-md bg-black/80 hover:bg-zinc-800 border border-white/20 text-zinc-200 hover:text-white flex items-center justify-center cursor-pointer transition-colors shadow-sm"
+                            >
+                              <Download className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteAiImage(item.id, e)}
+                              title="Delete Visual from History"
+                              className="w-6 h-6 rounded-md bg-black/80 hover:bg-red-950/80 border border-red-500/30 text-red-400 hover:text-red-300 flex items-center justify-center cursor-pointer transition-colors shadow-sm"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
-                        <p className="text-xs font-bold text-white line-clamp-2 leading-tight">
-                          {item.title}
-                        </p>
-                        <span className="text-[9px] text-zinc-400 flex items-center gap-1">
-                          Click to Add to Timeline
-                        </span>
+
+                        {/* Active Scene Badge if placed on timeline */}
+                        {isActive && (
+                          <div className="absolute inset-x-2 top-10 flex items-center justify-center z-10 pointer-events-none">
+                            <div className="px-2.5 py-0.5 rounded-full bg-blue-600/95 text-white font-bold text-[10px] flex items-center gap-1 shadow-lg border border-blue-400/50 backdrop-blur-xs">
+                              <Check className="w-3 h-3 stroke-[3]" /> Active Scene
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bottom Information & 1-Click Action */}
+                        <div className="relative z-10 flex flex-col gap-1.5 text-left">
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-xs font-bold text-white line-clamp-2 leading-tight drop-shadow-md">
+                              {item.title}
+                            </p>
+                            {item.prompt && (
+                              <p className="text-[9px] text-zinc-300/80 line-clamp-1 italic">
+                                "{item.prompt}"
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-white/10">
+                            <button
+                              type="button"
+                              onClick={() => handleApply(item)}
+                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Apply to Timeline
+                            </button>
+
+                            {item.prompt && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleCopyPrompt(item.prompt || '', e)}
+                                title="Copy Generation Prompt"
+                                className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
-        ) : null}
-
-        {/* ── Tab 2: Color Filters & Backdrop Tuning ── */}
-        {activeTab === 'filters' ? (
+        ) : activeTab === 'filters' ? (
           <div className="flex flex-col gap-4">
             <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -1139,7 +1253,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'catalog' || activeTab === 'saved' ? (
           /* Catalog or Saved Images Grid */
           <>
             {/* Recently Used Carousel */}
@@ -1389,7 +1503,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
             )}
           </>
-        )}
+        ) : null}
       </div>
 
       {/* ── API Keys Configuration Modal ── */}
