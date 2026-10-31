@@ -386,7 +386,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                     max="5"
                     value={delay}
                     onChange={(e) => setDelay(parseFloat(e.target.value))}
-                    className="w-full accent-purple-500 cursor-pointer"
+                    className="w-full accent-blue-500 cursor-pointer"
                   />
                 </div>
               </div>

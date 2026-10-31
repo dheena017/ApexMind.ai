@@ -18,7 +18,7 @@ class JamendoAudioProvider:
     name: str = "jamendo"
 
     def is_configured(self) -> bool:
-        return bool(os.getenv("JAMENDO_CLIENT_ID", "56d30c95"))
+        return bool(os.getenv("JAMENDO_CLIENT_ID", "").strip())
 
     def search(
         self,
@@ -27,7 +27,9 @@ class JamendoAudioProvider:
         limit: int = 15,
         **kwargs,
     ) -> List[AudioTrackAsset]:
-        client_id = os.getenv("JAMENDO_CLIENT_ID", "56d30c95")  # public developer sandbox ID
+        client_id = os.getenv("JAMENDO_CLIENT_ID", "").strip()
+        if not client_id:
+            return []
         clean_q = (query or "").strip().replace("#", "").strip() or "cinematic motivational"
 
         url = "https://api.jamendo.com/v3.0/tracks/"

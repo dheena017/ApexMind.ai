@@ -184,91 +184,35 @@ def expand_storyboard_to_target_duration(
     topic: str,
     target_aspect_ratio: str = "9:16",
 ) -> list[dict[str, Any]]:
-    """Guarantees the storyboard contains sufficient sequential scenes and spoken words to fill the selected duration (e.g. 60s, 45s)."""
-    target_scenes = max(3, round(target_seconds / 4.8))
-    target_words = round(target_seconds * 2.35)
-    
-    current_words = sum(len((s.get("subtitleText") or "").split()) for s in storyboard)
-    if len(storyboard) >= target_scenes and current_words >= target_words * 0.8:
-        return storyboard
+    """
+    Dynamically aligns the storyboard scenes to fill the user's selected duration (e.g. 60s, 45s, 30s)
+    using 100% pure AI-generated content with zero hardcoded static templates.
+    """
+    if not storyboard:
+        return []
 
-    narrative_templates = [
-        ("Most people spend their entire lives waiting for conditions that never arrive.", "emerald deep pine forest river rapids aerial", "Fast River Rapids in Emerald Forest", "push-in"),
-        ("Comfort whispers that tomorrow will be easier, but comfort is the silent trap.", "stormy ocean breakers crashing cliffs volumetric", "Dramatic Ocean Breakers & Sea Spray", "panoramic-drift-left"),
-        ("A mountain never yields to wishes; it surrenders only to daily relentless climbing.", "cascading waterfall deep alpine canyon mist", "Cascading Canyon Waterfall & Mist", "slow-zoom"),
-        ("Stop looking for an effortless path through terrain specifically engineered to test your grit.", "sunbeams piercing ancient redwood pine forest", "Sunbeams Through Ancient Redwoods", "push-in"),
-        ("True power is never announced in public; it is forged in the silence when no one watches.", "golden hour desert sand dunes vast shadows", "Vast Golden Hour Desert Dunes", "orbital-reveal"),
-        ("In the quiet hours of early dawn, your daily choices quietly carve your destiny.", "high alpine glacier mountain panoramic drift", "High Alpine Glacier Mountain Range", "slow-pull-out"),
-        ("Do not ask for lighter burdens; forge the inner character capable of carrying giants.", "dark volumetric storm clouds rolling over mountain ridge", "Volumetric Storm Clouds Over Ridge", "slow-zoom"),
-        ("Every single quiet act of discipline compounds into an unshakable psychological fortress.", "crystal clear alpine lake reflection mountain sunrise", "Alpine Lake Reflection At Dawn", "push-in"),
-        ("When resistance feels heaviest, understand that is the exact point breakthrough occurs.", "winding glacial turquoise river canyon aerial", "Glacial Turquoise River Canyon", "pan-right"),
-        ("Demand more from yourself every single morning than anyone else would dare ask.", "crimson sunset glow mountain summit silhouette", "Crimson Sunset Mountain Summit", "slow-zoom"),
-    ]
+    num_scenes = len(storyboard)
+    avg_dur = max(2.5, round(target_seconds / max(1, num_scenes), 2))
+    running_start = 0.0
 
-    hook_scene = dict(storyboard[0]) if storyboard else {
-        "sceneNumber": 1,
-        "beat": "hook",
-        "subtitleText": f"Stop waiting to feel ready for {topic or 'this'}.",
-        "visualQuery": "misty mountain peak sunrise clouds volumetric",
-        "googleSearchQuery": "misty mountain peak sunrise clouds vertical 9:16",
-        "mediaName": "Atmospheric Mountain Ridge & Mist",
-        "mediaType": "video",
-        "speechRate": 1.05,
-        "tone": "urgent",
-        "emotion": "Fast, urgent delivery",
-        "transition": "glitch",
-        "cameraMotion": "push-in",
-    }
-    
-    cta_scene = dict(storyboard[-1]) if len(storyboard) > 1 else {
-        "sceneNumber": target_scenes,
-        "beat": "cta",
-        "subtitleText": "Save this reel, silence the noise, and start now.",
-        "visualQuery": "aurora borealis northern lights mountain nature",
-        "googleSearchQuery": "northern lights aurora borealis mountain night sky 9:16",
-        "mediaName": "Celestial Aurora Borealis Over Peaks",
-        "mediaType": "video",
-        "speechRate": 1.00,
-        "tone": "decisive",
-        "emotion": "Firm, decisive pace",
-        "transition": "fade",
-        "cameraMotion": "static",
-    }
+    result = []
+    for idx, sc in enumerate(storyboard):
+        sc_copy = dict(sc)
+        is_last = idx == num_scenes - 1
+        dur = round(target_seconds - running_start, 2) if is_last else avg_dur
+        dur = max(1.5, dur)
 
-    existing_middle = [dict(s) for s in (storyboard[1:-1] if len(storyboard) > 2 else [])]
-    needed_middle = target_scenes - 2
-    final_middle = list(existing_middle)
+        sc_copy["sceneNumber"] = idx + 1
+        sc_copy["start"] = round(running_start, 2)
+        sc_copy["duration"] = dur
+        sc_copy["aspectRatio"] = target_aspect_ratio
+        sc_copy["mediaStatus"] = (
+            "resolved" if sc_copy.get("mediaUrl") and str(sc_copy["mediaUrl"]).startswith("http") else "unresolved"
+        )
+        running_start += dur
+        result.append(sc_copy)
 
-    tpl_idx = 0
-    while len(final_middle) < needed_middle:
-        tpl_text, tpl_query, tpl_name, tpl_motion = narrative_templates[tpl_idx % len(narrative_templates)]
-        final_middle.append({
-            "beat": "quote",
-            "subtitleText": tpl_text,
-            "visualQuery": f"{tpl_query} 9:16",
-            "googleSearchQuery": f"{tpl_query} vertical 9:16",
-            "fallbackQueries": [f"{tpl_query} 4k nature", "cinematic landscape aerial drone 9:16"],
-            "negativeTerms": ["indoor", "gym", "building", "urban", "office", "car"],
-            "mediaName": tpl_name,
-            "mediaType": "video",
-            "speechRate": 0.90,
-            "tone": "reverent",
-            "emotion": "Slower, heavier cadence",
-            "transition": "luma-fade" if tpl_idx % 2 == 0 else "whip-pan-left",
-            "cameraMotion": tpl_motion,
-            "captionPresetClass": hook_scene.get("captionPresetClass", "font-black tracking-tight text-yellow-400 uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)] bg-black/85 px-3 py-1 rounded-md border border-yellow-400/30"),
-            "captionPresetColor": hook_scene.get("captionPresetColor", "#FACC15"),
-            "captionPresetFontFamily": hook_scene.get("captionPresetFontFamily", "Impact, sans-serif"),
-        })
-        tpl_idx += 1
-
-    expanded = [hook_scene] + final_middle[:needed_middle] + [cta_scene]
-    for idx, sc in enumerate(expanded):
-        sc["sceneNumber"] = idx + 1
-        sc["aspectRatio"] = target_aspect_ratio
-        sc["mediaStatus"] = "resolved" if sc.get("mediaUrl") and str(sc["mediaUrl"]).startswith("http") else "unresolved"
-
-    return expanded
+    return result
 
 
 def generate_gemini_script(

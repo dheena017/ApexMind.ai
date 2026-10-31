@@ -392,18 +392,18 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             )}
 
             {/* ── AI VOICE TONE & EMOTION MODULATION ── */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-b from-[#1E1B33] to-[#141418] border border-purple-500/30 flex flex-col gap-3 shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-28 h-28 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="p-3.5 rounded-xl bg-[#141416] border border-[#26262B] flex flex-col gap-3 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
                       AI Voice Tone & Emotion Modulation
-                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-950/60 text-blue-400 border border-blue-500/30 font-mono">
                         Active
                       </span>
                     </h4>
@@ -418,7 +418,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => handleToggleCadence(!dynamicCadenceEnabled)}
                   className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
-                    dynamicCadenceEnabled ? 'bg-purple-600 justify-end' : 'bg-neutral-800 justify-start'
+                    dynamicCadenceEnabled ? 'bg-blue-600 justify-end' : 'bg-neutral-800 justify-start'
                   }`}
                   title="Toggle dynamic voice cadence modulation"
                 >
@@ -507,7 +507,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 onClick={handleAuditionModulation}
                 className="w-full py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
-                <Waves className="w-3 h-3 text-purple-400" />
+                <Waves className="w-3 h-3 text-blue-400" />
                 Audition Tone & Cadence Demo
               </button>
             </div>
@@ -723,7 +723,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   max="200"
                   value={stereoWidth}
                   onChange={(e) => setStereoWidth(Number(e.target.value))}
-                  className="w-full accent-purple-500 cursor-pointer"
+                  className="w-full accent-blue-500 cursor-pointer"
                 />
               </div>
             </div>
@@ -845,7 +845,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     max={Math.max(15, duration)}
                     value={trimEnd}
                     onChange={(e) => setTrimEnd(parseFloat(e.target.value))}
-                    className="w-full accent-purple-500 cursor-pointer"
+                    className="w-full accent-blue-500 cursor-pointer"
                   />
                 </div>
               </div>
