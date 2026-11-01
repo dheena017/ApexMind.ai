@@ -209,14 +209,24 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
     setRunSuccessNotice(null);
     setErrorMessage(null);
 
-    const phaseTimer1 = setTimeout(() => setActivePipelinePhase(1), 2500); // Voice
-    const phaseTimer2 = setTimeout(() => setActivePipelinePhase(2), 6500); // B-Roll
-    const phaseTimer3 = setTimeout(() => setActivePipelinePhase(3), 10500); // Captions
-    const phaseTimer4 = setTimeout(() => setActivePipelinePhase(4), 14000); // Render
-    const phaseTimer5 = setTimeout(() => setActivePipelinePhase(5), 20000); // Publish
+    // Poll backend state every 1.5s to accurately advance phases based on real execution status
+    const pollInterval = setInterval(async () => {
+      try {
+        const jobs = await youtubeApi.getAutomations();
+        const currentJob = jobs.find((j) => j.id === id);
+        if (currentJob?.lastRunMessage) {
+          const match = currentJob.lastRunMessage.match(/Stage\s*([1-6])\/6/i);
+          if (match) {
+            const stageNum = parseInt(match[1], 10);
+            setActivePipelinePhase(stageNum - 1);
+          }
+        }
+      } catch {}
+    }, 1500);
 
     try {
       const res = await youtubeApi.runAutomationNow(id);
+      setActivePipelinePhase(6);
       const videoTitle = res.data?.title || jobTheme;
       const isLive = Boolean(res.data?.isLive || res.data?.youtubeStatus === 'uploaded');
       if (isLive) {
@@ -229,11 +239,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
       setErrorMessage(err.message || 'Pipeline execution failed');
       onRefresh?.();
     } finally {
-      clearTimeout(phaseTimer1);
-      clearTimeout(phaseTimer2);
-      clearTimeout(phaseTimer3);
-      clearTimeout(phaseTimer4);
-      clearTimeout(phaseTimer5);
+      clearInterval(pollInterval);
       setRunningJobId(null);
       setActivePipelinePhase(0);
     }
@@ -536,7 +542,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                   key={auto.id}
                   className={`p-4 sm:p-5 rounded-2xl transition-all flex flex-col gap-4 shadow-xl border ${
                     isRunning
-                      ? 'bg-gradient-to-b from-[#181829] via-[#141420] to-[#111118] border-blue-500/60 shadow-[0_0_32px_rgba(59,130,246,0.18)] ring-1 ring-blue-500/40'
+                      ? 'bg-gradient-to-b from-[#181820] via-[#141419] to-[#121216] border-emerald-500/40 shadow-lg shadow-emerald-950/20'
                       : isPaused
                       ? 'bg-gradient-to-b from-[#17171C] via-[#141418] to-[#121215] border-zinc-800/90 opacity-95'
                       : 'bg-gradient-to-b from-[#191920] via-[#15151B] to-[#131317] border-[#2A2A38] hover:border-[#38384A]'
@@ -574,8 +580,8 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     {/* Top-Right: Status Badge and Stop/Resume Action */}
                     <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
                       {isRunning ? (
-                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 text-xs font-bold shadow-[0_0_12px_rgba(59,130,246,0.2)]">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                           <span>Live Generation Active</span>
                         </span>
                       ) : isActive ? (
@@ -690,18 +696,18 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
 
                   {/* ── 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) ── */}
                   {isRunning && (
-                    <div className="p-3.5 rounded-xl bg-blue-950/25 border border-blue-500/40 flex flex-col gap-2.5 animate-fade-in shadow-inner">
+                    <div className="p-3.5 rounded-xl bg-[#111116] border border-[#252532] flex flex-col gap-2.5 animate-fade-in shadow-inner">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-blue-300 flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                        <span className="font-bold text-zinc-200 flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
                           <span>Autonomous 6-Stage Pipeline Live</span>
                         </span>
-                        <span className="font-mono text-xs text-blue-300 font-bold bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-500/30">
+                        <span className="font-mono text-xs text-emerald-300 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
                           Stage {activePipelinePhase + 1} of 6
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
                         {[
                           { name: '1. Script', desc: 'Gemini 3.8 Flash' },
                           { name: '2. Voice', desc: auto.voice || 'Fenrir TTS' },
@@ -716,20 +722,29 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                           return (
                             <div
                               key={step.name}
-                              className={`p-2 rounded-xl border text-center transition-all ${
+                              className={`p-2.5 rounded-xl border flex flex-col gap-1.5 transition-all ${
                                 isDone
                                   ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
                                   : isCurrent
-                                  ? 'bg-blue-600/30 border-blue-400 text-blue-200 ring-1 ring-blue-500/60 shadow-[0_0_12px_rgba(59,130,246,0.3)]'
-                                  : 'bg-[#121217] border-[#22222E] text-zinc-500'
+                                  ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 ring-1 ring-emerald-500/50 shadow-sm'
+                                  : 'bg-[#15151C] border-[#22222C] text-zinc-500'
                               }`}
                             >
-                              <div className="text-xs font-bold truncate flex items-center justify-center gap-1">
-                                {isDone && <Check className="w-3 h-3 shrink-0 text-emerald-400" />}
-                                {isCurrent && <Loader2 className="w-3 h-3 shrink-0 animate-spin text-blue-400" />}
-                                <span>{step.name}</span>
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-xs font-bold text-white truncate">{step.name}</span>
+                                {isDone ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded shrink-0">
+                                    <Check className="w-3 h-3 stroke-[3] text-emerald-400" /> Done
+                                  </span>
+                                ) : isCurrent ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/25 px-2 py-0.5 rounded shrink-0 animate-pulse">
+                                    <Loader2 className="w-3 h-3 animate-spin text-emerald-400" /> Working
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-zinc-500 font-mono shrink-0">Pending</span>
+                                )}
                               </div>
-                              <div className="text-[9px] text-zinc-400 truncate mt-0.5">{step.desc}</div>
+                              <div className="text-[10px] text-zinc-400 truncate">{step.desc}</div>
                             </div>
                           );
                         })}
@@ -800,7 +815,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                                   isSuccess
                                     ? isLiveShort
                                       ? 'bg-[#151B18] border-emerald-500/30 hover:border-emerald-500/50'
-                                      : 'bg-[#151722] border-blue-500/30 hover:border-blue-500/50'
+                                      : 'bg-[#15151A] border-[#262630] hover:border-[#383844]'
                                     : 'bg-[#1D1418] border-rose-500/30 hover:border-rose-500/50'
                                 }`}
                               >
@@ -814,8 +829,8 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                                           <span>Published YouTube Short</span>
                                         </span>
                                       ) : (
-                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-bold">
-                                          <Video className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#1F1F28] text-zinc-300 border border-[#2B2B38] text-[10px] font-bold">
+                                          <Video className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                                           <span>Studio Video Catalog</span>
                                         </span>
                                       )
@@ -873,11 +888,11 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                                       href={entry.videoUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-[11px] font-bold text-blue-300 hover:text-white transition-colors"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1C1C24] hover:bg-[#252530] border border-[#2D2D3A] text-[11px] font-bold text-zinc-200 hover:text-white transition-colors"
                                     >
-                                      <Video className="w-3.5 h-3.5 text-blue-400" />
+                                      <Video className="w-3.5 h-3.5 text-zinc-400" />
                                       <span>Open Studio MP4</span>
-                                      <ExternalLink className="w-3 h-3 text-blue-400" />
+                                      <ExternalLink className="w-3 h-3 text-zinc-400" />
                                     </a>
                                   )}
 
@@ -967,7 +982,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                       onClick={() => handleRunPipelineNow(auto.id, auto.theme)}
                       className={`flex-1 h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.99] ${
                         isRunning
-                          ? 'bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-blue-600/20 text-blue-300 border border-blue-500/40 cursor-not-allowed shadow-inner'
+                          ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 cursor-not-allowed shadow-inner'
                           : isPaused
                           ? 'bg-[#1F1F27] hover:bg-[#282834] text-zinc-200 hover:text-white border border-[#2E2E3E] hover:border-zinc-500'
                           : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
@@ -982,7 +997,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     >
                       {isRunning ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
                           <span>
                             {activePipelinePhase === 0
                               ? 'Stage 1/6: Generating Script with Gemini 3.8...'

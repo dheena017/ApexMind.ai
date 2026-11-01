@@ -78,6 +78,108 @@ export const CURATED_MOOD_PILLS = [
 const LOCAL_STORAGE_KEY = 'apexmind_custom_images';
 const RECENT_IMAGES_KEY = 'apexmind_recent_images';
 
+interface ImageCardProps {
+  img: StockImageItem;
+  isSelected: boolean;
+  isActive: boolean;
+  activeTab: string;
+  onApply: (img: StockImageItem) => void;
+  onDeleteSaved: (id: string, e: React.MouseEvent) => void;
+  renderSourceBadge: (source?: string) => React.ReactNode;
+}
+
+const ImageCard = React.memo<ImageCardProps>(({
+  img,
+  isSelected,
+  isActive,
+  activeTab,
+  onApply,
+  onDeleteSaved,
+  renderSourceBadge,
+}) => {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onApply(img)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onApply(img);
+        }
+      }}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
+      className={`group relative rounded-xl border overflow-hidden aspect-[9/16] bg-[#1C1C20] transition-all cursor-pointer text-left transform-gpu ${
+        isSelected
+          ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg shadow-blue-500/10'
+          : 'border-[#2A2A30] hover:border-[#3A3A42]'
+      }`}
+    >
+      <img
+        src={img.thumbnail}
+        alt={img.title}
+        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        loading="lazy"
+        decoding="async"
+      />
+
+      {/* Top Provider & Theme Badges */}
+      <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
+        {renderSourceBadge(img.source)}
+      </div>
+
+      {/* Selected Indicator */}
+      {isActive && (
+        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center z-10 shadow-md">
+          <Check className="w-3 h-3 text-white stroke-[3]" />
+        </div>
+      )}
+
+      {/* Delete button for Saved images */}
+      {activeTab === 'saved' && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeleteSaved(img.id, e);
+          }}
+          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors z-10 cursor-pointer"
+          title="Delete from Saved"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-85 group-hover:opacity-100 transition-opacity" />
+
+      {/* Bottom Info */}
+      <div className="absolute inset-x-0 bottom-0 p-2.5 flex flex-col gap-1.5 z-10">
+        <div className="flex flex-col min-w-0">
+          <p className="text-[11px] font-bold text-white truncate drop-shadow-md leading-tight" title={img.title}>
+            {img.title}
+          </p>
+          <p className="text-[9px] text-zinc-400 truncate">
+            {img.authorUrl ? (
+              <a
+                href={img.authorUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="hover:underline text-zinc-400 hover:text-white"
+              >
+                {img.author}
+              </a>
+            ) : (
+              `by ${img.author}`
+            )}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+});
+ImageCard.displayName = 'ImageCard';
+
 export const ImagePane: React.FC<ImagePaneProps> = ({
   onSelectImage,
   activeImageUrl,
@@ -871,90 +973,18 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               /* Image Grid */
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-2 gap-2.5">
-                  {sourceList.map((img) => {
-                    const isSelected = selectedId === img.id || (!selectedId && activeImageUrl === img.url);
-                    return (
-                      <div
-                        key={img.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleApply(img)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            handleApply(img);
-                          }
-                        }}
-                        className={`group relative rounded-xl border overflow-hidden aspect-[9/16] bg-[#1C1C20] transition-all cursor-pointer text-left ${
-                          isSelected
-                            ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg shadow-blue-500/10'
-                            : 'border-[#2A2A30] hover:border-[#3A3A42]'
-                        }`}
-                      >
-                        <img
-                          src={img.thumbnail}
-                          alt={img.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        />
-
-                        {/* Top Provider & Theme Badges */}
-                        <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
-                          {renderSourceBadge(img.source)}
-                        </div>
-
-                        {/* Selected Indicator */}
-                        {activeImageUrl === img.url && (
-                          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center z-10 shadow-md">
-                            <Check className="w-3 h-3 text-white stroke-[3]" />
-                          </div>
-                        )}
-
-                        {/* Delete button for Saved images */}
-                        {activeTab === 'saved' && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSaved(img.id, e);
-                            }}
-                            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors z-10 cursor-pointer"
-                            title="Delete from Saved"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-85 group-hover:opacity-100 transition-opacity" />
-
-                        {/* Bottom Info & Full-Width Apply Button */}
-                        <div className="absolute inset-x-0 bottom-0 p-2.5 flex flex-col gap-1.5 z-10">
-                          <div className="flex flex-col min-w-0">
-                            <p className="text-[11px] font-bold text-white truncate drop-shadow-md leading-tight" title={img.title}>
-                              {img.title}
-                            </p>
-                            <p className="text-[9px] text-zinc-400 truncate">
-                              {img.authorUrl ? (
-                                <a
-                                  href={img.authorUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="hover:underline text-zinc-400 hover:text-white"
-                                >
-                                  {img.author}
-                                </a>
-                              ) : (
-                                `by ${img.author}`
-                              )}
-                            </p>
-                          </div>
-
-                          
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {sourceList.map((img) => (
+                    <ImageCard
+                      key={img.id}
+                      img={img}
+                      isSelected={selectedId === img.id || (!selectedId && activeImageUrl === img.url)}
+                      isActive={activeImageUrl === img.url}
+                      activeTab={activeTab}
+                      onApply={handleApply}
+                      onDeleteSaved={handleDeleteSaved}
+                      renderSourceBadge={renderSourceBadge}
+                    />
+                  ))}
                 </div>
 
                 {/* Load More Pagination (Infinite browsing over 100M+ assets) */}

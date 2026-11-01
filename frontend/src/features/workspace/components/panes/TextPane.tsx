@@ -535,7 +535,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
                     <div
                       key={preset.id}
                       onClick={() => handleApplyPreset(preset)}
-                      className={`group relative rounded-xl border p-2 bg-[#18181C] hover:bg-[#1D1D22] transition-all cursor-pointer flex flex-col gap-1.5 ${
+                      style={{ contentVisibility: 'auto', containIntrinsicSize: '78px' }}
+                      className={`group relative rounded-xl border p-2 bg-[#18181C] hover:bg-[#1D1D22] transition-all cursor-pointer flex flex-col gap-1.5 transform-gpu ${
                         isSelected
                           ? 'border-blue-500 ring-1 ring-blue-500/50 shadow-lg shadow-blue-500/10'
                           : 'border-[#26262B] hover:border-[#383842]'
@@ -726,7 +727,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
               {filteredHooks.map((item, idx) => (
                 <div
                   key={idx}
-                  className="rounded-xl border border-[#26262B] bg-[#18181C] hover:border-[#383842] transition-colors flex flex-col gap-2 p-3"
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '88px' }}
+                  className="rounded-xl border border-[#26262B] bg-[#18181C] hover:border-[#383842] transition-colors flex flex-col gap-2 p-3 transform-gpu"
                 >
                   <div className="bg-[#0E0E12] border border-[#23232A] rounded-lg p-2.5 flex items-center justify-center text-center min-h-[46px]">
                     <p className="text-xs font-bold text-white tracking-wide leading-snug">

@@ -86,7 +86,14 @@ html, body {
     background-color: #60A5FA;
   }
 
-  /* Explicit visible styling for studio panels */
+  /* Explicit visible styling for studio panels with GPU scroll optimization */
+  .custom-scrollbar {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    will-change: scroll-position;
+    transform: translateZ(0);
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 7px;
     height: 7px;

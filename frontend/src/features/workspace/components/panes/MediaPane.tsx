@@ -43,6 +43,142 @@ export interface MediaPaneProps {
 
 const LOCAL_STORAGE_MEDIA_KEY = 'apexmind_workspace_user_media_v2';
 
+interface MediaAssetCardProps {
+  item: UploadedMediaItem;
+  isSelected: boolean;
+  copiedId: string | null;
+  onApply: (item: UploadedMediaItem) => void;
+  onCopyUrl: (url: string, id: string, e: React.MouseEvent) => void;
+  onDeleteItem: (id: string, e: React.MouseEvent) => void;
+}
+
+const MediaAssetCard = React.memo<MediaAssetCardProps>(({
+  item,
+  isSelected,
+  copiedId,
+  onApply,
+  onCopyUrl,
+  onDeleteItem,
+}) => {
+  const [, setIsHovered] = useState(false);
+  const [shouldPlayVideo, setShouldPlayVideo] = useState(false);
+  const hoverTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (item.type === 'video') {
+      hoverTimerRef.current = setTimeout(() => {
+        setShouldPlayVideo(true);
+      }, 150);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setShouldPlayVideo(false);
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onApply(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onApply(item);
+        }
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '180px' }}
+      className={`group relative rounded-xl border overflow-hidden aspect-[9/13] bg-[#1C1C20] transition-all cursor-pointer flex flex-col justify-end text-left transform-gpu ${
+        isSelected
+          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg shadow-[#3B82F6]/20'
+          : 'border-[#2A2A30] hover:border-[#3A3A42]'
+      }`}
+    >
+      {/* Media Preview */}
+      {item.type === 'image' ? (
+        <img
+          src={item.url}
+          alt={item.name}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : shouldPlayVideo ? (
+        <video
+          src={item.url}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+      ) : (
+        <div className="absolute inset-0 bg-[#16161A] flex flex-col items-center justify-center text-zinc-500 group-hover:text-zinc-300 transition-colors">
+          <Film className="w-8 h-8 mb-1 opacity-70" />
+          <span className="text-[10px] font-mono">Video Clip</span>
+        </div>
+      )}
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+
+      {/* Top Action Icons */}
+      <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
+        <span className="px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-mono-studio text-white/90 border border-white/10 uppercase">
+          {item.type}
+        </span>
+
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={(e) => onCopyUrl(item.url, item.id, e)}
+            className="p-1.5 rounded-full bg-black/80 hover:bg-[#3B82F6] text-white transition-colors cursor-pointer"
+            title="Copy Media URL"
+          >
+            {copiedId === item.id ? (
+              <Check className="w-3 h-3 text-emerald-400" />
+            ) : (
+              <Copy className="w-3 h-3" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => onDeleteItem(item.id, e)}
+            className="p-1.5 rounded-full bg-black/80 hover:bg-rose-600 text-white transition-colors cursor-pointer"
+            title="Delete Asset"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom Info */}
+      <div className="relative z-10 p-2.5 pointer-events-none">
+        <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
+          {item.name}
+        </p>
+        <p className="text-[9px] text-[#A1A1AA]">{item.size}</p>
+      </div>
+
+      {/* Applied indicator */}
+      {isSelected && (
+        <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md z-20">
+          <Check className="w-3 h-3 stroke-[3]" />
+        </div>
+      )}
+    </div>
+  );
+});
+MediaAssetCard.displayName = 'MediaAssetCard';
+
 export const MediaPane: React.FC<MediaPaneProps> = ({
   onApplyBackdrop,
   onApplyAudio,
@@ -540,90 +676,17 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2.5">
-                {filteredMedia.map((item) => {
-                  const isSelected = activeMediaUrl === item.url || appliedId === item.id;
-
-                  return (
-                    <motion.div
-                      key={item.id}
-                      onClick={() => handleApplyItem(item)}
-                      whileHover={{ scale: 1.025, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                      className={`group relative rounded-xl border overflow-hidden aspect-[9/13] bg-[#1C1C20] transition-all cursor-pointer flex flex-col justify-end text-left ${
-                        isSelected
-                          ? 'border-[#3B82F6] ring-2 ring-[#3B82F6]/40 shadow-lg shadow-[#3B82F6]/20'
-                          : 'border-[#2A2A30] hover:border-[#3A3A42]'
-                      }`}
-                    >
-                      {/* Media Preview Thumbnail */}
-                      {item.type === 'image' && (
-                        <img
-                          src={item.url}
-                          alt={item.name}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      )}
-                      {item.type === 'video' && (
-                        <video
-                          src={item.url}
-                          className="absolute inset-0 w-full h-full object-cover"
-                          muted
-                          loop
-                        />
-                      )}
-
-                      {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-
-                      {/* Top Action Icons */}
-                      <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
-                        <span className="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[8px] font-mono-studio text-white/80 border border-white/10 uppercase">
-                          {item.type}
-                        </span>
-
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={(e) => handleCopyUrl(item.url, item.id, e)}
-                            className="p-1.5 rounded-full bg-black/70 hover:bg-[#3B82F6] text-white transition-colors"
-                            title="Copy Media URL"
-                          >
-                            {copiedId === item.id ? (
-                              <Check className="w-3 h-3 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteItem(item.id, e)}
-                            className="p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
-                            title="Delete Asset"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Bottom Info */}
-                      <div className="relative z-10 p-2.5">
-                        <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
-                          {item.name}
-                        </p>
-                        <p className="text-[9px] text-[#A1A1AA]">{item.size}</p>
-                      </div>
-
-                      {/* Applied indicator */}
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 p-1 rounded-full bg-[#3B82F6] text-white shadow-md z-20">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
+                {filteredMedia.map((item) => (
+                  <MediaAssetCard
+                    key={item.id}
+                    item={item}
+                    isSelected={activeMediaUrl === item.url || appliedId === item.id}
+                    copiedId={copiedId}
+                    onApply={handleApplyItem}
+                    onCopyUrl={handleCopyUrl}
+                    onDeleteItem={handleDeleteItem}
+                  />
+                ))}
               </div>
             )}
           </>

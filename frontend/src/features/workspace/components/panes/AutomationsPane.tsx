@@ -225,12 +225,20 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     setRunningJobId(id);
     setActivePipelinePhase(0);
 
-    // 6-Stage Dynamic Phase Progression Timers
-    const phaseTimer1 = setTimeout(() => setActivePipelinePhase(1), 2200); // Stage 2: Voice
-    const phaseTimer2 = setTimeout(() => setActivePipelinePhase(2), 4800); // Stage 3: B-Roll
-    const phaseTimer3 = setTimeout(() => setActivePipelinePhase(3), 8000); // Stage 4: Captions
-    const phaseTimer4 = setTimeout(() => setActivePipelinePhase(4), 11500); // Stage 5: Render
-    const phaseTimer5 = setTimeout(() => setActivePipelinePhase(5), 16000); // Stage 6: Publish
+    // Poll backend state every 1.5s to accurately advance phases based on real execution status
+    const pollInterval = setInterval(async () => {
+      try {
+        const jobs = await youtubeApi.getAutomations();
+        const currentJob = jobs.find((j) => j.id === id);
+        if (currentJob?.lastRunMessage) {
+          const match = currentJob.lastRunMessage.match(/Stage\s*([1-6])\/6/i);
+          if (match) {
+            const stageNum = parseInt(match[1], 10);
+            setActivePipelinePhase(stageNum - 1);
+          }
+        }
+      } catch {}
+    }, 1500);
 
     try {
       toast.info(`Executing autonomous 6-stage pipeline for "${jobTheme}"...`);
@@ -238,6 +246,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         ? activeTimeline
         : undefined;
       const res = await youtubeApi.runAutomationNow(id, payload);
+      // On success, mark all 6 stages as completed
+      setActivePipelinePhase(6);
       const isLive = Boolean(res.data?.isLive || res.data?.youtubeStatus === 'uploaded');
       const title = res.data?.title || jobTheme;
       
@@ -253,11 +263,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       await loadAutomations();
       await loadHistory(id, true);
     } finally {
-      clearTimeout(phaseTimer1);
-      clearTimeout(phaseTimer2);
-      clearTimeout(phaseTimer3);
-      clearTimeout(phaseTimer4);
-      clearTimeout(phaseTimer5);
+      clearInterval(pollInterval);
       setRunningJobId(null);
       setActivePipelinePhase(0);
     }
@@ -402,8 +408,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             onClick={() => setActiveSubTab('create')}
             className={`h-7 px-2.5 rounded-md font-semibold text-[11px] transition-all flex items-center gap-1 cursor-pointer shadow-sm ${
               activeSubTab === 'create'
-                ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40'
-                : 'bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/50'
+                ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/50'
             }`}
             title="Configure New Automation Schedule"
           >
@@ -612,7 +618,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                       key={job.id}
                       className={`p-3.5 sm:p-4 rounded-2xl transition-all flex flex-col gap-3.5 shadow-lg border ${
                         isRunning
-                          ? 'bg-gradient-to-b from-[#181829] via-[#141420] to-[#111118] border-blue-500/60 shadow-[0_0_24px_rgba(59,130,246,0.18)] ring-1 ring-blue-500/40'
+                          ? 'bg-gradient-to-b from-[#181820] via-[#141419] to-[#121216] border-emerald-500/40 shadow-lg shadow-emerald-950/20'
                           : isPaused
                           ? 'bg-gradient-to-b from-[#16161B] via-[#131317] to-[#111114] border-zinc-800/80 opacity-95'
                           : 'bg-gradient-to-b from-[#181820] via-[#141419] to-[#121216] border-[#282836] hover:border-[#38384A]'
@@ -653,8 +659,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         {/* Top-Right: Clean single status pill */}
                         <div className="shrink-0 pt-0.5">
                           {isRunning ? (
-                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 text-[10px] font-bold shadow-[0_0_10px_rgba(59,130,246,0.2)]">
-                              <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-400" />
+                            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                              <Loader2 className="w-2.5 h-2.5 animate-spin text-emerald-400" />
                               <span>Running</span>
                             </span>
                           ) : isActive ? (
@@ -745,18 +751,18 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
                       {/* ── 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) ── */}
                       {isRunning && (
-                        <div className="p-3 rounded-xl bg-blue-950/25 border border-blue-500/40 flex flex-col gap-2.5 animate-fade-in shadow-inner">
+                        <div className="p-3 rounded-xl bg-[#111116] border border-[#252532] flex flex-col gap-2.5 animate-fade-in shadow-inner">
                           <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-bold text-blue-300 flex items-center gap-1.5">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                            <span className="font-bold text-zinc-200 flex items-center gap-1.5">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                               <span>Autonomous 6-Stage Pipeline Live</span>
                             </span>
-                            <span className="font-mono text-[10px] text-blue-300 font-bold bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-500/30">
+                            <span className="font-mono text-[10px] text-emerald-300 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
                               Stage {activePipelinePhase + 1} of 6
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 pt-0.5">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-0.5">
                             {[
                               { name: '1. Script', desc: 'Gemini 3.8 Flash' },
                               { name: '2. Voice', desc: job.voice || 'Fenrir TTS' },
@@ -771,20 +777,29 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                               return (
                                 <div
                                   key={step.name}
-                                  className={`p-1.5 rounded-lg border text-center transition-all ${
+                                  className={`p-2 rounded-xl border flex flex-col gap-1 transition-all ${
                                     isDone
                                       ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
                                       : isCurrent
-                                      ? 'bg-blue-600/30 border-blue-400 text-blue-200 ring-1 ring-blue-500/60 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
-                                      : 'bg-[#111116] border-[#202028] text-zinc-500'
+                                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 ring-1 ring-emerald-500/50 shadow-sm'
+                                      : 'bg-[#15151C] border-[#22222C] text-zinc-500'
                                   }`}
                                 >
-                                  <div className="text-[10px] font-bold truncate flex items-center justify-center gap-1">
-                                    {isDone && <Check className="w-2.5 h-2.5 shrink-0 text-emerald-400" />}
-                                    {isCurrent && <Loader2 className="w-2.5 h-2.5 shrink-0 animate-spin text-blue-400" />}
-                                    <span>{step.name}</span>
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="text-[11px] font-bold text-white truncate">{step.name}</span>
+                                    {isDone ? (
+                                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded shrink-0">
+                                        <Check className="w-2.5 h-2.5 stroke-[3] text-emerald-400" /> Done
+                                      </span>
+                                    ) : isCurrent ? (
+                                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-300 bg-emerald-500/25 px-1.5 py-0.5 rounded shrink-0 animate-pulse">
+                                        <Loader2 className="w-2.5 h-2.5 animate-spin text-emerald-400" /> Working
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] text-zinc-500 font-mono shrink-0">Pending</span>
+                                    )}
                                   </div>
-                                  <div className="text-[8px] text-zinc-400 truncate mt-0.5">{step.desc}</div>
+                                  <div className="text-[9px] text-zinc-400 truncate">{step.desc}</div>
                                 </div>
                               );
                             })}
@@ -855,7 +870,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                       isSuccess
                                         ? isLiveShort
                                           ? 'bg-[#131815] border-emerald-500/30 hover:border-emerald-500/50'
-                                          : 'bg-[#14151F] border-blue-500/30 hover:border-blue-500/50'
+                                          : 'bg-[#15151A] border-[#262630] hover:border-[#383844]'
                                         : 'bg-[#1B1216] border-rose-500/30 hover:border-rose-500/50'
                                     }`}
                                   >
@@ -869,8 +884,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                               <span>YouTube Short</span>
                                             </span>
                                           ) : (
-                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[9px] font-bold">
-                                              <Video className="w-3 h-3 text-blue-400 shrink-0" />
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#1F1F28] text-zinc-300 border border-[#2B2B38] text-[9px] font-bold">
+                                              <Video className="w-3 h-3 text-zinc-400 shrink-0" />
                                               <span>Studio Video</span>
                                             </span>
                                           )
@@ -928,11 +943,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                           href={entry.videoUrl}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-[10px] font-bold text-blue-300 hover:text-white transition-colors"
+                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1C1C24] hover:bg-[#252530] border border-[#2D2D3A] text-[10px] font-bold text-zinc-200 hover:text-white transition-colors"
                                         >
-                                          <Video className="w-3 h-3 text-blue-400" />
+                                          <Video className="w-3 h-3 text-zinc-400" />
                                           <span>Open MP4</span>
-                                          <ExternalLink className="w-2.5 h-2.5 text-blue-400" />
+                                          <ExternalLink className="w-2.5 h-2.5 text-zinc-400" />
                                         </a>
                                       )}
 
@@ -1035,7 +1050,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           onClick={() => handleRunNow(job.id, job.theme)}
                           className={`flex-1 h-9 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-[0.99] ${
                             isRunning
-                              ? 'bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-blue-600/20 text-blue-300 border border-blue-500/40 cursor-not-allowed shadow-inner'
+                              ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 cursor-not-allowed shadow-inner'
                               : isPaused
                               ? 'bg-[#1C1C24] hover:bg-[#252530] text-zinc-200 hover:text-white border border-[#2A2A38] hover:border-zinc-500'
                               : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
@@ -1050,7 +1065,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         >
                           {isRunning ? (
                             <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                               <span className="truncate">
                                 {activePipelinePhase === 0
                                   ? 'Stage 1/6: Writing Script with Gemini...'

@@ -285,7 +285,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                 <div
                   key={tag.id}
                   onClick={() => handleApply(tag.id, tag.name, 'badge', tag.defaultVal)}
-                  className="p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3B82F6] hover:bg-[#222228] transition-all flex items-center justify-between gap-3 cursor-pointer border-[#2A2A30]"
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '64px' }}
+                  className="p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3B82F6] hover:bg-[#222228] transition-all flex items-center justify-between gap-3 cursor-pointer border-[#2A2A30] transform-gpu"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-lg bg-[#2A2A32] flex items-center justify-center text-[#60A5FA] shrink-0">
@@ -313,7 +314,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                 <div
                   key={b.id}
                   onClick={() => handleApply(b.id, b.label, 'badge', b.label)}
-                  className="p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3B82F6] hover:bg-[#222228] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer border-[#2A2A30]"
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '68px' }}
+                  className="p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3B82F6] hover:bg-[#222228] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer border-[#2A2A30] transform-gpu"
                 >
                   <div
                     className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white bg-gradient-to-r ${b.color} shadow-md flex items-center gap-1`}
@@ -338,7 +340,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                 <div
                   key={s.id}
                   onClick={() => handleApply(s.id, s.name, 'shape', s.id)}
-                  className="p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3B82F6] hover:bg-[#222228] transition-all flex items-center gap-3 text-left cursor-pointer border-[#2A2A30]"
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '64px' }}
+                  className="p-3 rounded-xl border bg-[#1C1C20] hover:border-[#3B82F6] hover:bg-[#222228] transition-all flex items-center gap-3 text-left cursor-pointer border-[#2A2A30] transform-gpu"
                 >
                   <div className="w-8 h-8 rounded-lg bg-[#2A2A32] flex items-center justify-center text-[#60A5FA] shrink-0">
                     <Icon className="w-4 h-4" />

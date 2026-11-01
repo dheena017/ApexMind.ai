@@ -629,7 +629,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   <div
                     key={track.id}
                     onClick={() => handleSelectSoundtrack(track.id)}
-                    className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    style={{ contentVisibility: 'auto', containIntrinsicSize: '64px' }}
+                    className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 transform-gpu ${
                       isSelected
                         ? 'bg-[#181D2A] border-blue-500/80 ring-1 ring-blue-500/40 shadow-sm'
                         : isPending
@@ -697,7 +698,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               return (
                 <div
                   key={sfx.id}
-                  className="p-2.5 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] transition-all flex items-center justify-between gap-3"
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '54px' }}
+                  className="p-2.5 rounded-xl border border-[#2A2A30] bg-[#1C1C20] hover:border-[#3A3A42] transition-all flex items-center justify-between gap-3 transform-gpu"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <button
