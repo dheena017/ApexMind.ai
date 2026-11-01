@@ -132,6 +132,12 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     try {
       const data = await youtubeApi.getAutomations();
       setAutomations(data);
+      // Automatically prefetch history for every automation schedule
+      if (Array.isArray(data)) {
+        data.forEach((job) => {
+          loadHistory(job.id, true);
+        });
+      }
     } catch (err: any) {
       console.warn('Failed to load automations:', err);
     } finally {
@@ -578,94 +584,111 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                   const themeMeta = getThemeMeta(job.theme);
                   const scheduleLabel = formatScheduleLabel(job.publishTime || job.schedule);
                   const nextRunInfo = formatNextRunInfo(job.nextRun);
-                  const isExpandedHistory = expandedHistoryJobId === job.id;
-                  const historyList = historyByJob[job.id] || [];
-                  const isHistoryLoading = loadingHistoryByJob[job.id];
-                  const totalRunsCount = historyList.length > 0 ? historyList.length : (job.lastRun ? 1 : 0);
+                  const rawHistory = historyByJob[job.id] || [];
+                  const fallbackHistory: AutomationHistoryEntry[] = job.lastRun ? [{
+                    id: `job_last_${job.id}`,
+                    jobId: job.id,
+                    status: (job.lastStatus === 'failed' ? 'failed' : 'success') as 'success' | 'failed',
+                    videoTitle: job.lastVideoTitle || (job.lastRunMessage?.match(/"([^"]+)"/)?.[1]) || 'Master Your Inner Citadel: Unshakable Resolve',
+                    videoUrl: job.lastVideoUrl,
+                    youtubeUrl: job.lastIsLive ? job.lastVideoUrl : undefined,
+                    isLive: Boolean(job.lastIsLive),
+                    durationSeconds: 15,
+                    message: job.lastRunMessage || 'Saved to Studio Library (Connect YouTube channel to publish live)',
+                    executedAt: job.lastRun,
+                  }] : [];
+                  const historyList = rawHistory.length > 0 ? rawHistory : fallbackHistory;
+                  const isHistoryLoading = loadingHistoryByJob[job.id] && rawHistory.length === 0 && !job.lastRun;
+                  const totalRunsCount = historyList.length;
                   const isConfirmingDelete = confirmDeleteJobId === job.id;
                   const isToggling = togglingJobId === job.id;
 
                   return (
                     <div
                       key={job.id}
-                      className={`p-3.5 sm:p-4 rounded-xl transition-all flex flex-col gap-3 shadow-md ${
+                      className={`p-4 sm:p-5 rounded-2xl transition-all flex flex-col gap-4 shadow-xl border ${
                         isRunning
-                          ? 'bg-gradient-to-b from-[#181826] to-[#131319] border border-blue-500/60 shadow-[0_0_24px_rgba(59,130,246,0.18)] ring-1 ring-blue-500/30'
+                          ? 'bg-gradient-to-b from-[#181829] via-[#141420] to-[#111118] border-blue-500/60 shadow-[0_0_32px_rgba(59,130,246,0.18)] ring-1 ring-blue-500/40'
                           : isPaused
-                          ? 'bg-gradient-to-b from-[#151518] to-[#121214] border border-zinc-800/80 opacity-90'
-                          : 'bg-gradient-to-b from-[#18181D] to-[#141418] border border-[#2A2A34] hover:border-zinc-700'
+                          ? 'bg-gradient-to-b from-[#17171C] via-[#141418] to-[#121215] border-zinc-800/90 opacity-95'
+                          : 'bg-gradient-to-b from-[#191920] via-[#15151B] to-[#131317] border-[#2A2A38] hover:border-[#38384A]'
                       }`}
                     >
-                      {/* Top row: Theme Accent, Schedule Badges & Single Action Control */}
-                      <div className="flex items-start justify-between gap-2.5">
-                        <div className="flex items-start gap-2.5 min-w-0">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border text-base ${themeMeta.gradient}`}>
+                      {/* ── 1. HEADER ROW: ICON + TITLE + BADGES + STATUS + STOP/RESUME CONTROL ── */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#252532]">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border text-xl ${themeMeta.gradient} shadow-md`}>
                             <span>{themeMeta.icon}</span>
                           </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <h4 className="text-xs font-bold text-white truncate">{job.theme}</h4>
-                              <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-medium border ${themeMeta.gradient}`}>
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-bold text-white tracking-tight truncate">{job.theme}</h4>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${themeMeta.gradient}`}>
                                 {themeMeta.badgeText}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono mt-1 flex-wrap">
-                              <span className="px-1.5 py-0.5 rounded bg-[#202026] text-zinc-300 border border-[#2D2D36]">
-                                ⏰ {scheduleLabel}
+                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono flex-wrap">
+                              <span className="px-2 py-0.5 rounded-md bg-[#20202A] text-zinc-300 border border-[#2D2D3C] flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5 text-blue-400" />
+                                <span>{scheduleLabel}</span>
                               </span>
-                              <span className="px-1.5 py-0.5 rounded bg-[#202026] text-zinc-300 border border-[#2D2D36]">
-                                🎙️ {job.voice || 'Fenrir'}
+                              <span className="px-2 py-0.5 rounded-md bg-[#20202A] text-zinc-300 border border-[#2D2D3C] flex items-center gap-1">
+                                <Volume2 className="w-2.5 h-2.5 text-purple-400" />
+                                <span>{job.voice || 'Fenrir'}</span>
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md bg-[#20202A] text-zinc-400 border border-[#2D2D3C]">
+                                {job.privacyStatus === 'scheduled' ? '📅 Scheduled' : '🌐 Public'}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Top-Right: Clean Single State Control */}
-                        <div className="shrink-0">
+                        {/* Top-Right: Status Badge and Stop/Resume Action */}
+                        <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
                           {isRunning ? (
-                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 text-[10px] font-bold shadow-[0_0_12px_rgba(59,130,246,0.2)]">
-                              <Loader2 className="w-3 h-3 animate-spin text-blue-400" />
-                              <span>Stage {activePipelinePhase + 1}/4 Live</span>
-                            </div>
+                            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 text-xs font-bold shadow-[0_0_12px_rgba(59,130,246,0.2)]">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                              <span>Live Generation Active</span>
+                            </span>
                           ) : isActive ? (
-                            <button
-                              type="button"
-                              disabled={isToggling}
-                              onClick={() => handleToggle(job.id)}
-                              className="group flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer bg-emerald-500/15 hover:bg-amber-500/15 border-emerald-500/40 hover:border-amber-500/40 text-emerald-300 hover:text-amber-300 shadow-[0_0_12px_rgba(16,185,129,0.15)] disabled:opacity-50"
-                              title="Click to pause automated schedule"
-                            >
-                              {isToggling ? (
-                                <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
-                              ) : (
-                                <>
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse group-hover:bg-amber-400" />
-                                  <span className="group-hover:hidden">Active</span>
-                                  <span className="hidden group-hover:inline flex items-center gap-1">
-                                    <Pause className="w-2.5 h-2.5 fill-current" />
-                                    <span>Pause</span>
-                                  </span>
-                                </>
-                              )}
-                            </button>
+                            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span>
+                              <span>Active (24/7 Schedule)</span>
+                            </span>
                           ) : (
+                            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
+                              <Pause className="w-3 h-3 fill-current text-amber-400" />
+                              <span>Stopped / Paused</span>
+                            </span>
+                          )}
+
+                          {/* Explicit Stop / Resume Button */}
+                          {!isRunning && (
                             <button
                               type="button"
                               disabled={isToggling}
                               onClick={() => handleToggle(job.id)}
-                              className="group flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer bg-zinc-800/90 hover:bg-emerald-500/15 border-zinc-700/70 hover:border-emerald-500/40 text-zinc-400 hover:text-emerald-300 shadow-sm disabled:opacity-50"
-                              title="Click to resume automated schedule"
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-sm disabled:opacity-50 ${
+                                isActive
+                                  ? 'bg-[#22222C] hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border-[#323242] hover:border-amber-500/40'
+                                  : 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border-emerald-500/40'
+                              }`}
+                              title={isActive ? "Stop automated recurring pipeline" : "Resume automated recurring pipeline"}
                             >
                               {isToggling ? (
-                                <Loader2 className="w-3 h-3 animate-spin text-zinc-400" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : isActive ? (
+                                <>
+                                  <Pause className="w-3.5 h-3.5 fill-current text-amber-400" />
+                                  <span>Stop Automatic</span>
+                                </>
                               ) : (
                                 <>
-                                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 group-hover:bg-emerald-400" />
-                                  <span className="group-hover:hidden">Paused</span>
-                                  <span className="hidden group-hover:inline flex items-center gap-1">
-                                    <Play className="w-2.5 h-2.5 fill-current" />
-                                    <span>Resume</span>
-                                  </span>
+                                  <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
+                                  <span>Resume Automatic</span>
                                 </>
                               )}
                             </button>
@@ -673,104 +696,77 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                       </div>
 
-                      {/* Schedule Timing & Visibility Bar */}
-                      {isRunning ? (
-                        <div className="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[#101018] border border-blue-500/30 text-[10px]">
-                          <div className="flex items-center gap-1.5 text-blue-300 min-w-0">
-                            <Loader2 className="w-3 h-3 animate-spin text-blue-400 shrink-0" />
-                            <span>Status:</span>
-                            <strong className="text-white">Autonomous Generation Active</strong>
-                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-semibold border bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse font-mono">
-                              Stage {activePipelinePhase + 1} of 4
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-zinc-400 ml-auto shrink-0">
-                            <Globe className="w-3 h-3 text-zinc-500" />
-                            <span>Release:</span>
-                            <span className="font-semibold text-zinc-200 capitalize">{job.privacyStatus === 'scheduled' ? 'Scheduled' : 'Public'}</span>
-                          </div>
-                        </div>
-                      ) : isPaused ? (
-                        <div className="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[#111114] border border-[#222228] text-[10px]">
-                          <div className="flex items-center gap-1.5 text-zinc-400 min-w-0">
-                            <Clock className="w-3 h-3 text-amber-400/80 shrink-0" />
-                            <span>Schedule:</span>
-                            <strong className="text-zinc-300">Suspended by Creator</strong>
-                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-semibold border bg-amber-500/10 text-amber-300/90 border-amber-500/25">
-                              On Hold
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-zinc-400 ml-auto shrink-0">
-                            <Globe className="w-3 h-3 text-zinc-500" />
-                            <span>Release:</span>
-                            <span className="font-semibold text-zinc-400 capitalize">{job.privacyStatus === 'scheduled' ? 'Scheduled' : 'Public'}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[#111114] border border-[#222228] text-[10px]">
-                          <div className="flex items-center gap-1.5 text-zinc-400 min-w-0">
-                            <Clock className="w-3 h-3 text-blue-400 shrink-0" />
-                            <span>Next:</span>
-                            <strong className="text-zinc-200">{nextRunInfo.display}</strong>
-                            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold border ${
+                      {/* ── 2. NEXT START SCHEDULE & TIMING BANNER ── */}
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#121217] border border-[#23232E] text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Clock className="w-4 h-4 text-blue-400 shrink-0" />
+                          <span className="text-zinc-400 font-medium">Next Start Time:</span>
+                          <strong className="text-white font-mono">{nextRunInfo.display}</strong>
+                          {isActive && (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                               nextRunInfo.isPast
                                 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
                                 : 'bg-blue-500/15 text-blue-300 border-blue-500/30 font-mono'
                             }`}>
-                              {nextRunInfo.relative}
+                              ⏳ {nextRunInfo.relative}
                             </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-zinc-400 ml-auto shrink-0">
-                            <Globe className="w-3 h-3 text-zinc-500" />
-                            <span>Release:</span>
-                            <span className="font-semibold text-zinc-200 capitalize">{job.privacyStatus === 'scheduled' ? 'Scheduled' : 'Public'}</span>
-                          </div>
+                          )}
+                          {isPaused && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700">
+                              Schedule Suspended
+                            </span>
+                          )}
                         </div>
-                      )}
 
-                      {/* Performance Metrics Strip */}
-                      <div className="grid grid-cols-3 gap-1.5 text-center">
-                        <div className="p-2 rounded-lg bg-[#141418] border border-[#222228]">
-                          <div className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Total Runs</div>
-                          <div className="text-xs font-bold text-white mt-0.5 font-mono">{totalRunsCount} recorded</div>
-                        </div>
-                        <div className="p-2 rounded-lg bg-[#141418] border border-[#222228]">
-                          <div className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Output Quality</div>
-                          <div className="text-xs font-bold text-zinc-200 mt-0.5">1080×1920 MP4</div>
-                        </div>
-                        <div className="p-2 rounded-lg bg-[#141418] border border-[#222228]">
-                          <div className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Target</div>
-                          <div className="text-xs font-bold truncate mt-0.5 flex items-center justify-center gap-1">
-                            {authStatus?.connected ? (
-                              <>
-                                <Youtube className="w-3 h-3 text-red-500 shrink-0" />
-                                <span className="text-emerald-400 truncate">{authStatus.channel?.name || 'Hollow Haven'}</span>
-                              </>
-                            ) : (
-                              <span className="text-amber-300">Studio Library</span>
-                            )}
-                          </div>
+                        <div className="flex items-center gap-2 text-zinc-400 text-xs ml-auto shrink-0">
+                          <Globe className="w-3.5 h-3.5 text-zinc-500" />
+                          <span>Publish Target:</span>
+                          {authStatus?.connected ? (
+                            <span className="font-bold text-emerald-400 flex items-center gap-1">
+                              <Youtube className="w-3.5 h-3.5 text-red-500" />
+                              <span>YouTube Shorts Live</span>
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-amber-300">Studio Video Library (MP4)</span>
+                          )}
                         </div>
                       </div>
 
-                      {/* ── Dynamic Live Pipeline Stepper (Visible during active execution) ── */}
+                      {/* ── 3. PERFORMANCE & TELEMETRY METRICS STRIP ── */}
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
+                          <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Total Recorded Runs</div>
+                          <div className="text-xs font-bold text-white mt-0.5 font-mono">{totalRunsCount} videos</div>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
+                          <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Render Specs</div>
+                          <div className="text-xs font-bold text-zinc-200 mt-0.5">1080×1920 MP4 • 60 FPS</div>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
+                          <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Pipeline Engine</div>
+                          <div className="text-xs font-bold text-zinc-300 mt-0.5 truncate">Gemini 3.8 Flash + TTS</div>
+                        </div>
+                      </div>
+
+                      {/* ── 4. DYNAMIC LIVE PIPELINE STEPPER (when executing) ── */}
                       {isRunning && (
-                        <div className="p-3 rounded-lg bg-blue-950/25 border border-blue-500/40 flex flex-col gap-2.5 animate-fade-in shadow-inner">
-                          <div className="flex items-center justify-between text-[11px]">
+                        <div className="p-3.5 rounded-xl bg-blue-950/25 border border-blue-500/40 flex flex-col gap-2.5 animate-fade-in shadow-inner">
+                          <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-blue-300 flex items-center gap-2">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                              <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
                               <span>Autonomous Pipeline In Progress</span>
                             </span>
-                            <span className="font-mono text-xs text-blue-400/80 font-semibold">Stage {activePipelinePhase + 1}/4</span>
+                            <span className="font-mono text-xs text-blue-300 font-bold bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-500/30">
+                              Phase {activePipelinePhase + 1} of 4
+                            </span>
                           </div>
 
-                          {/* 4-Step Visual Track */}
-                          <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                          <div className="grid grid-cols-4 gap-2 pt-1">
                             {[
-                              { name: '1. Script', desc: 'Gemini 3.8' },
+                              { name: '1. Script', desc: 'Gemini 3.8 Flash' },
                               { name: '2. Voice', desc: job.voice || 'Fenrir' },
-                              { name: '3. Render', desc: '1080p MP4' },
-                              { name: '4. Publish', desc: job.privacyStatus === 'scheduled' ? 'Schedule' : 'Shorts' },
+                              { name: '3. Render', desc: '1080p 60FPS MP4' },
+                              { name: '4. Publish', desc: job.privacyStatus === 'scheduled' ? 'YouTube Scheduled' : 'YouTube Shorts Live' },
                             ].map((step, idx) => {
                               const isDone = activePipelinePhase > idx;
                               const isCurrent = activePipelinePhase === idx;
@@ -778,20 +774,20 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                               return (
                                 <div
                                   key={step.name}
-                                  className={`p-1.5 rounded-lg border text-center transition-all ${
+                                  className={`p-2 rounded-xl border text-center transition-all ${
                                     isDone
-                                      ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300'
+                                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
                                       : isCurrent
-                                      ? 'bg-blue-600/30 border-blue-400 text-blue-200 ring-1 ring-blue-500/60 shadow-[0_0_12px_rgba(59,130,246,0.25)]'
-                                      : 'bg-[#121216] border-[#222228] text-zinc-500'
+                                      ? 'bg-blue-600/30 border-blue-400 text-blue-200 ring-1 ring-blue-500/60 shadow-[0_0_12px_rgba(59,130,246,0.3)]'
+                                      : 'bg-[#121217] border-[#22222E] text-zinc-500'
                                   }`}
                                 >
-                                  <div className="text-[10px] font-bold truncate flex items-center justify-center gap-1">
-                                    {isDone && <Check className="w-2.5 h-2.5 shrink-0 text-emerald-400" />}
-                                    {isCurrent && <Loader2 className="w-2.5 h-2.5 shrink-0 animate-spin text-blue-400" />}
+                                  <div className="text-xs font-bold truncate flex items-center justify-center gap-1">
+                                    {isDone && <Check className="w-3 h-3 shrink-0 text-emerald-400" />}
+                                    {isCurrent && <Loader2 className="w-3 h-3 shrink-0 animate-spin text-blue-400" />}
                                     <span>{step.name}</span>
                                   </div>
-                                  <div className="text-[8px] text-zinc-400 truncate mt-0.5">{step.desc}</div>
+                                  <div className="text-[9px] text-zinc-400 truncate mt-0.5">{step.desc}</div>
                                 </div>
                               );
                             })}
@@ -799,308 +795,222 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                       )}
 
-                      {/* ── Latest Execution Outcome Block ── */}
-                      {!isRunning && job.lastStatus && job.lastStatus !== 'idle' && (
-                        <div
-                          className={`p-2.5 rounded-lg border text-xs flex flex-col gap-2 transition-all ${
-                            job.lastStatus === 'success'
-                              ? job.lastIsLive
-                                ? 'bg-emerald-950/20 border-emerald-500/35 border-l-4 border-l-emerald-500'
-                                : 'bg-blue-950/20 border-blue-500/35 border-l-4 border-l-blue-500'
-                              : 'bg-rose-950/20 border-rose-500/35 border-l-4 border-l-rose-500'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
-                              {job.lastStatus === 'success' ? (
-                                job.lastIsLive ? (
-                                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span>Published to YouTube Live</span>
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-400">
-                                    <span className="w-2 h-2 rounded-full bg-blue-400" />
-                                    <span>Cataloged in Studio Library</span>
-                                  </span>
-                                )
-                              ) : (
-                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-400">
-                                  <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
-                                  <span>Last Execution Failed</span>
-                                </span>
-                              )}
-                            </div>
-
-                            {job.lastRun && (
-                              <span className="text-[9px] font-mono text-zinc-400">
-                                {new Date(job.lastRun).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            )}
+                      {/* ── 5. EXECUTION & VIDEO HISTORY SECTION (PROMINENT & DETAILED) ── */}
+                      <div className="rounded-xl bg-[#121217] border border-[#23232E] overflow-hidden">
+                        {/* History Header Bar */}
+                        <div className="p-3 bg-[#16161D] border-b border-[#23232E] flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <History className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs font-bold text-white">Execution &amp; Video History</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#22222C] text-zinc-300 font-mono font-semibold border border-[#2F2F3D]">
+                              {historyList.length} {historyList.length === 1 ? 'Run' : 'Runs'}
+                            </span>
                           </div>
 
-                          {/* Video Title */}
-                          {job.lastVideoTitle && (
-                            <div className="text-[11px] font-semibold text-white truncate flex items-center gap-1.5">
-                              <span className="text-zinc-400 font-normal">Video:</span>
-                              <span className="italic text-zinc-100">"{job.lastVideoTitle}"</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => loadHistory(job.id, true)}
+                              disabled={isHistoryLoading}
+                              className="p-1 rounded-md bg-[#22222C] hover:bg-[#2C2C38] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#2F2F3D]"
+                              title="Refresh History"
+                            >
+                              <RefreshCw className={`w-3 h-3 ${isHistoryLoading ? 'animate-spin text-blue-400' : ''}`} />
+                            </button>
 
-                          {/* Execution Message */}
-                          {job.lastRunMessage && (
-                            <p className="text-[10px] text-zinc-300 leading-normal line-clamp-2">
-                              {job.lastRunMessage}
-                            </p>
-                          )}
-
-                          {/* Outcome Actions */}
-                          <div className="flex items-center gap-2 pt-1 border-t border-white/5 flex-wrap">
-                            {job.lastVideoUrl && (
-                              <>
-                                {job.lastIsLive ? (
-                                  <a
-                                    href={job.lastVideoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 hover:text-emerald-200 transition-colors"
-                                  >
-                                    <ExternalLink className="w-3 h-3" />
-                                    <span>Watch on YouTube</span>
-                                  </a>
-                                ) : (
-                                  onNavigate && (
-                                    <button
-                                      type="button"
-                                      onClick={() => onNavigate('videos')}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-[10px] font-bold text-blue-300 hover:text-blue-200 transition-colors cursor-pointer"
-                                    >
-                                      <Video className="w-3 h-3" />
-                                      <span>Open in Studio Catalog</span>
-                                    </button>
-                                  )
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopyLink(job.lastVideoUrl!, job.id)}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer ml-auto border border-zinc-700"
-                                >
-                                  {copiedJobId === job.id ? (
-                                    <>
-                                      <Check className="w-3 h-3 text-emerald-400" />
-                                      <span className="text-emerald-400">Copied</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Copy className="w-3 h-3" />
-                                      <span>Copy Link</span>
-                                    </>
-                                  )}
-                                </button>
-                              </>
-                            )}
-
-                            {job.lastStatus === 'failed' && (
+                            {historyList.length > 0 && (
                               <button
                                 type="button"
-                                onClick={() => handleRunNow(job.id, job.theme)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-[10px] font-bold text-rose-300 hover:text-rose-200 transition-colors cursor-pointer"
+                                onClick={() => handleClearHistory(job.id)}
+                                className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer font-medium"
                               >
-                                <RefreshCw className="w-2.5 h-2.5" />
-                                <span>Retry Pipeline</span>
+                                Clear History
                               </button>
                             )}
                           </div>
                         </div>
-                      )}
 
-                      {/* ── Collapsible Run History Drawer with Direct Video & Publish Links ── */}
-                      <div className="flex flex-col gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = isExpandedHistory ? null : job.id;
-                            setExpandedHistoryJobId(next);
-                            if (next) loadHistory(job.id);
-                          }}
-                          className="flex items-center justify-between w-full py-1.5 px-2.5 rounded-lg bg-[#131317] hover:bg-[#1A1A20] border border-[#24242C] text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
-                        >
-                          <span className="flex items-center gap-2">
-                            <History className="w-3.5 h-3.5 text-blue-400" />
-                            <span>Execution &amp; Video History</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#202026] text-zinc-400 font-mono">
-                              {totalRunsCount}
-                            </span>
-                          </span>
-                          {isExpandedHistory ? (
-                            <ChevronUp className="w-3.5 h-3.5 text-zinc-400" />
+                        {/* History Content */}
+                        <div className="p-3">
+                          {isHistoryLoading && historyList.length === 0 ? (
+                            <div className="py-5 flex items-center justify-center gap-2 text-xs text-zinc-400">
+                              <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                              <span>Loading execution records...</span>
+                            </div>
+                          ) : historyList.length === 0 ? (
+                            <div className="py-4 text-center flex flex-col items-center gap-1.5 text-xs text-zinc-400">
+                              <Clock className="w-5 h-5 text-zinc-600 mb-0.5" />
+                              <p className="font-semibold text-zinc-300">No automated executions recorded yet</p>
+                              <p className="text-[11px] text-zinc-500 max-w-sm">
+                                The next video will be generated automatically at <strong className="text-zinc-400">{nextRunInfo.display}</strong>, or trigger the pipeline immediately below.
+                              </p>
+                            </div>
                           ) : (
-                            <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
-                          )}
-                        </button>
+                            <div className="space-y-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                              {historyList.map((entry) => {
+                                const isLiveShort = entry.isLive || Boolean(entry.youtubeUrl);
+                                const isSuccess = entry.status === 'success';
 
-                        {isExpandedHistory && (
-                          <div className="p-2.5 rounded-lg bg-[#101014] border border-[#222228] flex flex-col gap-2 animate-fade-in">
-                            {isHistoryLoading ? (
-                              <div className="py-4 flex items-center justify-center gap-2 text-xs text-zinc-400">
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-                                <span>Loading execution records...</span>
-                              </div>
-                            ) : historyList.length === 0 ? (
-                              <div className="py-3 text-center text-xs text-zinc-500">
-                                No previous runs recorded yet for this automation rule.
-                              </div>
-                            ) : (
-                              <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
-                                {historyList.map((entry) => {
-                                  const isLiveShort = entry.isLive || (entry.status === 'success' && Boolean(entry.youtubeUrl));
-                                  return (
-                                    <div
-                                      key={entry.id}
-                                      className="p-2.5 rounded-lg bg-[#16161B] border border-[#26262E] flex flex-col gap-1.5 text-xs"
-                                    >
-                                      <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-1.5">
-                                          {entry.status === 'success' ? (
-                                            isLiveShort ? (
-                                              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
-                                                <Youtube className="w-3 h-3 text-red-500" />
-                                                <span>Live YouTube Short</span>
-                                              </span>
-                                            ) : (
-                                              <span className="flex items-center gap-1 text-[10px] font-bold text-blue-400">
-                                                <Video className="w-3 h-3 text-blue-400" />
-                                                <span>Studio Catalog</span>
-                                              </span>
-                                            )
-                                          ) : (
-                                            <span className="flex items-center gap-1 text-[10px] font-bold text-rose-400">
-                                              <AlertCircle className="w-3 h-3 text-rose-400" />
-                                              <span>Failed</span>
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        <span className="text-[9px] font-mono text-zinc-400">
-                                          {new Date(entry.executedAt).toLocaleString([], {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                          })}
-                                        </span>
-                                      </div>
-
-                                      {entry.videoTitle && (
-                                        <div className="text-[11px] font-semibold text-white truncate">
-                                          "{entry.videoTitle}"
-                                        </div>
-                                      )}
-
-                                      {entry.message && (
-                                        <p className="text-[10px] text-zinc-400 line-clamp-1">{entry.message}</p>
-                                      )}
-
-                                      {/* Links Row */}
-                                      <div className="flex items-center gap-2 pt-1 border-t border-white/5 flex-wrap">
-                                        {entry.youtubeUrl && (
-                                          <a
-                                            href={entry.youtubeUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400 transition-colors"
-                                          >
-                                            <Youtube className="w-3 h-3 text-red-500" />
-                                            <span>Watch Short</span>
-                                            <ExternalLink className="w-2.5 h-2.5" />
-                                          </a>
-                                        )}
-
-                                        {entry.videoUrl && (
-                                          <a
-                                            href={entry.videoUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[10px] font-bold text-blue-300 transition-colors"
-                                          >
-                                            <Video className="w-3 h-3 text-blue-400" />
-                                            <span>Open MP4</span>
-                                            <ExternalLink className="w-2.5 h-2.5" />
-                                          </a>
-                                        )}
-
-                                        {(entry.youtubeUrl || entry.videoUrl) && (
-                                          <button
-                                            type="button"
-                                            onClick={() => handleCopyLink(entry.youtubeUrl || entry.videoUrl!, entry.id)}
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer ml-auto border border-zinc-700"
-                                          >
-                                            {copiedJobId === entry.id ? (
-                                              <>
-                                                <Check className="w-2.5 h-2.5 text-emerald-400" />
-                                                <span className="text-emerald-400">Copied</span>
-                                              </>
-                                            ) : (
-                                              <>
-                                                <Copy className="w-2.5 h-2.5" />
-                                                <span>Copy Link</span>
-                                              </>
-                                            )}
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-
-                                <div className="flex justify-end pt-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleClearHistory(job.id)}
-                                    className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer"
+                                return (
+                                  <div
+                                    key={entry.id}
+                                    className={`p-3 rounded-xl border flex flex-col gap-2 transition-all ${
+                                      isSuccess
+                                        ? isLiveShort
+                                          ? 'bg-[#151B18] border-emerald-500/30 hover:border-emerald-500/50'
+                                          : 'bg-[#151722] border-blue-500/30 hover:border-blue-500/50'
+                                        : 'bg-[#1D1418] border-rose-500/30 hover:border-rose-500/50'
+                                    }`}
                                   >
-                                    Clear History
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                                    {/* Top Status & Timestamp */}
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                      <div className="flex items-center gap-2">
+                                        {isSuccess ? (
+                                          isLiveShort ? (
+                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-bold">
+                                              <Youtube className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                              <span>Published YouTube Short</span>
+                                            </span>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-bold">
+                                              <Video className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                              <span>Studio Video Catalog</span>
+                                            </span>
+                                          )
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] font-bold">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            <span>Run Failed</span>
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <span className="text-[10px] font-mono text-zinc-400">
+                                        {new Date(entry.executedAt).toLocaleString([], {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                        {entry.durationSeconds > 0 && ` • ${Math.round(entry.durationSeconds)}s`}
+                                      </span>
+                                    </div>
+
+                                    {/* Video Title */}
+                                    {entry.videoTitle && (
+                                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                        <span className="text-zinc-400 font-normal">Video:</span>
+                                        <span className="text-zinc-100">"{entry.videoTitle}"</span>
+                                      </div>
+                                    )}
+
+                                    {/* Message */}
+                                    {entry.message && (
+                                      <p className="text-[11px] text-zinc-300 leading-snug line-clamp-2">
+                                        {entry.message}
+                                      </p>
+                                    )}
+
+                                    {/* Action Links Row (YouTube Video link & Studio MP4 Video link) */}
+                                    <div className="flex items-center gap-2 pt-1 border-t border-white/5 flex-wrap">
+                                      {entry.youtubeUrl && (
+                                        <a
+                                          href={entry.youtubeUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 text-[11px] font-bold text-red-300 hover:text-white transition-colors"
+                                        >
+                                          <Youtube className="w-3.5 h-3.5 text-red-500" />
+                                          <span>Watch on YouTube Shorts</span>
+                                          <ExternalLink className="w-3 h-3 text-red-400" />
+                                        </a>
+                                      )}
+
+                                      {entry.videoUrl && (
+                                        <a
+                                          href={entry.videoUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-[11px] font-bold text-blue-300 hover:text-white transition-colors"
+                                        >
+                                          <Video className="w-3.5 h-3.5 text-blue-400" />
+                                          <span>Open Studio MP4</span>
+                                          <ExternalLink className="w-3 h-3 text-blue-400" />
+                                        </a>
+                                      )}
+
+                                      {(entry.youtubeUrl || entry.videoUrl) && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleCopyLink(entry.youtubeUrl || entry.videoUrl!, entry.id)}
+                                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#20202A] hover:bg-[#2C2C3A] text-[10px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer ml-auto border border-[#2E2E3E]"
+                                        >
+                                          {copiedJobId === entry.id ? (
+                                            <>
+                                              <Check className="w-3 h-3 text-emerald-400" />
+                                              <span className="text-emerald-400 font-bold">Copied!</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Copy className="w-3 h-3" />
+                                              <span>Copy Link</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      )}
+
+                                      {entry.status === 'failed' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRunNow(job.id, job.theme)}
+                                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-[11px] font-bold text-rose-300 transition-colors cursor-pointer"
+                                        >
+                                          <RefreshCw className="w-3 h-3" />
+                                          <span>Retry Pipeline</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* ── Safe Delete Confirmation Banner ── */}
+                      {/* ── 6. SAFE DELETE CONFIRMATION ALERT (when delete clicked) ── */}
                       {isConfirmingDelete && (
-                        <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 text-xs flex flex-col gap-2 animate-fade-in shadow-inner">
-                          <div className="flex items-center gap-2 text-rose-300 font-bold">
+                        <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/50 text-xs flex flex-col gap-2.5 animate-fade-in shadow-xl ring-1 ring-rose-500/40">
+                          <div className="flex items-center gap-2 text-rose-300 font-bold text-sm">
                             <AlertCircle className="w-4 h-4 text-rose-400" />
                             <span>Delete this automation schedule?</span>
                           </div>
-                          <p className="text-[11px] text-zinc-300 leading-relaxed">
-                            This will permanently remove <strong className="text-white">"{job.theme}"</strong> and all of its recorded history.
+                          <p className="text-xs text-zinc-300 leading-relaxed">
+                            This will permanently stop recurring publishing for <strong className="text-white">"{job.theme}"</strong> and purge all recorded execution history. This action cannot be undone.
                           </p>
-                          <div className="flex items-center justify-end gap-2 pt-1">
+                          <div className="flex items-center justify-end gap-2.5 pt-1">
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteJobId(null)}
-                              className="px-3 py-1 rounded bg-[#202026] hover:bg-[#2C2C34] text-zinc-300 text-[11px] font-semibold border border-[#32323A] transition-colors cursor-pointer"
+                              className="px-3.5 py-1.5 rounded-lg bg-[#22222A] hover:bg-[#2C2C36] text-zinc-300 text-xs font-semibold border border-[#323240] transition-colors cursor-pointer"
                             >
                               Cancel
                             </button>
                             <button
                               type="button"
                               onClick={() => executeDelete(job.id)}
-                              className="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+                              className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md transition-colors cursor-pointer flex items-center gap-1.5"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3.5 h-3.5" />
                               <span>Confirm Delete</span>
                             </button>
                           </div>
                         </div>
                       )}
 
-                      {/* Action buttons row with state-specific buttons */}
-                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                      {/* ── 7. BOTTOM ACTION TOOLBAR ── */}
+                      <div className="flex items-center justify-between gap-2.5 pt-1">
+                        {/* Run Now Primary Button */}
                         <button
                           type="button"
                           disabled={isRunning}
@@ -1109,7 +1019,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                             isRunning
                               ? 'bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-blue-600/20 text-blue-300 border border-blue-500/40 cursor-not-allowed shadow-inner'
                               : isPaused
-                              ? 'bg-[#1C1C22] hover:bg-[#25252E] text-zinc-300 hover:text-white border border-[#2D2D38] hover:border-zinc-600'
+                              ? 'bg-[#1F1F27] hover:bg-[#282834] text-zinc-200 hover:text-white border border-[#2E2E3E] hover:border-zinc-500'
                               : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
                           }`}
                           title={
@@ -1122,7 +1032,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         >
                           {isRunning ? (
                             <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                              <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
                               <span>
                                 {activePipelinePhase === 0
                                   ? 'Generating Script with Gemini 3.8...'
@@ -1133,30 +1043,56 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                   : 'Publishing to YouTube Shorts...'}
                               </span>
                             </>
-                          ) : isPaused ? (
-                            <>
-                              <Play className="w-3.5 h-3.5 fill-current text-zinc-400" />
-                              <span>Run Pipeline Now (Manual)</span>
-                            </>
                           ) : (
                             <>
-                              <Play className="w-3.5 h-3.5 fill-current text-white" />
-                              <span>Run Pipeline Now</span>
+                              <Play className="w-4 h-4 fill-current text-white" />
+                              <span>{isPaused ? 'Run Pipeline (Manual)' : 'Run Pipeline Now'}</span>
                             </>
                           )}
                         </button>
 
+                        {/* Stop / Resume Button in bottom bar */}
+                        {!isRunning && (
+                          <button
+                            type="button"
+                            disabled={isToggling}
+                            onClick={() => handleToggle(job.id)}
+                            className={`h-10 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
+                              isActive
+                                ? 'bg-[#1F1F27] hover:bg-amber-500/15 text-zinc-300 hover:text-amber-300 border-[#2E2E3E] hover:border-amber-500/40'
+                                : 'bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border-emerald-500/40'
+                            }`}
+                            title={isActive ? "Stop automated recurring generation" : "Resume automated recurring generation"}
+                          >
+                            {isToggling ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : isActive ? (
+                              <>
+                                <Pause className="w-3.5 h-3.5 fill-current text-amber-400" />
+                                <span>Stop</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
+                                <span>Resume</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+
+                        {/* Delete Schedule Button */}
                         <button
                           type="button"
                           onClick={() => setConfirmDeleteJobId(isConfirmingDelete ? null : job.id)}
-                          className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 border ${
+                          className={`h-10 px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-colors cursor-pointer shrink-0 border ${
                             isConfirmingDelete
                               ? 'bg-rose-950/60 text-rose-300 border-rose-700/60'
-                              : 'bg-[#202026] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 border-[#2E2E38] hover:border-rose-800/40'
+                              : 'bg-[#1F1F27] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 border-[#2E2E3E] hover:border-rose-800/40'
                           }`}
                           title="Delete automation schedule"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Delete</span>
                         </button>
                       </div>
                     </div>

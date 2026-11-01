@@ -22,10 +22,12 @@ import {
   Copy,
   Check,
   RefreshCw,
+  History,
+  Globe,
   Search,
 } from 'lucide-react';
 import { Card, Badge } from '@/src/shared/ui/common';
-import { AutomationJob } from '../types';
+import { AutomationJob, AutomationHistoryEntry } from '../types';
 import { youtubeApi } from '../api/youtubeApi';
 
 export interface YouTubeSchedulesPageProps {
@@ -90,6 +92,45 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
   // Search and status filtering state
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all');
+  const [historyByJob, setHistoryByJob] = useState<Record<string, AutomationHistoryEntry[]>>({});
+  const [loadingHistoryByJob, setLoadingHistoryByJob] = useState<Record<string, boolean>>({});
+  const [confirmDeleteJobId, setConfirmDeleteJobId] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const loadHistory = async (jobId: string, force = false) => {
+    if (!force && historyByJob[jobId]) return;
+    setLoadingHistoryByJob((prev) => ({ ...prev, [jobId]: true }));
+    try {
+      const entries = await youtubeApi.getAutomationHistory(jobId);
+      setHistoryByJob((prev) => ({ ...prev, [jobId]: entries }));
+    } catch (err) {
+      console.warn('Failed to load history:', err);
+    } finally {
+      setLoadingHistoryByJob((prev) => ({ ...prev, [jobId]: false }));
+    }
+  };
+
+  const handleClearHistory = async (jobId: string) => {
+    try {
+      await youtubeApi.clearAutomationHistory(jobId);
+      setHistoryByJob((prev) => ({ ...prev, [jobId]: [] }));
+    } catch (err: any) {
+      alert(err.message || 'Failed to clear history');
+    }
+  };
+
+  React.useEffect(() => {
+    if (Array.isArray(automations)) {
+      automations.forEach((job) => {
+        loadHistory(job.id, true);
+      });
+    }
+  }, [automations]);
 
   // Form state
   const [theme, setTheme] = useState('Stoic Mindset & Discipline');
@@ -192,6 +233,78 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
       setRunningJobId(null);
       setActivePipelinePhase(0);
     }
+  };
+
+  const formatNextRunInfo = (isoString?: string): { display: string; relative: string; isPast: boolean } => {
+    if (!isoString) return { display: 'Pending schedule', relative: 'Queued', isPast: false };
+    try {
+      const target = new Date(isoString);
+      const diffMs = target.getTime() - currentTime;
+      const timeFormatted = target.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const dayFormatted = target.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+      if (diffMs > 0) {
+        const totalSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSecs / 3600);
+        const mins = Math.floor((totalSecs % 3600) / 60);
+        const secs = totalSecs % 60;
+        let relative = '';
+        if (hours > 0) {
+          relative = `in ${hours}h ${mins}m ${secs}s`;
+        } else if (mins > 0) {
+          relative = `in ${mins}m ${secs}s`;
+        } else {
+          relative = `in ${secs}s`;
+        }
+        return { display: `${dayFormatted}, ${timeFormatted}`, relative, isPast: false };
+      } else {
+        return { display: `${dayFormatted}, ${timeFormatted}`, relative: 'Triggering now...', isPast: true };
+      }
+    } catch {
+      return { display: isoString, relative: '', isPast: false };
+    }
+  };
+
+  const getThemeMeta = (themeName: string) => {
+    const lower = themeName.toLowerCase();
+    if (lower.includes('stoic')) {
+      return { icon: '🏛️', gradient: 'bg-amber-500/15 border-amber-500/30 text-amber-300', dot: 'bg-amber-400', badgeText: 'Stoic Philosophy' };
+    }
+    if (lower.includes('fitness') || lower.includes('iron')) {
+      return { icon: '🔥', gradient: 'bg-orange-500/15 border-orange-500/30 text-orange-300', dot: 'bg-orange-400', badgeText: 'Fitness & Will' };
+    }
+    if (lower.includes('calm') || lower.includes('resilience')) {
+      return { icon: '🌊', gradient: 'bg-teal-500/15 border-teal-500/30 text-teal-300', dot: 'bg-teal-400', badgeText: 'Inner Calm' };
+    }
+    if (lower.includes('focus') || lower.includes('flow')) {
+      return { icon: '🧠', gradient: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300', dot: 'bg-indigo-400', badgeText: 'Deep Focus' };
+    }
+    return { icon: '⚡', gradient: 'bg-blue-500/15 border-blue-500/30 text-blue-300', dot: 'bg-blue-400', badgeText: 'Motivation' };
+  };
+
+  const formatScheduleLabel = (val?: string): string => {
+    if (!val) return 'Active Schedule';
+    const clean = val.trim();
+    if (clean === 'every_30m') return 'Every 30 Minutes';
+    if (clean === 'every_1h') return 'Every 1 Hour';
+    if (clean === 'every_2h') return 'Every 2 Hours';
+    if (clean === 'every_3h') return 'Every 3 Hours';
+    if (clean === 'every_4h') return 'Every 4 Hours';
+    if (clean === 'every_6h') return 'Every 6 Hours';
+    if (clean === 'every_8h') return 'Every 8 Hours';
+    if (clean === 'every_12h') return 'Every 12 Hours';
+    if (clean.startsWith('every_')) {
+      const match = clean.match(/every_(\\d+)([hm])/);
+      if (match) {
+        const num = match[1];
+        const unit = match[2] === 'h' ? (num === '1' ? 'Hour' : 'Hours') : (num === '1' ? 'Minute' : 'Minutes');
+        return `Every ${num} ${unit}`;
+      }
+    }
+    if (clean.match(/^\\d{1,2}:\\d{2}$/)) {
+      return `Daily at ${clean} UTC`;
+    }
+    return clean.replace(/UTC/gi, '').trim();
   };
 
   const formatNextRun = (isoString?: string) => {
@@ -391,121 +504,172 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
           <div className="space-y-3.5">
             {filteredAutomations.map((auto) => {
               const isRunning = runningJobId === auto.id || auto.lastStatus === 'running';
+              const isPaused = !auto.active && !isRunning;
+              const isActive = auto.active && !isRunning;
+              const themeMeta = getThemeMeta(auto.theme);
+              const scheduleLabel = formatScheduleLabel(auto.publishTime || auto.schedule);
+              const nextRunInfo = formatNextRunInfo(auto.nextRun);
+              const historyList = historyByJob[auto.id] || [];
+              const isHistoryLoading = loadingHistoryByJob[auto.id];
+              const totalRunsCount = historyList.length > 0 ? historyList.length : (auto.lastRun ? 1 : 0);
+              const isConfirmingDelete = confirmDeleteJobId === auto.id;
 
               return (
                 <div
                   key={auto.id}
-                  className="p-4 sm:p-5 rounded-xl bg-[#181818] border border-[#262626] hover:border-[#3B82F6]/40 transition-all flex flex-col gap-3.5"
+                  className={`p-4 sm:p-5 rounded-2xl transition-all flex flex-col gap-4 shadow-xl border ${
+                    isRunning
+                      ? 'bg-gradient-to-b from-[#181829] via-[#141420] to-[#111118] border-blue-500/60 shadow-[0_0_32px_rgba(59,130,246,0.18)] ring-1 ring-blue-500/40'
+                      : isPaused
+                      ? 'bg-gradient-to-b from-[#17171C] via-[#141418] to-[#121215] border-zinc-800/90 opacity-95'
+                      : 'bg-gradient-to-b from-[#191920] via-[#15151B] to-[#131317] border-[#2A2A38] hover:border-[#38384A]'
+                  }`}
                 >
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    {/* Left: Info */}
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                          <Zap className="w-4 h-4" />
+                  {/* ── 1. HEADER ROW: ICON + TITLE + BADGES + STATUS + STOP/RESUME CONTROL ── */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#252532]">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border text-xl ${themeMeta.gradient} shadow-md`}>
+                        <span>{themeMeta.icon}</span>
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-sm font-bold text-white tracking-tight truncate">{auto.theme}</h4>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${themeMeta.gradient}`}>
+                            {themeMeta.badgeText}
+                          </span>
                         </div>
-                        <h4 className="font-bold text-white text-sm">{auto.theme}</h4>
-                        <Badge variant={auto.active ? 'green' : 'gray'}>
-                          {auto.active ? 'Active' : 'Paused'}
-                        </Badge>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#202020] text-[#A0A0A0] border border-[#2e2e2e]">
-                          {auto.privacyStatus === 'scheduled' ? 'Scheduled (publishAt)' : 'Instant Public'}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8E8E93]">
-                        <span>
-                          Schedule: <strong className="text-white">{auto.schedule || auto.publishTime}</strong>
-                        </span>
-                        <span>•</span>
-                        <span>
-                          Voice: <span className="text-blue-400 font-medium">{auto.voice}</span>
-                        </span>
-                        <span>•</span>
-                        <span>Music: {auto.musicTrack}</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs text-[#7A7A7A]">
-                        <Calendar className="w-3.5 h-3.5 text-[#60A5FA]" />
-                        <span>Next execution: <strong className="text-[#A0A0A0]">{formatNextRun(auto.nextRun)}</strong></span>
-                        {auto.lastRun && (
-                          <>
-                            <span>•</span>
-                            <span>Last run: {new Date(auto.lastRun).toLocaleDateString()}</span>
-                          </>
-                        )}
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono flex-wrap">
+                          <span className="px-2 py-0.5 rounded-md bg-[#20202A] text-zinc-300 border border-[#2D2D3C] flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5 text-blue-400" />
+                            <span>{scheduleLabel}</span>
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-[#20202A] text-zinc-300 border border-[#2D2D3C] flex items-center gap-1">
+                            <Volume2 className="w-2.5 h-2.5 text-purple-400" />
+                            <span>{auto.voice || 'Fenrir'}</span>
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-[#20202A] text-zinc-400 border border-[#2D2D3C]">
+                            {auto.privacyStatus === 'scheduled' ? '📅 Scheduled' : '🌐 Public'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Right: Actions */}
-                    <div className="flex flex-wrap items-center gap-2.5 self-end md:self-center shrink-0">
-                      {/* Run Now Button */}
-                      <button
-                        type="button"
-                        disabled={isRunning}
-                        onClick={() => handleRunPipelineNow(auto.id, auto.theme)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                          isRunning
-                            ? 'bg-blue-600/30 text-blue-300 border border-blue-500/30 cursor-not-allowed'
-                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
-                        }`}
-                        title="Run the automated script generation, video rendering, and YouTube upload now"
-                      >
-                        {isRunning ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Pipeline Executing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-3.5 h-3.5 fill-current" />
-                            <span>Run Now</span>
-                          </>
-                        )}
-                      </button>
+                    {/* Top-Right: Status Badge and Stop/Resume Action */}
+                    <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
+                      {isRunning ? (
+                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 text-xs font-bold shadow-[0_0_12px_rgba(59,130,246,0.2)]">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                          <span>Live Generation Active</span>
+                        </span>
+                      ) : isActive ? (
+                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          </span>
+                          <span>Active (24/7 Schedule)</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
+                          <Play className="w-3 h-3 fill-current text-amber-400" />
+                          <span>Stopped / Paused</span>
+                        </span>
+                      )}
 
-                      {/* Toggle Active Switch */}
-                      <button
-                        type="button"
-                        onClick={() => onToggleAuto(auto.id)}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                          auto.active
-                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25'
-                            : 'bg-gray-800 border-gray-700 text-[#9CA3AF] hover:text-white'
-                        }`}
-                      >
-                        {auto.active ? 'Active' : 'Paused'}
-                      </button>
-
-                      {/* Delete Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteSchedule(auto.id)}
-                        className="p-2 rounded-xl bg-[#202020] hover:bg-rose-500/15 text-[#8E8E93] hover:text-rose-400 border border-[#2e2e2e] hover:border-rose-500/30 transition-colors cursor-pointer"
-                        title="Delete schedule"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Explicit Stop / Resume Button */}
+                      {!isRunning && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleAuto(auto.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-sm ${
+                            isActive
+                              ? 'bg-[#22222C] hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border-[#323242] hover:border-amber-500/40'
+                              : 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border-emerald-500/40'
+                          }`}
+                          title={isActive ? "Stop automated recurring pipeline" : "Resume automated recurring pipeline"}
+                        >
+                          {isActive ? (
+                            <>
+                              <Clock className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Stop Automatic</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
+                              <span>Resume Automatic</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* ── Dynamic Live Pipeline Stepper ── */}
+                  {/* ── 2. NEXT START SCHEDULE & TIMING BANNER ── */}
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#121217] border border-[#23232E] text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Clock className="w-4 h-4 text-blue-400 shrink-0" />
+                      <span className="text-zinc-400 font-medium">Next Start Time:</span>
+                      <strong className="text-white font-mono">{nextRunInfo.display}</strong>
+                      {isActive && (
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                          nextRunInfo.isPast
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
+                            : 'bg-blue-500/15 text-blue-300 border-blue-500/30 font-mono'
+                        }`}>
+                          ⏳ {nextRunInfo.relative}
+                        </span>
+                      )}
+                      {isPaused && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700">
+                          Schedule Suspended
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-zinc-400 text-xs ml-auto shrink-0">
+                      <Globe className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>Release:</span>
+                      <span className="font-semibold text-zinc-200 capitalize">
+                        {auto.privacyStatus === 'scheduled' ? 'Scheduled (publishAt)' : 'Public Shorts'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ── 3. PERFORMANCE & TELEMETRY METRICS STRIP ── */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
+                      <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Total Recorded Runs</div>
+                      <div className="text-xs font-bold text-white mt-0.5 font-mono">{totalRunsCount} videos</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
+                      <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Render Specs</div>
+                      <div className="text-xs font-bold text-zinc-200 mt-0.5">1080×1920 MP4 • 60 FPS</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
+                      <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Pipeline Engine</div>
+                      <div className="text-xs font-bold text-zinc-300 mt-0.5 truncate">Gemini 3.8 Flash + TTS</div>
+                    </div>
+                  </div>
+
+                  {/* ── 4. DYNAMIC LIVE PIPELINE STEPPER (when executing) ── */}
                   {isRunning && (
-                    <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-500/30 flex flex-col gap-2.5 animate-fade-in">
+                    <div className="p-3.5 rounded-xl bg-blue-950/25 border border-blue-500/40 flex flex-col gap-2.5 animate-fade-in shadow-inner">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-blue-400 flex items-center gap-1.5">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                        <span className="font-bold text-blue-300 flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
                           <span>Autonomous Pipeline In Progress</span>
                         </span>
-                        <span className="font-mono text-zinc-400 text-[11px]">Phase {activePipelinePhase + 1} / 4</span>
+                        <span className="font-mono text-xs text-blue-300 font-bold bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-500/30">
+                          Phase {activePipelinePhase + 1} of 4
+                        </span>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-4 gap-2 pt-1">
                         {[
-                          { name: '1. Script Generation', desc: 'Gemini 3.8 Deduplication' },
-                          { name: '2. Voice Synthesis', desc: `${auto.voice} Persona TTS` },
-                          { name: '3. Video Render', desc: '1080x1920 MP4 at 60 FPS' },
-                          { name: '4. Cloud Publishing', desc: auto.privacyStatus === 'scheduled' ? 'YouTube Scheduled' : 'YouTube Shorts Live' },
+                          { name: '1. Script', desc: 'Gemini 3.8 Flash' },
+                          { name: '2. Voice', desc: auto.voice || 'Fenrir' },
+                          { name: '3. Render', desc: '1080p 60FPS MP4' },
+                          { name: '4. Publish', desc: auto.privacyStatus === 'scheduled' ? 'YouTube Scheduled' : 'YouTube Shorts Live' },
                         ].map((step, idx) => {
                           const isDone = activePipelinePhase > idx;
                           const isCurrent = activePipelinePhase === idx;
@@ -513,20 +677,20 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                           return (
                             <div
                               key={step.name}
-                              className={`p-2 rounded-lg border text-left transition-all ${
+                              className={`p-2 rounded-xl border text-center transition-all ${
                                 isDone
-                                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
                                   : isCurrent
-                                  ? 'bg-blue-600/25 border-blue-500 text-blue-300 ring-1 ring-blue-500/50 shadow-sm'
-                                  : 'bg-[#141414] border-[#262626] text-zinc-500'
+                                  ? 'bg-blue-600/30 border-blue-400 text-blue-200 ring-1 ring-blue-500/60 shadow-[0_0_12px_rgba(59,130,246,0.3)]'
+                                  : 'bg-[#121217] border-[#22222E] text-zinc-500'
                               }`}
                             >
-                              <div className="text-xs font-bold truncate flex items-center gap-1">
+                              <div className="text-xs font-bold truncate flex items-center justify-center gap-1">
                                 {isDone && <Check className="w-3 h-3 shrink-0 text-emerald-400" />}
                                 {isCurrent && <Loader2 className="w-3 h-3 shrink-0 animate-spin text-blue-400" />}
                                 <span>{step.name}</span>
                               </div>
-                              <div className="text-[10px] text-zinc-400 truncate mt-0.5">{step.desc}</div>
+                              <div className="text-[9px] text-zinc-400 truncate mt-0.5">{step.desc}</div>
                             </div>
                           );
                         })}
@@ -534,121 +698,311 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   )}
 
-                  {/* ── Latest Execution Outcome Block ── */}
-                  {!isRunning && auto.lastStatus && auto.lastStatus !== 'idle' && (
-                    <div
-                      className={`p-3 rounded-xl border text-xs flex flex-col gap-2 transition-all ${
-                        auto.lastStatus === 'success'
-                          ? auto.lastIsLive
-                            ? 'bg-emerald-950/15 border-emerald-500/30'
-                            : 'bg-blue-950/15 border-blue-500/30'
-                          : 'bg-rose-950/15 border-rose-500/30'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          {auto.lastStatus === 'success' ? (
-                            auto.lastIsLive ? (
-                              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                <span>Published Live to YouTube Shorts</span>
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1.5 text-xs font-bold text-blue-400">
-                                <span className="w-2 h-2 rounded-full bg-blue-400" />
-                                <span>Rendered & Saved in Studio Catalog</span>
-                              </span>
-                            )
-                          ) : (
-                            <span className="flex items-center gap-1.5 text-xs font-bold text-rose-400">
-                              <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
-                              <span>Last Execution Failed</span>
-                            </span>
-                          )}
-                        </div>
-
-                        {auto.lastRun && (
-                          <span className="text-[11px] font-mono text-zinc-400">
-                            {new Date(auto.lastRun).toLocaleString()}
-                          </span>
-                        )}
+                  {/* ── 5. EXECUTION & VIDEO HISTORY SECTION (PROMINENT & DETAILED) ── */}
+                  <div className="rounded-xl bg-[#121217] border border-[#23232E] overflow-hidden">
+                    {/* History Header Bar */}
+                    <div className="p-3 bg-[#16161D] border-b border-[#23232E] flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <History className="w-4 h-4 text-blue-400" />
+                        <span className="text-xs font-bold text-white">Execution &amp; Video History</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#22222C] text-zinc-300 font-mono font-semibold border border-[#2F2F3D]">
+                          {historyList.length} {historyList.length === 1 ? 'Run' : 'Runs'}
+                        </span>
                       </div>
 
-                      {/* Video Title */}
-                      {auto.lastVideoTitle && (
-                        <div className="text-xs font-semibold text-white flex items-center gap-1.5">
-                          <span className="text-zinc-400 font-normal">Video Produced:</span>
-                          <span className="italic">"{auto.lastVideoTitle}"</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => loadHistory(auto.id, true)}
+                          disabled={isHistoryLoading}
+                          className="p-1 rounded-md bg-[#22222C] hover:bg-[#2C2C38] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#2F2F3D]"
+                          title="Refresh History"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isHistoryLoading ? 'animate-spin text-blue-400' : ''}`} />
+                        </button>
 
-                      {/* Execution Message */}
-                      {auto.lastRunMessage && (
-                        <p className="text-xs text-zinc-300 leading-relaxed">
-                          {auto.lastRunMessage}
-                        </p>
-                      )}
-
-                      {/* Outcome Actions */}
-                      <div className="flex items-center gap-3 pt-1.5 border-t border-white/5">
-                        {auto.lastVideoUrl && (
-                          <>
-                            {auto.lastIsLive ? (
-                              <a
-                                href={auto.lastVideoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                <span>Watch on YouTube</span>
-                              </a>
-                            ) : (
-                              onNavigate && (
-                                <button
-                                  type="button"
-                                  onClick={() => onNavigate('videos')}
-                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
-                                >
-                                  <Video className="w-3.5 h-3.5" />
-                                  <span>Open in Studio Catalog</span>
-                                </button>
-                              )
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => handleCopyLink(auto.lastVideoUrl!, auto.id)}
-                              className="inline-flex items-center gap-1 text-xs font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer ml-auto"
-                            >
-                              {copiedJobId === auto.id ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                  <span className="text-emerald-400">Copied</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3.5 h-3.5" />
-                                  <span>Copy Link</span>
-                                </>
-                              )}
-                            </button>
-                          </>
-                        )}
-
-                        {auto.lastStatus === 'failed' && (
+                        {historyList.length > 0 && (
                           <button
                             type="button"
-                            onClick={() => handleRunPipelineNow(auto.id, auto.theme)}
-                            className="inline-flex items-center gap-1 text-xs font-bold text-rose-400 hover:text-rose-300 underline cursor-pointer"
+                            onClick={() => handleClearHistory(auto.id)}
+                            className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer font-medium"
                           >
-                            <RefreshCw className="w-3 h-3" />
-                            <span>Retry Pipeline</span>
+                            Clear History
                           </button>
                         )}
                       </div>
                     </div>
+
+                    {/* History Content */}
+                    <div className="p-3">
+                      {isHistoryLoading && historyList.length === 0 ? (
+                        <div className="py-5 flex items-center justify-center gap-2 text-xs text-zinc-400">
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                          <span>Loading execution records...</span>
+                        </div>
+                      ) : historyList.length === 0 ? (
+                        <div className="py-4 text-center flex flex-col items-center gap-1.5 text-xs text-zinc-400">
+                          <Clock className="w-5 h-5 text-zinc-600 mb-0.5" />
+                          <p className="font-semibold text-zinc-300">No automated executions recorded yet</p>
+                          <p className="text-[11px] text-zinc-500 max-w-sm">
+                            The next video will be generated automatically at <strong className="text-zinc-400">{nextRunInfo.display}</strong>, or trigger the pipeline immediately below.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                          {historyList.map((entry) => {
+                            const isLiveShort = entry.isLive || Boolean(entry.youtubeUrl);
+                            const isSuccess = entry.status === 'success';
+
+                            return (
+                              <div
+                                key={entry.id}
+                                className={`p-3 rounded-xl border flex flex-col gap-2 transition-all ${
+                                  isSuccess
+                                    ? isLiveShort
+                                      ? 'bg-[#151B18] border-emerald-500/30 hover:border-emerald-500/50'
+                                      : 'bg-[#151722] border-blue-500/30 hover:border-blue-500/50'
+                                    : 'bg-[#1D1418] border-rose-500/30 hover:border-rose-500/50'
+                                }`}
+                              >
+                                {/* Top Status & Timestamp */}
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <div className="flex items-center gap-2">
+                                    {isSuccess ? (
+                                      isLiveShort ? (
+                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-bold">
+                                          <Play className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                          <span>Published YouTube Short</span>
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-bold">
+                                          <Video className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                          <span>Studio Video Catalog</span>
+                                        </span>
+                                      )
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] font-bold">
+                                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                        <span>Run Failed</span>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <span className="text-[10px] font-mono text-zinc-400">
+                                    {new Date(entry.executedAt).toLocaleString([], {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                    {entry.durationSeconds > 0 && ` • ${Math.round(entry.durationSeconds)}s`}
+                                  </span>
+                                </div>
+
+                                {/* Video Title */}
+                                {entry.videoTitle && (
+                                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <span className="text-zinc-400 font-normal">Video:</span>
+                                    <span className="text-zinc-100">"{entry.videoTitle}"</span>
+                                  </div>
+                                )}
+
+                                {/* Message */}
+                                {entry.message && (
+                                  <p className="text-[11px] text-zinc-300 leading-snug line-clamp-2">
+                                    {entry.message}
+                                  </p>
+                                )}
+
+                                {/* Action Links Row (YouTube Video link & Studio MP4 Video link) */}
+                                <div className="flex items-center gap-2 pt-1 border-t border-white/5 flex-wrap">
+                                  {entry.youtubeUrl && (
+                                    <a
+                                      href={entry.youtubeUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 text-[11px] font-bold text-red-300 hover:text-white transition-colors"
+                                    >
+                                      <Play className="w-3.5 h-3.5 text-red-500" />
+                                      <span>Watch on YouTube Shorts</span>
+                                      <ExternalLink className="w-3 h-3 text-red-400" />
+                                    </a>
+                                  )}
+
+                                  {entry.videoUrl && (
+                                    <a
+                                      href={entry.videoUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-[11px] font-bold text-blue-300 hover:text-white transition-colors"
+                                    >
+                                      <Video className="w-3.5 h-3.5 text-blue-400" />
+                                      <span>Open Studio MP4</span>
+                                      <ExternalLink className="w-3 h-3 text-blue-400" />
+                                    </a>
+                                  )}
+
+                                  {(entry.youtubeUrl || entry.videoUrl) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopyLink(entry.youtubeUrl || entry.videoUrl!, entry.id)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#20202A] hover:bg-[#2C2C3A] text-[10px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer ml-auto border border-[#2E2E3E]"
+                                    >
+                                      {copiedJobId === entry.id ? (
+                                        <>
+                                          <Check className="w-3 h-3 text-emerald-400" />
+                                          <span className="text-emerald-400 font-bold">Copied!</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-3 h-3" />
+                                          <span>Copy Link</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+
+                                  {entry.status === 'failed' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRunPipelineNow(auto.id, auto.theme)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-[11px] font-bold text-rose-300 transition-colors cursor-pointer"
+                                    >
+                                      <RefreshCw className="w-3 h-3" />
+                                      <span>Retry Pipeline</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── 6. SAFE DELETE CONFIRMATION ALERT (when delete clicked) ── */}
+                  {isConfirmingDelete && (
+                    <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/50 text-xs flex flex-col gap-2.5 animate-fade-in shadow-xl ring-1 ring-rose-500/40">
+                      <div className="flex items-center gap-2 text-rose-300 font-bold text-sm">
+                        <AlertCircle className="w-4 h-4 text-rose-400" />
+                        <span>Delete this automation schedule?</span>
+                      </div>
+                      <p className="text-xs text-zinc-300 leading-relaxed">
+                        This will permanently stop recurring publishing for <strong className="text-white">"{auto.theme}"</strong> and purge all recorded execution history. This action cannot be undone.
+                      </p>
+                      <div className="flex items-center justify-end gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteJobId(null)}
+                          className="px-3.5 py-1.5 rounded-lg bg-[#22222A] hover:bg-[#2C2C36] text-zinc-300 text-xs font-semibold border border-[#323240] transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await youtubeApi.deleteAutomation(auto.id);
+                              setConfirmDeleteJobId(null);
+                              onRefresh?.();
+                            } catch (err: any) {
+                              alert(err.message || 'Could not delete automation');
+                            }
+                          }}
+                          className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md transition-colors cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Confirm Delete</span>
+                        </button>
+                      </div>
+                    </div>
                   )}
+
+                  {/* ── 7. BOTTOM ACTION TOOLBAR ── */}
+                  <div className="flex items-center justify-between gap-2.5 pt-1">
+                    {/* Run Now Primary Button */}
+                    <button
+                      type="button"
+                      disabled={isRunning}
+                      onClick={() => handleRunPipelineNow(auto.id, auto.theme)}
+                      className={`flex-1 h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.99] ${
+                        isRunning
+                          ? 'bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-blue-600/20 text-blue-300 border border-blue-500/40 cursor-not-allowed shadow-inner'
+                          : isPaused
+                          ? 'bg-[#1F1F27] hover:bg-[#282834] text-zinc-200 hover:text-white border border-[#2E2E3E] hover:border-zinc-500'
+                          : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
+                      }`}
+                      title={
+                        isRunning
+                          ? 'Autonomous pipeline currently executing'
+                          : isPaused
+                          ? 'Trigger manual pipeline execution for paused schedule'
+                          : 'Trigger full generation and publish now'
+                      }
+                    >
+                      {isRunning ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                          <span>
+                            {activePipelinePhase === 0
+                              ? 'Generating Script with Gemini 3.8...'
+                              : activePipelinePhase === 1
+                              ? 'Synthesizing Voice Narration...'
+                              : activePipelinePhase === 2
+                              ? 'Rendering 1080p MP4 Video...'
+                              : 'Publishing to YouTube Shorts...'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 fill-current text-white" />
+                          <span>{isPaused ? 'Run Pipeline (Manual)' : 'Run Pipeline Now'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Stop / Resume Button in bottom bar */}
+                    {!isRunning && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleAuto(auto.id)}
+                        className={`h-10 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
+                          isActive
+                            ? 'bg-[#1F1F27] hover:bg-amber-500/15 text-zinc-300 hover:text-amber-300 border-[#2E2E3E] hover:border-amber-500/40'
+                            : 'bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border-emerald-500/40'
+                        }`}
+                        title={isActive ? "Stop automated recurring generation" : "Resume automated recurring generation"}
+                      >
+                        {isActive ? (
+                          <>
+                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Stop</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
+                            <span>Resume</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {/* Delete Schedule Button */}
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteJobId(isConfirmingDelete ? null : auto.id)}
+                      className={`h-10 px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-colors cursor-pointer shrink-0 border ${
+                        isConfirmingDelete
+                          ? 'bg-rose-950/60 text-rose-300 border-rose-700/60'
+                          : 'bg-[#1F1F27] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 border-[#2E2E3E] hover:border-rose-800/40'
+                      }`}
+                      title="Delete automation schedule"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Delete</span>
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -672,12 +1026,12 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
 
         <div className="p-4 rounded-2xl bg-[#141414] border border-[#262626] flex items-start gap-3">
           <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex-shrink-0">
-            <ShieldCheck className="w-5 h-5" />
+            <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-white">Memory Deduplication Guard</h4>
+            <h4 className="text-sm font-bold text-white">Gemini 3.8 Creative Script Engine</h4>
             <p className="text-xs text-[#8E8E93] mt-1 leading-relaxed">
-              Every generated quote is cross-checked against SQLite memory history so themes never repeat.
+              Every video generates viral hooks, authentic storytelling, and high-retention vertical pacing.
             </p>
           </div>
         </div>
