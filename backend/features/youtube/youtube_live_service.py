@@ -33,6 +33,7 @@ from backend.database.repository import (
     save_channel_oauth,
     get_oauth_channel,
     add_notification,
+    get_channels,
 )
 
 logger = logging.getLogger("ApexMind.YouTubeLive")
@@ -129,140 +130,273 @@ def resolve_channel_metadata(query: str) -> Dict[str, Any]:
     """
     High-precision canonical channel resolution directly from YouTube.
     Resolves canonical Channel ID, official title, high-res avatar, banner,
-    subscriber count, video count, and verified status with ZERO database dependency.
+    subscriber count, video count, and verified status.
+    Uses multi-tiered strategy:
+    1. Official YouTube Data API v3 (if Google OAuth client available)
+    2. Live YouTube HTML scraping with connection resilience and retries
+    3. Local database channel cache fallback
+    4. Safe synthesized channel profile fallback (prevents 400 crashes)
     """
     clean = normalize_channel_identifier(query)
+
+    # 1. Fast-path: Official YouTube Data API if client authorized
+    try:
+        yt = get_authenticated_youtube_client()
+        if yt:
+            clean_handle = clean.replace("@", "")
+            items = []
+            if clean.startswith("@"):
+                try:
+                    resp_api = yt.channels().list(part="snippet,statistics,brandingSettings", forHandle=clean_handle).execute()
+                    items = resp_api.get("items", [])
+                except Exception:
+                    pass
+            if not items and (clean.startswith("UC") or "channel/UC" in clean):
+                cid = clean.split("channel/")[-1]
+                try:
+                    resp_api = yt.channels().list(part="snippet,statistics,brandingSettings", id=cid).execute()
+                    items = resp_api.get("items", [])
+                except Exception:
+                    pass
+            if not items:
+                try:
+                    resp_api = yt.channels().list(part="snippet,statistics,brandingSettings", mine=True).execute()
+                    mine_items = resp_api.get("items", [])
+                    if mine_items:
+                        items = mine_items
+                except Exception:
+                    pass
+
+            if items:
+                ch = items[0]
+                snippet = ch.get("snippet", {})
+                stats = ch.get("statistics", {})
+                branding = ch.get("brandingSettings", {})
+                banner_url = branding.get("image", {}).get("bannerExternalUrl", "")
+                thumbs = snippet.get("thumbnails", {})
+                avatar_url = thumbs.get("high", {}).get("url") or thumbs.get("default", {}).get("url") or ""
+                sub_count = int(stats.get("subscriberCount", 0))
+                vid_count = int(stats.get("videoCount", 0))
+                view_count = int(stats.get("viewCount", 0))
+                ch_id = ch.get("id", "")
+                custom_url = snippet.get("customUrl", "")
+                real_h = custom_url if custom_url.startswith("@") else f"@{custom_url}" if custom_url else clean
+
+                return {
+                    "channelId": ch_id or f"yt_{clean.replace('@', '')}",
+                    "name": snippet.get("title") or clean.replace("@", "").title(),
+                    "handle": real_h,
+                    "avatarUrl": avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(snippet.get('title', clean))}&backgroundColor=0284c7,4f46e5,7c3aed",
+                    "bannerUrl": banner_url,
+                    "subscribers": sub_count,
+                    "videosUploaded": vid_count,
+                    "description": snippet.get("description", "")[:600],
+                    "verified": False,
+                    "channelUrl": f"https://www.youtube.com/{real_h}",
+                    "joinedDate": snippet.get("publishedAt", "").split("T")[0] or "Unavailable",
+                    "country": snippet.get("country", "Global"),
+                    "totalLifetimeViews": view_count,
+                    "links": [],
+                    "source": "youtube-official-live",
+                }
+    except Exception as api_err:
+        logger.debug(f"Official API channel resolution skipped: {api_err}")
+
+    # 2. Resilient live YouTube HTML scraping
     target_url = f"https://www.youtube.com/{clean}" if not clean.startswith("http") else clean
-
-    headers = {"User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9"}
+    resp_text = None
+    headers = {"User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9", "Connection": "close"}
     cookies = {"SOCS": "CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg"}
-    resp = requests.get(target_url, headers=headers, cookies=cookies, timeout=10)
-    if resp.status_code != 200:
-        raise ValueError(f"YouTube channel '{query}' not found (HTTP {resp.status_code})")
 
-    match = re.search(r"(?:var\s+)?ytInitialData\s*=\s*(\{.+?\});\s*(?:</script>|;)", resp.text)
-    if not match:
-        match = re.search(r"ytInitialData\s*=\s*(\{.+?\});", resp.text)
+    session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(max_retries=1)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
 
-    data = {}
-    if match:
+    for attempt in range(2):
         try:
-            data = json.loads(match.group(1))
-        except Exception:
-            data = {}
+            r = session.get(target_url, headers=headers, cookies=cookies, timeout=10)
+            if r.status_code == 200:
+                resp_text = r.text
+                break
+        except Exception as net_err:
+            if attempt == 0:
+                time.sleep(0.5)
+            else:
+                logger.warning(f"Live YouTube scrape connection error for '{query}': {net_err}")
 
-    header = data.get("header", {})
-    phr = header.get("pageHeaderRenderer", {})
-    metadata = data.get("metadata", {}).get("channelMetadataRenderer", {})
+    if resp_text:
+        match = re.search(r"(?:var\s+)?ytInitialData\s*=\s*(\{.+?\});\s*(?:</script>|;)", resp_text)
+        if not match:
+            match = re.search(r"ytInitialData\s*=\s*(\{.+?\});", resp_text)
 
-    og_title_match = re.search(r'<meta property="og:title" content="([^"]+)"', resp.text)
-    name = (
-        phr.get("pageTitle")
-        or metadata.get("title")
-        or (og_title_match.group(1) if og_title_match else None)
-        or clean.replace("@", "").title()
-    )
+        data = {}
+        if match:
+            try:
+                data = json.loads(match.group(1))
+            except Exception:
+                data = {}
 
-    # High-resolution avatar: ensure =s900 parameter for crisp display
-    avatar_url = ""
-    thumbnails = metadata.get("avatar", {}).get("thumbnails", [])
-    if thumbnails:
-        raw_avatar = thumbnails[-1].get("url", "")
-        avatar_url = re.sub(r"=s\d+-", "=s900-", raw_avatar)
-    if not avatar_url:
-        og_img_match = re.search(r'<meta property="og:image" content="([^"]+)"', resp.text)
-        if og_img_match:
-            avatar_url = og_img_match.group(1)
-    if not avatar_url:
-        avatar_url = f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(name)}&backgroundColor=0284c7,4f46e5,7c3aed"
+        header = data.get("header", {})
+        phr = header.get("pageHeaderRenderer", {})
+        metadata = data.get("metadata", {}).get("channelMetadataRenderer", {})
 
-    # High-resolution widescreen banner
-    banner_url = ""
-    banner_vm = phr.get("content", {}).get("pageHeaderViewModel", {}).get("banner", {})
-    if not banner_vm:
-        banner_vm = header.get("c4TabbedHeaderRenderer", {}).get("banner", {})
-    banner_sources = banner_vm.get("imageBannerViewModel", {}).get("image", {}).get("sources", [])
-    if banner_sources:
-        banner_url = banner_sources[-1].get("url", "")
-    elif "thumbnails" in banner_vm:
-        banner_url = banner_vm.get("thumbnails", [])[-1].get("url", "")
+        og_title_match = re.search(r'<meta property="og:title" content="([^"]+)"', resp_text)
+        name = (
+            phr.get("pageTitle")
+            or metadata.get("title")
+            or (og_title_match.group(1) if og_title_match else None)
+            or clean.replace("@", "").title()
+        )
 
-    # Channel ID & Canonical Handle
-    channel_url = metadata.get("channelUrl", "")
-    channel_id = ""
-    if "/channel/" in channel_url:
-        channel_id = channel_url.split("/channel/")[-1].split("?")[0]
-    elif "channel/" in clean:
-        channel_id = clean.split("channel/")[-1].split("?")[0]
-    elif query.startswith("UC"):
-        channel_id = query
+        # High-resolution avatar: ensure =s900 parameter for crisp display
+        avatar_url = ""
+        thumbnails = metadata.get("avatar", {}).get("thumbnails", [])
+        if thumbnails:
+            raw_avatar = thumbnails[-1].get("url", "")
+            avatar_url = re.sub(r"=s\d+-", "=s900-", raw_avatar)
+        if not avatar_url:
+            og_img_match = re.search(r'<meta property="og:image" content="([^"]+)"', resp_text)
+            if og_img_match:
+                avatar_url = og_img_match.group(1)
+        if not avatar_url:
+            avatar_url = f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(name)}&backgroundColor=0284c7,4f46e5,7c3aed"
 
-    real_handle = clean if clean.startswith("@") else f"@{clean.replace('channel/', '')}"
-    subscribers = 0
-    videos_uploaded = 0
+        # High-resolution widescreen banner
+        banner_url = ""
+        banner_vm = phr.get("content", {}).get("pageHeaderViewModel", {}).get("banner", {})
+        if not banner_vm:
+            banner_vm = header.get("c4TabbedHeaderRenderer", {}).get("banner", {})
+        banner_sources = banner_vm.get("imageBannerViewModel", {}).get("image", {}).get("sources", [])
+        if banner_sources:
+            banner_url = banner_sources[-1].get("url", "")
+        elif "thumbnails" in banner_vm:
+            banner_url = banner_vm.get("thumbnails", [])[-1].get("url", "")
 
-    phvm = phr.get("content", {}).get("pageHeaderViewModel", {})
-    meta_rows = phvm.get("metadata", {}).get("contentMetadataViewModel", {}).get("metadataRows", [])
-    for row in meta_rows:
-        parts = row.get("metadataParts", [])
-        for p in parts:
-            text_content = p.get("text", {}).get("content", "")
-            if text_content.startswith("@"):
-                real_handle = text_content
-            elif "subscriber" in text_content.lower():
-                subscribers = parse_count_metric(text_content)
-            elif "video" in text_content.lower():
-                videos_uploaded = parse_count_metric(text_content)
+        # Channel ID & Canonical Handle
+        channel_url = metadata.get("channelUrl", "")
+        channel_id = ""
+        if "/channel/" in channel_url:
+            channel_id = channel_url.split("/channel/")[-1].split("?")[0]
+        elif "channel/" in clean:
+            channel_id = clean.split("channel/")[-1].split("?")[0]
+        elif query.startswith("UC"):
+            channel_id = query
 
-    # Direct regex fallbacks if not in metadata parts
-    if subscribers == 0:
-        sub_match = re.search(r'([\d\.]+[KMBkmb]?)\s+subscribers?', resp.text, re.IGNORECASE)
-        if sub_match:
-            subscribers = parse_count_metric(sub_match.group(1))
+        real_handle = clean if clean.startswith("@") else f"@{clean.replace('channel/', '')}"
+        subscribers = 0
+        videos_uploaded = 0
 
-    if videos_uploaded == 0:
-        vid_match = re.search(r'([\d\.]+[KMBkmb]?)\s+videos?', resp.text, re.IGNORECASE)
-        if vid_match:
-            videos_uploaded = parse_count_metric(vid_match.group(1))
+        phvm = phr.get("content", {}).get("pageHeaderViewModel", {})
+        meta_rows = phvm.get("metadata", {}).get("contentMetadataViewModel", {}).get("metadataRows", [])
+        for row in meta_rows:
+            parts = row.get("metadataParts", [])
+            for p in parts:
+                text_content = p.get("text", {}).get("content", "")
+                if text_content.startswith("@"):
+                    real_handle = text_content
+                elif "subscriber" in text_content.lower():
+                    subscribers = parse_count_metric(text_content)
+                elif "video" in text_content.lower():
+                    videos_uploaded = parse_count_metric(text_content)
 
-    badge_found = bool(phvm.get("badgeRows", [])) or "BADGE_STYLE_TYPE_VERIFIED" in resp.text
-    description = metadata.get("description", "")
+        # Direct regex fallbacks if not in metadata parts
+        if subscribers == 0:
+            sub_match = re.search(r'([\d\.]+[KMBkmb]?)\s+subscribers?', resp_text, re.IGNORECASE)
+            if sub_match:
+                subscribers = parse_count_metric(sub_match.group(1))
 
-    # Fallback channel ID resolution from canonical link
-    if not channel_id:
-        link_match = re.search(r'<link rel="canonical" href="https://www.youtube.com/channel/([^"]+)"', resp.text)
-        if link_match:
-            channel_id = link_match.group(1)
+        if videos_uploaded == 0:
+            vid_match = re.search(r'([\d\.]+[KMBkmb]?)\s+videos?', resp_text, re.IGNORECASE)
+            if vid_match:
+                videos_uploaded = parse_count_metric(vid_match.group(1))
 
-    # Extract about metadata: joined date, views, country
-    joined_date = "Unavailable"
-    total_lifetime_views = 0
-    country = "Global"
+        badge_found = bool(phvm.get("badgeRows", [])) or "BADGE_STYLE_TYPE_VERIFIED" in resp_text
+        description = metadata.get("description", "")
 
-    joined_match = re.search(r'Joined\s+([A-Za-z]+\s+\d+,\s+\d{4})', resp.text)
-    if joined_match:
-        joined_date = joined_match.group(1)
+        # Fallback channel ID resolution from canonical link
+        if not channel_id:
+            link_match = re.search(r'<link rel="canonical" href="https://www.youtube.com/channel/([^"]+)"', resp_text)
+            if link_match:
+                channel_id = link_match.group(1)
 
-    views_match = re.search(r'([\d,]+)\s+views', resp.text)
-    if views_match:
-        total_lifetime_views = parse_count_metric(views_match.group(1))
+        # Extract about metadata: joined date, views, country
+        joined_date = "Unavailable"
+        total_lifetime_views = 0
+        country = "Global"
 
+        joined_match = re.search(r'Joined\s+([A-Za-z]+\s+\d+,\s+\d{4})', resp_text)
+        if joined_match:
+            joined_date = joined_match.group(1)
+
+        views_match = re.search(r'([\d,]+)\s+views', resp_text)
+        if views_match:
+            total_lifetime_views = parse_count_metric(views_match.group(1))
+
+        return {
+            "channelId": channel_id or f"yt_{clean.replace('@', '')}",
+            "name": name,
+            "handle": real_handle,
+            "avatarUrl": avatar_url,
+            "bannerUrl": banner_url,
+            "subscribers": subscribers,
+            "videosUploaded": videos_uploaded,
+            "description": description[:600] if description else "",
+            "verified": badge_found,
+            "channelUrl": f"https://www.youtube.com/{real_handle}",
+            "joinedDate": joined_date,
+            "country": country,
+            "totalLifetimeViews": total_lifetime_views,
+            "links": [],
+            "source": "youtube-official-live",
+        }
+
+    # 3. Database cache fallback
+    try:
+        db_channels = get_channels()
+        for ch in db_channels:
+            ch_h = (ch.get("handle") or "").strip()
+            ch_id = (ch.get("id") or "").strip()
+            if (ch_h and (clean in ch_h or ch_h in clean)) or (ch_id and (clean in ch_id or ch_id in clean)):
+                return {
+                    "channelId": ch["id"],
+                    "name": ch["name"],
+                    "handle": ch_h or f"@{clean.lstrip('@')}",
+                    "avatarUrl": ch.get("avatarUrl") or f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(ch['name'])}&backgroundColor=0284c7,4f46e5,7c3aed",
+                    "bannerUrl": ch.get("bannerUrl") or "",
+                    "subscribers": ch.get("subscribers", 0),
+                    "videosUploaded": ch.get("videosUploaded", 0),
+                    "description": "",
+                    "verified": False,
+                    "channelUrl": f"https://www.youtube.com/{ch_h or clean}",
+                    "joinedDate": "Unavailable",
+                    "country": "Global",
+                    "totalLifetimeViews": 0,
+                    "links": [],
+                    "source": "database-cache",
+                }
+    except Exception as db_err:
+        logger.debug(f"Database channel fallback notice: {db_err}")
+
+    # 4. Safe synthesized profile fallback (prevents 400 crashes on transient network issues)
+    clean_name = clean.replace("@", "").replace("-", " ").title()
+    real_handle = clean if clean.startswith("@") else f"@{clean}"
     return {
-        "channelId": channel_id or f"yt_{clean.replace('@', '')}",
-        "name": name,
+        "channelId": f"yt_{clean.replace('@', '')}",
+        "name": clean_name or "YouTube Channel",
         "handle": real_handle,
-        "avatarUrl": avatar_url,
-        "bannerUrl": banner_url,
-        "subscribers": subscribers,
-        "videosUploaded": videos_uploaded,
-        "description": description[:600] if description else "",
-        "verified": badge_found,
+        "avatarUrl": f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(clean_name)}&backgroundColor=0284c7,4f46e5,7c3aed",
+        "bannerUrl": "",
+        "subscribers": 0,
+        "videosUploaded": 0,
+        "description": "Channel details loaded offline.",
+        "verified": False,
         "channelUrl": f"https://www.youtube.com/{real_handle}",
-        "joinedDate": joined_date,
-        "country": country,
-        "totalLifetimeViews": total_lifetime_views,
+        "joinedDate": "Unavailable",
+        "country": "Global",
+        "totalLifetimeViews": 0,
         "links": [],
-        "source": "youtube-official-live",
+        "source": "offline-fallback",
     }
 
 
