@@ -415,15 +415,66 @@ async def get_search_videos_route(query: str, type: str = "video", limit: int = 
 
 
 # ==============================================================================
-# Domain 4: Direct Video Operations (POST /api/youtube/videos)
+# ==============================================================================
+# Domain 4: Canonical Video Publish Operation (POST /api/youtube/publish)
+# ==============================================================================
+
+@router.post(
+    "/api/youtube/publish",
+    response_model=PublishVideoResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Publish AI Motivational Short to YouTube",
+    description="The canonical endpoint to render, assemble metadata, and publish an AI motivational Short directly to YouTube.",
+)
+async def post_publish_video(payload: PublishVideoRequest):
+    try:
+        title_text = payload.title or "Untitled Short"
+        quote_text = payload.quote or ""
+        return publish_video_to_shorts(
+            title=title_text,
+            quote=quote_text,
+            description=payload.description,
+            tags=payload.tags,
+            privacyStatus=payload.privacyStatus,
+            voice=payload.voice or "Fenrir",
+            category=payload.category or "Motivation",
+            channel_id=payload.channelId,
+            coverImageUrl=payload.coverImageUrl,
+            visualTheme=payload.visualTheme,
+            audioUrl=payload.audioUrl,
+            videoUrl=payload.videoUrl,
+            musicUrl=payload.musicUrl,
+            duration=payload.duration,
+            subtitles=payload.subtitles,
+            videoClips=payload.videoClips,
+            imageClips=payload.imageClips,
+            aspectRatio=payload.aspectRatio,
+        )
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error in video payload: {ve}"
+        )
+    except Exception as e:
+        logger.error(f"Error publishing video to YouTube: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to publish video: {e}"
+        )
+
+
+# ==============================================================================
+# Domain 4b: Video Management Operations (Metadata Update & Deletion)
 # ==============================================================================
 
 @router.post(
     "/api/youtube/videos",
     response_model=PublishVideoResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Publish, upload, or manage video on YouTube",
-    description="Standard RESTful endpoint to generate and publish an AI motivational Short, or manage video metadata on YouTube.",
+    status_code=status.HTTP_200_OK,
+    summary="Manage video metadata or delete video on YouTube",
+    description="Endpoint for updating video metadata or deleting a video on YouTube. For publishing, use POST /api/youtube/publish.",
 )
 async def post_youtube_videos(payload: PublishVideoRequest):
     try:
@@ -476,52 +527,13 @@ async def post_youtube_videos(payload: PublishVideoRequest):
                 logger.error(f"Error updating video metadata for '{target_video_id}': {ue}")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ue))
 
-        # ── 3. Publish AI Motivational Short to YouTube ───────────────────────
-        title_text = payload.title or "Untitled Short"
-        quote_text = payload.quote or ""
-        return publish_video_to_shorts(
-            title=title_text,
-            quote=quote_text,
-            description=payload.description,
-            tags=payload.tags,
-            privacyStatus=payload.privacyStatus,
-            voice=payload.voice or "Fenrir",
-            category=payload.category or "Motivation",
-            channel_id=payload.channelId,
-            coverImageUrl=payload.coverImageUrl,
-            visualTheme=payload.visualTheme,
-            audioUrl=payload.audioUrl,
-            videoUrl=payload.videoUrl,
-            musicUrl=payload.musicUrl,
-            duration=payload.duration,
-            subtitles=payload.subtitles,
-            videoClips=payload.videoClips,
-            imageClips=payload.imageClips,
-            aspectRatio=payload.aspectRatio,
-        )
+        # ── Fallback delegate to canonical publish endpoint ────────────────────
+        return await post_publish_video(payload)
     except HTTPException:
         raise
-    except ValueError as ve:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Validation error in video payload: {ve}"
-        )
     except Exception as e:
-        logger.error(f"Error processing video operation on YouTube: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process video operation: {e}"
-        )
-
-
-@router.post(
-    "/api/youtube/publish",
-    response_model=PublishVideoResponse,
-    status_code=status.HTTP_201_CREATED,
-    include_in_schema=False,
-)
-async def post_publish_video_alias(payload: PublishVideoRequest):
-    return await post_youtube_videos(payload)
+        logger.error(f"Error in video operation: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post(

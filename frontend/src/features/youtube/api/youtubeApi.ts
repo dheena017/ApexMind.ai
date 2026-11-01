@@ -138,11 +138,25 @@ export const youtubeApi = {
     }));
   },
 
-  // ── Action / Mutation Operations (RESTful /api/youtube/videos) ────────────
+  // ── Action / Mutation Operations ──────────────────────────────────────────
 
-  // Direct Live Video Upload to YouTube via unified /api/youtube/videos
+  // Direct Live Video Publish to YouTube via canonical /api/youtube/publish
+  async publishVideo(payload: any): Promise<any> {
+    const res = await fetch(apiUrl('/api/youtube/publish'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to publish video' }));
+      throw new Error(err.detail || 'Failed to publish video to YouTube');
+    }
+    return res.json();
+  },
+
+  // Direct Live Video Upload to YouTube via canonical /api/youtube/publish
   async uploadVideoToYouTube(formData: FormData): Promise<any> {
-    const res = await fetch(apiUrl('/api/youtube/videos'), {
+    const res = await fetch(apiUrl('/api/youtube/publish'), {
       method: 'POST',
       body: formData,
     });
