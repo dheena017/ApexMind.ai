@@ -10,11 +10,40 @@ export interface DashboardMetrics {
   unreadNotificationsCount: number;
 }
 
+export interface GeminiModelQuota {
+  name: string;
+  category: string;
+  rpmLimit: number;
+  rpdLimit: number;
+  tpmLimit: string;
+  rps: string;
+  status: string;
+  description?: string;
+}
+
+export interface GeminiRateLimitsSummary {
+  activeModel: string;
+  currentRpm: number;
+  limitRpm: number;
+  currentRpd: number;
+  limitRpd: number;
+  currentTpm: number;
+  limitTpm: number;
+  usagePercentRpm: number;
+  statusLevel: 'healthy' | 'warning' | 'critical' | 'exceeded';
+  secondsToWindowReset: number;
+  effectiveRps: number;
+  totalRequests: number;
+  tier: string;
+  models: GeminiModelQuota[];
+}
+
 export interface SystemStatusSummary {
   database: string;
   geminiAi: string;
   cachedAudioCount: number;
   serverUptimeFormatted: string;
+  geminiRateLimits?: GeminiRateLimitsSummary;
 }
 
 export interface TrendingPromptIdea {

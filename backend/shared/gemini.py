@@ -6,6 +6,7 @@ import re
 import struct
 import time
 import wave
+import threading
 from typing import Any, Dict, List, Optional
 
 from google import genai
@@ -116,6 +117,125 @@ if gemini_client:
     logger.info("Google GenAI client initialized successfully.")
 else:
     logger.warning("GEMINI_API_KEY is not set.")
+
+
+class GeminiRateTracker:
+    """Thread-safe real-time rate limit and RPM / RPD tracker for Gemini AI requests."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._requests: list[float] = []
+        self._daily_requests: list[float] = []
+        self._tokens_minute: list[tuple[float, int]] = []
+        self._total_requests_all_time: int = 0
+        self._last_request_time: float | None = None
+        self._last_model_used: str = DEFAULT_SCRIPT_MODEL
+
+    def record_request(self, model_name: str = DEFAULT_SCRIPT_MODEL, tokens: int = 0):
+        now = time.time()
+        with self._lock:
+            self._requests.append(now)
+            self._daily_requests.append(now)
+            if tokens > 0:
+                self._tokens_minute.append((now, tokens))
+            self._total_requests_all_time += 1
+            self._last_request_time = now
+            self._last_model_used = model_name
+            self._cleanup(now)
+
+    def _cleanup(self, now: float):
+        one_min_ago = now - 60.0
+        one_day_ago = now - 86400.0
+        self._requests = [t for t in self._requests if t > one_min_ago]
+        self._daily_requests = [t for t in self._daily_requests if t > one_day_ago]
+        self._tokens_minute = [(t, c) for t, c in self._tokens_minute if t > one_min_ago]
+
+    def get_telemetry(self) -> dict[str, Any]:
+        now = time.time()
+        with self._lock:
+            self._cleanup(now)
+            current_rpm = len(self._requests)
+            current_rpd = len(self._daily_requests)
+            current_tpm = sum(c for _, c in self._tokens_minute)
+            limit_rpm = 5
+            limit_rpd = 20
+            limit_tpm = 250_000
+
+            seconds_to_reset = 0
+            if self._requests:
+                oldest_in_window = min(self._requests)
+                seconds_to_reset = max(0, int(60 - (now - oldest_in_window)))
+
+            percent_used = int((current_rpm / limit_rpm) * 100) if limit_rpm > 0 else 0
+            if percent_used >= 100:
+                status_level = "exceeded"
+            elif percent_used >= 80:
+                status_level = "critical"
+            elif percent_used >= 60:
+                status_level = "warning"
+            else:
+                status_level = "healthy"
+
+            return {
+                "activeModel": self._last_model_used or DEFAULT_SCRIPT_MODEL,
+                "currentRpm": current_rpm,
+                "limitRpm": limit_rpm,
+                "currentRpd": current_rpd,
+                "limitRpd": limit_rpd,
+                "currentTpm": current_tpm,
+                "limitTpm": limit_tpm,
+                "usagePercentRpm": percent_used,
+                "statusLevel": status_level,
+                "secondsToWindowReset": seconds_to_reset,
+                "effectiveRps": round(limit_rpm / 60.0, 3),
+                "totalRequests": self._total_requests_all_time,
+                "tier": "Free Tier (5 RPM Cap)",
+                "models": [
+                    {
+                        "name": "Gemini 3.8 Flash",
+                        "category": "Text & Scripts",
+                        "rpmLimit": 5,
+                        "rpdLimit": 20,
+                        "tpmLimit": "250K",
+                        "rps": "0.083 req/s",
+                        "status": "Active",
+                        "description": "Default primary engine for script creation and reasoning",
+                    },
+                    {
+                        "name": "Gemini 3.8 Flash TTS",
+                        "category": "Voiceover Audio",
+                        "rpmLimit": 3,
+                        "rpdLimit": 10,
+                        "tpmLimit": "10K",
+                        "rps": "0.050 req/s",
+                        "status": "Active",
+                        "description": "Expressive multi-speaker speech synthesis engine",
+                    },
+                    {
+                        "name": "Gemini 3.5 Flash Lite",
+                        "category": "High-Throughput",
+                        "rpmLimit": 15,
+                        "rpdLimit": 500,
+                        "tpmLimit": "250K",
+                        "rps": "0.250 req/s",
+                        "status": "Standby",
+                        "description": "Ultra-fast lightweight fallback for fast generations",
+                    },
+                    {
+                        "name": "Antigravity Agent",
+                        "category": "Autonomous Agents",
+                        "rpmLimit": 60,
+                        "rpdLimit": 100,
+                        "tpmLimit": "100K",
+                        "rps": "1.000 req/s",
+                        "status": "Standby",
+                        "description": "Sandboxed autonomous agent execution environment",
+                    },
+                ],
+            }
+
+
+rate_tracker = GeminiRateTracker()
 
 
 def resolve_script_model(model_name: str | None = None) -> str:
@@ -336,6 +456,7 @@ def _generate_script_with_fallback(
                     raise inner_err
 
             used_model = attempt_model
+            rate_tracker.record_request(attempt_model)
             break
         except Exception as e:
             last_err = e
@@ -1324,6 +1445,7 @@ def generate_gemini_voiceover(
                 logger.warning(f"[Studio/TTS] Model '{attempt_tts}' failed ({e}), trying next TTS model...")
 
         if tts_res is not None:
+            rate_tracker.record_request(attempt_tts)
             raw_audio, mime_type = extract_voiceover_audio(tts_res)
             if isinstance(raw_audio, bytes):
                 audio_b64 = base64.b64encode(raw_audio).decode("utf-8")

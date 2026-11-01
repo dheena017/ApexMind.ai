@@ -518,8 +518,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             detail: { exporting: true, message: 'Rendering broadcast-quality Full HD video with FFmpeg...' },
           }));
 
-          const defaultBackdrop = DEFAULT_VISUAL_BACKDROPS[0];
-          const resolvedBackdropUrl = customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || activeStoryboardVideo || activeStoryboardImage || defaultBackdrop.videoUrl;
+          const defaultBackdrop = (DEFAULT_VISUAL_BACKDROPS && DEFAULT_VISUAL_BACKDROPS.length > 0) ? DEFAULT_VISUAL_BACKDROPS[0] : undefined;
+          const resolvedBackdropUrl = customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || activeStoryboardVideo || activeStoryboardImage || defaultBackdrop?.videoUrl || '';
           const resolvedBackdropType = (customVideoUrl || (!customImageUrl && (activeBackdrop?.videoUrl || activeStoryboardVideo || !activeBackdrop?.imageUrl))) ? 'video' : 'image';
 
           const backfillUrl = (c: any, idx: number) => {
@@ -527,8 +527,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             const sbMatch = script.storyboard?.[idx];
             const sbUrl = sbMatch?.mediaUrl || (sbMatch as any)?.videoUrl || sbMatch?.posterUrl;
             if (sbUrl && typeof sbUrl === 'string' && sbUrl.trim()) return sbUrl.trim();
-            const fallbackBackdrop = DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length];
-            return resolvedBackdropUrl || fallbackBackdrop.videoUrl;
+            const fallbackBackdrop = (DEFAULT_VISUAL_BACKDROPS && DEFAULT_VISUAL_BACKDROPS.length > 0)
+              ? DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length]
+              : undefined;
+            return resolvedBackdropUrl || fallbackBackdrop?.videoUrl || '';
           };
 
           const rawVClips = (timelineState.videoClips || []).map((c, idx) => ({
@@ -1097,8 +1099,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         const start = typeof sc.start === 'number' ? sc.start : runStart;
         const dur = typeof sc.duration === 'number' ? sc.duration : 3;
         runStart = start + dur;
-        const fallbackBackdrop = DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length];
-        const clipUrl = sc.mediaUrl || (sc as any).videoUrl || sc.posterUrl || customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || fallbackBackdrop.videoUrl;
+        const fallbackBackdrop = (DEFAULT_VISUAL_BACKDROPS && DEFAULT_VISUAL_BACKDROPS.length > 0)
+          ? DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length]
+          : undefined;
+        const clipUrl = sc.mediaUrl || (sc as any).videoUrl || sc.posterUrl || customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || fallbackBackdrop?.videoUrl || '';
         return {
           id: `sb-${idx}`,
           type: (sc.mediaType === 'image' || isImageMedia(clipUrl)) ? ('image' as const) : ('video' as const),

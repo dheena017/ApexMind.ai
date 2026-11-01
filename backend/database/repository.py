@@ -529,7 +529,30 @@ def toggle_automation(job_id: str) -> List[Dict[str, Any]]:
 def get_media_library() -> Dict[str, Any]:
     return {
         "musicTracks": [],
-        "visualBackdrops": [],
+        "visualBackdrops": [
+            {
+                "id": "vb-dark-aurora",
+                "name": "Dark Aurora",
+                "category": "Cinematic",
+                "aspectRatio": "9:16",
+                "previewColor": "#0a0a14",
+                "textColor": "#ffffff",
+                "particleEffect": "subtle-glow",
+                "videoUrl": "https://cdn.pixabay.com/video/2020/04/18/36423-411516053_tiny.mp4",
+                "imageUrl": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=720&q=80",
+            },
+            {
+                "id": "vb-stoic-grit",
+                "name": "Stoic Mist",
+                "category": "Atmospheric",
+                "aspectRatio": "9:16",
+                "previewColor": "#0d0d0d",
+                "textColor": "#f3f4f6",
+                "particleEffect": "fog-drift",
+                "videoUrl": "https://cdn.pixabay.com/video/2021/08/13/84970-588390119_tiny.mp4",
+                "imageUrl": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=720&q=80",
+            },
+        ],
         "stockVideos": [],
         "textPresets": [],
         "voiceProfiles": [
