@@ -1,42 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Check,
   Copy,
-  Home,
   Film,
   Type,
   Mic,
   Music,
   Layers,
-  ArrowRight,
   Sparkles,
   Youtube,
-  TrendingUp,
-  Hash,
-  BarChart2,
   Zap,
-  Star,
   AlertCircle,
-  Globe,
   Instagram,
+  Globe,
   Bookmark,
-  Share2,
   ChevronRight,
-  Cpu,
-  Radio,
   Clock,
   Download,
-  RefreshCw,
-  Target,
-  Plus,
-  X,
-  Sliders,
-  Settings2,
-  ShieldCheck,
   Smartphone,
-  Monitor,
-  Square,
-  Maximize2,
 } from 'lucide-react';
 import { GeneratedScript } from '../../types';
 
@@ -68,67 +49,6 @@ const normalizeHashtags = (hashtags: string[]): string[] => Array.from(new Set(
     .map((tag) => `#${tag}`),
 ));
 
-const computeContentReadiness = (
-  script: GeneratedScript | undefined,
-  duration: number,
-  title: string,
-  hook: string,
-  cta: string,
-  hashtags: string[],
-  aspectRatio: string,
-): number | null => {
-  const cleanTitle = normalizeText(title);
-  const cleanHook = normalizeText(hook);
-  const cleanQuote = normalizeText(script?.quote);
-  const cleanCta = normalizeText(cta);
-  const cleanHashtags = normalizeHashtags(hashtags);
-  const subtitleCount = script?.subtitles?.length ?? 0;
-  const spokenWords = countWords(`${cleanHook} ${cleanQuote} ${cleanCta}`);
-
-  if (
-    !cleanTitle &&
-    !spokenWords &&
-    cleanHashtags.length === 0 &&
-    !(script?.tags?.some((tag) => tag.trim()) ?? false) &&
-    subtitleCount === 0
-  ) {
-    return null;
-  }
-
-  let score = 0;
-
-  const titleWords = countWords(cleanTitle);
-  if (cleanTitle) {
-    score += titleWords >= 4 && titleWords <= 12 ? 13 : titleWords > 0 ? 6 : 0;
-    if (cleanTitle.length >= 18 && cleanTitle.length <= 70) score += 5;
-  }
-
-  const hookWords = countWords(cleanHook);
-  if (cleanHook) {
-    score += hookWords >= 5 && hookWords <= 20 ? 15 : hookWords > 0 ? 7 : 0;
-    if (/[.!?]/.test(cleanHook)) score += 5;
-  }
-
-  if (spokenWords > 0 && duration > 0) {
-    const wordsPerMinute = (spokenWords / duration) * 60;
-    score += Math.round(25 * Math.max(0, 1 - Math.abs(wordsPerMinute - 145) / 145));
-  }
-
-  const ctaWords = countWords(cleanCta);
-  if (cleanCta) score += ctaWords >= 2 && ctaWords <= 10 ? 10 : 5;
-
-  if (cleanHashtags.length >= 3 && cleanHashtags.length <= 8) score += 8;
-  else if (cleanHashtags.length > 0) score += Math.min(6, cleanHashtags.length * 2);
-  if (script?.tags?.some((tag) => tag.trim())) score += 4;
-
-  if (subtitleCount >= 4) score += 10;
-  else if (subtitleCount > 0) score += 5;
-
-  if (aspectRatio === '9:16') score += 5;
-
-  return Math.min(100, Math.max(0, score));
-};
-
 export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   onPublish,
   publishing,
@@ -142,9 +62,8 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   onUpdateScript,
   onSelectCompound,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'seo' | 'audit' | 'distribute' | 'codec'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'audit' | 'distribute' | 'codec'>('overview');
   const [copiedMetadata, setCopiedMetadata] = useState(false);
-  const [copiedHashtags, setCopiedHashtags] = useState(false);
   const [platform, setPlatform] = useState<'youtube' | 'instagram' | 'tiktok' | 'twitter'>('youtube');
   const [savedDraft, setSavedDraft] = useState(false);
 
@@ -157,77 +76,23 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   const [selectedAudioSampleRate, setSelectedAudioSampleRate] = useState<'24000' | '44100' | '48000'>('24000');
   const [selectedAudioBitrate, setSelectedAudioBitrate] = useState<'128' | '192' | '320'>('192');
 
-  // Interactive SEO editing
-  const [editingTitle, setEditingTitle] = useState(script?.title || '');
-  const [editingHook, setEditingHook] = useState(script?.hook || '');
-  const [editingCta, setEditingCta] = useState(script?.cta || '');
-  const [newHashtag, setNewHashtag] = useState('');
-  const [currentHashtags, setCurrentHashtags] = useState<string[]>(script?.hashtags || []);
-  const uniqueHashtags = normalizeHashtags(currentHashtags);
-
-  useEffect(() => {
-    setEditingTitle(script?.title || '');
-    setEditingHook(script?.hook || '');
-    setEditingCta(script?.cta || '');
-    setCurrentHashtags(script?.hashtags || []);
-  }, [script?.title, script?.hook, script?.cta, script?.hashtags]);
-
-  const handleApplyTitleChange = (val: string) => {
-    setEditingTitle(val);
-    onUpdateScript?.({ title: val });
-  };
-
-  const handleApplyHookChange = (val: string) => {
-    setEditingHook(val);
-    onUpdateScript?.({ hook: val });
-  };
-
-  const handleApplyCtaChange = (val: string) => {
-    setEditingCta(val);
-    onUpdateScript?.({ cta: val });
-  };
-
-  const handleAddHashtag = (tagToAdd?: string) => {
-    const raw = tagToAdd || newHashtag.trim();
-    if (!raw) return;
-    const formatted = raw.startsWith('#') ? raw : `#${raw}`;
-    if (!currentHashtags.includes(formatted)) {
-      const updated = [...currentHashtags, formatted];
-      setCurrentHashtags(updated);
-      onUpdateScript?.({ hashtags: updated });
-    }
-    if (!tagToAdd) setNewHashtag('');
-  };
-
-  const handleRemoveHashtag = (tagToRemove: string) => {
-    const updated = currentHashtags.filter((t) => t !== tagToRemove);
-    setCurrentHashtags(updated);
-    onUpdateScript?.({ hashtags: updated });
-  };
+  const title = script?.title || '';
+  const hook = script?.hook || '';
+  const cta = script?.cta || '';
+  const hashtags = script?.hashtags || [];
+  const uniqueHashtags = normalizeHashtags(hashtags);
 
   const handleCopyMetadata = () => {
-    const text = `${editingTitle || script?.title || 'ApexMind Video'}\n\n${script?.quote || ''}\n\n${currentHashtags.join(' ')}`;
+    const text = `${title || 'ApexMind Video'}\n\n${script?.quote || ''}\n\n${hashtags.join(' ')}`;
     navigator.clipboard?.writeText(text);
     setCopiedMetadata(true);
     setTimeout(() => setCopiedMetadata(false), 2000);
-  };
-
-  const handleCopyHashtags = () => {
-    const tags = currentHashtags.join(' ');
-    navigator.clipboard?.writeText(tags);
-    setCopiedHashtags(true);
-    setTimeout(() => setCopiedHashtags(false), 2000);
   };
 
   const handleSaveDraft = () => {
     window.dispatchEvent(new CustomEvent('workspace:save-draft'));
     setSavedDraft(true);
     setTimeout(() => setSavedDraft(false), 2000);
-  };
-
-  const handleAspectRatioSelect = (ratio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9') => {
-    onCanvasAspectRatioChange?.(ratio);
-    window.dispatchEvent(new CustomEvent('workspace:aspect-ratio-change', { detail: { aspectRatio: ratio } }));
   };
 
   const compoundShortcuts = [
@@ -239,30 +104,14 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
     { id: 'overlay' as const, label: 'Stickers & Graphic Badges', icon: Layers, color: 'text-indigo-400', bg: 'bg-indigo-400/10', badge: 'Overlays' },
   ];
 
-  const displayCategory = category || (script?.tags?.[0]) || 'General Creator';
-  const readinessScore = computeContentReadiness(
-    script,
-    duration,
-    editingTitle,
-    editingHook,
-    editingCta,
-    currentHashtags,
-    canvasAspectRatio,
-  );
-  const scoreColor = readinessScore === null
-    ? 'text-[#A1A1AA]'
-    : readinessScore >= 75 ? 'text-emerald-400' : readinessScore >= 50 ? 'text-amber-400' : 'text-red-400';
-  const scoreBg = readinessScore === null
-    ? 'bg-white/5 border-white/10'
-    : readinessScore >= 75 ? 'bg-emerald-400/10 border-emerald-400/30' : readinessScore >= 50 ? 'bg-amber-400/10 border-amber-400/30' : 'bg-red-400/10 border-red-400/30';
-  const spokenWordCount = countWords(`${editingHook} ${script?.quote ?? ''} ${editingCta}`);
+  const spokenWordCount = countWords(`${hook} ${script?.quote ?? ''} ${cta}`);
   const spokenWordsPerMinute = duration > 0 ? Math.round((spokenWordCount / duration) * 60) : 0;
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar ── */}
       <div className="flex items-center gap-3 px-3 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
-        {(['overview', 'seo', 'audit', 'distribute', 'codec'] as const).map((tab) => (
+        {(['overview', 'audit', 'distribute', 'codec'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -284,81 +133,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
         {/* ─────── OVERVIEW TAB ─────── */}
         {activeSubTab === 'overview' && (
           <div className="flex flex-col gap-3 pt-0.5">
-            {/* Content readiness score */}
-            <div className={`p-3 rounded-xl border ${scoreBg} flex items-center justify-between`}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                  <TrendingUp className={`w-4 h-4 ${scoreColor}`} />
-                </div>
-                <div>
-                  <p className="text-[10px] text-[#71717A] uppercase tracking-wider font-bold" title="A checklist score for script and format completeness; it cannot predict views or virality.">Content Readiness</p>
-                  <p className={`text-xl font-black leading-tight ${scoreColor}`}>
-                    {readinessScore ?? '—'}<span className="text-xs font-medium ml-0.5 text-[#A1A1AA]">/100</span>
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] text-[#A1A1AA] font-semibold truncate max-w-[130px]">{displayCategory}</p>
-                <p className="text-[10px] text-[#71717A] font-mono-studio">
-                  {readinessScore === null ? 'Add content to score' : readinessScore >= 75 ? 'Ready' : readinessScore >= 50 ? 'In progress' : 'Needs work'}
-                </p>
-                <p className="text-[10px] text-[#71717A] font-mono-studio">{duration > 0 ? `${duration.toFixed(1)}s total` : 'Duration not set'}</p>
-              </div>
-            </div>
-
-            {/* Canvas Aspect Ratio Quick Selector */}
-            <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#18181C] border border-[#282830]">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
-                <span>Canvas Format</span>
-                <span className="text-sky-400 font-bold">{canvasAspectRatio}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {[
-                  { id: '9:16' as const, label: '9:16', desc: 'Shorts/Reels', icon: Smartphone },
-                  { id: '16:9' as const, label: '16:9', desc: 'YouTube', icon: Monitor },
-                  { id: '1:1' as const, label: '1:1', desc: 'Square', icon: Square },
-                  { id: '4:5' as const, label: '4:5', desc: 'Portrait', icon: Maximize2 },
-                ].map((aspect) => {
-                  const Icon = aspect.icon;
-                  const isSelected = canvasAspectRatio === aspect.id;
-                  return (
-                    <button
-                      key={aspect.id}
-                      type="button"
-                      onClick={() => handleAspectRatioSelect(aspect.id)}
-                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#1E293B] border-sky-500 text-sky-400 shadow-sm'
-                          : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-[#D4D4D8] hover:border-[#3A3A42]'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 mb-1" />
-                      <span className="text-[10px] font-bold leading-none">{aspect.label}</span>
-                      <span className="text-[8px] text-[#71717A] mt-0.5">{aspect.desc}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Quick Content Checklist */}
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
-                { label: 'Hook', icon: Zap, value: (script?.hook || editingHook) ? 'Ready' : 'Missing', ok: !!(script?.hook || editingHook), color: 'text-amber-400' },
-                { label: 'Tags', icon: Hash, value: `${currentHashtags.length}`, ok: currentHashtags.length >= 3, color: 'text-blue-400' },
-                { label: 'CTA', icon: Target, value: (script?.cta || editingCta) ? 'Ready' : 'Missing', ok: !!(script?.cta || editingCta), color: 'text-emerald-400' },
-              ].map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <div key={stat.label} className={`flex flex-col items-center gap-1 p-2 rounded-xl border ${stat.ok ? 'bg-[#18181C] border-[#282830]' : 'bg-[#1C1410] border-amber-900/30'}`}>
-                    <Icon className={`w-3.5 h-3.5 ${stat.ok ? stat.color : 'text-amber-500'}`} />
-                    <span className={`text-xs font-black ${stat.ok ? 'text-white' : 'text-amber-400'}`}>{stat.value}</span>
-                    <span className="text-[9px] text-[#71717A]">{stat.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-
             {/* Inspector Navigation Panels */}
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold px-0.5">
@@ -434,146 +208,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* ─────── SEO TAB ─────── */}
-        {activeSubTab === 'seo' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            {/* Live Editable Title */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">Video Title</span>
-                <span className={`text-[10px] font-mono-studio ${editingTitle.length <= 100 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {editingTitle.length}/100 chars
-                </span>
-              </div>
-              <input
-                type="text"
-                value={editingTitle}
-                onChange={(e) => handleApplyTitleChange(e.target.value)}
-                placeholder="Enter compelling video title..."
-                className="w-full bg-[#121215] border border-[#2A2A30] focus:border-[#3B82F6] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
-              />
-            </div>
-
-            {/* Live Editable Hook & CTA */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">Opening Hook (First 3s)</span>
-              <input
-                type="text"
-                value={editingHook}
-                onChange={(e) => handleApplyHookChange(e.target.value)}
-                placeholder="First 3 seconds attention hook..."
-                className="w-full bg-[#121215] border border-[#2A2A30] focus:border-[#3B82F6] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
-              />
-
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold mt-1">Closing Call-To-Action</span>
-              <input
-                type="text"
-                value={editingCta}
-                onChange={(e) => handleApplyCtaChange(e.target.value)}
-                placeholder="Subscribe / Comment / Like prompt..."
-                className="w-full bg-[#121215] border border-[#2A2A30] focus:border-[#3B82F6] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
-              />
-            </div>
-
-            {/* Interactive Hashtag Manager */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
-                  Hashtags ({currentHashtags.length})
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopyHashtags}
-                  className="text-[10px] text-[#3B82F6] hover:text-blue-300 cursor-pointer flex items-center gap-1 font-medium"
-                >
-                  <Copy className="w-2.5 h-2.5" />
-                  {copiedHashtags ? 'Copied!' : 'Copy All'}
-                </button>
-              </div>
-
-              {/* Tag input row */}
-              <div className="flex gap-1.5">
-                <input
-                  type="text"
-                  value={newHashtag}
-                  onChange={(e) => setNewHashtag(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddHashtag(); }}
-                  placeholder="Add hashtag (e.g. #Stoic)..."
-                  className="flex-1 bg-[#121215] border border-[#2A2A30] focus:border-[#3B82F6] rounded-lg px-2.5 py-1 text-xs text-white outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleAddHashtag()}
-                  className="px-2.5 py-1 rounded-lg bg-[#2563EB] hover:bg-blue-600 text-xs font-semibold text-white flex items-center gap-1 cursor-pointer"
-                >
-                  <Plus className="w-3 h-3" /> Add
-                </button>
-              </div>
-
-              {/* Tag Cloud */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {currentHashtags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1E2A3A] border border-[#2A3A5A] text-[10px] text-[#60A5FA] font-medium"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveHashtag(tag)}
-                      className="text-[#93C5FD] hover:text-white cursor-pointer ml-0.5"
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-
-              {/* Popular Suggestions */}
-              <div className="flex flex-col gap-1 pt-1 border-t border-[#25252A]">
-                <span className="text-[9px] text-[#71717A] uppercase font-bold">Suggested Tags:</span>
-                <div className="flex flex-wrap gap-1">
-                  {['#Shorts', '#Viral', '#Mindset', '#Motivation', '#Discipline', '#Success', '#SelfImprovement', '#Stoicism'].map((sug) => (
-                    <button
-                      key={sug}
-                      type="button"
-                      onClick={() => handleAddHashtag(sug)}
-                      disabled={currentHashtags.includes(sug)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
-                        currentHashtags.includes(sug)
-                          ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                          : 'bg-[#1C1C22] border-[#2A2A32] text-[#A1A1AA] hover:text-white hover:border-[#3B82F6]'
-                      }`}
-                    >
-                      + {sug}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Dynamic SEO Checklist */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">SEO Audit Checklist</span>
-              {[
-                { label: 'Title is 10–80 characters', pass: editingTitle.trim().length >= 10 && editingTitle.trim().length <= 80 },
-                { label: 'Opening hook added', pass: normalizeText(editingHook).length > 0 },
-                { label: 'Call-to-action added', pass: normalizeText(editingCta).length > 0 },
-                { label: '3–8 unique hashtags added', pass: uniqueHashtags.length >= 3 && uniqueHashtags.length <= 8 },
-                { label: 'Short-form target duration set (15–58s)', pass: duration >= 15 && duration <= 58 },
-                { label: 'Vertical aspect ratio configured', pass: canvasAspectRatio === '9:16' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  {item.pass
-                    ? <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    : <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-                  <span className={`text-[11px] ${item.pass ? 'text-[#D4D4D8]' : 'text-amber-300'}`}>{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* ─────── AUDIT TAB ─────── */}
         {activeSubTab === 'audit' && (
           <div className="flex flex-col gap-3 pt-0.5">
@@ -616,25 +250,25 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                 },
                 {
                   label: 'Opening hook added',
-                  pass: normalizeText(editingHook).length > 0,
+                  pass: normalizeText(hook).length > 0,
                 },
                 {
                   label: 'Call-to-action added',
-                  pass: normalizeText(editingCta).length > 0,
+                  pass: normalizeText(cta).length > 0,
                 },
                 {
                   label: `Export: ${selectedContainer.toUpperCase()} / ${selectedCodec.toUpperCase()}`,
                   pass: selectedContainer === 'mp4' && selectedCodec === 'h264',
                 },
                 ...(platform === 'youtube' ? [
-                  { label: `Video title: ${editingTitle.trim().length}/100 characters`, pass: editingTitle.trim().length > 0 && editingTitle.trim().length <= 100 },
+                  { label: `Video title: ${title.trim().length}/100 characters`, pass: title.trim().length > 0 && title.trim().length <= 100 },
                 ] : platform === 'instagram' ? [
                   { label: `Unique hashtags: ${uniqueHashtags.length} (suggested 3–10)`, pass: uniqueHashtags.length >= 3 && uniqueHashtags.length <= 10 },
                   { label: `Resolution: ${selectedResolution} (1080×1920 target)`, pass: selectedResolution === '1080x1920' },
                 ] : platform === 'tiktok' ? [
                   { label: `Resolution: ${selectedResolution} (1080×1920 target)`, pass: selectedResolution === '1080x1920' },
                 ] : [
-                  { label: 'Post text available', pass: Boolean(normalizeText(`${editingTitle} ${script?.quote ?? ''}`)) },
+                  { label: 'Post text available', pass: Boolean(normalizeText(`${title} ${script?.quote ?? ''}`)) },
                 ]),
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -663,9 +297,9 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                 {
                   label: 'Opening hook',
                   icon: Zap,
-                  value: editingHook ? `${countWords(editingHook)} words` : 'Missing',
+                  value: hook ? `${countWords(hook)} words` : 'Missing',
                   color: 'text-amber-400',
-                  pass: countWords(editingHook) >= 5 && countWords(editingHook) <= 20,
+                  pass: countWords(hook) >= 5 && countWords(hook) <= 20,
                 },
                 {
                   label: 'Captions',

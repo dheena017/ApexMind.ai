@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from datetime import datetime, timezone, timedelta
 from .connection import get_connection
 
 logger = logging.getLogger("ApexMind.Database")
@@ -95,6 +96,57 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_website_videos_category ON website_videos (category);")
     except Exception as e:
         logger.debug(f"website_videos table initialization notice: {e}")
+
+    # 6. Verify automation_jobs table and columns
+    try:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS automation_jobs (
+            id TEXT PRIMARY KEY,
+            theme TEXT NOT NULL,
+            schedule TEXT NOT NULL,
+            voice TEXT NOT NULL,
+            music_track TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            next_run TEXT NOT NULL,
+            channel_id TEXT,
+            privacy_status TEXT DEFAULT 'public',
+            publish_time TEXT DEFAULT '08:00',
+            last_run TEXT,
+            last_status TEXT DEFAULT 'idle',
+            created_at TEXT
+        );
+        """)
+        cursor.execute("PRAGMA table_info(automation_jobs)")
+        auto_cols = {row[1] for row in cursor.fetchall()}
+        for col_name, col_def in [
+            ("channel_id", "TEXT"),
+            ("privacy_status", "TEXT DEFAULT 'public'"),
+            ("publish_time", "TEXT DEFAULT '08:00'"),
+            ("last_run", "TEXT"),
+            ("last_status", "TEXT DEFAULT 'idle'"),
+            ("created_at", "TEXT"),
+        ]:
+            if col_name not in auto_cols:
+                cursor.execute(f"ALTER TABLE automation_jobs ADD COLUMN {col_name} {col_def}")
+                logger.info(f"Migrated automation_jobs: added '{col_name}' column")
+
+        # Seed default automation job if none exist
+        cursor.execute("SELECT COUNT(*) FROM automation_jobs")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+            INSERT INTO automation_jobs (id, theme, schedule, voice, music_track, active, next_run, privacy_status, publish_time, created_at)
+            VALUES (?, ?, ?, ?, ?, 1, ?, 'public', '08:00', datetime('now'))
+            """, (
+                "job_daily_stoic",
+                "Stoic Mindset & Discipline",
+                "Daily at 08:00 AM",
+                "Fenrir",
+                "Epic Cinematic",
+                (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=8, minute=0, second=0).isoformat(),
+            ))
+            logger.info("Seeded starter automation job: 'job_daily_stoic'")
+    except Exception as e:
+        logger.debug(f"automation_jobs schema migration notice: {e}")
 
 
     conn.commit()

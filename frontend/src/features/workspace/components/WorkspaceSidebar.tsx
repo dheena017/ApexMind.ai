@@ -8,9 +8,13 @@ import {
   Music,
   Image as ImageIcon,
   Film,
+  Youtube,
+  CalendarClock,
 } from 'lucide-react';
 
 export type WorkspaceTabType =
+  | 'youtube'
+  | 'automations'
   | 'script'
   | 'prompt'
   | 'editor'
@@ -34,6 +38,8 @@ const SIDEBAR_ITEMS: Array<{
   icon: React.ComponentType<{ className?: string }>;
   isScriptGroup?: boolean;
 }> = [
+  { id: 'youtube', label: 'YouTube Studio', shortLabel: 'YouTube', icon: Youtube },
+  { id: 'automations', label: 'Daily Automations', shortLabel: 'Auto', icon: CalendarClock },
   { id: 'script', label: 'Script & AI', shortLabel: 'Script', icon: FileText, isScriptGroup: true },
   { id: 'canvas', label: 'Canvas & Frame', shortLabel: 'Canvas', icon: LayoutTemplate },
   { id: 'media', label: 'Media Library', shortLabel: 'Media', icon: FolderOpen },
@@ -70,11 +76,11 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               aria-current={isActive ? 'page' : undefined}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
                 isActive
-                  ? 'border-[#3B82F6]/50 bg-[#1A1A1A] text-white shadow-xs'
+                  ? 'border-red-500/50 bg-[#1A1A1A] text-white shadow-xs'
                   : 'border-transparent text-[#8E8E93] hover:text-[#E5E5E5] hover:bg-[#181818]'
               }`}
             >
-              <IconComp className="h-3.5 w-3.5 shrink-0" />
+              <IconComp className={`h-3.5 w-3.5 shrink-0 ${item.id === 'youtube' && isActive ? 'text-red-500' : item.id === 'automations' && isActive ? 'text-emerald-400' : ''}`} />
               <span className="text-[11px] leading-none">{item.shortLabel}</span>
             </button>
           );
@@ -100,11 +106,23 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 title={item.label}
                 className={`group relative flex flex-col h-8 w-8 items-center justify-center rounded-md border transition-all cursor-pointer ${
                   isActive
-                    ? 'border-[#2F2F2F] bg-[#1A1A1A] text-white'
+                    ? item.id === 'youtube'
+                      ? 'border-red-500/50 bg-red-950/20 text-white'
+                      : item.id === 'automations'
+                      ? 'border-emerald-500/50 bg-emerald-950/20 text-white'
+                      : 'border-[#2F2F2F] bg-[#1A1A1A] text-white'
                     : 'border-transparent text-[#757575] hover:border-[#2F2F2F] hover:bg-[#171717] hover:text-[#E5E5E5]'
                 }`}
               >
-                <IconComp className="h-3 w-3 shrink-0 transition-transform group-hover:scale-110" />
+                <IconComp
+                  className={`h-3 w-3 shrink-0 transition-transform group-hover:scale-110 ${
+                    item.id === 'youtube'
+                      ? (isActive ? 'text-red-500' : 'group-hover:text-red-500')
+                      : item.id === 'automations'
+                      ? (isActive ? 'text-emerald-400' : 'group-hover:text-emerald-400')
+                      : ''
+                  }`}
+                />
                 <span className="text-[6px] font-semibold mt-0.5 tracking-tight truncate max-w-[30px] leading-none">
                   {item.shortLabel}
                 </span>

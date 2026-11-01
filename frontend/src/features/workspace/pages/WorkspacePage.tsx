@@ -18,6 +18,8 @@ import {
   AudioPane,
   ImagePane,
   VideoStockPane,
+  YouTubePane,
+  AutomationsPane,
 } from '../components/panes';
 import { TYPOGRAPHY_PRESETS } from '../data/mediaCatalogData';
 import { Toaster, toast } from 'sonner';
@@ -1539,7 +1541,19 @@ export default function WorkspacePage({
           style={isDesktop ? { width: `${leftPaneWidth}px` } : undefined}
           className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-r border-[#242426]"
         >
-            {activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
+            {activePane === 'automations' ? (
+              <AutomationsPane onNavigate={onNavigate} />
+            ) : activePane === 'youtube' ? (
+              <YouTubePane
+                script={script}
+                onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
+                onPublish={handlePublish}
+                canPublish={canPublish}
+                publishing={publishing}
+                publishedSuccess={publishedSuccess}
+                onNavigate={onNavigate}
+              />
+            ) : activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
               <ScriptEditorPane
                 script={script}
                 onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}

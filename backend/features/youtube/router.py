@@ -566,6 +566,7 @@ async def post_connect_channel(payload: TokenConnectRequest):
             subscribers=channel_data["subscribers"],
             refresh_token="",
             access_token=payload.accessToken,
+            videos_uploaded=channel_data.get("videos_uploaded", 0),
         )
         return {
             "success": True,
@@ -617,3 +618,85 @@ async def post_disconnect_oauth():
 async def get_saved_channels(handle: Optional[str] = None):
     db_channels = get_channels()
     return {"success": True, "channels": db_channels or [], "videos": []}
+
+
+# ==============================================================================
+# Autonomous Daily YouTube Shorts Automation Schedules Endpoints
+# ==============================================================================
+
+@router.get(
+    "/api/youtube/automations",
+    summary="Get YouTube automation schedules",
+    description="Returns all recurring daily shorts publishing jobs.",
+)
+async def get_youtube_automations_route():
+    from backend.database.repository import get_automations
+    return {"success": True, "data": get_automations()}
+
+
+@router.post(
+    "/api/youtube/automations",
+    summary="Create or schedule a daily Shorts automation",
+)
+async def create_youtube_automation_route(payload: dict):
+    from backend.database.repository import create_automation_job
+    theme = payload.get("theme", "Stoic Mindset & Discipline")
+    publish_time = payload.get("publishTime", "08:00")
+    schedule = payload.get("schedule") or f"Daily at {publish_time}"
+    voice = payload.get("voice", "Fenrir")
+    music = payload.get("musicTrack", "Epic Cinematic")
+    privacy = payload.get("privacyStatus", "public")
+    channel_id = payload.get("channelId")
+    active = payload.get("active", True)
+
+    job = create_automation_job(
+        theme=theme,
+        schedule=schedule,
+        voice=voice,
+        music_track=music,
+        channel_id=channel_id,
+        privacy_status=privacy,
+        publish_time=publish_time,
+        active=active,
+    )
+    return {"success": True, "data": job, "message": "Automation schedule created successfully."}
+
+
+@router.patch(
+    "/api/youtube/automations/{job_id}/toggle",
+    summary="Toggle automation active state",
+)
+async def toggle_youtube_automation_route(job_id: str):
+    from backend.database.repository import toggle_automation
+    jobs = toggle_automation(job_id)
+    return {"success": True, "data": jobs}
+
+
+@router.delete(
+    "/api/youtube/automations/{job_id}",
+    summary="Delete an automation schedule",
+)
+async def delete_youtube_automation_route(job_id: str):
+    from backend.database.repository import delete_automation_job, get_automations
+    deleted = delete_automation_job(job_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Automation job not found.")
+    return {"success": True, "data": get_automations(), "message": "Schedule deleted."}
+
+
+@router.post(
+    "/api/youtube/automations/{job_id}/run-now",
+    summary="Execute daily automation pipeline immediately",
+    description="Manually triggers the autonomous generation, rendering, and YouTube publishing flow.",
+)
+async def run_youtube_automation_now_route(job_id: str):
+    from .automation_service import execute_automation_job
+    try:
+        # Run pipeline in a background thread executor so event loop is non-blocking
+        import asyncio
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, execute_automation_job, job_id)
+        return {"success": True, "data": result, "message": "Automation pipeline completed successfully."}
+    except Exception as e:
+        logger.error(f"Manual automation execution failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

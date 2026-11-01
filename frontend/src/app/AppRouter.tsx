@@ -75,6 +75,8 @@ export default function AppRouter({
           case 'dashboard':
             return <DashboardPage onNavigate={onNavigate} />;
           case 'workspace':
+          case 'workspace-youtube':
+          case 'workspace-automations':
           case 'workspace-script':
           case 'workspace-prompt':
           case 'workspace-editor':
@@ -108,7 +110,7 @@ export default function AppRouter({
           case 'youtube-trending':
             return <YouTubePage onNavigate={onNavigate} initialTab="trending" />;
           case 'youtube-schedules':
-            return <YouTubePage onNavigate={onNavigate} initialTab="overview" />;
+            return <YouTubePage onNavigate={onNavigate} initialTab="schedules" />;
           case 'youtube-analytics':
             return <YouTubePage onNavigate={onNavigate} initialTab="analytics" />;
           case 'youtube-settings':

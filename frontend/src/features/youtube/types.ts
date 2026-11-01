@@ -159,4 +159,9 @@ export interface AutomationJob {
   musicTrack: string;
   active: boolean;
   nextRun: string;
+  channelId?: string;
+  privacyStatus?: 'public' | 'private' | 'scheduled';
+  publishTime?: string;
+  lastRun?: string;
+  lastStatus?: 'idle' | 'running' | 'success' | 'failed';
 }

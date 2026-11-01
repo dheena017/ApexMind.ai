@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from .connection import get_connection
@@ -109,6 +110,7 @@ def save_channel_oauth(
     refresh_token: str,
     access_token: Optional[str] = None,
     token_expiry: Optional[str] = None,
+    videos_uploaded: int = 0,
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -122,7 +124,7 @@ def save_channel_oauth(
         is_auto_upload_enabled, schedule_cron, connected_at, niche,
         refresh_token, access_token, token_expiry, is_oauth_authenticated
     ) VALUES (?, ?, ?, ?, ?, ?, 1, 'Daily at 08:00 AM EST', ?, 'Motivational Quotes', ?, ?, ?, 1)
-    """, (channel_id, name, clean_handle, subscribers, 0, avatar_url, timestamp, refresh_token, access_token, token_expiry))
+    """, (channel_id, name, clean_handle, subscribers, videos_uploaded, avatar_url, timestamp, refresh_token, access_token, token_expiry))
     conn.commit()
     conn.close()
     logger.info(f"Saved OAuth-authorized YouTube channel: '{name}' ({clean_handle}) (ID: {channel_id})")
@@ -148,7 +150,10 @@ def get_oauth_channel() -> Optional[Dict[str, Any]]:
         conn.close()
         if not r:
             return None
-        return dict(r)
+        res = dict(r)
+        res["videosUploaded"] = r["videos_uploaded"]
+        res["avatarUrl"] = r["avatar_url"]
+        return res
     except sqlite3.OperationalError:
         conn.close()
         from backend.database.schema import init_db
@@ -299,16 +304,20 @@ def publish_video(
     channel_id: Optional[str] = None,
     video_url: Optional[str] = None,
     custom_id: Optional[str] = None,
+    views: int = 0,
+    likes: int = 0,
+    duration: str = "00:30",
+    **kwargs,
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
+    # Strip broken ANSI formatting codes from title
+    clean_title = re.sub(r'(\x1b\[[0-9;]*[a-zA-Z]|[0-9]{1,2}m)', '', str(title)).strip() or "Untitled Short"
     vid_id = custom_id or f"yt_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
     timestamp = datetime.now(timezone.utc).isoformat()
     # Do not generate fake 404 YouTube links when video is stored locally in Studio
     final_video_url = video_url if (video_url and not ("youtube.com/shorts/" in video_url and video_url.rstrip("/").split("/")[-1].isdigit())) else ""
     status_label = "published" if final_video_url else "draft"
-    views = 0
-    likes = 0
 
     target_channel_id = channel_id
     if target_channel_id:
@@ -324,7 +333,7 @@ def publish_video(
     cursor.execute("""
     INSERT INTO published_videos (id, title, quote, views, likes, published_at, status, duration, channel_id, video_url, category, voice)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (vid_id, title, quote, views, likes, timestamp, status_label, "00:30", target_channel_id, final_video_url, category, voice))
+    """, (vid_id, clean_title, quote, views, likes, timestamp, status_label, duration, target_channel_id, final_video_url, category, voice))
 
     # Increment video count on the channel if channel exists
     if target_channel_id:
@@ -336,22 +345,22 @@ def publish_video(
     cursor.execute("""
     INSERT INTO notifications (id, title, message, timestamp, read, type, category, action_url, priority)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (notif_id, "Short Published", f"'{title}' was uploaded to YouTube Shorts.", iso_now, 0, "success", "youtube", "/youtube", "high"))
+    """, (notif_id, "Short Published", f"'{clean_title}' was uploaded to YouTube Shorts.", iso_now, 0, "success", "youtube", "/youtube", "high"))
 
     conn.commit()
     conn.close()
 
-    logger.info(f"Published Short to YouTube: '{title}' [Voice: {voice}, Channel: {target_channel_id}] -> URL: {final_video_url}")
+    logger.info(f"Published Short to YouTube: '{clean_title}' [Voice: {voice}, Channel: {target_channel_id}] -> URL: {final_video_url}")
 
     return {
         "id": vid_id,
-        "title": title,
+        "title": clean_title,
         "quote": quote,
         "views": views,
         "likes": likes,
         "publishedAt": timestamp,
         "status": "published",
-        "duration": "00:30",
+        "duration": duration,
         "channelId": target_channel_id or "",
         "videoUrl": final_video_url,
         "category": category,
@@ -500,7 +509,7 @@ def clear_notifications(category: Optional[str] = None) -> int:
 def get_automations() -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM automation_jobs")
+    cursor.execute("SELECT * FROM automation_jobs ORDER BY active DESC, next_run ASC")
     rows = cursor.fetchall()
     conn.close()
     logger.debug(f"Queried automation schedules -> Found {len(rows)} job(s)")
@@ -513,9 +522,92 @@ def get_automations() -> List[Dict[str, Any]]:
             "musicTrack": r["music_track"],
             "active": bool(r["active"]),
             "nextRun": r["next_run"],
+            "channelId": r["channel_id"] if "channel_id" in r.keys() else None,
+            "privacyStatus": r["privacy_status"] if "privacy_status" in r.keys() else "public",
+            "publishTime": r["publish_time"] if "publish_time" in r.keys() else "08:00",
+            "lastRun": r["last_run"] if "last_run" in r.keys() else None,
+            "lastStatus": r["last_status"] if "last_status" in r.keys() else "idle",
         }
         for r in rows
     ]
+
+def get_automation_by_id(job_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM automation_jobs WHERE id = ?", (job_id,))
+    r = cursor.fetchone()
+    conn.close()
+    if not r:
+        return None
+    return {
+        "id": r["id"],
+        "theme": r["theme"],
+        "schedule": r["schedule"],
+        "voice": r["voice"],
+        "musicTrack": r["music_track"],
+        "active": bool(r["active"]),
+        "nextRun": r["next_run"],
+        "channelId": r["channel_id"] if "channel_id" in r.keys() else None,
+        "privacyStatus": r["privacy_status"] if "privacy_status" in r.keys() else "public",
+        "publishTime": r["publish_time"] if "publish_time" in r.keys() else "08:00",
+        "lastRun": r["last_run"] if "last_run" in r.keys() else None,
+        "lastStatus": r["last_status"] if "last_status" in r.keys() else "idle",
+    }
+
+def create_automation_job(
+    theme: str,
+    schedule: str,
+    voice: str = "Fenrir",
+    music_track: str = "Epic Cinematic",
+    channel_id: Optional[str] = None,
+    privacy_status: str = "public",
+    publish_time: str = "08:00",
+    active: bool = True,
+) -> Dict[str, Any]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    job_id = f"job_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    now_utc = datetime.now(timezone.utc)
+    try:
+        parts = publish_time.split(":")
+        hour = int(parts[0])
+        minute = int(parts[1]) if len(parts) > 1 else 0
+        candidate = now_utc.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if candidate <= now_utc:
+            candidate += timedelta(days=1)
+        next_run = candidate.isoformat()
+    except Exception:
+        next_run = (now_utc + timedelta(days=1)).isoformat()
+
+    cursor.execute("""
+    INSERT INTO automation_jobs (id, theme, schedule, voice, music_track, active, next_run, channel_id, privacy_status, publish_time, last_status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', ?)
+    """, (job_id, theme, schedule, voice, music_track, 1 if active else 0, next_run, channel_id, privacy_status, publish_time, now_utc.isoformat()))
+    conn.commit()
+    conn.close()
+    logger.info(f"Created automation job '{job_id}' (Theme: '{theme}', Schedule: '{schedule}')")
+    return get_automation_by_id(job_id) or {"id": job_id, "theme": theme}
+
+def delete_automation_job(job_id: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM automation_jobs WHERE id = ?", (job_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    logger.info(f"Deleted automation job '{job_id}': {deleted}")
+    return deleted
+
+def update_automation_run_state(job_id: str, last_status: str, next_run: Optional[str] = None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_str = datetime.now(timezone.utc).isoformat()
+    if next_run:
+        cursor.execute("UPDATE automation_jobs SET last_run = ?, last_status = ?, next_run = ? WHERE id = ?", (now_str, last_status, next_run, job_id))
+    else:
+        cursor.execute("UPDATE automation_jobs SET last_run = ?, last_status = ? WHERE id = ?", (now_str, last_status, job_id))
+    conn.commit()
+    conn.close()
 
 def toggle_automation(job_id: str) -> List[Dict[str, Any]]:
     conn = get_connection()

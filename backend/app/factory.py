@@ -41,7 +41,15 @@ async def lifespan(app: FastAPI):
     # Initialize SQLite tables on startup
     init_db()
     logger.info("SQLite DB connected: backend/data/apexmind.db")
+
+    # Launch background autonomous daily YouTube Shorts scheduler
+    import asyncio
+    from backend.features.youtube.automation_service import automation_scheduler_loop
+    scheduler_task = asyncio.create_task(automation_scheduler_loop())
+
     yield
+
+    scheduler_task.cancel()
     logger.info("ApexMind Studio stopped gracefully.")
 
 def create_app() -> FastAPI:

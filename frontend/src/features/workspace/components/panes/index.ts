@@ -7,3 +7,6 @@ export * from './ElementsPane';
 export * from './AudioPane';
 export * from './ImagePane';
 export * from './VideoStockPane';
+export * from './YouTubePane';
+export * from './AutomationsPane';
+

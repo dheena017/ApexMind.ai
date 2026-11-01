@@ -19,6 +19,7 @@ import { YouTubeAnalyticsPage } from './YouTubeAnalyticsPage';
 import { YouTubeSettingsPage } from './YouTubeSettingsPage';
 import { YouTubeSeoPage } from './YouTubeSeoPage';
 import { YouTubeTrendingPage } from './YouTubeTrendingPage';
+import { YouTubeSchedulesPage } from './YouTubeSchedulesPage';
 import { YouTubeVideoDetailsModal } from '../components/YouTubeVideoDetailsModal';
 import { youtubeApi } from '../api/youtubeApi';
 import { connectYouTubeWithGoogle } from '../utils/googleOAuthConnect';
@@ -29,6 +30,7 @@ import {
   YouTubeLiveVideo,
   YouTubeForYouItem,
   YouTubePlaylist,
+  AutomationJob,
 } from '../types';
 
 export default function YouTubePage({
@@ -75,6 +77,37 @@ export default function YouTubePage({
 
   // Interactive in-studio video player modal
   const [activePlayingVideo, setActivePlayingVideo] = useState<YouTubeLiveVideo | YouTubeLiveShort | null>(null);
+
+  // Daily Automations state
+  const [automations, setAutomations] = useState<AutomationJob[]>([]);
+  const [automationsLoading, setAutomationsLoading] = useState(false);
+
+  const loadAutomations = async () => {
+    setAutomationsLoading(true);
+    try {
+      const data = await youtubeApi.getAutomations();
+      setAutomations(data);
+    } catch (e) {
+      console.warn('Failed to load automations:', e);
+    } finally {
+      setAutomationsLoading(false);
+    }
+  };
+
+  const handleToggleAuto = async (id: string) => {
+    try {
+      const updated = await youtubeApi.toggleAutomation(id);
+      setAutomations(updated);
+    } catch (e) {
+      alert(`Could not toggle automation: ${e}`);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'schedules') {
+      loadAutomations();
+    }
+  }, [activeTab]);
 
   // Connect Channel with Google OAuth (GIS popup flow)
   const handleConnectWithGoogle = () => {
@@ -320,6 +353,17 @@ export default function YouTubePage({
           channels={channelsList}
           liveVideos={liveVideos}
           loading={loading}
+        />
+      )}
+
+      {/* ── Tab: DAILY SCHEDULES & AUTOMATIONS ── */}
+      {activeTab === 'schedules' && (
+        <YouTubeSchedulesPage
+          automations={automations}
+          loading={automationsLoading}
+          onToggleAuto={handleToggleAuto}
+          onRefresh={loadAutomations}
+          onNavigate={onNavigate}
         />
       )}
 

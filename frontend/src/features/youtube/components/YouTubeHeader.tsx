@@ -9,6 +9,7 @@ import {
   Sliders,
   Sparkles,
   Flame,
+  CalendarClock,
 } from 'lucide-react';
 
 export type YouTubeTab =
@@ -17,6 +18,7 @@ export type YouTubeTab =
   | 'shorts'
   | 'playlists'
   | 'posts'
+  | 'schedules'
   | 'analytics'
   | 'seo'
   | 'trending'
@@ -74,6 +76,11 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
       badge: postsCount !== undefined ? postsCount : undefined,
     },
     {
+      id: 'schedules',
+      label: 'Automations',
+      badge: 'Daily',
+    },
+    {
       id: 'analytics',
       label: 'Analytics',
     },
@@ -107,6 +114,8 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
         return <ListVideo className={iconClass} />;
       case 'posts':
         return <MessageSquare className={iconClass} />;
+      case 'schedules':
+        return <CalendarClock className={`${iconClass} ${!isActive ? 'text-cyan-400' : ''}`} />;
       case 'analytics':
         return <TrendingUp className={`${iconClass} ${!isActive ? 'text-emerald-400' : ''}`} />;
       case 'seo':

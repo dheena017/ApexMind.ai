@@ -948,6 +948,8 @@ def fetch_authenticated_channel_details(access_token: str) -> Dict[str, Any]:
             "handle": handle,
             "avatar_url": avatar,
             "subscribers": int(stats.get("subscriberCount", 0)),
+            "videos_uploaded": int(stats.get("videoCount", 0)),
+            "total_lifetime_views": int(stats.get("viewCount", 0)),
         }
 
 
@@ -969,6 +971,7 @@ def handle_oauth_callback(code: str, redirect_uri: str) -> Dict[str, Any]:
         refresh_token=refresh_token or "",
         access_token=access_token,
         token_expiry=token_expiry,
+        videos_uploaded=channel_info.get("videos_uploaded", 0),
     )
 
     return {
@@ -1037,6 +1040,16 @@ def upload_video_to_live_youtube(
     if norm_privacy not in ("public", "private", "unlisted"):
         norm_privacy = "public"
 
+    publish_at = kwargs.get("publish_at") or kwargs.get("publishAt")
+    status_dict: Dict[str, Any] = {
+        "privacyStatus": norm_privacy,
+        "selfDeclaredMadeForKids": False,
+    }
+    # When scheduling a video on YouTube, privacyStatus must be private and publishAt must be an ISO 8601 string
+    if publish_at:
+        status_dict["privacyStatus"] = "private"
+        status_dict["publishAt"] = str(publish_at).strip()
+
     body = {
         "snippet": {
             "title": clean_title,
@@ -1044,10 +1057,7 @@ def upload_video_to_live_youtube(
             "tags": tag_list,
             "categoryId": "22",
         },
-        "status": {
-            "privacyStatus": norm_privacy,
-            "selfDeclaredMadeForKids": False,
-        },
+        "status": status_dict,
     }
 
     # Infer or use specified mimetype

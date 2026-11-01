@@ -9,6 +9,7 @@ import {
   YouTubeVideoDetails,
   YouTubeComment,
   YouTubeChapter,
+  AutomationJob,
 } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
@@ -247,5 +248,62 @@ export const youtubeApi = {
       likes: 0,
       comments: 0,
     };
+  },
+
+  // ── YouTube Automations & Schedules ──────────────────────────────────────────
+
+  async getAutomations(): Promise<AutomationJob[]> {
+    try {
+      const res = await fetch(apiUrl('/api/youtube/automations'));
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.data || [];
+    } catch (e) {
+      consoleLogger.error('YouTubeApi', 'Failed to fetch automations', e);
+      return [];
+    }
+  },
+
+  async createAutomation(payload: Partial<AutomationJob>): Promise<AutomationJob> {
+    const res = await fetch(apiUrl('/api/youtube/automations'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to create automation schedule' }));
+      throw new Error(err.detail || 'Failed to create automation schedule');
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
+  async toggleAutomation(jobId: string): Promise<AutomationJob[]> {
+    const res = await fetch(apiUrl(`/api/youtube/automations/${jobId}/toggle`), {
+      method: 'PATCH',
+    });
+    if (!res.ok) throw new Error('Failed to toggle automation');
+    const json = await res.json();
+    return json.data;
+  },
+
+  async deleteAutomation(jobId: string): Promise<AutomationJob[]> {
+    const res = await fetch(apiUrl(`/api/youtube/automations/${jobId}`), {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete automation');
+    const json = await res.json();
+    return json.data;
+  },
+
+  async runAutomationNow(jobId: string): Promise<any> {
+    const res = await fetch(apiUrl(`/api/youtube/automations/${jobId}/run-now`), {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to execute automation pipeline' }));
+      throw new Error(err.detail || 'Failed to execute automation pipeline');
+    }
+    return res.json();
   },
 };
