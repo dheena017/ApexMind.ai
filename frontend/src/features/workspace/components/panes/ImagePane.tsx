@@ -19,7 +19,6 @@ import {
   Contrast,
   Droplets,
   History,
-  Key,
   ChevronDown,
   Cpu,
   Eye,
@@ -108,7 +107,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     unsplash: boolean;
     jamendo?: boolean;
   }>({ pexels: false, pixabay: false, unsplash: false });
-  const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
 
   // Custom URL inputs
   const [customUrlInput, setCustomUrlInput] = useState('');
@@ -208,29 +206,17 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     []
   );
 
-  // Provider Select Options with real-time status badges
+  // Provider Select Options
   const providerSelectOptions = useMemo(
     () => [
       { value: 'all', label: 'All (100M+ Stock)', badge: '100M+' },
-      { value: 'flickr', label: 'Flickr HD (Free)', badge: 'Free HD' },
-      { value: 'wikimedia', label: 'Wikimedia (Free)', badge: 'Free CC0' },
-      {
-        value: 'pexels',
-        label: 'Pexels',
-        badge: providerStatus.pexels ? 'Connected' : 'Key Req',
-      },
-      {
-        value: 'pixabay',
-        label: 'Pixabay',
-        badge: providerStatus.pixabay ? 'Connected' : 'Key Req',
-      },
-      {
-        value: 'unsplash',
-        label: 'Unsplash',
-        badge: providerStatus.unsplash ? 'Connected' : 'Key Req',
-      },
+      { value: 'flickr', label: 'Flickr HD', badge: 'Free HD' },
+      { value: 'wikimedia', label: 'Wikimedia', badge: 'Free CC0' },
+      { value: 'pexels', label: 'Pexels' },
+      { value: 'pixabay', label: 'Pixabay' },
+      { value: 'unsplash', label: 'Unsplash' },
     ],
-    [providerStatus]
+    []
   );
 
   // Debounce search when user types in the search input
@@ -422,8 +408,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     }
   };
 
-  const activeKeyCount = [providerStatus.pexels, providerStatus.pixabay, providerStatus.unsplash].filter(Boolean).length;
-
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
@@ -439,21 +423,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           {isLoadingLive && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
-
-          {/* Provider API Key Status Pill */}
-          <button
-            type="button"
-            onClick={() => setShowKeyModal(true)}
-            className={`text-[9px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-pointer transition-colors ${
-              activeKeyCount > 0
-                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40 hover:bg-emerald-900/50'
-                : 'bg-[#222226] text-zinc-400 border-[#2F2F36] hover:text-white hover:border-zinc-500'
-            }`}
-            title="Configure Pexels, Pixabay, & Unsplash API keys"
-          >
-            <Key className="w-2.5 h-2.5" />
-            <span>{activeKeyCount > 0 ? `${activeKeyCount} APIs Active` : 'API Keys'}</span>
-          </button>
 
           <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
             {totalFound} Photos
@@ -885,60 +854,18 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
             ) : sourceList.length === 0 && !isLoadingLive ? (
               <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-6 text-center text-xs text-[#A1A1AA] flex flex-col items-center gap-2.5">
-                {selectedProvider !== 'all' &&
-                selectedProvider !== 'flickr' &&
-                selectedProvider !== 'wikimedia' &&
-                !providerStatus[selectedProvider as keyof typeof providerStatus] ? (
-                  <>
-                    <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                      <Key className="w-5 h-5" />
-                    </div>
-                    <p className="font-bold text-white text-xs capitalize">
-                      {selectedProvider} API Key Not Connected
-                    </p>
-                    <p className="text-[11px] text-[#A1A1AA] max-w-xs leading-relaxed">
-                      {selectedProvider} requires an API key in <code className="text-zinc-300">.env</code>. You can switch to our free high-resolution libraries with zero setup:
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
-                      <button
-                        type="button"
-                        onClick={() => handleProviderSelect('flickr')}
-                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px] cursor-pointer transition-colors shadow-xs"
-                      >
-                        Browse Flickr HD (Free)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleProviderSelect('wikimedia')}
-                        className="px-3 py-1.5 rounded-lg bg-[#27272E] hover:bg-[#34343E] text-zinc-200 border border-[#3A3A46] font-semibold text-[11px] cursor-pointer transition-colors"
-                      >
-                        Browse Wikimedia (Free)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleProviderSelect('all')}
-                        className="px-3 py-1.5 rounded-lg bg-[#1E1E24] hover:bg-[#282830] text-zinc-400 hover:text-white text-[11px] cursor-pointer transition-colors"
-                      >
-                        Back to All
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-6 h-6 text-zinc-600" />
-                    <p>No photos found{searchQuery ? ` matching "${searchQuery}"` : ''} on {selectedProvider.toUpperCase()}</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery('');
-                        handleProviderSelect('all');
-                      }}
-                      className="mt-1 text-[11px] text-blue-400 hover:underline cursor-pointer"
-                    >
-                      Reset filters to browse all photos
-                    </button>
-                  </>
-                )}
+                <Search className="w-6 h-6 text-zinc-600" />
+                <p>No photos found{searchQuery ? ` matching "${searchQuery}"` : ''} on {selectedProvider.toUpperCase()}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    handleProviderSelect('all');
+                  }}
+                  className="mt-1 text-[11px] text-blue-400 hover:underline cursor-pointer"
+                >
+                  Reset filters to browse all photos
+                </button>
               </div>
             ) : (
               /* Image Grid */
@@ -1077,120 +1004,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           </>
         ) : null}
       </div>
-
-      {/* ── API Keys Configuration Modal ── */}
-      {showKeyModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#18181C] border border-[#2D2D35] rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-4 text-left">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-blue-400" />
-                <h3 className="text-sm font-bold text-white">Stock Media API Configuration</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowKeyModal(false)}
-                className="text-zinc-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              ApexMind searches <strong>100,000,000+ photos</strong> across Pexels, Pixabay, Unsplash, and Wikimedia Commons.
-              Adding free developer keys unlocks unlimited high-resolution commercial photography:
-            </p>
-
-            <div className="flex flex-col gap-2.5">
-              {/* Pixabay (Recommended: 100% Instant, Never Paused) */}
-              <div className="p-2.5 rounded-xl bg-[#121214] border border-blue-500/30 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-white">Pixabay API</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-500/40">Instant &bull; 10 Seconds</span>
-                    {providerStatus.pixabay ? (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600/40">Active</span>
-                    ) : (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">Keyless</span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">4.5M+ high-resolution photos &bull; 5,000 req/hr free</p>
-                </div>
-                <a
-                  href="https://pixabay.com/api/docs/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] font-semibold text-blue-400 hover:underline flex items-center gap-1 shrink-0"
-                >
-                  Get Key <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              </div>
-
-              {/* Unsplash */}
-              <div className="p-2.5 rounded-xl bg-[#121214] border border-zinc-800 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-white">Unsplash API</span>
-                    {providerStatus.unsplash ? (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600/40">Active</span>
-                    ) : (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">Keyless</span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">5M+ studio-grade vertical photography</p>
-                </div>
-                <a
-                  href="https://unsplash.com/developers"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] font-semibold text-blue-400 hover:underline flex items-center gap-1 shrink-0"
-                >
-                  Get Key <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              </div>
-
-              {/* Pexels (Registration currently paused by Pexels) */}
-              <div className="p-2.5 rounded-xl bg-[#121214] border border-zinc-800 flex items-center justify-between opacity-80">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-white">Pexels API</span>
-                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-600/30">Signups Paused by Pexels</span>
-                    {providerStatus.pexels && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600/40">Active</span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">If you already have an existing Pexels key, it will still work</p>
-                </div>
-                <a
-                  href="https://www.pexels.com/api/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1 shrink-0"
-                >
-                  Status <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-300">
-              Paste keys directly in your <span className="text-blue-400 font-bold">.env</span> file:
-              <pre className="mt-1 text-zinc-400">
-{`PEXELS_API_KEY="your_key"
-PIXABAY_API_KEY="your_key"
-UNSPLASH_ACCESS_KEY="your_key"`}
-              </pre>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowKeyModal(false)}
-              className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
