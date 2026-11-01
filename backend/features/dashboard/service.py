@@ -101,9 +101,6 @@ def get_dashboard_summary(server_start_time: float) -> Dict[str, Any]:
 
     gemini_ready = bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip())
 
-    from backend.shared.gemini import rate_tracker
-    rate_limits = rate_tracker.get_telemetry()
-
     return {
         "success": True,
         "metrics": {
@@ -122,7 +119,6 @@ def get_dashboard_summary(server_start_time: float) -> Dict[str, Any]:
             "geminiAi": "ready" if gemini_ready else "unconfigured",
             "cachedAudioCount": cached_audio,
             "serverUptimeFormatted": uptime_str,
-            "geminiRateLimits": rate_limits,
         },
         "categories": DASHBOARD_CATEGORIES,
         "trendingPrompts": DEFAULT_TRENDING_PROMPTS,

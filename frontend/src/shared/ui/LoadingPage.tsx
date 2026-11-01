@@ -35,7 +35,7 @@ export default function LoadingPage({ onNavigate }: LoadingPageProps) {
       steps: [
         'Validating Google Identity Services token...',
         'Loading creator profile & channel permissions...',
-        'Checking Gemini API engine quotas & rate limits...',
+        'Checking Gemini API engine connectivity...',
         'Syncing YouTube Shorts automation catalog...',
         'Session ready. Redirecting to your workspace...',
       ],

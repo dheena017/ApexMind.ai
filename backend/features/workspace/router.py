@@ -47,13 +47,14 @@ from .service import (
 )
 
 logger = logging.getLogger("ApexMind.features.workspace")
-router = APIRouter(tags=["Workspace Studio"])
+router = APIRouter()
 
 @router.post(
     "/api/generate-script",
     response_model=GenerateScriptResponse,
-    summary="Generate motivational script",
-    description="Generate viral YouTube Shorts script using Gemini AI with memory deduplication."
+    summary="Generate motivational script (legacy)",
+    description="Generate viral YouTube Shorts script using Gemini AI with memory deduplication.",
+    include_in_schema=False,
 )
 def post_generate_script(payload: GenerateScriptRequest):
     try:
@@ -93,8 +94,9 @@ def post_generate_script(payload: GenerateScriptRequest):
 @router.post(
     "/api/generate-voiceover",
     response_model=VoiceoverResponse,
-    summary="Generate voiceover TTS",
-    description="Synthesize high-converting audio voiceover using Gemini TTS."
+    summary="Generate voiceover TTS (legacy)",
+    description="Synthesize high-converting audio voiceover using Gemini TTS.",
+    include_in_schema=False,
 )
 def post_generate_voiceover(payload: GenerateVoiceoverRequest):
     if not payload.text.strip():
@@ -123,8 +125,9 @@ def post_generate_voiceover(payload: GenerateVoiceoverRequest):
 @router.post(
     "/api/generate-captions",
     response_model=GenerateCaptionsResponse,
-    summary="Generate Closed Captions",
+    summary="Generate Closed Captions (legacy)",
     description="Generate word-level karaoke timestamps, safe-zone line chunking, SRT, and WebVTT for subtitles.",
+    include_in_schema=False,
 )
 def post_generate_captions(payload: GenerateCaptionsRequest):
     try:
@@ -150,7 +153,8 @@ def post_generate_captions(payload: GenerateCaptionsRequest):
 @router.get(
     "/api/quote-memory",
     response_model=QuoteMemoryListResponse,
-    summary="Get quote memory history",
+    tags=["Quote Memory & Deduplication"],
+    summary="List Quote Memory History",
     description="Retrieve past quotes to guarantee zero repetition across video creations. Supports category filtering, keyword search, pagination, and sorting.",
 )
 async def get_quotes_memory_route(
@@ -180,7 +184,8 @@ async def get_quotes_memory_route(
     "/api/quote-memory",
     response_model=CreateQuoteMemoryResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Add quote to memory",
+    tags=["Quote Memory & Deduplication"],
+    summary="Add Quote to Memory Store",
     description="Manually register a quote in the uniqueness memory store to prevent AI repetition or preserve favorite quotes.",
 )
 async def post_quote_memory_route(payload: CreateQuoteMemoryRequest):
@@ -202,7 +207,8 @@ async def post_quote_memory_route(payload: CreateQuoteMemoryRequest):
 @router.delete(
     "/api/quote-memory",
     response_model=DeleteQuoteMemoryResponse,
-    summary="Delete quote memory history",
+    tags=["Quote Memory & Deduplication"],
+    summary="Clear Quote Memory History",
     description="Delete a specific quote by ID from memory, or clear all quote history if no ID is specified.",
 )
 async def delete_quotes_memory_route(
@@ -226,6 +232,7 @@ async def delete_quotes_memory_route(
 @router.delete(
     "/api/quote-memory/{quote_id}",
     response_model=DeleteQuoteMemoryResponse,
+    tags=["Quote Memory & Deduplication"],
     summary="Delete quote by ID",
     description="Delete a specific quote by its ID from memory store.",
     include_in_schema=False,
@@ -236,7 +243,8 @@ async def delete_quote_by_path_route(quote_id: str):
 @router.get(
     "/api/media-library",
     response_model=MediaLibraryResponse,
-    summary="Get copyright-free media library",
+    tags=["Studio Stock & Open Media"],
+    summary="Get Copyright-Free Media Library",
     description="Retrieve royalty-free audio tracks, dynamic visual backdrops, and vocal profile presets."
 )
 async def get_media_library_route():
@@ -244,7 +252,8 @@ async def get_media_library_route():
 
 @router.get(
     "/api/workspace/open-media/videos",
-    summary="Search open-source & royalty-free videos",
+    tags=["Studio Stock & Open Media"],
+    summary="Search Stock Videos",
     description="Query Pexels, Pixabay, or keyless open stock video loops."
 )
 async def get_open_videos_route(
@@ -267,7 +276,8 @@ async def get_open_videos_route(
 
 @router.get(
     "/api/workspace/open-media/images",
-    summary="Search 100M+ stock photos",
+    tags=["Studio Stock & Open Media"],
+    summary="Search Stock Photos",
     description="Query Pexels, Pixabay, Unsplash, or Wikimedia Commons photography."
 )
 async def get_open_images_route(
@@ -290,7 +300,8 @@ async def get_open_images_route(
 
 @router.get(
     "/api/workspace/open-media/providers",
-    summary="Get media provider API connection status",
+    tags=["Studio Stock & Open Media"],
+    summary="Get Media Provider API Status",
     description="Check whether Pexels, Pixabay, and Unsplash API keys are active."
 )
 async def get_open_media_providers_route():
@@ -299,7 +310,8 @@ async def get_open_media_providers_route():
 
 @router.get(
     "/api/workspace/open-media/tracks",
-    summary="Search royalty-free soundtracks",
+    tags=["Studio Stock & Open Media"],
+    summary="Search Royalty-Free Soundtracks",
     description="Query Jamendo & open audio tracks by mood or genre."
 )
 async def get_open_tracks_route(q: str = "", genre: str = "", limit: int = 20):
@@ -308,7 +320,8 @@ async def get_open_tracks_route(q: str = "", genre: str = "", limit: int = 20):
 
 @router.get(
     "/api/workspace/open-media/sfx",
-    summary="Search sound effects",
+    tags=["Studio Stock & Open Media"],
+    summary="Search Sound Effects",
     description="Query open sound effects library."
 )
 async def get_open_sfx_route(q: str = "whoosh", limit: int = 20):
@@ -318,7 +331,8 @@ async def get_open_sfx_route(q: str = "whoosh", limit: int = 20):
 
 @router.get(
     "/api/workspace/open-media/quotes",
-    summary="Search real viral hooks & quotes from open-source APIs",
+    tags=["Studio Stock & Open Media"],
+    summary="Search Viral Hooks & Quotes",
     description="Query ZenQuotes and DummyJSON open APIs dynamically with zero API keys."
 )
 async def get_open_quotes_route(
@@ -340,7 +354,8 @@ async def get_open_quotes_route(
 @router.get(
     "/api/workspace/elements",
     response_model=ElementsCatalogResponse,
-    summary="Get studio visual elements catalog",
+    tags=["Studio Visual Elements"],
+    summary="List Visual Elements Catalog",
     description="Retrieve all available badges, frames, stickers, social tags, progress bars, and emojis."
 )
 def get_elements_route(
@@ -354,7 +369,8 @@ def get_elements_route(
 @router.post(
     "/api/workspace/elements/recommend",
     response_model=RecommendedElementsResponse,
-    summary="Get AI-recommended elements for video context",
+    tags=["Studio Visual Elements"],
+    summary="Recommend Contextual Overlays",
     description="Intelligently scores and recommends the top viral badges, scrubbers, and stickers matching theme, topic, and delivery tone."
 )
 def post_recommended_elements_route(payload: RecommendedElementsRequest):
@@ -369,7 +385,8 @@ def post_recommended_elements_route(payload: RecommendedElementsRequest):
 @router.post(
     "/api/workspace/elements/custom",
     response_model=CreateCustomBadgeResponse,
-    summary="Create custom creator badge element",
+    tags=["Studio Visual Elements"],
+    summary="Create Custom Creator Badge",
     description="Generates a customized viral badge with gradient, styling, and text."
 )
 def post_create_custom_badge_route(payload: CreateCustomBadgeRequest):
@@ -385,19 +402,19 @@ def post_create_custom_badge_route(payload: CreateCustomBadgeRequest):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# STUDIO PIPELINE v2 — 4 Clean, Independently-Callable Endpoints
+# STUDIO PRODUCTION PIPELINE — 4 Clean Stages & Native Video Rendering
 # ══════════════════════════════════════════════════════════════════════════════
 
 @router.post(
     "/api/studio/generate-script",
     response_model=StudioScriptResponse,
-    summary="[Stage 1] Studio AI Script Generation",
+    tags=["Studio Production Pipeline"],
+    summary="Generate Storyboard Script (Stage 1)",
     description=(
         "Generates a full viral short-form script with multi-scene storyboard, hooks, "
         "sound design plan, and creative metadata via Gemini AI. "
         "Storyboard scenes are returned with mediaStatus='unresolved', ready for Stage 3."
     ),
-    tags=["Studio Pipeline"],
 )
 def post_studio_generate_script(payload: StudioScriptRequest):
     from .studio_script_service import run_studio_script
@@ -435,14 +452,14 @@ def post_studio_generate_script(payload: StudioScriptRequest):
 @router.post(
     "/api/studio/synthesize-voice",
     response_model=StudioVoiceResponse,
-    summary="[Stage 2] Studio Voice Synthesis",
+    tags=["Studio Production Pipeline"],
+    summary="Synthesize Storyboard Voice (Stage 2)",
     description=(
         "Synthesizes a full narration voiceover using Gemini TTS. "
         "Accepts either storyboard[] (narration auto-assembled from subtitleText) "
         "or a direct fullNarrationText string. "
         "Returns audioUrl, durationSeconds, and word-level timestamps."
     ),
-    tags=["Studio Pipeline"],
 )
 def post_studio_synthesize_voice(payload: StudioVoiceRequest):
     from .studio_voice_service import run_studio_voice
@@ -479,13 +496,13 @@ def post_studio_synthesize_voice(payload: StudioVoiceRequest):
 @router.post(
     "/api/studio/resolve-media",
     response_model=StudioMediaResponse,
-    summary="[Stage 3] Studio Media Resolution",
+    tags=["Studio Production Pipeline"],
+    summary="Resolve Scene Stock Media & SFX (Stage 3)",
     description=(
         "Batch-resolves real stock video/image URLs for all storyboard scenes concurrently "
         "using Google CSE, Pexels, Pixabay, and Wikimedia. "
         "Also resolves SFX audio URLs and returns backdrop/background metadata."
     ),
-    tags=["Studio Pipeline"],
 )
 def post_studio_resolve_media(payload: StudioMediaRequest):
     import time as _time
@@ -526,13 +543,13 @@ def post_studio_resolve_media(payload: StudioMediaRequest):
 @router.post(
     "/api/studio/generate-captions",
     response_model=StudioCaptionsResponse,
-    summary="[Stage 4] Studio Caption Generation",
+    tags=["Studio Production Pipeline"],
+    summary="Generate Word-Timed Captions (Stage 4)",
     description=(
         "Generates scene-aligned, word-level timed captions pinned to each scene's time window. "
         "Returns timelineClips[] directly usable as LocalClips[] in StudioTimelinePane, "
         "plus SRT and WebVTT exports."
     ),
-    tags=["Studio Pipeline"],
 )
 def post_studio_generate_captions(payload: StudioCaptionsRequest):
     from .studio_captions_service import run_studio_captions
@@ -588,8 +605,9 @@ class RenderVideoApiRequest(BaseModel):
 
 @router.post(
     "/api/workspace/render-video",
-    summary="Render Full HD broadcast-quality MP4 using native FFmpeg",
-    tags=["Workspace Studio"],
+    tags=["Studio Production Pipeline"],
+    summary="Render Timeline to Full HD MP4",
+    description="Assembles multi-layer video clips, images, voiceover, music, sound effects, and karaoke subtitles into a 1080x1920 MP4 using native FFmpeg.",
 )
 def post_render_video(payload: RenderVideoApiRequest):
     from .video_render_service import render_studio_video
@@ -628,8 +646,9 @@ def post_render_video(payload: RenderVideoApiRequest):
 
 @router.post(
     "/api/workspace/convert-to-mp4",
-    summary="Transcode WebM blob to Full HD MP4 with AAC audio",
-    tags=["Workspace Studio"],
+    tags=["Studio Production Pipeline"],
+    summary="Transcode WebM Recording to MP4",
+    description="Converts canvas-recorded WebM blobs to broadcast-ready H.264 MP4 with AAC audio.",
 )
 async def post_convert_to_mp4(
     file: UploadFile = File(...),

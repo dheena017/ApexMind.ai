@@ -30,20 +30,3 @@ async def get_dashboard_summary_endpoint():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate dashboard summary: {str(e)}"
         )
-
-
-@router.get(
-    "/rate-limits",
-    summary="Get Gemini AI Content Rate Limits & RPM Telemetry",
-    description="Retrieve real-time content requests per minute (RPM), daily caps, model capabilities, and rate limit status."
-)
-async def get_gemini_rate_limits_endpoint():
-    try:
-        from backend.shared.gemini import rate_tracker
-        return {"success": True, "data": rate_tracker.get_telemetry()}
-    except Exception as e:
-        logger.error(f"Failed to get rate limits: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve rate limits: {str(e)}"
-        )

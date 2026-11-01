@@ -14,7 +14,6 @@ class SystemStatusSummary(BaseModel):
     geminiAi: str = Field("ready", description="Gemini AI engine status")
     cachedAudioCount: int = Field(0, description="Cached synthesis files count")
     serverUptimeFormatted: str = Field("0h 0m 0s", description="Formatted uptime")
-    geminiRateLimits: Optional[Dict[str, Any]] = Field(default=None, description="Real-time Gemini AI rate limit & RPM telemetry")
 
 class TrendingPromptIdea(BaseModel):
     id: str
