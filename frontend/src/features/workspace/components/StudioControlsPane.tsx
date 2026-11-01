@@ -156,18 +156,33 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   // Listen to open-inspector-tab events from timeline buttons/zones
   useEffect(() => {
     const handleOpenTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ compound?: CompoundType; subTab?: VideoInspectorTab; clipId?: string }>).detail;
+      const detail = (e as CustomEvent<{
+        compound?: CompoundType;
+        subTab?: VideoInspectorTab | string;
+        tab?: VideoInspectorTab | string;
+        clipId?: string;
+        track?: 'video' | 'image';
+      }>).detail;
       if (!detail) return;
-      if (detail.compound) {
+      const targetTab = (detail.subTab || detail.tab) as string | undefined;
+
+      if (detail.compound === 'transitions' || targetTab === 'transitions') {
+        setActiveCompound('transitions');
+        onSelectCompound?.('transitions');
+      } else if (detail.compound) {
         setActiveCompound(detail.compound);
         onSelectCompound?.(detail.compound);
       }
-      const targetTab = detail.subTab || (detail as any).tab;
-      if (targetTab) {
-        setVideoInspectorTab(targetTab);
+
+      if (targetTab && targetTab !== 'transitions') {
+        setVideoInspectorTab(targetTab as VideoInspectorTab);
       }
       if (detail.clipId) {
-        setLocalSelectedClip({ track: detail.compound === 'video' ? 'video' : 'video', clipId: detail.clipId, all: false });
+        setLocalSelectedClip({
+          track: detail.track || ((detail.compound as string) === 'image' ? 'image' : 'video'),
+          clipId: detail.clipId,
+          all: false,
+        });
       }
     };
     window.addEventListener('workspace:open-inspector-tab', handleOpenTab);

@@ -207,6 +207,7 @@ class PublishVideoResponse(BaseModel):
     video: Optional[Dict[str, Any]] = None
     videoId: Optional[str] = None
     videoUrl: Optional[str] = None
+    shortsUrl: Optional[str] = None
     liveUploaded: Optional[bool] = False
     message: Optional[str] = None
 
@@ -235,3 +236,8 @@ class ShortsListResponse(BaseModel):
 class TokenConnectRequest(BaseModel):
     accessToken: str
 
+
+
+class CodeConnectRequest(BaseModel):
+    code: str
+    redirectUri: Optional[str] = "postmessage"

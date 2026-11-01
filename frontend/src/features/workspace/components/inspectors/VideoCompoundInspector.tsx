@@ -11,10 +11,12 @@ import {
 import { VisualBackdrop, DEFAULT_VISUAL_BACKDROPS } from '../../types';
 import { SelectedClip } from '../timeline/timelineTypes';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
+import { TransitionsInspector } from './TransitionsInspector';
 
 export type VideoInspectorTab =
   | 'transform'
   | 'animations'
+  | 'transitions'
   | 'adjust'
   | 'style'
   | 'speed'
@@ -488,8 +490,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   };
 
   const tabs: VideoInspectorTab[] = isImageMode
-    ? ['transform', 'animations', 'adjust', 'time']
-    : ['transform', 'animations', 'adjust', 'speed', 'time'];
+    ? ['transform', 'animations', 'transitions', 'adjust', 'time']
+    : ['transform', 'animations', 'transitions', 'adjust', 'speed', 'time'];
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
@@ -1139,6 +1141,18 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* ── TRANSITIONS TAB ── */}
+        {activeSubTab === 'transitions' && (
+          <div className="-m-3 h-full">
+            <TransitionsInspector
+              selectedClip={selectedClip}
+              customImageUrl={customImageUrl}
+              customVideoUrl={customVideoUrl}
+              activeBackdrop={activeBackdrop}
+            />
           </div>
         )}
 

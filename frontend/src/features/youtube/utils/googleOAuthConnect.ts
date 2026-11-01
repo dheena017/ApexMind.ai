@@ -1,7 +1,6 @@
 import { youtubeApi } from '../api/youtubeApi';
 import type { YouTubeChannel } from '../types';
 
-
 export const getGoogleClientId = (): string => {
   return (
     (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_CLIENT_ID) ||
@@ -19,7 +18,8 @@ export interface ConnectOptions {
 
 /**
  * Connect YouTube Channel via Google Identity Services Popup (same as Login flow)
- * Avoids Error 400: redirect_uri_mismatch by leveraging Authorized JavaScript Origin.
+ * Prioritizes offline Authorization Code flow (initCodeClient) to acquire a persistent refresh_token.
+ * Falls back to Token Client (initTokenClient) when code flow is not supported.
  */
 export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Promise<void> => {
   const { onSuccess, onError, onLoading } = options;
@@ -27,9 +27,51 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
 
   onLoading?.(true);
 
-  // 1. If Google Identity Services (GIS) token client is available, use popup
   if (typeof window !== 'undefined' && window.google?.accounts?.oauth2 && clientId) {
     try {
+      // 1. Prioritize initCodeClient for offline refresh_token access
+      if (typeof (window.google.accounts.oauth2 as any).initCodeClient === 'function') {
+        const codeClient = (window.google.accounts.oauth2 as any).initCodeClient({
+          client_id: clientId,
+          scope:
+            'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload openid email profile',
+          ux_mode: 'popup',
+          callback: async (codeResponse: any) => {
+            if (codeResponse.error) {
+              onLoading?.(false);
+              const msg =
+                codeResponse.error_description ||
+                codeResponse.error ||
+                'Google authorization was closed';
+              onError?.(msg);
+              return;
+            }
+
+            try {
+              const code = codeResponse.code;
+              if (!code) {
+                throw new Error('Google did not return an authorization code.');
+              }
+              const result = await youtubeApi.connectWithCode(code, 'postmessage');
+              if (result.channel) {
+                localStorage.setItem('apexmind_yt_active_channel', result.channel.handle);
+                onSuccess?.(result.channel);
+              } else {
+                onError?.('Channel connected, but no channel profile returned.');
+              }
+            } catch (apiErr: any) {
+              onError?.(apiErr.message || 'Failed to connect YouTube channel');
+            } finally {
+              onLoading?.(false);
+            }
+          },
+        });
+
+        codeClient.requestCode();
+        return;
+      }
+
+      // 2. Fallback to initTokenClient if initCodeClient is unavailable
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope:

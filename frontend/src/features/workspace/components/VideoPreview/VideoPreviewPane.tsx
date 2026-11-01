@@ -787,532 +787,6 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     return convData.videoUrl;
   }, [canvasAspectRatio, script, timelineState, duration, playbackDuration, exportDuration, exportFileName, captionPresetColor, audioElement, audioOutputStream]);
 
-  // Expose global frame builder for live YouTube publishing
-  useEffect(() => {
-    (window as any).__apexmind_render_preview_video = async () => {
-      return await buildFramesAndTranscodeMp4(true);
-    };
-    return () => {
-      delete (window as any).__apexmind_render_preview_video;
-    };
-  }, [buildFramesAndTranscodeMp4]);
-
-
-  useEffect(() => {
-    if (!isExporting) return;
-
-    let cancelled = false;
-    let recorder: MediaRecorder | null = null;
-    let outputStream: MediaStream | null = null;
-
-    const exportVideo = async () => {
-      try {
-        const preview = canvasRef.current;
-        if (!preview) throw new Error('The video preview is not available.');
-
-        // Broad cross-browser MIME type negotiation
-        // Fast check: Try direct native FFmpeg render from backend first for pristine 60/30fps and full audio
-        try {
-          window.dispatchEvent(new CustomEvent('workspace:export-state', {
-            detail: { exporting: true, message: 'Rendering broadcast-quality Full HD video with FFmpeg...' },
-          }));
-
-          const defaultBackdrop = (DEFAULT_VISUAL_BACKDROPS && DEFAULT_VISUAL_BACKDROPS.length > 0) ? DEFAULT_VISUAL_BACKDROPS[0] : undefined;
-          const resolvedBackdropUrl = customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || activeStoryboardVideo || activeStoryboardImage || defaultBackdrop?.videoUrl || '';
-          const resolvedBackdropType = (customVideoUrl || (!customImageUrl && (activeBackdrop?.videoUrl || activeStoryboardVideo || !activeBackdrop?.imageUrl))) ? 'video' : 'image';
-
-          const backfillUrl = (c: any, idx: number) => {
-            if (c.url && typeof c.url === 'string' && c.url.trim()) return c.url.trim();
-            const sbMatch = script.storyboard?.[idx];
-            const sbUrl = sbMatch?.mediaUrl || (sbMatch as any)?.videoUrl || sbMatch?.posterUrl;
-            if (sbUrl && typeof sbUrl === 'string' && sbUrl.trim()) return sbUrl.trim();
-            const fallbackBackdrop = (DEFAULT_VISUAL_BACKDROPS && DEFAULT_VISUAL_BACKDROPS.length > 0)
-              ? DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length]
-              : undefined;
-            return resolvedBackdropUrl || fallbackBackdrop?.videoUrl || '';
-          };
-
-          const rawVClips = (timelineState.videoClips || []).map((c, idx) => ({
-            ...c,
-            url: backfillUrl(c, idx),
-            transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
-            transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
-            cameraMotion: c.cameraMotion || c.animationIn || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
-            animationIn: c.animationIn || 'zoom-in',
-            animationInDuration: typeof c.animationInDuration === 'number' ? c.animationInDuration : 0.5,
-            animationOut: c.animationOut || 'fade',
-            animationOutDuration: typeof c.animationOutDuration === 'number' ? c.animationOutDuration : 0.45,
-          })).filter((c) => Boolean(c.url));
-
-          const rawIClips = (timelineState.imageClips || []).map((c, idx) => ({
-            ...c,
-            url: backfillUrl(c, idx),
-            transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
-            transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
-            cameraMotion: c.cameraMotion || c.animationIn || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
-            animationIn: c.animationIn || 'zoom-in',
-            animationInDuration: typeof c.animationInDuration === 'number' ? c.animationInDuration : 0.5,
-            animationOut: c.animationOut || 'fade',
-            animationOutDuration: typeof c.animationOutDuration === 'number' ? c.animationOutDuration : 0.45,
-          })).filter((c) => Boolean(c.url));
-
-          // Multi-clip fallback: If timeline tracks are empty, pull directly from effectiveVisualClips (e.g. Studio storyboard)
-          let vClips = rawVClips;
-          let iClips = rawIClips;
-          if (vClips.length === 0 && iClips.length === 0 && effectiveVisualClips.length > 0) {
-            vClips = effectiveVisualClips.filter((c) => c.type === 'video').map((c, idx) => ({
-              ...c,
-              url: backfillUrl(c, idx),
-              transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
-              transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
-              cameraMotion: (c as any).cameraMotion || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
-              animationIn: (c as any).animationIn || 'zoom-in',
-              animationInDuration: typeof (c as any).animationInDuration === 'number' ? (c as any).animationInDuration : 0.5,
-              animationOut: (c as any).animationOut || 'fade',
-              animationOutDuration: typeof (c as any).animationOutDuration === 'number' ? (c as any).animationOutDuration : 0.45,
-            })).filter((c) => Boolean(c.url));
-
-            iClips = effectiveVisualClips.filter((c) => c.type === 'image').map((c, idx) => ({
-              ...c,
-              url: backfillUrl(c, idx),
-              transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
-              transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
-              cameraMotion: (c as any).cameraMotion || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
-              animationIn: (c as any).animationIn || 'zoom-in',
-              animationInDuration: typeof (c as any).animationInDuration === 'number' ? (c as any).animationInDuration : 0.5,
-              animationOut: (c as any).animationOut || 'fade',
-              animationOutDuration: typeof (c as any).animationOutDuration === 'number' ? (c as any).animationOutDuration : 0.45,
-            })).filter((c) => Boolean(c.url));
-          }
-
-          const sClips = (timelineState.sfxClips || []).filter((c) => Boolean(c.url));
-          const sfxPayload = !timelineState.sfxMuted && sClips.length > 0 ? sClips : undefined;
-          const maxClipEnd = Math.max(
-            0,
-            ...vClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0)),
-            ...iClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0))
-          );
-
-          const exportSubtitles = (timelineState.captionClips && timelineState.captionClips.length > 0)
-            ? timelineState.captionClips
-            : ((script.subtitles && script.subtitles.length > 0)
-              ? script.subtitles
-              : ((script as any).storyboard || []).map((s: any) => ({
-                  start: Number(s.start) || 0,
-                  duration: Number(s.duration) || 2.5,
-                  text: s.subtitleText || s.text || '',
-                  words: s.words,
-                  captionPresetColor: s.captionPresetColor,
-                  captionPresetClass: s.captionPresetClass,
-                })).filter((s: any) => Boolean(s.text)));
-
-          const maxSubEnd = Math.max(
-            0,
-            ...exportSubtitles.map((s: any) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
-          );
-
-          // If timeline has clips, use exact clip timeline end without artificial stretching
-          const exactTimelineDuration = maxClipEnd > 0
-            ? maxClipEnd
-            : (Number(duration) > 0 ? Number(duration) : (Number(playbackDuration) > 0 ? Number(playbackDuration) : (maxSubEnd > 0 ? maxSubEnd : 0)));
-
-          const fullRenderDuration = exactTimelineDuration > 0
-            ? exactTimelineDuration
-            : Math.max(Number(exportDuration) || 0, 15);
-
-          const renderPayload = {
-            title: script.title || exportFileName || 'apexmind-video',
-            aspectRatio: canvasAspectRatio,
-            duration: fullRenderDuration,
-            exactDuration: exactTimelineDuration > 0 ? exactTimelineDuration : undefined,
-            audioUrl: audioUrl || null,
-            musicUrl: musicUrl || null,
-            backdropUrl: resolvedBackdropUrl,
-            backdropType: resolvedBackdropType,
-            videoClips: vClips.length > 0 ? vClips : undefined,
-            imageClips: iClips.length > 0 ? iClips : undefined,
-            sfxClips: sfxPayload,
-            subtitles: exportSubtitles
-              .filter((s: any) => Boolean((s.text || s.subtitleText || '').trim()))
-              .map((s: any) => ({
-                start: Number(s.start) || 0,
-                duration: Number(s.duration) || 2.5,
-                text: (s.text || s.subtitleText || '').trim(),
-                words: s.words,
-                emphasis: s.emphasis,
-                captionPresetClass: s.captionPresetClass,
-                captionPresetColor: s.captionPresetColor,
-              })),
-            captionColor: captionPresetColor || '#FACC15',
-            captionFont: captionPresetFontFamily || 'Impact',
-            captionTransform: captionPresetTextTransform || 'uppercase',
-            filterSettings: filterSettings || undefined,
-            voiceVolume: typeof volume === 'number' ? volume : 1.0,
-            musicVolume: 0.65,
-            sfxVolume: 0.85,
-            duckingSettings: (script as any).soundDesign?.ducking || { active: true, threshold: 0.045, ratio: 4.5, attackMs: 25, releaseMs: 320 },
-            fps: 30,
-          };
-
-          const res = await fetch('/api/workspace/render-video', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(renderPayload),
-          });
-
-          if (res.ok) {
-            const result = await res.json();
-            if (result.success && result.videoUrl) {
-              const link = document.createElement('a');
-              link.href = result.videoUrl;
-              link.download = result.filename || `${renderPayload.title}.mp4`;
-              document.body.appendChild(link);
-              link.click();
-              link.remove();
-              onExportComplete?.();
-              return;
-            }
-          }
-        } catch (serverErr) {
-          console.warn('Server FFmpeg render unavailable, using browser capture:', serverErr);
-        }
-
-        // Broad cross-browser MIME type negotiation (prefer VP9/Opus which preserves audio)
-        const candidateTypes = [
-          'video/webm;codecs=vp9,opus',
-          'video/webm;codecs=h264,opus',
-          'video/webm',
-          'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-          'video/mp4;codecs=h264,aac',
-          'video/mp4',
-        ];
-        let mimeType = '';
-        if (typeof MediaRecorder !== 'undefined') {
-          for (const t of candidateTypes) {
-            if (MediaRecorder.isTypeSupported(t)) {
-              mimeType = t;
-              break;
-            }
-          }
-        }
-        if (!mimeType) {
-          throw new Error('Video recording is not supported by your browser.');
-        }
-
-        const defaultDimensions = {
-          '9:16': { width: 1080, height: 1920 },
-          '16:9': { width: 1920, height: 1080 },
-          '1:1': { width: 1080, height: 1080 },
-          '4:5': { width: 1080, height: 1350 },
-          '21:9': { width: 1920, height: 823 },
-        }[canvasAspectRatio] || { width: 1080, height: 1920 };
-
-        const dimensions = defaultDimensions;
-        const outputCanvas = document.createElement('canvas');
-        outputCanvas.width = dimensions.width;
-        outputCanvas.height = dimensions.height;
-        const context = outputCanvas.getContext('2d', { alpha: false });
-        if (!context) throw new Error('Could not create video render canvas.');
-
-        // Direct frame compositor: never empty, draws media + cinematic backdrop + titles + captions
-        const captureFrame = (renderTimeSec: number) => {
-          let drewMedia = false;
-
-          // 1. Draw active video frame with proper object-fit: cover aspect scaling
-          const videoEl = videoElementRef.current;
-          if (videoEl && videoEl.readyState >= 2 && videoEl.videoWidth > 0) {
-            try {
-              const vW = videoEl.videoWidth;
-              const vH = videoEl.videoHeight;
-              const targetRatio = dimensions.width / dimensions.height;
-              const sourceRatio = vW / vH;
-              let sx = 0, sy = 0, sWidth = vW, sHeight = vH;
-              if (sourceRatio > targetRatio) {
-                sWidth = vH * targetRatio;
-                sx = (vW - sWidth) / 2;
-              } else {
-                sHeight = vW / targetRatio;
-                sy = (vH - sHeight) / 2;
-              }
-              context.drawImage(videoEl, sx, sy, sWidth, sHeight, 0, 0, dimensions.width, dimensions.height);
-              drewMedia = true;
-            } catch {}
-          }
-
-          // 2. Draw active image backdrop with proper object-fit: cover aspect scaling
-          if (!drewMedia) {
-            const imgEl = preview.querySelector('img');
-            if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
-              try {
-                const iW = imgEl.naturalWidth;
-                const iH = imgEl.naturalHeight;
-                const targetRatio = dimensions.width / dimensions.height;
-                const sourceRatio = iW / iH;
-                let sx = 0, sy = 0, sWidth = iW, sHeight = iH;
-                if (sourceRatio > targetRatio) {
-                  sWidth = iH * targetRatio;
-                  sx = (iW - sWidth) / 2;
-                } else {
-                  sHeight = iW / targetRatio;
-                  sy = (iH - sHeight) / 2;
-                }
-                context.drawImage(imgEl, sx, sy, sWidth, sHeight, 0, 0, dimensions.width, dimensions.height);
-                drewMedia = true;
-              } catch {}
-            }
-          }
-
-          // 3. Fallback: Draw rich studio gradient backdrop so frame is NEVER black
-          if (!drewMedia) {
-            const grad = context.createLinearGradient(0, 0, 0, dimensions.height);
-            grad.addColorStop(0, '#0F172A');
-            grad.addColorStop(0.45, '#1E1B4B');
-            grad.addColorStop(1, '#020617');
-            context.fillStyle = grad;
-            context.fillRect(0, 0, dimensions.width, dimensions.height);
-
-            const radial = context.createRadialGradient(
-              dimensions.width / 2, dimensions.height / 2, 40,
-              dimensions.width / 2, dimensions.height / 2, dimensions.width * 0.75
-            );
-            radial.addColorStop(0, 'rgba(59, 130, 246, 0.22)');
-            radial.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            context.fillStyle = radial;
-            context.fillRect(0, 0, dimensions.width, dimensions.height);
-          }
-
-          // 4. Subtle Vignette
-          const gradVignette = context.createRadialGradient(
-            dimensions.width / 2, dimensions.height / 2, dimensions.width * 0.35,
-            dimensions.width / 2, dimensions.height / 2, dimensions.width * 0.82
-          );
-          gradVignette.addColorStop(0, 'transparent');
-          gradVignette.addColorStop(1, 'rgba(0, 0, 0, 0.65)');
-          context.fillStyle = gradVignette;
-          context.fillRect(0, 0, dimensions.width, dimensions.height);
-
-          // 5. Draw Title Pill (visible during first 3.5 seconds)
-          if (script.title && renderTimeSec < 3.5) {
-            context.save();
-            const titleFontSize = Math.round(dimensions.width * 0.046);
-            context.font = `800 ${titleFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            const titleY = dimensions.height * 0.16;
-            const metrics = context.measureText(script.title);
-            const pillW = Math.min(dimensions.width * 0.9, metrics.width + 48);
-            const pillH = titleFontSize + 24;
-
-            // Broadcast title: thick black border around font, no box panel
-            context.lineWidth = Math.max(5, Math.round(titleFontSize * 0.14));
-            context.strokeStyle = '#000000';
-            context.lineJoin = 'round';
-            context.miterLimit = 2;
-            context.shadowColor = 'rgba(0, 0, 0, 0.95)';
-            context.shadowBlur = 12;
-            context.shadowOffsetX = 0;
-            context.shadowOffsetY = 3;
-            context.strokeText(script.title, dimensions.width / 2, titleY, dimensions.width * 0.9);
-
-            context.fillStyle = '#FFFFFF';
-            context.fillText(script.title, dimensions.width / 2, titleY, dimensions.width * 0.9);
-            context.restore();
-          }
-
-          // 6. Draw Caption / Subtitle Text matched to renderTimeSec
-          const activeSub = (script.subtitles || []).find(
-            (s) => renderTimeSec >= s.start && renderTimeSec <= s.start + (s.duration || 3)
-          );
-          const captionText = activeSub ? activeSub.text : '';
-
-          if (captionText) {
-            context.save();
-            const capFontSize = Math.round(dimensions.width * 0.065);
-            context.font = `900 ${capFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            const capY = dimensions.height * 0.76;
-
-            const metrics = context.measureText(captionText);
-            const pillW = Math.min(dimensions.width * 0.92, metrics.width + 56);
-            const pillH = capFontSize + 32;
-
-            // Broadcast subtitle: thick black outline (border) around font, no box panel
-            context.lineWidth = Math.max(6, Math.round(capFontSize * 0.16));
-            context.strokeStyle = '#000000';
-            context.lineJoin = 'round';
-            context.miterLimit = 2;
-            context.shadowColor = 'rgba(0, 0, 0, 0.95)';
-            context.shadowBlur = 14;
-            context.shadowOffsetX = 0;
-            context.shadowOffsetY = 4;
-            context.strokeText(captionText, dimensions.width / 2, capY, dimensions.width * 0.92);
-
-            context.fillStyle = captionPresetColor || '#FACC15'; // Gold / vibrant highlight
-            context.fillText(captionText, dimensions.width / 2, capY, dimensions.width * 0.92);
-            context.restore();
-          }
-        };
-
-        captureFrame(0);
-        outputStream = outputCanvas.captureStream(30);
-
-        // Attach audio tracks safely
-        try {
-          const captureAudio = audioElement as (HTMLAudioElement & {
-            captureStream?: () => MediaStream;
-            mozCaptureStream?: () => MediaStream;
-          }) | null | undefined;
-          const audioStream = audioOutputStream ?? captureAudio?.captureStream?.() ?? captureAudio?.mozCaptureStream?.();
-          audioStream?.getAudioTracks().forEach((track) => {
-            try {
-              outputStream?.addTrack(track);
-            } catch {}
-          });
-        } catch {}
-
-        const chunks: BlobPart[] = [];
-        recorder = new MediaRecorder(outputStream, {
-          mimeType,
-          videoBitsPerSecond: 10_000_000,
-          audioBitsPerSecond: 192_000,
-        });
-
-        recorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) chunks.push(event.data);
-        };
-
-        recorder.onstop = async () => {
-          if (cancelled) return;
-          const blob = new Blob(chunks, { type: mimeType });
-          if (blob.size === 0) {
-            onExportComplete?.('Rendered video was empty.');
-            return;
-          }
-
-          const safeName = exportFileName.trim().replace(/[<>:"/\\|?*]+/g, '').slice(0, 80) || 'apexmind-video';
-
-          // If browser recorded WebM, transcode to broadcast MP4 with FFmpeg via backend
-          if (mimeType.includes('webm')) {
-            try {
-              window.dispatchEvent(new CustomEvent('workspace:export-state', {
-                detail: { exporting: true, message: 'Finalizing pristine MP4...' },
-              }));
-              const formData = new FormData();
-              formData.append('file', blob, 'video.webm');
-              formData.append('filename', safeName);
-              const convRes = await fetch('/api/workspace/convert-to-mp4', {
-                method: 'POST',
-                body: formData,
-              });
-              if (convRes.ok) {
-                const convData = await convRes.json();
-                if (convData.videoUrl) {
-                  const link = document.createElement('a');
-                  link.href = convData.videoUrl;
-                  link.download = convData.filename || `${safeName}.mp4`;
-                  document.body.appendChild(link);
-                  link.click();
-                  link.remove();
-                  onExportComplete?.();
-                  return;
-                }
-              }
-            } catch (convErr) {
-              console.warn('Backend MP4 transcode failed, downloading direct file:', convErr);
-            }
-          }
-
-          const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-          const link = document.createElement('a');
-          const downloadUrl = URL.createObjectURL(blob);
-          link.href = downloadUrl;
-          link.download = `${safeName}.${ext}`;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60_000);
-          onExportComplete?.();
-        };
-
-        recorder.onerror = () => {
-          if (!cancelled) onExportComplete?.('Recording error in browser encoder.');
-        };
-
-        recorder.start(500);
-
-        const exportStartedAt = performance.now();
-        const vClips = timelineState.videoClips || [];
-        const iClips = timelineState.imageClips || [];
-        const maxClipEnd = Math.max(
-          0,
-          ...vClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0)),
-          ...iClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0))
-        );
-        const maxSubEnd = Math.max(
-          0,
-          ...(script.subtitles || []).map((s) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
-        );
-        const exactTimelineDuration = maxClipEnd > 0
-          ? maxClipEnd
-          : (Number(duration) > 0 ? Number(duration) : (Number(playbackDuration) > 0 ? Number(playbackDuration) : (maxSubEnd > 0 ? maxSubEnd : 0)));
-
-        const effectiveDuration = exactTimelineDuration > 0
-          ? exactTimelineDuration
-          : Math.max(
-              Number(exportDuration) || 0,
-              Number(duration) || 0,
-              Number(playbackDuration) || 0,
-              maxSubEnd,
-              15
-            );
-        const exportLength = Math.max(1, effectiveDuration) * 1000;
-        let lastReportedPercent = 0;
-
-        while (!cancelled && performance.now() - exportStartedAt < exportLength) {
-          const elapsed = performance.now() - exportStartedAt;
-          const renderTimeSec = elapsed / 1000;
-          captureFrame(renderTimeSec);
-
-          const pct = Math.min(99, Math.round((elapsed / exportLength) * 100));
-          if (pct > lastReportedPercent + 4) {
-            lastReportedPercent = pct;
-            window.dispatchEvent(new CustomEvent('workspace:export-state', {
-              detail: { exporting: true, message: `Rendering ${pct}%...` },
-            }));
-          }
-
-          // Natively request frame capture on stream
-          const videoTrack = outputStream?.getVideoTracks()[0] as any;
-          if (videoTrack?.requestFrame) {
-            try { videoTrack.requestFrame(); } catch {}
-          }
-
-          await new Promise((resolve) => window.setTimeout(resolve, 1000 / 24));
-        }
-
-        if (!cancelled && recorder && recorder.state === 'recording') {
-          try {
-            recorder.requestData();
-          } catch {}
-          recorder.stop();
-        }
-      } catch (error) {
-        if (!cancelled) {
-          const message = error instanceof Error ? error.message : 'Video export failed.';
-          onExportComplete?.(message);
-        }
-      }
-    };
-
-    void exportVideo();
-    return () => {
-      cancelled = true;
-      if (recorder?.state === 'recording') recorder.stop();
-      outputStream?.getTracks().forEach((track) => track.stop());
-    };
-  }, [audioUrl, musicUrl, audioElement, audioOutputStream, canvasAspectRatio, canvasOutputSize, exportDuration, exportFileName, isExporting, onExportComplete, script]);
-
   useEffect(() => {
     const handleTimelineState = (e: Event) => {
       const detail = (e as CustomEvent<Partial<TimelineState>>).detail;
@@ -2063,6 +1537,196 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const effectiveVideoSrc = cachedVideoSrc || currentVideoSrc;
   const effectiveTransitionSrc = cachedTransitionSrc || transitionVideoSrc;
+
+  // ── Unified Server-Side Full HD Studio Video Renderer (FFmpeg Multi-Clip & Audio Engine) ──
+  const renderBroadcastStudioVideo = useCallback(async (): Promise<string> => {
+    window.dispatchEvent(new CustomEvent('workspace:export-state', {
+      detail: { exporting: true, message: 'Rendering broadcast-quality Full HD video with FFmpeg...' },
+    }));
+
+    const defaultBackdrop = (DEFAULT_VISUAL_BACKDROPS && DEFAULT_VISUAL_BACKDROPS.length > 0) ? DEFAULT_VISUAL_BACKDROPS[0] : undefined;
+    const resolvedBackdropUrl = customVideoUrl || customImageUrl || activeBackdrop?.videoUrl || activeBackdrop?.imageUrl || activeStoryboardVideo || activeStoryboardImage || defaultBackdrop?.videoUrl || '';
+    const resolvedBackdropType = (customVideoUrl || (!customImageUrl && (activeBackdrop?.videoUrl || activeStoryboardVideo || !activeBackdrop?.imageUrl))) ? 'video' : 'image';
+
+    const backfillUrl = (c: any, idx: number) => {
+      if (c.url && typeof c.url === 'string' && c.url.trim()) return c.url.trim();
+      const sbMatch = script.storyboard?.[idx];
+      const sbUrl = sbMatch?.mediaUrl || (sbMatch as any)?.videoUrl || sbMatch?.posterUrl;
+      if (sbUrl && typeof sbUrl === 'string' && sbUrl.trim()) return sbUrl.trim();
+      const fallbackBackdrop = (DEFAULT_VISUAL_BACKDROPS && DEFAULT_VISUAL_BACKDROPS.length > 0)
+        ? DEFAULT_VISUAL_BACKDROPS[idx % DEFAULT_VISUAL_BACKDROPS.length]
+        : undefined;
+      return resolvedBackdropUrl || fallbackBackdrop?.videoUrl || '';
+    };
+
+    const rawVClips = (timelineState.videoClips || []).map((c, idx) => ({
+      ...c,
+      url: backfillUrl(c, idx),
+      transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
+      transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
+      cameraMotion: c.cameraMotion || c.animationIn || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
+      animationIn: c.animationIn || 'zoom-in',
+      animationInDuration: typeof c.animationInDuration === 'number' ? c.animationInDuration : 0.5,
+      animationOut: c.animationOut || 'fade',
+      animationOutDuration: typeof c.animationOutDuration === 'number' ? c.animationOutDuration : 0.45,
+    })).filter((c) => Boolean(c.url));
+
+    const rawIClips = (timelineState.imageClips || []).map((c, idx) => ({
+      ...c,
+      url: backfillUrl(c, idx),
+      transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
+      transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
+      cameraMotion: c.cameraMotion || c.animationIn || (idx % 2 === 0 ? 'push-in' : 'zoom-out'),
+      animationIn: c.animationIn || 'zoom-in',
+      animationInDuration: typeof c.animationInDuration === 'number' ? c.animationInDuration : 0.5,
+      animationOut: c.animationOut || 'fade',
+      animationOutDuration: typeof c.animationOutDuration === 'number' ? c.animationOutDuration : 0.45,
+    })).filter((c) => Boolean(c.url));
+
+    let vClips: any[] = rawVClips;
+    let iClips: any[] = rawIClips;
+    if (vClips.length === 0 && iClips.length === 0 && effectiveVisualClips.length > 0) {
+      vClips = effectiveVisualClips.filter((c) => c.type === 'video').map((c, idx) => ({
+        ...c,
+        url: backfillUrl(c, idx),
+        transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
+        transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
+      })).filter((c) => Boolean(c.url));
+
+      iClips = effectiveVisualClips.filter((c) => c.type === 'image').map((c, idx) => ({
+        ...c,
+        url: backfillUrl(c, idx),
+        transition: c.transition !== undefined ? c.transition : (idx > 0 ? 'fade' : undefined),
+        transitionDuration: typeof c.transitionDuration === 'number' ? c.transitionDuration : 0.45,
+      })).filter((c) => Boolean(c.url));
+    }
+
+    const sClips = (timelineState.sfxClips || []).filter((c) => Boolean(c.url));
+    const sfxPayload = !timelineState.sfxMuted && sClips.length > 0 ? sClips : undefined;
+    const maxClipEnd = Math.max(
+      0,
+      ...vClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0)),
+      ...iClips.map((c) => (Number(c.start) || 0) + (Number(c.duration) || 0))
+    );
+
+    const exportSubtitles = (timelineState.captionClips && timelineState.captionClips.length > 0)
+      ? timelineState.captionClips
+      : ((script.subtitles && script.subtitles.length > 0)
+        ? script.subtitles
+        : ((script as any).storyboard || []).map((s: any) => ({
+            start: Number(s.start) || 0,
+            duration: Number(s.duration) || 2.5,
+            text: s.subtitleText || s.text || '',
+            words: s.words,
+            captionPresetColor: s.captionPresetColor,
+            captionPresetClass: s.captionPresetClass,
+          })).filter((s: any) => Boolean(s.text)));
+
+    const maxSubEnd = Math.max(
+      0,
+      ...exportSubtitles.map((s: any) => (Number(s.start) || 0) + (Number(s.duration) || 2.5))
+    );
+
+    const exactTimelineDuration = maxClipEnd > 0
+      ? maxClipEnd
+      : (Number(duration) > 0 ? Number(duration) : (Number(playbackDuration) > 0 ? Number(playbackDuration) : (maxSubEnd > 0 ? maxSubEnd : 0)));
+
+    const fullRenderDuration = exactTimelineDuration > 0
+      ? exactTimelineDuration
+      : Math.max(Number(exportDuration) || 0, 15);
+
+    const renderPayload = {
+      title: script.title || exportFileName || 'apexmind-video',
+      aspectRatio: canvasAspectRatio,
+      duration: fullRenderDuration,
+      exactDuration: exactTimelineDuration > 0 ? exactTimelineDuration : undefined,
+      audioUrl: audioUrl || null,
+      musicUrl: musicUrl || null,
+      backdropUrl: resolvedBackdropUrl,
+      backdropType: resolvedBackdropType,
+      videoClips: vClips.length > 0 ? vClips : undefined,
+      imageClips: iClips.length > 0 ? iClips : undefined,
+      sfxClips: sfxPayload,
+      subtitles: exportSubtitles
+        .filter((s: any) => Boolean((s.text || s.subtitleText || '').trim()))
+        .map((s: any) => ({
+          start: Number(s.start) || 0,
+          duration: Number(s.duration) || 2.5,
+          text: (s.text || s.subtitleText || '').trim(),
+          words: s.words,
+          emphasis: s.emphasis,
+          captionPresetClass: s.captionPresetClass,
+          captionPresetColor: s.captionPresetColor,
+        })),
+      captionColor: captionPresetColor || '#FACC15',
+      captionFont: captionPresetFontFamily || 'Impact',
+      captionTransform: captionPresetTextTransform || 'uppercase',
+      filterSettings: filterSettings || undefined,
+      voiceVolume: typeof volume === 'number' ? volume : 1.0,
+      musicVolume: 0.65,
+      sfxVolume: 0.85,
+      duckingSettings: (script as any).soundDesign?.ducking || { active: true, threshold: 0.045, ratio: 4.5, attackMs: 25, releaseMs: 320 },
+      fps: 30,
+    };
+
+    const res = await fetch('/api/workspace/render-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(renderPayload),
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success && result.videoUrl) {
+        window.dispatchEvent(new CustomEvent('workspace:export-state', {
+          detail: { exporting: false, message: 'Broadcast-quality video render complete!' },
+        }));
+        return result.videoUrl;
+      }
+    }
+
+    return await buildFramesAndTranscodeMp4(true);
+  }, [canvasAspectRatio, script, timelineState, effectiveVisualClips, duration, playbackDuration, exportDuration, exportFileName, customVideoUrl, customImageUrl, activeBackdrop, activeStoryboardVideo, activeStoryboardImage, audioUrl, musicUrl, captionPresetColor, captionPresetFontFamily, captionPresetTextTransform, filterSettings, volume, buildFramesAndTranscodeMp4]);
+
+  // Expose global frame builder for live YouTube publishing
+  useEffect(() => {
+    (window as any).__apexmind_render_preview_video = async () => {
+      return await renderBroadcastStudioVideo();
+    };
+    return () => {
+      delete (window as any).__apexmind_render_preview_video;
+    };
+  }, [renderBroadcastStudioVideo]);
+
+  // Handle export request from parent or UI controls
+  useEffect(() => {
+    if (!isExporting) return;
+
+    let cancelled = false;
+    const runExport = async () => {
+      try {
+        const videoUrl = await renderBroadcastStudioVideo();
+        const safeName = (script.title || exportFileName || 'apexmind-video').trim().replace(/[<>:"/\\|?*]+/g, '').slice(0, 80) || 'apexmind-video';
+        const link = document.createElement('a');
+        link.href = videoUrl;
+        link.download = `${safeName}.mp4`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        if (!cancelled) onExportComplete?.();
+      } catch (err: any) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : (err?.message || 'Video export failed.');
+          onExportComplete?.(message);
+        }
+      }
+    };
+
+    void runExport();
+    return () => {
+      cancelled = true;
+    };
+  }, [isExporting, renderBroadcastStudioVideo, script.title, exportFileName, onExportComplete]);
 
   // Auto-reload video element only when active source changes
   useEffect(() => {

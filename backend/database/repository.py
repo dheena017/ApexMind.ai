@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 from .connection import get_connection
 
@@ -117,6 +117,13 @@ def save_channel_oauth(
     timestamp = datetime.now(timezone.utc).isoformat()
     clean_handle = handle if handle.startswith("@") else f"@{handle}"
 
+    effective_refresh = (refresh_token or "").strip()
+    if not effective_refresh:
+        cursor.execute("SELECT refresh_token FROM youtube_channels WHERE refresh_token IS NOT NULL AND refresh_token != '' LIMIT 1")
+        existing_row = cursor.fetchone()
+        if existing_row and existing_row["refresh_token"]:
+            effective_refresh = str(existing_row["refresh_token"]).strip()
+
     cursor.execute("DELETE FROM youtube_channels")
     cursor.execute("""
     INSERT INTO youtube_channels (
@@ -124,7 +131,7 @@ def save_channel_oauth(
         is_auto_upload_enabled, schedule_cron, connected_at, niche,
         refresh_token, access_token, token_expiry, is_oauth_authenticated
     ) VALUES (?, ?, ?, ?, ?, ?, 1, 'Daily at 08:00 AM EST', ?, 'Motivational Quotes', ?, ?, ?, 1)
-    """, (channel_id, name, clean_handle, subscribers, videos_uploaded, avatar_url, timestamp, refresh_token, access_token, token_expiry))
+    """, (channel_id, name, clean_handle, subscribers, videos_uploaded, avatar_url, timestamp, effective_refresh, access_token, token_expiry))
     conn.commit()
     conn.close()
     logger.info(f"Saved OAuth-authorized YouTube channel: '{name}' ({clean_handle}) (ID: {channel_id})")

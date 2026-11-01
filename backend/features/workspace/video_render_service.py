@@ -558,13 +558,13 @@ def render_studio_video(
                 anim_out_dur = max(0.05, min(float(clip.get("animationOutDuration") or 0.45), dur_i * 0.45))
 
                 clip_filters = [
-                    f"trim=duration={dur_i:.3f}",
-                    "setpts=PTS-STARTPTS",
                     f"scale={width}:{height}:force_original_aspect_ratio=increase",
                     f"crop={width}:{height}",
                     "setsar=1",
                     f"fps={render_fps}",
                     "format=pix_fmts=yuv420p",
+                    f"trim=duration={dur_i:.3f}",
+                    "setpts=PTS-STARTPTS",
                 ]
 
                 # Transitions & In/Out Animations (Crash-proof fixed-geometry)
@@ -797,6 +797,8 @@ def render_studio_video(
         return {
             "success": True,
             "filename": out_filename,
+            "video_path": str(out_path.resolve()),
+            "videoPath": str(out_path.resolve()),
             "videoUrl": f"/api/videos/{out_filename}",
             "downloadUrl": f"/api/videos/{out_filename}",
             "thumbnailUrl": f"/api/videos/{thumb_filename}" if thumb_path.exists() else None,

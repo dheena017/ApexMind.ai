@@ -119,7 +119,15 @@ export default function WorkspacePage({
   const [testingVoiceId, setTestingVoiceId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [publishedSuccess, setPublishedSuccess] = useState(false);
+  const [publishedVideoUrl, setPublishedVideoUrl] = useState<string | null>(null);
   const [memoryCount, setMemoryCount] = useState(0);
+
+  // Live timeline clips cached for publish & export operations
+  const timelineClipsRef = useRef<{
+    videoClips?: any[];
+    imageClips?: any[];
+    captionClips?: any[];
+  }>({});
 
   // Custom Backdrop Media (Images / Stock Videos / Uploads)
   const [customBackdropImage, setCustomBackdropImage] = useState<string | undefined>(undefined);
@@ -270,8 +278,13 @@ export default function WorkspacePage({
         videoClips?: unknown[];
         imageEnabled?: boolean;
         imageClips?: unknown[];
+        captionClips?: unknown[];
       }>).detail;
       if (detail) {
+        if (Array.isArray(detail.videoClips)) timelineClipsRef.current.videoClips = detail.videoClips;
+        if (Array.isArray(detail.imageClips)) timelineClipsRef.current.imageClips = detail.imageClips;
+        if (Array.isArray((detail as any).captionClips)) timelineClipsRef.current.captionClips = (detail as any).captionClips;
+
         if (detail.voiceMuted !== undefined) setVoiceTrackMuted(Boolean(detail.voiceMuted));
         if (detail.musicMuted !== undefined) setMusicTrackMuted(Boolean(detail.musicMuted));
         if (detail.videoEnabled === false || (Array.isArray(detail.videoClips) && detail.videoClips.length === 0)) {
@@ -989,9 +1002,31 @@ export default function WorkspacePage({
     setCustomBackdropVideo(undefined);
     setActiveElementOverlay(null);
     setSelectedSfx(null);
+    setPublishedSuccess(false);
+    setPublishedVideoUrl(null);
     // Dispatch event to clear all timeline tracks and clips immediately
     window.dispatchEvent(new CustomEvent('workspace:clear-timeline'));
   }, [onPaneChange, selectedVoice]);
+
+  const handleResetPublishState = useCallback(() => {
+    setPublishedSuccess(false);
+    setPublishedVideoUrl(null);
+  }, []);
+
+  useEffect(() => {
+    const handleReset = () => {
+      handleResetPublishState();
+    };
+    const handleNewVideo = () => {
+      handleStartNewVideo();
+    };
+    window.addEventListener('workspace:reset-publish', handleReset);
+    window.addEventListener('workspace:start-new-video', handleNewVideo);
+    return () => {
+      window.removeEventListener('workspace:reset-publish', handleReset);
+      window.removeEventListener('workspace:start-new-video', handleNewVideo);
+    };
+  }, [handleResetPublishState, handleStartNewVideo]);
 
   // Capture real cover image snapshot from active studio canvas or real media
   const resolveRealCoverImage = async (): Promise<string> => {
@@ -1064,9 +1099,18 @@ export default function WorkspacePage({
         category,
         videoUrl: resolvedVideoUrl || undefined,
         coverImageUrl: resolvedCoverUrl || undefined,
-        audioUrl: audioUrl && !audioUrl.startsWith('data:') ? audioUrl : undefined,
+        audioUrl: audioUrl || undefined,
         musicUrl: resolvedMusicUrl || undefined,
-        subtitles: script.subtitles && script.subtitles.length > 0 ? script.subtitles : undefined,
+        subtitles: (timelineClipsRef.current.captionClips && timelineClipsRef.current.captionClips.length > 0)
+          ? timelineClipsRef.current.captionClips
+          : (script.subtitles && script.subtitles.length > 0 ? script.subtitles : undefined),
+        videoClips: (timelineClipsRef.current.videoClips && timelineClipsRef.current.videoClips.length > 0)
+          ? timelineClipsRef.current.videoClips
+          : undefined,
+        imageClips: (timelineClipsRef.current.imageClips && timelineClipsRef.current.imageClips.length > 0)
+          ? timelineClipsRef.current.imageClips
+          : undefined,
+        aspectRatio: canvasAspectRatio,
         duration: Math.round(duration || timelineDuration || 15),
         description: script.hook || script.quote ? `${script.hook ? `${script.hook}\n\n` : ''}${script.quote ? `${script.quote}\n\n` : ''}${script.cta ? `${script.cta}\n\n` : ''}${(script.hashtags || []).join(' ')}\n\nCreated with ApexMind AI Studio.` : undefined,
         tags: script.hashtags && script.hashtags.length > 0 ? script.hashtags : ['#Shorts', '#ApexMind', '#Motivation'],
@@ -1080,7 +1124,7 @@ export default function WorkspacePage({
         category,
         coverImageUrl: realCover,
         videoUrl: resolvedVideoUrl,
-        audioUrl: audioUrl && !audioUrl.startsWith('data:') ? audioUrl : '',
+        audioUrl: audioUrl || '',
         voice: selectedVoice,
         aspectRatio: canvasAspectRatio,
         duration: `00:${String(Math.round(duration || 30)).padStart(2, '0')}`,
@@ -1089,11 +1133,15 @@ export default function WorkspacePage({
         tags: script.hashtags || [],
         status: 'ready',
       }).catch(() => {}); // Non-blocking
-      setPublishedSuccess(true);
+
       const isLive = Boolean(publishedShort?.liveUploaded);
-      const videoLink = publishedShort?.videoUrl || publishedShort?.url;
+      const videoLink = publishedShort?.shortsUrl || publishedShort?.videoUrl || publishedShort?.url || (publishedShort?.videoId ? `https://www.youtube.com/shorts/${publishedShort.videoId}` : null);
+      if (videoLink) {
+        setPublishedVideoUrl(videoLink);
+      }
       const hasRealLink = isLive && Boolean(videoLink) && !videoLink.split('/').pop()?.match(/^\d+$/);
 
+      setPublishedSuccess(isLive);
       if (hasRealLink) {
         toast.success('Uploaded LIVE to YouTube Shorts!', {
           description: videoLink,
@@ -1107,12 +1155,12 @@ export default function WorkspacePage({
           actionLabel: 'View on YouTube',
         });
       } else {
-        toast.info('Video saved to Studio Library!', {
-          description: 'Connect your YouTube channel in settings to publish directly to YouTube.',
+        toast.warning('Live upload skipped: YouTube session needs re-authorization. Video saved to Studio Library!', {
+          description: 'Click Connect Channel in the YouTube tab to publish directly next time.',
         });
         addWorkspaceNotification({
-          title: 'Saved to Studio Library',
-          message: `"${script.title}" rendered and cataloged in Studio Library. Connect YouTube to publish live.`,
+          title: 'Saved to Studio Library (OAuth Refresh Needed)',
+          message: `"${script.title}" rendered and stored. Please re-authorize YouTube to upload live.`,
           category: 'export',
           type: 'info',
           targetPane: 'canvas',
@@ -1409,6 +1457,37 @@ export default function WorkspacePage({
   }, []);
 
   useEffect(() => {
+    const handleOpenInspectorTab = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        compound?: CompoundType | string;
+        subTab?: string;
+        tab?: string;
+        clipId?: string;
+        track?: 'video' | 'image' | string;
+        transition?: string;
+        transitionDuration?: number;
+      }>).detail;
+      if (!detail) return;
+      setShowRightPane(true);
+      const targetTab = detail.subTab || detail.tab;
+      if (detail.compound === 'transitions' || targetTab === 'transitions') {
+        setActiveCompound('transitions');
+      } else if (detail.compound) {
+        setActiveCompound(detail.compound as CompoundType);
+      }
+      if (detail.clipId) {
+        setSelectedClip({
+          track: (detail.track as any) || (detail.compound === 'image' ? 'image' : 'video'),
+          clipId: detail.clipId,
+          all: false,
+        });
+      }
+    };
+    window.addEventListener('workspace:open-inspector-tab', handleOpenInspectorTab);
+    return () => window.removeEventListener('workspace:open-inspector-tab', handleOpenInspectorTab);
+  }, []);
+
+  useEffect(() => {
     const handleAspectRatio = (e: Event) => {
       const customEvent = e as CustomEvent<{ aspectRatio: '9:16' | '16:9' | '1:1' | '4:5' | '21:9' }>;
       if (customEvent.detail?.aspectRatio) {
@@ -1574,6 +1653,8 @@ export default function WorkspacePage({
                 canPublish={canPublish}
                 publishing={publishing}
                 publishedSuccess={publishedSuccess}
+                publishedVideoUrl={publishedVideoUrl}
+                onResetPublishState={handleResetPublishState}
                 onNavigate={onNavigate}
               />
             ) : activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (

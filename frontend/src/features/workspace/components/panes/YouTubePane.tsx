@@ -17,6 +17,7 @@ import {
   X,
   Check,
   Hash,
+  Upload,
 } from 'lucide-react';
 import { GeneratedScript } from '../../types';
 import type { YouTubeChannel } from '@/src/features/youtube/types';
@@ -33,6 +34,8 @@ export interface YouTubePaneProps {
   canPublish?: boolean;
   publishing?: boolean;
   publishedSuccess?: boolean;
+  publishedVideoUrl?: string | null;
+  onResetPublishState?: () => void;
   onNavigate?: (page: string) => void;
 }
 
@@ -86,6 +89,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   canPublish = true,
   publishing = false,
   publishedSuccess = false,
+  publishedVideoUrl = null,
+  onResetPublishState,
   onNavigate,
 }) => {
   // ── Two Dedicated Subtabs: Publish & Meta | Shorts SEO ──
@@ -801,46 +806,144 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         )}
       </div>
 
-      {/* ── Sticky Bottom Action Bar (Zero duplication, always accessible) ── */}
-      <div className="p-3 bg-[#151518] border-t border-[#26262B] shrink-0 flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={onPublish}
-          disabled={publishing || !canPublish}
-          className={`w-full h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg ${
-            publishedSuccess
-              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
-              : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-red-900/25 disabled:opacity-50 disabled:cursor-not-allowed'
-          }`}
-        >
-          {publishing ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Building Frames & Publishing to YouTube...</span>
-            </>
-          ) : publishedSuccess ? (
-            <>
+      {/* ── Sticky Bottom Action Bar (With Live Published YouTube Video Link) ── */}
+      <div className="p-3 bg-[#151518] border-t border-[#26262B] shrink-0 flex flex-col gap-2.5">
+        {publishedSuccess && (publishedVideoUrl || channel) ? (
+          <div className="flex flex-col gap-2">
+            <a
+              href={publishedVideoUrl || channel?.channelUrl || `https://www.youtube.com/${channel?.handle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30"
+            >
               <CheckCircle2 className="w-4 h-4 text-white" />
-              <span>✓ Published to YouTube Shorts!</span>
-            </>
-          ) : (
-            <>
-              <Youtube className="w-4 h-4 text-white" />
-              <span>Publish Now to {channel?.name ? channel.name : 'YouTube'}</span>
-            </>
-          )}
-        </button>
+              <span>Watch Short on YouTube</span>
+              <ExternalLink className="w-3.5 h-3.5 ml-0.5 text-emerald-200" />
+            </a>
 
-        {publishedSuccess && channel && (
-          <a
-            href={channel.channelUrl || `https://www.youtube.com/${channel.handle}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] text-center font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1"
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onResetPublishState) {
+                    onResetPublishState();
+                  } else {
+                    window.dispatchEvent(new CustomEvent('workspace:reset-publish'));
+                  }
+                  toast.success('Ready to upload another video to YouTube!');
+                }}
+                className="h-9 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-[#202026] hover:bg-[#2C2C34] text-zinc-200 hover:text-white border border-[#32323C] hover:border-sky-500/50 transition-all cursor-pointer shadow-sm"
+                title="Publish current edited video or re-upload to YouTube"
+              >
+                <Upload className="w-3.5 h-3.5 text-sky-400" />
+                <span>Upload Another Video</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (onResetPublishState) onResetPublishState();
+                  window.dispatchEvent(new CustomEvent('workspace:reset-publish'));
+                  window.dispatchEvent(new CustomEvent('workspace:start-new-video'));
+                  toast.info('Starting fresh new video project...');
+                }}
+                className="h-9 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-gradient-to-r from-red-600/20 to-red-500/20 hover:from-red-600/30 hover:to-red-500/30 text-red-200 hover:text-white border border-red-500/40 transition-all cursor-pointer shadow-sm"
+                title="Start a new script & generate a fresh video"
+              >
+                <Plus className="w-3.5 h-3.5 text-red-400" />
+                <span>Create New Video</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onPublish}
+            disabled={publishing || !canPublish}
+            className={`w-full h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg ${
+              publishedSuccess
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
+                : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-red-900/25 disabled:opacity-50 disabled:cursor-not-allowed'
+            }`}
           >
-            <ExternalLink className="w-3 h-3" />
-            <span>Open {channel.name} on YouTube</span>
-          </a>
+            {publishing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Building Frames & Publishing to YouTube...</span>
+              </>
+            ) : (
+              <>
+                <Youtube className="w-4 h-4 text-white" />
+                <span>Publish Now to {channel?.name ? channel.name : 'YouTube'}</span>
+              </>
+            )}
+          </button>
+        )}
+
+        {/* Live Published YouTube Link Banner */}
+        {publishedSuccess && (
+          <div className="p-2.5 rounded-xl bg-[#1A1A20] border border-emerald-500/30 flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-[10px] font-mono-studio">
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <Youtube className="w-3 h-3 text-red-500" /> Published Video Link:
+              </span>
+              {publishedVideoUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(publishedVideoUrl);
+                    toast.success('YouTube Short link copied to clipboard!');
+                  }}
+                  className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  title="Copy video link"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Copy Link</span>
+                </button>
+              )}
+            </div>
+
+            {publishedVideoUrl ? (
+              <a
+                href={publishedVideoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-400 hover:text-blue-300 underline font-mono truncate flex items-center justify-between gap-1 p-1.5 rounded bg-[#121215] border border-[#26262E]"
+              >
+                <span className="truncate">{publishedVideoUrl}</span>
+                <ExternalLink className="w-3 h-3 shrink-0 text-zinc-400" />
+              </a>
+            ) : (
+              <span className="text-[11px] text-zinc-400 font-mono">
+                {script.title || 'Video'} successfully uploaded to channel.
+              </span>
+            )}
+
+            <div className="flex items-center justify-between pt-0.5 text-[10px]">
+              {channel && (
+                <a
+                  href={channel.channelUrl || `https://www.youtube.com/${channel.handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                >
+                  <span>Channel: {channel.name}</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+              {publishedVideoUrl && (
+                <a
+                  href={publishedVideoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 ml-auto"
+                >
+                  <span>Open Video</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>

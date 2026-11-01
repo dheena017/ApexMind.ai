@@ -24,7 +24,11 @@ class Settings:
 
     # Google Auth & Search
     GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", os.environ.get("VITE_GOOGLE_CLIENT_ID", ""))
-    GOOGLE_SECRET: str = os.environ.get("GOOGLE_SECRET", "")
+    GOOGLE_SECRET: str = (
+        os.environ.get("GOOGLE_SECRET")
+        or os.environ.get("GOOGLE_CLIENT_SECRET")
+        or os.environ.get("VITE_GOOGLE_CLIENT_SECRET", "")
+    )
     GOOGLE_SEARCH_API_KEY: str = os.environ.get("GOOGLE_SEARCH_API_KEY", "")
     GOOGLE_CSE_ID: str = os.environ.get("GOOGLE_CSE_ID", "")
 

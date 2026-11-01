@@ -226,7 +226,14 @@ export const TimelineTransitionButton: React.FC<TimelineTransitionButtonProps> =
   return (
     <button
       type="button"
+      onPointerDown={(e) => {
+        e.stopPropagation();
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+      }}
       onClick={(e) => {
+        e.preventDefault();
         e.stopPropagation();
         onClick();
       }}
@@ -236,7 +243,7 @@ export const TimelineTransitionButton: React.FC<TimelineTransitionButtonProps> =
         top: `${topPx}px`,
         transform: 'translate(-50%, -50%)',
       }}
-      className={`group absolute z-35 flex items-center justify-center cursor-pointer select-none transition-all duration-150 hover:scale-115 active:scale-95 shadow-md ${
+      className={`group absolute z-40 pointer-events-auto flex items-center justify-center cursor-pointer select-none transition-all duration-150 hover:scale-115 active:scale-95 shadow-md ${
         isTransitionActive
           ? 'p-[2px] rounded-[6px] bg-[#141417] border border-black/80 ring-1 ring-white/15 hover:ring-white/30'
           : 'w-[16px] h-[16px] rounded-[4px] bg-[#1A1A20] hover:bg-[#262630] border border-white/20 hover:border-amber-400/80 text-neutral-400 hover:text-white'

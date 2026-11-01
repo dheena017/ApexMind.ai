@@ -39,6 +39,7 @@ from .schemas import (
     AddPlaylistItemRequest,
     ReplyCommentRequest,
     TokenConnectRequest,
+    CodeConnectRequest,
     PublishVideoRequest,
     PublishVideoResponse,
 )
@@ -612,6 +613,25 @@ async def post_comment_reply_alias(payload: ReplyCommentRequest):
 # ==============================================================================
 # Domain 5: Google YouTube Channel Connect & OAuth Status
 # ==============================================================================
+
+@router.post(
+    "/api/youtube/oauth/code",
+    summary="Exchange Google Auth Code for Tokens",
+    description="Exchanges Google auth code for access & refresh tokens, enabling persistent live YouTube uploads.",
+)
+async def post_exchange_oauth_code(payload: CodeConnectRequest):
+    try:
+        redirect_uri = payload.redirectUri or "postmessage"
+        res = handle_oauth_callback(payload.code, redirect_uri)
+        return {
+            "success": True,
+            "message": f"Successfully connected YouTube channel '{res.get('channel', {}).get('name', 'YouTube')}' with offline refresh token",
+            "channel": res.get("channel"),
+        }
+    except Exception as e:
+        logger.error(f"Error exchanging Google OAuth code: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to authenticate YouTube channel: {str(e)}")
+
 
 @router.post(
     "/api/youtube/connect",

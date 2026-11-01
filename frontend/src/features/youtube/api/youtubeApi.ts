@@ -205,6 +205,19 @@ export const youtubeApi = {
 
   // ── YouTube Channel Connection ─────────────────────────────────────────────
 
+  async connectWithCode(code: string, redirectUri = 'postmessage'): Promise<{ success: boolean; channel: YouTubeChannel; message: string }> {
+    const res = await fetch(apiUrl('/api/youtube/oauth/code'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, redirectUri }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to authenticate channel with authorization code' }));
+      throw new Error(err.detail || 'Failed to authenticate channel with authorization code');
+    }
+    return res.json();
+  },
+
   async connectWithToken(accessToken: string): Promise<{ success: boolean; channel: YouTubeChannel; message: string }> {
     const res = await fetch(apiUrl('/api/youtube/connect'), {
       method: 'POST',

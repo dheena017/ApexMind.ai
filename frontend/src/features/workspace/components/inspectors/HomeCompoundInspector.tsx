@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Clock,
   Download,
+  Upload,
   Smartphone,
 } from 'lucide-react';
 import { GeneratedScript } from '../../types';
@@ -206,6 +207,19 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               <Youtube className="w-4 h-4" />
               {publishing ? 'Publishing...' : publishedSuccess ? '✓ Published to YouTube!' : 'Publish to YouTube'}
             </button>
+
+            {publishedSuccess && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('workspace:reset-publish'));
+                }}
+                className="w-full mt-2 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-[#202026] hover:bg-[#2C2C34] text-zinc-200 hover:text-white border border-[#32323C] cursor-pointer transition-colors shadow-xs"
+              >
+                <Upload className="w-3.5 h-3.5 text-sky-400" />
+                <span>Upload Another Video to YouTube</span>
+              </button>
+            )}
           </div>
         )}
 

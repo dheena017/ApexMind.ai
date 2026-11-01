@@ -126,8 +126,15 @@ def publish_video_to_shorts(
                         caption_font="Impact",
                         caption_transform="uppercase",
                     )
-                    if rendered.get("video_path") and Path(rendered["video_path"]).exists():
-                        video_file = rendered["video_path"]
+                    cand_path = rendered.get("video_path") or rendered.get("videoPath")
+                    if not cand_path and rendered.get("filename"):
+                        cand_path = str((Path("backend/data/rendered_shorts") / rendered["filename"]).resolve())
+                    if not cand_path and rendered.get("videoUrl"):
+                        fname = rendered["videoUrl"].split("/")[-1]
+                        cand_path = str((Path("backend/data/rendered_shorts") / fname).resolve())
+
+                    if cand_path and Path(cand_path).exists():
+                        video_file = cand_path
                         logger.info(f"Studio video successfully rendered for YouTube: {video_file}")
                 except Exception as studio_err:
                     logger.warning(f"Studio render engine exception ({studio_err}), falling back to direct vertical renderer.")
@@ -169,8 +176,16 @@ def publish_video_to_shorts(
         custom_id=real_video_id,
     )
     created["liveUploaded"] = live_uploaded
+    created["videoUrl"] = real_video_url
+    created["shortsUrl"] = f"https://www.youtube.com/shorts/{real_video_id}" if real_video_id else real_video_url
+    created["videoId"] = real_video_id
+
     return {
         "success": True,
         "video": created,
+        "videoId": real_video_id,
+        "videoUrl": real_video_url,
+        "shortsUrl": f"https://www.youtube.com/shorts/{real_video_id}" if real_video_id else real_video_url,
         "liveUploaded": live_uploaded,
+        "message": "Video successfully uploaded to YouTube Shorts!" if live_uploaded else "Video saved to Studio library.",
     }

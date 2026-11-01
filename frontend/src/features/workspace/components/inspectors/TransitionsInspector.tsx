@@ -83,11 +83,21 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
   // Listen to open-inspector-tab & clip selection details
   useEffect(() => {
     const handleOpenTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ compound?: string; clipId?: string; track?: 'video' | 'image'; transition?: string }>).detail;
-      if (detail && (detail.compound === 'transitions' || !detail.compound)) {
+      const detail = (e as CustomEvent<{
+        compound?: string;
+        subTab?: string;
+        clipId?: string;
+        track?: 'video' | 'image';
+        transition?: string;
+        transitionDuration?: number;
+      }>).detail;
+      if (detail && (detail.compound === 'transitions' || detail.subTab === 'transitions' || !detail.compound)) {
         if (detail.track) setTargetTrack(detail.track);
         if (detail.clipId) setTargetClipId(detail.clipId);
         if (detail.transition !== undefined) setActiveTransition(detail.transition || 'none');
+        if (typeof detail.transitionDuration === 'number') {
+          setTransitionDuration(detail.transitionDuration);
+        }
       }
     };
 
@@ -206,6 +216,32 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-y-auto custom-scrollbar p-3 gap-3.5">
+      {/* ── Active Clip Target Header ── */}
+      {targetClipId ? (
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0 animate-pulse" />
+            <span className="font-bold text-amber-200 truncate">
+              Transition for Clip: {targetClipId}
+            </span>
+          </div>
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+            {targetTrack} Track
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+            <span className="font-bold text-blue-200 truncate">
+              Timeline Transition Studio
+            </span>
+          </div>
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase">
+            All Clips
+          </span>
+        </div>
+      )}
 
 
       {/* ── Transition Duration Slider & Quick Presets ── */}

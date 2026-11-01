@@ -3589,6 +3589,31 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       onDeleteClip={(clipId) => handleDeleteVideoClip(clipId)}
                       onDuplicateClip={(clipId) => handleDuplicateVideoClip(clipId)}
                       onSplitClip={(clipId) => handleSplitVideoClip(clipId)}
+                      onOpenTransition={(clip, _nextClip) => {
+                        handleSelectClip({ track: 'video', clipId: clip.id, all: false }, 'video');
+                        window.dispatchEvent(
+                          new CustomEvent('workspace:select-compound', {
+                            detail: {
+                              compound: 'transitions',
+                              openInspector: true,
+                              selectedClip: { track: 'video', clipId: clip.id, all: false },
+                            },
+                          })
+                        );
+                        window.dispatchEvent(
+                          new CustomEvent('workspace:open-inspector-tab', {
+                            detail: {
+                              compound: 'transitions',
+                              subTab: 'transitions',
+                              tab: 'transitions',
+                              track: 'video',
+                              clipId: clip.id,
+                              transition: clip.transition,
+                              transitionDuration: clip.transitionDuration,
+                            },
+                          })
+                        );
+                      }}
                       onSelect={() => handleSelectClip({ track: 'video' }, 'video')}
                       onPointerDownMove={(e) => {
                         const first = videoClips[0];
@@ -3709,6 +3734,31 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                       onDeleteClip={(clipId) => handleDeleteImageClip(clipId)}
                       onDuplicateClip={(clipId) => handleDuplicateImageClip(clipId)}
                       onSplitClip={(clipId) => handleSplitImageClip(clipId)}
+                      onOpenTransition={(clip, _nextClip) => {
+                        handleSelectClip({ track: 'image', clipId: clip.id, all: false }, 'video');
+                        window.dispatchEvent(
+                          new CustomEvent('workspace:select-compound', {
+                            detail: {
+                              compound: 'transitions',
+                              openInspector: true,
+                              selectedClip: { track: 'image', clipId: clip.id, all: false },
+                            },
+                          })
+                        );
+                        window.dispatchEvent(
+                          new CustomEvent('workspace:open-inspector-tab', {
+                            detail: {
+                              compound: 'transitions',
+                              subTab: 'transitions',
+                              tab: 'transitions',
+                              track: 'image',
+                              clipId: clip.id,
+                              transition: clip.transition,
+                              transitionDuration: clip.transitionDuration,
+                            },
+                          })
+                        );
+                      }}
                       onSelect={() => handleSelectClip({ track: 'image' }, 'video')}
                       onPointerDownMove={(e) => {
                         const first = imageClips[0];

@@ -233,6 +233,9 @@ export const workspaceApi = {
     audioUrl?: string;
     musicUrl?: string;
     subtitles?: any[];
+    videoClips?: any[];
+    imageClips?: any[];
+    aspectRatio?: string;
     duration?: number;
     description?: string;
     tags?: string[];
@@ -254,7 +257,13 @@ export const workspaceApi = {
       throw new Error(errDetail);
     }
     consoleLogger.success('YouTube', `Short published to catalog: ${data.video?.title}`, data.video);
-    return data.video;
+    return {
+      ...(data.video || {}),
+      videoUrl: data.videoUrl || data.video?.videoUrl || data.video?.video_url,
+      shortsUrl: data.shortsUrl || data.video?.shortsUrl,
+      videoId: data.videoId || data.video?.id || data.video?.videoId,
+      liveUploaded: Boolean(data.liveUploaded || data.video?.liveUploaded),
+    };
   },
 
   // Search free open-source videos via Pexels, Pixabay, Wikimedia, Google CSE, or CC0 open stock loops

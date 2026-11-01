@@ -371,7 +371,28 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
             variant="seam"
             onClick={() => {
               if (onSelectClip) onSelectClip(clip.id); else onSelect?.();
-              window.dispatchEvent(new CustomEvent('workspace:open-inspector-tab', { detail: { compound: 'video', subTab: 'transitions', clipId: clip.id } }));
+              window.dispatchEvent(
+                new CustomEvent('workspace:select-compound', {
+                  detail: {
+                    compound: 'transitions',
+                    openInspector: true,
+                    selectedClip: { track: 'image', clipId: clip.id, all: false },
+                  },
+                })
+              );
+              window.dispatchEvent(
+                new CustomEvent('workspace:open-inspector-tab', {
+                  detail: {
+                    compound: 'transitions',
+                    subTab: 'transitions',
+                    tab: 'transitions',
+                    track: 'image',
+                    clipId: clip.id,
+                    transition: activeTransition,
+                    transitionDuration: activeDuration,
+                  },
+                })
+              );
               onOpenTransition?.(clip, nextClip, 'transition');
             }}
           />
