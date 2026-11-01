@@ -1133,12 +1133,21 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const motionPattern = aiMotionPatterns[idx % aiMotionPatterns.length];
         const isLastScene = idx === (detail.storyboard?.length ?? 1) - 1;
 
+        const isImg = (u?: string) => Boolean(u && typeof u === 'string' && u.trim() && !u.includes('.mp4') && !u.includes('.webm') && !u.includes('.mov'));
+        const resolvedPoster = isImg(scene.posterUrl)
+          ? scene.posterUrl
+          : isImg(scene.thumbnailUrl)
+          ? scene.thumbnailUrl
+          : isImg(scene.mediaType === 'image' ? scene.mediaUrl : undefined)
+          ? scene.mediaUrl
+          : (customImageUrl || activeBackdrop?.imageUrl || fallbackBackdrop.imageUrl);
+
         newVideoClips.push({
           id: clipId,
           type: 'video',
           url: resolvedUrl,
-          posterUrl: scene.posterUrl || scene.thumbnailUrl || (scene.mediaType === 'image' ? scene.mediaUrl : undefined),
-          thumbnailUrl: scene.thumbnailUrl || scene.posterUrl,
+          posterUrl: resolvedPoster,
+          thumbnailUrl: resolvedPoster,
           name: clipName,
           start: clipStart,
           duration: clipDuration,
@@ -1488,12 +1497,21 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         const isLastScene = idx === (script.storyboard?.length ?? 1) - 1;
         const motionPattern = aiMotionPatterns[idx % aiMotionPatterns.length];
 
+        const isImg = (u?: string) => Boolean(u && typeof u === 'string' && u.trim() && !u.includes('.mp4') && !u.includes('.webm') && !u.includes('.mov'));
+        const resolvedPoster = isImg(scene.posterUrl)
+          ? scene.posterUrl
+          : isImg(scene.thumbnailUrl)
+          ? scene.thumbnailUrl
+          : isImg(scene.mediaType === 'image' ? scene.mediaUrl : undefined)
+          ? scene.mediaUrl
+          : (customImageUrl || activeBackdrop?.imageUrl || fallbackBackdrop.imageUrl);
+
         initialVideos.push({
           id: `sb-${scene.sceneNumber || idx + 1}-${Date.now()}`,
           type: 'video',
           url: resolvedUrl,
-          posterUrl: scene.posterUrl || scene.thumbnailUrl || (scene.mediaType === 'image' ? scene.mediaUrl : undefined),
-          thumbnailUrl: scene.thumbnailUrl || scene.posterUrl,
+          posterUrl: resolvedPoster,
+          thumbnailUrl: resolvedPoster,
           name: scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`,
           start: clipStart,
           duration: clipDuration,

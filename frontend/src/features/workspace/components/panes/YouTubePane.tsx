@@ -327,17 +327,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
           </div>
         </div>
 
-        {onNavigate && (
-          <button
-            type="button"
-            onClick={() => onNavigate('youtube')}
-            className="h-7 px-2.5 rounded-md bg-[#222226] hover:bg-[#2C2C32] text-[11px] font-medium text-white transition-colors cursor-pointer border border-[#323238] flex items-center gap-1 shrink-0"
-            title="Open full YouTube Channel Hub"
-          >
-            <ExternalLink className="w-3 h-3 text-[#A1A1AA]" />
-            <span className="hidden sm:inline">Channel Hub</span>
-          </button>
-        )}
+
       </div>
 
       {/* ── Connected YouTube Channel Header Box (Always visible at top) ── */}

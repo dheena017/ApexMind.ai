@@ -1131,9 +1131,12 @@ def get_authenticated_youtube_client() -> Optional[Any]:
         except Exception:
             pass
 
+    raw_refresh = ch.get("refresh_token")
+    refresh_token = str(raw_refresh).strip() if raw_refresh and str(raw_refresh).strip() else None
+
     creds = Credentials(
         token=ch.get("access_token"),
-        refresh_token=ch.get("refresh_token"),
+        refresh_token=refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=cfg["client_id"],
         client_secret=cfg["client_secret"],
@@ -1141,16 +1144,20 @@ def get_authenticated_youtube_client() -> Optional[Any]:
         expiry=expiry,
     )
 
-    if (not creds.valid or creds.expired) and ch.get("refresh_token"):
-        try:
-            creds.refresh(Request())
-            if creds.token and ch.get("id"):
-                from backend.database.repository import update_channel_access_token
-                new_expiry = creds.expiry.isoformat() + "Z" if creds.expiry else None
-                update_channel_access_token(ch["id"], creds.token, new_expiry)
-                logger.info(f"Proactively refreshed and saved OAuth token for channel '{ch.get('name')}'")
-        except Exception as e:
-            logger.error(f"Failed to refresh YouTube OAuth credentials: {e}")
+    if (creds.expired or not creds.valid):
+        if refresh_token:
+            try:
+                creds.refresh(Request())
+                if creds.token and ch.get("id"):
+                    from backend.database.repository import update_channel_access_token
+                    new_expiry = creds.expiry.isoformat() + "Z" if creds.expiry else None
+                    update_channel_access_token(ch["id"], creds.token, new_expiry)
+                    logger.info(f"Proactively refreshed and saved OAuth token for channel '{ch.get('name')}'")
+            except Exception as e:
+                logger.error(f"Failed to refresh YouTube OAuth credentials: {e}")
+                return None
+        else:
+            logger.warning("YouTube access token has expired and no refresh token is available.")
             return None
 
     return build("youtube", "v3", credentials=creds, cache_discovery=False)
@@ -1231,6 +1238,12 @@ def upload_video_to_live_youtube(
             if status:
                 logger.info(f"[YouTube Upload] Progress: {int(status.progress() * 100)}%")
         except Exception as e:
+            err_str = str(e).lower()
+            if "refresh_token" in err_str or "invalid_grant" in err_str or "unauthorized" in err_str or "permission_denied" in err_str:
+                logger.error(f"[YouTube Upload] Unrecoverable authentication error during upload: {e}")
+                raise RuntimeError(
+                    "YouTube authentication failed. Please reconnect or re-authorize your YouTube channel in settings to refresh your credentials."
+                ) from e
             retries += 1
             if retries > max_retries:
                 logger.error(f"[YouTube Upload] Max retries ({max_retries}) exceeded during upload: {e}")

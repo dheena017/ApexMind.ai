@@ -227,6 +227,7 @@ export default function App() {
     (pane: WorkspaceTabType) => {
       setActiveWorkspacePane(pane);
       const targetRoute = `workspace-${pane}` as PageRoute;
+      setActivePage(targetRoute);
       // Preserve active query params (e.g. videoId) when changing tabs
       const currentParams = getQueryParams();
       const targetPath = buildRouteUrl(targetRoute, currentParams);

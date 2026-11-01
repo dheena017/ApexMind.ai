@@ -253,7 +253,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
 
             {/* Frame-by-frame Video Filmstrip across the box */}
             <FilmstripTrackBackground
-              imageUrl={clip.posterUrl || clip.thumbnailUrl || clip.url || mediaUrl || posterUrl}
+              imageUrl={clip.posterUrl || clip.thumbnailUrl || posterUrl || clip.url || mediaUrl}
               posterUrl={clip.posterUrl || clip.thumbnailUrl || posterUrl}
               videoUrl={clip.url || mediaUrl}
               count={Math.max(4, Math.min(14, Math.round((clip.duration || 3) * 2)))}
