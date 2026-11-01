@@ -90,6 +90,11 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
     return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);
   }, [video?.videoUrl]);
 
+  const hasLiveVideo = Boolean(resolvedVideoUrl && !videoFailed);
+  const hasLiveAudio = Boolean(resolvedAudioUrl && !audioFailed);
+  // Audio tag should only play when there is NO live video (e.g. static image preview)
+  const shouldPlaySeparateAudio = !hasLiveVideo && hasLiveAudio;
+
   // Reset state on video change
   useEffect(() => {
     setIsPlaying(false);
@@ -117,19 +122,16 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
 
   // Sync media play/pause
   const executePlay = useCallback(async () => {
-    let playSuccessful = false;
     try {
       const promises: Promise<void>[] = [];
-      if (videoRef.current && !videoFailed && resolvedVideoUrl) {
+      if (hasLiveVideo && videoRef.current) {
         promises.push(videoRef.current.play());
-      }
-      if (audioRef.current && !audioFailed && resolvedAudioUrl) {
+      } else if (shouldPlaySeparateAudio && audioRef.current) {
         promises.push(audioRef.current.play());
       }
       if (promises.length > 0) {
         await Promise.all(promises);
       }
-      playSuccessful = true;
       setAutoplayBlocked(false);
       setIsPlaying(true);
     } catch (err: any) {
@@ -143,7 +145,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
         setIsPlaying(true);
       }
     }
-  }, [videoFailed, audioFailed, resolvedVideoUrl, resolvedAudioUrl]);
+  }, [hasLiveVideo, shouldPlaySeparateAudio]);
 
   const executePause = useCallback(() => {
     if (videoRef.current) {
@@ -206,8 +208,6 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
 
   // Video time update handler
   const handleVideoTimeUpdate = () => {
-    // If audio is also playing, let audio be master clock
-    if (resolvedAudioUrl && !audioFailed && audioRef.current) return;
     if (!videoRef.current) return;
     const cur = videoRef.current.currentTime;
     const dur = videoRef.current.duration || duration;
@@ -379,16 +379,13 @@ ${video.tags || ''}
   const quoteWords = (video.quote || '').split(' ');
   const highlightedWordCount = Math.floor((progress / 100) * quoteWords.length);
 
-  const hasLiveVideo = Boolean(resolvedVideoUrl && !videoFailed);
-  const hasLiveAudio = Boolean(resolvedAudioUrl && !audioFailed);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-fade-in font-sans-studio">
       {/* Click outside to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Hidden Audio Player for Synchronized AI Voiceover */}
-      {resolvedAudioUrl && !audioFailed && (
+      {/* Audio Player for Static Backdrop Voiceover (only when no native video MP4 exists) */}
+      {shouldPlaySeparateAudio && (
         <audio
           ref={audioRef}
           src={resolvedAudioUrl}
@@ -439,7 +436,7 @@ ${video.tags || ''}
                 onTimeUpdate={handleVideoTimeUpdate}
                 onLoadedMetadata={(e) => {
                   const dur = (e.target as HTMLVideoElement).duration;
-                  if (!hasLiveAudio && dur && !isNaN(dur) && dur > 0) setDuration(dur);
+                  if (dur && !isNaN(dur) && dur > 0) setDuration(dur);
                 }}
                 onError={() => {
                   console.warn('Video failed to stream smoothly. Falling back to HD animated backdrop.');
@@ -465,67 +462,69 @@ ${video.tags || ''}
               </div>
             )}
 
-            {/* Floating Dynamic Motivational Typography Overlay */}
-            <div className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none z-10 text-center">
-              {/* Top category pill & live status */}
-              <div className="pt-2 flex items-center justify-between">
-                <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-black/60 backdrop-blur-md text-[#60A5FA] border border-[#3B82F6]/30 shadow-md">
-                  {video.category.split('&')[0].trim()}
-                </span>
-                {hasLiveAudio && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-md">
-                    <Mic className="w-2.5 h-2.5" />
-                    <span>{video.voice}</span>
+            {/* Floating Dynamic Motivational Typography Overlay - ONLY when NOT a live video */}
+            {!hasLiveVideo && (
+              <div className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none z-10 text-center">
+                {/* Top category pill & live status */}
+                <div className="pt-2 flex items-center justify-between">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-black/60 backdrop-blur-md text-[#60A5FA] border border-[#3B82F6]/30 shadow-md">
+                    {video.category.split('&')[0].trim()}
                   </span>
-                )}
-              </div>
-
-              {/* Center quote typography with dynamic progress highlight */}
-              <div className="px-1.5 sm:px-2 py-4">
-                <div className="text-white text-xs sm:text-sm font-extrabold uppercase tracking-wide leading-snug drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
-                  {quoteWords.map((word, idx) => {
-                    const isPassed = idx <= highlightedWordCount;
-                    return (
-                      <span
-                        key={idx}
-                        className={`transition-colors duration-200 inline-block mr-1 ${
-                          isPassed
-                            ? 'text-white underline decoration-[#3B82F6] decoration-2'
-                            : 'text-white/70'
-                        }`}
-                      >
-                        {word}
-                      </span>
-                    );
-                  })}
+                  {hasLiveAudio && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-md">
+                      <Mic className="w-2.5 h-2.5" />
+                      <span>{video.voice}</span>
+                    </span>
+                  )}
                 </div>
 
-                {video.hook && (
-                  <div className="mt-2.5 inline-block px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm border border-amber-500/30">
-                    <p className="text-[#FBBF24] text-[10px] font-bold drop-shadow-md flex items-center justify-center gap-1">
-                      <Flame className="w-3 h-3 text-amber-400" />
-                      <span>{video.hook}</span>
-                    </p>
+                {/* Center quote typography with dynamic progress highlight */}
+                <div className="px-1.5 sm:px-2 py-4">
+                  <div className="text-white text-xs sm:text-sm font-extrabold uppercase tracking-wide leading-snug drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
+                    {quoteWords.map((word, idx) => {
+                      const isPassed = idx <= highlightedWordCount;
+                      return (
+                        <span
+                          key={idx}
+                          className={`transition-colors duration-200 inline-block mr-1 ${
+                            isPassed
+                              ? 'text-white underline decoration-[#3B82F6] decoration-2'
+                              : 'text-white/70'
+                          }`}
+                        >
+                          {word}
+                        </span>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
 
-              {/* Bottom: Audio Visualizer Waves (when playing) + Watermark */}
-              <div className="pb-10 flex flex-col items-center gap-1.5">
-                {isPlaying && (
-                  <div className="flex items-center gap-1 h-3">
-                    <span className="w-0.5 h-full bg-[#3B82F6] rounded-full animate-pulse" />
-                    <span className="w-0.5 h-2/3 bg-[#60A5FA] rounded-full animate-bounce" />
-                    <span className="w-0.5 h-full bg-[#3B82F6] rounded-full animate-pulse" />
-                    <span className="w-0.5 h-4/5 bg-[#93C5FD] rounded-full animate-bounce" />
-                    <span className="w-0.5 h-1/2 bg-[#3B82F6] rounded-full animate-pulse" />
-                  </div>
-                )}
-                <span className="text-[10px] font-bold text-white/75 tracking-wider drop-shadow-md">
-                  @ApexMind.ai
-                </span>
+                  {video.hook && (
+                    <div className="mt-2.5 inline-block px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm border border-amber-500/30">
+                      <p className="text-[#FBBF24] text-[10px] font-bold drop-shadow-md flex items-center justify-center gap-1">
+                        <Flame className="w-3 h-3 text-amber-400" />
+                        <span>{video.hook}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom: Audio Visualizer Waves (when playing) + Watermark */}
+                <div className="pb-10 flex flex-col items-center gap-1.5">
+                  {isPlaying && (
+                    <div className="flex items-center gap-1 h-3">
+                      <span className="w-0.5 h-full bg-[#3B82F6] rounded-full animate-pulse" />
+                      <span className="w-0.5 h-2/3 bg-[#60A5FA] rounded-full animate-bounce" />
+                      <span className="w-0.5 h-full bg-[#3B82F6] rounded-full animate-pulse" />
+                      <span className="w-0.5 h-4/5 bg-[#93C5FD] rounded-full animate-bounce" />
+                      <span className="w-0.5 h-1/2 bg-[#3B82F6] rounded-full animate-pulse" />
+                    </div>
+                  )}
+                  <span className="text-[10px] font-bold text-white/75 tracking-wider drop-shadow-md">
+                    @ApexMind.ai
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Tap to Unmute Overlay if browser blocked initial autoplay sound */}
             {autoplayBlocked && (
@@ -669,7 +668,7 @@ ${video.tags || ''}
             {hasLiveAudio && (
               <>
                 <span>•</span>
-                <span className="text-[#60A5FA] font-medium">Fenrir Voice</span>
+                <span className="text-[#60A5FA] font-medium">{video.voice || 'Studio'} Voice</span>
               </>
             )}
           </div>
