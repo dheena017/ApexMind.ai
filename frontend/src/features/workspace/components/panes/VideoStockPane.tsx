@@ -46,6 +46,224 @@ const SEARCH_TOPICS = ['#nature', '#mountains', '#forest', '#ocean', '#waterfall
 
 const LOCAL_STORAGE_VIDEOS_KEY = 'apexmind_custom_videos';
 
+interface VideoCardProps {
+  vid: StockVideoItem;
+  isSelected: boolean;
+  isUsedInTimeline: boolean;
+  playbackSpeed: number;
+  activeTab: string;
+  onApply: (vid: StockVideoItem) => void;
+  onAddToTimeline: (vid: StockVideoItem, e?: React.MouseEvent) => void;
+  onDeleteSaved?: (id: string, e: React.MouseEvent) => void;
+}
+
+const VideoCard: React.FC<VideoCardProps> = React.memo(({
+  vid,
+  isSelected,
+  isUsedInTimeline,
+  playbackSpeed,
+  activeTab,
+  onApply,
+  onAddToTimeline,
+  onDeleteSaved,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const handleMouseEnter = () => {
+    // 120ms debounce prevents mounting video decoder while user is rapidly scrolling past
+    hoverTimerRef.current = setTimeout(() => {
+      setIsHovered(true);
+    }, 120);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setIsHovered(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isHovered && videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isHovered, playbackSpeed]);
+
+  const hasPoster = Boolean(vid.posterUrl) && !imgError;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onApply(vid)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onApply(vid);
+        }
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
+      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#141418] transition-all cursor-pointer text-left flex flex-col justify-between transform-gpu ${
+        isSelected
+          ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/10'
+          : 'border-[#26262D] hover:border-[#3E3E4A] hover:shadow-md'
+      }`}
+    >
+      {/* ── Visual Media: High-performance lazy image by default, video mounted ONLY on intentional hover ── */}
+      {isHovered ? (
+        <video
+          ref={videoRef}
+          src={vid.videoUrl}
+          poster={vid.posterUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      ) : hasPoster ? (
+        <img
+          src={vid.posterUrl}
+          alt={vid.title}
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgError(true)}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      ) : (
+        <video
+          src={vid.videoUrl}
+          preload="none"
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
+
+      {/* Top Badges (Crisp solid translucent instead of GPU-heavy backdrop-blur) */}
+      <div className="relative z-10 p-2 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full bg-black/80 text-[9px] font-semibold text-zinc-200 border border-white/10 uppercase tracking-wider">
+            {vid.category}
+          </span>
+          {vid.source && (
+            <span className="px-1.5 py-0.5 rounded-full bg-blue-950/90 text-[8.5px] font-bold text-blue-300 border border-blue-500/30 uppercase">
+              {vid.source}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {typeof vid.aestheticScore === 'number' && vid.aestheticScore > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-950/90 text-[8.5px] font-bold text-emerald-300 border border-emerald-500/40 flex items-center gap-0.5">
+              <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
+              {Math.round(vid.aestheticScore)}
+            </span>
+          )}
+          <span className="px-1.5 py-0.5 rounded-full bg-black/80 text-[9px] font-mono text-zinc-300 border border-white/10">
+            {vid.duration}
+          </span>
+        </div>
+      </div>
+
+      {/* Aesthetic & 60fps/120fps Quality Badges */}
+      {vid.aestheticBadges && vid.aestheticBadges.length > 0 && (
+        <div className="relative z-10 px-2 flex flex-wrap gap-1 pointer-events-none">
+          {vid.aestheticBadges.slice(0, 2).map((badge: string) => (
+            <span
+              key={badge}
+              className="px-1.5 py-0.5 rounded-full bg-amber-950/90 text-[8px] font-bold text-amber-300 border border-amber-500/40 flex items-center gap-0.5"
+            >
+              <span>⚡</span> {badge}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Center Play Indicator */}
+      {!isHovered && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          <div className="w-8 h-8 rounded-full bg-black/65 flex items-center justify-center border border-white/20 shadow-md">
+            <Play className="w-3.5 h-3.5 text-white ml-0.5" fill="white" />
+          </div>
+        </div>
+      )}
+
+      {/* Delete button for Saved clips */}
+      {activeTab === 'saved' && onDeleteSaved && (
+        <button
+          type="button"
+          onClick={(e) => onDeleteSaved(vid.id, e)}
+          className="absolute top-2 right-2 z-20 p-1.5 rounded-full bg-black/80 hover:bg-rose-600 text-white transition-colors"
+          title="Delete from Saved"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
+
+      {/* Bottom Info & Action Bar */}
+      <div className="relative z-10 bg-gradient-to-t from-black via-black/85 to-transparent p-2.5 pt-8 flex flex-col gap-1.5 pointer-events-auto">
+        <p className="text-[11px] font-semibold text-white leading-tight line-clamp-1 group-hover:text-blue-300 transition-colors drop-shadow-sm">
+          {vid.title}
+        </p>
+
+        <div className="flex items-center justify-between gap-1 pt-0.5">
+          <span className="text-[9px] text-zinc-400 font-mono flex items-center gap-1">
+            <span className={`w-1.5 h-1.5 rounded-full ${isUsedInTimeline ? 'bg-amber-400' : 'bg-emerald-400'} inline-block animate-pulse`} />
+            {isUsedInTimeline ? 'In Project' : 'Stock'}
+          </span>
+
+          <div className="flex items-center gap-1">
+            {isUsedInTimeline ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.dispatchEvent(new CustomEvent('workspace:remove-clip-by-url', { detail: { url: vid.videoUrl } }));
+                  toast.success(`Removed "${vid.title}" from Timeline`);
+                }}
+                className="px-2 py-0.5 rounded bg-rose-500/25 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-[9px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                title="Remove this video from Timeline Track"
+              >
+                <Trash2 className="w-2.5 h-2.5 stroke-[2.5]" />
+                Remove
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => onAddToTimeline(vid, e)}
+                className="px-2 py-0.5 rounded bg-amber-500/25 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 text-[9px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                title="Add to Timeline Track V1"
+              >
+                <Plus className="w-2.5 h-2.5 stroke-[3]" />
+                Track
+              </button>
+            )}
+            {isSelected && (
+              <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                Active
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   onSelectVideo,
   activeVideoUrl,
@@ -54,7 +272,6 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [videos, setVideos] = useState<StockVideoItem[]>([]);
   const [savedVideos, setSavedVideos] = useState<StockVideoItem[]>([]);
@@ -86,7 +303,6 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     return () => window.removeEventListener('workspace:timeline-state', handleTimelineState);
   }, []);
 
-  const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 
   // Load saved videos from localStorage
@@ -195,32 +411,14 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     setSelectedProvider(provId);
   };
 
-  const handleMouseEnter = (id: string) => {
-    setHoveredId(id);
-    const video = videoRefs.current[id];
-    if (video) {
-      video.playbackRate = playbackSpeed;
-      video.play().catch(() => {});
-    }
-  };
-
-  const handleMouseLeave = (id: string) => {
-    setHoveredId(null);
-    const video = videoRefs.current[id];
-    if (video) {
-      video.pause();
-      video.currentTime = 0;
-    }
-  };
-
-  const handleApply = (vid: StockVideoItem) => {
+  const handleApply = useCallback((vid: StockVideoItem) => {
     setSelectedId(vid.id);
     onSelectVideo(vid.videoUrl, vid.posterUrl);
     window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
     toast.success(`Applied "${vid.title}"`);
-  };
+  }, [onSelectVideo]);
 
-  const handleAddToTimeline = (vid: StockVideoItem, e?: React.MouseEvent) => {
+  const handleAddToTimeline = useCallback((vid: StockVideoItem, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setSelectedId(vid.id);
     window.dispatchEvent(
@@ -235,7 +433,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       })
     );
     toast.success(`Added "${vid.title}" to Timeline Track (V1)`);
-  };
+  }, []);
 
   const handleStageVideo = (vid: StockVideoItem) => setSelectedId(vid.id);
 
@@ -269,14 +467,16 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     setUrlVideoValid(null);
   };
 
-  const handleDeleteSaved = (id: string, e: React.MouseEvent) => {
+  const handleDeleteSaved = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = savedVideos.filter((item) => item.id !== id);
-    setSavedVideos(updated);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_VIDEOS_KEY, JSON.stringify(updated));
-    } catch {}
-  };
+    setSavedVideos((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_VIDEOS_KEY, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  }, []);
 
   const sourceList = activeTab === 'saved' ? savedVideos : videos;
 
@@ -650,160 +850,20 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
               /* Video Grid & Pagination */
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-2 gap-2.5">
-                {filteredVideos.map((vid) => {
-                  const isHovered = hoveredId === vid.id;
-                  const isSelected = selectedId === vid.id || (!selectedId && activeVideoUrl === vid.videoUrl);
-
-                  return (
-                    <div
+                  {filteredVideos.map((vid) => (
+                    <VideoCard
                       key={vid.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleApply(vid)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          handleApply(vid);
-                        }
-                      }}
-                      onMouseEnter={() => handleMouseEnter(vid.id)}
-                      onMouseLeave={() => handleMouseLeave(vid.id)}
-                      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#16161A] transition-all cursor-pointer text-left flex flex-col justify-between ${
-                        isSelected
-                          ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/10'
-                          : 'border-[#26262D] hover:border-[#3E3E4A] hover:shadow-md'
-                      }`}
-                    >
-                      {/* Video element for hover preview */}
-                      <video
-                        ref={(el) => {
-                          videoRefs.current[vid.id] = el;
-                        }}
-                        src={vid.videoUrl}
-                        poster={vid.posterUrl}
-                        loop
-                        muted
-                        playsInline
-                        preload="metadata"
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-
-                      {/* Top Glass Badges */}
-                      <div className="relative z-10 p-2 flex items-center justify-between pointer-events-none">
-                        <div className="flex items-center gap-1">
-                          <span className="px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-semibold text-zinc-200 border border-white/10 uppercase tracking-wider">
-                            {vid.category}
-                          </span>
-                          {vid.source && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-blue-950/80 backdrop-blur-md text-[8.5px] font-bold text-blue-300 border border-blue-500/30 uppercase">
-                              {vid.source}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {typeof vid.aestheticScore === 'number' && vid.aestheticScore > 0 && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-950/80 backdrop-blur-md text-[8.5px] font-bold text-emerald-300 border border-emerald-500/40 flex items-center gap-0.5">
-                              <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
-                              {Math.round(vid.aestheticScore)}
-                            </span>
-                          )}
-                          <span className="px-1.5 py-0.5 rounded-full bg-black/65 backdrop-blur-md text-[9px] font-mono text-zinc-300 border border-white/10">
-                            {vid.duration}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Aesthetic & 60fps/120fps Quality Badges */}
-                      {vid.aestheticBadges && vid.aestheticBadges.length > 0 && (
-                        <div className="relative z-10 px-2 flex flex-wrap gap-1 pointer-events-none">
-                          {vid.aestheticBadges.slice(0, 2).map((badge: string) => (
-                            <span
-                              key={badge}
-                              className="px-1.5 py-0.5 rounded-full bg-amber-950/80 backdrop-blur-md text-[8px] font-bold text-amber-300 border border-amber-500/40 flex items-center gap-0.5"
-                            >
-                              <span>⚡</span> {badge}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Center Play Indicator */}
-                      {!isHovered && (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                          <div className="w-8 h-8 rounded-full bg-black/55 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-md">
-                            <Play className="w-3.5 h-3.5 text-white ml-0.5" fill="white" />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Delete button for Saved clips */}
-                      {activeTab === 'saved' && (
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteSaved(vid.id, e)}
-                          className="absolute top-2 right-2 z-20 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors"
-                          title="Delete from Saved"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-
-                      {/* Bottom Info & Action Bar */}
-                      <div className="relative z-10 bg-gradient-to-t from-black via-black/80 to-transparent p-2.5 pt-8 flex flex-col gap-1.5 pointer-events-auto">
-                        <p className="text-[11px] font-semibold text-white leading-tight line-clamp-1 group-hover:text-blue-300 transition-colors drop-shadow-sm">
-                          {vid.title}
-                        </p>
-
-                        {(() => {
-                          const isUsedInTimeline = timelineVideoUrls.has(vid.videoUrl);
-                          return (
-                            <div className="flex items-center justify-between gap-1 pt-0.5">
-                              <span className="text-[9px] text-zinc-400 font-mono flex items-center gap-1">
-                                <span className={`w-1.5 h-1.5 rounded-full ${isUsedInTimeline ? 'bg-amber-400' : 'bg-emerald-400'} inline-block animate-pulse`} />
-                                {isUsedInTimeline ? 'In Project' : 'Stock'}
-                              </span>
-
-                              <div className="flex items-center gap-1">
-                                {isUsedInTimeline ? (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      window.dispatchEvent(new CustomEvent('workspace:remove-clip-by-url', { detail: { url: vid.videoUrl } }));
-                                      toast.success(`Removed "${vid.title}" from Timeline`);
-                                    }}
-                                    className="px-2 py-0.5 rounded bg-rose-500/25 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-[9px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                                    title="Remove this video from Timeline Track"
-                                  >
-                                    <Trash2 className="w-2.5 h-2.5 stroke-[2.5]" />
-                                    Remove
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => handleAddToTimeline(vid, e)}
-                                    className="px-2 py-0.5 rounded bg-amber-500/25 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 text-[9px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                                    title="Add to Timeline Track V1"
-                                  >
-                                    <Plus className="w-2.5 h-2.5 stroke-[3]" />
-                                    Track
-                                  </button>
-                                )}
-                                {isSelected && (
-                                  <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
-                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                    Active
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                      vid={vid}
+                      isSelected={selectedId === vid.id || (!selectedId && activeVideoUrl === vid.videoUrl)}
+                      isUsedInTimeline={timelineVideoUrls.has(vid.videoUrl)}
+                      playbackSpeed={playbackSpeed}
+                      activeTab={activeTab}
+                      onApply={handleApply}
+                      onAddToTimeline={handleAddToTimeline}
+                      onDeleteSaved={handleDeleteSaved}
+                    />
+                  ))}
+                </div>
 
               {/* Load More / Next Page button (Appends down by down like Image pane) */}
               {activeTab === 'catalog' && filteredVideos.length > 0 && (
