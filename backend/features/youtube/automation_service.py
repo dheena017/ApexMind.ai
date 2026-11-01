@@ -376,6 +376,22 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         elapsed = round(time.perf_counter() - start_time, 2)
         logger.info(f"[Automation] Pipeline completed in {elapsed}s for job '{job_id}' | Next run: {next_run} | Live: {is_live}")
 
+        # Step 8: Persist detailed entry to execution history log
+        try:
+            from backend.database.repository import add_automation_history
+            add_automation_history(
+                job_id=job_id,
+                status="success",
+                video_title=title,
+                video_url=rel_video_url,
+                youtube_url=youtube_url,
+                is_live=is_live,
+                duration_seconds=elapsed,
+                message=run_msg,
+            )
+        except Exception as hist_err:
+            logger.debug(f"[Automation] History log error: {hist_err}")
+
         return {
             "success": True,
             "jobId": job_id,
@@ -398,6 +414,18 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             last_run_message=str(e),
             last_is_live=False,
         )
+        try:
+            from backend.database.repository import add_automation_history
+            add_automation_history(
+                job_id=job_id,
+                status="failed",
+                video_title=title if 'title' in locals() and title else theme,
+                is_live=False,
+                duration_seconds=round(time.perf_counter() - start_time, 2),
+                message=str(e),
+            )
+        except Exception:
+            pass
         create_notification(
             title="Daily Automation Failed",
             message=f"Pipeline error for theme '{theme}': {str(e)}",

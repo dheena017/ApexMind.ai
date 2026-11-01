@@ -4,6 +4,7 @@ import {
   Clock,
   Zap,
   Play,
+  Pause,
   Plus,
   Trash2,
   CheckCircle2,
@@ -23,10 +24,14 @@ import {
   Video,
   Youtube,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  History,
+  BarChart3,
   Globe,
 } from 'lucide-react';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
-import { AutomationJob } from '@/src/features/youtube/types';
+import { AutomationJob, AutomationHistoryEntry } from '@/src/features/youtube/types';
 import { toast } from 'sonner';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
@@ -108,6 +113,20 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
   const [activePipelinePhase, setActivePipelinePhase] = useState<number>(0);
 
+  // Live countdown, Run History, Pause/Resume & Safe Delete state
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  const [historyByJob, setHistoryByJob] = useState<Record<string, AutomationHistoryEntry[]>>({});
+  const [loadingHistoryByJob, setLoadingHistoryByJob] = useState<Record<string, boolean>>({});
+  const [expandedHistoryJobId, setExpandedHistoryJobId] = useState<string | null>(null);
+  const [confirmDeleteJobId, setConfirmDeleteJobId] = useState<string | null>(null);
+  const [togglingJobId, setTogglingJobId] = useState<string | null>(null);
+
+  // Live tick every second for real-time countdown
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const loadAutomations = async () => {
     setLoading(true);
     try {
@@ -117,6 +136,29 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       console.warn('Failed to load automations:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadHistory = async (jobId: string, force = false) => {
+    if (!force && historyByJob[jobId]) return;
+    setLoadingHistoryByJob((prev) => ({ ...prev, [jobId]: true }));
+    try {
+      const entries = await youtubeApi.getAutomationHistory(jobId);
+      setHistoryByJob((prev) => ({ ...prev, [jobId]: entries }));
+    } catch (err) {
+      console.warn(`Failed to load history for ${jobId}:`, err);
+    } finally {
+      setLoadingHistoryByJob((prev) => ({ ...prev, [jobId]: false }));
+    }
+  };
+
+  const handleClearHistory = async (jobId: string) => {
+    try {
+      await youtubeApi.clearAutomationHistory(jobId);
+      setHistoryByJob((prev) => ({ ...prev, [jobId]: [] }));
+      toast.success('Run history cleared');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to clear history');
     }
   };
 
@@ -145,21 +187,29 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   };
 
   const handleToggle = async (id: string) => {
+    setTogglingJobId(id);
     try {
       const updated = await youtubeApi.toggleAutomation(id);
       setAutomations(updated);
-      toast.success('Automation schedule updated');
+      const target = updated.find((a) => a.id === id);
+      if (target?.active) {
+        toast.success(`Automation resumed: "${target.theme}"`);
+      } else {
+        toast.info(`Automation paused: "${target?.theme || 'Rule'}"`);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Could not toggle automation');
+    } finally {
+      setTogglingJobId(null);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this automated publishing rule?')) return;
+  const executeDelete = async (id: string) => {
     try {
       await youtubeApi.deleteAutomation(id);
       setAutomations((prev) => prev.filter((a) => a.id !== id));
-      toast.success('Automation rule deleted');
+      setConfirmDeleteJobId(null);
+      toast.success('Automation rule and history deleted');
     } catch (err: any) {
       toast.error(err.message || 'Could not delete automation');
     }
@@ -189,9 +239,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         toast.success(`Pipeline complete! "${title}" rendered and cataloged in Studio Library.`);
       }
       await loadAutomations();
+      await loadHistory(id, true);
     } catch (err: any) {
       toast.error(err.message || 'Pipeline execution failed');
       await loadAutomations();
+      await loadHistory(id, true);
     } finally {
       clearTimeout(phaseTimer1);
       clearTimeout(phaseTimer2);
@@ -271,20 +323,26 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     if (!isoString) return { display: 'Pending schedule', relative: 'Queued', isPast: false };
     try {
       const target = new Date(isoString);
-      const now = new Date();
-      const diffMs = target.getTime() - now.getTime();
-      const timeFormatted = target.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const diffMs = target.getTime() - currentTime;
+      const timeFormatted = target.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const dayFormatted = target.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
       if (diffMs > 0) {
-        const diffMins = Math.round(diffMs / 60000);
-        if (diffMins < 60) {
-          return { display: `${dayFormatted}, ${timeFormatted}`, relative: `in ${diffMins}m`, isPast: false };
+        const totalSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSecs / 3600);
+        const mins = Math.floor((totalSecs % 3600) / 60);
+        const secs = totalSecs % 60;
+        let relative = '';
+        if (hours > 0) {
+          relative = `in ${hours}h ${mins}m ${secs}s`;
+        } else if (mins > 0) {
+          relative = `in ${mins}m ${secs}s`;
+        } else {
+          relative = `in ${secs}s`;
         }
-        const diffHours = Math.round(diffMins / 60);
-        return { display: `${dayFormatted}, ${timeFormatted}`, relative: `in ~${diffHours}h`, isPast: false };
+        return { display: `${dayFormatted}, ${timeFormatted}`, relative, isPast: false };
       } else {
-        return { display: `${dayFormatted}, ${timeFormatted}`, relative: 'Queued (Next tick)', isPast: true };
+        return { display: `${dayFormatted}, ${timeFormatted}`, relative: 'Triggering now...', isPast: true };
       }
     } catch {
       return { display: isoString, relative: '', isPast: false };
@@ -518,13 +576,19 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                   const themeMeta = getThemeMeta(job.theme);
                   const scheduleLabel = formatScheduleLabel(job.publishTime || job.schedule);
                   const nextRunInfo = formatNextRunInfo(job.nextRun);
+                  const isExpandedHistory = expandedHistoryJobId === job.id;
+                  const historyList = historyByJob[job.id] || [];
+                  const isHistoryLoading = loadingHistoryByJob[job.id];
+                  const totalRunsCount = historyList.length > 0 ? historyList.length : (job.lastRun ? 1 : 0);
+                  const isConfirmingDelete = confirmDeleteJobId === job.id;
+                  const isToggling = togglingJobId === job.id;
 
                   return (
                     <div
                       key={job.id}
-                      className="p-3.5 rounded-xl bg-gradient-to-b from-[#18181D] to-[#141418] border border-[#26262E] hover:border-zinc-700 transition-all flex flex-col gap-3 shadow-md"
+                      className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-b from-[#18181D] to-[#141418] border border-[#26262E] hover:border-zinc-700/80 transition-all flex flex-col gap-3 shadow-md"
                     >
-                      {/* Top row: Theme Accent & Interactive Toggle */}
+                      {/* Top row: Theme Accent, Schedule Badges, Pause/Resume & Status Badge */}
                       <div className="flex items-start justify-between gap-2.5">
                         <div className="flex items-start gap-2.5 min-w-0">
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border text-base ${themeMeta.gradient}`}>
@@ -548,20 +612,40 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           </div>
                         </div>
 
-                        {/* Status Toggle Switch */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggle(job.id)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
-                            job.active
-                              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
-                              : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-400 hover:text-zinc-300'
-                          }`}
-                          title={job.active ? 'Click to Pause Automation' : 'Click to Activate Automation'}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${job.active ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
-                          <span>{job.active ? 'Active' : 'Paused'}</span>
-                        </button>
+                        {/* Status Toggle Switch & Pause/Resume */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            disabled={isToggling}
+                            onClick={() => handleToggle(job.id)}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer shadow-sm ${
+                              job.active
+                                ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            } disabled:opacity-50`}
+                            title={job.active ? 'Pause automated runs' : 'Resume automated runs'}
+                          >
+                            {isToggling ? (
+                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            ) : job.active ? (
+                              <Pause className="w-2.5 h-2.5 fill-current" />
+                            ) : (
+                              <Play className="w-2.5 h-2.5 fill-current" />
+                            )}
+                            <span>{job.active ? 'Pause' : 'Resume'}</span>
+                          </button>
+
+                          <span
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                              job.active
+                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
+                                : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-400'
+                            }`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${job.active ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
+                            <span>{job.active ? 'Active' : 'Paused'}</span>
+                          </span>
+                        </div>
                       </div>
 
                       {/* Schedule Timing & Visibility Bar */}
@@ -572,8 +656,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           <strong className="text-zinc-200">{nextRunInfo.display}</strong>
                           <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold border ${
                             nextRunInfo.isPast
-                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                              : 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
+                              : 'bg-blue-500/15 text-blue-300 border-blue-500/30 font-mono'
                           }`}>
                             {nextRunInfo.relative}
                           </span>
@@ -585,6 +669,24 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           <span className="font-semibold text-zinc-200 capitalize">
                             {job.privacyStatus === 'scheduled' ? 'Scheduled' : 'Public'}
                           </span>
+                        </div>
+                      </div>
+
+                      {/* Performance Metrics Strip */}
+                      <div className="grid grid-cols-3 gap-1.5 text-center">
+                        <div className="p-1.5 rounded-lg bg-[#141418] border border-[#222228]">
+                          <div className="text-[9px] text-zinc-500 font-mono uppercase">Total Runs</div>
+                          <div className="text-[11px] font-bold text-zinc-200 mt-0.5">{totalRunsCount} recorded</div>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-[#141418] border border-[#222228]">
+                          <div className="text-[9px] text-zinc-500 font-mono uppercase">Output Quality</div>
+                          <div className="text-[11px] font-bold text-zinc-200 mt-0.5">1080x1920 MP4</div>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-[#141418] border border-[#222228]">
+                          <div className="text-[9px] text-zinc-500 font-mono uppercase">Target</div>
+                          <div className="text-[11px] font-bold text-emerald-400 truncate mt-0.5">
+                            {authStatus?.connected ? (authStatus.channel?.name || 'YouTube Live') : 'Studio Library'}
+                          </div>
                         </div>
                       </div>
 
@@ -690,7 +792,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           )}
 
                           {/* Outcome Actions */}
-                          <div className="flex items-center gap-2 pt-1 border-t border-white/5">
+                          <div className="flex items-center gap-2 pt-1 border-t border-white/5 flex-wrap">
                             {job.lastVideoUrl && (
                               <>
                                 {job.lastIsLive ? (
@@ -750,6 +852,190 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                       )}
 
+                      {/* ── Collapsible Run History Drawer with Direct Video & Publish Links ── */}
+                      <div className="flex flex-col gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = isExpandedHistory ? null : job.id;
+                            setExpandedHistoryJobId(next);
+                            if (next) loadHistory(job.id);
+                          }}
+                          className="flex items-center justify-between w-full py-1.5 px-2.5 rounded-lg bg-[#131317] hover:bg-[#1A1A20] border border-[#24242C] text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <History className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Execution &amp; Video History</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#202026] text-zinc-400 font-mono">
+                              {totalRunsCount}
+                            </span>
+                          </span>
+                          {isExpandedHistory ? (
+                            <ChevronUp className="w-3.5 h-3.5 text-zinc-400" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                          )}
+                        </button>
+
+                        {isExpandedHistory && (
+                          <div className="p-2.5 rounded-lg bg-[#101014] border border-[#222228] flex flex-col gap-2 animate-fade-in">
+                            {isHistoryLoading ? (
+                              <div className="py-4 flex items-center justify-center gap-2 text-xs text-zinc-400">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                                <span>Loading execution records...</span>
+                              </div>
+                            ) : historyList.length === 0 ? (
+                              <div className="py-3 text-center text-xs text-zinc-500">
+                                No previous runs recorded yet for this automation rule.
+                              </div>
+                            ) : (
+                              <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                                {historyList.map((entry) => {
+                                  const isLiveShort = entry.isLive || (entry.status === 'success' && Boolean(entry.youtubeUrl));
+                                  return (
+                                    <div
+                                      key={entry.id}
+                                      className="p-2.5 rounded-lg bg-[#16161B] border border-[#26262E] flex flex-col gap-1.5 text-xs"
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-1.5">
+                                          {entry.status === 'success' ? (
+                                            isLiveShort ? (
+                                              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                                                <Youtube className="w-3 h-3 text-red-500" />
+                                                <span>Live YouTube Short</span>
+                                              </span>
+                                            ) : (
+                                              <span className="flex items-center gap-1 text-[10px] font-bold text-blue-400">
+                                                <Video className="w-3 h-3 text-blue-400" />
+                                                <span>Studio Catalog</span>
+                                              </span>
+                                            )
+                                          ) : (
+                                            <span className="flex items-center gap-1 text-[10px] font-bold text-rose-400">
+                                              <AlertCircle className="w-3 h-3 text-rose-400" />
+                                              <span>Failed</span>
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <span className="text-[9px] font-mono text-zinc-400">
+                                          {new Date(entry.executedAt).toLocaleString([], {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                          })}
+                                        </span>
+                                      </div>
+
+                                      {entry.videoTitle && (
+                                        <div className="text-[11px] font-semibold text-white truncate">
+                                          "{entry.videoTitle}"
+                                        </div>
+                                      )}
+
+                                      {entry.message && (
+                                        <p className="text-[10px] text-zinc-400 line-clamp-1">{entry.message}</p>
+                                      )}
+
+                                      {/* Links Row */}
+                                      <div className="flex items-center gap-2 pt-1 border-t border-white/5 flex-wrap">
+                                        {entry.youtubeUrl && (
+                                          <a
+                                            href={entry.youtubeUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400 transition-colors"
+                                          >
+                                            <Youtube className="w-3 h-3 text-red-500" />
+                                            <span>Watch Short</span>
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                          </a>
+                                        )}
+
+                                        {entry.videoUrl && (
+                                          <a
+                                            href={entry.videoUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[10px] font-bold text-blue-300 transition-colors"
+                                          >
+                                            <Video className="w-3 h-3 text-blue-400" />
+                                            <span>Open MP4</span>
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                          </a>
+                                        )}
+
+                                        {(entry.youtubeUrl || entry.videoUrl) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleCopyLink(entry.youtubeUrl || entry.videoUrl!, entry.id)}
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer ml-auto border border-zinc-700"
+                                          >
+                                            {copiedJobId === entry.id ? (
+                                              <>
+                                                <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                                <span className="text-emerald-400">Copied</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Copy className="w-2.5 h-2.5" />
+                                                <span>Copy Link</span>
+                                              </>
+                                            )}
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+
+                                <div className="flex justify-end pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleClearHistory(job.id)}
+                                    className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer"
+                                  >
+                                    Clear History
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Safe Delete Confirmation Banner ── */}
+                      {isConfirmingDelete && (
+                        <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 text-xs flex flex-col gap-2 animate-fade-in shadow-inner">
+                          <div className="flex items-center gap-2 text-rose-300 font-bold">
+                            <AlertCircle className="w-4 h-4 text-rose-400" />
+                            <span>Delete this automation schedule?</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-300 leading-relaxed">
+                            This will permanently remove <strong className="text-white">"{job.theme}"</strong> and all of its recorded history.
+                          </p>
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteJobId(null)}
+                              className="px-3 py-1 rounded bg-[#202026] hover:bg-[#2C2C34] text-zinc-300 text-[11px] font-semibold border border-[#32323A] transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => executeDelete(job.id)}
+                              className="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Confirm Delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Action buttons row */}
                       <div className="flex items-center justify-between gap-2 pt-0.5">
                         <button
@@ -778,8 +1064,12 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
                         <button
                           type="button"
-                          onClick={() => handleDelete(job.id)}
-                          className="w-8 h-8 rounded-lg bg-[#202026] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 border border-[#2E2E38] hover:border-rose-800/40 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                          onClick={() => setConfirmDeleteJobId(isConfirmingDelete ? null : job.id)}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer shrink-0 border ${
+                            isConfirmingDelete
+                              ? 'bg-rose-950/60 text-rose-300 border-rose-700/60'
+                              : 'bg-[#202026] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 border-[#2E2E38] hover:border-rose-800/40'
+                          }`}
                           title="Delete automation schedule"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

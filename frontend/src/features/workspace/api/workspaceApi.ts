@@ -266,6 +266,24 @@ export const workspaceApi = {
     };
   },
 
+  // Render Broadcast Full HD MP4 Video via /api/workspace/render-video
+  async renderVideo(payload: any): Promise<{ success: boolean; videoUrl?: string; filename?: string; duration?: number }> {
+    consoleLogger.info('Workspace', `[RenderVideo] Calling render API for 1080p MP4...`, payload);
+    const start = performance.now();
+    const res = await fetch(apiUrl('/api/workspace/render-video'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const duration = performance.now() - start;
+    consoleLogger.api('POST', '/api/workspace/render-video', res.status, duration);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Render failed' }));
+      throw new Error(err.detail || 'Failed to render studio video');
+    }
+    return res.json();
+  },
+
   // Search free open-source videos via Pexels, Pixabay, Wikimedia, Google CSE, or CC0 open stock loops
   async searchOpenVideos(
     query: string = '',

@@ -151,6 +151,19 @@ export interface YouTubeTranscriptSnippet {
   text: string;
 }
 
+export interface AutomationHistoryEntry {
+  id: string;
+  jobId: string;
+  status: 'success' | 'failed' | 'running';
+  videoTitle?: string;
+  videoUrl?: string;
+  youtubeUrl?: string;
+  isLive: boolean;
+  durationSeconds: number;
+  message?: string;
+  executedAt: string;
+}
+
 export interface AutomationJob {
   id: string;
   theme: string;
@@ -168,4 +181,5 @@ export interface AutomationJob {
   lastVideoUrl?: string;
   lastRunMessage?: string;
   lastIsLive?: boolean;
+  history?: AutomationHistoryEntry[];
 }

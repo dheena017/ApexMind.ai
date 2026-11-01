@@ -12,8 +12,8 @@ Architecture:
 import os
 import logging
 import urllib.parse
-from typing import Optional, List
-from fastapi import APIRouter, HTTPException, status, Request
+from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, HTTPException, status, Request, Body
 from fastapi.responses import RedirectResponse
 import tempfile
 from pathlib import Path
@@ -716,24 +716,52 @@ async def get_saved_channels(handle: Optional[str] = None):
 
 
 # ==============================================================================
-# Autonomous Daily YouTube Shorts Automation Schedules Endpoints
+# Autonomous Video Production & Publishing Schedules Endpoints
+# Primary: /api/schedules | Aliases: /api/automations, /api/youtube/automations
 # ==============================================================================
 
 @router.get(
-    "/api/youtube/automations",
-    summary="Get YouTube automation schedules",
-    description="Returns all recurring daily shorts publishing jobs.",
+    "/api/schedules",
+    tags=["Schedules & Automations"],
+    summary="List Automation Schedules",
+    description="Returns all active recurring automated video production and publishing schedules.",
 )
-async def get_youtube_automations_route():
+@router.get(
+    "/api/automations",
+    tags=["Schedules & Automations"],
+    summary="List Automation Schedules (alias)",
+    include_in_schema=False,
+)
+@router.get(
+    "/api/youtube/automations",
+    tags=["Schedules & Automations"],
+    summary="List Automation Schedules (legacy alias)",
+    include_in_schema=False,
+)
+async def list_automation_schedules_route():
     from backend.database.repository import get_automations
     return {"success": True, "data": get_automations()}
 
 
 @router.post(
-    "/api/youtube/automations",
-    summary="Create or schedule a daily Shorts automation",
+    "/api/schedules",
+    tags=["Schedules & Automations"],
+    summary="Create Automation Schedule",
+    description="Creates a recurring automated video generation, TTS narration, and publishing schedule.",
 )
-async def create_youtube_automation_route(payload: dict):
+@router.post(
+    "/api/automations",
+    tags=["Schedules & Automations"],
+    summary="Create Automation Schedule (alias)",
+    include_in_schema=False,
+)
+@router.post(
+    "/api/youtube/automations",
+    tags=["Schedules & Automations"],
+    summary="Create Automation Schedule (legacy alias)",
+    include_in_schema=False,
+)
+async def create_automation_schedule_route(payload: dict):
     from backend.database.repository import create_automation_job
     theme = payload.get("theme", "Stoic Mindset & Discipline")
     publish_time = payload.get("publishTime", "08:00")
@@ -758,20 +786,48 @@ async def create_youtube_automation_route(payload: dict):
 
 
 @router.patch(
-    "/api/youtube/automations/{job_id}/toggle",
-    summary="Toggle automation active state",
+    "/api/schedules/{job_id}/toggle",
+    tags=["Schedules & Automations"],
+    summary="Toggle Schedule Active State",
+    description="Pauses or resumes an automated production schedule.",
 )
-async def toggle_youtube_automation_route(job_id: str):
+@router.patch(
+    "/api/automations/{job_id}/toggle",
+    tags=["Schedules & Automations"],
+    summary="Toggle Schedule Active State (alias)",
+    include_in_schema=False,
+)
+@router.patch(
+    "/api/youtube/automations/{job_id}/toggle",
+    tags=["Schedules & Automations"],
+    summary="Toggle Schedule Active State (legacy alias)",
+    include_in_schema=False,
+)
+async def toggle_automation_schedule_route(job_id: str):
     from backend.database.repository import toggle_automation
     jobs = toggle_automation(job_id)
     return {"success": True, "data": jobs}
 
 
 @router.delete(
-    "/api/youtube/automations/{job_id}",
-    summary="Delete an automation schedule",
+    "/api/schedules/{job_id}",
+    tags=["Schedules & Automations"],
+    summary="Delete Automation Schedule",
+    description="Deletes an automated schedule and purges its execution history.",
 )
-async def delete_youtube_automation_route(job_id: str):
+@router.delete(
+    "/api/automations/{job_id}",
+    tags=["Schedules & Automations"],
+    summary="Delete Automation Schedule (alias)",
+    include_in_schema=False,
+)
+@router.delete(
+    "/api/youtube/automations/{job_id}",
+    tags=["Schedules & Automations"],
+    summary="Delete Automation Schedule (legacy alias)",
+    include_in_schema=False,
+)
+async def delete_automation_schedule_route(job_id: str):
     from backend.database.repository import delete_automation_job, get_automations
     deleted = delete_automation_job(job_id)
     if not deleted:
@@ -780,11 +836,24 @@ async def delete_youtube_automation_route(job_id: str):
 
 
 @router.post(
-    "/api/youtube/automations/{job_id}/run-now",
-    summary="Execute daily automation pipeline immediately",
-    description="Manually triggers the autonomous generation, rendering, and YouTube publishing flow.",
+    "/api/schedules/{job_id}/run-now",
+    tags=["Schedules & Automations"],
+    summary="Execute Schedule Immediately",
+    description="Triggers the automated script generation, voice synthesis, and video render pipeline immediately.",
 )
-async def run_youtube_automation_now_route(job_id: str, payload: Optional[Dict[str, Any]] = None):
+@router.post(
+    "/api/automations/{job_id}/run-now",
+    tags=["Schedules & Automations"],
+    summary="Execute Schedule Immediately (alias)",
+    include_in_schema=False,
+)
+@router.post(
+    "/api/youtube/automations/{job_id}/run-now",
+    tags=["Schedules & Automations"],
+    summary="Execute Schedule Immediately (legacy alias)",
+    include_in_schema=False,
+)
+async def execute_schedule_immediately_route(job_id: str, payload: Optional[Dict[str, Any]] = Body(default=None)):
     from .automation_service import execute_automation_job
     try:
         # Run pipeline in a background thread executor so event loop is non-blocking
@@ -795,3 +864,51 @@ async def run_youtube_automation_now_route(job_id: str, payload: Optional[Dict[s
     except Exception as e:
         logger.error(f"Manual automation execution failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/api/schedules/{job_id}/history",
+    tags=["Schedules & Automations"],
+    summary="Get Schedule Execution History",
+    description="Retrieves chronological execution logs, video titles, rendered MP4 links, and published Shorts links.",
+)
+@router.get(
+    "/api/automations/{job_id}/history",
+    tags=["Schedules & Automations"],
+    summary="Get Schedule Execution History (alias)",
+    include_in_schema=False,
+)
+@router.get(
+    "/api/youtube/automations/{job_id}/history",
+    tags=["Schedules & Automations"],
+    summary="Get Schedule Execution History (legacy alias)",
+    include_in_schema=False,
+)
+async def get_schedule_history_route(job_id: str, limit: int = 50):
+    from backend.database.repository import get_automation_history
+    history = get_automation_history(job_id, limit=limit)
+    return {"success": True, "data": history}
+
+
+@router.delete(
+    "/api/schedules/{job_id}/history",
+    tags=["Schedules & Automations"],
+    summary="Clear Schedule Execution History",
+    description="Clears all recorded run history entries for a given schedule.",
+)
+@router.delete(
+    "/api/automations/{job_id}/history",
+    tags=["Schedules & Automations"],
+    summary="Clear Schedule Execution History (alias)",
+    include_in_schema=False,
+)
+@router.delete(
+    "/api/youtube/automations/{job_id}/history",
+    tags=["Schedules & Automations"],
+    summary="Clear Schedule Execution History (legacy alias)",
+    include_in_schema=False,
+)
+async def clear_schedule_history_route(job_id: str):
+    from backend.database.repository import clear_automation_history
+    cleared = clear_automation_history(job_id)
+    return {"success": True, "cleared": cleared}

@@ -38,6 +38,7 @@ export interface YouTubePaneProps {
   onPublish?: () => void;
   canPublish?: boolean;
   publishing?: boolean;
+  publishingStage?: 'idle' | 'rendering' | 'uploading' | 'done';
   publishedSuccess?: boolean;
   publishedVideoUrl?: string | null;
   onResetPublishState?: () => void;
@@ -93,6 +94,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   onPublish,
   canPublish = true,
   publishing = false,
+  publishingStage = 'idle',
   publishedSuccess = false,
   publishedVideoUrl = null,
   onResetPublishState,
@@ -927,8 +929,16 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
           >
             {publishing ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Building Frames & Publishing to YouTube...</span>
+                <div className={`w-4 h-4 border-2 rounded-full animate-spin ${
+                  publishingStage === 'rendering'
+                    ? 'border-amber-400/40 border-t-amber-400'
+                    : 'border-blue-400/40 border-t-blue-400'
+                }`} />
+                <span>
+                  {publishingStage === 'rendering'
+                    ? '🎬 [1/2] Rendering 1080p Video...'
+                    : '🚀 [2/2] Publishing to YouTube Shorts...'}
+                </span>
               </>
             ) : (
               <>

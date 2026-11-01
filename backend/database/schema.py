@@ -156,6 +156,26 @@ def init_db():
     except Exception as e:
         logger.debug(f"automation_jobs schema migration notice: {e}")
 
+    # 7. Verify automation_history table
+    try:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS automation_history (
+            id TEXT PRIMARY KEY,
+            job_id TEXT NOT NULL,
+            status TEXT NOT NULL,
+            video_title TEXT,
+            video_url TEXT,
+            youtube_url TEXT,
+            is_live INTEGER DEFAULT 0,
+            duration_seconds REAL DEFAULT 0,
+            message TEXT,
+            executed_at TEXT NOT NULL,
+            FOREIGN KEY (job_id) REFERENCES automation_jobs(id) ON DELETE CASCADE
+        );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_automation_history_job_id ON automation_history (job_id, executed_at DESC);")
+    except Exception as e:
+        logger.debug(f"automation_history table initialization notice: {e}")
 
     conn.commit()
     conn.close()

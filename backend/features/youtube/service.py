@@ -62,12 +62,16 @@ def publish_video_to_shorts(
             direct_video = kwargs.get("videoUrl") or kwargs.get("video_url")
             video_file = None
             if direct_video and isinstance(direct_video, str):
-                if direct_video.startswith("/api/videos/"):
-                    cand = Path("backend/data/rendered_shorts") / direct_video.rsplit("/", 1)[-1]
-                    if cand.exists():
-                        video_file = str(cand.resolve())
-                elif Path(direct_video).exists():
-                    video_file = str(Path(direct_video).resolve())
+                fname = direct_video.rsplit("/", 1)[-1]
+                cand1 = Path("backend/data/rendered_shorts") / fname
+                cand2 = Path("backend/data/exports") / fname
+                cand3 = Path(direct_video)
+                if cand1.exists():
+                    video_file = str(cand1.resolve())
+                elif cand2.exists():
+                    video_file = str(cand2.resolve())
+                elif cand3.exists():
+                    video_file = str(cand3.resolve())
 
             # 2. Render broadcast-quality video using server-side Studio Video Render Engine
             if not video_file:

@@ -17,6 +17,9 @@ from .repository import (
     clear_notifications,
     get_automations,
     toggle_automation,
+    add_automation_history,
+    get_automation_history,
+    clear_automation_history,
 )
 
 __all__ = [
@@ -39,4 +42,7 @@ __all__ = [
     "clear_notifications",
     "get_automations",
     "toggle_automation",
+    "add_automation_history",
+    "get_automation_history",
+    "clear_automation_history",
 ]

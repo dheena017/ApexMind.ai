@@ -118,6 +118,7 @@ export default function WorkspacePage({
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [testingVoiceId, setTestingVoiceId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [publishingStage, setPublishingStage] = useState<'idle' | 'rendering' | 'uploading' | 'done'>('idle');
   const [publishedSuccess, setPublishedSuccess] = useState(false);
   const [publishedVideoUrl, setPublishedVideoUrl] = useState<string | null>(null);
   const [memoryCount, setMemoryCount] = useState(0);
@@ -1034,26 +1035,72 @@ export default function WorkspacePage({
     );
   };
 
-  // Publish to YouTube Shorts
+  // ── Two-Stage Video Publishing Pipeline ─────────────────────────────────────
+  // Stage 1: Render broadcast 1080p MP4 via /api/workspace/render-video
+  // Stage 2: Publish rendered MP4 to YouTube Shorts via POST /api/youtube/publish
   const handlePublish = async () => {
     const publishTitle = script.title?.trim() || 'Untitled Short';
     const publishQuote = script.quote?.trim() || script.hook?.trim() || script.cta?.trim() || 'ApexMind video';
 
     setPublishing(true);
-    consoleLogger.info('YouTube', `Uploading video to YouTube Shorts: "${publishTitle}"`);
+    setPublishingStage('rendering');
+    consoleLogger.info('YouTube', `Starting 2-Stage Publish Pipeline for: "${publishTitle}"`);
 
     try {
-      // 1. Render the EXACT video from the live video preview and timeline
+      // ── Stage 1: Render the video frames via render API ───────────────────────
+      toast.info('Stage 1/2: Rendering timeline video preview with FFmpeg...', { duration: 4000 });
       let renderedVideoUrl: string | undefined;
+
+      // 1a. Try client-side preview frame transcode if available
       if (typeof (window as any).__apexmind_render_preview_video === 'function') {
-        toast.info('Rendering timeline & video preview for YouTube Shorts...', { duration: 4000 });
         try {
           renderedVideoUrl = await (window as any).__apexmind_render_preview_video();
-          consoleLogger.info('YouTube', `Live preview & timeline rendered: ${renderedVideoUrl}`);
+          consoleLogger.info('YouTube', `Live preview transcode complete: ${renderedVideoUrl}`);
         } catch (rErr) {
           consoleLogger.warn('YouTube', 'Preview direct render fallback:', rErr);
         }
       }
+
+      // 1b. If not pre-rendered, call the server render API directly
+      if (!renderedVideoUrl) {
+        const currentBackdrop = backdrops.find((b) => b.id === selectedBackdrop);
+        const currentMusic = musicTracks.find((m) => m.id === selectedMusic || m.name === selectedMusic);
+        const exportSubtitles = (timelineClipsRef.current.captionClips && timelineClipsRef.current.captionClips.length > 0)
+          ? timelineClipsRef.current.captionClips
+          : (script.subtitles && script.subtitles.length > 0 ? script.subtitles : []);
+
+        const renderRes = await workspaceApi.renderVideo({
+          title: publishTitle,
+          aspectRatio: canvasAspectRatio,
+          duration: Math.round(duration || timelineDuration || 15),
+          audioUrl: audioUrl || null,
+          musicUrl: currentMusic?.audioUrl || null,
+          backdropUrl: customBackdropVideo || currentBackdrop?.videoUrl || currentBackdrop?.imageUrl,
+          backdropType: (customBackdropVideo || currentBackdrop?.videoUrl) ? 'video' : 'image',
+          videoClips: timelineClipsRef.current.videoClips?.length ? timelineClipsRef.current.videoClips : undefined,
+          imageClips: timelineClipsRef.current.imageClips?.length ? timelineClipsRef.current.imageClips : undefined,
+          subtitles: exportSubtitles.map((s: any) => ({
+            start: Number(s.start) || 0,
+            duration: Number(s.duration) || 2.5,
+            text: (s.text || s.subtitleText || '').trim(),
+          })),
+          captionColor: captionPreset?.color || '#FACC15',
+          captionFont: 'Impact',
+          captionTransform: 'uppercase',
+          fps: 30,
+        }).catch((err) => {
+          consoleLogger.warn('YouTube', `Direct render API error: ${err}`);
+          return null;
+        });
+
+        if (renderRes?.videoUrl) {
+          renderedVideoUrl = renderRes.videoUrl;
+        }
+      }
+
+      // ── Stage 2: Publish to YouTube Shorts via POST /api/youtube/publish ─────
+      setPublishingStage('uploading');
+      toast.info('Stage 2/2: Publishing rendered video to YouTube Shorts...', { duration: 4000 });
 
       const currentBackdrop = backdrops.find((b) => b.id === selectedBackdrop);
       const resolvedVideoUrl =
@@ -1093,7 +1140,8 @@ export default function WorkspacePage({
         description: script.hook || script.quote ? `${script.hook ? `${script.hook}\n\n` : ''}${script.quote ? `${script.quote}\n\n` : ''}${script.cta ? `${script.cta}\n\n` : ''}${(script.hashtags || []).join(' ')}\n\nCreated with ApexMind AI Studio.` : undefined,
         tags: script.hashtags && script.hashtags.length > 0 ? script.hashtags : ['#Shorts', '#ApexMind', '#Motivation'],
       });
-      // Also save to website video library automatically
+
+      // Save to website video library automatically
       await videosApi.createVideo({
         title: publishTitle,
         quote: publishQuote,
@@ -1120,6 +1168,7 @@ export default function WorkspacePage({
       const hasRealLink = isLive && Boolean(videoLink) && !videoLink.split('/').pop()?.match(/^\d+$/);
 
       setPublishedSuccess(isLive);
+      setPublishingStage('done');
       if (hasRealLink) {
         toast.success('Uploaded LIVE to YouTube Shorts!', {
           description: videoLink,
@@ -1171,6 +1220,7 @@ export default function WorkspacePage({
       toast.error('YouTube upload failed', {
         description: err instanceof Error ? err.message : 'Please try again',
       });
+      setPublishingStage('idle');
     } finally {
       setPublishing(false);
     }
@@ -1663,8 +1713,14 @@ export default function WorkspacePage({
                 onPublish={handlePublish}
                 canPublish={canPublish}
                 publishing={publishing}
+                publishingStage={publishingStage}
                 publishedSuccess={publishedSuccess}
                 publishedVideoUrl={publishedVideoUrl}
+                onResetPublishState={() => {
+                  setPublishedSuccess(false);
+                  setPublishedVideoUrl(null);
+                  setPublishingStage('idle');
+                }}
                 onNavigate={onNavigate}
               />
             ) : activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (

@@ -277,22 +277,22 @@ export const youtubeApi = {
     };
   },
 
-  // ── YouTube Automations & Schedules ──────────────────────────────────────────
+  // ── Video Production & Publishing Schedules ─────────────────────────────────
 
   async getAutomations(): Promise<AutomationJob[]> {
     try {
-      const res = await fetch(apiUrl('/api/youtube/automations'));
+      const res = await fetch(apiUrl('/api/schedules'));
       if (!res.ok) return [];
       const json = await res.json();
       return json.data || [];
     } catch (e) {
-      consoleLogger.error('YouTubeApi', 'Failed to fetch automations', e);
+      consoleLogger.error('YouTubeApi', 'Failed to fetch schedules', e);
       return [];
     }
   },
 
   async createAutomation(payload: Partial<AutomationJob>): Promise<AutomationJob> {
-    const res = await fetch(apiUrl('/api/youtube/automations'), {
+    const res = await fetch(apiUrl('/api/schedules'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -306,25 +306,25 @@ export const youtubeApi = {
   },
 
   async toggleAutomation(jobId: string): Promise<AutomationJob[]> {
-    const res = await fetch(apiUrl(`/api/youtube/automations/${jobId}/toggle`), {
+    const res = await fetch(apiUrl(`/api/schedules/${jobId}/toggle`), {
       method: 'PATCH',
     });
-    if (!res.ok) throw new Error('Failed to toggle automation');
+    if (!res.ok) throw new Error('Failed to toggle automation schedule');
     const json = await res.json();
     return json.data;
   },
 
   async deleteAutomation(jobId: string): Promise<AutomationJob[]> {
-    const res = await fetch(apiUrl(`/api/youtube/automations/${jobId}`), {
+    const res = await fetch(apiUrl(`/api/schedules/${jobId}`), {
       method: 'DELETE',
     });
-    if (!res.ok) throw new Error('Failed to delete automation');
+    if (!res.ok) throw new Error('Failed to delete automation schedule');
     const json = await res.json();
     return json.data;
   },
 
   async runAutomationNow(jobId: string, payload?: any): Promise<any> {
-    const res = await fetch(apiUrl(`/api/youtube/automations/${jobId}/run-now`), {
+    const res = await fetch(apiUrl(`/api/schedules/${jobId}/run-now`), {
       method: 'POST',
       headers: payload ? { 'Content-Type': 'application/json' } : undefined,
       body: payload ? JSON.stringify(payload) : undefined,
@@ -334,5 +334,21 @@ export const youtubeApi = {
       throw new Error(err.detail || 'Failed to execute automation pipeline');
     }
     return res.json();
+  },
+
+  async getAutomationHistory(jobId: string): Promise<import('../types').AutomationHistoryEntry[]> {
+    const res = await fetch(apiUrl(`/api/schedules/${jobId}/history`));
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  },
+
+  async clearAutomationHistory(jobId: string): Promise<boolean> {
+    const res = await fetch(apiUrl(`/api/schedules/${jobId}/history`), {
+      method: 'DELETE',
+    });
+    if (!res.ok) return false;
+    const json = await res.json();
+    return Boolean(json.cleared);
   },
 };

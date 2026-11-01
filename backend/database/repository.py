@@ -604,11 +604,93 @@ def create_automation_job(
 def delete_automation_job(job_id: str) -> bool:
     conn = get_connection()
     cursor = conn.cursor()
+    cursor.execute("DELETE FROM automation_history WHERE job_id = ?", (job_id,))
     cursor.execute("DELETE FROM automation_jobs WHERE id = ?", (job_id,))
     deleted = cursor.rowcount > 0
     conn.commit()
     conn.close()
-    logger.info(f"Deleted automation job '{job_id}': {deleted}")
+    logger.info(f"Deleted automation job '{job_id}' and its history: {deleted}")
+    return deleted
+
+def add_automation_history(
+    job_id: str,
+    status: str,
+    video_title: Optional[str] = None,
+    video_url: Optional[str] = None,
+    youtube_url: Optional[str] = None,
+    is_live: bool = False,
+    duration_seconds: float = 0.0,
+    message: Optional[str] = None,
+) -> Dict[str, Any]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    run_id = f"run_{int(time.time() * 1000)}"
+    now_str = datetime.now(timezone.utc).isoformat()
+    cursor.execute("""
+    INSERT INTO automation_history (id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        run_id,
+        job_id,
+        status,
+        video_title,
+        video_url,
+        youtube_url,
+        1 if is_live else 0,
+        float(duration_seconds),
+        message,
+        now_str,
+    ))
+    conn.commit()
+    conn.close()
+    return {
+        "id": run_id,
+        "jobId": job_id,
+        "status": status,
+        "videoTitle": video_title,
+        "videoUrl": video_url,
+        "youtubeUrl": youtube_url,
+        "isLive": is_live,
+        "durationSeconds": duration_seconds,
+        "message": message,
+        "executedAt": now_str,
+    }
+
+def get_automation_history(job_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at
+    FROM automation_history
+    WHERE job_id = ?
+    ORDER BY executed_at DESC
+    LIMIT ?
+    """, (job_id, limit))
+    rows = cursor.fetchall()
+    conn.close()
+    return [
+        {
+            "id": r[0],
+            "jobId": r[1],
+            "status": r[2],
+            "videoTitle": r[3],
+            "videoUrl": r[4],
+            "youtubeUrl": r[5],
+            "isLive": bool(r[6]),
+            "durationSeconds": float(r[7] or 0),
+            "message": r[8],
+            "executedAt": r[9],
+        }
+        for r in rows
+    ]
+
+def clear_automation_history(job_id: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM automation_history WHERE job_id = ?", (job_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
     return deleted
 
 def update_automation_run_state(
