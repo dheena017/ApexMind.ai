@@ -7,6 +7,7 @@ and publishes or schedules directly to YouTube at configured times.
 
 import asyncio
 import logging
+import re
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -43,9 +44,33 @@ FALLBACK_VISUAL_LOOPS = [
 ]
 
 
-def calculate_next_run_iso(publish_time: str = "08:00") -> str:
-    """Calculate the next upcoming UTC timestamp for a specific daily HH:MM string."""
+def calculate_next_run_iso(publish_time: str = "08:00", schedule: Optional[str] = None) -> str:
+    """Calculate the next upcoming UTC timestamp for a specific daily HH:MM string or recurring interval."""
     now_utc = datetime.now(timezone.utc)
+    combined = f"{schedule or ''} {publish_time or ''}".lower()
+
+    # 1. Check for minutes: "every X min", "every X minutes", "X mins"
+    m_min = re.search(r'every\s+(\d+)\s*(?:min|minute)', combined)
+    if m_min:
+        mins = int(m_min.group(1))
+        return (now_utc + timedelta(minutes=max(1, mins))).isoformat()
+
+    # 2. Check for hours: "every X hour", "every X hr", "every X hours"
+    m_hr = re.search(r'every\s+(\d+)\s*(?:hr|hour)', combined)
+    if m_hr:
+        hrs = int(m_hr.group(1))
+        return (now_utc + timedelta(hours=max(1, hrs))).isoformat()
+
+    # 3. Check for every_Xh or every_Xm code
+    m_code = re.search(r'every_(\d+)([hm])', combined)
+    if m_code:
+        val, unit = int(m_code.group(1)), m_code.group(2)
+        if unit == 'h':
+            return (now_utc + timedelta(hours=max(1, val))).isoformat()
+        elif unit == 'm':
+            return (now_utc + timedelta(minutes=max(1, val))).isoformat()
+
+    # 4. Fallback: specific daily time HH:MM
     try:
         parts = publish_time.split(":")
         hour = int(parts[0])
@@ -199,8 +224,9 @@ def execute_automation_job(job_id: str) -> Dict[str, Any]:
             priority="high",
         )
 
-        # Step 7: Calculate next scheduled daily run
-        next_run = calculate_next_run_iso(publish_time)
+        # Step 7: Calculate next scheduled run
+        job_schedule = job.get("schedule", "")
+        next_run = calculate_next_run_iso(publish_time, job_schedule)
         update_automation_run_state(job_id, last_status="success", next_run=next_run)
 
         elapsed = round(time.perf_counter() - start_time, 2)

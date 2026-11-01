@@ -579,13 +579,8 @@ def create_automation_job(
     job_id = f"job_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
     now_utc = datetime.now(timezone.utc)
     try:
-        parts = publish_time.split(":")
-        hour = int(parts[0])
-        minute = int(parts[1]) if len(parts) > 1 else 0
-        candidate = now_utc.replace(hour=hour, minute=minute, second=0, microsecond=0)
-        if candidate <= now_utc:
-            candidate += timedelta(days=1)
-        next_run = candidate.isoformat()
+        from backend.features.youtube.automation_service import calculate_next_run_iso
+        next_run = calculate_next_run_iso(publish_time=publish_time, schedule=schedule)
     except Exception:
         next_run = (now_utc + timedelta(days=1)).isoformat()
 

@@ -53,6 +53,18 @@ const MUSIC_OPTIONS = [
   'None (Voice Only)',
 ];
 
+const INTERVAL_OPTIONS = [
+  { value: 'every_30m', label: 'Every 30 Minutes', schedule: 'Every 30 Minutes' },
+  { value: 'every_1h', label: 'Every 1 Hour', schedule: 'Every 1 Hour' },
+  { value: 'every_2h', label: 'Every 2 Hours', schedule: 'Every 2 Hours' },
+  { value: 'every_3h', label: 'Every 3 Hours (Recommended)', schedule: 'Every 3 Hours' },
+  { value: 'every_4h', label: 'Every 4 Hours', schedule: 'Every 4 Hours' },
+  { value: 'every_6h', label: 'Every 6 Hours', schedule: 'Every 6 Hours' },
+  { value: 'every_8h', label: 'Every 8 Hours (Recommended)', schedule: 'Every 8 Hours' },
+  { value: 'every_12h', label: 'Every 12 Hours', schedule: 'Every 12 Hours' },
+  { value: 'custom', label: 'Custom Interval...', schedule: 'Custom' },
+];
+
 export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   onNavigate,
   className = '',
@@ -65,7 +77,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
   // Form inputs
   const [theme, setTheme] = useState('Stoic Mindset & Discipline');
+  const [frequencyType, setFrequencyType] = useState<'daily' | 'interval'>('interval');
   const [publishTime, setPublishTime] = useState('08:00');
+  const [intervalSelection, setIntervalSelection] = useState('every_3h');
+  const [customValue, setCustomValue] = useState(3);
+  const [customUnit, setCustomUnit] = useState<'hours' | 'minutes'>('hours');
   const [voice, setVoice] = useState('Fenrir');
   const [musicTrack, setMusicTrack] = useState('Epic Cinematic');
   const [privacyStatus, setPrivacyStatus] = useState<'public' | 'scheduled'>('public');
@@ -97,7 +113,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this automated daily publishing rule?')) return;
+    if (!window.confirm('Delete this automated publishing rule?')) return;
     try {
       await youtubeApi.deleteAutomation(id);
       setAutomations((prev) => prev.filter((a) => a.id !== id));
@@ -125,17 +141,33 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreating(true);
+
+    let finalSchedule = `Daily at ${publishTime} UTC`;
+    let finalPublishTime = publishTime;
+
+    if (frequencyType === 'interval') {
+      if (intervalSelection === 'custom') {
+        const unitLabel = customUnit === 'hours' ? (customValue === 1 ? 'Hour' : 'Hours') : (customValue === 1 ? 'Minute' : 'Minutes');
+        finalSchedule = `Every ${customValue} ${unitLabel}`;
+        finalPublishTime = `every_${customValue}${customUnit === 'hours' ? 'h' : 'm'}`;
+      } else {
+        const opt = INTERVAL_OPTIONS.find((o) => o.value === intervalSelection);
+        finalSchedule = opt ? opt.schedule : 'Every 3 Hours';
+        finalPublishTime = intervalSelection;
+      }
+    }
+
     try {
       await youtubeApi.createAutomation({
         theme,
-        publishTime,
-        schedule: `Daily at ${publishTime} UTC`,
+        publishTime: finalPublishTime,
+        schedule: finalSchedule,
         voice,
         musicTrack,
         privacyStatus,
         active: true,
       });
-      toast.success('New daily automation rule scheduled!');
+      toast.success(`New automation rule scheduled: ${finalSchedule}!`);
       setShowCreateForm(false);
       loadAutomations();
     } catch (err: any) {
@@ -266,38 +298,134 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               />
             </div>
 
-            {/* Publish Time & Privacy Status */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold">
-                  Time (UTC)
-                </label>
-                <input
-                  type="time"
-                  value={publishTime}
-                  onChange={(e) => setPublishTime(e.target.value)}
-                  required
-                  className="w-full bg-[#121215] border border-[#2A2A30] focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold">
-                  YouTube Release
-                </label>
-                <CustomSelect
-                  options={[
-                    { value: 'public', label: 'Instant Public' },
-                    { value: 'scheduled', label: 'Scheduled (publishAt)' },
-                  ]}
-                  value={privacyStatus}
-                  onChange={(val) => setPrivacyStatus(val as any)}
-                  className="w-full text-xs"
-                  buttonClassName="!bg-[#121215] !border-[#2A2A30] !py-2 !rounded-lg text-xs"
-                  menuClassName="!bg-[#16161A] !border-[#2E2E38]"
-                />
+            {/* Schedule Frequency Mode Selector */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold">
+                Schedule Frequency
+              </label>
+              <div className="grid grid-cols-2 p-1 rounded-xl bg-[#121215] border border-[#2A2A30] gap-1">
+                <button
+                  type="button"
+                  onClick={() => setFrequencyType('interval')}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    frequencyType === 'interval'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Every X Hours / Mins</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFrequencyType('daily')}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    frequencyType === 'daily'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Clock className="w-3 h-3" />
+                  <span>Daily at Time</span>
+                </button>
               </div>
             </div>
+
+            {/* Interval Selection OR Daily Time & Privacy Status */}
+            {frequencyType === 'interval' ? (
+              <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold">
+                      Interval (e.g. 3h, 8h)
+                    </label>
+                    <CustomSelect
+                      options={INTERVAL_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+                      value={intervalSelection}
+                      onChange={(val) => setIntervalSelection(val)}
+                      className="w-full text-xs"
+                      buttonClassName="!bg-[#121215] !border-[#2A2A30] !py-2 !rounded-lg text-xs"
+                      menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold">
+                      YouTube Release
+                    </label>
+                    <CustomSelect
+                      options={[
+                        { value: 'public', label: 'Instant Public' },
+                        { value: 'scheduled', label: 'Scheduled (publishAt)' },
+                      ]}
+                      value={privacyStatus}
+                      onChange={(val) => setPrivacyStatus(val as any)}
+                      className="w-full text-xs"
+                      buttonClassName="!bg-[#121215] !border-[#2A2A30] !py-2 !rounded-lg text-xs"
+                      menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                    />
+                  </div>
+                </div>
+
+                {/* Custom interval builder when 'custom' is selected */}
+                {intervalSelection === 'custom' && (
+                  <div className="p-2.5 rounded-lg bg-[#141418] border border-blue-500/25 flex items-center gap-2">
+                    <span className="text-xs text-zinc-300 font-medium shrink-0">Run every:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="720"
+                      value={customValue}
+                      onChange={(e) => setCustomValue(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      className="w-16 bg-[#101013] border border-[#2A2A30] rounded-md px-2 py-1 text-xs text-white text-center font-bold"
+                    />
+                    <CustomSelect
+                      options={[
+                        { value: 'hours', label: 'Hours (e.g. 3 hr, 8 hr)' },
+                        { value: 'minutes', label: 'Minutes (e.g. 30 min)' },
+                      ]}
+                      value={customUnit}
+                      onChange={(val) => setCustomUnit(val as any)}
+                      className="flex-1 text-xs"
+                      buttonClassName="!bg-[#101013] !border-[#2A2A30] !py-1 !rounded-md text-xs"
+                      menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold">
+                    Time (UTC)
+                  </label>
+                  <input
+                    type="time"
+                    value={publishTime}
+                    onChange={(e) => setPublishTime(e.target.value)}
+                    required
+                    className="w-full bg-[#121215] border border-[#2A2A30] focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold">
+                    YouTube Release
+                  </label>
+                  <CustomSelect
+                    options={[
+                      { value: 'public', label: 'Instant Public' },
+                      { value: 'scheduled', label: 'Scheduled (publishAt)' },
+                    ]}
+                    value={privacyStatus}
+                    onChange={(val) => setPrivacyStatus(val as any)}
+                    className="w-full text-xs"
+                    buttonClassName="!bg-[#121215] !border-[#2A2A30] !py-2 !rounded-lg text-xs"
+                    menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* AI Voice Persona */}
             <div className="flex flex-col gap-1">
@@ -344,7 +472,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                <span>Activate Daily Cron</span>
+                <span>Activate Automation Cron</span>
               </button>
             </div>
           </form>

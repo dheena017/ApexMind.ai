@@ -54,6 +54,18 @@ const MUSIC_OPTIONS = [
   'None (Voice Only)',
 ];
 
+const INTERVAL_OPTIONS = [
+  { value: 'every_30m', label: 'Every 30 Minutes', schedule: 'Every 30 Minutes' },
+  { value: 'every_1h', label: 'Every 1 Hour', schedule: 'Every 1 Hour' },
+  { value: 'every_2h', label: 'Every 2 Hours', schedule: 'Every 2 Hours' },
+  { value: 'every_3h', label: 'Every 3 Hours (Recommended)', schedule: 'Every 3 Hours' },
+  { value: 'every_4h', label: 'Every 4 Hours', schedule: 'Every 4 Hours' },
+  { value: 'every_6h', label: 'Every 6 Hours', schedule: 'Every 6 Hours' },
+  { value: 'every_8h', label: 'Every 8 Hours (Recommended)', schedule: 'Every 8 Hours' },
+  { value: 'every_12h', label: 'Every 12 Hours', schedule: 'Every 12 Hours' },
+  { value: 'custom', label: 'Custom Interval...', schedule: 'Custom' },
+];
+
 export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
   automations,
   loading = false,
@@ -68,7 +80,11 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
 
   // Form state
   const [theme, setTheme] = useState('Stoic Mindset & Discipline');
+  const [frequencyType, setFrequencyType] = useState<'daily' | 'interval'>('interval');
   const [publishTime, setPublishTime] = useState('08:00');
+  const [intervalSelection, setIntervalSelection] = useState('every_3h');
+  const [customValue, setCustomValue] = useState(3);
+  const [customUnit, setCustomUnit] = useState<'hours' | 'minutes'>('hours');
   const [voice, setVoice] = useState('Fenrir');
   const [musicTrack, setMusicTrack] = useState('Epic Cinematic');
   const [privacyStatus, setPrivacyStatus] = useState<'public' | 'scheduled'>('public');
@@ -79,11 +95,27 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
     e.preventDefault();
     setSubmitting(true);
     setErrorMessage(null);
+
+    let finalSchedule = `Daily at ${publishTime} UTC`;
+    let finalPublishTime = publishTime;
+
+    if (frequencyType === 'interval') {
+      if (intervalSelection === 'custom') {
+        const unitLabel = customUnit === 'hours' ? (customValue === 1 ? 'Hour' : 'Hours') : (customValue === 1 ? 'Minute' : 'Minutes');
+        finalSchedule = `Every ${customValue} ${unitLabel}`;
+        finalPublishTime = `every_${customValue}${customUnit === 'hours' ? 'h' : 'm'}`;
+      } else {
+        const opt = INTERVAL_OPTIONS.find((o) => o.value === intervalSelection);
+        finalSchedule = opt ? opt.schedule : 'Every 3 Hours';
+        finalPublishTime = intervalSelection;
+      }
+    }
+
     try {
       await youtubeApi.createAutomation({
         theme,
-        publishTime,
-        schedule: `Daily at ${publishTime} UTC`,
+        publishTime: finalPublishTime,
+        schedule: finalSchedule,
         voice,
         musicTrack,
         privacyStatus,
@@ -256,7 +288,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8E8E93]">
                       <span>
-                        Time: <strong className="text-white">{auto.publishTime || auto.schedule}</strong>
+                        Schedule: <strong className="text-white">{auto.schedule || auto.publishTime}</strong>
                       </span>
                       <span>•</span>
                       <span>
@@ -421,43 +453,135 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                 </select>
               </div>
 
-              {/* Daily Publish Time */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-white mb-1.5">
-                    Daily Publish Time (UTC)
-                  </label>
-                  <input
-                    type="time"
-                    value={publishTime}
-                    onChange={(e) => setPublishTime(e.target.value)}
-                    required
-                    className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                  />
-                  <span className="text-[10px] text-[#7A7A7A] mt-1 block">
-                    Runs every 24 hours at this exact time.
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-white mb-1.5">
-                    YouTube Privacy & Release
-                  </label>
-                  <select
-                    value={privacyStatus}
-                    onChange={(e) => setPrivacyStatus(e.target.value as any)}
-                    className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+              {/* Schedule Frequency Mode Selector */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-white">
+                  Schedule Frequency
+                </label>
+                <div className="grid grid-cols-2 p-1 rounded-xl bg-[#161616] border border-[#2a2a2a] gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setFrequencyType('interval')}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      frequencyType === 'interval'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
                   >
-                    <option value="public">Instant Public (Uploaded Live)</option>
-                    <option value="scheduled">Scheduled (YouTube publishAt)</option>
-                  </select>
-                  <span className="text-[10px] text-[#7A7A7A] mt-1 block">
-                    {privacyStatus === 'scheduled'
-                      ? 'Uploads private; YouTube auto-releases at peak hours.'
-                      : 'Publishes immediately upon generation.'}
-                  </span>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Every X Hours / Mins</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFrequencyType('daily')}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      frequencyType === 'daily'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Daily at Time</span>
+                  </button>
                 </div>
               </div>
+
+              {/* Interval Selection OR Daily Publish Time */}
+              {frequencyType === 'interval' ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-white mb-1.5">
+                        Interval (e.g. 3h, 8h)
+                      </label>
+                      <select
+                        value={intervalSelection}
+                        onChange={(e) => setIntervalSelection(e.target.value)}
+                        className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+                      >
+                        {INTERVAL_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-white mb-1.5">
+                        YouTube Privacy & Release
+                      </label>
+                      <select
+                        value={privacyStatus}
+                        onChange={(e) => setPrivacyStatus(e.target.value as any)}
+                        className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+                      >
+                        <option value="public">Instant Public (Uploaded Live)</option>
+                        <option value="scheduled">Scheduled (YouTube publishAt)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {intervalSelection === 'custom' && (
+                    <div className="p-3 rounded-xl bg-[#141414] border border-blue-500/30 flex items-center gap-2">
+                      <span className="text-xs text-zinc-300 font-medium shrink-0">Run every:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="720"
+                        value={customValue}
+                        onChange={(e) => setCustomValue(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="w-20 bg-[#1c1c1c] border border-[#333] rounded-lg px-2.5 py-1.5 text-xs text-white text-center font-bold"
+                      />
+                      <select
+                        value={customUnit}
+                        onChange={(e) => setCustomUnit(e.target.value as any)}
+                        className="flex-1 bg-[#1c1c1c] border border-[#333] rounded-lg px-2.5 py-1.5 text-xs text-white cursor-pointer"
+                      >
+                        <option value="hours">Hours (e.g. 3 hr, 8 hr)</option>
+                        <option value="minutes">Minutes (e.g. 30 min)</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-white mb-1.5">
+                      Daily Publish Time (UTC)
+                    </label>
+                    <input
+                      type="time"
+                      value={publishTime}
+                      onChange={(e) => setPublishTime(e.target.value)}
+                      required
+                      className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    />
+                    <span className="text-[10px] text-[#7A7A7A] mt-1 block">
+                      Runs every 24 hours at this exact time.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-white mb-1.5">
+                      YouTube Privacy & Release
+                    </label>
+                    <select
+                      value={privacyStatus}
+                      onChange={(e) => setPrivacyStatus(e.target.value as any)}
+                      className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+                    >
+                      <option value="public">Instant Public (Uploaded Live)</option>
+                      <option value="scheduled">Scheduled (YouTube publishAt)</option>
+                    </select>
+                    <span className="text-[10px] text-[#7A7A7A] mt-1 block">
+                      {privacyStatus === 'scheduled'
+                        ? 'Uploads private; YouTube auto-releases at peak hours.'
+                        : 'Publishes immediately upon generation.'}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* AI Voice Selection */}
               <div>
