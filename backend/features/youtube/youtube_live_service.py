@@ -1122,6 +1122,15 @@ def get_authenticated_youtube_client() -> Optional[Any]:
         return None
 
     cfg = get_google_oauth_config()
+
+    expiry = None
+    if ch.get("token_expiry"):
+        try:
+            raw_exp = str(ch["token_expiry"]).replace("Z", "+00:00")
+            expiry = datetime.fromisoformat(raw_exp).replace(tzinfo=None)
+        except Exception:
+            pass
+
     creds = Credentials(
         token=ch.get("access_token"),
         refresh_token=ch.get("refresh_token"),
@@ -1129,14 +1138,17 @@ def get_authenticated_youtube_client() -> Optional[Any]:
         client_id=cfg["client_id"],
         client_secret=cfg["client_secret"],
         scopes=YOUTUBE_SCOPES,
+        expiry=expiry,
     )
 
-    if not creds.valid and ch.get("refresh_token"):
+    if (not creds.valid or creds.expired) and ch.get("refresh_token"):
         try:
             creds.refresh(Request())
-            if creds.token and creds.token != ch.get("access_token") and ch.get("id"):
+            if creds.token and ch.get("id"):
                 from backend.database.repository import update_channel_access_token
-                update_channel_access_token(ch["id"], creds.token)
+                new_expiry = creds.expiry.isoformat() + "Z" if creds.expiry else None
+                update_channel_access_token(ch["id"], creds.token, new_expiry)
+                logger.info(f"Proactively refreshed and saved OAuth token for channel '{ch.get('name')}'")
         except Exception as e:
             logger.error(f"Failed to refresh YouTube OAuth credentials: {e}")
             return None
@@ -1206,10 +1218,30 @@ def upload_video_to_live_youtube(
     elif lower_path.endswith(".avi"):
         mime = "video/x-msvideo"
 
-    media = MediaFileUpload(video_path, chunksize=-1, resumable=True, mimetype=mime)
+    # Use chunked resumable upload with retry loop to prevent [WinError 10060] socket timeouts
+    media = MediaFileUpload(video_path, chunksize=1024 * 1024, resumable=True, mimetype=mime)
     request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
-    response = request.execute()
-    real_video_id = response.get("id")
+    
+    response = None
+    retries = 0
+    max_retries = 5
+    while response is None:
+        try:
+            status, response = request.next_chunk()
+            if status:
+                logger.info(f"[YouTube Upload] Progress: {int(status.progress() * 100)}%")
+        except Exception as e:
+            retries += 1
+            if retries > max_retries:
+                logger.error(f"[YouTube Upload] Max retries ({max_retries}) exceeded during upload: {e}")
+                raise
+            sleep_time = min(15, retries * 2)
+            logger.warning(f"[YouTube Upload] Transient socket/network error ({e}), resuming in {sleep_time}s (attempt {retries}/{max_retries})...")
+            time.sleep(sleep_time)
+
+    real_video_id = response.get("id") if response else None
+    if not real_video_id:
+        raise RuntimeError("YouTube upload completed but did not return a valid video ID.")
 
     return {
         "success": True,
@@ -1399,7 +1431,7 @@ def render_vertical_short(
         else:
             cmd.extend([
                 "-f", "lavfi",
-                "-i", f"color=c=#0B0F19:s=1080x1920:r=30:d={duration_seconds}"
+                "-i", f"gradients=s=1080x1920:r=30:c0=0x0a0f2c:c1=0x111a45:c2=0x1a0a3a:c3=0x08070f:nb_colors=4:speed=0.005:type=linear:d={duration_seconds}"
             ])
 
         if audio_path and Path(audio_path).exists():
@@ -1407,7 +1439,31 @@ def render_vertical_short(
         else:
             cmd.extend(["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"])
 
-        vf = "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v_out]"
+        # Generate clean ASS subtitles file for burned-in captions in fallback renderer
+        ass_path = temp_dir / "fallback_subtitles.ass"
+        clean_q = quote.replace("\n", " ").replace("'", "").strip()
+        clean_t = title.replace("\n", " ").replace("'", "").strip()
+        ass_content = f"""[Script Info]
+Title: ApexMind Shorts
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Hook,Impact,76,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,6,3,5,60,60,640,1
+Style: Sub,Impact,64,&H0015CCFA,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,6,3,5,60,60,980,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:04.00,Hook,,0,0,0,,{clean_t.upper()}
+Dialogue: 0,0:00:04.00,0:00:{duration_seconds:02d}.00,Sub,,0,0,0,,{clean_q[:140].upper()}
+"""
+        with open(ass_path, "w", encoding="utf-8") as f:
+            f.write(ass_content)
+        ass_escaped = str(ass_path.resolve()).replace("\\", "/").replace(":", "\\:")
+
+        vf = f"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30,subtitles='{ass_escaped}'[v_out]"
         cmd.extend([
             "-filter_complex", vf,
             "-map", "[v_out]",

@@ -12,6 +12,7 @@ import { WebsiteVideo } from '@/src/features/videos/types';
 import { VideoPlayerModal } from '@/src/features/videos/components/VideoPlayerModal';
 import { Button } from '@/src/shared/ui/common';
 import { buildRouteUrl } from '@/src/app/routes';
+import { apiUrl } from '@/src/shared/utils/api';
 
 interface RecentVideosSectionProps {
   videos: WebsiteVideo[];
@@ -84,7 +85,7 @@ export const RecentVideosSection: React.FC<RecentVideosSectionProps> = ({
               <div className="relative aspect-video w-full bg-[#1A1A1A] overflow-hidden">
                 {video.coverImageUrl ? (
                   <img
-                    src={video.coverImageUrl.startsWith('/api/') ? `${((import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '')}${video.coverImageUrl}` : video.coverImageUrl}
+                    src={apiUrl(video.coverImageUrl)}
                     alt={video.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"

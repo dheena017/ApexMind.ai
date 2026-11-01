@@ -1027,25 +1027,51 @@ export default function WorkspacePage({
     const publishQuote = script.quote?.trim() || script.hook?.trim() || script.cta?.trim() || 'ApexMind video';
 
     setPublishing(true);
-    consoleLogger.info('YouTube', `ðŸ“¤ Uploading video to YouTube Shorts: "${publishTitle}"`);
+    consoleLogger.info('YouTube', `Uploading video to YouTube Shorts: "${publishTitle}"`);
+
     try {
+      // 1. Render the EXACT video from the live video preview and timeline
+      let renderedVideoUrl: string | undefined;
+      if (typeof (window as any).__apexmind_render_preview_video === 'function') {
+        toast.info('Rendering timeline & video preview for YouTube Shorts...', { duration: 4000 });
+        try {
+          renderedVideoUrl = await (window as any).__apexmind_render_preview_video();
+          consoleLogger.info('YouTube', `Live preview & timeline rendered: ${renderedVideoUrl}`);
+        } catch (rErr) {
+          consoleLogger.warn('YouTube', 'Preview direct render fallback:', rErr);
+        }
+      }
+
+      const currentBackdrop = backdrops.find((b) => b.id === selectedBackdrop);
+      const resolvedVideoUrl =
+        renderedVideoUrl ||
+        customBackdropVideo ||
+        script.storyboard?.find((s) => s.mediaType === 'video' && s.mediaUrl)?.mediaUrl ||
+        currentBackdrop?.videoUrl ||
+        '';
+
+      const realCover = await resolveRealCoverImage();
+      const resolvedCoverUrl = realCover || currentBackdrop?.imageUrl || '';
+
+      const currentMusic = musicTracks.find((m) => m.id === selectedMusic || m.name === selectedMusic);
+      const resolvedMusicUrl = currentMusic?.audioUrl || '';
+
       const publishedShort = await workspaceApi.publishVideo({
         title: publishTitle,
         quote: publishQuote,
         voice: selectedVoice,
         visualTheme: selectedBackdrop,
         category,
-        videoUrl: customBackdropVideo || script.storyboard?.find((s) => s.mediaType === 'video' && s.mediaUrl)?.mediaUrl || undefined,
+        videoUrl: resolvedVideoUrl || undefined,
+        coverImageUrl: resolvedCoverUrl || undefined,
+        audioUrl: audioUrl && !audioUrl.startsWith('data:') ? audioUrl : undefined,
+        musicUrl: resolvedMusicUrl || undefined,
+        subtitles: script.subtitles && script.subtitles.length > 0 ? script.subtitles : undefined,
+        duration: Math.round(duration || timelineDuration || 15),
+        description: script.hook || script.quote ? `${script.hook ? `${script.hook}\n\n` : ''}${script.quote ? `${script.quote}\n\n` : ''}${script.cta ? `${script.cta}\n\n` : ''}${(script.hashtags || []).join(' ')}\n\nCreated with ApexMind AI Studio.` : undefined,
+        tags: script.hashtags && script.hashtags.length > 0 ? script.hashtags : ['#Shorts', '#ApexMind', '#Motivation'],
       });
       // Also save to website video library automatically
-      const resolvedVideoUrl =
-        customBackdropVideo ||
-        script.storyboard?.find((s) => s.mediaType === 'video' && s.mediaUrl)?.mediaUrl ||
-        backdrops.find((b) => b.id === selectedBackdrop)?.videoUrl ||
-        '';
-
-      const realCover = await resolveRealCoverImage();
-
       await videosApi.createVideo({
         title: publishTitle,
         quote: publishQuote,
@@ -1093,9 +1119,6 @@ export default function WorkspacePage({
           actionLabel: 'View in Library',
         });
       }
-      setTimeout(() => {
-        onNavigate('youtube');
-      }, 1500);
     } catch (err) {
       consoleLogger.error('YouTube', 'Upload failed:', err);
       toast.error('YouTube upload failed', {

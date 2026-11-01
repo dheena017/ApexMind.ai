@@ -132,11 +132,14 @@ def save_channel_oauth(
 
 save_oauth_channel = save_channel_oauth
 
-def update_channel_access_token(channel_id: str, access_token: str) -> None:
+def update_channel_access_token(channel_id: str, access_token: str, token_expiry: Optional[str] = None) -> None:
     """Updates access token for an OAuth-connected YouTube channel."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE youtube_channels SET access_token = ? WHERE id = ?", (access_token, channel_id))
+    if token_expiry:
+        cursor.execute("UPDATE youtube_channels SET access_token = ?, token_expiry = ? WHERE id = ?", (access_token, token_expiry, channel_id))
+    else:
+        cursor.execute("UPDATE youtube_channels SET access_token = ? WHERE id = ?", (access_token, channel_id))
     conn.commit()
     conn.close()
 

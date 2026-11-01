@@ -74,7 +74,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
   const resolvedAudioUrl = useMemo(() => {
     if (!video?.audioUrl) return '';
     const raw = video.audioUrl.trim();
-    if (raw.startsWith('http') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    if ((raw.startsWith('http') && !raw.includes('127.0.0.1') && !raw.includes('localhost')) || raw.startsWith('data:') || raw.startsWith('blob:')) {
       return raw;
     }
     return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);
@@ -84,7 +84,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
   const resolvedVideoUrl = useMemo(() => {
     if (!video?.videoUrl) return '';
     const raw = video.videoUrl.trim();
-    if (raw.startsWith('http') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    if ((raw.startsWith('http') && !raw.includes('127.0.0.1') && !raw.includes('localhost')) || raw.startsWith('data:') || raw.startsWith('blob:')) {
       return raw;
     }
     return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);
@@ -362,7 +362,7 @@ ${video.tags || ''}
   const coverSrc = useMemo(() => {
     if (imgError || !video?.coverImageUrl) return '';
     const raw = video.coverImageUrl.trim();
-    if (raw.startsWith('http') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    if ((raw.startsWith('http') && !raw.includes('127.0.0.1') && !raw.includes('localhost')) || raw.startsWith('data:') || raw.startsWith('blob:')) {
       return raw;
     }
     return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);

@@ -31,17 +31,30 @@ export const API_BASE_URL: string = (() => {
 })();
 
 /**
- * Returns the full URL for an API endpoint.
+ * Returns the full URL for an API endpoint or media asset.
+ *
+ * Automatically normalizes any hardcoded localhost/loopback endpoints
+ * (e.g. from local database records) so they point to the correct live API base in production.
  *
  * Examples:
  *   apiUrl('/api/auth/login')
  *   -> In dev: '/api/auth/login'
  *   -> In Render prod: 'https://apexmind-backend-zxw7.onrender.com/api/auth/login'
+ *   apiUrl('http://127.0.0.1:8000/api/media/cover_123.jpg')
+ *   -> In dev: '/api/media/cover_123.jpg'
+ *   -> In Render prod: 'https://apexmind-backend-zxw7.onrender.com/api/media/cover_123.jpg'
  */
-export function apiUrl(endpoint: string): string {
-  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
-    return endpoint;
+export function apiUrl(endpoint?: string | null): string {
+  if (!endpoint) return '';
+
+  let clean = endpoint.trim();
+
+  // Strip hardcoded localhost / loopback addresses that may be stored in database or state
+  clean = clean.replace(/^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?/, '');
+
+  if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('data:') || clean.startsWith('blob:')) {
+    return clean;
   }
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const cleanEndpoint = clean.startsWith('/') ? clean : `/${clean}`;
   return `${API_BASE_URL}${cleanEndpoint}`;
 }

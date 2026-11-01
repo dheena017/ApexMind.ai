@@ -813,20 +813,13 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                     {AI_MODEL_OPTIONS.find((m) => m.id === aiModel)?.badge || 'Active'}
                   </span>
                 </div>
-                <div className="relative">
-                  <select
-                    value={aiModel}
-                    onChange={(e) => setAiModel(e.target.value)}
-                    className="w-full bg-[#18181B] border border-[#27272A] hover:border-blue-500/50 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer appearance-none transition-all pr-8 font-medium shadow-inner"
-                  >
-                    {AI_MODEL_OPTIONS.map((m) => (
-                      <option key={m.id} value={m.id} className="bg-[#121215] text-white py-1">
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                <CustomSelect
+                  value={aiModel}
+                  onChange={(val) => setAiModel(val)}
+                  options={AI_MODEL_OPTIONS.map((m) => ({ value: m.id, label: m.name, description: m.desc, badge: m.badge }))}
+                  size="sm"
+                  className="w-full"
+                />
                 <span className="text-[9.5px] text-zinc-500 px-1">
                   {AI_MODEL_OPTIONS.find((m) => m.id === aiModel)?.desc}
                 </span>
@@ -842,20 +835,13 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                     {AI_STYLE_PRESETS.find((s) => s.id === aiStyle)?.label}
                   </span>
                 </div>
-                <div className="relative">
-                  <select
-                    value={aiStyle}
-                    onChange={(e) => setAiStyle(e.target.value as any)}
-                    className="w-full bg-[#18181B] border border-[#27272A] hover:border-blue-500/50 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer appearance-none transition-all pr-8 font-medium shadow-inner"
-                  >
-                    {AI_STYLE_PRESETS.map((st) => (
-                      <option key={st.id} value={st.id} className="bg-[#121215] text-white py-1">
-                        {st.label} — {st.desc}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                <CustomSelect
+                  value={aiStyle}
+                  onChange={(val) => setAiStyle(val as any)}
+                  options={AI_STYLE_PRESETS.map((st) => ({ value: st.id, label: st.label, description: st.desc }))}
+                  size="sm"
+                  className="w-full"
+                />
               </div>
 
               {/* Aspect Ratio Selector & Action Button */}

@@ -1,3 +1,4 @@
+import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import React, { useState } from 'react';
 import {
   Check,
@@ -523,28 +524,30 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="flex flex-col gap-1">
                   <span className="text-[#71717A]">Sample Rate:</span>
-                  <select
+                  <CustomSelect
+                    size="sm"
                     value={selectedAudioSampleRate}
-                    onChange={(e) => setSelectedAudioSampleRate(e.target.value as any)}
-                    className="bg-[#121215] border border-[#2A2A30] rounded-lg px-2 py-1 text-white text-xs outline-none"
-                  >
-                    <option value="24000">24 kHz (Gemini TTS)</option>
-                    <option value="44100">44.1 kHz (CD Standard)</option>
-                    <option value="48000">48 kHz (Broadcast Master)</option>
-                  </select>
+                    onChange={(val) => setSelectedAudioSampleRate(val as any)}
+                    options={[
+                      { value: '24000', label: '24 kHz (Gemini TTS)' },
+                      { value: '44100', label: '44.1 kHz (CD Standard)' },
+                      { value: '48000', label: '48 kHz (Broadcast Master)' },
+                    ]}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <span className="text-[#71717A]">Bitrate:</span>
-                  <select
+                  <CustomSelect
+                    size="sm"
                     value={selectedAudioBitrate}
-                    onChange={(e) => setSelectedAudioBitrate(e.target.value as any)}
-                    className="bg-[#121215] border border-[#2A2A30] rounded-lg px-2 py-1 text-white text-xs outline-none"
-                  >
-                    <option value="128">128 kbps</option>
-                    <option value="192">192 kbps (Recommended)</option>
-                    <option value="320">320 kbps (High Fidelity)</option>
-                  </select>
+                    onChange={(val) => setSelectedAudioBitrate(val as any)}
+                    options={[
+                      { value: '128', label: '128 kbps' },
+                      { value: '192', label: '192 kbps (Recommended)' },
+                      { value: '320', label: '320 kbps (High Fidelity)' },
+                    ]}
+                  />
                 </div>
               </div>
             </div>

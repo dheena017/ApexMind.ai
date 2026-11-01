@@ -77,6 +77,13 @@ class PublishVideoRequest(BaseModel):
     channelId: Optional[str] = Field(default=None)
     audioUrl: Optional[str] = Field(default=None)
     coverImageUrl: Optional[str] = Field(default=None)
+    videoUrl: Optional[str] = Field(default=None)
+    musicUrl: Optional[str] = Field(default=None)
+    duration: Optional[float] = Field(default=15.0)
+    subtitles: Optional[List[Dict[str, Any]]] = Field(default=None)
+    videoClips: Optional[List[Dict[str, Any]]] = Field(default=None)
+    imageClips: Optional[List[Dict[str, Any]]] = Field(default=None)
+    aspectRatio: Optional[str] = Field(default="9:16")
 
 
 # ── 3. Response DTOs ──────────────────────────────────────────────────────────

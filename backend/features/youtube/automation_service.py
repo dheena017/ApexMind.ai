@@ -151,16 +151,19 @@ def execute_automation_job(job_id: str) -> Dict[str, Any]:
                     sched_target += timedelta(days=1)
                 publish_at_iso = sched_target.isoformat().replace("+00:00", "Z")
 
-            upload_res = upload_video_to_live_youtube(
-                video_path=video_path,
-                title=f"{title} #Shorts",
-                description=f"{quote_text}\n\n{cta_text}\n\n#ApexMind #Shorts #{theme.replace(' ', '')}",
-                tags=["#Shorts", "#Motivation", "#Discipline", f"#{theme.replace(' ', '')}"],
-                privacy_status="private" if is_scheduled else "public",
-                publish_at=publish_at_iso,
-            )
-            youtube_url = upload_res.get("videoUrl")
-            logger.info(f"[Automation] YouTube upload success: {youtube_url} | Status: {upload_res.get('status')}")
+            try:
+                upload_res = upload_video_to_live_youtube(
+                    video_path=video_path,
+                    title=f"{title} #Shorts",
+                    description=f"{quote_text}\n\n{cta_text}\n\n#ApexMind #Shorts #{theme.replace(' ', '')}",
+                    tags=["#Shorts", "#Motivation", "#Discipline", f"#{theme.replace(' ', '')}"],
+                    privacy_status="private" if is_scheduled else "public",
+                    publish_at=publish_at_iso,
+                )
+                youtube_url = upload_res.get("videoUrl")
+                logger.info(f"[Automation] YouTube upload success: {youtube_url} | Status: {upload_res.get('status')}")
+            except Exception as up_err:
+                logger.warning(f"[Automation] Direct YouTube upload encountered network error: {up_err}. Cataloging video locally in Studio.")
 
         # Step 5: Catalog video in local studio database
         rel_video_url = f"/api/videos/{Path(video_path).name}"
@@ -177,14 +180,20 @@ def execute_automation_job(job_id: str) -> Dict[str, Any]:
         )
 
         # Step 6: Create high-priority activity notification
-        status_label = f"Scheduled on YouTube for {publish_time}" if is_scheduled else "Published to YouTube Shorts"
-        if not yt_client:
+        if youtube_url:
+            status_label = f"Scheduled on YouTube for {publish_time}" if is_scheduled else "Published to YouTube Shorts"
+            notif_type = "success"
+        elif yt_client:
+            status_label = "Generated in Studio (YouTube network upload timed out, ready to publish manually)"
+            notif_type = "warning"
+        else:
             status_label = "Generated & Ready in Studio (Connect YouTube to Auto-Publish)"
+            notif_type = "success"
 
         create_notification(
             title="Daily Automation Complete",
             message=f"'{title}' was automatically rendered and {status_label.lower()}.",
-            type="success",
+            type=notif_type,
             category="youtube",
             action_url=youtube_url or "/videos",
             priority="high",

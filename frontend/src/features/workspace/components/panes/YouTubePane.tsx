@@ -634,36 +634,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
             </div>
 
-            {/* Primary Action Button */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={onPublish}
-                disabled={publishing || !canPublish}
-                className={`w-full h-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg ${
-                  publishedSuccess
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed'
-                }`}
-              >
-                {publishing ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Publishing Short to YouTube...</span>
-                  </>
-                ) : publishedSuccess ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>Published to YouTube!</span>
-                  </>
-                ) : (
-                  <>
-                    <Youtube className="w-4 h-4 text-white" />
-                    <span>Publish Now to {channel?.name ? channel.name : 'YouTube'}</span>
-                  </>
-                )}
-              </button>
-            </div>
+
           </div>
         )}
 
@@ -837,6 +808,49 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               ))}
             </div>
           </div>
+        )}
+      </div>
+
+      {/* ── Sticky Bottom Action Bar (Zero duplication, always accessible) ── */}
+      <div className="p-3 bg-[#151518] border-t border-[#26262B] shrink-0 flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={onPublish}
+          disabled={publishing || !canPublish}
+          className={`w-full h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg ${
+            publishedSuccess
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
+              : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-red-900/25 disabled:opacity-50 disabled:cursor-not-allowed'
+          }`}
+        >
+          {publishing ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Building Frames & Publishing to YouTube...</span>
+            </>
+          ) : publishedSuccess ? (
+            <>
+              <CheckCircle2 className="w-4 h-4 text-white" />
+              <span>✓ Published to YouTube Shorts!</span>
+            </>
+          ) : (
+            <>
+              <Youtube className="w-4 h-4 text-white" />
+              <span>Publish Now to {channel?.name ? channel.name : 'YouTube'}</span>
+            </>
+          )}
+        </button>
+
+        {publishedSuccess && channel && (
+          <a
+            href={channel.channelUrl || `https://www.youtube.com/${channel.handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-center font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            <span>Open {channel.name} on YouTube</span>
+          </a>
         )}
       </div>
     </div>

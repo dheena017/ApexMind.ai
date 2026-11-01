@@ -225,10 +225,19 @@ export const workspaceApi = {
   async publishVideo(payload: {
     title: string;
     quote: string;
-    voice: string;
-    visualTheme: string;
-    category: string;
+    voice?: string;
+    visualTheme?: string;
+    category?: string;
     videoUrl?: string;
+    coverImageUrl?: string;
+    audioUrl?: string;
+    musicUrl?: string;
+    subtitles?: any[];
+    duration?: number;
+    description?: string;
+    tags?: string[];
+    channelId?: string;
+    privacyStatus?: string;
   }): Promise<any> {
     consoleLogger.info('YouTube', `Publishing Short: "${payload.title}"...`, payload);
     const start = performance.now();

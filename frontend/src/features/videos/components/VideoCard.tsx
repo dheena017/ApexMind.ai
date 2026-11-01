@@ -67,7 +67,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
   const resolvedVideoUrl = React.useMemo(() => {
     if (!video.videoUrl) return '';
     const raw = video.videoUrl.trim();
-    if (raw.startsWith('http') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    if ((raw.startsWith('http') && !raw.includes('127.0.0.1') && !raw.includes('localhost')) || raw.startsWith('data:') || raw.startsWith('blob:')) {
       return raw;
     }
     return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);
@@ -77,7 +77,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
   const coverSrc = React.useMemo(() => {
     if (imgError || !video?.coverImageUrl) return '';
     const raw = video.coverImageUrl.trim();
-    if (raw.startsWith('http') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    if ((raw.startsWith('http') && !raw.includes('127.0.0.1') && !raw.includes('localhost')) || raw.startsWith('data:') || raw.startsWith('blob:')) {
       return raw;
     }
     return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);

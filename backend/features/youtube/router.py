@@ -481,11 +481,22 @@ async def post_youtube_videos(payload: PublishVideoRequest):
         return publish_video_to_shorts(
             title=title_text,
             quote=quote_text,
+            description=payload.description,
+            tags=payload.tags,
+            privacyStatus=payload.privacyStatus,
             voice=payload.voice or "Fenrir",
             category=payload.category or "Motivation",
             channel_id=payload.channelId,
             coverImageUrl=payload.coverImageUrl,
             visualTheme=payload.visualTheme,
+            audioUrl=payload.audioUrl,
+            videoUrl=payload.videoUrl,
+            musicUrl=payload.musicUrl,
+            duration=payload.duration,
+            subtitles=payload.subtitles,
+            videoClips=payload.videoClips,
+            imageClips=payload.imageClips,
+            aspectRatio=payload.aspectRatio,
         )
     except HTTPException:
         raise
