@@ -526,13 +526,7 @@ def render_studio_video(
                 expected_t = clip.get("type", "video")
                 c_file, c_type = save_backdrop_payload(c_url, temp_dir, expected_type=expected_t) if c_url else (None, "none")
                 if not c_file or not c_file.exists():
-                    c_file = temp_dir / f"fallback_{idx}.mp4"
-                    subprocess.run([
-                        "ffmpeg", "-y", "-f", "lavfi",
-                        "-i", f"gradients=s={width}x{height}:r={render_fps}:c0=0x0a0f2c:c1=0x111a45:c2=0x1a0a3a:c3=0x08070f:nb_colors=4:speed=0.005:type=linear:d=5",
-                        "-t", "5", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(c_file.resolve())
-                    ], capture_output=True)
-                    c_type = "video"
+                    raise RuntimeError(f"Video clip #{idx + 1} is missing, unreachable, or corrupted: '{c_url or 'no URL provided'}'")
                 clip_inputs.append((c_file, c_type, clip))
 
             for c_file, c_type, clip in clip_inputs:
@@ -607,18 +601,16 @@ def render_studio_video(
             video_filters.append(f"[{last_video_tag}]ass='{ass_path_escaped}'[v_out]")
         else:
             # Single Backdrop mode
-            backdrop_file, detected_type = save_backdrop_payload(backdrop_url, temp_dir) if backdrop_url else (None, "none")
+            if not backdrop_url:
+                raise RuntimeError("No backdrop media or video clips provided for video rendering.")
+            backdrop_file, detected_type = save_backdrop_payload(backdrop_url, temp_dir)
             actual_type = detected_type if detected_type != "none" else backdrop_type
-            if backdrop_file and backdrop_file.exists():
-                if actual_type == "video":
-                    cmd.extend(["-stream_loop", "-1", "-i", str(backdrop_file.resolve())])
-                else:
-                    cmd.extend(["-loop", "1", "-i", str(backdrop_file.resolve())])
+            if not backdrop_file or not backdrop_file.exists():
+                raise RuntimeError(f"Backdrop media is missing, unreachable, or corrupted: '{backdrop_url}'")
+            if actual_type == "video":
+                cmd.extend(["-stream_loop", "-1", "-i", str(backdrop_file.resolve())])
             else:
-                cmd.extend([
-                    "-f", "lavfi",
-                    "-i", f"gradients=s={width}x{height}:r={render_fps}:c0=0x0a0f2c:c1=0x111a45:c2=0x1a0a3a:c3=0x08070f:nb_colors=4:speed=0.005:type=linear:d={safe_duration}"
-                ])
+                cmd.extend(["-loop", "1", "-i", str(backdrop_file.resolve())])
             input_count = 1
             video_filters.append(
                 f"[0:v]trim=duration={safe_duration:.3f},setpts=PTS-STARTPTS,scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps={render_fps},format=pix_fmts=yuv420p,scale=eval=frame:w='trunc({width}*(1+0.04*t/{safe_duration:.3f})/2)*2':h='trunc({height}*(1+0.04*t/{safe_duration:.3f})/2)*2',crop={width}:{height}[scaled]"

@@ -29,7 +29,6 @@ from .providers import (
     PixabayVideoProvider,
     WikimediaVideoProvider,
     UnsplashImageProvider,
-    GeminiImageProvider,
     JamendoAudioProvider,
     WikimediaAudioProvider,
     SfxProvider,
@@ -55,11 +54,6 @@ SEARCH_NOISE_WORDS: set[str] = {
     "vertical", "9:16", "16:9", "4k", "uhd", "hd", "1080p", "8k", "60fps", "120fps"
 }
 
-DEFAULT_FALLBACK_QUERIES: list[str] = [
-    "golden hour mountain sunset",
-    "dramatic ocean storm waves",
-]
-
 # ==============================================================================
 # Provider Singletons & Logger
 # ==============================================================================
@@ -72,7 +66,6 @@ pexels_video = PexelsVideoProvider()
 pixabay_video = PixabayVideoProvider()
 wikimedia_video = WikimediaVideoProvider()
 unsplash_image = UnsplashImageProvider()
-gemini_image = GeminiImageProvider()
 jamendo_audio = JamendoAudioProvider()
 wikimedia_audio = WikimediaAudioProvider()
 sfx_provider = SfxProvider()
@@ -102,16 +95,12 @@ def _resolve_single_scene_internal(
     queries_to_try: List[str] = []
     for q in raw_queries:
         tokens = [w for w in q.replace(",", " ").replace("-", " ").split() if w.strip()]
-        lower_tokens = set(t.lower() for t in tokens)
-        if lower_tokens & DISALLOWED_CTA_WORDS and len(lower_tokens - DISALLOWED_CTA_WORDS) <= 2:
-            queries_to_try.extend(DEFAULT_FALLBACK_QUERIES)
-        else:
-            clean_tokens = [w for w in tokens if w.lower() not in DISALLOWED_CTA_WORDS and w.lower() not in SEARCH_NOISE_WORDS]
-            clean_q = " ".join(clean_tokens).strip()
-            if len(clean_q) > 3 and clean_q not in queries_to_try:
-                queries_to_try.append(clean_q)
-            if q not in queries_to_try:
-                queries_to_try.append(q)
+        clean_tokens = [w for w in tokens if w.lower() not in DISALLOWED_CTA_WORDS and w.lower() not in SEARCH_NOISE_WORDS]
+        clean_q = " ".join(clean_tokens).strip()
+        if len(clean_q) > 3 and clean_q not in queries_to_try:
+            queries_to_try.append(clean_q)
+        if q not in queries_to_try:
+            queries_to_try.append(q)
 
     # Only query scene-specific search terms; do not fall back to generic ambient loops
     all_queries = [q for q in queries_to_try if q]
@@ -212,37 +201,6 @@ def _resolve_single_scene_internal(
                         status="resolved",
                         media=cand,
                     )
-
-        # 5. Multimodal AI Visual Generation: If stock media is unavailable, generate bespoke AI scene visual
-    try:
-        ai_prompt = item.visualQuery or f"Dramatic cinematic scene {item.sceneNumber}"
-        logger.info(f"Generating AI visual fallback for scene {item.sceneNumber}: '{ai_prompt[:50]}...'")
-        ai_media = gemini_image.generate(
-            prompt=ai_prompt,
-            aspect_ratio=aspect_ratio,
-            style="cinematic",
-            scene_number=item.sceneNumber,
-        )
-        if ai_media:
-            ai_accepted = False
-            if lock:
-                with lock:
-                    if _is_valid_cand(ai_media, excluded_urls):
-                        excluded_urls.add(ai_media.url)
-                        ai_accepted = True
-            else:
-                if _is_valid_cand(ai_media, excluded_urls):
-                    excluded_urls.add(ai_media.url)
-                    ai_accepted = True
-
-            if ai_accepted:
-                return ResolvedSceneResult(
-                    sceneNumber=item.sceneNumber,
-                    status="resolved",
-                    media=ai_media,
-                )
-    except Exception as ai_err:
-        logger.warning(f"AI image fallback failed for scene {item.sceneNumber}: {ai_err}")
 
     return ResolvedSceneResult(
         sceneNumber=item.sceneNumber,
@@ -505,13 +463,6 @@ def get_providers_status() -> ProvidersStatusData:
             authRequired=False,
             latencyMs=300,
         ),
-        "gemini_image": ProviderInfo(
-            status="active" if gemini_image.is_configured() else "fallback_active",
-            type=["image"],
-            hasKey=gemini_image.is_configured(),
-            authRequired=False,
-            latencyMs=1200,
-        ),
         "open_sfx": ProviderInfo(
             status="active",
             type=["audio"],
@@ -525,21 +476,4 @@ def get_providers_status() -> ProvidersStatusData:
     return ProvidersStatusData(
         allHealthy=all_healthy,
         providers=providers_info,
-    )
-
-
-def generate_ai_image(
-    prompt: str,
-    aspect_ratio: str = "9:16",
-    style: str = "cinematic",
-    scene_number: Optional[int] = None,
-    model: Optional[str] = None,
-) -> Optional[MediaAsset]:
-    """Generates a bespoke visual asset using Gemini Multimodal Image Generation."""
-    return gemini_image.generate(
-        prompt=prompt,
-        aspect_ratio=aspect_ratio,
-        style=style,
-        scene_number=scene_number,
-        model=model,
     )

@@ -5,7 +5,6 @@ from typing import Dict, Any, List
 
 from backend.database.repository import (
     get_website_videos,
-    get_quote_memory,
     get_channels,
     get_notifications,
     get_unread_notification_count,
@@ -75,9 +74,9 @@ def get_dashboard_summary(server_start_time: float) -> Dict[str, Any]:
     total_views = sum(v.get("views", 0) for v in videos)
     total_likes = sum(v.get("likes", 0) for v in videos)
 
-    # 2. Fetch scripts memory
-    scripts = get_quote_memory(limit=10)
-    total_scripts = len(scripts)
+    # 2. Scripts and production count
+    scripts: List[Dict[str, Any]] = []
+    total_scripts = total_videos
 
     # 3. Channels info
     channels = get_channels()

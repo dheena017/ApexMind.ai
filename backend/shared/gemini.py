@@ -482,186 +482,6 @@ def _generate_script_with_fallback(
     return parsed, used_model
 
 
-def generate_contextual_fallback_script(
-    category: str,
-    topic: str,
-    tone: str,
-    target_seconds: int,
-    target_aspect_ratio: str = "9:16",
-    user_prompt: str | None = None,
-    catalog: dict | None = None,
-) -> dict[str, Any]:
-    """Generates an intelligent, high-retention contextual video plan when external Gemini models are unavailable or quota-limited."""
-    clean_topic = (topic or "").strip() or (category or "").strip() or "Unbreakable Focus"
-    clean_cat = (category or "").strip() or "Stoic Mindset & Discipline"
-
-    # Contextual hooks
-    primary_hook = (
-        f"The brutal truth about {clean_topic.lower()}: you are waiting for a feeling that never comes."
-        if "stoic" in clean_cat.lower() or "discipline" in clean_topic.lower()
-        else f"Stop scrolling. This one realization about {clean_topic.lower()} changes everything."
-    )
-    hook_2 = f"The silent habit that separates the elite in {clean_topic.lower()}."
-    hook_3 = f"What happens when you stop negotiating with your own mind?"
-
-    # Contextual narrative body sentences
-    monologue_sentences = [
-        "Motivation is a fleeting ghost. It visits when conditions are easy and vanishes when the storm begins.",
-        "Real discipline does not require inspiration—it requires decision.",
-        "When Marcus Aurelius woke to harsh Roman winters, he didn't wait for comfort. He reminded himself: 'At dawn, when you have trouble getting out of bed, tell yourself: I have to go to work—as a human being.'",
-        "The mountain does not negotiate with the tempest. The ocean does not ask the shore for permission.",
-        "Your potential expands only at the exact point of resistance.",
-        "Every excuse you rehearse today becomes the prison of your tomorrow.",
-        "Master the silence between thought and reaction, and no outside circumstance can shatter your resolve.",
-    ]
-
-    scene_count = max(3, round(target_seconds / 4.8))
-    nature_scenarios = [
-        {
-            "name": "Misty Alpine Mountain Ridge at Dawn",
-            "googleSearchQuery": f"misty alpine mountain peak sunrise volumetric rays 4k vertical {target_aspect_ratio}",
-            "visualQuery": "misty alpine mountain peak sunrise nature volumetric",
-            "fallbackQueries": ["foggy pine forest aerial landscape", "mountain ridge storm clouds timelapse"],
-            "cameraMotion": "push-in",
-            "transition": "glitch",
-            "sfx": "Fast Cinematic Whoosh",
-            "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
-        },
-        {
-            "name": "Cascading Forest Rapids & Pine Canyon",
-            "googleSearchQuery": f"cascading waterfall deep pine forest river rapids {target_aspect_ratio}",
-            "visualQuery": "cascading waterfall deep pine forest nature",
-            "fallbackQueries": ["river rapids rocky forest nature", "lush green woodland waterfall"],
-            "cameraMotion": "pan-right",
-            "transition": "match-cut",
-            "sfx": None,
-            "sfxUrl": None,
-        },
-        {
-            "name": "Solitary Ocean Storm Waves & Dark Cliffs",
-            "googleSearchQuery": f"dramatic ocean waves crashing sea cliffs storm sunset {target_aspect_ratio}",
-            "visualQuery": "dramatic ocean waves crashing sea cliffs nature",
-            "fallbackQueries": ["ocean tempest storm waves aerial", "rocky coastal cliffs golden hour"],
-            "cameraMotion": "panoramic-drift-left",
-            "transition": "luma-fade",
-            "sfx": "Deep Sub Bass Drop",
-            "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-        },
-        {
-            "name": "Ancient Pine Canopy Under Starry Nebula",
-            "googleSearchQuery": f"starry cosmos milky way nebula above ancient forest night {target_aspect_ratio}",
-            "visualQuery": "starry cosmos milky way above ancient forest nature",
-            "fallbackQueries": ["aurora borealis northern lights night sky", "cosmic galaxy timelapse over mountains"],
-            "cameraMotion": "slow-pull-out",
-            "transition": "soft-rotate",
-            "sfx": None,
-            "sfxUrl": None,
-        },
-        {
-            "name": "Sunlit Mountain Summit Golden Horizon",
-            "googleSearchQuery": f"golden hour mountain summit razor peak cinematic clouds {target_aspect_ratio}",
-            "visualQuery": "golden hour mountain summit razor peak nature",
-            "fallbackQueries": ["golden horizon sunrise clouds drone", "epic mountain peak glowing sunlight"],
-            "cameraMotion": "orbital-reveal",
-            "transition": "whip-pan-left",
-            "sfx": "Cinematic Impact",
-            "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
-        },
-    ]
-
-    storyboard = []
-    dur_per_scene = round(target_seconds / scene_count, 2)
-    running_time = 0.0
-
-    for i in range(scene_count):
-        is_first = i == 0
-        is_last = i == scene_count - 1
-        scene_dur = round(target_seconds - running_time, 2) if is_last else dur_per_scene
-        scen_info = nature_scenarios[i % len(nature_scenarios)]
-
-        if is_first:
-            beat = "hook"
-            subtitle = primary_hook
-        elif is_last:
-            beat = "cta"
-            subtitle = "Demand more from yourself than anyone else ever could. Execute now."
-        else:
-            beat = "quote"
-            mid_idx = (i - 1) % len(monologue_sentences)
-            subtitle = monologue_sentences[mid_idx]
-
-        storyboard.append({
-            "sceneNumber": i + 1,
-            "beat": beat,
-            "start": round(running_time, 2),
-            "duration": scene_dur,
-            "mediaType": "video",
-            "mediaId": "",
-            "mediaUrl": "",
-            "mediaName": scen_info["name"],
-            "textStyleId": "sub-hormozi" if is_first else "sub-classic-clean",
-            "textStyleName": "Hormozi Viral Yellow" if is_first else "Studio Clean",
-            "captionPresetClass": "font-black tracking-tight text-yellow-400 uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)] bg-black/85 px-3 py-1 rounded-md border border-yellow-400/30" if is_first else "font-extrabold text-white uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]",
-            "captionPresetColor": "#FACC15" if is_first else "#FFFFFF",
-            "captionPresetFontFamily": "Impact, sans-serif" if is_first else "Inter, sans-serif",
-            "transition": scen_info["transition"],
-            "cameraMotion": scen_info["cameraMotion"],
-            "sfx": scen_info["sfx"],
-            "sfxUrl": scen_info["sfxUrl"],
-            "googleSearchQuery": scen_info["googleSearchQuery"],
-            "visualQuery": scen_info["visualQuery"],
-            "fallbackQueries": scen_info["fallbackQueries"],
-            "negativeTerms": ["indoor", "gym", "building", "urban", "office", "car", "talking", "people"],
-            "subtitleText": subtitle,
-        })
-        running_time += scene_dur
-
-    return {
-        "title": f"{clean_topic}: The Law of Unstoppable Resolve",
-        "hook": primary_hook,
-        "quote": " ".join([s["subtitleText"] for s in storyboard[1:-1]]),
-        "cta": "Demand more from yourself than anyone else ever could. Execute now.",
-        "tone": tone or "stoic",
-        "category": clean_cat,
-        "topic": clean_topic,
-        "estimatedDuration": f"{target_seconds}s",
-        "durationSeconds": target_seconds,
-        "uniquenessScore": 96,
-        "tags": [
-            f"#{clean_topic.replace(' ', '')[:15]}",
-            "#Shorts",
-            "#StoicMindset",
-            "#Discipline",
-            "#ApexMind",
-        ],
-        "hooks": [
-            {"id": "hook_1", "angle": "Brutal Truth", "text": primary_hook, "viralityScore": 96, "spokenDuration": 2.2},
-            {"id": "hook_2", "angle": "Curiosity Gap", "text": hook_2, "viralityScore": 93, "spokenDuration": 2.3},
-            {"id": "hook_3", "angle": "Direct Challenge", "text": hook_3, "viralityScore": 89, "spokenDuration": 2.0},
-        ],
-        "soundDesign": {
-            "soundtrackTrackId": "track-phonk-titan",
-            "soundtrackTitle": "Titan Momentum Phonk",
-            "genre": "phonk",
-            "bpm": 140,
-            "ducking": {
-                "active": True,
-                "voiceActiveVolume": 0.18,
-                "pauseSwellVolume": 0.72,
-                "attackMs": 150,
-                "releaseMs": 300,
-            },
-            "sfxEvents": [
-                {"time": 0.0, "sfxId": "sfx-impact-subdrop", "label": "Opening Hook Boom"},
-                {"time": 2.5, "sfxId": "sfx-whoosh-fast", "label": "Scene 1 to 2 Swish"},
-                {"time": round(target_seconds * 0.6, 1), "sfxId": "sfx-whoosh-swish", "label": "Climax Transition"},
-                {"time": round(target_seconds - 1.5, 1), "sfxId": "sfx-notif-cash", "label": "Closing CTA Chime"},
-            ],
-        },
-        "storyboard": storyboard,
-    }
-
-
 def generate_gemini_script(
     category: str,
     topic: str,
@@ -684,7 +504,7 @@ def generate_gemini_script(
     available_assets: dict | None = None,
     user_prompt: str | None = None,
 ) -> dict[str, Any]:
-    """Generates viral motivational quote scripts via Gemini with memory deduplication and multi-scene media planning."""
+    """Generates viral motivational quote scripts via Gemini with creative multi-scene media planning."""
     memory_snippets = "\n".join([
         f"- [Title: {q.get('title')}] Quote: {q.get('quote')}"
         for q in memory_quotes[-15:]
@@ -1117,20 +937,10 @@ Output MUST be a single raw JSON object matching this exact schema:
             system_instruction=SCRIPT_SYSTEM_INSTRUCTION,
         )
         if result is None:
-            logger.warning(
-                f"[Studio/Script] Online Gemini quota/models unavailable ({used_model}). "
-                f"Smoothly synthesizing intelligent contextual video plan for '{topic}'..."
+            raise RuntimeError(
+                f"Stage 1 (Script) Error: Gemini AI script generation failed across all configured models ({used_model}). "
+                f"Please verify GEMINI_API_KEY validity, internet connectivity, and API quota limits."
             )
-            result = generate_contextual_fallback_script(
-                category=category,
-                topic=topic,
-                tone=tone,
-                target_seconds=target_seconds,
-                target_aspect_ratio=target_aspect_ratio,
-                user_prompt=user_prompt,
-                catalog=catalog,
-            )
-            used_model = "apexmind-contextual-engine"
         elapsed = time.perf_counter() - start_t
 
         # ── Multi-Scene Storyboard Validation (Zero Fake Fallbacks) ───────────

@@ -62,7 +62,7 @@ const DEFAULT_WORKSPACE_NOTIFICATIONS: WorkspaceNotification[] = [
   {
     id: 'wn-init-6',
     title: 'Auto-Save Snapshot Synchronized',
-    message: 'Workspace project draft #14 saved to browser local store. Quote memory deduplication verified.',
+    message: 'Workspace project draft #14 saved to browser local store. Creative script context verified.',
     category: 'autosave',
     type: 'info',
     timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),

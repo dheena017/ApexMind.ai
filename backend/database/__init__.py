@@ -1,9 +1,6 @@
 from .connection import get_connection, DB_PATH
 from .schema import init_db
 from .repository import (
-    get_quote_memory,
-    add_quote_to_memory,
-    clear_quote_memory,
     get_channels,
     add_channel,
     get_videos,
@@ -26,9 +23,6 @@ __all__ = [
     "get_connection",
     "DB_PATH",
     "init_db",
-    "get_quote_memory",
-    "add_quote_to_memory",
-    "clear_quote_memory",
     "get_channels",
     "add_channel",
     "get_videos",

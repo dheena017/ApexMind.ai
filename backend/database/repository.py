@@ -7,49 +7,6 @@ from .connection import get_connection
 
 logger = logging.getLogger("ApexMind.Database")
 
-def get_quote_memory(limit: int = 50) -> List[Dict[str, Any]]:
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, title, hook, quote, category, generated_at FROM quotes_memory ORDER BY generated_at DESC LIMIT ?",
-        (limit,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    logger.debug(f"Queried quotes memory (limit: {limit}) -> Found {len(rows)} recorded quotes")
-    return [dict(r) for r in rows]
-
-def add_quote_to_memory(title: str, hook: str, quote: str, category: str) -> Dict[str, Any]:
-    conn = get_connection()
-    cursor = conn.cursor()
-    record_id = f"mem_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
-    timestamp = datetime.now(timezone.utc).isoformat()
-    cursor.execute("""
-    INSERT INTO quotes_memory (id, title, hook, quote, category, generated_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-    """, (record_id, title, hook, quote, category, timestamp))
-    conn.commit()
-    conn.close()
-    logger.info(f"Saved quote to memory: '{title}' [{category}] (ID: {record_id})")
-    return {
-        "id": record_id,
-        "title": title,
-        "hook": hook,
-        "quote": quote,
-        "category": category,
-        "generated_at": timestamp
-    }
-
-def clear_quote_memory() -> int:
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM quotes_memory")
-    deleted = cursor.rowcount
-    conn.commit()
-    conn.close()
-    logger.info(f"Cleared all quotes from memory ({deleted} records removed)")
-    return deleted
-
 
 def get_channels() -> List[Dict[str, Any]]:
     conn = get_connection()

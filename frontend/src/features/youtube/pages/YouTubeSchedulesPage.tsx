@@ -209,9 +209,11 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
     setRunSuccessNotice(null);
     setErrorMessage(null);
 
-    const phaseTimer1 = setTimeout(() => setActivePipelinePhase(1), 3200);
-    const phaseTimer2 = setTimeout(() => setActivePipelinePhase(2), 7000);
-    const phaseTimer3 = setTimeout(() => setActivePipelinePhase(3), 12000);
+    const phaseTimer1 = setTimeout(() => setActivePipelinePhase(1), 2500); // Voice
+    const phaseTimer2 = setTimeout(() => setActivePipelinePhase(2), 6500); // B-Roll
+    const phaseTimer3 = setTimeout(() => setActivePipelinePhase(3), 10500); // Captions
+    const phaseTimer4 = setTimeout(() => setActivePipelinePhase(4), 14000); // Render
+    const phaseTimer5 = setTimeout(() => setActivePipelinePhase(5), 20000); // Publish
 
     try {
       const res = await youtubeApi.runAutomationNow(id);
@@ -230,6 +232,8 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
       clearTimeout(phaseTimer1);
       clearTimeout(phaseTimer2);
       clearTimeout(phaseTimer3);
+      clearTimeout(phaseTimer4);
+      clearTimeout(phaseTimer5);
       setRunningJobId(null);
       setActivePipelinePhase(0);
     }
@@ -509,9 +513,22 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
               const themeMeta = getThemeMeta(auto.theme);
               const scheduleLabel = formatScheduleLabel(auto.publishTime || auto.schedule);
               const nextRunInfo = formatNextRunInfo(auto.nextRun);
-              const historyList = historyByJob[auto.id] || [];
-              const isHistoryLoading = loadingHistoryByJob[auto.id];
-              const totalRunsCount = historyList.length > 0 ? historyList.length : (auto.lastRun ? 1 : 0);
+              const rawHistory = historyByJob[auto.id] || [];
+              const fallbackHistory: AutomationHistoryEntry[] = auto.lastRun ? [{
+                id: `fallback-${auto.id}`,
+                jobId: auto.id,
+                status: (auto.lastStatus === 'failed' ? 'failed' : 'success') as 'success' | 'failed',
+                videoTitle: auto.lastVideoTitle || auto.theme,
+                videoUrl: auto.lastVideoUrl,
+                youtubeUrl: auto.lastIsLive ? auto.lastVideoUrl : undefined,
+                isLive: Boolean(auto.lastIsLive),
+                durationSeconds: 15,
+                message: auto.lastRunMessage || (auto.lastIsLive ? 'Published live to YouTube Shorts' : 'Saved to Studio Library (Connect YouTube channel to publish live)'),
+                executedAt: auto.lastRun,
+              }] : [];
+              const historyList = rawHistory.length > 0 ? rawHistory : fallbackHistory;
+              const isHistoryLoading = loadingHistoryByJob[auto.id] && rawHistory.length === 0 && !auto.lastRun;
+              const totalRunsCount = historyList.length;
               const isConfirmingDelete = confirmDeleteJobId === auto.id;
 
               return (
@@ -651,25 +668,47 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   </div>
 
-                  {/* ── 4. DYNAMIC LIVE PIPELINE STEPPER (when executing) ── */}
+                  {/* ── 3B. RECENT ERROR BANNER (When last execution failed) ── */}
+                  {auto.lastStatus === 'failed' && !isRunning && (
+                    <div className="p-3 rounded-xl bg-rose-950/35 border border-rose-500/40 text-xs flex flex-col gap-1.5 shadow-sm animate-fade-in">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 text-rose-400 font-bold text-xs">
+                          <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                          <span>Pipeline Execution Failed</span>
+                        </span>
+                        {auto.lastRun && (
+                          <span className="text-[10px] font-mono text-rose-300/70">
+                            {new Date(auto.lastRun).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-rose-200/90 leading-snug font-mono break-words">
+                        {auto.lastRunMessage || 'Pipeline execution failed. Please verify API credentials and retry.'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ── 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) ── */}
                   {isRunning && (
                     <div className="p-3.5 rounded-xl bg-blue-950/25 border border-blue-500/40 flex flex-col gap-2.5 animate-fade-in shadow-inner">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-bold text-blue-300 flex items-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                          <span>Autonomous Pipeline In Progress</span>
+                          <span>Autonomous 6-Stage Pipeline Live</span>
                         </span>
                         <span className="font-mono text-xs text-blue-300 font-bold bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-500/30">
-                          Phase {activePipelinePhase + 1} of 4
+                          Stage {activePipelinePhase + 1} of 6
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-2 pt-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
                         {[
                           { name: '1. Script', desc: 'Gemini 3.8 Flash' },
-                          { name: '2. Voice', desc: auto.voice || 'Fenrir' },
-                          { name: '3. Render', desc: '1080p 60FPS MP4' },
-                          { name: '4. Publish', desc: auto.privacyStatus === 'scheduled' ? 'YouTube Scheduled' : 'YouTube Shorts Live' },
+                          { name: '2. Voice', desc: auto.voice || 'Fenrir TTS' },
+                          { name: '3. B-Roll', desc: '4K Pexels/Pixabay' },
+                          { name: '4. Captions', desc: 'Acoustic Sync' },
+                          { name: '5. Render', desc: '1080p MP4' },
+                          { name: '6. Publish', desc: auto.privacyStatus === 'scheduled' ? 'Scheduled' : 'Shorts Live' },
                         ].map((step, idx) => {
                           const isDone = activePipelinePhase > idx;
                           const isCurrent = activePipelinePhase === idx;
@@ -946,12 +985,16 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                           <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
                           <span>
                             {activePipelinePhase === 0
-                              ? 'Generating Script with Gemini 3.8...'
+                              ? 'Stage 1/6: Generating Script with Gemini 3.8...'
                               : activePipelinePhase === 1
-                              ? 'Synthesizing Voice Narration...'
+                              ? 'Stage 2/6: Synthesizing Neural Voiceover...'
                               : activePipelinePhase === 2
-                              ? 'Rendering 1080p MP4 Video...'
-                              : 'Publishing to YouTube Shorts...'}
+                              ? 'Stage 3/6: Resolving 4K Stock B-Roll...'
+                              : activePipelinePhase === 3
+                              ? 'Stage 4/6: Aligning Word Syllable Captions...'
+                              : activePipelinePhase === 4
+                              ? 'Stage 5/6: Rendering 1080x1920 MP4 Video...'
+                              : 'Stage 6/6: Publishing to YouTube Shorts...'}
                           </span>
                         </>
                       ) : (

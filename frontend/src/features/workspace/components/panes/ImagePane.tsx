@@ -83,20 +83,11 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   onSelectImage,
   activeImageUrl,
 }) => {
-  const [activeTab, setActiveTab] = useState<'catalog' | 'ai-generator' | 'url' | 'filters' | 'saved'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'filters' | 'saved'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // ── AI Visual Generator (Gemini Multimodal Scene Generation) ──
-  const [aiPrompt, setAiPrompt] = useState<string>('');
-  const [aiModel, setAiModel] = useState<string>('imagen-3.0-generate-002');
-  const [aiStyle, setAiStyle] = useState<'cinematic' | 'stoic' | 'cyberpunk' | 'anime' | '3d' | 'vintage' | 'minimal' | 'nature' | 'space'>('cinematic');
-  const [aiAspectRatio, setAiAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
-  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
-  const [aiGeneratedList, setAiGeneratedList] = useState<StockImageItem[]>([]);
-  const AI_IMAGES_STORAGE_KEY = 'apexmind_ai_generated_images';
-
 
   // Images state
   const [images, setImages] = useState<StockImageItem[]>([]);
@@ -138,8 +129,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       if (stored) setSavedImages(JSON.parse(stored));
       const recent = localStorage.getItem(RECENT_IMAGES_KEY);
       if (recent) setRecentImages(JSON.parse(recent));
-      const aiSaved = localStorage.getItem(AI_IMAGES_STORAGE_KEY);
-      if (aiSaved) setAiGeneratedList(JSON.parse(aiSaved));
     } catch {}
   }, []);
 
@@ -332,113 +321,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     });
   };
 
-
-  const AI_INSPIRATIONS = [
-    { label: '🏛️ Stoic Marble Statue', prompt: 'Classical Greek marble statue head in pouring rain, dramatic golden hour lightning, moody dark atmosphere, 8k cinematic' },
-    { label: '🧪 Neon Cyberpunk Lab', prompt: 'Futuristic cyberpunk scientist in a dark neon laboratory mixing glowing green potions with rising volumetric smoke, 8k' },
-    { label: '🌧️ Rainy Tokyo Streets', prompt: 'Melancholic rainy crosswalk in Tokyo at midnight, neon reflections on wet asphalt, cinematic bokeh 35mm' },
-    { label: '⛰️ Himalayan Summit', prompt: 'Lone adventurer standing on a razor-sharp snow mountain peak at sunrise, majestic orange sunlight, IMAX composition' },
-    { label: '🌌 Deep Space Nebula', prompt: 'Celestial stellar portal inside deep cosmic nebula, glowing turquoise and violet dust clouds, photorealistic NASA style' },
-    { label: '🔥 Molten Steel Forge', prompt: 'Blacksmith forging legendary blade with flying molten golden sparks, dark foundry, extreme high contrast lighting' },
-  ];
-
-  const AI_MODEL_OPTIONS = [
-    { id: 'imagen-3.0-generate-002', name: 'Google Imagen 3 (Photorealistic HD)', badge: 'Recommended', desc: '8K photorealism, high detail & volumetric lighting' },
-    { id: 'imagen-3.0-fast-generate-001', name: 'Google Imagen 3 Fast', badge: 'Ultra-Fast', desc: 'Rapid 1-second scene generation for fast visual exploration' },
-    { id: 'gemini-2.5-flash', name: 'Gemini Multimodal Scene AI', badge: 'Contextual', desc: 'Narrative-aligned conceptual composition' },
-    { id: 'procedural-svg', name: 'Procedural Gradient Backdrop', badge: 'Instant', desc: 'Local vector backdrop — instant generation, zero API quota' },
-  ];
-
-  const AI_STYLE_PRESETS = [
-    { id: 'cinematic', label: '🎬 Cinematic', desc: '35mm anamorphic, volumetric lighting & 8k realism' },
-    { id: 'stoic', label: '🏛️ Dark Stoic', desc: 'Chiaroscuro, marble statues, moody gold & charcoal' },
-    { id: 'cyberpunk', label: '🏙️ Cyberpunk', desc: 'Neon cyan/magenta rim lighting, reflective wet asphalt' },
-    { id: 'anime', label: '🎨 Anime Art', desc: 'Makoto Shinkai style, vibrant sky & atmospheric light' },
-    { id: '3d', label: '🔮 3D Render', desc: 'Unreal Engine 5, raytraced subsurface scattering' },
-    { id: 'vintage', label: '📷 Vintage Film', desc: '1970s Kodachrome analog film grain & nostalgic hues' },
-    { id: 'nature', label: '🌿 Nature & Wildlife', desc: 'National Geographic 8K landscape documentary' },
-    { id: 'space', label: '🌌 Deep Space', desc: 'NASA Hubble astrophotography, nebulae & stellar dust' },
-    { id: 'minimal', label: '✨ Minimalist', desc: 'Negative space, zen aesthetic & clean lines' },
-  ] as const;
-
-  const handleGenerateAiVisual = async () => {
-    if (!aiPrompt.trim()) {
-      toast.error('Please enter a scene prompt to generate a visual');
-      return;
-    }
-    setIsGeneratingAi(true);
-    try {
-      const res = await workspaceApi.generateAiImage({
-        prompt: aiPrompt.trim(),
-        aspectRatio: aiAspectRatio,
-        style: aiStyle,
-        model: aiModel,
-      });
-
-      if (res?.data) {
-        const newItem: StockImageItem = {
-          id: res.data.id || `ai-${Date.now()}`,
-          title: res.data.title || `AI: ${aiPrompt.slice(0, 32)}`,
-          category: aiStyle,
-          url: res.data.url,
-          thumbnail: res.data.thumbnail || res.data.url,
-          author: aiModel.includes('imagen') ? 'Google Imagen 3' : 'Gemini Multimodal AI',
-          resolution: `${res.data.width || 1080}×${res.data.height || 1920}`,
-          source: 'gemini_ai',
-          tags: res.data.tags || ['ai_generated', aiStyle],
-          prompt: aiPrompt.trim(),
-          model: aiModel,
-          aspectRatio: aiAspectRatio,
-          createdAt: Date.now(),
-        };
-
-        const updated = [newItem, ...aiGeneratedList.filter((i) => i.id !== newItem.id)].slice(0, 30);
-        setAiGeneratedList(updated);
-        try {
-          localStorage.setItem(AI_IMAGES_STORAGE_KEY, JSON.stringify(updated));
-        } catch {}
-
-        handleApply(newItem);
-        toast.success('✨ AI Visual Generated & Placed on Timeline', {
-          description: `Rendered in ${aiStyle} style for ${aiAspectRatio} vertical short.`,
-        });
-      }
-    } catch (err: any) {
-      toast.error('AI Visual Generation Failed', {
-        description: err.message || 'Please check your GEMINI_API_KEY.',
-      });
-    } finally {
-      setIsGeneratingAi(false);
-    }
-  };
-
-  const handleDeleteAiImage = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const updated = aiGeneratedList.filter((img) => img.id !== id);
-    setAiGeneratedList(updated);
-    try {
-      localStorage.setItem(AI_IMAGES_STORAGE_KEY, JSON.stringify(updated));
-    } catch {}
-    toast.success('Removed visual from history');
-  };
-
-  const handleDownloadAiImage = (url: string, title: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    toast.success('Downloading AI visual PNG');
-  };
-
-  const handleCopyPrompt = (promptText: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(promptText);
-    toast.success('Prompt copied to clipboard');
-  };
-
   const handleStageImage = (img: StockImageItem) => setSelectedId(img.id);
 
   const handleAddCustomUrl = (saveToFavorites = false) => {
@@ -547,54 +429,35 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          {activeTab === 'ai-generator' ? (
-            <>
-              <Sparkles className="w-4 h-4 shrink-0 text-blue-400" />
-              <span className="text-xs font-bold text-white truncate">
-                AI Visual Studio
-              </span>
-            </>
-          ) : (
-            <>
-              <ImageIcon className="w-4 h-4 shrink-0 text-blue-400" />
-              <span className="text-xs font-bold text-white truncate">
-                Stock Photos (100M+ Library)
-              </span>
-            </>
-          )}
+          <ImageIcon className="w-4 h-4 shrink-0 text-blue-400" />
+          <span className="text-xs font-bold text-white truncate">
+            Stock Photos (100M+ Library)
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {activeTab === 'ai-generator' ? (
-            <span className="text-[9.5px] font-mono font-bold text-blue-400 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
-              Google Imagen 3 &amp; Gemini AI
-            </span>
-          ) : (
-            <>
-              {isLoadingLive && (
-                <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
-              )}
-
-              {/* Provider API Key Status Pill */}
-              <button
-                type="button"
-                onClick={() => setShowKeyModal(true)}
-                className={`text-[9px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-pointer transition-colors ${
-                  activeKeyCount > 0
-                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40 hover:bg-emerald-900/50'
-                    : 'bg-[#222226] text-zinc-400 border-[#2F2F36] hover:text-white hover:border-zinc-500'
-                }`}
-                title="Configure Pexels, Pixabay, & Unsplash API keys"
-              >
-                <Key className="w-2.5 h-2.5" />
-                <span>{activeKeyCount > 0 ? `${activeKeyCount} APIs Active` : 'API Keys'}</span>
-              </button>
-
-              <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
-                {totalFound} Photos
-              </span>
-            </>
+          {isLoadingLive && (
+            <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
+
+          {/* Provider API Key Status Pill */}
+          <button
+            type="button"
+            onClick={() => setShowKeyModal(true)}
+            className={`text-[9px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-pointer transition-colors ${
+              activeKeyCount > 0
+                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40 hover:bg-emerald-900/50'
+                : 'bg-[#222226] text-zinc-400 border-[#2F2F36] hover:text-white hover:border-zinc-500'
+            }`}
+            title="Configure Pexels, Pixabay, & Unsplash API keys"
+          >
+            <Key className="w-2.5 h-2.5" />
+            <span>{activeKeyCount > 0 ? `${activeKeyCount} APIs Active` : 'API Keys'}</span>
+          </button>
+
+          <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
+            {totalFound} Photos
+          </span>
         </div>
       </div>
 
@@ -610,20 +473,6 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           }`}
         >
           Photo Catalog
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('ai-generator')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'ai-generator'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-          <span className="font-semibold text-white">
-            AI Visual Gen
-          </span>
         </button>
         <button
           type="button"
@@ -733,323 +582,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
-                {/* ── Tab: AI Visual Generator (Gemini Multimodal Scene Generation) ── */}
-        {activeTab === 'ai-generator' ? (
-          <div className="flex flex-col gap-4">
-            {/* AI Generator Hero Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-[#141416] border border-[#26262B] p-4 shadow-xl flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                    <Sparkles className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-                      Gemini Multimodal Scene Generator
-                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-400 border border-blue-500/30">
-                        Nano Banana 2.1
-                      </span>
-                    </h3>
-                    <p className="text-[10px] text-zinc-400">
-                      Generate bespoke vertical 9:16 cinematic visuals with high-detail lighting & style coherence.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Prompt Input Box */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-400">
-                  <span>SCENE PROMPT</span>
-                  <span className="text-[9px] font-mono text-zinc-500">{aiPrompt.length}/300 chars</span>
-                </div>
-                <div className="relative">
-                  <textarea
-                    rows={3}
-                    value={aiPrompt}
-                    maxLength={300}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Describe your scene in rich detail (e.g. Ancient Greek warrior standing on rainy summit under dramatic thunder, golden light, 8k cinematic)..."
-                    className="w-full bg-[#18181B] border border-[#27272A] focus:border-blue-500/70 rounded-xl p-3 text-xs text-white placeholder:text-zinc-500 outline-none resize-none transition-colors"
-                  />
-                  {aiPrompt && (
-                    <button
-                      type="button"
-                      onClick={() => setAiPrompt('')}
-                      className="absolute right-2.5 top-2.5 text-zinc-500 hover:text-white cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Inspiration Chips */}
-              <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-                  <Wand2 className="w-2.5 h-2.5 text-blue-400" /> Quick Inspiration Scenes
-                </span>
-                <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
-                  {AI_INSPIRATIONS.map((chip, idx) => (
-                    <button
-                      key={`chip-${idx}`}
-                      type="button"
-                      onClick={() => setAiPrompt(chip.prompt)}
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] hover:border-blue-500/40 text-zinc-300 hover:text-white transition-colors shrink-0 cursor-pointer"
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* AI Image Creation Generator & Model Dropdown */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-blue-400" /> AI Image Model
-                  </span>
-                  <span className="text-[9.5px] font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
-                    {AI_MODEL_OPTIONS.find((m) => m.id === aiModel)?.badge || 'Active'}
-                  </span>
-                </div>
-                <CustomSelect
-                  value={aiModel}
-                  onChange={(val) => setAiModel(val)}
-                  options={AI_MODEL_OPTIONS.map((m) => ({ value: m.id, label: m.name, description: m.desc, badge: m.badge }))}
-                  size="sm"
-                  className="w-full"
-                />
-                <span className="text-[9.5px] text-zinc-500 px-1">
-                  {AI_MODEL_OPTIONS.find((m) => m.id === aiModel)?.desc}
-                </span>
-              </div>
-
-              {/* Visual Aesthetic Dropdown */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Visual Aesthetic Style
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-mono">
-                    {AI_STYLE_PRESETS.find((s) => s.id === aiStyle)?.label}
-                  </span>
-                </div>
-                <CustomSelect
-                  value={aiStyle}
-                  onChange={(val) => setAiStyle(val as any)}
-                  options={AI_STYLE_PRESETS.map((st) => ({ value: st.id, label: st.label, description: st.desc }))}
-                  size="sm"
-                  className="w-full"
-                />
-              </div>
-
-              {/* Aspect Ratio Selector & Action Button */}
-              <div className="flex items-center justify-between gap-3 pt-1 border-t border-[#26262B]">
-                <div className="flex items-center gap-1 bg-[#18181B] p-0.5 rounded-lg border border-[#27272A]">
-                  {(['9:16', '16:9', '1:1'] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setAiAspectRatio(r)}
-                      className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-all cursor-pointer ${
-                        aiAspectRatio === r
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {r} {r === '9:16' ? '(Shorts)' : ''}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleGenerateAiVisual}
-                  disabled={isGeneratingAi || !aiPrompt.trim()}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGeneratingAi ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Synthesizing Scene Visual...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 text-white" />
-                      <span>Generate AI Visual</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* AI Generated History Gallery */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-blue-400" />
-                  Generated Scene Assets ({aiGeneratedList.length})
-                </span>
-                {aiGeneratedList.length > 0 && (
-                  <span className="text-[10px] text-zinc-400 font-medium">1-click apply to active timeline</span>
-                )}
-              </div>
-
-              {aiGeneratedList.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-[#141416] border border-[#26262B] text-center text-xs text-zinc-400 flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                    <Sparkles className="w-6 h-6" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="font-bold text-white text-sm">No AI Visuals Generated Yet</p>
-                    <p className="text-[11px] max-w-xs text-zinc-500 leading-relaxed">
-                      Type a scene prompt above or click an inspiration scene below to create high-definition visuals.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                    {AI_INSPIRATIONS.slice(0, 3).map((chip, idx) => (
-                      <button
-                        key={`empty-chip-${idx}`}
-                        type="button"
-                        onClick={() => {
-                          setAiPrompt(chip.prompt);
-                          toast.info(`Prompt set: "${chip.label}" — click Generate to create visual`);
-                        }}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#1C1C20] hover:bg-[#25252C] border border-[#2A2A32] text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {aiGeneratedList.map((item) => {
-                    const isActive = activeImageUrl === item.url;
-                    const modelLabel = item.model
-                      ? item.model.includes('fast')
-                        ? 'Imagen 3 Fast'
-                        : item.model.includes('imagen')
-                        ? 'Imagen 3'
-                        : item.model.includes('flash')
-                        ? 'Gemini 2.5'
-                        : item.model.includes('svg')
-                        ? 'Vector SVG'
-                        : 'AI Gen'
-                      : (item.category?.toUpperCase() || 'AI GEN');
-
-                    return (
-                      <div
-                        key={item.id}
-                        className={`group relative rounded-2xl overflow-hidden border transition-all aspect-[9/16] bg-[#121214] flex flex-col justify-between p-2.5 shadow-md hover:shadow-xl hover:shadow-blue-950/20 ${
-                          isActive
-                            ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-blue-500/20'
-                            : 'border-[#26262B] hover:border-blue-500/60'
-                        }`}
-                      >
-                        {/* Background Visual Asset */}
-                        <img
-                          src={item.url}
-                          alt={item.title}
-                          loading="lazy"
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80';
-                          }}
-                        />
-
-                        {/* Cinematic Multi-stop Gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-black/60 pointer-events-none" />
-
-                        {/* Top Metadata Header: Engine Badge & Quick Action Buttons */}
-                        <div className="relative z-10 flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-full bg-blue-950/90 border border-blue-400/40 text-[9px] font-mono font-bold text-blue-200 shadow-sm backdrop-blur-xs flex items-center gap-1">
-                              <Sparkles className="w-2.5 h-2.5 text-blue-400" />
-                              {modelLabel}
-                            </span>
-                            {item.aspectRatio && (
-                              <span className="px-1.5 py-0.5 rounded-md bg-black/70 border border-white/10 text-[8.5px] font-mono text-zinc-300">
-                                {item.aspectRatio}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Top-Right Quick Action Overlay (Download & Delete) */}
-                          <div className="flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              onClick={(e) => handleDownloadAiImage(item.url, item.title, e)}
-                              title="Download High-Res PNG"
-                              className="w-6 h-6 rounded-md bg-black/80 hover:bg-zinc-800 border border-white/20 text-zinc-200 hover:text-white flex items-center justify-center cursor-pointer transition-colors shadow-sm"
-                            >
-                              <Download className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeleteAiImage(item.id, e)}
-                              title="Delete Visual from History"
-                              className="w-6 h-6 rounded-md bg-black/80 hover:bg-red-950/80 border border-red-500/30 text-red-400 hover:text-red-300 flex items-center justify-center cursor-pointer transition-colors shadow-sm"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Active Scene Badge if placed on timeline */}
-                        {isActive && (
-                          <div className="absolute inset-x-2 top-10 flex items-center justify-center z-10 pointer-events-none">
-                            <div className="px-2.5 py-0.5 rounded-full bg-blue-600/95 text-white font-bold text-[10px] flex items-center gap-1 shadow-lg border border-blue-400/50 backdrop-blur-xs">
-                              <Check className="w-3 h-3 stroke-[3]" /> Active Scene
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Bottom Information & 1-Click Action */}
-                        <div className="relative z-10 flex flex-col gap-1.5 text-left">
-                          <div className="flex flex-col gap-0.5">
-                            <p className="text-xs font-bold text-white line-clamp-2 leading-tight drop-shadow-md">
-                              {item.title}
-                            </p>
-                            {item.prompt && (
-                              <p className="text-[9px] text-zinc-300/80 line-clamp-1 italic">
-                                "{item.prompt}"
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-1.5 pt-1 border-t border-white/10">
-                            <button
-                              type="button"
-                              onClick={() => handleApply(item)}
-                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md"
-                            >
-                              <Plus className="w-3 h-3" />
-                              Apply to Timeline
-                            </button>
-
-                            {item.prompt && (
-                              <button
-                                type="button"
-                                onClick={(e) => handleCopyPrompt(item.prompt || '', e)}
-                                title="Copy Generation Prompt"
-                                className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                              >
-                                <Copy className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        ) : activeTab === 'filters' ? (
+        {activeTab === 'filters' ? (
           <div className="flex flex-col gap-4">
             <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
               <div className="flex items-center justify-between">

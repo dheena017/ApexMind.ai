@@ -148,29 +148,10 @@ async def get_live_channel_details(handle: Optional[str] = None, channel_id: Opt
         except Exception as db_err:
             logger.debug(f"Database channel fallback error: {db_err}")
 
-        # Synthesized fallback
-        clean_name = target.replace("@", "").replace("-", " ").title()
-        return {
-            "success": True,
-            "source": "fallback",
-            "channel": {
-                "channelId": f"yt_{target.replace('@', '')}",
-                "name": clean_name or "YouTube Channel",
-                "handle": target if target.startswith("@") else f"@{target}",
-                "avatarUrl": f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(clean_name)}&backgroundColor=0284c7,4f46e5,7c3aed",
-                "bannerUrl": "",
-                "subscribers": 0,
-                "videosUploaded": 0,
-                "description": "",
-                "verified": False,
-                "channelUrl": f"https://www.youtube.com/{target if target.startswith('@') else f'@{target}'}",
-                "joinedDate": "Unavailable",
-                "country": "Global",
-                "totalLifetimeViews": 0,
-                "links": [],
-                "source": "fallback",
-            }
-        }
+        raise HTTPException(
+            status_code=404,
+            detail=f"YouTube channel '{target}' could not be resolved or found. Please verify the handle.",
+        )
 
 
 @yt_router.get(

@@ -148,7 +148,7 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
                   onClick={() => onNavigate('workspace')}
                   className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
                 >
-                  Quote Deduplication
+                  AI Script Generation
                 </button>
               </li>
             </ul>

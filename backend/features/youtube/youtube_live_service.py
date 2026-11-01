@@ -378,26 +378,10 @@ def resolve_channel_metadata(query: str) -> Dict[str, Any]:
     except Exception as db_err:
         logger.debug(f"Database channel fallback notice: {db_err}")
 
-    # 4. Safe synthesized profile fallback (prevents 400 crashes on transient network issues)
-    clean_name = clean.replace("@", "").replace("-", " ").title()
-    real_handle = clean if clean.startswith("@") else f"@{clean}"
-    return {
-        "channelId": f"yt_{clean.replace('@', '')}",
-        "name": clean_name or "YouTube Channel",
-        "handle": real_handle,
-        "avatarUrl": f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(clean_name)}&backgroundColor=0284c7,4f46e5,7c3aed",
-        "bannerUrl": "",
-        "subscribers": 0,
-        "videosUploaded": 0,
-        "description": "Channel details loaded offline.",
-        "verified": False,
-        "channelUrl": f"https://www.youtube.com/{real_handle}",
-        "joinedDate": "Unavailable",
-        "country": "Global",
-        "totalLifetimeViews": 0,
-        "links": [],
-        "source": "offline-fallback",
-    }
+    # 4. If channel is neither live reachable nor in database, raise explicit error
+    raise RuntimeError(
+        f"YouTube channel '{clean}' not found or unreachable. Please verify the channel handle or internet connection."
+    )
 
 
 def fetch_channel_about(query: str) -> Dict[str, Any]:
@@ -1453,10 +1437,7 @@ def render_vertical_short(
             else:
                 cmd.extend(["-loop", "1", "-i", str(media_input.resolve())])
         else:
-            cmd.extend([
-                "-f", "lavfi",
-                "-i", f"gradients=s=1080x1920:r=30:c0=0x0a0f2c:c1=0x111a45:c2=0x1a0a3a:c3=0x08070f:nb_colors=4:speed=0.005:type=linear:d={duration_seconds}"
-            ])
+            raise RuntimeError(f"Video/cover media is missing, unreachable, or corrupted: '{img_url or 'no URL provided'}'")
 
         if audio_path and Path(audio_path).exists():
             cmd.extend(["-i", str(Path(audio_path).resolve())])

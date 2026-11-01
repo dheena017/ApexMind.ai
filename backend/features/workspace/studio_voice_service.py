@@ -92,24 +92,32 @@ def run_studio_voice(
         storyboard=storyboard,
     )
 
-    # Enrich with stage metadata and dynamic audio alignment
-    duration = float(result.get("duration") or result.get("durationSeconds") or 0.0)
-    if duration <= 0.0:
-        if target_duration_seconds and target_duration_seconds > 0:
-            duration = float(target_duration_seconds)
-        elif storyboard:
-            duration = sum(float(s.get("duration") or 3.5) for s in storyboard)
-        else:
-            duration = DEFAULT_FALLBACK_DURATION
-    mime_type = result.get("mimeType", DEFAULT_MIME_TYPE)
+    # Validate audio payload exists
+    audio_b64 = result.get("audioBase64")
+    if not audio_b64 and not result.get("audioUrl"):
+        raise RuntimeError(
+            f"Stage 2 (Voice) Error: Neural Voiceover synthesis returned no audio payload for voice '{voice_name}'. "
+            f"Please verify Gemini TTS configuration or select another voice."
+        )
 
     raw_audio_bytes = None
-    audio_b64 = result.get("audioBase64")
     if audio_b64:
         try:
             raw_audio_bytes = base64.b64decode(audio_b64)
         except Exception as b64_err:
-            logger.debug(f"[Studio/Voice] Could not decode base64 audio for energy alignment: {b64_err}")
+            logger.debug(f"[Studio/Voice] Could not decode base64 audio: {b64_err}")
+
+    # Enrich with stage metadata and dynamic audio alignment
+    duration = float(result.get("duration") or result.get("durationSeconds") or 0.0)
+    if duration <= 0.0 and raw_audio_bytes:
+        from backend.shared.gemini import calculate_audio_duration
+        duration = calculate_audio_duration(raw_audio_bytes, mime_type=result.get("mimeType", DEFAULT_MIME_TYPE))
+    
+    if duration <= 0.0:
+        raise RuntimeError(
+            f"Stage 2 (Voice) Error: Audio duration could not be determined for voice '{voice_name}' (audio stream empty or invalid)."
+        )
+    mime_type = result.get("mimeType", DEFAULT_MIME_TYPE)
 
     aligned_storyboard = storyboard or []
     word_timestamps: List[Dict[str, Any]] = []

@@ -31,15 +31,14 @@ export function useCreatorStudioData() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchStudioData = async () => {
-    const [channelsRes, videosRes, memoryRes] = await Promise.allSettled([
+    const [channelsRes, videosRes] = await Promise.allSettled([
       fetch(apiUrl('/api/youtube/channels')).then((r) => r.json()),
       videosApi.getVideos(),
-      workspaceApi.getQuoteMemory(),
     ]);
 
     const loadedChannels: YouTubeChannel[] = channelsRes.status === 'fulfilled' ? channelsRes.value.channels || [] : [];
     const loadedVideos: WebsiteVideo[] = videosRes.status === 'fulfilled' ? videosRes.value || [] : [];
-    const loadedScripts: RecentGeneratedScript[] = memoryRes.status === 'fulfilled' ? memoryRes.value.memoryStore || [] : [];
+    const loadedScripts: RecentGeneratedScript[] = [];
 
     setChannels(loadedChannels);
     setVideos(loadedVideos);

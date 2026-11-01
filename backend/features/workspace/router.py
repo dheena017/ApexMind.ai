@@ -44,8 +44,8 @@ router = APIRouter()
 @router.post(
     "/api/generate-script",
     response_model=GenerateScriptResponse,
-    summary="Generate motivational script (legacy)",
-    description="Generate viral YouTube Shorts script using Gemini AI with memory deduplication.",
+    summary="Generate motivational script",
+    description="Generate viral YouTube Shorts script using Gemini Multimodal AI.",
     include_in_schema=False,
 )
 def post_generate_script(payload: GenerateScriptRequest):

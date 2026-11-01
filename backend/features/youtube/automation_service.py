@@ -18,30 +18,20 @@ from backend.database.repository import (
     get_automations,
     update_automation_run_state,
     get_channels,
-    add_quote_to_memory,
-    get_quote_memory,
 )
 from backend.features.youtube.repository import insert_video
 from backend.features.notifications.service import create_notification
-from backend.shared.gemini import (
-    generate_gemini_script,
-    generate_gemini_voiceover,
-)
+from backend.features.workspace.studio_script_service import run_studio_script
+from backend.features.workspace.studio_voice_service import run_studio_voice
+from backend.features.workspace.studio_media_service import run_studio_media
+from backend.features.workspace.studio_captions_service import run_studio_captions
+from backend.features.workspace.video_render_service import render_studio_video
 from .youtube_live_service import (
     get_authenticated_youtube_client,
-    render_vertical_short,
     upload_video_to_live_youtube,
 )
 
 logger = logging.getLogger("ApexMind.YouTube.Automation")
-
-# Default background nature & stoic visual video loops
-FALLBACK_VISUAL_LOOPS = [
-    "https://cdn.pixabay.com/video/2020/04/18/36423-411516053_tiny.mp4",
-    "https://cdn.pixabay.com/video/2021/08/13/84970-588390119_tiny.mp4",
-    "https://cdn.pixabay.com/video/2020/07/04/43831-438459469_tiny.mp4",
-    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=720&q=80",
-]
 
 
 def calculate_next_run_iso(publish_time: str = "08:00", schedule: Optional[str] = None) -> str:
@@ -83,15 +73,20 @@ def calculate_next_run_iso(publish_time: str = "08:00", schedule: Optional[str] 
         return (now_utc + timedelta(days=1)).isoformat()
 
 
+import re
+import time
+from pathlib import Path
+from typing import Dict, Any, Optional
+
 def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Executes the complete autonomous daily video pipeline:
-    1. AI Script Writing (Gemini 3.8 Flash with Memory Deduplication) or active workspace timeline
-    2. Multi-Scene Visual Footage Resolution (Pexels, Pixabay, Wikimedia, Gemini AI Image)
-    3. Voiceover Audio Generation (Gemini 3.8 Flash TTS)
-    4. Full Broadcast Multi-Scene Video Rendering (1080x1920 MP4 via FFmpeg with transitions, zoom, and kinetic captions)
-    5. YouTube Upload & Publish / Schedule (YouTube Data API v3)
-    6. Dashboard Activity Logging & Notification
+    Executes the autonomous 6-stage production pipeline:
+    Stage 1: Script Writing (POST /api/studio/generate-script via Gemini AI + Quote Memory)
+    Stage 2: Voiceover Synthesis (POST /api/studio/synthesize-voice via Neural Voice TTS)
+    Stage 3: B-Roll Media Resolution (POST /api/studio/resolve-media via Pexels and Pixabay)
+    Stage 4: Syllable Captions Alignment (POST /api/studio/generate-captions via Acoustic Aligner)
+    Stage 5: Full HD MP4 Video Render (POST /api/workspace/render-video via native FFmpeg)
+    Stage 6: YouTube Live Shorts Publication (POST /api/youtube/publish via YouTube Data API v3)
     """
     job = get_automation_by_id(job_id)
     if not job:
@@ -103,28 +98,22 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
     publish_time = job.get("publishTime", "08:00")
     channel_id = job.get("channelId")
 
-    logger.info(f"[Automation] Starting autonomous pipeline for Job '{job_id}' | Theme: '{theme}' | Voice: '{voice}'")
-    update_automation_run_state(
-        job_id,
-        last_status="running",
-        last_run_message="Crafting Multi-Scene Storyboard & Resolving Footage...",
-    )
+    logger.info(f"[Automation/6-Stage] Starting pipeline for Job '{job_id}' | Theme: '{theme}' | Voice: '{voice}'")
     start_time = time.perf_counter()
 
     try:
-        from backend.features.workspace.video_render_service import render_studio_video
-        from backend.features.media.schemas import SceneResolveItem
-        from backend.features.media.service import resolve_scenes_batch
-
         title = None
         quote_text = None
+        hook_text = None
         cta_text = "Execute today without excuses."
         audio_path = None
         video_clips = []
         image_clips = []
+        sfx_clips = []
         subtitles = []
         music_url = None
         actual_duration = 20.0
+        storyboard = []
 
         # Check if caller supplied active workspace timeline clips
         has_custom_clips = override_data and (
@@ -133,7 +122,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         )
 
         if has_custom_clips:
-            logger.info(f"[Automation] Using active workspace timeline clips ({len(override_data.get('videoClips', []))} videos, {len(override_data.get('imageClips', []))} images)")
+            logger.info(f"[Automation/6-Stage] Using active workspace timeline clips ({len(override_data.get('videoClips', []))} videos, {len(override_data.get('imageClips', []))} images)")
             video_clips = override_data.get("videoClips") or []
             image_clips = override_data.get("imageClips") or []
             title = override_data.get("title") or f"Daily {theme} Short"
@@ -143,111 +132,161 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             music_url = override_data.get("musicUrl")
             actual_duration = float(override_data.get("duration") or 20.0)
         else:
-            # Step 1: Generate original motivational script with memory deduplication
-            memory_quotes = get_quote_memory(limit=15)
-            script_data = generate_gemini_script(
+            # ── STAGE 1: SCRIPT WRITING (POST /api/studio/generate-script) ──
+            update_automation_run_state(
+                job_id,
+                last_status="running",
+                last_run_message="Stage 1/6: Generating viral script & multi-scene storyboard with Gemini AI...",
+            )
+            logger.info(f"[Automation/Stage-1] Writing script for '{theme}'")
+            script_resp = run_studio_script(
                 category=theme,
                 topic=theme,
                 tone="motivational",
-                length="30s",
-                memory_quotes=memory_quotes,
+                length="30 seconds",
+                model="gemini-2.5-flash",
+                aspect_ratio="9:16",
+                voice_name=voice,
             )
-
+            script_data = script_resp.get("data") or {}
             title = script_data.get("title") or f"Daily {theme} Short"
             quote_text = script_data.get("quote") or script_data.get("fullScript") or "Discipline equals freedom."
             hook_text = script_data.get("hook") or "Wake up with intent."
             cta_text = script_data.get("cta") or "Execute today without excuses."
             storyboard = script_data.get("storyboard") or []
+            if not storyboard:
+                raise RuntimeError(f"Stage 1 (Script) Error: Gemini failed to generate storyboard scenes for '{theme}'.")
 
-            # Record quote in memory to avoid future duplicates
-            try:
-                add_quote_to_memory(title=title, quote=quote_text, category=theme, hook=hook_text)
-            except Exception as mem_err:
-                logger.debug(f"[Automation] Memory record notice: {mem_err}")
+            music_url = script_data.get("soundDesign", {}).get("audioUrl") or None
+            sfx_events = script_data.get("soundDesign", {}).get("sfxEvents") or []
 
-            # Step 2: Synthesize voiceover audio using Gemini TTS
+            # ── STAGE 2: VOICEOVER SYNTHESIS (POST /api/studio/synthesize-voice) ──
             update_automation_run_state(
                 job_id,
                 last_status="running",
-                last_run_message=f"Synthesizing Voiceover with '{voice}'...",
+                last_run_message=f"Stage 2/6: Synthesizing Neural Voiceover with '{voice}'...",
             )
-            narration_full = f"{hook_text} {quote_text} {cta_text}"
-            voice_result = generate_gemini_voiceover(
-                text=narration_full,
+            logger.info(f"[Automation/Stage-2] Synthesizing voiceover with '{voice}'")
+            full_narration = f"{hook_text} {quote_text} {cta_text}"
+            voice_resp = run_studio_voice(
                 voice_name=voice,
                 storyboard=storyboard,
+                full_narration_text=full_narration,
+                target_duration_seconds=25.0,
             )
+            actual_duration = float(voice_resp.get("durationSeconds") or 20.0)
 
-            audio_bytes = None
-            if voice_result.get("audioBase64"):
+            # Persist WAV file to disk for FFmpeg
+            audio_path = None
+            audio_b64 = voice_resp.get("audioBase64")
+            if audio_b64:
                 import base64
-                audio_bytes = base64.b64decode(voice_result["audioBase64"])
-
-            if audio_bytes:
+                raw_bytes = base64.b64decode(audio_b64)
                 audio_dir = Path("backend/data/audio")
                 audio_dir.mkdir(parents=True, exist_ok=True)
                 audio_path = str((audio_dir / f"auto_voice_{int(time.time() * 1000)}.wav").resolve())
                 with open(audio_path, "wb") as f:
-                    f.write(audio_bytes)
+                    f.write(raw_bytes)
+            elif voice_resp.get("audioUrl"):
+                raw_u = voice_resp["audioUrl"]
+                if not raw_u.startswith("data:"):
+                    audio_path = raw_u
 
-            actual_duration = float(voice_result.get("duration") or 20.0)
-            subtitles = voice_result.get("subtitles") or script_data.get("subtitles") or []
-            music_url = script_data.get("soundDesign", {}).get("audioUrl") or None
+            if not audio_path or not Path(audio_path).exists():
+                raise RuntimeError(
+                    f"Stage 2 (Voice) Error: Neural Voice synthesis failed to produce an audio file for voice '{voice}'."
+                )
 
-            # Step 3: Resolve high-definition footage for EVERY scene in the storyboard
+            # Use audio-aligned storyboard if available
+            aligned_sb = voice_resp.get("alignedStoryboard")
+            if aligned_sb and len(aligned_sb) > 0:
+                storyboard = aligned_sb
+
+            # ── STAGE 3: B-ROLL MEDIA RESOLUTION (POST /api/studio/resolve-media) ──
             update_automation_run_state(
                 job_id,
                 last_status="running",
-                last_run_message=f"Resolving cinematic visual scenes ({len(storyboard)} cuts)...",
+                last_run_message=f"Stage 3/6: Resolving 4K stock B-Roll for {len(storyboard)} scenes...",
             )
-            if storyboard:
-                scene_items = []
-                for idx, sc in enumerate(storyboard):
-                    q = sc.get("visualQuery") or sc.get("googleSearchQuery") or f"{theme} nature cinematic"
-                    scene_items.append(SceneResolveItem(
-                        sceneNumber=int(sc.get("sceneNumber", idx + 1)),
-                        visualQuery=q,
-                        mediaType=sc.get("mediaType", "video"),
-                        fallbackQueries=sc.get("fallbackQueries") or [f"{theme} landscape 4k"],
-                    ))
+            logger.info(f"[Automation/Stage-3] Resolving stock media for {len(storyboard)} scenes")
+            try:
+                media_resp = run_studio_media(
+                    scenes=storyboard,
+                    aspect_ratio="9:16",
+                    sfx_events=sfx_events,
+                )
+                media_data = media_resp.get("data") or {}
+                resolved_scenes = media_data.get("scenes") or []
 
-                try:
-                    batch_res = resolve_scenes_batch(scene_items, aspect_ratio="9:16")
-                    for sc, r in zip(storyboard, batch_res.scenes):
-                        media = r.media
-                        if media and media.url:
-                            clip = {
-                                "id": f"clip_{sc.get('sceneNumber', 1)}",
-                                "url": media.url,
-                                "start": float(sc.get("start", 0.0)),
-                                "duration": float(sc.get("duration", 4.0)),
-                                "transition": sc.get("transition", "fade"),
-                                "title": sc.get("mediaName") or media.title or f"Scene {sc.get('sceneNumber')}",
-                                "type": media.mediaType,
-                            }
-                            if media.mediaType == "video":
-                                video_clips.append(clip)
-                            else:
-                                image_clips.append(clip)
-                except Exception as res_err:
-                    logger.warning(f"[Automation] Batch scene resolution error: {res_err}")
+                for sc_res, sc_orig in zip(resolved_scenes, storyboard):
+                    m = sc_res.get("media")
+                    if m and m.get("url"):
+                        clip = {
+                            "id": f"clip_{sc_res.get('sceneNumber', 1)}",
+                            "url": m["url"],
+                            "start": float(sc_orig.get("start", 0.0)),
+                            "duration": float(sc_orig.get("duration", 4.0)),
+                            "transition": sc_orig.get("transition", "fade"),
+                            "title": m.get("title") or f"Scene {sc_res.get('sceneNumber')}",
+                            "type": sc_res.get("mediaType", "video"),
+                        }
+                        if sc_res.get("mediaType") == "image":
+                            image_clips.append(clip)
+                        else:
+                            video_clips.append(clip)
 
-            if not subtitles and storyboard:
-                subtitles = [
-                    {
-                        "start": float(sc.get("start", 0.0)),
-                        "duration": float(sc.get("duration", 3.5)),
-                        "text": sc.get("subtitleText", ""),
-                    }
-                    for sc in storyboard if sc.get("subtitleText")
-                ]
+                # Process resolved SFX
+                for sfx in media_data.get("sfxEvents") or []:
+                    if sfx.get("sfxUrl"):
+                        sfx_clips.append({
+                            "url": sfx["sfxUrl"],
+                            "start": float(sfx.get("start", 0.0)),
+                            "duration": float(sfx.get("duration", 1.5)),
+                            "volume": float(sfx.get("volume", 0.85)),
+                        })
+            except Exception as media_err:
+                logger.error(f"[Automation/Stage-3] Media resolution failed: {media_err}")
+                raise RuntimeError(f"Stage 3 (B-Roll) Error: Media resolution failed: {media_err}")
 
-        # Step 4: Render broadcast-quality multi-scene 9:16 MP4 video with FFmpeg
+            if not video_clips and not image_clips:
+                raise RuntimeError(
+                    f"Stage 3 (B-Roll) Error: No video or image clips could be resolved for '{theme}'. "
+                    f"Please verify Pexels / Pixabay stock media configuration or queries."
+                )
+
+            # ── STAGE 4: SYLLABLE CAPTIONS ALIGNMENT (POST /api/studio/generate-captions) ──
+            update_automation_run_state(
+                job_id,
+                last_status="running",
+                last_run_message="Stage 4/6: Aligning word-timed kinetic karaoke captions...",
+            )
+            logger.info(f"[Automation/Stage-4] Generating aligned karaoke captions for {actual_duration:.1f}s")
+            try:
+                captions_resp = run_studio_captions(
+                    storyboard_scenes=storyboard,
+                    duration_seconds=actual_duration,
+                    full_narration_text=full_narration,
+                    style_preset="yellow_pop",
+                    aspect_ratio="9:16",
+                    caption_color="#FACC15",
+                    caption_font_family="Impact",
+                )
+                c_data = captions_resp.get("data") or {}
+                subtitles = c_data.get("timelineClips") or c_data.get("segments") or []
+            except Exception as cap_err:
+                logger.error(f"[Automation/Stage-4] Captions generation failed: {cap_err}")
+                raise RuntimeError(f"Stage 4 (Captions) Error: Captions generation failed: {cap_err}")
+
+            if not subtitles:
+                raise RuntimeError("Stage 4 (Captions) Error: No subtitles generated for video.")
+
+        # ── STAGE 5: FULL HD MP4 VIDEO RENDER (POST /api/workspace/render-video) ──
         update_automation_run_state(
             job_id,
             last_status="running",
-            last_run_message="Rendering 1080x1920 MP4 with transitions and subtitles...",
+            last_run_message="Stage 5/6: Rendering 1080x1920 MP4 with audio ducking and kinetic captions...",
         )
+        logger.info(f"[Automation/Stage-5] Rendering studio video '{title}' via FFmpeg")
         video_path = None
         try:
             rendered = render_studio_video(
@@ -259,12 +298,21 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                 music_url=music_url,
                 video_clips=video_clips if video_clips else None,
                 image_clips=image_clips if image_clips else None,
+                sfx_clips=sfx_clips if sfx_clips else None,
                 backdrop_url=video_clips[0]["url"] if video_clips else (image_clips[0]["url"] if image_clips else None),
                 backdrop_type="video" if video_clips else "image",
                 subtitles=subtitles,
                 caption_color="#FACC15",
                 caption_font="Impact",
                 caption_transform="uppercase",
+                ducking_settings={
+                    "enabled": True,
+                    "reductionDb": 14.0,
+                    "attackMs": 150,
+                    "releaseMs": 350,
+                },
+                music_volume=0.45,
+                voice_volume=1.0,
             )
             cand = rendered.get("video_path") or rendered.get("videoPath")
             if not cand and rendered.get("filename"):
@@ -274,30 +322,34 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                 cand = str((Path("backend/data/rendered_shorts") / fname).resolve())
             if cand and Path(cand).exists():
                 video_path = cand
-                logger.info(f"[Automation] Studio multi-scene video successfully rendered: {video_path}")
+                logger.info(f"[Automation/Stage-5] Studio video successfully rendered: {video_path}")
         except Exception as studio_err:
-            logger.warning(f"[Automation] Studio render engine failed ({studio_err}), falling back to direct vertical renderer.")
+            logger.error(f"[Automation/Stage-5] Studio render engine failed: {studio_err}")
+            raise RuntimeError(f"Stage 5 (Render) Error: FFmpeg video rendering failed: {studio_err}")
 
         if not video_path or not Path(video_path).exists():
-            chosen_visual = FALLBACK_VISUAL_LOOPS[int(time.time()) % len(FALLBACK_VISUAL_LOOPS)]
-            video_path = render_vertical_short(
-                title=title or theme,
-                quote=quote_text or "Discipline equals freedom.",
-                cover_image_url=chosen_visual,
-                audio_path=audio_path,
-                duration_seconds=int(actual_duration) or 20,
-            )
+            raise RuntimeError("Stage 5 (Render) Error: FFmpeg failed to produce 1080x1920 MP4 file.")
 
-        # Step 5: Publish or Schedule to YouTube
+        # ── STAGE 6: YOUTUBE LIVE SHORTS PUBLISH (POST /api/youtube/publish) ──
+        update_automation_run_state(
+            job_id,
+            last_status="running",
+            last_run_message="Stage 6/6: Uploading and publishing Short to YouTube...",
+        )
+        logger.info(f"[Automation/Stage-6] Publishing video to YouTube")
         yt_client = get_authenticated_youtube_client()
         upload_res = None
         youtube_url = None
         is_scheduled = privacy == "scheduled"
         publish_at_iso = None
 
+        # Build viral hashtags and rich description
+        theme_tag = re.sub(r'[^a-zA-Z0-9]', '', theme)
+        viral_tags = ["#Shorts", "#Motivation", "#Discipline", f"#{theme_tag}", "#ViralShorts", "#DailyMindset"]
+        clean_desc = f"{quote_text}\n\n{cta_text}\n\n{' '.join(viral_tags)}\n\nGenerated autonomously with ApexMind Studio AI."
+
         if yt_client:
             if is_scheduled:
-                # Schedule publication for upcoming target time
                 now_utc = datetime.now(timezone.utc)
                 parts = publish_time.split(":")
                 h, m = int(parts[0]), int(parts[1]) if len(parts) > 1 else 0
@@ -310,43 +362,44 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                 upload_res = upload_video_to_live_youtube(
                     video_path=video_path,
                     title=f"{title} #Shorts",
-                    description=f"{quote_text}\n\n{cta_text}\n\n#ApexMind #Shorts #{theme.replace(' ', '')}",
-                    tags=["#Shorts", "#Motivation", "#Discipline", f"#{theme.replace(' ', '')}"],
+                    description=clean_desc,
+                    tags=["#Shorts", "#Motivation", "#Discipline", f"#{theme_tag}"],
                     privacy_status="private" if is_scheduled else "public",
                     publish_at=publish_at_iso,
                 )
                 youtube_url = upload_res.get("videoUrl")
-                logger.info(f"[Automation] YouTube upload success: {youtube_url} | Status: {upload_res.get('status')}")
+                logger.info(f"[Automation/Stage-6] YouTube upload success: {youtube_url} | Status: {upload_res.get('status')}")
             except Exception as up_err:
-                logger.warning(f"[Automation] Direct YouTube upload encountered network error: {up_err}. Cataloging video locally in Studio.")
+                logger.error(f"[Automation/Stage-6] YouTube upload failed: {up_err}")
+                raise RuntimeError(f"Stage 6 (Publish) Error: YouTube upload failed: {up_err}")
 
-        # Step 5: Catalog video in local studio database
+        # Catalog in local database
         rel_video_url = f"/api/videos/{Path(video_path).name}"
         insert_video(
             title=title,
             quote=quote_text,
             views=0,
             likes=0,
-            duration=f"00:{int(voice_result.get('duration', 20)):02d}",
+            duration=f"00:{int(actual_duration):02d}",
             channel_id=channel_id,
             video_url=youtube_url or rel_video_url,
             category=theme,
             voice=voice,
         )
 
-        # Step 6: Create high-priority activity notification
+        # Create activity notification
         if youtube_url:
             status_label = f"Scheduled on YouTube for {publish_time}" if is_scheduled else "Published to YouTube Shorts"
             notif_type = "success"
         elif yt_client:
-            status_label = "Generated in Studio (YouTube network upload timed out, ready to publish manually)"
+            status_label = "Generated in Studio (Ready to publish manually)"
             notif_type = "warning"
         else:
-            status_label = "Generated & Ready in Studio (Connect YouTube to Auto-Publish)"
+            status_label = "Generated & Ready in Studio Library"
             notif_type = "success"
 
         create_notification(
-            title="Daily Automation Complete",
+            title="6-Stage Automation Complete",
             message=f"'{title}' was automatically rendered and {status_label.lower()}.",
             type=notif_type,
             category="youtube",
@@ -354,7 +407,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             priority="high",
         )
 
-        # Step 7: Calculate next scheduled run and update detailed execution state
+        # Calculate next scheduled run
         job_schedule = job.get("schedule", "")
         next_run = calculate_next_run_iso(publish_time, job_schedule)
         is_live = bool(youtube_url)
@@ -374,9 +427,9 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         )
 
         elapsed = round(time.perf_counter() - start_time, 2)
-        logger.info(f"[Automation] Pipeline completed in {elapsed}s for job '{job_id}' | Next run: {next_run} | Live: {is_live}")
+        logger.info(f"[Automation/6-Stage] Pipeline completed in {elapsed}s for job '{job_id}' | Next run: {next_run} | Live: {is_live}")
 
-        # Step 8: Persist detailed entry to execution history log
+        # Persist entry to execution history log
         try:
             from backend.database.repository import add_automation_history
             add_automation_history(
@@ -407,7 +460,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         }
 
     except Exception as e:
-        logger.error(f"[Automation] Pipeline execution failed for job '{job_id}': {e}", exc_info=True)
+        logger.error(f"[Automation/6-Stage] Execution failed for job '{job_id}': {e}", exc_info=True)
         update_automation_run_state(
             job_id,
             last_status="failed",
@@ -427,8 +480,8 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         except Exception:
             pass
         create_notification(
-            title="Daily Automation Failed",
-            message=f"Pipeline error for theme '{theme}': {str(e)}",
+            title="Automation Pipeline Failed",
+            message=f"Pipeline error for '{theme}': {str(e)}",
             type="error",
             category="youtube",
             priority="high",

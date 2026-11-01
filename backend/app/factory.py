@@ -75,7 +75,6 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-
     # Register Feature Routers matching frontend modules exactly
     app.include_router(dashboard_router)
     app.include_router(auth_router)
@@ -85,9 +84,6 @@ def create_app() -> FastAPI:
     app.include_router(youtube_router)
     app.include_router(notifications_router)
     app.include_router(settings_router)
-
-
-
 
     @app.get(
         "/api/health",
@@ -194,44 +190,6 @@ def create_app() -> FastAPI:
         raise HTTPException(status_code=404, detail="Audio file not found")
 
     @app.get(
-        "/api/media/generated/{filename}",
-        tags=["Static Asset Streaming"],
-        summary="Stream Generated Image",
-    )
-    @app.get(
-        "/api/media/images/{filename}",
-        tags=["Static Asset Streaming"],
-        summary="Stream Generated Image (alias)",
-        include_in_schema=False,
-    )
-    def get_generated_image_file(filename: str):
-        from fastapi.responses import FileResponse, Response
-        from pathlib import Path
-        for folder in ["backend/data/generated_images", "backend/database/data/generated_images", "backend/data/media", "backend/data"]:
-            file_path = Path(folder) / filename
-            if file_path.exists() and file_path.is_file():
-                if filename.endswith(".svg"):
-                    media_type = "image/svg+xml"
-                elif filename.endswith(".webp"):
-                    media_type = "image/webp"
-                elif filename.endswith(".jpg") or filename.endswith(".jpeg"):
-                    media_type = "image/jpeg"
-                else:
-                    media_type = "image/png"
-                return FileResponse(file_path, media_type=media_type)
-
-        # Fallback: Procedural vector backdrop so UI image thumbnails never 404
-        try:
-            from backend.features.media.providers.image_gemini import GeminiImageProvider
-            clean_title = filename.replace("ai_scene_", "").replace(".png", "").replace(".svg", "").replace("_", " ").title()
-            svg_bytes = GeminiImageProvider()._generate_fallback_svg_bytes(clean_title, "cinematic", 1080, 1920)
-            return Response(content=svg_bytes, media_type="image/svg+xml")
-        except Exception:
-            pass
-
-        raise HTTPException(status_code=404, detail="Generated image not found")
-
-    @app.get(
         "/api/videos/{filename}",
         tags=["Static Asset Streaming"],
         summary="Stream Rendered Video",
@@ -245,7 +203,7 @@ def create_app() -> FastAPI:
     def get_video_file(filename: str):
         from fastapi.responses import FileResponse
         from pathlib import Path
-        for folder in ["backend/data/generated_images", "backend/data/rendered_shorts", "backend/data/media", "backend/data"]:
+        for folder in ["backend/data/rendered_shorts", "backend/data/media", "backend/data"]:
             file_path = Path(folder) / filename
             if file_path.exists() and file_path.is_file():
                 if filename.endswith(".png"):

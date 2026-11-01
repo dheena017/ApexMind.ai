@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from .service import generate_script
-from .repository import fetch_quote_memory
 from backend.shared.config import settings
 
 # ==============================================================================

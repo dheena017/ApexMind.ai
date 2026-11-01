@@ -142,16 +142,11 @@ def publish_video_to_shorts(
                         video_file = cand_path
                         logger.info(f"Studio video successfully rendered for YouTube: {video_file}")
                 except Exception as studio_err:
-                    logger.warning(f"Studio render engine exception ({studio_err}), falling back to direct vertical renderer.")
+                    logger.error(f"Studio video render engine failed: {studio_err}", exc_info=True)
+                    raise RuntimeError(f"Video Rendering Failed: {studio_err}")
 
-            # 3. Fallback to direct vertical renderer if studio engine was unavailable
             if not video_file or not Path(video_file).exists():
-                video_file = render_vertical_short(
-                    title=clean_title,
-                    quote=quote,
-                    cover_image_url=kwargs.get("coverImageUrl") or kwargs.get("visualTheme"),
-                    duration_seconds=int(kwargs.get("duration") or 15),
-                )
+                raise RuntimeError("Video Rendering Failed: Output 1080x1920 MP4 file was not produced by FFmpeg.")
 
             desc_text = kwargs.get("description") or quote
             tags_val = kwargs.get("tags")
@@ -170,7 +165,8 @@ def publish_video_to_shorts(
             logger.info(f"Live YouTube Short published successfully: {real_video_url}")
         except Exception as e:
             upload_error = str(e)
-            logger.error(f"Live YouTube upload error ({e}), storing in studio catalog with fallback link.")
+            logger.error(f"Live YouTube publish pipeline error: {e}", exc_info=True)
+            raise RuntimeError(f"YouTube Publish Failed: {e}")
 
     created = insert_video(
         title=clean_title,

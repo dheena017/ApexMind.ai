@@ -121,7 +121,6 @@ export default function WorkspacePage({
   const [publishingStage, setPublishingStage] = useState<'idle' | 'rendering' | 'uploading' | 'done'>('idle');
   const [publishedSuccess, setPublishedSuccess] = useState(false);
   const [publishedVideoUrl, setPublishedVideoUrl] = useState<string | null>(null);
-  const [memoryCount, setMemoryCount] = useState(0);
 
   // Live timeline clips cached for publish & export operations
   const timelineClipsRef = useRef<{
@@ -470,11 +469,8 @@ export default function WorkspacePage({
           }
         }
 
-        consoleLogger.info('Studio', 'Loading live media library and quote memory...');
-        const [media, mem] = await Promise.all([
-          workspaceApi.getMediaLibrary(),
-          workspaceApi.getQuoteMemory(),
-        ]);
+        consoleLogger.info('Studio', 'Loading live media library...');
+        const media = await workspaceApi.getMediaLibrary();
 
         setMusicTracks(media.musicTracks || []);
         setBackdrops(media.visualBackdrops && media.visualBackdrops.length > 0 ? media.visualBackdrops : DEFAULT_VISUAL_BACKDROPS);
@@ -487,8 +483,6 @@ export default function WorkspacePage({
               : media.voiceProfiles[0].id
           );
         }
-
-        setMemoryCount(mem.totalQuotesInMemory || 0);
 
         // â”€â”€ Deep Linking: Load Video, Prompt, or Tab from URL Query Parameters â”€â”€
         const urlParams = getQueryParams();

@@ -225,13 +225,15 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     setRunningJobId(id);
     setActivePipelinePhase(0);
 
-    // Dynamic phase progression timer
-    const phaseTimer1 = setTimeout(() => setActivePipelinePhase(1), 3200); // Gemini Voice
-    const phaseTimer2 = setTimeout(() => setActivePipelinePhase(2), 7000); // FFmpeg 1080x1920 MP4
-    const phaseTimer3 = setTimeout(() => setActivePipelinePhase(3), 12000); // YouTube Publish
+    // 6-Stage Dynamic Phase Progression Timers
+    const phaseTimer1 = setTimeout(() => setActivePipelinePhase(1), 2200); // Stage 2: Voice
+    const phaseTimer2 = setTimeout(() => setActivePipelinePhase(2), 4800); // Stage 3: B-Roll
+    const phaseTimer3 = setTimeout(() => setActivePipelinePhase(3), 8000); // Stage 4: Captions
+    const phaseTimer4 = setTimeout(() => setActivePipelinePhase(4), 11500); // Stage 5: Render
+    const phaseTimer5 = setTimeout(() => setActivePipelinePhase(5), 16000); // Stage 6: Publish
 
     try {
-      toast.info(`Executing autonomous pipeline for "${jobTheme}"...`);
+      toast.info(`Executing autonomous 6-stage pipeline for "${jobTheme}"...`);
       const payload = (activeTimeline?.videoClips?.length || activeTimeline?.imageClips?.length)
         ? activeTimeline
         : undefined;
@@ -254,6 +256,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       clearTimeout(phaseTimer1);
       clearTimeout(phaseTimer2);
       clearTimeout(phaseTimer3);
+      clearTimeout(phaseTimer4);
+      clearTimeout(phaseTimer5);
       setRunningJobId(null);
       setActivePipelinePhase(0);
     }
@@ -719,25 +723,47 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                       </div>
 
-                      {/* ── 4. DYNAMIC LIVE PIPELINE STEPPER (when executing) ── */}
+                      {/* ── 3B. RECENT ERROR BANNER (When last execution failed) ── */}
+                      {job.lastStatus === 'failed' && !isRunning && (
+                        <div className="p-2.5 rounded-xl bg-rose-950/30 border border-rose-500/40 text-xs flex flex-col gap-1 shadow-sm animate-fade-in">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="flex items-center gap-1.5 text-rose-400 font-bold text-[11px]">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+                              <span>Pipeline Execution Failed</span>
+                            </span>
+                            {job.lastRun && (
+                              <span className="text-[9px] font-mono text-rose-300/70">
+                                {new Date(job.lastRun).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-rose-200/90 leading-snug font-mono break-words">
+                            {job.lastRunMessage || 'Pipeline execution failed. Please verify API credentials and retry.'}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* ── 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) ── */}
                       {isRunning && (
-                        <div className="p-2.5 rounded-xl bg-blue-950/25 border border-blue-500/40 flex flex-col gap-2 animate-fade-in shadow-inner">
+                        <div className="p-3 rounded-xl bg-blue-950/25 border border-blue-500/40 flex flex-col gap-2.5 animate-fade-in shadow-inner">
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="font-bold text-blue-300 flex items-center gap-1.5">
-                              <Loader2 className="w-3 h-3 animate-spin text-blue-400" />
-                              <span>Generation in Progress</span>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                              <span>Autonomous 6-Stage Pipeline Live</span>
                             </span>
-                            <span className="font-mono text-[10px] text-blue-300 font-bold bg-blue-500/20 px-1.5 py-0.2 rounded border border-blue-500/30">
-                              Phase {activePipelinePhase + 1}/4
+                            <span className="font-mono text-[10px] text-blue-300 font-bold bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-500/30">
+                              Stage {activePipelinePhase + 1} of 6
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 pt-0.5">
                             {[
-                              { name: '1. Script', desc: 'Gemini 3.8' },
-                              { name: '2. Voice', desc: job.voice || 'Fenrir' },
-                              { name: '3. Render', desc: '1080p MP4' },
-                              { name: '4. Publish', desc: job.privacyStatus === 'scheduled' ? 'Schedule' : 'Shorts Live' },
+                              { name: '1. Script', desc: 'Gemini 3.8 Flash' },
+                              { name: '2. Voice', desc: job.voice || 'Fenrir TTS' },
+                              { name: '3. B-Roll', desc: '4K Pexels/Pixabay' },
+                              { name: '4. Captions', desc: 'Acoustic Sync' },
+                              { name: '5. Render', desc: '1080p MP4' },
+                              { name: '6. Publish', desc: job.privacyStatus === 'scheduled' ? 'Schedule' : 'Shorts Live' },
                             ].map((step, idx) => {
                               const isDone = activePipelinePhase > idx;
                               const isCurrent = activePipelinePhase === idx;
@@ -913,6 +939,27 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                       {(entry.youtubeUrl || entry.videoUrl) && (
                                         <button
                                           type="button"
+                                          onClick={() => {
+                                            window.dispatchEvent(new CustomEvent('workspace:load-timeline', {
+                                              detail: {
+                                                title: entry.videoTitle,
+                                                videoUrl: entry.videoUrl,
+                                              }
+                                            }));
+                                            toast.success(`Loaded "${entry.videoTitle}" into Studio Timeline`);
+                                            if (onNavigate) onNavigate('studio');
+                                          }}
+                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#22222E] hover:bg-[#2C2C3A] text-[9px] font-bold text-amber-300 hover:text-white transition-colors cursor-pointer border border-[#323242]"
+                                          title="Load this video project into Studio Timeline for manual edits"
+                                        >
+                                          <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                                          <span>Edit in Timeline</span>
+                                        </button>
+                                      )}
+
+                                      {(entry.youtubeUrl || entry.videoUrl) && (
+                                        <button
+                                          type="button"
                                           onClick={() => handleCopyLink(entry.youtubeUrl || entry.videoUrl!, entry.id)}
                                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1D1D26] hover:bg-[#282834] text-[9px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer ml-auto border border-[#2A2A38]"
                                         >
@@ -1006,12 +1053,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                               <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
                               <span className="truncate">
                                 {activePipelinePhase === 0
-                                  ? 'Script Generation...'
+                                  ? 'Stage 1/6: Writing Script with Gemini...'
                                   : activePipelinePhase === 1
-                                  ? 'Voice Narration...'
+                                  ? 'Stage 2/6: Synthesizing Neural Voice...'
                                   : activePipelinePhase === 2
-                                  ? 'Rendering MP4...'
-                                  : 'Publishing Shorts...'}
+                                  ? 'Stage 3/6: Resolving 4K Stock B-Roll...'
+                                  : activePipelinePhase === 3
+                                  ? 'Stage 4/6: Aligning Word Captions...'
+                                  : activePipelinePhase === 4
+                                  ? 'Stage 5/6: Rendering 1080p MP4 Video...'
+                                  : 'Stage 6/6: Uploading to YouTube Shorts...'}
                               </span>
                             </>
                           ) : (
