@@ -392,21 +392,21 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             </div>
           </div>
         ) : channel ? (
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-start justify-between gap-2.5">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 {channel.avatarUrl ? (
                   <img
                     src={channel.avatarUrl}
                     alt={channel.name}
-                    className="w-10 h-10 rounded-full object-cover border border-red-500/40 shadow-xs shrink-0"
+                    className="w-9 h-9 rounded-full object-cover border border-red-500/40 shadow-xs shrink-0"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-red-600 border border-red-500/40 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-xs">
+                  <div className="w-9 h-9 rounded-full bg-red-600 border border-red-500/40 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-xs">
                     {channel.name?.slice(0, 2).toUpperCase() || 'YT'}
                   </div>
                 )}
@@ -425,26 +425,26 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 </div>
               </div>
 
+              {/* Inline Channel Stats (Moved up from bottom row) */}
+              <div className="flex items-center gap-2.5 text-[9.5px] font-mono-studio px-2 py-1 rounded-lg bg-[#1B1B22] border border-[#282834] shrink-0">
+                <div>
+                  <span className="text-zinc-500 mr-1">Subs:</span>
+                  <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 mr-1">Videos:</span>
+                  <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 mr-1">Views:</span>
+                  <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
+                </div>
+              </div>
+
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-[9px] font-semibold border border-emerald-500/30 shrink-0 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 Connected
               </span>
-            </div>
-
-            {/* Metrics */}
-            <div className="flex items-center gap-4 pt-2 border-t border-[#222228] text-[10px] font-mono-studio">
-              <div>
-                <span className="text-zinc-500 mr-1.5">Subs:</span>
-                <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
-              </div>
-              <div>
-                <span className="text-zinc-500 mr-1.5">Videos:</span>
-                <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
-              </div>
-              <div>
-                <span className="text-zinc-500 mr-1.5">Views:</span>
-                <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
-              </div>
             </div>
 
             {/* Expandable Switch Handle Form */}
