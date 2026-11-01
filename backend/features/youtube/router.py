@@ -772,13 +772,13 @@ async def delete_youtube_automation_route(job_id: str):
     summary="Execute daily automation pipeline immediately",
     description="Manually triggers the autonomous generation, rendering, and YouTube publishing flow.",
 )
-async def run_youtube_automation_now_route(job_id: str):
+async def run_youtube_automation_now_route(job_id: str, payload: Optional[Dict[str, Any]] = None):
     from .automation_service import execute_automation_job
     try:
         # Run pipeline in a background thread executor so event loop is non-blocking
         import asyncio
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, execute_automation_job, job_id)
+        result = await loop.run_in_executor(None, execute_automation_job, job_id, payload)
         return {"success": True, "data": result, "message": "Automation pipeline completed successfully."}
     except Exception as e:
         logger.error(f"Manual automation execution failed: {e}", exc_info=True)

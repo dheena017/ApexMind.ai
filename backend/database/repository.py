@@ -537,6 +537,10 @@ def get_automations() -> List[Dict[str, Any]]:
             "publishTime": r["publish_time"] if "publish_time" in r.keys() else "08:00",
             "lastRun": r["last_run"] if "last_run" in r.keys() else None,
             "lastStatus": r["last_status"] if "last_status" in r.keys() else "idle",
+            "lastVideoTitle": r["last_video_title"] if "last_video_title" in r.keys() else None,
+            "lastVideoUrl": r["last_video_url"] if "last_video_url" in r.keys() else None,
+            "lastRunMessage": r["last_run_message"] if "last_run_message" in r.keys() else None,
+            "lastIsLive": bool(r["last_is_live"]) if "last_is_live" in r.keys() and r["last_is_live"] is not None else False,
         }
         for r in rows
     ]
@@ -562,6 +566,10 @@ def get_automation_by_id(job_id: str) -> Optional[Dict[str, Any]]:
         "publishTime": r["publish_time"] if "publish_time" in r.keys() else "08:00",
         "lastRun": r["last_run"] if "last_run" in r.keys() else None,
         "lastStatus": r["last_status"] if "last_status" in r.keys() else "idle",
+        "lastVideoTitle": r["last_video_title"] if "last_video_title" in r.keys() else None,
+        "lastVideoUrl": r["last_video_url"] if "last_video_url" in r.keys() else None,
+        "lastRunMessage": r["last_run_message"] if "last_run_message" in r.keys() else None,
+        "lastIsLive": bool(r["last_is_live"]) if "last_is_live" in r.keys() and r["last_is_live"] is not None else False,
     }
 
 def create_automation_job(
@@ -603,14 +611,42 @@ def delete_automation_job(job_id: str) -> bool:
     logger.info(f"Deleted automation job '{job_id}': {deleted}")
     return deleted
 
-def update_automation_run_state(job_id: str, last_status: str, next_run: Optional[str] = None):
+def update_automation_run_state(
+    job_id: str,
+    last_status: str,
+    next_run: Optional[str] = None,
+    last_video_title: Optional[str] = None,
+    last_video_url: Optional[str] = None,
+    last_run_message: Optional[str] = None,
+    last_is_live: Optional[bool] = None,
+):
     conn = get_connection()
     cursor = conn.cursor()
     now_str = datetime.now(timezone.utc).isoformat()
-    if next_run:
-        cursor.execute("UPDATE automation_jobs SET last_run = ?, last_status = ?, next_run = ? WHERE id = ?", (now_str, last_status, next_run, job_id))
-    else:
-        cursor.execute("UPDATE automation_jobs SET last_run = ?, last_status = ? WHERE id = ?", (now_str, last_status, job_id))
+    
+    # Build dynamic update statement based on provided outcome fields
+    updates = ["last_run = ?", "last_status = ?"]
+    params: List[Any] = [now_str, last_status]
+    
+    if next_run is not None:
+        updates.append("next_run = ?")
+        params.append(next_run)
+    if last_video_title is not None:
+        updates.append("last_video_title = ?")
+        params.append(last_video_title)
+    if last_video_url is not None:
+        updates.append("last_video_url = ?")
+        params.append(last_video_url)
+    if last_run_message is not None:
+        updates.append("last_run_message = ?")
+        params.append(last_run_message)
+    if last_is_live is not None:
+        updates.append("last_is_live = ?")
+        params.append(1 if last_is_live else 0)
+        
+    params.append(job_id)
+    sql = f"UPDATE automation_jobs SET {', '.join(updates)} WHERE id = ?"
+    cursor.execute(sql, tuple(params))
     conn.commit()
     conn.close()
 

@@ -83,14 +83,15 @@ def calculate_next_run_iso(publish_time: str = "08:00", schedule: Optional[str] 
         return (now_utc + timedelta(days=1)).isoformat()
 
 
-def execute_automation_job(job_id: str) -> Dict[str, Any]:
+def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Executes the complete autonomous daily video pipeline:
-    1. AI Script Writing (Gemini 3.8 Flash with Memory Deduplication)
-    2. Voiceover Audio Generation (Gemini 3.8 Flash TTS)
-    3. Vertical Video Rendering (1080x1920 MP4 via FFmpeg)
-    4. YouTube Upload & Publish / Schedule (YouTube Data API v3)
-    5. Dashboard Activity Logging & Notification
+    1. AI Script Writing (Gemini 3.8 Flash with Memory Deduplication) or active workspace timeline
+    2. Multi-Scene Visual Footage Resolution (Pexels, Pixabay, Wikimedia, Gemini AI Image)
+    3. Voiceover Audio Generation (Gemini 3.8 Flash TTS)
+    4. Full Broadcast Multi-Scene Video Rendering (1080x1920 MP4 via FFmpeg with transitions, zoom, and kinetic captions)
+    5. YouTube Upload & Publish / Schedule (YouTube Data API v3)
+    6. Dashboard Activity Logging & Notification
     """
     job = get_automation_by_id(job_id)
     if not job:
@@ -103,62 +104,191 @@ def execute_automation_job(job_id: str) -> Dict[str, Any]:
     channel_id = job.get("channelId")
 
     logger.info(f"[Automation] Starting autonomous pipeline for Job '{job_id}' | Theme: '{theme}' | Voice: '{voice}'")
-    update_automation_run_state(job_id, last_status="running")
+    update_automation_run_state(
+        job_id,
+        last_status="running",
+        last_run_message="Crafting Multi-Scene Storyboard & Resolving Footage...",
+    )
     start_time = time.perf_counter()
 
     try:
-        # Step 1: Generate original motivational script with memory deduplication
-        memory_quotes = get_quote_memory(limit=15)
-        script_data = generate_gemini_script(
-            category=theme,
-            topic=theme,
-            tone="motivational",
-            length="30s",
-            memory_quotes=memory_quotes,
-        )
+        from backend.features.workspace.video_render_service import render_studio_video
+        from backend.features.media.schemas import SceneResolveItem
+        from backend.features.media.service import resolve_scenes_batch
 
-        title = script_data.get("title") or f"Daily {theme} Short"
-        quote_text = script_data.get("quote") or script_data.get("fullScript") or "Discipline equals freedom."
-        hook_text = script_data.get("hook") or "Wake up with intent."
-        cta_text = script_data.get("cta") or "Execute today without excuses."
-
-        # Record quote in memory to avoid future duplicates
-        try:
-            add_quote_to_memory(title=title, quote=quote_text, category=theme, hook=hook_text)
-        except Exception as mem_err:
-            logger.debug(f"[Automation] Memory record notice: {mem_err}")
-
-        # Step 2: Synthesize voiceover audio using Gemini TTS
-        narration_full = f"{hook_text} {quote_text} {cta_text}"
-        voice_result = generate_gemini_voiceover(
-            text=narration_full,
-            voice_name=voice,
-        )
-
-        audio_bytes = None
-        if voice_result.get("audioBase64"):
-            import base64
-            audio_bytes = base64.b64decode(voice_result["audioBase64"])
-
+        title = None
+        quote_text = None
+        cta_text = "Execute today without excuses."
         audio_path = None
-        if audio_bytes:
-            audio_dir = Path("backend/data/audio")
-            audio_dir.mkdir(parents=True, exist_ok=True)
-            audio_path = str((audio_dir / f"auto_voice_{int(time.time() * 1000)}.wav").resolve())
-            with open(audio_path, "wb") as f:
-                f.write(audio_bytes)
+        video_clips = []
+        image_clips = []
+        subtitles = []
+        music_url = None
+        actual_duration = 20.0
 
-        # Step 3: Render vertical 9:16 Full HD (1080x1920) MP4 video with FFmpeg
-        chosen_visual = FALLBACK_VISUAL_LOOPS[int(time.time()) % len(FALLBACK_VISUAL_LOOPS)]
-        video_path = render_vertical_short(
-            title=title,
-            quote=quote_text,
-            cover_image_url=chosen_visual,
-            audio_path=audio_path,
-            duration_seconds=int(voice_result.get("duration", 20)) or 20,
+        # Check if caller supplied active workspace timeline clips
+        has_custom_clips = override_data and (
+            (override_data.get("videoClips") and len(override_data["videoClips"]) > 0) or
+            (override_data.get("imageClips") and len(override_data["imageClips"]) > 0)
         )
 
-        # Step 4: Publish or Schedule to YouTube
+        if has_custom_clips:
+            logger.info(f"[Automation] Using active workspace timeline clips ({len(override_data.get('videoClips', []))} videos, {len(override_data.get('imageClips', []))} images)")
+            video_clips = override_data.get("videoClips") or []
+            image_clips = override_data.get("imageClips") or []
+            title = override_data.get("title") or f"Daily {theme} Short"
+            quote_text = override_data.get("quote") or "Discipline equals freedom."
+            subtitles = override_data.get("subtitles") or []
+            audio_path = override_data.get("audioUrl")
+            music_url = override_data.get("musicUrl")
+            actual_duration = float(override_data.get("duration") or 20.0)
+        else:
+            # Step 1: Generate original motivational script with memory deduplication
+            memory_quotes = get_quote_memory(limit=15)
+            script_data = generate_gemini_script(
+                category=theme,
+                topic=theme,
+                tone="motivational",
+                length="30s",
+                memory_quotes=memory_quotes,
+            )
+
+            title = script_data.get("title") or f"Daily {theme} Short"
+            quote_text = script_data.get("quote") or script_data.get("fullScript") or "Discipline equals freedom."
+            hook_text = script_data.get("hook") or "Wake up with intent."
+            cta_text = script_data.get("cta") or "Execute today without excuses."
+            storyboard = script_data.get("storyboard") or []
+
+            # Record quote in memory to avoid future duplicates
+            try:
+                add_quote_to_memory(title=title, quote=quote_text, category=theme, hook=hook_text)
+            except Exception as mem_err:
+                logger.debug(f"[Automation] Memory record notice: {mem_err}")
+
+            # Step 2: Synthesize voiceover audio using Gemini TTS
+            update_automation_run_state(
+                job_id,
+                last_status="running",
+                last_run_message=f"Synthesizing Voiceover with '{voice}'...",
+            )
+            narration_full = f"{hook_text} {quote_text} {cta_text}"
+            voice_result = generate_gemini_voiceover(
+                text=narration_full,
+                voice_name=voice,
+                storyboard=storyboard,
+            )
+
+            audio_bytes = None
+            if voice_result.get("audioBase64"):
+                import base64
+                audio_bytes = base64.b64decode(voice_result["audioBase64"])
+
+            if audio_bytes:
+                audio_dir = Path("backend/data/audio")
+                audio_dir.mkdir(parents=True, exist_ok=True)
+                audio_path = str((audio_dir / f"auto_voice_{int(time.time() * 1000)}.wav").resolve())
+                with open(audio_path, "wb") as f:
+                    f.write(audio_bytes)
+
+            actual_duration = float(voice_result.get("duration") or 20.0)
+            subtitles = voice_result.get("subtitles") or script_data.get("subtitles") or []
+            music_url = script_data.get("soundDesign", {}).get("audioUrl") or None
+
+            # Step 3: Resolve high-definition footage for EVERY scene in the storyboard
+            update_automation_run_state(
+                job_id,
+                last_status="running",
+                last_run_message=f"Resolving cinematic visual scenes ({len(storyboard)} cuts)...",
+            )
+            if storyboard:
+                scene_items = []
+                for idx, sc in enumerate(storyboard):
+                    q = sc.get("visualQuery") or sc.get("googleSearchQuery") or f"{theme} nature cinematic"
+                    scene_items.append(SceneResolveItem(
+                        sceneNumber=int(sc.get("sceneNumber", idx + 1)),
+                        visualQuery=q,
+                        mediaType=sc.get("mediaType", "video"),
+                        fallbackQueries=sc.get("fallbackQueries") or [f"{theme} landscape 4k"],
+                    ))
+
+                try:
+                    batch_res = resolve_scenes_batch(scene_items, aspect_ratio="9:16")
+                    for sc, r in zip(storyboard, batch_res.scenes):
+                        media = r.media
+                        if media and media.url:
+                            clip = {
+                                "id": f"clip_{sc.get('sceneNumber', 1)}",
+                                "url": media.url,
+                                "start": float(sc.get("start", 0.0)),
+                                "duration": float(sc.get("duration", 4.0)),
+                                "transition": sc.get("transition", "fade"),
+                                "title": sc.get("mediaName") or media.title or f"Scene {sc.get('sceneNumber')}",
+                                "type": media.mediaType,
+                            }
+                            if media.mediaType == "video":
+                                video_clips.append(clip)
+                            else:
+                                image_clips.append(clip)
+                except Exception as res_err:
+                    logger.warning(f"[Automation] Batch scene resolution error: {res_err}")
+
+            if not subtitles and storyboard:
+                subtitles = [
+                    {
+                        "start": float(sc.get("start", 0.0)),
+                        "duration": float(sc.get("duration", 3.5)),
+                        "text": sc.get("subtitleText", ""),
+                    }
+                    for sc in storyboard if sc.get("subtitleText")
+                ]
+
+        # Step 4: Render broadcast-quality multi-scene 9:16 MP4 video with FFmpeg
+        update_automation_run_state(
+            job_id,
+            last_status="running",
+            last_run_message="Rendering 1080x1920 MP4 with transitions and subtitles...",
+        )
+        video_path = None
+        try:
+            rendered = render_studio_video(
+                title=title or theme,
+                aspect_ratio="9:16",
+                duration=actual_duration,
+                exact_duration=actual_duration,
+                audio_url=audio_path,
+                music_url=music_url,
+                video_clips=video_clips if video_clips else None,
+                image_clips=image_clips if image_clips else None,
+                backdrop_url=video_clips[0]["url"] if video_clips else (image_clips[0]["url"] if image_clips else None),
+                backdrop_type="video" if video_clips else "image",
+                subtitles=subtitles,
+                caption_color="#FACC15",
+                caption_font="Impact",
+                caption_transform="uppercase",
+            )
+            cand = rendered.get("video_path") or rendered.get("videoPath")
+            if not cand and rendered.get("filename"):
+                cand = str((Path("backend/data/rendered_shorts") / rendered["filename"]).resolve())
+            if not cand and rendered.get("videoUrl"):
+                fname = rendered["videoUrl"].split("/")[-1]
+                cand = str((Path("backend/data/rendered_shorts") / fname).resolve())
+            if cand and Path(cand).exists():
+                video_path = cand
+                logger.info(f"[Automation] Studio multi-scene video successfully rendered: {video_path}")
+        except Exception as studio_err:
+            logger.warning(f"[Automation] Studio render engine failed ({studio_err}), falling back to direct vertical renderer.")
+
+        if not video_path or not Path(video_path).exists():
+            chosen_visual = FALLBACK_VISUAL_LOOPS[int(time.time()) % len(FALLBACK_VISUAL_LOOPS)]
+            video_path = render_vertical_short(
+                title=title or theme,
+                quote=quote_text or "Discipline equals freedom.",
+                cover_image_url=chosen_visual,
+                audio_path=audio_path,
+                duration_seconds=int(actual_duration) or 20,
+            )
+
+        # Step 5: Publish or Schedule to YouTube
         yt_client = get_authenticated_youtube_client()
         upload_res = None
         youtube_url = None
@@ -224,13 +354,27 @@ def execute_automation_job(job_id: str) -> Dict[str, Any]:
             priority="high",
         )
 
-        # Step 7: Calculate next scheduled run
+        # Step 7: Calculate next scheduled run and update detailed execution state
         job_schedule = job.get("schedule", "")
         next_run = calculate_next_run_iso(publish_time, job_schedule)
-        update_automation_run_state(job_id, last_status="success", next_run=next_run)
+        is_live = bool(youtube_url)
+        run_msg = (
+            f"Scheduled for {publish_time} on YouTube" if is_scheduled
+            else "Published Live to YouTube Shorts" if is_live
+            else "Saved to Studio Library (Connect YouTube channel to publish live)"
+        )
+        update_automation_run_state(
+            job_id,
+            last_status="success",
+            next_run=next_run,
+            last_video_title=title,
+            last_video_url=youtube_url or rel_video_url,
+            last_run_message=run_msg,
+            last_is_live=is_live,
+        )
 
         elapsed = round(time.perf_counter() - start_time, 2)
-        logger.info(f"[Automation] Pipeline completed in {elapsed}s for job '{job_id}' | Next run: {next_run}")
+        logger.info(f"[Automation] Pipeline completed in {elapsed}s for job '{job_id}' | Next run: {next_run} | Live: {is_live}")
 
         return {
             "success": True,
@@ -242,11 +386,18 @@ def execute_automation_job(job_id: str) -> Dict[str, Any]:
             "publishAt": publish_at_iso,
             "durationSeconds": elapsed,
             "nextRun": next_run,
+            "isLive": is_live,
+            "statusMessage": run_msg,
         }
 
     except Exception as e:
         logger.error(f"[Automation] Pipeline execution failed for job '{job_id}': {e}", exc_info=True)
-        update_automation_run_state(job_id, last_status="failed")
+        update_automation_run_state(
+            job_id,
+            last_status="failed",
+            last_run_message=str(e),
+            last_is_live=False,
+        )
         create_notification(
             title="Daily Automation Failed",
             message=f"Pipeline error for theme '{theme}': {str(e)}",

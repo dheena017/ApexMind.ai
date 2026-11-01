@@ -262,6 +262,7 @@ export default function YouTubePage({
           onTabChange={handleTabChange}
           videosCount={liveVideos.length}
           shortsCount={liveShorts.length}
+          schedulesCount={automations.length}
           playlistsCount={playlistsCount}
           postsCount={postsCount}
         />

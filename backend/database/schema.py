@@ -113,6 +113,10 @@ def init_db():
             publish_time TEXT DEFAULT '08:00',
             last_run TEXT,
             last_status TEXT DEFAULT 'idle',
+            last_video_title TEXT,
+            last_video_url TEXT,
+            last_run_message TEXT,
+            last_is_live INTEGER DEFAULT 0,
             created_at TEXT
         );
         """)
@@ -124,6 +128,10 @@ def init_db():
             ("publish_time", "TEXT DEFAULT '08:00'"),
             ("last_run", "TEXT"),
             ("last_status", "TEXT DEFAULT 'idle'"),
+            ("last_video_title", "TEXT"),
+            ("last_video_url", "TEXT"),
+            ("last_run_message", "TEXT"),
+            ("last_is_live", "INTEGER DEFAULT 0"),
             ("created_at", "TEXT"),
         ]:
             if col_name not in auto_cols:

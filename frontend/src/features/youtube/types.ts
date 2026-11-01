@@ -164,4 +164,8 @@ export interface AutomationJob {
   publishTime?: string;
   lastRun?: string;
   lastStatus?: 'idle' | 'running' | 'success' | 'failed';
+  lastVideoTitle?: string;
+  lastVideoUrl?: string;
+  lastRunMessage?: string;
+  lastIsLive?: boolean;
 }

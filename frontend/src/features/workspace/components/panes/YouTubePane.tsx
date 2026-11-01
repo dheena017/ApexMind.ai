@@ -18,6 +18,11 @@ import {
   Check,
   Hash,
   Upload,
+  Users,
+  Eye,
+  Film,
+  Sparkles,
+  ArrowUpRight,
 } from 'lucide-react';
 import { GeneratedScript } from '../../types';
 import type { YouTubeChannel } from '@/src/features/youtube/types';
@@ -120,6 +125,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   const [customHandleInput, setCustomHandleInput] = useState<string>('');
   const [isSearchingHandle, setIsSearchingHandle] = useState<boolean>(false);
   const [showHandleSearch, setShowHandleSearch] = useState<boolean>(false);
+  const [copiedHandle, setCopiedHandle] = useState<boolean>(false);
 
   // Load user's connected YouTube channel
   const loadChannelData = async (silent = false) => {
@@ -315,136 +321,186 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   viralScore = Math.min(100, viralScore);
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
-      {/* ── Top Header Bar ── */}
-      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-lg bg-red-600/20 border border-red-500/30 flex items-center justify-center shrink-0">
-            <Youtube className="w-3.5 h-3.5 text-red-500" />
+    <div className="flex flex-col h-full bg-[#121215] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl">
+      {/* ── Top Header Bar (Ambient glow, refined micro-actions) ── */}
+      <div className="relative h-12 px-3.5 bg-gradient-to-r from-red-950/25 via-[#17171C] to-[#15151A] border-b border-white/[0.06] flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-red-950/40">
+            <Youtube className="w-4 h-4 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
           </div>
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-xs font-bold text-white truncate">YouTube Studio</span>
-            {channel && (
-              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-red-500/15 text-red-400 font-semibold border border-red-500/30 truncate max-w-[120px]">
-                {channel.name}
-              </span>
-            )}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold text-white tracking-tight">YouTube Studio</span>
+            <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-zinc-600" />
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400">
+              <Sparkles className="w-2.5 h-2.5 text-red-400" />
+              Creator Hub
+            </span>
           </div>
         </div>
 
         {/* ── Header Actions (View, Sync, Search, Unlink) ── */}
         {channel && (
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <a
               href={channel.channelUrl || `https://www.youtube.com/${channel.handle}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-6 px-2 rounded-md bg-[#222228] hover:bg-[#2C2C34] text-[10px] font-medium text-white transition-colors flex items-center gap-1 border border-[#30303A]"
-              title="View Channel on YouTube"
+              className="h-7 px-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white transition-all flex items-center gap-1.5 border border-white/[0.08] hover:border-white/[0.15] shadow-xs cursor-pointer group"
+              title="Open Channel on YouTube"
             >
-              <ExternalLink className="w-2.5 h-2.5 text-red-400" />
               <span>View</span>
+              <ArrowUpRight className="w-3 h-3 text-zinc-400 group-hover:text-red-400 transition-colors" />
             </a>
 
             <button
               type="button"
               disabled={isSyncingStats}
               onClick={handleRefreshLiveStats}
-              className="h-6 w-6 rounded-md bg-[#222228] hover:bg-[#2C2C34] text-zinc-300 hover:text-white transition-colors border border-[#30303A] flex items-center justify-center cursor-pointer disabled:opacity-50"
+              className="h-7 w-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white transition-all border border-white/[0.08] hover:border-white/[0.15] flex items-center justify-center cursor-pointer disabled:opacity-50 shadow-xs"
               title="Sync Live Channel Statistics"
             >
-              <RefreshCw className={`w-2.5 h-2.5 ${isSyncingStats ? 'animate-spin text-red-400' : ''}`} />
+              <RefreshCw className={`w-3 h-3 ${isSyncingStats ? 'animate-spin text-red-400' : ''}`} />
             </button>
 
             <button
               type="button"
               onClick={() => setShowHandleSearch(!showHandleSearch)}
-              className={`h-6 w-6 rounded-md transition-colors border flex items-center justify-center cursor-pointer ${
+              className={`h-7 w-7 rounded-lg transition-all border flex items-center justify-center cursor-pointer shadow-xs ${
                 showHandleSearch
-                  ? 'bg-red-600/20 border-red-500/40 text-red-400'
-                  : 'bg-[#222228] hover:bg-[#2C2C34] text-zinc-300 hover:text-white border-[#30303A]'
+                  ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white border-white/[0.08] hover:border-white/[0.15]'
               }`}
-              title="Switch or Sync Another Handle"
+              title="Switch or Search Channel"
             >
-              <Search className="w-2.5 h-2.5" />
+              <Search className="w-3 h-3" />
             </button>
 
             <button
               type="button"
               onClick={handleDisconnectChannel}
-              className="h-6 w-6 rounded-md bg-[#222228] hover:bg-red-950/40 text-zinc-400 hover:text-red-400 transition-colors border border-[#30303A] hover:border-red-800/40 flex items-center justify-center cursor-pointer"
+              className="h-7 w-7 rounded-lg bg-white/[0.04] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all border border-white/[0.08] hover:border-red-500/30 flex items-center justify-center cursor-pointer shadow-xs"
               title="Disconnect Channel"
             >
-              <Unlink className="w-2.5 h-2.5" />
+              <Unlink className="w-3 h-3" />
             </button>
           </div>
         )}
       </div>
 
-      {/* ── Connected YouTube Channel Header Box (Always visible at top) ── */}
-      <div className="p-3 bg-[#151518] border-b border-[#26262E] shrink-0">
+      {/* ── Connected YouTube Channel Identity & Metrics Card ── */}
+      <div className="p-3.5 bg-gradient-to-b from-[#16161B] to-[#121215] border-b border-white/[0.06] shrink-0">
         {loadingChannel ? (
           <div className="flex items-center gap-3 animate-pulse">
             <div className="w-10 h-10 rounded-full bg-zinc-800 shrink-0" />
             <div className="flex-1 space-y-2 min-w-0">
-              <div className="h-3 bg-zinc-800 rounded w-1/2" />
-              <div className="h-2.5 bg-zinc-800 rounded w-1/3" />
+              <div className="h-3.5 bg-zinc-800 rounded w-1/3" />
+              <div className="h-2.5 bg-zinc-800 rounded w-1/4" />
             </div>
           </div>
         ) : channel ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {channel.avatarUrl ? (
-                  <img
-                    src={channel.avatarUrl}
-                    alt={channel.name}
-                    className="w-9 h-9 rounded-full object-cover border border-red-500/40 shadow-xs shrink-0"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-red-600 border border-red-500/40 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-xs">
-                    {channel.name?.slice(0, 2).toUpperCase() || 'YT'}
+          <div className="flex flex-col gap-2.5">
+            {/* Top Identity Row: Avatar + Name & Copyable Handle + Active Ping Connected Badge */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative shrink-0">
+                  {channel.avatarUrl ? (
+                    <img
+                      src={channel.avatarUrl}
+                      alt={channel.name}
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] shadow-md shadow-black/40"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] flex items-center justify-center text-white font-bold text-xs shadow-md">
+                      {channel.name?.slice(0, 2).toUpperCase() || 'YT'}
+                    </div>
+                  )}
+                  {/* Micro YouTube badge overlay */}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#16161A] border border-white/10 flex items-center justify-center shadow-xs">
+                    <Youtube className="w-2.5 h-2.5 text-red-500" />
                   </div>
-                )}
+                </div>
+
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-xs font-bold text-white truncate">{channel.name}</h3>
+                    <h3 className="text-xs font-bold text-white tracking-tight truncate hover:text-red-300 transition-colors">
+                      {channel.name}
+                    </h3>
                     {channel.verified && (
-                      <span className="text-[10px] text-blue-400" title="Verified Channel">
+                      <span className="text-[10px] text-blue-400 shrink-0" title="Verified Creator">
                         ✓
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-zinc-400 font-mono truncate">
-                    {channel.handle || '@channel'}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (channel.handle) {
+                        navigator.clipboard.writeText(channel.handle);
+                        setCopiedHandle(true);
+                        setTimeout(() => setCopiedHandle(false), 2000);
+                        toast.success(`Copied handle ${channel.handle}`);
+                      }
+                    }}
+                    className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 font-mono transition-colors group cursor-pointer"
+                    title="Click to copy handle"
+                  >
+                    <span>{channel.handle || '@channel'}</span>
+                    {copiedHandle ? (
+                      <Check className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <Copy className="w-2.5 h-2.5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {/* Inline Channel Stats (Moved up from bottom row) */}
-              <div className="flex items-center gap-2.5 text-[9.5px] font-mono-studio px-2 py-1 rounded-lg bg-[#1B1B22] border border-[#282834] shrink-0">
-                <div>
-                  <span className="text-zinc-500 mr-1">Subs:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
+              {/* Status Badge with Live Pulsing Radar Dot */}
+              <div className="shrink-0 flex items-center">
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/[0.12] text-emerald-400 text-[10px] font-semibold border border-emerald-500/25 flex items-center gap-1.5 shadow-xs">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  </span>
+                  Connected
+                </span>
+              </div>
+            </div>
+
+            {/* Micro-Metrics Segmented Cluster (Subs, Videos, Views) */}
+            <div className="grid grid-cols-3 divide-x divide-white/[0.06] bg-[#0E0E12] border border-white/[0.06] rounded-xl p-1.5 shadow-inner">
+              <div className="flex flex-col items-center justify-center py-0.5 px-1 text-center">
+                <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400 uppercase tracking-wider">
+                  <Users className="w-2.5 h-2.5 text-red-400/80" />
+                  <span>Subs</span>
                 </div>
-                <div>
-                  <span className="text-zinc-500 mr-1">Videos:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 mr-1">Views:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
+                <div className="text-xs font-bold text-white mt-0.5 font-mono-studio">
+                  {formatNumber(channel.subscribers)}
                 </div>
               </div>
 
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-[9px] font-semibold border border-emerald-500/30 shrink-0 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                Connected
-              </span>
+              <div className="flex flex-col items-center justify-center py-0.5 px-1 text-center">
+                <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400 uppercase tracking-wider">
+                  <Film className="w-2.5 h-2.5 text-red-400/80" />
+                  <span>Videos</span>
+                </div>
+                <div className="text-xs font-bold text-white mt-0.5 font-mono-studio">
+                  {formatNumber(channel.videosUploaded)}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-center py-0.5 px-1 text-center">
+                <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400 uppercase tracking-wider">
+                  <Eye className="w-2.5 h-2.5 text-red-400/80" />
+                  <span>Views</span>
+                </div>
+                <div className="text-xs font-bold text-white mt-0.5 font-mono-studio">
+                  {formatNumber(channel.totalLifetimeViews)}
+                </div>
+              </div>
             </div>
 
             {/* Expandable Switch Handle Form */}
@@ -455,12 +511,12 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   value={customHandleInput}
                   onChange={(e) => setCustomHandleInput(e.target.value)}
                   placeholder="Enter YouTube handle (@channel)..."
-                  className="flex-1 bg-[#1C1C20] border border-[#2A2A30] rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-red-500/80"
+                  className="flex-1 bg-[#0E0E12] border border-white/[0.1] rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-red-500/80 transition-colors"
                 />
                 <button
                   type="submit"
                   disabled={isSearchingHandle || !customHandleInput.trim()}
-                  className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-xs font-bold text-white transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-xs font-bold text-white transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
                 >
                   {isSearchingHandle ? 'Syncing...' : 'Sync'}
                 </button>

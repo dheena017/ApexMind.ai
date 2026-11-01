@@ -309,9 +309,11 @@ export const youtubeApi = {
     return json.data;
   },
 
-  async runAutomationNow(jobId: string): Promise<any> {
+  async runAutomationNow(jobId: string, payload?: any): Promise<any> {
     const res = await fetch(apiUrl(`/api/youtube/automations/${jobId}/run-now`), {
       method: 'POST',
+      headers: payload ? { 'Content-Type': 'application/json' } : undefined,
+      body: payload ? JSON.stringify(payload) : undefined,
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Failed to execute automation pipeline' }));

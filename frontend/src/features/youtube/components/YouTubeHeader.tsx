@@ -6,18 +6,22 @@ import {
   ListVideo,
   MessageSquare,
   Sliders,
+  CalendarClock,
+  BarChart3,
+  TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 
 export type YouTubeTab =
   | 'overview'
   | 'videos'
   | 'shorts'
-  | 'playlists'
-  | 'posts'
   | 'schedules'
   | 'analytics'
-  | 'seo'
+  | 'playlists'
+  | 'posts'
   | 'trending'
+  | 'seo'
   | 'settings';
 
 export interface YouTubeHeaderProps {
@@ -29,6 +33,7 @@ export interface YouTubeHeaderProps {
   onTabChange: (tab: YouTubeTab) => void;
   videosCount?: number | string;
   shortsCount?: number | string;
+  schedulesCount?: number | string;
   playlistsCount?: number | string;
   postsCount?: number | string;
   analyticsCount?: number | string;
@@ -42,6 +47,7 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
   onTabChange,
   videosCount,
   shortsCount,
+  schedulesCount,
   playlistsCount,
   postsCount,
   className = '',
@@ -62,6 +68,15 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
       badge: shortsCount !== undefined ? shortsCount : undefined,
     },
     {
+      id: 'schedules',
+      label: 'Automations',
+      badge: schedulesCount !== undefined ? schedulesCount : undefined,
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+    },
+    {
       id: 'playlists',
       label: 'Playlists',
       badge: playlistsCount !== undefined ? playlistsCount : undefined,
@@ -70,6 +85,14 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
       id: 'posts',
       label: 'Community',
       badge: postsCount !== undefined ? postsCount : undefined,
+    },
+    {
+      id: 'trending',
+      label: 'Trending',
+    },
+    {
+      id: 'seo',
+      label: 'SEO',
     },
     {
       id: 'settings',
@@ -89,10 +112,18 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
         return <Video className={iconClass} />;
       case 'shorts':
         return <Film className={`${iconClass} ${!isActive ? 'text-red-500' : ''}`} />;
+      case 'schedules':
+        return <CalendarClock className={`${iconClass} ${!isActive ? 'text-emerald-400' : ''}`} />;
+      case 'analytics':
+        return <BarChart3 className={iconClass} />;
       case 'playlists':
         return <ListVideo className={iconClass} />;
       case 'posts':
         return <MessageSquare className={iconClass} />;
+      case 'trending':
+        return <TrendingUp className={`${iconClass} ${!isActive ? 'text-amber-400' : ''}`} />;
+      case 'seo':
+        return <Sparkles className={iconClass} />;
       case 'settings':
         return <Sliders className={iconClass} />;
       default:

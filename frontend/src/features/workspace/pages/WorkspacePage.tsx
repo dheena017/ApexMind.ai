@@ -1643,7 +1643,19 @@ export default function WorkspacePage({
           className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-r border-[#242426]"
         >
             {activePane === 'automations' ? (
-              <AutomationsPane onNavigate={onNavigate} />
+              <AutomationsPane
+                onNavigate={onNavigate}
+                activeTimeline={{
+                  videoClips: timelineClipsRef.current.videoClips,
+                  imageClips: timelineClipsRef.current.imageClips,
+                  subtitles: (script as any).subtitles || [],
+                  title: script.title,
+                  quote: script.quote,
+                  audioUrl: audioUrl || undefined,
+                  musicUrl: musicTracks.find((t) => t.id === selectedMusic)?.audioUrl || undefined,
+                  duration: duration,
+                }}
+              />
             ) : activePane === 'youtube' ? (
               <YouTubePane
                 script={script}

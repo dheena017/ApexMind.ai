@@ -27,7 +27,10 @@ export const ImageStripBackground: React.FC<ImageStripBackgroundProps> = ({
               <img
                 src={imageUrl}
                 alt=""
-                onError={() => setHasError(true)}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  setHasError(true);
+                }}
                 className="w-full h-full object-cover filter brightness-100 saturate-110 pointer-events-none select-none"
               />
             ) : (

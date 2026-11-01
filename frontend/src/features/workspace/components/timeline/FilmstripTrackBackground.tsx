@@ -10,6 +10,7 @@ export interface FilmstripTrackBackgroundProps {
 
 // Global cache for multi-frame video snapshots across timeline
 const multiFrameCache = new Map<string, string[]>();
+const failedUrlCache = new Set<string>();
 
 function isDirectVideo(url?: string): boolean {
   if (!url || typeof url !== 'string') return false;
@@ -31,9 +32,16 @@ function isDirectVideo(url?: string): boolean {
 function isCleanImage(url?: string): boolean {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
-  if (!trimmed) return false;
+  if (!trimmed || failedUrlCache.has(trimmed)) return false;
   if (isDirectVideo(trimmed)) return false;
-  return trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/');
+  return (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:image/') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('./')
+  );
 }
 
 function useMultiFrameVideoThumbnails(videoUrl?: string, fallbackUrl?: string): string[] {
@@ -116,7 +124,19 @@ function useMultiFrameVideoThumbnails(videoUrl?: string, fallbackUrl?: string): 
       }
     };
 
+    let triedWithoutCors = false;
     video.onerror = () => {
+      if (!triedWithoutCors) {
+        triedWithoutCors = true;
+        try {
+          video.removeAttribute('crossorigin');
+          video.src = videoUrl;
+          video.load();
+          return;
+        } catch {
+          // Ignore
+        }
+      }
       if (safeFallback && isMounted) setFrames([safeFallback]);
     };
 
@@ -173,7 +193,11 @@ export const FilmstripTrackBackground: React.FC<FilmstripTrackBackgroundProps> =
                   src={rawFrameSrc}
                   alt=""
                   loading="lazy"
-                  onError={() => setFailedIndices((prev) => ({ ...prev, [i]: true }))}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    if (rawFrameSrc) failedUrlCache.add(rawFrameSrc);
+                    setFailedIndices((prev) => ({ ...prev, [i]: true }));
+                  }}
                   className="w-full h-full object-cover filter brightness-95 saturate-105 pointer-events-none select-none"
                 />
               ) : targetVideoUrl ? (
