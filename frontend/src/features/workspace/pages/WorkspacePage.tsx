@@ -1002,31 +1002,9 @@ export default function WorkspacePage({
     setCustomBackdropVideo(undefined);
     setActiveElementOverlay(null);
     setSelectedSfx(null);
-    setPublishedSuccess(false);
-    setPublishedVideoUrl(null);
     // Dispatch event to clear all timeline tracks and clips immediately
     window.dispatchEvent(new CustomEvent('workspace:clear-timeline'));
   }, [onPaneChange, selectedVoice]);
-
-  const handleResetPublishState = useCallback(() => {
-    setPublishedSuccess(false);
-    setPublishedVideoUrl(null);
-  }, []);
-
-  useEffect(() => {
-    const handleReset = () => {
-      handleResetPublishState();
-    };
-    const handleNewVideo = () => {
-      handleStartNewVideo();
-    };
-    window.addEventListener('workspace:reset-publish', handleReset);
-    window.addEventListener('workspace:start-new-video', handleNewVideo);
-    return () => {
-      window.removeEventListener('workspace:reset-publish', handleReset);
-      window.removeEventListener('workspace:start-new-video', handleNewVideo);
-    };
-  }, [handleResetPublishState, handleStartNewVideo]);
 
   // Capture real cover image snapshot from active studio canvas or real media
   const resolveRealCoverImage = async (): Promise<string> => {
@@ -1654,7 +1632,6 @@ export default function WorkspacePage({
                 publishing={publishing}
                 publishedSuccess={publishedSuccess}
                 publishedVideoUrl={publishedVideoUrl}
-                onResetPublishState={handleResetPublishState}
                 onNavigate={onNavigate}
               />
             ) : activePane === 'editor' || (activePane === 'script' && scriptSubPane === 'editor') ? (
