@@ -91,8 +91,8 @@ def create_app() -> FastAPI:
 
     @app.get(
         "/api/health",
-        tags=["Health"],
-        summary="System Health & Diagnostic Telemetry",
+        tags=["System Health"],
+        summary="Get System Health & Telemetry",
         description="Comprehensive application health check returning system telemetry, database status, AI engine availability, audio cache metrics, and active module routes."
     )
     def health_check():
@@ -180,7 +180,11 @@ def create_app() -> FastAPI:
             },
         }
 
-    @app.get("/api/audio/{filename}", tags=["Audio"])
+    @app.get(
+        "/api/audio/{filename}",
+        tags=["Static Asset Streaming"],
+        summary="Stream Audio File",
+    )
     def get_audio_file(filename: str):
         from fastapi.responses import FileResponse
         from pathlib import Path
@@ -189,8 +193,17 @@ def create_app() -> FastAPI:
             return FileResponse(file_path, media_type="audio/wav")
         raise HTTPException(status_code=404, detail="Audio file not found")
 
-    @app.get("/api/media/generated/{filename}", tags=["Media"])
-    @app.get("/api/media/images/{filename}", tags=["Media"])
+    @app.get(
+        "/api/media/generated/{filename}",
+        tags=["Static Asset Streaming"],
+        summary="Stream Generated Image",
+    )
+    @app.get(
+        "/api/media/images/{filename}",
+        tags=["Static Asset Streaming"],
+        summary="Stream Generated Image (alias)",
+        include_in_schema=False,
+    )
     def get_generated_image_file(filename: str):
         from fastapi.responses import FileResponse, Response
         from pathlib import Path
@@ -218,8 +231,17 @@ def create_app() -> FastAPI:
 
         raise HTTPException(status_code=404, detail="Generated image not found")
 
-    @app.get("/api/videos/{filename}", tags=["Videos"])
-    @app.get("/api/media/{filename}", tags=["Videos"])
+    @app.get(
+        "/api/videos/{filename}",
+        tags=["Static Asset Streaming"],
+        summary="Stream Rendered Video",
+    )
+    @app.get(
+        "/api/media/{filename}",
+        tags=["Static Asset Streaming"],
+        summary="Stream Rendered Video (alias)",
+        include_in_schema=False,
+    )
     def get_video_file(filename: str):
         from fastapi.responses import FileResponse
         from pathlib import Path

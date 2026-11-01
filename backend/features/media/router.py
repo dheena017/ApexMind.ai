@@ -36,7 +36,7 @@ router = APIRouter(tags=["Media Engine"])
 @router.post(
     "/api/media/generate-image",
     response_model=GenerateImageResponse,
-    summary="Generate bespoke scene visual using Gemini Multimodal AI",
+    summary="Generate AI Scene Visual",
     description="Generates high-resolution vertical 9:16 or custom ratio visuals with style directives.",
 )
 def post_generate_image(payload: GenerateImageRequest):
@@ -74,7 +74,7 @@ def post_generate_image(payload: GenerateImageRequest):
 @router.post(
     "/api/media/resolve-scenes",
     response_model=BatchResolveMediaResponse,
-    summary="Batch resolve media cuts for storyboard scenes",
+    summary="Resolve Storyboard Scene Media",
     description="Concurrently queries Google CSE, Pexels, Pixabay, and Wikimedia for all scene queries with duplicate prevention.",
 )
 def post_resolve_scenes(payload: BatchResolveMediaRequest):
@@ -98,7 +98,7 @@ def post_resolve_scenes(payload: BatchResolveMediaRequest):
 @router.post(
     "/api/media/resolve-scene",
     response_model=SingleSceneResolveResponse,
-    summary="Regenerate single scene visual",
+    summary="Regenerate Single Scene Visual",
     description="Resolves a replacement video/image for a specific scene cut with exclusion list support.",
 )
 def post_resolve_single_scene(payload: SingleSceneResolveRequest):
@@ -128,7 +128,7 @@ def post_resolve_single_scene(payload: SingleSceneResolveRequest):
 @router.get(
     "/api/media/search",
     response_model=MediaSearchResponse,
-    summary="Live search videos or photos",
+    summary="Search Stock Photos & Videos",
     description="Queries Google CSE, Pexels, Pixabay, Unsplash, or Wikimedia Commons.",
 )
 def get_search_media(
@@ -159,7 +159,7 @@ def get_search_media(
 @router.get(
     "/api/media/audio",
     response_model=AudioSearchResponse,
-    summary="Search royalty-free soundtracks",
+    summary="Search Royalty-Free Soundtracks",
     description="Queries Jamendo and open audio catalogs by mood or genre with waveform peaks.",
 )
 def get_search_audio(
@@ -180,7 +180,7 @@ def get_search_audio(
 @router.get(
     "/api/media/sfx",
     response_model=SfxSearchResponse,
-    summary="Search sound effects",
+    summary="Search Sound Effects",
     description="Queries high-impact sound effects (whoosh, sub drop, riser, impact).",
 )
 def get_search_sfx(
@@ -200,7 +200,7 @@ def get_search_sfx(
 @router.get(
     "/api/media/providers",
     response_model=ProvidersStatusResponse,
-    summary="Media provider API status",
+    summary="Get Media Provider API Status",
     description="Reports connection health, active credentials, and latency for Google CSE, Pexels, Pixabay, etc.",
 )
 def get_providers():

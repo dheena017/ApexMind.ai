@@ -546,7 +546,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             onRunAgent();
           }}
           disabled={loadingAgent}
-          className="w-full bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-bold rounded-lg shadow-lg shadow-[#3B82F6]/25 transition-all py-2 text-xs"
+          className="w-full h-10 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-md shadow-blue-500/25 active:scale-[0.99] transition-all py-2 text-xs flex items-center justify-center gap-2 cursor-pointer border-0"
         >
           {loadingAgent ? (
             <>

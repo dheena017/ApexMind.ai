@@ -30,7 +30,7 @@ router = APIRouter(tags=["Notifications"])
 @router.get(
     "/api/notifications",
     response_model=NotificationsListResponse,
-    summary="Get notifications",
+    summary="List Notifications",
     description="Retrieve system alerts and activity notifications with optional category filtering."
 )
 async def get_notifications_route(
@@ -50,7 +50,7 @@ async def get_notifications_route(
 @router.post(
     "/api/notifications",
     response_model=NotificationResponse,
-    summary="Create a notification",
+    summary="Create Notification",
     description="Dispatch a new notification alert."
 )
 async def post_notification_route(payload: NotificationCreateRequest):
@@ -73,7 +73,7 @@ async def post_notification_route(payload: NotificationCreateRequest):
 @router.post(
     "/api/notifications/manage",
     response_model=NotificationManageResponse,
-    summary="Manage notifications",
+    summary="Manage Notifications Batch",
     description="Unified endpoint to mark all read, toggle single notification read state, delete a notification, or retrieve unread badge count."
 )
 async def post_manage_notifications(
@@ -163,7 +163,7 @@ async def post_manage_notifications(
 @router.delete(
     "/api/notifications",
     response_model=StandardSuccessResponse,
-    summary="Clear all notifications"
+    summary="Clear Notifications"
 )
 async def delete_notifications_route(
     category: Optional[str] = Query(None, description="Optional category to clear"),

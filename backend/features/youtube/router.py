@@ -75,7 +75,8 @@ from .repository import insert_video
 from backend.database.repository import get_oauth_channel, get_channels, save_oauth_channel
 
 logger = logging.getLogger("ApexMind.features.youtube")
-router = APIRouter(tags=["YouTube Studio Live"])
+router = APIRouter()
+yt_router = APIRouter(tags=["YouTube Studio Live"])
 
 
 def _resolve_target(
@@ -103,10 +104,10 @@ def _resolve_target(
 # Domain 1: Channel Intelligence (Live Queries)
 # ==============================================================================
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channel/details",
     response_model=ChannelDetailsResponse,
-    summary="Get live channel metadata & about details",
+    summary="Get Channel Details",
     description="Resolves canonical channel ID, verified badge, high-res avatar, banner, subscribers, joined date, views, and country in a single call.",
 )
 async def get_live_channel_details(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, channel: Optional[str] = None):
@@ -172,10 +173,10 @@ async def get_live_channel_details(handle: Optional[str] = None, channel_id: Opt
         }
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channel/videos",
     response_model=ChannelVideosResponse,
-    summary="Get live channel video uploads",
+    summary="List Channel Videos",
     description="Fetches real 16:9 uploaded videos with durations, views, and watch URLs. Supports sort by 'latest' or 'views'/'popular'.",
 )
 async def get_live_channel_videos(
@@ -199,7 +200,7 @@ async def get_live_channel_videos(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channel/videos/sorted",
     include_in_schema=False,
 )
@@ -214,10 +215,10 @@ async def get_live_channel_videos_sorted_alias(
     return await get_live_channel_videos(handle=handle, channel_id=channel_id, query=query, channel=channel, limit=limit, sort=sort)
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channel/shorts",
     response_model=ChannelShortsResponse,
-    summary="Get live vertical YouTube Shorts",
+    summary="List Channel Shorts",
     description="Fetches validated 9:16 Shorts with verified direct shorts URLs.",
 )
 async def get_live_channel_shorts_route(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, limit: int = 24):
@@ -231,9 +232,9 @@ async def get_live_channel_shorts_route(handle: Optional[str] = None, channel_id
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channel/feed",
-    summary="Get aggregated live YouTube channel feed",
+    summary="Get Channel Feed",
     description="Returns channel details, videos, and shorts in a single live call.",
 )
 async def get_live_channel_feed_route(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, channel: Optional[str] = None, limit: int = 24):
@@ -264,10 +265,10 @@ async def get_live_channel_feed_route(handle: Optional[str] = None, channel_id: 
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channel/playlists",
     response_model=ChannelPlaylistsResponse,
-    summary="Get channel playlists",
+    summary="List Channel Playlists",
     description="Fetches public playlists created on the channel.",
 )
 async def get_live_channel_playlists_route(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, channel: Optional[str] = None, limit: int = 20):
@@ -281,10 +282,10 @@ async def get_live_channel_playlists_route(handle: Optional[str] = None, channel
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channel/analytics",
     response_model=ChannelAnalyticsResponse,
-    summary="Get authentic live channel analytics",
+    summary="Get Channel Analytics",
     description="Computes real metrics from loaded video view counts (zero mock data).",
 )
 async def get_live_channel_analytics_route(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, channel: Optional[str] = None):
@@ -298,9 +299,9 @@ async def get_live_channel_analytics_route(handle: Optional[str] = None, channel
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channel/live-streams",
-    summary="Check channel live streams & premieres",
+    summary="Check Channel Live Streams",
 )
 async def get_live_channel_streams_route(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, channel: Optional[str] = None):
     target = _resolve_target(query, channel, channel_id, handle)
@@ -311,10 +312,10 @@ async def get_live_channel_streams_route(handle: Optional[str] = None, channel_i
 # Domain 2: Deep Video Inspection (Details, Thumbnails, Comments, Chapters)
 # ==============================================================================
 
-@router.get(
+@yt_router.get(
     "/api/youtube/video/details",
     response_model=VideoDetailsResponse,
-    summary="Get deep video details & exact statistics",
+    summary="Get Video Details & Statistics",
 )
 async def get_video_details_route(video_id: str):
     try:
@@ -325,10 +326,10 @@ async def get_video_details_route(video_id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/video/thumbnails",
     response_model=VideoThumbnailsResponse,
-    summary="Get all CDN thumbnail resolutions",
+    summary="Get Video Thumbnails",
 )
 async def get_video_thumbnails_route(video_id: str):
     try:
@@ -338,10 +339,10 @@ async def get_video_thumbnails_route(video_id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/video/chapters",
     response_model=VideoChaptersResponse,
-    summary="Extract video chapters and key moments",
+    summary="Extract Video Chapters",
 )
 async def get_video_chapters_route(video_id: str):
     try:
@@ -350,10 +351,10 @@ async def get_video_chapters_route(video_id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/video/comments",
     response_model=VideoCommentsResponse,
-    summary="Get live viewer comments from video",
+    summary="List Video Comments",
 )
 async def get_video_comments_route(video_id: str, limit: int = 20):
     try:
@@ -364,10 +365,10 @@ async def get_video_comments_route(video_id: str, limit: int = 20):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/video/transcript",
     response_model=VideoTranscriptResponse,
-    summary="Extract closed captions from YouTube video",
+    summary="Get Video Transcript",
 )
 async def get_video_transcript_route(video_id: str, lang: str = "en"):
     try:
@@ -386,9 +387,9 @@ async def get_video_transcript_route(video_id: str, lang: str = "en"):
 # Domain 3: SEO & Video Search
 # ==============================================================================
 
-@router.get(
+@yt_router.get(
     "/api/youtube/seo/tags",
-    summary="Extract tags and keywords from competitor video",
+    summary="Extract Competitor Video Tags",
 )
 async def get_seo_tags_route(video_id: str):
     try:
@@ -397,17 +398,17 @@ async def get_seo_tags_route(video_id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/seo/hashtag",
-    summary="Get YouTube hashtag feed information",
+    summary="Get Hashtag Trends",
 )
 async def get_seo_hashtag_route(tag: str):
     return {"success": True, **fetch_hashtag_feed(tag)}
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/search/videos",
-    summary="Search YouTube videos and shorts",
+    summary="Search YouTube Videos & Shorts",
 )
 async def get_search_videos_route(query: str, type: str = "video", limit: int = 15):
     videos = search_youtube_videos(query, video_type=type, limit=limit)
@@ -419,11 +420,11 @@ async def get_search_videos_route(query: str, type: str = "video", limit: int = 
 # Domain 4: Canonical Video Publish Operation (POST /api/youtube/publish)
 # ==============================================================================
 
-@router.post(
+@yt_router.post(
     "/api/youtube/publish",
     response_model=PublishVideoResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Publish AI Motivational Short to YouTube",
+    summary="Publish Short to YouTube",
     description="The canonical endpoint to render, assemble metadata, and publish an AI motivational Short directly to YouTube.",
 )
 async def post_publish_video(payload: PublishVideoRequest):
@@ -469,7 +470,7 @@ async def post_publish_video(payload: PublishVideoRequest):
 # Domain 4b: Video Management Operations (Metadata Update & Deletion)
 # ==============================================================================
 
-@router.post(
+@yt_router.post(
     "/api/youtube/videos",
     response_model=PublishVideoResponse,
     status_code=status.HTTP_200_OK,
@@ -536,10 +537,10 @@ async def post_youtube_videos(payload: PublishVideoRequest):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.post(
+@yt_router.post(
     "/api/youtube/playlists",
     status_code=status.HTTP_201_CREATED,
-    summary="Create or manage playlist on YouTube",
+    summary="Manage YouTube Playlists",
     description="Unified RESTful endpoint to create, update, or delete a YouTube playlist.",
 )
 async def post_manage_playlist(payload: ManagePlaylistRequest):
@@ -574,31 +575,31 @@ async def post_manage_playlist(payload: ManagePlaylistRequest):
 
 
 # Backward-compatibility routes for existing callers & tests (unlisted in Swagger UI)
-@router.post("/api/youtube/playlist/create", status_code=status.HTTP_201_CREATED, include_in_schema=False)
+@yt_router.post("/api/youtube/playlist/create", status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def post_create_playlist(payload: CreatePlaylistRequest):
     return await post_manage_playlist(
         ManagePlaylistRequest(action="create", title=payload.title, description=payload.description, privacyStatus=payload.privacyStatus)
     )
 
 
-@router.patch("/api/youtube/playlist/update", include_in_schema=False)
+@yt_router.patch("/api/youtube/playlist/update", include_in_schema=False)
 async def patch_playlist(payload: UpdatePlaylistRequest):
     return await post_manage_playlist(
         ManagePlaylistRequest(action="update", playlistId=payload.playlistId, title=payload.title, description=payload.description, privacyStatus=payload.privacyStatus)
     )
 
 
-@router.delete("/api/youtube/playlist/delete", include_in_schema=False)
+@yt_router.delete("/api/youtube/playlist/delete", include_in_schema=False)
 async def delete_playlist_route(payload: DeletePlaylistRequest):
     return await post_manage_playlist(
         ManagePlaylistRequest(action="delete", playlistId=payload.playlistId)
     )
 
 
-@router.post(
+@yt_router.post(
     "/api/youtube/video/comments",
     status_code=status.HTTP_201_CREATED,
-    summary="Post comment or reply directly on YouTube",
+    summary="Post Comment or Reply",
     description="Post a top-level comment or reply to an existing comment on a YouTube video.",
 )
 async def post_comment_reply(payload: ReplyCommentRequest):
@@ -613,7 +614,7 @@ async def post_comment_reply(payload: ReplyCommentRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post(
+@yt_router.post(
     "/api/youtube/video/comments/reply",
     status_code=status.HTTP_201_CREATED,
     include_in_schema=False,
@@ -626,9 +627,9 @@ async def post_comment_reply_alias(payload: ReplyCommentRequest):
 # Domain 5: Google YouTube Channel Connect & OAuth Status
 # ==============================================================================
 
-@router.post(
+@yt_router.post(
     "/api/youtube/oauth/code",
-    summary="Exchange Google Auth Code for Tokens",
+    summary="Exchange OAuth Code for Tokens",
     description="Exchanges Google auth code for access & refresh tokens, enabling persistent live YouTube uploads.",
 )
 async def post_exchange_oauth_code(payload: CodeConnectRequest):
@@ -645,7 +646,7 @@ async def post_exchange_oauth_code(payload: CodeConnectRequest):
         raise HTTPException(status_code=400, detail=f"Failed to authenticate YouTube channel: {str(e)}")
 
 
-@router.post(
+@yt_router.post(
     "/api/youtube/connect",
     summary="Connect YouTube Channel",
     description="Connect a YouTube channel using Google access token from client-side Google popup.",
@@ -676,9 +677,9 @@ async def post_connect_channel(payload: TokenConnectRequest):
         raise HTTPException(status_code=400, detail=f"Failed to connect YouTube channel: {str(e)}")
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/status",
-    summary="Check YouTube connection status",
+    summary="Get YouTube Connection Status",
 )
 async def get_oauth_status_route():
     yt = get_authenticated_youtube_client()
@@ -691,7 +692,7 @@ async def get_oauth_status_route():
     }
 
 
-@router.post(
+@yt_router.post(
     "/api/youtube/disconnect",
     summary="Disconnect YouTube channel",
 )
@@ -705,9 +706,9 @@ async def post_disconnect_oauth():
     return {"success": True, "message": "Disconnected YouTube OAuth session and channel credentials."}
 
 
-@router.get(
+@yt_router.get(
     "/api/youtube/channels",
-    summary="Get saved YouTube channels",
+    summary="List Saved YouTube Channels",
     description="Returns all connected channels from the studio database.",
 )
 async def get_saved_channels(handle: Optional[str] = None):
@@ -716,6 +717,9 @@ async def get_saved_channels(handle: Optional[str] = None):
 
 
 # ==============================================================================
+router.include_router(yt_router)
+
+
 # Autonomous Video Production & Publishing Schedules Endpoints
 # Primary: /api/schedules | Aliases: /api/automations, /api/youtube/automations
 # ==============================================================================

@@ -400,29 +400,29 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             </div>
           </div>
         ) : channel ? (
-          <div className="flex flex-col gap-2.5">
-            {/* Top Identity Row: Avatar + Name & Copyable Handle + Active Ping Connected Badge */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
+          <div className="flex flex-col gap-2">
+            {/* Top Identity Row: Avatar + Name & Handle | Compact Stats Cluster | Connected Badge */}
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div className="relative shrink-0">
                   {channel.avatarUrl ? (
                     <img
                       src={channel.avatarUrl}
                       alt={channel.name}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] shadow-md shadow-black/40"
+                      className="w-9 h-9 rounded-full object-cover ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] shadow-md shadow-black/40"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] flex items-center justify-center text-white font-bold text-xs shadow-md">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-red-700 ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] flex items-center justify-center text-white font-bold text-xs shadow-md">
                       {channel.name?.slice(0, 2).toUpperCase() || 'YT'}
                     </div>
                   )}
                   {/* Micro YouTube badge overlay */}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#16161A] border border-white/10 flex items-center justify-center shadow-xs">
-                    <Youtube className="w-2.5 h-2.5 text-red-500" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#16161A] border border-white/10 flex items-center justify-center shadow-xs">
+                    <Youtube className="w-2 h-2 text-red-500" />
                   </div>
                 </div>
 
@@ -460,6 +460,24 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 </div>
               </div>
 
+              {/* Center Micro-Metrics Pill Cluster (Subs, Videos, Views) */}
+              <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 py-1 bg-[#0E0E12] border border-white/[0.08] rounded-lg shadow-inner">
+                <div className="flex items-center gap-1 text-[11px] font-mono">
+                  <span className="text-zinc-500 text-[10px] font-sans font-medium">Subs:</span>
+                  <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
+                </div>
+                <span className="text-white/15">•</span>
+                <div className="flex items-center gap-1 text-[11px] font-mono">
+                  <span className="text-zinc-500 text-[10px] font-sans font-medium">Videos:</span>
+                  <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
+                </div>
+                <span className="text-white/15">•</span>
+                <div className="flex items-center gap-1 text-[11px] font-mono">
+                  <span className="text-zinc-500 text-[10px] font-sans font-medium">Views:</span>
+                  <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
+                </div>
+              </div>
+
               {/* Status Badge with Live Pulsing Radar Dot */}
               <div className="shrink-0 flex items-center">
                 <span className="px-2.5 py-1 rounded-full bg-emerald-500/[0.12] text-emerald-400 text-[10px] font-semibold border border-emerald-500/25 flex items-center gap-1.5 shadow-xs">
@@ -469,39 +487,6 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   </span>
                   Connected
                 </span>
-              </div>
-            </div>
-
-            {/* Micro-Metrics Segmented Cluster (Subs, Videos, Views) */}
-            <div className="grid grid-cols-3 divide-x divide-white/[0.06] bg-[#0E0E12] border border-white/[0.06] rounded-xl p-1.5 shadow-inner">
-              <div className="flex flex-col items-center justify-center py-0.5 px-1 text-center">
-                <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400 uppercase tracking-wider">
-                  <Users className="w-2.5 h-2.5 text-red-400/80" />
-                  <span>Subs</span>
-                </div>
-                <div className="text-xs font-bold text-white mt-0.5 font-mono-studio">
-                  {formatNumber(channel.subscribers)}
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center justify-center py-0.5 px-1 text-center">
-                <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400 uppercase tracking-wider">
-                  <Film className="w-2.5 h-2.5 text-red-400/80" />
-                  <span>Videos</span>
-                </div>
-                <div className="text-xs font-bold text-white mt-0.5 font-mono-studio">
-                  {formatNumber(channel.videosUploaded)}
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center justify-center py-0.5 px-1 text-center">
-                <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400 uppercase tracking-wider">
-                  <Eye className="w-2.5 h-2.5 text-red-400/80" />
-                  <span>Views</span>
-                </div>
-                <div className="text-xs font-bold text-white mt-0.5 font-mono-studio">
-                  {formatNumber(channel.totalLifetimeViews)}
-                </div>
               </div>
             </div>
 
@@ -921,10 +906,10 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             type="button"
             onClick={onPublish}
             disabled={publishing || !canPublish}
-            className={`w-full h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg ${
+            className={`w-full h-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg active:scale-[0.99] ${
               publishedSuccess
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
-                : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-red-900/25 disabled:opacity-50 disabled:cursor-not-allowed'
+                : 'bg-gradient-to-r from-red-600 via-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white shadow-red-950/40 disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
           >
             {publishing ? (

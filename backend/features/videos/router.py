@@ -23,12 +23,12 @@ from .schemas import (
 )
 
 logger = logging.getLogger("ApexMind.features.videos")
-router = APIRouter(prefix="/api/studio-videos", tags=["Website Studio Videos"])
+router = APIRouter(prefix="/api/studio-videos", tags=["Studio Video Library"])
 
 @router.get(
     "",
     response_model=WebsiteVideoListResponse,
-    summary="Get all website-created studio videos",
+    summary="List Studio Videos",
     description="Retrieve list of videos created and rendered by ApexMind AI Video Studio with cover images and metadata."
 )
 async def list_website_videos(
@@ -55,7 +55,7 @@ async def list_website_videos(
     "",
     response_model=WebsiteVideoSchema,
     status_code=status.HTTP_201_CREATED,
-    summary="Save a newly created website studio video",
+    summary="Save Studio Video",
     description="Stores a new video created in the AI Video Studio with cover image and audio track."
 )
 async def create_website_video_endpoint(payload: CreateWebsiteVideoRequest):
@@ -75,7 +75,7 @@ async def create_website_video_endpoint(payload: CreateWebsiteVideoRequest):
 @router.get(
     "/{video_id}",
     response_model=WebsiteVideoSchema,
-    summary="Get single website studio video details"
+    summary="Get Studio Video Details"
 )
 async def get_website_video_endpoint(video_id: str):
     video = get_website_video_by_id(video_id)
@@ -91,7 +91,7 @@ async def get_website_video_endpoint(video_id: str):
 @router.patch(
     "/{video_id}",
     response_model=WebsiteVideoSchema,
-    summary="Update website studio video details"
+    summary="Update Studio Video"
 )
 async def update_website_video_endpoint(video_id: str, payload: UpdateWebsiteVideoRequest):
     updates = payload.dict(exclude_unset=True)
@@ -107,7 +107,7 @@ async def update_website_video_endpoint(video_id: str, payload: UpdateWebsiteVid
 
 @router.delete(
     "/{video_id}",
-    summary="Delete a website studio video"
+    summary="Delete Studio Video"
 )
 async def delete_website_video_endpoint(video_id: str):
     deleted = delete_website_video(video_id)
