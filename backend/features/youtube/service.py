@@ -47,6 +47,7 @@ def publish_video_to_shorts(
     real_video_url = None
     real_video_id = None
     live_uploaded = False
+    upload_error = None
 
     # Clean up broken ANSI escape codes like 97m from title
     clean_title = re.sub(r'(\x1b\[[0-9;]*[a-zA-Z]|[0-9]{1,2}m)', '', str(title)).strip() or "Untitled Short"
@@ -164,7 +165,8 @@ def publish_video_to_shorts(
             live_uploaded = True
             logger.info(f"Live YouTube Short published successfully: {real_video_url}")
         except Exception as e:
-            logger.error(f"Live YouTube upload encounter error ({e}), storing in studio catalog with fallback link.")
+            upload_error = str(e)
+            logger.error(f"Live YouTube upload error ({e}), storing in studio catalog with fallback link.")
 
     created = insert_video(
         title=clean_title,
@@ -179,6 +181,8 @@ def publish_video_to_shorts(
     created["videoUrl"] = real_video_url
     created["shortsUrl"] = f"https://www.youtube.com/shorts/{real_video_id}" if real_video_id else real_video_url
     created["videoId"] = real_video_id
+    if upload_error:
+        created["error"] = upload_error
 
     return {
         "success": True,
@@ -187,5 +191,6 @@ def publish_video_to_shorts(
         "videoUrl": real_video_url,
         "shortsUrl": f"https://www.youtube.com/shorts/{real_video_id}" if real_video_id else real_video_url,
         "liveUploaded": live_uploaded,
-        "message": "Video successfully uploaded to YouTube Shorts!" if live_uploaded else "Video saved to Studio library.",
+        "error": upload_error,
+        "message": "Video successfully uploaded to YouTube Shorts!" if live_uploaded else (upload_error or "Video saved to Studio library."),
     }

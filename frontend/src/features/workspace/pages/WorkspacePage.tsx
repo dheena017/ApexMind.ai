@@ -1133,17 +1133,38 @@ export default function WorkspacePage({
           actionLabel: 'View on YouTube',
         });
       } else {
-        toast.warning('Live upload skipped: YouTube session needs re-authorization. Video saved to Studio Library!', {
-          description: 'Click Connect Channel in the YouTube tab to publish directly next time.',
-        });
-        addWorkspaceNotification({
-          title: 'Saved to Studio Library (OAuth Refresh Needed)',
-          message: `"${script.title}" rendered and stored. Please re-authorize YouTube to upload live.`,
-          category: 'export',
-          type: 'info',
-          targetPane: 'canvas',
-          actionLabel: 'View in Library',
-        });
+        const errorMsg = String((publishedShort as any)?.error || (publishedShort as any)?.message || '');
+        const isQuotaOrLimit =
+          errorMsg.toLowerCase().includes('uploadlimitexceeded') ||
+          errorMsg.toLowerCase().includes('upload limit') ||
+          errorMsg.toLowerCase().includes('exceeded the number of videos') ||
+          errorMsg.toLowerCase().includes('quota');
+
+        if (isQuotaOrLimit) {
+          toast.error('YouTube Daily Upload Limit Reached!', {
+            description: 'YouTube restricts daily video uploads per channel. Please wait 24 hours, or complete phone verification in YouTube Studio to raise your limit.',
+            duration: 8000,
+          });
+          addWorkspaceNotification({
+            title: 'Daily Upload Limit Reached on YouTube',
+            message: 'YouTube limits daily uploads per channel. Your video is safely stored in Studio Library.',
+            category: 'export',
+            type: 'warning',
+            targetPane: 'youtube',
+          });
+        } else {
+          toast.warning('Live upload skipped: YouTube session needs re-authorization. Video saved to Studio Library!', {
+            description: 'Click Connect Channel in the YouTube tab to publish directly next time.',
+          });
+          addWorkspaceNotification({
+            title: 'Saved to Studio Library (OAuth Refresh Needed)',
+            message: `"${script.title}" rendered and stored. Please re-authorize YouTube to upload live.`,
+            category: 'export',
+            type: 'info',
+            targetPane: 'canvas',
+            actionLabel: 'View in Library',
+          });
+        }
       }
     } catch (err) {
       consoleLogger.error('YouTube', 'Upload failed:', err);

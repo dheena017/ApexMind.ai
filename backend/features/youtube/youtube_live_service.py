@@ -1239,6 +1239,17 @@ def upload_video_to_live_youtube(
                 logger.info(f"[YouTube Upload] Progress: {int(status.progress() * 100)}%")
         except Exception as e:
             err_str = str(e).lower()
+            if "uploadlimitexceeded" in err_str or "exceeded the number of videos" in err_str:
+                logger.error(f"[YouTube Upload] YouTube channel daily upload limit reached: {e}")
+                raise RuntimeError(
+                    "YouTube Daily Upload Limit Reached: Your channel has reached YouTube's maximum allowed video uploads for a 24-hour window. "
+                    "YouTube limits daily uploads (especially on new or unverified channels). Please wait 24 hours for YouTube to reset your upload quota, or complete phone verification in YouTube Studio (Settings > Channel > Feature Eligibility) to increase your upload limits."
+                ) from e
+            if "quotaexceeded" in err_str or "quota exceeded" in err_str:
+                logger.error(f"[YouTube Upload] YouTube API project quota reached: {e}")
+                raise RuntimeError(
+                    "YouTube API Quota Limit Reached: The daily API request quota for your Google Cloud Project has been exhausted for today. Quotas reset daily at midnight Pacific Time (PT)."
+                ) from e
             if "refresh_token" in err_str or "invalid_grant" in err_str or "unauthorized" in err_str or "permission_denied" in err_str:
                 logger.error(f"[YouTube Upload] Unrecoverable authentication error during upload: {e}")
                 raise RuntimeError(
