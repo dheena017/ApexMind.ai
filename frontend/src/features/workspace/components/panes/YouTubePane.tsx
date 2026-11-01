@@ -332,7 +332,53 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
           </div>
         </div>
 
+        {/* ── Header Actions (View, Sync, Search, Unlink) ── */}
+        {channel && (
+          <div className="flex items-center gap-1 shrink-0">
+            <a
+              href={channel.channelUrl || `https://www.youtube.com/${channel.handle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-6 px-2 rounded-md bg-[#222228] hover:bg-[#2C2C34] text-[10px] font-medium text-white transition-colors flex items-center gap-1 border border-[#30303A]"
+              title="View Channel on YouTube"
+            >
+              <ExternalLink className="w-2.5 h-2.5 text-red-400" />
+              <span>View</span>
+            </a>
 
+            <button
+              type="button"
+              disabled={isSyncingStats}
+              onClick={handleRefreshLiveStats}
+              className="h-6 w-6 rounded-md bg-[#222228] hover:bg-[#2C2C34] text-zinc-300 hover:text-white transition-colors border border-[#30303A] flex items-center justify-center cursor-pointer disabled:opacity-50"
+              title="Sync Live Channel Statistics"
+            >
+              <RefreshCw className={`w-2.5 h-2.5 ${isSyncingStats ? 'animate-spin text-red-400' : ''}`} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowHandleSearch(!showHandleSearch)}
+              className={`h-6 w-6 rounded-md transition-colors border flex items-center justify-center cursor-pointer ${
+                showHandleSearch
+                  ? 'bg-red-600/20 border-red-500/40 text-red-400'
+                  : 'bg-[#222228] hover:bg-[#2C2C34] text-zinc-300 hover:text-white border-[#30303A]'
+              }`}
+              title="Switch or Sync Another Handle"
+            >
+              <Search className="w-2.5 h-2.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDisconnectChannel}
+              className="h-6 w-6 rounded-md bg-[#222228] hover:bg-red-950/40 text-zinc-400 hover:text-red-400 transition-colors border border-[#30303A] hover:border-red-800/40 flex items-center justify-center cursor-pointer"
+              title="Disconnect Channel"
+            >
+              <Unlink className="w-2.5 h-2.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Connected YouTube Channel Header Box (Always visible at top) ── */}
@@ -385,62 +431,19 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </span>
             </div>
 
-            {/* Metrics & Actions */}
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#222228]">
-              <div className="flex items-center gap-3 text-[10px] min-w-0 font-mono-studio">
-                <div>
-                  <span className="text-zinc-500 mr-1">Subs:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 mr-1">Videos:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 mr-1">Views:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
-                </div>
+            {/* Metrics */}
+            <div className="flex items-center gap-4 pt-2 border-t border-[#222228] text-[10px] font-mono-studio">
+              <div>
+                <span className="text-zinc-500 mr-1.5">Subs:</span>
+                <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
               </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                <a
-                  href={channel.channelUrl || `https://www.youtube.com/${channel.handle}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-6 px-2 rounded-md bg-[#222228] hover:bg-[#2C2C34] text-[10px] font-medium text-white transition-colors flex items-center gap-1 border border-[#30303A]"
-                  title="View Channel on YouTube"
-                >
-                  <ExternalLink className="w-2.5 h-2.5 text-red-400" />
-                  <span className="hidden sm:inline">View</span>
-                </a>
-
-                <button
-                  type="button"
-                  disabled={isSyncingStats}
-                  onClick={handleRefreshLiveStats}
-                  className="h-6 w-6 rounded-md bg-[#222228] hover:bg-[#2C2C34] text-zinc-300 hover:text-white transition-colors border border-[#30303A] flex items-center justify-center cursor-pointer disabled:opacity-50"
-                  title="Sync Live Channel Statistics"
-                >
-                  <RefreshCw className={`w-2.5 h-2.5 ${isSyncingStats ? 'animate-spin text-red-400' : ''}`} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowHandleSearch(!showHandleSearch)}
-                  className="h-6 w-6 rounded-md bg-[#222228] hover:bg-[#2C2C34] text-zinc-300 hover:text-white transition-colors border border-[#30303A] flex items-center justify-center cursor-pointer"
-                  title="Switch or Sync Another Handle"
-                >
-                  <Search className="w-2.5 h-2.5 text-zinc-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDisconnectChannel}
-                  className="h-6 w-6 rounded-md bg-[#222228] hover:bg-red-950/40 text-zinc-400 hover:text-red-400 transition-colors border border-[#30303A] hover:border-red-800/40 flex items-center justify-center cursor-pointer"
-                  title="Disconnect Channel"
-                >
-                  <Unlink className="w-2.5 h-2.5" />
-                </button>
+              <div>
+                <span className="text-zinc-500 mr-1.5">Videos:</span>
+                <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
+              </div>
+              <div>
+                <span className="text-zinc-500 mr-1.5">Views:</span>
+                <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
               </div>
             </div>
 

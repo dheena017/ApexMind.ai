@@ -954,6 +954,10 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                           alt={item.title}
                           loading="lazy"
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80';
+                          }}
                         />
 
                         {/* Cinematic Multi-stop Gradient */}
@@ -1266,9 +1270,24 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             {/* Recently Used Carousel */}
             {activeTab === 'catalog' && recentImages.length > 0 && !searchQuery && (
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-mono-studio text-[#71717A] uppercase flex items-center gap-1">
-                  <History className="w-3 h-3" /> Recently Used
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono-studio text-[#71717A] uppercase flex items-center gap-1">
+                    <History className="w-3 h-3" /> Recently Used
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecentImages([]);
+                      try {
+                        localStorage.removeItem(RECENT_IMAGES_KEY);
+                      } catch {}
+                    }}
+                    className="text-[9px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                    title="Clear Recently Used"
+                  >
+                    Clear
+                  </button>
+                </div>
                 <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
                   {recentImages.map((rec) => (
                     <button
@@ -1277,7 +1296,20 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       onClick={() => handleApply(rec)}
                       className="w-16 h-20 rounded-lg overflow-hidden border border-[#2A2A30] hover:border-[#3B82F6] shrink-0 relative group cursor-pointer"
                     >
-                      <img src={rec.thumbnail} alt={rec.title} className="w-full h-full object-cover" />
+                      <img
+                        src={rec.thumbnail}
+                        alt={rec.title}
+                        className="w-full h-full object-cover"
+                        onError={() => {
+                          setRecentImages((prev) => {
+                            const filtered = prev.filter((item) => item.id !== rec.id);
+                            try {
+                              localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(filtered));
+                            } catch {}
+                            return filtered;
+                          });
+                        }}
+                      />
                       {activeImageUrl === rec.url && (
                         <div className="absolute inset-0 bg-[#3B82F6]/40 flex items-center justify-center">
                           <Check className="w-3 h-3 text-white stroke-[3]" />
