@@ -160,6 +160,7 @@ export default function AppLayout({
             mode="desktop-only"
             activeTab={activeWorkspacePane}
             onTabChange={(tab) => onWorkspacePaneChange(tab)}
+            onNavigate={onNavigate}
           />
 
           {/* Right Area: Header at top (side to the sidebar), content, and status bar */}
@@ -173,6 +174,7 @@ export default function AppLayout({
             <WorkspaceMobileTabs
               activeTab={activeWorkspacePane}
               onTabChange={(tab) => onWorkspacePaneChange(tab)}
+              onNavigate={onNavigate}
             />
             <main className="flex-1 min-w-0 min-h-0 p-1 sm:p-1.5 overflow-y-auto lg:overflow-hidden flex flex-col bg-[#0A0A0A]">
               <div className="w-full h-full flex-1 min-h-0">
