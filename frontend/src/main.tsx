@@ -59,6 +59,31 @@ if (!rootElement) {
 
 consoleLogger.printDevBanner();
 
+// Global API Request/Response Logger Interceptor
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
+    // Trace application API endpoints (exclude background client log transport)
+    if (url.includes('/api/') && !url.includes('/__apex_client_log')) {
+      const method = (init?.method || 'GET').toUpperCase();
+      consoleLogger.apiSent(method, url);
+      const start = performance.now();
+      try {
+        const response = await originalFetch(input, init);
+        const duration = performance.now() - start;
+        consoleLogger.apiComing(method, url, response.status, duration);
+        return response;
+      } catch (err) {
+        const duration = performance.now() - start;
+        consoleLogger.apiComing(method, url, 0, duration, err);
+        throw err;
+      }
+    }
+    return originalFetch(input, init);
+  };
+}
+
 import { AuthProvider } from './features/auth/context/AuthContext';
 
 createRoot(rootElement, {

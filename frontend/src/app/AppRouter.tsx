@@ -75,6 +75,7 @@ export default function AppRouter({
           case 'dashboard':
             return <DashboardPage onNavigate={onNavigate} />;
           case 'workspace':
+          case 'studio':
           case 'workspace-youtube':
           case 'workspace-automations':
           case 'workspace-script':

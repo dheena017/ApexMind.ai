@@ -1674,6 +1674,108 @@ export default function WorkspacePage({
     return () => window.removeEventListener('workspace:save-to-library', handleSave);
   }, [canPublish, handleSaveToLibrary]);
 
+  // Listen for workspace:load-timeline to load an automated video or history run into the timeline
+  useEffect(() => {
+    const handleLoadTimeline = (e: CustomEvent<any>) => {
+      const detail = e.detail;
+      if (!detail) return;
+      const pData = detail.projectData || {};
+      const title = detail.title || pData.title || 'Studio Video';
+      const videoUrl = detail.videoUrl || pData.videoUrl;
+      const audioUrlToLoad = detail.audioUrl || pData.audioUrl;
+      const durationToLoad = detail.duration || pData.duration || 15.0;
+      const storyboard = detail.storyboard || pData.storyboard || [];
+      const subtitles = detail.subtitles || pData.subtitles || (detail.captions || pData.captions || []);
+      const voiceToLoad = detail.voice || pData.voice || 'Fenrir';
+
+      // 1. Switch left pane to Editor
+      if (onPaneChange) {
+        onPaneChange('editor');
+      }
+
+      // 2. Open timeline (uncollapse)
+      setShowTimeline(true);
+
+      // 3. Set Canvas & Backdrops
+      if (videoUrl) {
+        setCustomBackdropVideo(videoUrl);
+        setActiveCompound('video');
+      }
+      if (audioUrlToLoad) {
+        setAudioUrl(audioUrlToLoad);
+      }
+      if (voiceToLoad) {
+        setSelectedVoice(voiceToLoad);
+      }
+      if (durationToLoad > 0) {
+        setDuration(durationToLoad);
+        setTimelineDuration(durationToLoad);
+      }
+      setCurrentTime(0);
+
+      // 4. Update Script state with title, quote, and subtitles
+      setScript((prev) => ({
+        ...prev,
+        title: title,
+        quote: pData.quote || title,
+        subtitles: subtitles.length > 0 ? subtitles : prev.subtitles,
+        storyboard: storyboard.length > 0 ? storyboard : prev.storyboard,
+      }));
+
+      // 5. Build storyboard clips for V1 Video track if needed
+      let finalStoryboard = storyboard;
+      if (!finalStoryboard || finalStoryboard.length === 0) {
+        const totalDur = durationToLoad > 0 ? durationToLoad : 15.0;
+        const sceneCount = Math.max(1, Math.min(4, Math.round(totalDur / 4)));
+        const scDur = parseFloat((totalDur / sceneCount).toFixed(2));
+        finalStoryboard = Array.from({ length: sceneCount }).map((_, i) => ({
+          sceneNumber: i + 1,
+          start: parseFloat((i * scDur).toFixed(2)),
+          duration: scDur,
+          mediaUrl: videoUrl,
+          previewUrl: videoUrl,
+          mediaType: 'video',
+          mediaName: `Scene ${i + 1}: ${title}`,
+          transition: i === sceneCount - 1 ? 'none' : 'whip-pan-left',
+          transitionDuration: 0.35,
+        }));
+      }
+
+      // 6. Forward event to StudioTimelinePane to populate all tracks
+      window.dispatchEvent(
+        new CustomEvent('workspace:set-timeline-storyboard', {
+          detail: {
+            storyboard: finalStoryboard,
+            captions: subtitles,
+            duration: durationToLoad,
+            audioUrl: audioUrlToLoad,
+            videoUrl: videoUrl,
+            title: title,
+            voice: voiceToLoad,
+          },
+        })
+      );
+
+      // 7. Add voice clip to timeline
+      if (audioUrlToLoad || voiceToLoad) {
+        window.dispatchEvent(
+          new CustomEvent('workspace:add-timeline-clip', {
+            detail: {
+              type: 'voice',
+              url: audioUrlToLoad || '',
+              name: 'Voiceover Track',
+              duration: durationToLoad,
+              start: 0,
+            },
+          })
+        );
+      }
+    };
+
+    window.addEventListener('workspace:load-timeline' as any, handleLoadTimeline);
+    return () => window.removeEventListener('workspace:load-timeline' as any, handleLoadTimeline);
+  }, [onPaneChange]);
+
   return (
     <div className="w-full h-auto lg:h-full flex flex-col lg:flex-row min-h-0 font-sans-studio select-none gap-0 overflow-hidden">
       {/* Hidden Audio Element */}
@@ -1689,6 +1791,7 @@ export default function WorkspacePage({
             {activePane === 'automations' ? (
               <AutomationsPane
                 onNavigate={onNavigate}
+                onPaneChange={onPaneChange}
                 activeTimeline={{
                   videoClips: timelineClipsRef.current.videoClips,
                   imageClips: timelineClipsRef.current.imageClips,

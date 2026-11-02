@@ -5,22 +5,30 @@ from dotenv import load_dotenv
 # Search and load .env from root or current working directory
 env_path = Path(__file__).resolve().parent.parent.parent / ".env"
 if env_path.exists():
-    load_dotenv(dotenv_path=env_path)
+    load_dotenv(dotenv_path=env_path, override=True)
 else:
-    load_dotenv()
+    load_dotenv(override=True)
 
 
 class Settings:
-    # Google Gemini & AI Model Configuration
-    GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
-    DEFAULT_SCRIPT_MODEL: str = os.environ.get("DEFAULT_SCRIPT_MODEL", "gemini-3.8-flash")
-    DEFAULT_TTS_MODEL: str = os.environ.get("DEFAULT_TTS_MODEL", "gemini-3.8-flash-tts")
-
     # Server Networking
     PORT: int = int(os.environ.get("PORT", "8000"))
     HOST: str = os.environ.get("HOST", "0.0.0.0")
     APP_URL: str = os.environ.get("APP_URL", "http://localhost:3000")
     ENV: str = os.environ.get("NODE_ENV", "development")
+
+    # Google Gemini & AI Model Configuration
+    @property
+    def GEMINI_API_KEY(self) -> str:
+        return os.environ.get("GEMINI_API_KEY", "").strip()
+
+    @property
+    def DEFAULT_SCRIPT_MODEL(self) -> str:
+        return os.environ.get("DEFAULT_SCRIPT_MODEL", "gemini-3.8-flash")
+
+    @property
+    def DEFAULT_TTS_MODEL(self) -> str:
+        return os.environ.get("DEFAULT_TTS_MODEL", "gemini-2.0-flash")
 
     # Google Auth & Search
     GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", os.environ.get("VITE_GOOGLE_CLIENT_ID", ""))

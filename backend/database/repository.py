@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import time
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 from .connection import get_connection
@@ -598,14 +599,16 @@ def add_automation_history(
     is_live: bool = False,
     duration_seconds: float = 0.0,
     message: Optional[str] = None,
+    project_data: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
     run_id = f"run_{int(time.time() * 1000)}"
     now_str = datetime.now(timezone.utc).isoformat()
+    project_data_json = json.dumps(project_data) if project_data else None
     cursor.execute("""
-    INSERT INTO automation_history (id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO automation_history (id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         run_id,
         job_id,
@@ -617,6 +620,7 @@ def add_automation_history(
         float(duration_seconds),
         message,
         now_str,
+        project_data_json,
     ))
     conn.commit()
     conn.close()
@@ -631,13 +635,14 @@ def add_automation_history(
         "durationSeconds": duration_seconds,
         "message": message,
         "executedAt": now_str,
+        "projectData": project_data,
     }
 
 def get_automation_history(job_id: str, limit: int = 50) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-    SELECT id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at
+    SELECT id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data
     FROM automation_history
     WHERE job_id = ?
     ORDER BY executed_at DESC
@@ -692,8 +697,21 @@ def get_automation_history(job_id: str, limit: int = 50) -> List[Dict[str, Any]]
             logger.debug(f"History auto-seed note: {e}")
 
     conn.close()
-    return [
-        {
+    result = []
+    for r in rows:
+        proj_data = None
+        if len(r) > 10 and r[10]:
+            try:
+                proj_data = json.loads(r[10])
+            except Exception:
+                proj_data = None
+        if not proj_data and (r[4] or r[3]):
+            proj_data = {
+                "title": r[3] or "Autonomous Studio Video",
+                "videoUrl": r[4],
+                "duration": float(r[7] or 15.0),
+            }
+        result.append({
             "id": r[0],
             "jobId": r[1],
             "status": r[2],
@@ -704,9 +722,9 @@ def get_automation_history(job_id: str, limit: int = 50) -> List[Dict[str, Any]]
             "durationSeconds": float(r[7] or 0),
             "message": r[8],
             "executedAt": r[9],
-        }
-        for r in rows
-    ]
+            "projectData": proj_data,
+        })
+    return result
 
 def clear_automation_history(job_id: str) -> bool:
     conn = get_connection()

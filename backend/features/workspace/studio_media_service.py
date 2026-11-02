@@ -114,8 +114,7 @@ def run_studio_media(
         }
 
     logger.info(
-        f"[Studio/Media] Starting Stage 3 | scenes={len(scenes)} "
-        f"sfxEvents={len(sfx_events or [])} aspect={aspect_ratio}"
+        f"--> [API SENT]   Pexels / Pixabay Media API | Resolving stock B-Roll for {len(scenes)} scenes (Aspect: {aspect_ratio})"
     )
     t0 = time.perf_counter()
 
@@ -182,8 +181,7 @@ def run_studio_media(
 
     elapsed_ms = int((time.perf_counter() - t0) * 1000)
     logger.info(
-        f"[Studio/Media] Stage 3 complete | resolved={resolved_count}/{len(scenes)} "
-        f"sfx={len(resolved_sfx)} elapsed={elapsed_ms}ms"
+        f"<-- [API COMING] Stock Media API | Resolved {resolved_count}/{len(scenes)} clips in {elapsed_ms}ms (sfx={len(resolved_sfx)})"
     )
 
     return {

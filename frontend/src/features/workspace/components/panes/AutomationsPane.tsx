@@ -33,11 +33,13 @@ import {
 } from 'lucide-react';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
 import { AutomationJob, AutomationHistoryEntry } from '@/src/features/youtube/types';
+import { WorkspaceTabType } from '../WorkspaceSidebar';
 import { toast } from 'sonner';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 
 export interface AutomationsPaneProps {
   onNavigate?: (page: string) => void;
+  onPaneChange?: (pane: WorkspaceTabType) => void;
   className?: string;
   activeTimeline?: {
     videoClips?: any[];
@@ -109,6 +111,7 @@ const INTERVAL_OPTIONS = [
 
 export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   onNavigate,
+  onPaneChange,
   className = '',
   activeTimeline,
 }) => {
@@ -935,6 +938,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                               <span>Studio Video</span>
                                             </span>
                                           )
+                                        ) : entry.status === 'stopped' ? (
+                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] font-bold">
+                                            <Square className="w-2.5 h-2.5 shrink-0" />
+                                            <span>Stopped</span>
+                                          </span>
                                         ) : (
                                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px] font-bold">
                                             <AlertCircle className="w-3 h-3 shrink-0" />
@@ -1001,14 +1009,25 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                         <button
                                           type="button"
                                           onClick={() => {
+                                            const pData = entry.projectData || {};
+                                            const vUrl = entry.videoUrl || pData.videoUrl;
+                                            const vTitle = entry.videoTitle || pData.title || 'Studio Video';
+                                            const dur = entry.durationSeconds || pData.duration || 15.0;
                                             window.dispatchEvent(new CustomEvent('workspace:load-timeline', {
                                               detail: {
-                                                title: entry.videoTitle,
-                                                videoUrl: entry.videoUrl,
+                                                title: vTitle,
+                                                videoUrl: vUrl,
+                                                audioUrl: pData.audioUrl,
+                                                duration: dur,
+                                                voice: pData.voice,
+                                                storyboard: pData.storyboard,
+                                                subtitles: pData.subtitles,
+                                                projectData: pData,
                                               }
                                             }));
-                                            toast.success(`Loaded "${entry.videoTitle}" into Studio Timeline`);
-                                            if (onNavigate) onNavigate('studio');
+                                            toast.success(`Loaded "${vTitle}" into Studio Timeline`);
+                                            if (onPaneChange) onPaneChange('editor');
+                                            if (onNavigate) onNavigate('workspace-editor');
                                           }}
                                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#22222E] hover:bg-[#2C2C3A] text-[9px] font-bold text-amber-300 hover:text-white transition-colors cursor-pointer border border-[#323242]"
                                           title="Load this video project into Studio Timeline for manual edits"

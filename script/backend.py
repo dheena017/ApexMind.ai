@@ -177,30 +177,83 @@ def register_windows_ctrl_handler(callback) -> None:
         pass
 
 
-def find_process_on_port(port: int) -> int | None:
-    """Find the PID of the process listening on the given port."""
+def find_processes_on_port(port: int) -> set[int]:
+    """Find all PIDs of processes bound to or listening on the given port across all connection states."""
+    pids: set[int] = set()
+
     if sys.platform == "win32":
+        # Strategy 1: High-precision native PowerShell Get-NetTCPConnection
+        try:
+            cmd = [
+                "powershell",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                f"Get-NetTCPConnection -LocalPort {port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess",
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=4)
+            for line in res.stdout.splitlines():
+                clean = line.strip()
+                if clean.isdigit():
+                    pid_val = int(clean)
+                    if pid_val > 0 and pid_val != os.getpid():
+                        pids.add(pid_val)
+        except Exception:
+            pass
+
+        # Strategy 2: Netstat fallback (checks all states: LISTENING, ESTABLISHED, CLOSE_WAIT, etc.)
         try:
             res = subprocess.run(
                 ["netstat", "-ano"],
                 capture_output=True,
                 text=True,
-                check=True,
+                check=False,
+                timeout=4,
             )
             for line in res.stdout.splitlines():
                 parts = line.strip().split()
-                if len(parts) >= 5 and f":{port}" in parts[1] and parts[3].upper() == "LISTENING":
-                    try:
-                        return int(parts[4])
-                    except ValueError:
-                        continue
+                if len(parts) >= 4:
+                    local_addr = parts[1]
+                    if local_addr.endswith(f":{port}") or f":{port}" in local_addr:
+                        try:
+                            pid_val = int(parts[-1])
+                            if pid_val > 0 and pid_val != os.getpid():
+                                pids.add(pid_val)
+                        except (ValueError, IndexError):
+                            pass
         except Exception:
             pass
-    return None
+    else:
+        try:
+            res = subprocess.run(
+                ["lsof", "-t", f"-i:{port}"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=3,
+            )
+            for line in res.stdout.splitlines():
+                clean = line.strip()
+                if clean.isdigit():
+                    pid_val = int(clean)
+                    if pid_val != os.getpid():
+                        pids.add(pid_val)
+        except Exception:
+            pass
+
+    return pids
+
+
+def find_process_on_port(port: int) -> int | None:
+    """Find the primary PID of the process listening on the given port."""
+    pids = find_processes_on_port(port)
+    return next(iter(pids)) if pids else None
 
 
 def kill_process_by_pid(pid: int) -> bool:
     """Forcefully terminate a process tree by PID."""
+    if pid <= 0 or pid == os.getpid():
+        return False
     if sys.platform == "win32":
         res = subprocess.run(
             ["taskkill", "/F", "/T", "/PID", str(pid)],
@@ -208,6 +261,14 @@ def kill_process_by_pid(pid: int) -> bool:
             stderr=subprocess.DEVNULL,
             check=False,
         )
+        try:
+            PROCESS_TERMINATE = 0x0001
+            handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
+            if handle:
+                ctypes.windll.kernel32.TerminateProcess(handle, 1)
+                ctypes.windll.kernel32.CloseHandle(handle)
+        except Exception:
+            pass
         return res.returncode == 0
     else:
         try:
@@ -215,6 +276,32 @@ def kill_process_by_pid(pid: int) -> bool:
             return True
         except Exception:
             return False
+
+
+def kill_processes_by_pids(pids: set[int]) -> None:
+    """Forcefully terminate multiple processes and their process trees."""
+    for pid in sorted(pids):
+        kill_process_by_pid(pid)
+
+
+def free_port(host: str, port: int, ansi=None) -> bool:
+    """Aggressively finds and terminates all processes occupying a port with verification retries."""
+    for attempt in range(1, 4):
+        pids = find_processes_on_port(port)
+        if pids:
+            pid_str = ", ".join(f"PID {p}" for p in sorted(pids))
+            if ansi and hasattr(ansi, "YELLOW"):
+                print(f"{ansi.YELLOW}[ApexMind Notice]{ansi.RESET} Port {port} is occupied by {pid_str}. Terminating process tree(s)...")
+            else:
+                print(f"[ApexMind Notice] Port {port} is occupied by {pid_str}. Terminating process tree(s)...")
+            kill_processes_by_pids(pids)
+
+        for _ in range(8):
+            if not is_port_in_use(host, port):
+                return True
+            time.sleep(0.2)
+
+    return not is_port_in_use(host, port)
 
 
 class Ansi:
@@ -567,16 +654,12 @@ def main() -> int:
 
     # 3. Port conflict check and resolution
     if is_port_in_use(host, port):
-        occupied_pid = find_process_on_port(port)
         if args.kill_port or args.force:
-            if occupied_pid:
-                print(f"{ansi.YELLOW}[ApexMind Notice]{ansi.RESET} Port {port} is occupied by PID {occupied_pid}. Terminating process tree...")
-                kill_process_by_pid(occupied_pid)
-                time.sleep(0.6)
-            if not is_port_in_use(host, port):
+            freed = free_port(host, port, ansi)
+            if freed:
                 print(f"{ansi.GREEN}[ApexMind]{ansi.RESET} Port {port} freed successfully!")
             else:
-                print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Could not free port {port}. Please specify another port.", file=sys.stderr)
+                print(f"{ansi.RED}[ApexMind Error]{ansi.RESET} Could not free port {port}. Please specify another port or run terminal as Administrator.", file=sys.stderr)
                 return 1
         elif args.auto_port:
             next_port = find_next_available_port(host, port + 1)

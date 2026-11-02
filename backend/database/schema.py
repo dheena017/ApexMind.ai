@@ -173,10 +173,16 @@ def init_db():
             duration_seconds REAL DEFAULT 0,
             message TEXT,
             executed_at TEXT NOT NULL,
+            project_data TEXT,
             FOREIGN KEY (job_id) REFERENCES automation_jobs(id) ON DELETE CASCADE
         );
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_automation_history_job_id ON automation_history (job_id, executed_at DESC);")
+        # Migrate project_data column if it doesn't exist yet
+        try:
+            cursor.execute("ALTER TABLE automation_history ADD COLUMN project_data TEXT;")
+        except Exception:
+            pass
     except Exception as e:
         logger.debug(f"automation_history table initialization notice: {e}")
 

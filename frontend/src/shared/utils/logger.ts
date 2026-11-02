@@ -148,21 +148,42 @@ export const consoleLogger = {
     }
   },
 
-  api(method: string, endpoint: string, status: number, durationMs: number, detail?: unknown) {
+  apiSent(method: string, endpoint: string, detail?: unknown) {
+    const badgeStyle = 'background: #2563EB; color: #FFFFFF; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 11px;';
+    const time = new Date().toLocaleTimeString();
+    console.log(
+      `%c--> API SENT%c %c[${time}]%c %c${method}%c ${endpoint}`,
+      badgeStyle,
+      '',
+      TEXT_STYLES.dim,
+      '',
+      'color: #60A5FA; font-weight: 700;',
+      'color: #E5E5E5; font-weight: 500;',
+      detail ?? ''
+    );
+  },
+
+  apiComing(method: string, endpoint: string, status: number, durationMs: number, detail?: unknown) {
     const statusColor = status < 300 ? '#16A34A' : status < 400 ? '#0284C7' : '#DC2626';
     const badgeStyle = `background: ${statusColor}; color: #FFFFFF; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 11px;`;
     const latencyStyle = durationMs < 100 ? 'color: #4ADE80;' : durationMs < 400 ? 'color: #FACC15;' : 'color: #F87171;';
     const time = new Date().toLocaleTimeString();
 
     console.log(
-      `%c${method} ${status}%c %c[${time}]%c ${endpoint} %c(${durationMs.toFixed(1)}ms)`,
+      `%c<-- API COMING%c %c[${time}]%c %c${method} ${status}%c ${endpoint} %c(${durationMs.toFixed(1)}ms)`,
       badgeStyle,
       '',
       TEXT_STYLES.dim,
+      '',
+      'color: #F59E0B; font-weight: 700;',
       'color: #E5E5E5; font-weight: 600;',
       latencyStyle,
       detail ?? ''
     );
+  },
+
+  api(method: string, endpoint: string, status: number, durationMs: number, detail?: unknown) {
+    this.apiComing(method, endpoint, status, durationMs, detail);
   },
 
   printDevBanner() {

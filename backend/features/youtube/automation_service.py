@@ -57,6 +57,17 @@ def stop_automation_job(job_id: str) -> Dict[str, Any]:
         next_run=next_run,
         last_run_message="Pipeline execution stopped by user.",
     )
+    try:
+        from backend.database.repository import add_automation_history
+        add_automation_history(
+            job_id=job_id,
+            status="stopped",
+            video_title=job.get("theme") or "Autonomous Video Pipeline",
+            message="Pipeline execution stopped by user.",
+            duration_seconds=0.0,
+        )
+    except Exception as e:
+        logger.debug(f"[Automation/Stop] History write error: {e}")
     logger.info(f"[Automation/Stop] Job '{job_id}' marked as stopped. Next scheduled run: {next_run}")
     return {"success": True, "jobId": job_id, "nextRun": next_run, "message": "Pipeline run stopped."}
 
@@ -428,6 +439,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         viral_tags = ["#Shorts", "#Motivation", "#Discipline", f"#{theme_tag}", "#ViralShorts", "#DailyMindset"]
         clean_desc = f"{quote_text}\n\n{cta_text}\n\n{' '.join(viral_tags)}\n\nGenerated autonomously with ApexMind Studio AI."
 
+        upload_warning = None
         if yt_client:
             if is_scheduled:
                 now_utc = datetime.now(timezone.utc)
@@ -450,8 +462,9 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                 youtube_url = upload_res.get("videoUrl")
                 logger.info(f"[Automation/Stage-6] YouTube upload success: {youtube_url} | Status: {upload_res.get('status')}")
             except Exception as up_err:
-                logger.error(f"[Automation/Stage-6] YouTube upload failed: {up_err}")
-                raise RuntimeError(f"Stage 6 (Publish) Error: YouTube upload failed: {up_err}")
+                logger.warning(f"[Automation/Stage-6] YouTube upload deferred: {up_err}")
+                upload_warning = str(up_err)
+                youtube_url = None
 
         # Catalog in local database
         rel_video_url = f"/api/videos/{Path(video_path).name}"
@@ -471,6 +484,9 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         if youtube_url:
             status_label = f"Scheduled on YouTube for {publish_time}" if is_scheduled else "Published to YouTube Shorts"
             notif_type = "success"
+        elif upload_warning:
+            status_label = f"1080p MP4 Ready in Studio (YouTube upload deferred: {upload_warning[:80]}...)"
+            notif_type = "warning"
         elif yt_client:
             status_label = "Generated in Studio (Ready to publish manually)"
             notif_type = "warning"
@@ -494,6 +510,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         run_msg = (
             f"Scheduled for {publish_time} on YouTube" if is_scheduled
             else "Published Live to YouTube Shorts" if is_live
+            else f"1080p Video Saved in Library (YouTube deferred: {upload_warning[:80]}...)" if upload_warning
             else "Saved to Studio Library (Connect YouTube channel to publish live)"
         )
         update_automation_run_state(
@@ -509,8 +526,23 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         elapsed = round(time.perf_counter() - start_time, 2)
         logger.info(f"[Automation/6-Stage] Pipeline completed in {elapsed}s for job '{job_id}' | Next run: {next_run} | Live: {is_live}")
 
-        # Persist entry to execution history log
+        # Persist entry to execution history log with full timeline restoration metadata
         try:
+            rel_audio_url = f"/api/audio/{Path(audio_path).name}" if audio_path and Path(audio_path).exists() else None
+            project_data = {
+                "title": title,
+                "quote": quote_text,
+                "hook": hook_text,
+                "cta": cta_text,
+                "storyboard": storyboard,
+                "subtitles": subtitles,
+                "audioUrl": rel_audio_url,
+                "videoUrl": rel_video_url,
+                "musicUrl": music_url,
+                "duration": actual_duration,
+                "voice": voice,
+                "aspectRatio": aspect_ratio,
+            }
             from backend.database.repository import add_automation_history
             add_automation_history(
                 job_id=job_id,
@@ -521,6 +553,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                 is_live=is_live,
                 duration_seconds=elapsed,
                 message=run_msg,
+                project_data=project_data,
             )
         except Exception as hist_err:
             logger.debug(f"[Automation] History log error: {hist_err}")

@@ -162,6 +162,20 @@ export interface AutomationHistoryEntry {
   durationSeconds: number;
   message?: string;
   executedAt: string;
+  projectData?: {
+    title?: string;
+    quote?: string;
+    hook?: string;
+    cta?: string;
+    storyboard?: any[];
+    subtitles?: any[];
+    audioUrl?: string;
+    videoUrl?: string;
+    musicUrl?: string;
+    duration?: number;
+    voice?: string;
+    aspectRatio?: string;
+  };
 }
 
 export interface AutomationJob {

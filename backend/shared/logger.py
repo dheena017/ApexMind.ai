@@ -349,6 +349,20 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             or (path == "/api/notifications/manage" and request.query_params.get("action") == "unread_count")
         )
 
+        query_str = str(request.url.query)
+        full_path = f"{path}?{query_str}" if query_str else path
+
+        # ── 1. LOG API SENT (Incoming Request) ──
+        sent_badge = f"{Colors.BRIGHT_BLUE}{Colors.BOLD}--> [API SENT]{Colors.RESET}"
+        sent_msg = (
+            f"{sent_badge}   {m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
+            f"{path_color}{full_path}{Colors.RESET}"
+        )
+        if is_poll:
+            logger.debug(sent_msg)
+        else:
+            logger.info(sent_msg)
+
         try:
             response: Response = await call_next(request)
             duration_ms = (time.perf_counter() - start_time) * 1000
@@ -372,8 +386,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             else:
                 duration_str = f"{Colors.RED}{duration_ms:.1f}ms{Colors.RESET}"
 
+            coming_badge = f"{Colors.BRIGHT_GREEN}{Colors.BOLD}<-- [API COMING]{Colors.RESET}"
             log_msg = (
-                f"{Colors.GRAY}<--{Colors.RESET} {code_str} "
+                f"{coming_badge} {code_str} "
                 f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
                 f"{path_color}{path}{Colors.RESET} "
                 f"{Colors.GRAY}| Duration: {Colors.RESET}{duration_str}"
@@ -385,8 +400,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             return response
         except Exception as exc:
             duration_ms = (time.perf_counter() - start_time) * 1000
+            failed_badge = f"{Colors.BRIGHT_RED}{Colors.BOLD}<!- [API FAILED]{Colors.RESET}"
             logger.error(
-                f"{Colors.BRIGHT_RED}<!- EXCEPTION{Colors.RESET} "
+                f"{failed_badge} "
                 f"{m_color}{Colors.BOLD}{method:<6}{Colors.RESET} "
                 f"{path_color}{path}{Colors.RESET} "
                 f"{Colors.GRAY}| Failed after {Colors.RESET}{Colors.BRIGHT_RED}{duration_ms:.1f}ms"

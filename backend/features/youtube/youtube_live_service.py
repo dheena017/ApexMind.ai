@@ -1216,6 +1216,7 @@ def upload_video_to_live_youtube(
     response = None
     retries = 0
     max_retries = 5
+    logger.info(f"--> [API SENT]   YouTube Data API v3 | Uploading video '{clean_title}' ({norm_privacy})")
     while response is None:
         try:
             status, response = request.next_chunk()
@@ -1250,6 +1251,8 @@ def upload_video_to_live_youtube(
     real_video_id = response.get("id") if response else None
     if not real_video_id:
         raise RuntimeError("YouTube upload completed but did not return a valid video ID.")
+
+    logger.info(f"<-- [API COMING] YouTube Data API v3 | Video published live: https://www.youtube.com/watch?v={real_video_id}")
 
     return {
         "success": True,

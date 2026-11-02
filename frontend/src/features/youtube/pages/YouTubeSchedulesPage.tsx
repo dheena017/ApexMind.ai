@@ -880,6 +880,11 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                                           <span>Studio Video Catalog</span>
                                         </span>
                                       )
+                                    ) : entry.status === 'stopped' ? (
+                                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold">
+                                        <Square className="w-3 h-3 shrink-0" />
+                                        <span>Stopped by User</span>
+                                      </span>
                                     ) : (
                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] font-bold">
                                         <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -940,6 +945,38 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                                       <span>Open Studio MP4</span>
                                       <ExternalLink className="w-3 h-3 text-zinc-400" />
                                     </a>
+                                  )}
+
+                                  {(entry.youtubeUrl || entry.videoUrl) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const pData = entry.projectData || {};
+                                        const vUrl = entry.videoUrl || pData.videoUrl;
+                                        const vTitle = entry.videoTitle || pData.title || 'Studio Video';
+                                        const dur = entry.durationSeconds || pData.duration || 15.0;
+                                        window.dispatchEvent(new CustomEvent('workspace:load-timeline', {
+                                          detail: {
+                                            title: vTitle,
+                                            videoUrl: vUrl,
+                                            audioUrl: pData.audioUrl,
+                                            duration: dur,
+                                            voice: pData.voice,
+                                            storyboard: pData.storyboard,
+                                            subtitles: pData.subtitles,
+                                            projectData: pData,
+                                          }
+                                        }));
+                                        if (onNavigate) {
+                                          onNavigate('workspace-editor');
+                                        }
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#22222E] hover:bg-[#2C2C3A] text-[10px] font-bold text-amber-300 hover:text-white transition-colors cursor-pointer border border-[#323242]"
+                                      title="Load this video project into Studio Timeline for manual edits"
+                                    >
+                                      <Sparkles className="w-3 h-3 text-amber-400" />
+                                      <span>Edit in Timeline</span>
+                                    </button>
                                   )}
 
                                   {(entry.youtubeUrl || entry.videoUrl) && (

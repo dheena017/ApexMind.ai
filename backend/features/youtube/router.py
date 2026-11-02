@@ -898,7 +898,7 @@ async def stop_schedule_execution_route(job_id: str):
     summary="Get Schedule Execution History (legacy alias)",
     include_in_schema=False,
 )
-async def get_schedule_history_route(job_id: str, limit: int = 50):
+async def get_schedule_history_route(job_id: str, limit: int = 100):
     from backend.database.repository import get_automation_history
     history = get_automation_history(job_id, limit=limit)
     return {"success": True, "data": history}

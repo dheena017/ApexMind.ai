@@ -1103,15 +1103,36 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     };
 
     const handleSetStoryboard = (e: Event) => {
-      const detail = (e as CustomEvent<{ storyboard?: any[]; musicTrack?: string; captions?: any[]; duration?: number; soundDesign?: any; hooks?: any[] }>).detail;
-      if (!detail || !detail.storyboard || !detail.storyboard.length) return;
+      const detail = (e as CustomEvent<{ storyboard?: any[]; musicTrack?: string; captions?: any[]; duration?: number; soundDesign?: any; hooks?: any[]; videoUrl?: string; audioUrl?: string; title?: string; voice?: string }>).detail;
+      if (!detail) return;
+
+      let scenesToProcess = Array.isArray(detail.storyboard) ? [...detail.storyboard] : [];
+      if (scenesToProcess.length === 0 && (detail.videoUrl || customVideoUrl)) {
+        const fallbackVid = detail.videoUrl || customVideoUrl || '';
+        const totalDur = detail.duration && detail.duration > 0 ? detail.duration : (duration > 0 ? duration : 15.0);
+        const sceneCount = Math.max(1, Math.min(4, Math.round(totalDur / 4)));
+        const scDur = parseFloat((totalDur / sceneCount).toFixed(2));
+        scenesToProcess = Array.from({ length: sceneCount }).map((_, i) => ({
+          sceneNumber: i + 1,
+          start: parseFloat((i * scDur).toFixed(2)),
+          duration: scDur,
+          mediaUrl: fallbackVid,
+          previewUrl: fallbackVid,
+          mediaType: 'video',
+          mediaName: `Scene ${i + 1}: ${detail.title || script.title || 'Video Cut'}`,
+          transition: i === sceneCount - 1 ? 'none' : 'whip-pan-left',
+          transitionDuration: 0.35,
+        }));
+      }
+
+      if (scenesToProcess.length === 0) return;
 
       const newVideoClips: TimelineMediaClip[] = [];
       const newImageClips: TimelineMediaClip[] = [];
       const newSfxClips: TimelineAudioClip[] = [];
 
       let runningStart = 0;
-      detail.storyboard.forEach((scene: any, idx: number) => {
+      scenesToProcess.forEach((scene: any, idx: number) => {
         const clipId = `sb-${scene.sceneNumber || idx + 1}-${Date.now()}`;
         const clipName = scene.mediaName || `Scene ${scene.sceneNumber || idx + 1}: ${scene.beat || 'Beat'}`;
         const parsedStart = typeof scene.start === 'number' && Number.isFinite(scene.start) ? scene.start : parseFloat(scene.start);
@@ -1218,13 +1239,56 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         setEnabledTracks((prev) => ({ ...prev, sfx: true }));
         setSfxTrackMuted(false);
       }
+
+      // Voiceover Track Population (A1 Voice Track)
+      const targetAudioUrl = detail.audioUrl || audioUrl || '';
+      const voiceDur = detail.duration && detail.duration > 0 ? detail.duration : (duration > 0 ? duration : 15.0);
+      const newVoiceClip: TimelineAudioClip = {
+        id: `voice-auto-${Date.now()}`,
+        type: 'voice',
+        url: targetAudioUrl,
+        name: 'Voiceover Track',
+        start: 0,
+        duration: voiceDur,
+      };
+      setVoiceClips([newVoiceClip]);
+      setEnabledTracks((prev) => ({ ...prev, voice: true, title: Boolean(detail.title || script.title) }));
+      setVoiceTrackMuted(false);
+      setIsCollapsed(false);
+    };
+
+    const handleLoadTimelineDirect = (e: Event) => {
+      const detail = (e as CustomEvent<any>).detail;
+      if (!detail) return;
+      const pData = detail.projectData || {};
+      const vTitle = detail.title || pData.title || 'Studio Video';
+      const vUrl = detail.videoUrl || pData.videoUrl;
+      const aUrl = detail.audioUrl || pData.audioUrl;
+      const dur = detail.duration || pData.duration || 15.0;
+      const sb = detail.storyboard || pData.storyboard || [];
+      const subs = detail.subtitles || pData.subtitles || (detail.captions || pData.captions || []);
+      const vVoice = detail.voice || pData.voice || 'Fenrir';
+
+      handleSetStoryboard({
+        detail: {
+          storyboard: sb,
+          captions: subs,
+          duration: dur,
+          audioUrl: aUrl,
+          videoUrl: vUrl,
+          title: vTitle,
+          voice: vVoice,
+        }
+      } as any);
     };
 
     window.addEventListener('workspace:add-timeline-clip', handleAddTimelineClip);
     window.addEventListener('workspace:set-timeline-storyboard', handleSetStoryboard);
+    window.addEventListener('workspace:load-timeline' as any, handleLoadTimelineDirect);
     return () => {
       window.removeEventListener('workspace:add-timeline-clip', handleAddTimelineClip);
       window.removeEventListener('workspace:set-timeline-storyboard', handleSetStoryboard);
+      window.removeEventListener('workspace:load-timeline' as any, handleLoadTimelineDirect);
     };
   }, [duration, audioUrl, onSelectCompound]);
 
