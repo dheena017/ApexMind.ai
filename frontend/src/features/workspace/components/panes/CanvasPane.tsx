@@ -11,6 +11,8 @@ import {
   Sliders,
   Maximize2,
   Search,
+  Palette,
+  Layers,
 } from 'lucide-react';
 
 export interface CanvasPaneProps {
@@ -197,16 +199,21 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <LayoutTemplate className="w-4 h-4 shrink-0 text-amber-400" />
-          <span className="text-xs font-bold text-white truncate">
-            Canvas &amp; Frame Studio
-          </span>
+          <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
+            <LayoutTemplate className="w-3.5 h-3.5" />
+          </div>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-xs font-bold text-white truncate">Canvas &amp; Frame Studio</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30 shrink-0">
+              Aspect &amp; FX
+            </span>
+          </div>
         </div>
 
         <button
           type="button"
           onClick={() => handleSelectBg('#000000')}
-          className="h-7 px-2.5 rounded-md bg-[#222226] hover:bg-[#2C2C32] text-[11px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#323238] flex items-center gap-1.5"
+          className="h-7 px-2.5 rounded-lg bg-[#222226] hover:bg-[#2C2C32] text-[11px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#323238] flex items-center gap-1.5"
           title="Reset canvas to default black"
         >
           <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
@@ -214,30 +221,37 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         </button>
       </div>
 
-      {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
-        {[
-          { id: 'ratio', label: 'Aspect Ratio' },
-          { id: 'luts', label: 'Color LUTs' },
-          { id: 'solid', label: 'Solid Color' },
-          { id: 'gradient', label: 'Gradients' },
-          { id: 'builder', label: 'Builder' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-              activeTab === tab.id
-                ? 'text-white border-white'
-                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-5 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          {[
+            { id: 'ratio', label: 'Ratio', icon: Layers, color: 'text-blue-400' },
+            { id: 'luts', label: 'LUTs', icon: Sparkles, color: 'text-amber-400' },
+            { id: 'solid', label: 'Solid', icon: Square, color: 'text-emerald-400' },
+            { id: 'gradient', label: 'Gradient', icon: Palette, color: 'text-purple-400' },
+            { id: 'builder', label: 'Build', icon: Sliders, color: 'text-cyan-400' },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+                  isActive
+                    ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                    : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+                }`}
+                title={tab.label}
+              >
+                <Icon className={`w-3 h-3 shrink-0 ${isActive ? tab.color : 'text-[#8E8E93]'}`} />
+                <span className="truncate">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
         {/* ── Tab: Cinematic Color LUTs ── */}

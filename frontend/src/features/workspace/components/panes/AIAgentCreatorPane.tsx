@@ -207,35 +207,43 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-2 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveTab('prompt')}
-          className={`flex items-center gap-1.5 pb-2.5 px-1.5 capitalize transition-all cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'prompt'
-              ? 'text-white border-[#3B82F6]'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Wand2 className={`w-3.5 h-3.5 ${activeTab === 'prompt' ? 'text-[#60A5FA]' : 'text-[#71717A]'}`} />
-          <span>Prompt &amp; Concept</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('voice')}
-          className={`flex items-center gap-1.5 pb-2.5 px-1.5 capitalize transition-all cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'voice'
-              ? 'text-white border-[#3B82F6]'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Mic className={`w-3.5 h-3.5 ${activeTab === 'voice' ? 'text-[#60A5FA]' : 'text-[#71717A]'}`} />
-          <span>Voice Actor</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#26262B] text-zinc-400 font-mono-studio">
-            {liveVoices.length}
-          </span>
-        </button>
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          <button
+            type="button"
+            onClick={() => setActiveTab('prompt')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === 'prompt'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+          >
+            <Wand2 className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'prompt' ? 'text-blue-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Prompt &amp; Concept</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('voice')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === 'voice'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+          >
+            <Mic className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'voice' ? 'text-emerald-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Voice Persona</span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
+                activeTab === 'voice'
+                  ? 'bg-emerald-400/20 text-emerald-300 font-bold border border-emerald-400/30'
+                  : 'bg-[#26262B] text-zinc-400'
+              }`}
+            >
+              {liveVoices.length}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* ── Prominent Error Banner (Pinned) ── */}

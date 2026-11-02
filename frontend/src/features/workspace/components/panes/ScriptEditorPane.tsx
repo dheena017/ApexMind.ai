@@ -156,33 +156,43 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveTab('content')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'content'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Script Content
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('subtitles')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'subtitles'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <span>Subtitles</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">
-            {script.subtitles?.length || 0}
-          </span>
-        </button>
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          <button
+            type="button"
+            onClick={() => setActiveTab('content')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === 'content'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+          >
+            <FileText className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'content' ? 'text-emerald-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Script Content</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('subtitles')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === 'subtitles'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+          >
+            <Type className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'subtitles' ? 'text-amber-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Subtitles</span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
+                activeTab === 'subtitles'
+                  ? 'bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30'
+                  : 'bg-[#26262B] text-zinc-400'
+              }`}
+            >
+              {script.subtitles?.length || 0}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* ── Main Content Area ── */}

@@ -223,19 +223,22 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     };
 
   const compoundMetadata = {
-    home: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' },
-    project: { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' },
+    home: { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-sky-400', badgeBg: 'bg-sky-500/15', badgeBorder: 'border-sky-500/30' },
+    project: { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-sky-400', badgeBg: 'bg-sky-500/15', badgeBorder: 'border-sky-500/30' },
     video: {
-      label: customImageUrl ? 'Image Inspector (V2)' : 'Video Backdrop (V1)',
+      label: customImageUrl ? 'Image Inspector' : 'Backdrop Canvas',
+      tag: customImageUrl ? 'V2' : 'V1',
       icon: customImageUrl ? ImageIcon : Film,
       color: 'text-amber-400',
+      badgeBg: 'bg-amber-500/15',
+      badgeBorder: 'border-amber-500/30',
     },
-    text: { label: 'Captions & Title (T1)', icon: Type, color: 'text-blue-400' },
-    voice: { label: `Voice: ${selectedVoice || 'Fenrir'} (A1)`, icon: Mic, color: 'text-emerald-400' },
-    music: { label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-blue-400' },
-    overlay: { label: 'Overlay Sticker / Badge', icon: Layers, color: 'text-indigo-400' },
-    transitions: { label: 'Transitions Studio', icon: Sparkles, color: 'text-amber-400' },
-  }[activeCompound] || { label: 'Home (Project Studio)', icon: Home, color: 'text-sky-400' };
+    text: { label: 'Captions & Titles', tag: 'T1', icon: Type, color: 'text-blue-400', badgeBg: 'bg-blue-500/15', badgeBorder: 'border-blue-500/30' },
+    voice: { label: `Voice: ${selectedVoice || 'Fenrir'}`, tag: 'A1', icon: Mic, color: 'text-emerald-400', badgeBg: 'bg-emerald-500/15', badgeBorder: 'border-emerald-500/30' },
+    music: { label: 'Soundtrack Mix', tag: 'A2', icon: Music, color: 'text-blue-400', badgeBg: 'bg-blue-500/15', badgeBorder: 'border-blue-500/30' },
+    overlay: { label: 'Overlay Badges', tag: 'FX', icon: Layers, color: 'text-indigo-400', badgeBg: 'bg-indigo-500/15', badgeBorder: 'border-indigo-500/30' },
+    transitions: { label: 'Transitions Studio', tag: 'FX', icon: Sparkles, color: 'text-amber-400', badgeBg: 'bg-amber-500/15', badgeBorder: 'border-amber-500/30' },
+  }[activeCompound] || { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-sky-400', badgeBg: 'bg-sky-500/15', badgeBorder: 'border-sky-500/30' };
 
   const isAllClipsMode = Boolean(
     !localSelectedClip ||
@@ -257,9 +260,14 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
       {/* ── Top Bar: Active Compound Indicator, Home Button & Switcher Dropdown ── */}
       <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <CurrentIcon className={`w-4 h-4 shrink-0 ${compoundMetadata.color}`} />
+          <div className={`w-6 h-6 rounded-lg ${compoundMetadata.badgeBg} border ${compoundMetadata.badgeBorder} flex items-center justify-center shrink-0`}>
+            <CurrentIcon className={`w-3.5 h-3.5 ${compoundMetadata.color}`} />
+          </div>
           <span className="text-xs font-bold text-white truncate">
             {compoundMetadata.label}
+          </span>
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-white/[0.06] text-[#A1A1AA] border border-white/10 uppercase shrink-0">
+            {compoundMetadata.tag}
           </span>
         </div>
 

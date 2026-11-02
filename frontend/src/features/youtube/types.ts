@@ -154,7 +154,7 @@ export interface YouTubeTranscriptSnippet {
 export interface AutomationHistoryEntry {
   id: string;
   jobId: string;
-  status: 'success' | 'failed' | 'running';
+  status: 'success' | 'failed' | 'running' | 'stopped';
   videoTitle?: string;
   videoUrl?: string;
   youtubeUrl?: string;

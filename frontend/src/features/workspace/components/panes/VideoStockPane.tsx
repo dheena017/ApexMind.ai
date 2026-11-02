@@ -516,56 +516,63 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveTab('catalog')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'catalog'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Motion Catalog
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('settings')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'settings'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
-          <span>Speed &amp; Mood</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('url')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'url'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Direct URL
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('saved')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'saved'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Bookmark className="w-3.5 h-3.5 text-amber-400" />
-          <span>Saved ({savedVideos.length})</span>
-        </button>
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-4 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("catalog")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "catalog"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Catalog"
+          >
+            <Film className={`w-3.5 h-3.5 shrink-0 ${activeTab === "catalog" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Catalog</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("settings")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "settings"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Mood"
+          >
+            <Sliders className={`w-3.5 h-3.5 shrink-0 ${activeTab === "settings" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Mood</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("url")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "url"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Direct URL"
+          >
+            <ExternalLink className={`w-3.5 h-3.5 shrink-0 ${activeTab === "url" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Direct URL</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("saved")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "saved"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Saved"
+          >
+            <Bookmark className={`w-3.5 h-3.5 shrink-0 ${activeTab === "saved" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Saved</span>
+          </button>
+        </div>
       </div>
-
       {/* ── Category Filter Chips (In Catalog Mode) ── */}
       {activeTab === 'catalog' && (
         <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">

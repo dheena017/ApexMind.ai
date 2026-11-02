@@ -492,52 +492,68 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Header Bar (Exact AI Script Studio / Workspace Pane Style) ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('pipelines')}
-          className={`flex items-center gap-1.5 pb-2.5 px-1 capitalize transition-all cursor-pointer border-b-2 -mb-px shrink-0 ${
-            activeSubTab === 'pipelines'
-              ? 'text-white border-[#3B82F6] font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Zap className={`w-3.5 h-3.5 ${activeSubTab === 'pipelines' ? 'text-[#60A5FA]' : 'text-[#71717A]'}`} />
-          <span>Pipelines</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#26262B] text-zinc-400 font-mono-studio">
-            {automations.length}
-          </span>
-        </button>
+      {/* ── Subtabs Segmented Control (High-Precision Studio Navigation) ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-3 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          {/* Tab 1: Pipelines */}
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('pipelines')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeSubTab === 'pipelines'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+            title="Active Autonomous Pipelines"
+          >
+            <Zap className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'pipelines' ? 'text-amber-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Pipelines</span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
+                activeSubTab === 'pipelines'
+                  ? 'bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30'
+                  : 'bg-[#26262B] text-zinc-400'
+              }`}
+            >
+              {automations.length}
+            </span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('create')}
-          className={`flex items-center gap-1.5 pb-2.5 px-1 capitalize transition-all cursor-pointer border-b-2 -mb-px shrink-0 ${
-            activeSubTab === 'create'
-              ? 'text-white border-[#3B82F6] font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sparkles className={`w-3.5 h-3.5 ${activeSubTab === 'create' ? 'text-[#60A5FA]' : 'text-[#71717A]'}`} />
-          <span>New Schedule</span>
-        </button>
+          {/* Tab 2: New Schedule */}
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('create')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeSubTab === 'create'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+            title="Configure New Automation Schedule"
+          >
+            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'create' ? 'text-blue-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Schedule</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('channel')}
-          className={`flex items-center gap-1.5 pb-2.5 px-1 capitalize transition-all cursor-pointer border-b-2 -mb-px shrink-0 ${
-            activeSubTab === 'channel'
-              ? 'text-white border-[#3B82F6] font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Youtube className={`w-3.5 h-3.5 ${activeSubTab === 'channel' ? 'text-red-500' : 'text-[#71717A]'}`} />
-          <span>Channel &amp; Target</span>
-          {authStatus?.connected && (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-          )}
-        </button>
+          {/* Tab 3: Channel Target */}
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('channel')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeSubTab === 'channel'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+            title="Publishing Destination & Channel Target"
+          >
+            <Youtube className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'channel' ? 'text-red-500' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Channel</span>
+            {authStatus?.connected ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.8)]" title="Connected to YouTube" />
+            ) : (
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" title="Studio Local Mode" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── Subtab 1: Pipelines ── */}
@@ -771,9 +787,9 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           <div className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Completed Runs</div>
                           <div className="text-xs font-bold text-white mt-0.5 font-mono">{totalRunsCount} {totalRunsCount === 1 ? 'Video' : 'Videos'}</div>
                         </div>
-                        <div className="p-2 rounded-xl bg-[#131318] border border-[#22222A]">
+                        <div className="p-2 rounded-xl bg-[#131318] border border-[#22222A] min-w-0" title={`1080p • ${job.aspectRatio || '9:16'} • ${job.length ? job.length.replace(' seconds', 's') : '30s'} • ${job.aiModel || 'Gemini 3.8'}`}>
                           <div className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Specs &amp; Engine</div>
-                          <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate">1080p • {job.aspectRatio || '9:16'} • {job.length ? job.length.replace(' seconds', 's') : '30s'} • {job.aiModel || 'Gemini 2.5'}</div>
+                          <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate font-mono">1080p • {job.aspectRatio || '9:16'} • {job.aiModel ? job.aiModel.replace('gemini-', 'Gemini ').replace('-flash', '').replace('-lite', '') : 'Gemini 3.8'}</div>
                         </div>
                       </div>
 

@@ -151,36 +151,49 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <Shapes className="w-4 h-4 shrink-0 text-blue-400" />
-          <span className="text-xs font-bold text-white truncate">
-            Studio Elements &amp; Overlays
-          </span>
+          <div className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0 text-blue-400">
+            <Shapes className="w-3.5 h-3.5" />
+          </div>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-xs font-bold text-white truncate">Elements &amp; Overlays</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/30 shrink-0">
+              FX Studio
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
-        {[
-          { id: 'badges', label: 'Badges' },
-          { id: 'fx', label: 'Visual FX' },
-          { id: 'social', label: 'Social Tags' },
-          { id: 'shapes', label: 'Frames' },
-          { id: 'progress', label: 'Progress' },
-          { id: 'custom', label: 'Custom' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-              activeTab === tab.id
-                ? 'text-white border-white'
-                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-6 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          {[
+            { id: 'badges', label: 'Badge', icon: Award, color: 'text-amber-400' },
+            { id: 'fx', label: 'FX', icon: Sparkles, color: 'text-purple-400' },
+            { id: 'social', label: 'Social', icon: Share2, color: 'text-rose-400' },
+            { id: 'shapes', label: 'Frame', icon: Square, color: 'text-blue-400' },
+            { id: 'progress', label: 'Bar', icon: Layers, color: 'text-emerald-400' },
+            { id: 'custom', label: 'Custom', icon: Plus, color: 'text-cyan-400' },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+                  isActive
+                    ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                    : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+                }`}
+                title={tab.label}
+              >
+                <Icon className={`w-3 h-3 shrink-0 ${isActive ? tab.color : 'text-[#8E8E93]'}`} />
+                <span className="truncate">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Main Content Area ── */}

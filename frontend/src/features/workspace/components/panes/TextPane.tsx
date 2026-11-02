@@ -388,70 +388,76 @@ export const TextPane: React.FC<TextPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Navigation Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveTab('presets')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'presets'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>Preset Packs</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('quick')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'quick'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Plus className="w-3.5 h-3.5 text-[#60A5FA]" />
-          <span>Quick Insert</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('hooks')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'hooks'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Zap className="w-3.5 h-3.5 text-amber-400" />
-          <span>Hook Vault ({hooksList.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('overrides')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'overrides'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Style Studio</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('custom')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'custom'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Bookmark className="w-3.5 h-3.5 text-blue-400" />
-          <span>Saved ({savedSnippets.length})</span>
-        </button>
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-5 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("presets")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "presets"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Presets"
+          >
+            <Sparkles className={`w-3 h-3 shrink-0 ${activeTab === "presets" ? "text-amber-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Presets</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("quick")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "quick"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Insert"
+          >
+            <Plus className={`w-3 h-3 shrink-0 ${activeTab === "quick" ? "text-amber-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Insert</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("hooks")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "hooks"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Hooks"
+          >
+            <Zap className={`w-3 h-3 shrink-0 ${activeTab === "hooks" ? "text-amber-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Hooks</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("overrides")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "overrides"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Style"
+          >
+            <Sliders className={`w-3 h-3 shrink-0 ${activeTab === "overrides" ? "text-amber-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Style</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("custom")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "custom"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Saved"
+          >
+            <Bookmark className={`w-3 h-3 shrink-0 ${activeTab === "custom" ? "text-amber-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Saved</span>
+          </button>
+        </div>
       </div>
-
       {/* ── Unified Search, Dropdown & Mood Bar (Presets & Hooks) ── */}
       {(activeTab === 'presets' || activeTab === 'hooks') && (
         <div className="flex flex-col gap-2 border-b border-[#26262B] bg-[#141416] p-3 shrink-0">

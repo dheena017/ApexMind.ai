@@ -532,56 +532,63 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveTab('catalog')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'catalog'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Photo Catalog
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('filters')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'filters'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
-          <span>Color Filters</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('url')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'url'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Direct URL
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('saved')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'saved'
-              ? 'text-white border-blue-500'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Bookmark className="w-3.5 h-3.5 text-amber-400" />
-          <span>Saved ({savedImages.length})</span>
-        </button>
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-4 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("catalog")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "catalog"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Catalog"
+          >
+            <ImageIcon className={`w-3.5 h-3.5 shrink-0 ${activeTab === "catalog" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Catalog</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("filters")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "filters"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Filters"
+          >
+            <Sliders className={`w-3.5 h-3.5 shrink-0 ${activeTab === "filters" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Filters</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("url")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "url"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Direct URL"
+          >
+            <ExternalLink className={`w-3.5 h-3.5 shrink-0 ${activeTab === "url" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Direct URL</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("saved")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "saved"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Saved"
+          >
+            <Bookmark className={`w-3.5 h-3.5 shrink-0 ${activeTab === "saved" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Saved</span>
+          </button>
+        </div>
       </div>
-
       {/* ── Search & Provider Bar (When in Catalog) ── */}
       {activeTab === 'catalog' && (
         <div className="flex flex-col gap-2 border-b border-[#26262B] bg-[#141416] p-3 shrink-0">

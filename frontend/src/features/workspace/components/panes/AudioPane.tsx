@@ -362,79 +362,89 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveTab('soundtracks')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'soundtracks'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Soundtracks
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('sfx')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'sfx'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Sound Effects
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('soundboard')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'soundboard'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>Soundboard ({VIRAL_MEME_SOUNDBOARD.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('mixer')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'mixer'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
-          <span>Mixer</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('record')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'record'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <Mic className="w-3.5 h-3.5 text-rose-400" />
-          <span>Voiceover</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('url')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'url'
-              ? 'text-white border-blue-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Direct URL
-        </button>
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-6 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("soundtracks")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "soundtracks"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Music"
+          >
+            <Music className={`w-3 h-3 shrink-0 ${activeTab === "soundtracks" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Music</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("sfx")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "sfx"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="SFX"
+          >
+            <Volume2 className={`w-3 h-3 shrink-0 ${activeTab === "sfx" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">SFX</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("soundboard")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "soundboard"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Board"
+          >
+            <Sparkles className={`w-3 h-3 shrink-0 ${activeTab === "soundboard" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Board</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("mixer")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "mixer"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Mixer"
+          >
+            <Sliders className={`w-3 h-3 shrink-0 ${activeTab === "mixer" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Mixer</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("record")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "record"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="Voice"
+          >
+            <Mic className={`w-3 h-3 shrink-0 ${activeTab === "record" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">Voice</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("url")}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === "url"
+                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
+                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+            }`}
+            title="URL"
+          >
+            <ExternalLink className={`w-3 h-3 shrink-0 ${activeTab === "url" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <span className="truncate">URL</span>
+          </button>
+        </div>
       </div>
-
       {/* ── Genre / Category Chips ── */}
       {activeTab === 'soundtracks' && (
         <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141416]">

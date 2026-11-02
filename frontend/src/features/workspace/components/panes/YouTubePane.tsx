@@ -535,33 +535,43 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         )}
       </div>
 
-      {/* ── The Two Clean Subtabs (Exactly as in User Screenshot) ── */}
-      <div className="flex items-center gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('meta')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeSubTab === 'meta'
-              ? 'text-white border-red-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          Publish &amp; Meta
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('seo')}
-          className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeSubTab === 'seo'
-              ? 'text-white border-red-500 font-bold'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <span>Shorts SEO</span>
-          <span className="text-[9px] px-1 py-0.2 rounded bg-red-950/60 text-red-300 font-bold border border-red-800/40">
-            {viralScore}%
-          </span>
-        </button>
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('meta')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeSubTab === 'meta'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+          >
+            <Upload className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'meta' ? 'text-red-500' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Publish &amp; Meta</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('seo')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeSubTab === 'seo'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+          >
+            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'seo' ? 'text-amber-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Shorts SEO</span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold shrink-0 transition-colors ${
+                activeSubTab === 'seo'
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  : 'bg-[#26262B] text-zinc-400'
+              }`}
+            >
+              {viralScore}%
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* ── Main Tab Content ── */}

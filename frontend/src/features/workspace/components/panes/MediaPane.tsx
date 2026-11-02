@@ -418,31 +418,43 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-4 sm:gap-5 px-3.5 pt-2 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0 bg-[#141417]">
-        <button
-          type="button"
-          onClick={() => setActiveTab('library')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-            activeTab === 'library'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          My Uploads ({mediaItems.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('import-url')}
-          className={`pb-2 capitalize transition-colors cursor-pointer border-b-2 shrink-0 flex items-center gap-1.5 ${
-            activeTab === 'import-url'
-              ? 'text-white border-white'
-              : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-          }`}
-        >
-          <ExternalLink className="w-3.5 h-3.5 text-[#60A5FA]" />
-          <span>Web Import</span>
-        </button>
+      {/* ── Subtabs Segmented Control ── */}
+      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          <button
+            type="button"
+            onClick={() => setActiveTab('library')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === 'library'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+          >
+            <Upload className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'library' ? 'text-blue-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">My Uploads</span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
+                activeTab === 'library'
+                  ? 'bg-blue-400/20 text-blue-300 font-bold border border-blue-400/30'
+                  : 'bg-[#26262B] text-zinc-400'
+              }`}
+            >
+              {mediaItems.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('import-url')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === 'import-url'
+                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+            }`}
+          >
+            <ExternalLink className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'import-url' ? 'text-emerald-400' : 'text-[#8E8E93]'}`} />
+            <span className="truncate">Web Import</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Media Type Filter & Sort ── */}

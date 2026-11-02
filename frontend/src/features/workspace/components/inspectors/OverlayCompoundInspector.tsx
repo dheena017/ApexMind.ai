@@ -138,21 +138,36 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
   return (
     <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar ── */}
-      <div className="flex items-center gap-2.5 px-3 pt-2.5 border-b border-[#26262B] text-xs font-semibold overflow-x-auto custom-scrollbar shrink-0">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveSubTab(tab)}
-            className={`pb-2.5 capitalize transition-colors cursor-pointer border-b-2 shrink-0 ${
-              activeSubTab === tab
-                ? 'text-white border-[#3B82F6]'
-                : 'text-[#71717A] border-transparent hover:text-[#D4D4D8]'
-            }`}
-          >
-            {tab === 'animate' ? 'Motion FX' : tab}
-          </button>
-        ))}
+      <div className="px-3 pt-2.5 pb-2 shrink-0 border-b border-[#26262B]/80">
+        <div className="grid grid-cols-5 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+          {(
+            [
+              { id: 'transform', label: 'Position', icon: Move },
+              { id: 'animate', label: 'Motion', icon: Sparkles },
+              { id: 'color', label: 'Color', icon: Palette },
+              { id: 'shadow', label: 'Shadow', icon: Layers },
+              { id: 'time', label: 'Timing', icon: Clock },
+            ] as const
+          ).map((t) => {
+            const Icon = t.icon;
+            const isActive = activeSubTab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActiveSubTab(t.id)}
+                className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
+                    : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04]'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-indigo-400' : 'text-[#8E8E93]'}`} />
+                <span className="truncate">{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Tab Content Area ── */}
