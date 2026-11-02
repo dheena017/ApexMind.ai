@@ -612,6 +612,15 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             _STOP_REQUESTED_JOB_IDS.discard(job_id)
 
 
+async def _dispatch_scheduled_job(job_id: str):
+    """Executes a scheduled automation job in a threadpool executor without blocking the event loop."""
+    try:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, execute_automation_job, job_id)
+    except Exception as exec_err:
+        logger.error(f"[Automation Scheduler] Error executing job '{job_id}': {exec_err}", exc_info=True)
+
+
 async def automation_scheduler_loop():
     """Background asyncio worker that periodically checks and triggers due automation jobs."""
     logger.info("[Automation Scheduler] Background scheduler initialized and running.")
@@ -671,7 +680,6 @@ async def automation_scheduler_loop():
                         with _JOB_LOCK:
                             if job_id in _RUNNING_JOB_IDS:
                                 continue
-                            _RUNNING_JOB_IDS.add(job_id)
 
                         # Advance nextRun in DB immediately so it cannot be triggered again
                         adv_next = calculate_next_run_iso(job.get("publishTime", "08:00"), job.get("schedule"))
@@ -683,8 +691,7 @@ async def automation_scheduler_loop():
                         )
 
                         logger.info(f"[Automation Scheduler] Triggering job '{job_id}' at scheduled time (Scheduled: {next_run_str}, Next: {adv_next})")
-                        loop = asyncio.get_running_loop()
-                        asyncio.create_task(loop.run_in_executor(None, execute_automation_job, job_id))
+                        asyncio.create_task(_dispatch_scheduled_job(job_id))
 
                 except Exception as job_err:
                     logger.error(f"[Automation Scheduler] Error processing job '{job.get('id')}': {job_err}")
