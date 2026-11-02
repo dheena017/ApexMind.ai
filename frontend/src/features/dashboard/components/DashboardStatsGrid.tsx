@@ -56,8 +56,8 @@ export const DashboardStatsGrid: React.FC<DashboardStatsGridProps> = ({
       bgColor: 'bg-blue-500/10',
       borderColor: 'border-blue-500/25',
       glowColor: 'hover:border-blue-500/60',
-      actionPage: 'youtube-analytics',
-      actionLabel: 'Analytics',
+      actionPage: 'youtube',
+      actionLabel: 'Channel',
     },
     {
       id: 'likes',

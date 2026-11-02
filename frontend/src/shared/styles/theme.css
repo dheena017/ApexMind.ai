@@ -7,14 +7,14 @@
   color-scheme: dark;
 
   /* Color Palette Hierarchy */
-  --color-bg-base: #0A0A0A;
-  --color-bg-subtle: #121212;
-  --color-bg-surface: #1E1E1E;
-  --color-bg-elevated: #2A2A2A;
+  --color-bg-base: #090B10;
+  --color-bg-subtle: #0E121B;
+  --color-bg-surface: #141824;
+  --color-bg-elevated: #1B2132;
 
   /* Borders */
-  --color-border-subtle: #2F2F2F;
-  --color-border-active: #4A4A4A;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-active: rgba(255, 255, 255, 0.16);
 
   /* Brand Accents */
   --color-accent-primary: #3B82F6;

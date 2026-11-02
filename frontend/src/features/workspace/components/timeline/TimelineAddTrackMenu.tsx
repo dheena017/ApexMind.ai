@@ -211,7 +211,7 @@ export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
         <span className="text-[10px] font-mono-studio text-white font-bold uppercase tracking-wider">
           Add Track
         </span>
-        <span className="text-[9px] font-mono-studio text-[#A1A1AA] bg-white/10 px-2 py-0.5 rounded-full font-bold">
+        <span className="text-[9px] font-mono-studio text-slate-400 bg-white/10 px-2 py-0.5 rounded-full font-bold">
           8 Tracks
         </span>
       </div>
@@ -237,7 +237,7 @@ export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
                 <span className={`font-medium truncate ${track.colorClass}`}>
                   {track.label}
                 </span>
-                <span className="text-[9px] font-mono-studio text-[#71717A] bg-black/40 px-1 py-0.2 rounded border border-white/5 shrink-0">
+                <span className="text-[9px] font-mono-studio text-slate-500 bg-black/40 px-1 py-0.2 rounded border border-white/5 shrink-0">
                   {track.badge}
                 </span>
               </div>

@@ -305,7 +305,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
     setIsOpen(false);
   };
 
-  const isWorkspace = activePage === 'workspace';
+  const isWorkspace = activePage === 'workspace' || activePage.startsWith('workspace-');
 
   const paneLabels: Record<string, string> = {
     script: 'AI Script Studio',
@@ -335,7 +335,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
       {/* =========================================================================
           WORKSPACE BOTTOM STATUS & NOTIFICATION BAR (ApexMind Studio Theme)
           ========================================================================= */}
-      <footer className="h-6 shrink-0 border-t border-[#2F2F2F] bg-[#0D0D0D] px-2.5 sm:px-3 flex items-center justify-between gap-2.5 font-mono-studio text-[9px] text-[#9CA3AF] select-none z-30 relative">
+      <footer className="h-6 shrink-0 border-t border-white/[0.08] bg-[#0B0E17] px-2.5 sm:px-3 flex items-center justify-between gap-2.5 font-mono-studio text-[9.5px] text-slate-400 select-none z-30 relative">
         {/* Left: Studio Metrics & Context */}
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {isWorkspace ? (

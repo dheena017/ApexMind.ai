@@ -8,7 +8,6 @@ import DashboardPage from '@/src/features/dashboard/pages/DashboardPage';
 import WorkspacePage from '@/src/features/workspace/pages/WorkspacePage';
 import VideosPage from '@/src/features/videos/pages/VideosPage';
 import YouTubePage from '@/src/features/youtube/pages/YouTubePage';
-import ProfilePage from '@/src/features/profile/pages/ProfilePage';
 import ProfileDetailsPage from '@/src/features/profile/pages/ProfileDetailsPage';
 import ProfilePreferencesPage from '@/src/features/profile/pages/ProfilePreferencesPage';
 import ProfileChannelsPage from '@/src/features/profile/pages/ProfileChannelsPage';
@@ -106,20 +105,16 @@ export default function AppRouter({
             return <YouTubePage onNavigate={onNavigate} initialTab="playlists" />;
           case 'youtube-posts':
             return <YouTubePage onNavigate={onNavigate} initialTab="posts" />;
-          case 'youtube-seo':
-            return <YouTubePage onNavigate={onNavigate} initialTab="seo" />;
-          case 'youtube-trending':
-            return <YouTubePage onNavigate={onNavigate} initialTab="trending" />;
           case 'youtube-schedules':
             return <YouTubePage onNavigate={onNavigate} initialTab="schedules" />;
-          case 'youtube-analytics':
-            return <YouTubePage onNavigate={onNavigate} initialTab="analytics" />;
           case 'youtube-settings':
-            return <YouTubePage onNavigate={onNavigate} initialTab="settings" />;
+          case 'youtube-seo':
+          case 'youtube-trending':
+          case 'youtube-analytics':
+            return <YouTubePage onNavigate={onNavigate} />;
           case 'videos':
             return <VideosPage onNavigate={onNavigate} />;
           case 'profile':
-            return <ProfilePage onNavigate={onNavigate} />;
           case 'profile-details':
             return <ProfileDetailsPage />;
           case 'profile-preferences':

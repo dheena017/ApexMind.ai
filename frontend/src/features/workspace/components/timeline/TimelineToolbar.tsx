@@ -96,7 +96,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   const addTrackAnchorRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex flex-nowrap items-center justify-between px-3 py-1.5 bg-[#0D0D11] border-b border-[#222228] gap-3 overflow-x-auto select-none min-w-0">
+    <div className="flex flex-nowrap items-center justify-between px-3 py-1.5 bg-[#0C0F17] border-b border-white/[0.08] gap-3 overflow-x-auto select-none min-w-0">
       {/* Left: Title, Track Indicators, Editing Tools & Hero Playback Cluster */}
       <div className="flex items-center gap-2 shrink-0">
         <button
@@ -112,11 +112,11 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
 
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-bold tracking-wider uppercase flex items-center gap-1.5 text-white">
-            <Sliders className="w-3.5 h-3.5 text-[#A1A1AA]" />
+            <Sliders className="w-3.5 h-3.5 text-slate-400" />
             Timeline
           </span>
           <span
-            className="text-[9.5px] font-mono-studio text-[#A1A1AA] bg-[#1A1A22] border border-[#2B2B36] px-2 py-0.5 rounded-full"
+            className="text-[9.5px] font-mono-studio text-slate-400 bg-[#1A1A22] border border-[#2B2B36] px-2 py-0.5 rounded-full"
             title="Tracks containing content"
           >
             {activeTracksCount} Tracks
@@ -230,7 +230,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
 
           {/* Time Readout: Playhead / Media Duration */}
           <div
-            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#08080A] border border-[#262630] text-[10.5px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
+            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#080A10] border border-white/[0.08] text-[10.5px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
             title={`Playhead: ${formatTime(currentTime)} | Duration: ${formatTime(displayDuration)}`}
             aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
           >
@@ -253,7 +253,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             aria-label="Add track"
             aria-expanded={addTrackMenuOpen}
           >
-            <Plus className="w-3 h-3 text-[#A1A1AA]" />
+            <Plus className="w-3 h-3 text-slate-400" />
             <span>Add Track</span>
           </button>
           <TimelineAddTrackMenu
@@ -322,7 +322,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           className="fixed bottom-4 right-4 m-0 w-60 rounded-xl border border-[#33333E] bg-[#121218] p-3.5 text-[#E5E5E5] shadow-2xl backdrop-blur-xl"
         >
           <h3 id="timeline-shortcuts-title" className="mb-2.5 text-[11px] font-bold text-white flex items-center gap-1.5">
-            <Keyboard className="w-3.5 h-3.5 text-[#A1A1AA]" />
+            <Keyboard className="w-3.5 h-3.5 text-slate-400" />
             Keyboard Shortcuts
           </h3>
           <div className="space-y-1.5 text-[10px]">
@@ -336,7 +336,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
               ['Deselect / close menus', 'Esc'],
             ].map(([action, shortcut]) => (
               <div key={action} className="flex items-center justify-between gap-3 py-0.5">
-                <span className="text-[#A1A1AA]">{action}</span>
+                <span className="text-slate-400">{action}</span>
                 <kbd className="whitespace-nowrap rounded-md border border-[#333340] bg-[#0A0A0E] px-1.5 py-0.5 font-mono-studio text-[9px] text-[#E5E5E5]">
                   {shortcut}
                 </kbd>

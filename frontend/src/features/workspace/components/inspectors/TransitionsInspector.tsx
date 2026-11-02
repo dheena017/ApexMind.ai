@@ -215,7 +215,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-y-auto custom-scrollbar p-3 gap-3.5">
+    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-y-auto custom-scrollbar p-3 gap-3.5">
       {/* ── Active Clip Target Header ── */}
       {targetClipId ? (
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs">
@@ -245,9 +245,9 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
 
 
       {/* ── Transition Duration Slider & Quick Presets ── */}
-      <div className="p-3 rounded-xl bg-[#18181D] border border-[#26262E] flex flex-col gap-2.5">
+      <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
         <div className="flex justify-between items-center text-xs">
-          <span className="text-[#A1A1AA] font-medium flex items-center gap-1.5">
+          <span className="text-slate-400 font-medium flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-sky-400" />
             Transition Duration
           </span>
@@ -267,7 +267,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
               setTransitionDuration(d);
               handleTransitionChange(activeTransition, d);
             }}
-            className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#2A2A35] rounded-lg"
+            className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#1F2538] rounded-lg"
           />
           <div className="flex gap-1 shrink-0">
             {[0.3, 0.5, 0.8, 1.0, 1.5].map((d) => (
@@ -281,7 +281,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
                 className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
                   Math.abs(transitionDuration - d) < 0.05
                     ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
-                    : 'bg-[#141417] text-[#71717A] hover:text-white border border-[#2A2A30]'
+                    : 'bg-[#0B0E17] text-slate-500 hover:text-white border border-white/[0.08]'
                 }`}
               >
                 {d}s
@@ -310,7 +310,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
             className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors shrink-0 ${
               transitionCategory === cat.id
                 ? 'bg-[#282834] text-white border border-white/30 shadow-xs'
-                : 'bg-[#16161A] text-[#71717A] hover:text-white border border-transparent'
+                : 'bg-[#141824] text-slate-500 hover:text-white border border-transparent'
             }`}
           >
             {cat.label}
@@ -338,14 +338,14 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
                 className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 ${
                   isSelected
                     ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
-                    : 'border-[#26262E] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30 bg-[#16161A]'
+                    : 'border-white/[0.08] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30 bg-[#141824]'
                 }`}
               >
                 {isNone ? (
                   <div className="w-full h-full bg-[#1A1A22] flex items-center justify-center">
                     <svg
                       viewBox="0 0 24 24"
-                      className="w-7 h-7 text-[#71717A] stroke-[1.8]"
+                      className="w-7 h-7 text-slate-500 stroke-[1.8]"
                       fill="none"
                       stroke="currentColor"
                     >
@@ -354,7 +354,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
                     </svg>
                   </div>
                 ) : (
-                  <div className="w-full h-full relative overflow-hidden bg-[#141418]">
+                  <div className="w-full h-full relative overflow-hidden bg-[#0B0E17]">
                     <img
                       src={previewThumbnail}
                       alt={t.label}
@@ -368,7 +368,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
               </div>
               <span
                 className={`text-[11px] font-medium truncate block text-center mt-1.5 w-full leading-tight transition-colors ${
-                  isSelected ? 'text-white font-bold' : 'text-[#A1A1AA] group-hover:text-white'
+                  isSelected ? 'text-white font-bold' : 'text-slate-400 group-hover:text-white'
                 }`}
               >
                 {t.label}
@@ -379,9 +379,9 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
       </div>
 
       {/* ── Bottom Actions Floating Bar ── */}
-      <div className="mt-auto pt-3 border-t border-[#26262E] flex items-center justify-between gap-2">
+      <div className="mt-auto pt-3 border-t border-white/[0.08] flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[11px] text-[#A1A1AA] truncate">
+          <span className="text-[11px] text-slate-400 truncate">
             Active:{' '}
             <strong className="text-white font-semibold">
               {TRANSITION_PRESETS.find((p) => p.id === activeTransition)?.label || 'None'}

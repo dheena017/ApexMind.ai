@@ -55,6 +55,17 @@ export default function ProfileChannelsPage({ onNavigate }: { onNavigate: (page:
 
   return (
     <div className="w-full space-y-5">
+      {/* YouTube Studio Banner Card */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-red-500/25 bg-red-950/20 text-xs text-[#E5E5E5]">
+        <div className="flex items-center gap-2.5">
+          <Youtube className="w-4 h-4 text-red-400 shrink-0" />
+          <span>YouTube channel management, videos, Shorts, and automations are centralized in <strong>YouTube Studio</strong>.</span>
+        </div>
+        <Button type="button" variant="primary" size="sm" onClick={() => onNavigate('youtube')}>
+          Open YouTube Studio →
+        </Button>
+      </div>
+
       {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#262626]">
         <div className="flex items-center gap-3">

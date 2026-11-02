@@ -111,28 +111,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
       {/* ── Desktop Vertical Left Sidebar (>= 640px) ── */}
       {showDesktop && (
-        <aside className="hidden sm:flex relative w-11 shrink-0 h-full bg-[#0A0E1A]/95 border-r border-white/10 flex-col items-center justify-between py-2.5 z-20 select-none font-sans-studio backdrop-blur-xl">
-          <div className="flex w-full flex-col items-center gap-1.5">
-            {onNavigate && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('dashboard')}
-                  aria-label="Creator Dashboard"
-                  title="Creator Dashboard"
-                  className="group relative flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-all cursor-pointer hover:text-white hover:bg-white/10 hover:border-white/20 shadow-xs"
-                >
-                  <LayoutDashboard className="h-4 w-4 text-sky-400 transition-transform group-hover:scale-110" />
-
-                  {/* Flyout Tooltip */}
-                  <span className="pointer-events-none absolute left-12 top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-full border border-white/15 bg-[#0D1424] px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
-                    Creator Dashboard
-                  </span>
-                </button>
-                <div className="w-6 h-[1px] bg-white/10 my-0.5 shrink-0" aria-hidden="true" />
-              </>
-            )}
-
+        <aside className="hidden sm:flex relative w-14 shrink-0 h-full bg-[#0B0E17]/95 border-r border-white/[0.08] flex-col items-center justify-between py-2.5 z-20 select-none font-sans-studio backdrop-blur-xl">
+          <div className="flex w-full flex-col items-center gap-1.5 px-1.5 pt-1">
             {SIDEBAR_ITEMS.map((item) => {
               const IconComp = item.icon;
               const isActive = item.isScriptGroup
@@ -147,31 +127,31 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   aria-label={item.label}
                   aria-current={isActive ? 'page' : undefined}
                   title={item.label}
-                  className={`group relative flex flex-col h-8.5 w-8.5 items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                  className={`group relative flex flex-col h-11 w-11 items-center justify-center rounded-xl border transition-all cursor-pointer ${
                     isActive
                       ? item.id === 'youtube'
-                        ? 'border-red-500/50 bg-red-950/30 text-white shadow-[0_0_12px_rgba(239,68,68,0.3)]'
+                        ? 'border-red-500/40 bg-red-950/25 text-red-200 shadow-[0_0_12px_rgba(239,68,68,0.25)]'
                         : item.id === 'automations'
-                        ? 'border-emerald-500/50 bg-emerald-950/30 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                        : 'border-sky-400/40 bg-blue-600/25 text-white shadow-[0_0_12px_rgba(56,189,248,0.25)]'
-                      : 'border-transparent text-slate-400 hover:border-white/10 hover:bg-white/5 hover:text-white'
+                        ? 'border-emerald-500/40 bg-emerald-950/25 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                        : 'border-sky-400/40 bg-blue-600/20 text-white shadow-[0_0_12px_rgba(56,189,248,0.2)]'
+                      : 'border-transparent text-slate-400 hover:border-white/[0.08] hover:bg-white/[0.04] hover:text-slate-200'
                   }`}
                 >
                   <IconComp
-                    className={`h-3.5 w-3.5 shrink-0 transition-transform group-hover:scale-110 ${
+                    className={`h-4 w-4 shrink-0 transition-transform group-hover:scale-105 ${
                       item.id === 'youtube'
                         ? (isActive ? 'text-red-400' : 'group-hover:text-red-400')
                         : item.id === 'automations'
                         ? (isActive ? 'text-emerald-400' : 'group-hover:text-emerald-400')
-                        : ''
+                        : isActive ? 'text-sky-300' : ''
                     }`}
                   />
-                  <span className="text-[6.5px] font-bold mt-0.5 tracking-tight truncate max-w-[34px] leading-none">
+                  <span className={`text-[8.5px] font-semibold mt-1 tracking-tight truncate max-w-[44px] leading-none ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
                     {item.shortLabel}
                   </span>
 
                   {/* Flyout Tooltip (Pill Style) */}
-                  <span className="pointer-events-none absolute left-12 top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-full border border-white/15 bg-[#0D1424] px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
+                  <span className="pointer-events-none absolute left-14 top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-lg border border-white/15 bg-[#121622] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
                     {item.label}
                   </span>
                 </button>

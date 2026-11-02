@@ -256,9 +256,9 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Bar: Active Compound Indicator, Home Button & Switcher Dropdown ── */}
-      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`w-6 h-6 rounded-lg ${compoundMetadata.badgeBg} border ${compoundMetadata.badgeBorder} flex items-center justify-center shrink-0`}>
             <CurrentIcon className={`w-3.5 h-3.5 ${compoundMetadata.color}`} />
@@ -279,8 +279,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             onClick={() => handleSwitchCompound('home')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border ${
               activeCompound === 'home' || activeCompound === 'project'
-                ? 'bg-[#3B82F6] text-white border-transparent shadow'
-                : 'bg-[#222228] hover:bg-[#2C2C34] text-[#D4D4D8] hover:text-white border-[#32323C]'
+                ? 'bg-blue-600/30 text-sky-200 border-sky-400/40 shadow-xs font-semibold'
+                : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border-white/[0.08]'
             }`}
             title="Go to Project Home Studio"
           >
@@ -293,7 +293,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             <button
               type="button"
               onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#222228] hover:bg-[#2C2C34] text-[10px] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer border border-[#32323C]"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[10px] text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/[0.08]"
               title="Switch inspector compound"
             >
               <span>Switch</span>

@@ -1,6 +1,7 @@
 export interface CreatorProfile {
   displayName: string;
   avatarUrl: string;
+  bannerUrl: string;
   bio: string;
   creatorHandle: string;
   websiteUrl: string;
@@ -18,6 +19,7 @@ const PROFILE_STORAGE_PREFIX = 'apexmind_creator_profile:';
 export const DEFAULT_CREATOR_PROFILE: CreatorProfile = {
   displayName: '',
   avatarUrl: '',
+  bannerUrl: '',
   bio: '',
   creatorHandle: '',
   websiteUrl: '',

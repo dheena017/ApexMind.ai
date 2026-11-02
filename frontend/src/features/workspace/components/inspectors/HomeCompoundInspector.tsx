@@ -109,10 +109,10 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   const spokenWordsPerMinute = duration > 0 ? Math.round((spokenWordCount / duration) * 60) : 0;
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
+    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar ── */}
-      <div className="px-3 pt-2.5 pb-2 shrink-0 border-b border-[#26262B]/80">
-        <div className="grid grid-cols-4 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+      <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-white/[0.08] bg-[#0B0E17]">
+        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-xl border border-white/[0.06] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {(
             [
               { id: 'overview', label: 'Overview', icon: Layers },
@@ -128,14 +128,14 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                 key={t.id}
                 type="button"
                 onClick={() => setActiveSubTab(t.id)}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex-1 min-w-[58px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
-                    : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10 text-sky-300'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-sky-400' : 'text-[#8E8E93]'}`} />
-                <span className="truncate">{t.label}</span>
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
+                <span>{t.label}</span>
               </button>
             );
           })}
@@ -150,7 +150,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
           <div className="flex flex-col gap-3 pt-0.5">
             {/* Inspector Navigation Panels */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold px-0.5">
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold px-0.5">
                 Active Inspectors
               </span>
               {compoundShortcuts.map((c) => {
@@ -163,7 +163,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       if (onSelectCompound) onSelectCompound(c.id, c.videoTab);
                       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: c.id }));
                     }}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#18181C] hover:bg-[#222228] border border-[#282830] transition-colors cursor-pointer text-left group"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#141824] hover:bg-[#1B2132] border border-white/[0.07] hover:border-white/[0.14] transition-all cursor-pointer text-left group shadow-xs"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-6 h-6 rounded-lg ${c.bg} flex items-center justify-center shrink-0`}>
@@ -174,10 +174,10 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[9px] font-mono-studio px-1.5 py-0.5 rounded bg-white/5 text-[#A1A1AA] border border-white/10">
+                      <span className="text-[9px] font-mono-studio px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
                         {c.badge}
                       </span>
-                      <ChevronRight className="w-3 h-3 text-[#71717A] group-hover:text-white transition-colors" />
+                      <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-white transition-colors" />
                     </div>
                   </button>
                 );
@@ -189,7 +189,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               <button
                 type="button"
                 onClick={handleCopyMetadata}
-                className="flex-1 py-2 rounded-xl bg-[#1C1C20] hover:bg-[#25252C] border border-[#2A2A30] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="flex-1 py-2 rounded-xl bg-[#141824] hover:bg-[#25252C] border border-white/[0.08] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Copy className="w-3 h-3 text-[#3B82F6]" />
                 {copiedMetadata ? 'Copied!' : 'Copy Meta'}
@@ -197,7 +197,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               <button
                 type="button"
                 onClick={handleSaveDraft}
-                className="flex-1 py-2 rounded-xl bg-[#1C1C20] hover:bg-[#25252C] border border-[#2A2A30] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="flex-1 py-2 rounded-xl bg-[#141824] hover:bg-[#25252C] border border-white/[0.08] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Bookmark className="w-3 h-3 text-amber-400" />
                 {savedDraft ? 'Saved!' : 'Save Draft'}
@@ -214,7 +214,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                   ? 'bg-emerald-600 text-white'
                   : canPublish
                   ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-900/30'
-                  : 'bg-[#1C1C20] text-[#555] border border-[#2A2A30] cursor-not-allowed'
+                  : 'bg-[#141824] text-[#555] border border-white/[0.08] cursor-not-allowed'
               }`}
             >
               <Youtube className="w-4 h-4" />
@@ -227,7 +227,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                 onClick={() => {
                   window.dispatchEvent(new CustomEvent('workspace:reset-publish'));
                 }}
-                className="w-full mt-2 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-[#202026] hover:bg-[#2C2C34] text-zinc-200 hover:text-white border border-[#32323C] cursor-pointer transition-colors shadow-xs"
+                className="w-full mt-2 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-[#202026] hover:bg-[#1F2538] text-zinc-200 hover:text-white border border-white/[0.12] cursor-pointer transition-colors shadow-xs"
               >
                 <Upload className="w-3.5 h-3.5 text-sky-400" />
                 <span>Upload Another Video to YouTube</span>
@@ -240,8 +240,8 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
         {activeSubTab === 'audit' && (
           <div className="flex flex-col gap-3 pt-0.5">
             {/* Platform Requirements */}
-            <div className="p-3 rounded-xl bg-[#1C1C20] border border-[#2A2A30] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
                 YouTube Shorts Checks
               </span>
               {[
@@ -277,14 +277,14 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                   <span className={`text-[11px] ${item.pass ? 'text-[#D4D4D8]' : 'text-amber-300'}`}>{item.label}</span>
                 </div>
               ))}
-              <p className="text-[9px] leading-relaxed text-[#71717A] border-t border-[#25252A] pt-2">
+              <p className="text-[9px] leading-relaxed text-slate-500 border-t border-[#25252A] pt-2">
                 Checks use current project settings and are guidance, not a guarantee of platform acceptance.
               </p>
             </div>
 
             {/* Measurable readiness signals */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">Readiness Signals</span>
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">Readiness Signals</span>
               {[
                 {
                   label: 'Spoken pace',
@@ -320,13 +320,13 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                   <div key={i} className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <Icon className={`w-3 h-3 ${item.color}`} />
-                      <span className="text-[11px] text-[#A1A1AA]">{item.label}</span>
+                      <span className="text-[11px] text-slate-400">{item.label}</span>
                     </div>
                     <span className={`text-[11px] font-bold ${item.pass ? item.color : 'text-amber-400'}`}>{item.value}</span>
                   </div>
                 );
               })}
-              <p className="text-[9px] leading-relaxed text-[#71717A] border-t border-[#25252A] pt-2">
+              <p className="text-[9px] leading-relaxed text-slate-500 border-t border-[#25252A] pt-2">
                 Checklist guidance only; actual reach depends on audience response and platform distribution.
               </p>
             </div>
@@ -336,8 +336,8 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
         {/* ─────── DISTRIBUTE TAB ─────── */}
         {activeSubTab === 'distribute' && (
           <div className="flex flex-col gap-3 pt-0.5">
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">Publish & Share</span>
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">Publish & Share</span>
               {[
                 { label: 'YouTube Shorts', icon: Youtube, desc: 'Direct API publish', color: 'text-red-400', action: onPublish, disabled: !canPublish || publishing },
                 { label: 'Instagram Reels', icon: Instagram, desc: 'Export optimized video', color: 'text-pink-400', action: () => window.dispatchEvent(new CustomEvent('workspace:export-video')), disabled: false },
@@ -351,12 +351,12 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                     type="button"
                     onClick={item.action}
                     disabled={item.disabled}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-[#1C1C20] hover:bg-[#252529] border border-[#2A2A30] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-left group"
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-[#141824] hover:bg-[#252529] border border-white/[0.08] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-left group"
                   >
                     <Icon className={`w-4 h-4 ${item.color} shrink-0`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-white">{item.label}</p>
-                      <p className="text-[10px] text-[#71717A]">{item.desc}</p>
+                      <p className="text-[10px] text-slate-500">{item.desc}</p>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-[#555] group-hover:text-white transition-colors" />
                   </button>
@@ -366,7 +366,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
 
             {/* Export Actions */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">One-Click Render</span>
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">One-Click Render</span>
               <button
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('workspace:export-video'))}
@@ -383,8 +383,8 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
         {activeSubTab === 'codec' && (
           <div className="flex flex-col gap-3 pt-0.5">
             {/* Resolution Selector */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <div className="flex justify-between items-center text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+              <div className="flex justify-between items-center text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
                 <span>Output Resolution</span>
                 <span className="text-white font-semibold">{selectedResolution}</span>
               </div>
@@ -403,20 +403,20 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                     className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
                       selectedResolution === res.id
                         ? 'bg-[#1E293B] border-blue-500 text-white'
-                        : 'bg-[#141417] border-[#2A2A30] text-[#A1A1AA] hover:text-white'
+                        : 'bg-[#0B0E17] border-white/[0.08] text-slate-400 hover:text-white'
                     }`}
                   >
                     <p className="text-[11px] font-bold leading-tight">{res.label}</p>
-                    <span className="text-[9px] text-[#71717A]">{res.badge}</span>
+                    <span className="text-[9px] text-slate-500">{res.badge}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Framerate & Bitrate */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
               <div className="flex flex-col gap-1">
-                <div className="flex justify-between text-[10px] font-mono-studio text-[#71717A] uppercase font-bold">
+                <div className="flex justify-between text-[10px] font-mono-studio text-slate-500 uppercase font-bold">
                   <span>Framerate</span>
                   <span className="text-white font-semibold">{selectedFps} FPS</span>
                 </div>
@@ -429,7 +429,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                         selectedFps === fps
                           ? 'bg-[#3B82F6] border-transparent text-white'
-                          : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                          : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                       }`}
                     >
                       {fps} FPS
@@ -439,7 +439,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               </div>
 
               <div className="flex flex-col gap-1">
-                <div className="flex justify-between text-[10px] font-mono-studio text-[#71717A] uppercase font-bold">
+                <div className="flex justify-between text-[10px] font-mono-studio text-slate-500 uppercase font-bold">
                   <span>Video Target Bitrate</span>
                   <span className="text-white font-semibold">{selectedBitrate} Mbps</span>
                 </div>
@@ -457,7 +457,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                         selectedBitrate === bit.id
                           ? 'bg-[#3B82F6] border-transparent text-white'
-                          : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                          : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                       }`}
                     >
                       {bit.label}
@@ -468,9 +468,9 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
             </div>
 
             {/* Video Codec & Container */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-mono-studio text-[#71717A] uppercase font-bold">Video Codec</span>
+                <span className="text-[10px] font-mono-studio text-slate-500 uppercase font-bold">Video Codec</span>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { id: 'h264' as const, label: 'H.264 / AVC', desc: 'Universal compatibility' },
@@ -485,18 +485,18 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       className={`p-2 rounded-lg border text-left cursor-pointer transition-colors ${
                         selectedCodec === codec.id
                           ? 'bg-[#1E293B] border-blue-500 text-white'
-                          : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                          : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                       }`}
                     >
                       <p className="text-[10px] font-bold">{codec.label}</p>
-                      <p className="text-[8px] text-[#71717A]">{codec.desc}</p>
+                      <p className="text-[8px] text-slate-500">{codec.desc}</p>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-mono-studio text-[#71717A] uppercase font-bold">File Container</span>
+                <span className="text-[10px] font-mono-studio text-slate-500 uppercase font-bold">File Container</span>
                 <div className="flex gap-1.5">
                   {(['mp4', 'webm', 'mov'] as const).map((cnt) => (
                     <button
@@ -506,7 +506,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase border transition-colors cursor-pointer ${
                         selectedContainer === cnt
                           ? 'bg-emerald-600 border-transparent text-white'
-                          : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                          : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                       }`}
                     >
                       .{cnt}
@@ -517,11 +517,11 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
             </div>
 
             {/* Audio Encoder Options */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase font-bold">Audio Output Encoding</span>
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase font-bold">Audio Output Encoding</span>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="flex flex-col gap-1">
-                  <span className="text-[#71717A]">Sample Rate:</span>
+                  <span className="text-slate-500">Sample Rate:</span>
                   <CustomSelect
                     size="sm"
                     value={selectedAudioSampleRate}
@@ -535,7 +535,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <span className="text-[#71717A]">Bitrate:</span>
+                  <span className="text-slate-500">Bitrate:</span>
                   <CustomSelect
                     size="sm"
                     value={selectedAudioBitrate}

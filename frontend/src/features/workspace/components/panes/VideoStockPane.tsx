@@ -116,10 +116,10 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
-      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#141418] transition-all cursor-pointer text-left flex flex-col justify-between transform-gpu ${
+      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#0B0E17] transition-all cursor-pointer text-left flex flex-col justify-between transform-gpu ${
         isSelected
           ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/10'
-          : 'border-[#26262D] hover:border-[#3E3E4A] hover:shadow-md'
+          : 'border-white/[0.08] hover:border-white/[0.12] hover:shadow-md'
       }`}
     >
       {/* ── Visual Media: High-performance lazy image by default, video mounted ONLY on intentional hover ── */}
@@ -496,9 +496,9 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   const filteredVideos = baseFiltered.filter((vid) => !hideUsed || !timelineVideoUrls.has(vid.videoUrl));
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
-      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Film className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="text-xs font-bold text-white truncate">
@@ -510,79 +510,79 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
           {isLoadingBackend && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
-          <span className="text-[10px] font-mono-studio text-[#A1A1AA] bg-[#222226] px-2 py-0.5 rounded-full border border-[#2F2F36]">
+          <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/[0.08]">
             {filteredVideos.length} Clips
           </span>
         </div>
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
-        <div className="grid grid-cols-4 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setActiveTab("catalog")}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "catalog"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Catalog"
           >
-            <Film className={`w-3.5 h-3.5 shrink-0 ${activeTab === "catalog" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <Film className={`w-3.5 h-3.5 shrink-0 ${activeTab === "catalog" ? "text-blue-400" : "text-slate-400"}`} />
             <span className="truncate">Catalog</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("settings")}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "settings"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Mood"
           >
-            <Sliders className={`w-3.5 h-3.5 shrink-0 ${activeTab === "settings" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <Sliders className={`w-3.5 h-3.5 shrink-0 ${activeTab === "settings" ? "text-blue-400" : "text-slate-400"}`} />
             <span className="truncate">Mood</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("url")}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "url"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Direct URL"
           >
-            <ExternalLink className={`w-3.5 h-3.5 shrink-0 ${activeTab === "url" ? "text-blue-400" : "text-[#8E8E93]"}`} />
-            <span className="truncate">Direct URL</span>
+            <ExternalLink className={`w-3.5 h-3.5 shrink-0 ${activeTab === "url" ? "text-blue-400" : "text-slate-400"}`} />
+            <span>URL</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("saved")}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "saved"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Saved"
           >
-            <Bookmark className={`w-3.5 h-3.5 shrink-0 ${activeTab === "saved" ? "text-blue-400" : "text-[#8E8E93]"}`} />
+            <Bookmark className={`w-3.5 h-3.5 shrink-0 ${activeTab === "saved" ? "text-blue-400" : "text-slate-400"}`} />
             <span className="truncate">Saved</span>
           </button>
         </div>
       </div>
       {/* ── Category Filter Chips (In Catalog Mode) ── */}
       {activeTab === 'catalog' && (
-        <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#26262B]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
+        <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-white/[0.08]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
           <button
             type="button"
             onClick={() => setHideUsed(!hideUsed)}
             className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
               hideUsed
                 ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-xs'
-                : 'bg-[#1C1C22] text-[#A1A1AA] hover:text-white hover:bg-[#26262E] border border-[#2A2A32]'
+                : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-white/[0.08]'
             }`}
             title="Filter out videos already in project so they cannot be reused"
           >
@@ -615,7 +615,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
                 selectedCategory === cat.id
                   ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
-                  : 'bg-[#1C1C22] text-[#A1A1AA] hover:text-white hover:bg-[#26262E] border border-[#2A2A32]'
+                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-white/[0.08]'
               }`}
             >
               {cat.label}
@@ -629,12 +629,12 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         {activeTab === 'settings' ? (
           /* Motion Speed & Mood Grading Tab */
           <div className="flex flex-col gap-4">
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Gauge className="w-3.5 h-3.5 text-[#60A5FA]" />
                 Video Loop Playback Speed
               </span>
-              <p className="text-[11px] text-[#A1A1AA]">
+              <p className="text-[11px] text-slate-400">
                 Slow down drone or storm footage for dramatic stoic impact or speed it up for hype reels.
               </p>
 
@@ -652,7 +652,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     className={`py-2 rounded-xl text-xs font-bold border transition-all ${
                       playbackSpeed === s.val
                         ? 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-[#3B82F6]/20'
-                        : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30] hover:text-white'
+                        : 'bg-[#0B0E17] text-slate-400 border-white/[0.08] hover:text-white'
                     }`}
                   >
                     {s.label}
@@ -662,7 +662,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             </div>
 
             {/* Video Color Mood Preset */}
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-2.5">
+            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-2.5">
               <span className="text-xs font-bold text-white">Video Color Mood</span>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -678,7 +678,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     className={`p-2.5 rounded-lg border text-xs font-semibold text-left transition-all ${
                       colorMood === m.id
                         ? 'bg-[#1E2330] text-white border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
-                        : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30] hover:text-white'
+                        : 'bg-[#0B0E17] text-slate-400 border-white/[0.08] hover:text-white'
                     }`}
                   >
                     {m.name}
@@ -690,28 +690,28 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         ) : activeTab === 'url' ? (
           /* Custom Video URL Input Form */
           <div className="flex flex-col gap-4">
-            <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <ExternalLink className="w-4 h-4 text-[#60A5FA]" />
                 <span className="text-xs font-bold text-white">Import Custom Video URL</span>
               </div>
-              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+              <p className="text-[11px] text-slate-400 leading-relaxed">
                 Paste any direct MP4, WebM, or public video link to render as the animated background in your canvas.
               </p>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Clip Title</label>
+                <label className="text-[10px] uppercase font-mono-studio text-slate-500">Clip Title</label>
                 <input
                   type="text"
                   value={customTitleInput}
                   onChange={(e) => setCustomTitleInput(e.target.value)}
                   placeholder="e.g. Cinematic Rain Drone"
-                  className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                  className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Video URL (MP4 / WebM / Cloud Storage)</label>
+                <label className="text-[10px] uppercase font-mono-studio text-slate-500">Video URL (MP4 / WebM / Cloud Storage)</label>
                 <input
                   type="url"
                   value={customUrlInput}
@@ -720,13 +720,13 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     setUrlVideoValid(null);
                   }}
                   placeholder="https://example.com/video.mp4"
-                  className="bg-[#141417] border border-[#2A2A30] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                  className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
               {/* Video Preview */}
               {customUrlInput.trim() && (
-                <div className="mt-2 rounded-xl overflow-hidden border border-[#2A2A30] bg-[#121214] aspect-[9/12] max-h-56 relative flex items-center justify-center">
+                <div className="mt-2 rounded-xl overflow-hidden border border-white/[0.08] bg-[#0E121B] aspect-[9/12] max-h-56 relative flex items-center justify-center">
                   <video
                     ref={previewVideoRef}
                     src={customUrlInput.trim()}
@@ -740,7 +740,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                   {urlVideoValid === false && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-3 text-center">
                       <p className="text-xs text-rose-400 font-semibold">Video could not be played</p>
-                      <p className="text-[10px] text-[#A1A1AA] mt-1">Check that URL is direct .mp4 or .webm</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Check that URL is direct .mp4 or .webm</p>
                     </div>
                   )}
                 </div>
@@ -760,7 +760,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                   type="button"
                   onClick={() => handleAddCustomUrl(true)}
                   disabled={!customUrlInput.trim()}
-                  className="bg-[#2A2A32] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#3A3A44]"
+                  className="bg-[#1B2132] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#3A3A44]"
                   title="Save to My Clips"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -775,19 +775,19 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             {/* Search Input & Provider Selector */}
             <div className="flex flex-col gap-2">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search motion clips or #tags..."
-                  className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+                  className="w-full bg-[#141824] border border-white/[0.08] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -810,7 +810,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
                         selectedProvider === p.id
                           ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40 font-semibold'
-                          : 'bg-[#18181B] text-[#71717A] hover:text-[#D4D4D8] border border-[#27272A]'
+                          : 'bg-[#18181B] text-slate-500 hover:text-[#D4D4D8] border border-[#27272A]'
                       }`}
                     >
                       {p.label}
@@ -822,10 +822,10 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
             {/* Empty Saved State */}
             {activeTab === 'saved' && savedVideos.length === 0 ? (
-              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
+              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
                 <Bookmark className="w-8 h-8 text-[#52525B]" />
                 <p className="text-xs font-bold text-white">No Saved Clips Yet</p>
-                <p className="text-[11px] text-[#A1A1AA] max-w-xs">
+                <p className="text-[11px] text-slate-400 max-w-xs">
                   Import video loops using the &ldquo;Direct URL&rdquo; tab to build your library.
                 </p>
                 <button
@@ -841,7 +841,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 {Array.from({ length: 6 }).map((_, idx) => (
                   <div
                     key={`vskel-${idx}`}
-                    className="rounded-xl border border-[#2A2A30] aspect-[9/16] bg-[#1A1A1E] animate-pulse flex flex-col justify-end p-2.5"
+                    className="rounded-none border-0 aspect-[9/16] bg-[#151926] animate-pulse flex flex-col justify-end p-2.5"
                   >
                     <div className="h-3 w-3/4 bg-zinc-800 rounded mb-1" />
                     <div className="h-2.5 w-1/2 bg-zinc-800/60 rounded mb-2" />
@@ -850,7 +850,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 ))}
               </div>
             ) : filteredVideos.length === 0 ? (
-              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 text-center text-xs text-[#A1A1AA]">
+              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-8 text-center text-xs text-slate-400">
                 No video clips matching &ldquo;{searchQuery}&rdquo;
               </div>
             ) : (
@@ -874,7 +874,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
               {/* Load More / Next Page button (Appends down by down like Image pane) */}
               {activeTab === 'catalog' && filteredVideos.length > 0 && (
-                <div className="pt-3 pb-2 flex flex-col items-center gap-2 border-t border-[#26262B]">
+                <div className="pt-3 pb-2 flex flex-col items-center gap-2 border-t border-white/[0.08]">
                   {hasMore && (
                     <button
                       type="button"

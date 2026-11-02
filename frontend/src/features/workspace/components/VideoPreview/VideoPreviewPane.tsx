@@ -2770,11 +2770,11 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         {/* Empty Canvas Placeholder */}
         {!activeVideo && !activeImage && !visibleSubtitle && !effectiveOverlay && !script.title && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none pointer-events-none z-10">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center mb-3 text-white/30 shadow-inner">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/[0.08] flex items-center justify-center mb-3 text-sky-400 shadow-md">
               <Film className="w-5 h-5 text-white/40" />
             </div>
-            <span className="text-xs font-semibold text-white/60 tracking-wide mb-1">Canvas Ready</span>
-            <span className="text-[10px] text-white/35 max-w-[210px] leading-relaxed">
+            <span className="text-xs font-bold text-slate-200 tracking-wide mb-1">Canvas Ready</span>
+            <span className="text-[11px] text-slate-400 max-w-[220px] leading-relaxed">
               Generate a script with AI or add media to the timeline to begin
             </span>
           </div>

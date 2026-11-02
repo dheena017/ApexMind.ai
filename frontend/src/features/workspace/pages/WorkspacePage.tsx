@@ -1791,7 +1791,7 @@ export default function WorkspacePage({
       {showLeftPane && (
         <div
           style={isDesktop ? { width: `${leftPaneWidth}px` } : undefined}
-          className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-r border-[#242426]"
+          className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-r border-white/[0.08]"
         >
             {activePane === 'automations' ? (
               <AutomationsPane
@@ -2208,7 +2208,7 @@ export default function WorkspacePage({
           {showRightPane && (
             <div
               style={isDesktop ? { width: `${rightPaneWidth}px` } : undefined}
-              className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-l border-[#242426]"
+              className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-l border-white/[0.08]"
             >
               <StudioControlsPane
                 voices={voices}
@@ -2288,7 +2288,7 @@ export default function WorkspacePage({
 
         {/* â”€â”€ Studio Multi-Track Timeline Panel (Bottom Studio Area, placed next to Left Panel) â”€â”€ */}
         {showTimeline && (
-          <div className="shrink-0 min-h-[44px] border-t border-[#242426]">
+          <div className="shrink-0 min-h-[44px] border-t border-white/[0.08]">
             <StudioTimelinePane
               timelineHeight={timelineHeight}
               onTimelineHeightChange={setTimelineHeight}

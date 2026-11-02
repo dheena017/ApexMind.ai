@@ -572,10 +572,10 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
   const tabs = ['text', 'style', 'animation', 'position', 'background', 'shadow'] as const;
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none">
+    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar ── */}
-      <div className="px-3 pt-2.5 pb-2 shrink-0 border-b border-[#26262B]/80">
-        <div className="grid grid-cols-6 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+      <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-white/[0.08] bg-[#0B0E17]">
+        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-xl border border-white/[0.08] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {(
             [
               { id: 'text', label: 'Text', icon: Type },
@@ -593,14 +593,14 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                 key={t.id}
                 type="button"
                 onClick={() => setActiveSubTab(t.id)}
-                className={`flex items-center justify-center gap-1 py-1.5 px-0.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
-                    : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-blue-400' : 'text-[#8E8E93]'}`} />
-                <span className="truncate">{t.label}</span>
+                <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
+                <span>{t.label}</span>
               </button>
             );
           })}
@@ -630,35 +630,35 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
                 {/* Title Specific Timings */}
                 <div className="grid grid-cols-2 gap-2 mt-1">
-                  <div className="flex flex-col gap-1 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
-                    <span className="text-[9px] text-[#71717A] uppercase font-bold">Start Time</span>
+                  <div className="flex flex-col gap-1 bg-[#0B0E17] border border-white/[0.08] rounded-lg p-1.5">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold">Start Time</span>
                     <div className="flex items-center justify-between font-mono-studio text-xs">
                       <button
                         type="button"
                         onClick={() => handleTitleStartChange(Math.max(0, titleTiming.start - 0.2))}
-                        className="w-5 h-5 rounded bg-[#222228] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
+                        className="w-5 h-5 rounded bg-[#1B2132] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
                       >-</button>
                       <span className="text-white font-bold">{titleTiming.start.toFixed(1)}s</span>
                       <button
                         type="button"
                         onClick={() => handleTitleStartChange(titleTiming.start + 0.2)}
-                        className="w-5 h-5 rounded bg-[#222228] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
+                        className="w-5 h-5 rounded bg-[#1B2132] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
                       >+</button>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
-                    <span className="text-[9px] text-[#71717A] uppercase font-bold">Duration</span>
+                  <div className="flex flex-col gap-1 bg-[#0B0E17] border border-white/[0.08] rounded-lg p-1.5">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold">Duration</span>
                     <div className="flex items-center justify-between font-mono-studio text-xs">
                       <button
                         type="button"
                         onClick={() => handleTitleDurationChange(Math.max(0.5, titleTiming.duration - 0.2))}
-                        className="w-5 h-5 rounded bg-[#222228] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
+                        className="w-5 h-5 rounded bg-[#1B2132] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
                       >-</button>
                       <span className="text-white font-bold">{titleTiming.duration.toFixed(1)}s</span>
                       <button
                         type="button"
                         onClick={() => handleTitleDurationChange(titleTiming.duration + 0.2)}
-                        className="w-5 h-5 rounded bg-[#222228] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
+                        className="w-5 h-5 rounded bg-[#1B2132] hover:bg-sky-500/30 hover:text-sky-300 flex items-center justify-center cursor-pointer text-white"
                       >+</button>
                     </div>
                   </div>
@@ -693,35 +693,35 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
                 {/* Cue Specific Timings */}
                 <div className="grid grid-cols-2 gap-2 mt-1">
-                  <div className="flex flex-col gap-1 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
-                    <span className="text-[9px] text-[#71717A] uppercase font-bold">Start Time</span>
+                  <div className="flex flex-col gap-1 bg-[#0B0E17] border border-white/[0.08] rounded-lg p-1.5">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold">Start Time</span>
                     <div className="flex items-center justify-between font-mono-studio text-xs">
                       <button
                         type="button"
                         onClick={() => handleCueStartChange(Math.max(0, (activeCue.start || 0) - 0.2))}
-                        className="w-5 h-5 rounded bg-[#222228] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
+                        className="w-5 h-5 rounded bg-[#1B2132] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
                       >-</button>
                       <span className="text-white font-bold">{(activeCue.start || 0).toFixed(1)}s</span>
                       <button
                         type="button"
                         onClick={() => handleCueStartChange((activeCue.start || 0) + 0.2)}
-                        className="w-5 h-5 rounded bg-[#222228] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
+                        className="w-5 h-5 rounded bg-[#1B2132] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
                       >+</button>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
-                    <span className="text-[9px] text-[#71717A] uppercase font-bold">Duration</span>
+                  <div className="flex flex-col gap-1 bg-[#0B0E17] border border-white/[0.08] rounded-lg p-1.5">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold">Duration</span>
                     <div className="flex items-center justify-between font-mono-studio text-xs">
                       <button
                         type="button"
                         onClick={() => handleCueDurationChange(Math.max(0.3, (activeCue.duration || 1.5) - 0.2))}
-                        className="w-5 h-5 rounded bg-[#222228] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
+                        className="w-5 h-5 rounded bg-[#1B2132] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
                       >-</button>
                       <span className="text-white font-bold">{(activeCue.duration || 1.5).toFixed(1)}s</span>
                       <button
                         type="button"
                         onClick={() => handleCueDurationChange((activeCue.duration || 1.5) + 0.2)}
-                        className="w-5 h-5 rounded bg-[#222228] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
+                        className="w-5 h-5 rounded bg-[#1B2132] hover:bg-teal-500/30 hover:text-teal-300 flex items-center justify-center cursor-pointer text-white"
                       >+</button>
                     </div>
                   </div>
@@ -730,7 +730,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             )}
             {/* Target Layer Selector */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Select Layer To Edit</span>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Select Layer To Edit</span>
               <div className="grid grid-cols-4 gap-1">
                 {[
                   { id: 'quote' as const, label: 'Body Quote' },
@@ -745,7 +745,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer text-center ${
                       textTarget === tgt.id
                         ? 'bg-[#1E293B] border-[#3B82F6] text-white'
-                        : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                        : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                     }`}
                   >
                     {tgt.label}
@@ -756,7 +756,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
             {/* Textarea */}
             <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-center text-[10px] font-mono-studio text-[#71717A]">
+              <div className="flex justify-between items-center text-[10px] font-mono-studio text-slate-500">
                 <span className="uppercase font-bold">Content Editor</span>
                 <span>{textContent.length} chars</span>
               </div>
@@ -765,13 +765,13 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                 value={textContent}
                 onChange={(e) => handleUpdateContent(e.target.value)}
                 placeholder="Type or paste caption text..."
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] focus:border-[#3B82F6] rounded-xl px-3 py-2 text-xs text-white outline-none resize-none"
+                className="w-full bg-[#141824] border border-white/[0.08] focus:border-[#3B82F6] rounded-xl px-3 py-2 text-xs text-white outline-none resize-none"
               />
             </div>
 
             {/* Formatting & Alignment Buttons */}
             <div
-              className="p-2.5 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2"
+              className="p-2.5 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2"
               onClickCapture={activateCustomTextStyle}
               onChangeCapture={activateCustomTextStyle}
             >
@@ -791,7 +791,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                         type="button"
                         onClick={() => btn.setter(!btn.active)}
                         className={`w-7 h-7 rounded-lg flex items-center justify-center border cursor-pointer transition-colors ${
-                          btn.active ? 'bg-[#2E2E38] border-[#3B82F6] text-white' : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                          btn.active ? 'bg-[#2E2E38] border-[#3B82F6] text-white' : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                         }`}
                         title={btn.title}
                       >
@@ -816,7 +816,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                         type="button"
                         onClick={() => setTextAlign(al.id)}
                         className={`w-7 h-7 rounded-lg flex items-center justify-center border cursor-pointer transition-colors ${
-                          textAlign === al.id ? 'bg-[#2E2E38] border-[#3B82F6] text-white' : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                          textAlign === al.id ? 'bg-[#2E2E38] border-[#3B82F6] text-white' : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                         }`}
                         title={`Align ${al.id}`}
                       >
@@ -840,7 +840,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     type="button"
                     onClick={() => setTextTransform(tr.id)}
                     className={`flex-1 py-1 rounded-md text-[10px] font-bold border cursor-pointer transition-colors ${
-                      textTransform === tr.id ? 'bg-[#3B82F6] border-transparent text-white' : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                      textTransform === tr.id ? 'bg-[#3B82F6] border-transparent text-white' : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                     }`}
                   >
                     {tr.label}
@@ -851,13 +851,13 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
             {/* Font Size & Spacing Sliders */}
             <div
-              className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5"
+              className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5"
               onClickCapture={activateCustomTextStyle}
               onChangeCapture={activateCustomTextStyle}
             >
               <div className="flex flex-col gap-1.5">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-[#A1A1AA] font-medium">Font Size</span>
+                  <span className="text-slate-400 font-medium">Font Size</span>
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
@@ -865,9 +865,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                       max="140"
                       value={textSize}
                       onChange={(e) => setTextSize(Math.max(12, Math.min(140, Number(e.target.value) || 58)))}
-                      className="w-12 bg-[#121215] border border-[#2A2A30] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
+                      className="w-12 bg-[#0E121B] border border-white/[0.08] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
                     />
-                    <span className="text-[10px] text-[#71717A]">px</span>
+                    <span className="text-[10px] text-slate-500">px</span>
                   </div>
                 </div>
                 <input
@@ -883,7 +883,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
               {/* Letter Spacing & Line Height */}
               <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#25252A]">
                 <div className="flex flex-col gap-1">
-                  <div className="flex justify-between text-[10px] text-[#A1A1AA]">
+                  <div className="flex justify-between text-[10px] text-slate-400">
                     <span>Tracking</span>
                     <span className="font-mono-studio text-white">{letterSpacing}em</span>
                   </div>
@@ -899,7 +899,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <div className="flex justify-between text-[10px] text-[#A1A1AA]">
+                  <div className="flex justify-between text-[10px] text-slate-400">
                     <span>Line Height</span>
                     <span className="font-mono-studio text-white">{lineHeight}</span>
                   </div>
@@ -918,12 +918,12 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
             {/* Color Chooser */}
             <div
-              className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2"
+              className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2"
               onClickCapture={activateCustomTextStyle}
               onChangeCapture={activateCustomTextStyle}
             >
               <div className="flex items-center justify-between text-xs">
-                <span className="text-[#A1A1AA] font-medium">Text Color</span>
+                <span className="text-slate-400 font-medium">Text Color</span>
                 <span className="font-mono-studio text-white font-bold">{textColor}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -931,7 +931,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                   type="color"
                   value={textColor.startsWith('#') ? textColor : '#FFFFFF'}
                   onChange={(e) => handleColorChange(e.target.value)}
-                  className="w-8 h-8 rounded-lg border border-[#2A2A30] bg-transparent cursor-pointer shrink-0"
+                  className="w-8 h-8 rounded-lg border border-white/[0.08] bg-transparent cursor-pointer shrink-0"
                 />
                 <div className="flex flex-wrap gap-1.5 flex-1">
                   {COLOR_PALETTE.map((c) => (
@@ -960,17 +960,17 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
           >
             {/* Quick Combos */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Style Combos</span>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Style Combos</span>
               <div className="grid grid-cols-2 gap-1.5">
                 {TEXT_STYLE_COMBOS.map((combo) => (
                   <button
                     key={combo.label}
                     type="button"
                     onClick={() => applyStyleCombo(combo)}
-                    className="p-2.5 rounded-xl bg-[#18181C] hover:bg-[#202026] border border-[#282830] hover:border-[#3B82F6]/50 text-left cursor-pointer transition-all group"
+                    className="p-2.5 rounded-xl bg-[#141824] hover:bg-[#202026] border border-white/[0.08] hover:border-[#3B82F6]/50 text-left cursor-pointer transition-all group"
                   >
                     <p className="text-xs font-bold text-white mb-0.5" style={{ color: combo.color }}>{combo.label}</p>
-                    <p className="text-[9px] text-[#71717A]">{combo.font} • {combo.weight}</p>
+                    <p className="text-[9px] text-slate-500">{combo.font} • {combo.weight}</p>
                   </button>
                 ))}
               </div>
@@ -978,7 +978,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
             {/* Typography Font Picker */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Typography Font Family</span>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Typography Font Family</span>
               <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
                 {FONT_PRESETS.map((f) => (
                   <button
@@ -988,12 +988,12 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     className={`flex items-center justify-between p-2 rounded-xl border text-left cursor-pointer transition-colors ${
                       textFont === f.id
                         ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                        : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
+                        : 'bg-[#141824] border-white/[0.08] text-slate-400 hover:bg-[#202026] hover:text-white'
                     }`}
                   >
                     <div>
                       <span className="text-xs font-bold block" style={{ fontFamily: f.id }}>{f.label}</span>
-                      <span className="text-[9px] text-[#71717A]">{f.style}</span>
+                      <span className="text-[9px] text-slate-500">{f.style}</span>
                     </div>
                     {textFont === f.id && <Check className="w-3.5 h-3.5 text-[#3B82F6]" />}
                   </button>
@@ -1002,8 +1002,8 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {/* Font Weight */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-1.5">
-              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Font Weight</span>
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-1.5">
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Font Weight</span>
               <div className="grid grid-cols-3 gap-1">
                 {(['Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold', 'Black'] as const).map((w) => (
                   <button
@@ -1011,7 +1011,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     type="button"
                     onClick={() => setTextWeight(w)}
                     className={`py-1.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
-                      textWeight === w ? 'bg-[#3B82F6] border-transparent text-white' : 'bg-[#141417] border-[#2A2A30] text-[#71717A] hover:text-white'
+                      textWeight === w ? 'bg-[#3B82F6] border-transparent text-white' : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
                     }`}
                   >
                     {w}
@@ -1025,7 +1025,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         {/* ── ANIMATION TAB ── */}
         {activeSubTab === 'animation' && (
           <div className="flex flex-col gap-3 pt-0.5">
-            <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Caption Motion Presets</span>
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Caption Motion Presets</span>
             <div className="flex flex-col gap-1.5">
               {CAPTION_ANIMATION_PRESETS.map((anim) => (
                 <button
@@ -1035,14 +1035,14 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                   className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
                     activeAnimation === anim.id
                       ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                      : 'bg-[#18181C] border-[#282830] text-[#A1A1AA] hover:bg-[#202026] hover:text-white'
+                      : 'bg-[#141824] border-white/[0.08] text-slate-400 hover:bg-[#202026] hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{anim.icon}</span>
                     <div>
                       <span className="text-xs font-semibold text-white block">{anim.label}</span>
-                      <span className="text-[10px] text-[#71717A]">{anim.desc}</span>
+                      <span className="text-[10px] text-slate-500">{anim.desc}</span>
                     </div>
                   </div>
                   {activeAnimation === anim.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
@@ -1051,9 +1051,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {/* Animation Speed & Timing */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-[#A1A1AA]">Entrance Transition Duration</span>
+                <span className="text-slate-400">Entrance Transition Duration</span>
                 <span className="font-mono-studio text-white">{animDuration}s</span>
               </div>
               <input
@@ -1073,8 +1073,8 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         {activeSubTab === 'position' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Quick Position Presets */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
-              <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Screen Placement</span>
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Screen Placement</span>
               <div className="grid grid-cols-2 gap-1.5">
                 {[
                   { label: 'Top Hook Banner', y: 18, desc: 'Highest impact placement' },
@@ -1089,27 +1089,27 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     className={`p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
                       Math.abs(posY - pos.y) <= 4
                         ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                        : 'bg-[#141417] border-[#2A2A30] text-[#A1A1AA] hover:text-white'
+                        : 'bg-[#0B0E17] border-white/[0.08] text-slate-400 hover:text-white'
                     }`}
                   >
                     <p className="text-[11px] font-bold">{pos.label}</p>
-                    <p className="text-[8px] text-[#71717A]">{pos.desc}</p>
+                    <p className="text-[8px] text-slate-500">{pos.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Fine Vertical Y Slider */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-[#A1A1AA]">Vertical Offset (Y%)</span>
+                <span className="text-slate-400">Vertical Offset (Y%)</span>
                 <input
                   type="number"
                   min="5"
                   max="95"
                   value={posY}
                   onChange={(e) => setPosY(Math.max(5, Math.min(95, Number(e.target.value) || 50)))}
-                  className="w-12 bg-[#121215] border border-[#2A2A30] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
+                  className="w-12 bg-[#0E121B] border border-white/[0.08] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
                 />
               </div>
               <input
@@ -1123,16 +1123,16 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {/* Display Duration */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-[#A1A1AA]">Layer Display Duration</span>
+                <span className="text-slate-400">Layer Display Duration</span>
                 <span className="font-mono-studio text-white font-bold">{displayDuration.toFixed(1)}s</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setDisplayDuration((p) => Math.max(0.5, parseFloat((p - 0.5).toFixed(1))))}
-                  className="w-8 h-8 rounded-lg bg-[#141417] border border-[#2A2A30] flex items-center justify-center text-white cursor-pointer hover:bg-[#202026]"
+                  className="w-8 h-8 rounded-lg bg-[#0B0E17] border border-white/[0.08] flex items-center justify-center text-white cursor-pointer hover:bg-[#202026]"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -1143,12 +1143,12 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                   max="60"
                   value={displayDuration}
                   onChange={(e) => setDisplayDuration(Math.max(0.5, Math.min(60, Number(e.target.value) || 3)))}
-                  className="flex-1 bg-[#121215] border border-[#2A2A30] rounded-lg px-2 py-1 text-center font-mono-studio text-xs text-white outline-none"
+                  className="flex-1 bg-[#0E121B] border border-white/[0.08] rounded-lg px-2 py-1 text-center font-mono-studio text-xs text-white outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setDisplayDuration((p) => Math.min(60, parseFloat((p + 0.5).toFixed(1))))}
-                  className="w-8 h-8 rounded-lg bg-[#141417] border border-[#2A2A30] flex items-center justify-center text-white cursor-pointer hover:bg-[#202026]"
+                  className="w-8 h-8 rounded-lg bg-[#0B0E17] border border-white/[0.08] flex items-center justify-center text-white cursor-pointer hover:bg-[#202026]"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -1160,7 +1160,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         {/* ── BACKGROUND TAB ── */}
         {activeSubTab === 'background' && (
           <div className="flex flex-col gap-3 pt-0.5">
-            <span className="text-[10px] text-[#71717A] uppercase font-bold tracking-wider">Caption Box Background</span>
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Caption Box Background</span>
             <div className="grid grid-cols-2 gap-1.5">
               {[
                 { label: 'None', val: 'transparent' },
@@ -1175,7 +1175,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setBgColor(bg.val)}
                   className={`py-2 px-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer text-left ${
-                    bgColor === bg.val ? 'bg-[#3B82F6]/20 border-[#3B82F6] text-white' : 'bg-[#18181C] border-[#282830] text-[#9CA3AF] hover:text-white'
+                    bgColor === bg.val ? 'bg-[#3B82F6]/20 border-[#3B82F6] text-white' : 'bg-[#141824] border-white/[0.08] text-[#9CA3AF] hover:text-white'
                   }`}
                 >
                   {bg.label}
@@ -1184,10 +1184,10 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {bgColor !== 'transparent' && (
-              <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5">
+              <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between text-xs">
-                    <span className="text-[#A1A1AA]">Corner Radius</span>
+                    <span className="text-slate-400">Corner Radius</span>
                     <span className="font-mono-studio text-white">{bgRadius}px</span>
                   </div>
                   <input
@@ -1202,7 +1202,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between text-xs">
-                    <span className="text-[#A1A1AA]">Padding</span>
+                    <span className="text-slate-400">Padding</span>
                     <span className="font-mono-studio text-white">{bgPadding}px</span>
                   </div>
                   <input
@@ -1223,7 +1223,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         {activeSubTab === 'shadow' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Outline / Stroke */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Text Stroke Outline</span>
                 <button
@@ -1240,7 +1240,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
               {strokeOutline && (
                 <div className="flex flex-col gap-2 pt-1 border-t border-[#25252A]">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#A1A1AA]">Stroke Width</span>
+                    <span className="text-slate-400">Stroke Width</span>
                     <span className="font-mono-studio text-white">{strokeWidth}px</span>
                   </div>
                   <input
@@ -1252,12 +1252,12 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     className="w-full accent-[#3B82F6] cursor-pointer"
                   />
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[#A1A1AA]">Stroke Color</span>
+                    <span className="text-slate-400">Stroke Color</span>
                     <input
                       type="color"
                       value={strokeColor}
                       onChange={(e) => setStrokeColor(e.target.value)}
-                      className="w-7 h-7 rounded border border-[#2A2A30] bg-transparent cursor-pointer"
+                      className="w-7 h-7 rounded border border-white/[0.08] bg-transparent cursor-pointer"
                     />
                   </div>
                 </div>
@@ -1265,7 +1265,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {/* Drop Shadow & Glow */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Drop Shadow</span>
                 <button
@@ -1282,7 +1282,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
               {dropShadow && (
                 <div className="flex flex-col gap-2 pt-1 border-t border-[#25252A]">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#A1A1AA]">Shadow Blur</span>
+                    <span className="text-slate-400">Shadow Blur</span>
                     <span className="font-mono-studio text-white">{shadowBlur}px</span>
                   </div>
                   <input
@@ -1298,7 +1298,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
             </div>
 
             {/* Neon Glow Toggle */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Neon Cyber Glow</span>
                 <button
@@ -1314,12 +1314,12 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
               {neonGlow && (
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-[#25252A]">
-                  <span className="text-[#A1A1AA]">Glow Tint</span>
+                  <span className="text-slate-400">Glow Tint</span>
                   <input
                     type="color"
                     value={glowColor}
                     onChange={(e) => setGlowColor(e.target.value)}
-                    className="w-7 h-7 rounded border border-[#2A2A30] bg-transparent cursor-pointer"
+                    className="w-7 h-7 rounded border border-white/[0.08] bg-transparent cursor-pointer"
                   />
                 </div>
               )}

@@ -140,10 +140,10 @@ export const ChannelPulseCard: React.FC<ChannelPulseCardProps> = ({
         <span className="text-[#333333]">•</span>
         <button
           type="button"
-          onClick={() => onNavigate('youtube-analytics')}
+          onClick={() => onNavigate('youtube-videos')}
           className="text-[#8E8E93] hover:text-white transition-colors cursor-pointer"
         >
-          Analytics
+          Videos
         </button>
         <span className="text-[#333333]">•</span>
         <button

@@ -5,11 +5,7 @@ import {
   Film,
   ListVideo,
   MessageSquare,
-  Sliders,
   CalendarClock,
-  BarChart3,
-  TrendingUp,
-  Sparkles,
 } from 'lucide-react';
 
 export type YouTubeTab =
@@ -17,12 +13,8 @@ export type YouTubeTab =
   | 'videos'
   | 'shorts'
   | 'schedules'
-  | 'analytics'
   | 'playlists'
-  | 'posts'
-  | 'trending'
-  | 'seo'
-  | 'settings';
+  | 'posts';
 
 export interface YouTubeHeaderProps {
   loading: boolean;
@@ -73,10 +65,6 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
       badge: schedulesCount !== undefined ? schedulesCount : undefined,
     },
     {
-      id: 'analytics',
-      label: 'Analytics',
-    },
-    {
       id: 'playlists',
       label: 'Playlists',
       badge: playlistsCount !== undefined ? playlistsCount : undefined,
@@ -85,18 +73,6 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
       id: 'posts',
       label: 'Community',
       badge: postsCount !== undefined ? postsCount : undefined,
-    },
-    {
-      id: 'trending',
-      label: 'Trending',
-    },
-    {
-      id: 'seo',
-      label: 'SEO',
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
     },
   ];
 
@@ -114,18 +90,10 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
         return <Film className={`${iconClass} ${!isActive ? 'text-red-500' : ''}`} />;
       case 'schedules':
         return <CalendarClock className={`${iconClass} ${!isActive ? 'text-emerald-400' : ''}`} />;
-      case 'analytics':
-        return <BarChart3 className={iconClass} />;
       case 'playlists':
         return <ListVideo className={iconClass} />;
       case 'posts':
         return <MessageSquare className={iconClass} />;
-      case 'trending':
-        return <TrendingUp className={`${iconClass} ${!isActive ? 'text-amber-400' : ''}`} />;
-      case 'seo':
-        return <Sparkles className={iconClass} />;
-      case 'settings':
-        return <Sliders className={iconClass} />;
       default:
         return null;
     }

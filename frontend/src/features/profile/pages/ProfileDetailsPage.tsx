@@ -12,7 +12,7 @@ export default function ProfileDetailsPage() {
   const [displayNameEdited, setDisplayNameEdited] = useState(false);
   const [avatarUrlEdited, setAvatarUrlEdited] = useState(false);
 
-  const field = (label: string, key: 'displayName' | 'creatorHandle' | 'avatarUrl' | 'websiteUrl' | 'instagramUrl' | 'tiktokUrl' | 'youtubeUrl', type = 'text', placeholder?: string) => (
+  const field = (label: string, key: 'displayName' | 'creatorHandle' | 'avatarUrl' | 'bannerUrl' | 'websiteUrl' | 'instagramUrl' | 'tiktokUrl' | 'youtubeUrl', type = 'text', placeholder?: string) => (
     <label className="block space-y-1.5">
       <span className={labelClass}>{label}</span>
       <input
@@ -68,6 +68,7 @@ export default function ProfileDetailsPage() {
           </label>
           {field('Creator handle', 'creatorHandle', 'text', '@yourchannel')}
           {field('Avatar image URL', 'avatarUrl', 'url', 'Paste an image URL')}
+          {field('Cover banner image URL', 'bannerUrl', 'url', 'https://images.unsplash.com/... or banner image URL')}
           {field('Website', 'websiteUrl', 'url', 'https://yourwebsite.com')}
           {field('Instagram profile', 'instagramUrl', 'url', 'https://instagram.com/yourname')}
           {field('TikTok profile', 'tiktokUrl', 'url', 'https://tiktok.com/@yourname')}

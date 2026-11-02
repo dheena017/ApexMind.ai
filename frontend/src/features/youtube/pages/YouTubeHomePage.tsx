@@ -16,6 +16,8 @@ import {
   ListVideo,
   BarChart2,
   ArrowUpRight,
+  CalendarClock,
+  Sliders,
 } from 'lucide-react';
 import {
   YouTubeChannel,
@@ -194,11 +196,11 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => onTabChange('analytics')}
+                onClick={() => onTabChange('videos')}
                 className="px-3 py-1.5 rounded-xl bg-[#202020] hover:bg-[#2A2A2A] text-white text-xs font-semibold transition-all border border-[#333333] flex items-center gap-1.5 cursor-pointer"
               >
-                <BarChart2 className="w-3.5 h-3.5 text-[#60A5FA]" />
-                <span>Audience Analytics</span>
+                <Video className="w-3.5 h-3.5 text-[#60A5FA]" />
+                <span>View Videos</span>
               </button>
             </div>
           </div>
@@ -294,18 +296,18 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  icon={<Sparkles className="w-3.5 h-3.5 text-amber-400" />}
-                  onClick={() => onTabChange('seo')}
+                  icon={<Video className="w-3.5 h-3.5 text-[#60A5FA]" />}
+                  onClick={() => onTabChange('videos')}
                 >
-                  Inspect SEO &amp; Tags
+                  Manage Videos
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  icon={<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />}
-                  onClick={() => onTabChange('analytics')}
+                  icon={<CalendarClock className="w-3.5 h-3.5 text-emerald-400" />}
+                  onClick={() => onTabChange('schedules')}
                 >
-                  View Analytics
+                  Automations
                 </Button>
               </div>
             </div>
@@ -343,63 +345,63 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
 
           <button
             type="button"
-            onClick={() => onTabChange('analytics')}
+            onClick={() => onTabChange('shorts')}
+            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-red-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
+          >
+            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 w-fit group-hover:scale-105 transition-transform">
+              <Film className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">
+                  YouTube Shorts
+                </h4>
+                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
+              </div>
+              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                Stream vertical 9:16 Shorts feed and play full in-studio video previews.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onTabChange('schedules')}
+            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-emerald-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
+          >
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 w-fit group-hover:scale-105 transition-transform">
+              <CalendarClock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                  Daily Automations
+                </h4>
+                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
+              </div>
+              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                Manage automated daily synthesis and scheduled channel uploads.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onTabChange('playlists')}
             className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-blue-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
           >
             <div className="p-2.5 rounded-xl bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/20 w-fit group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-5 h-5" />
+              <ListVideo className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA] transition-colors">
-                  Audience Analytics
+                  Playlists &amp; Series
                 </h4>
                 <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
               </div>
               <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
-                Track real views, subscriber velocities, and retention metrics.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange('seo')}
-            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-amber-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
-          >
-            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 w-fit group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
-                  SEO &amp; Tags Radar
-                </h4>
-                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
-              </div>
-              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
-                Inspect YouTube autocomplete trends and competitor video tags.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange('trending')}
-            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-orange-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
-          >
-            <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 w-fit group-hover:scale-105 transition-transform">
-              <Flame className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">
-                  Trending Shorts
-                </h4>
-                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
-              </div>
-              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
-                Monitor real-time viral trends and top ranking vertical formats.
+                Browse and organize curated playlists across your channel videos.
               </p>
             </div>
           </button>

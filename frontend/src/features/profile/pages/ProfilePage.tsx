@@ -36,7 +36,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
     Boolean(profile.bio.trim()),
     Boolean(profile.websiteUrl.trim() || profile.instagramUrl.trim() || profile.tiktokUrl.trim() || profile.youtubeUrl.trim()),
     Boolean(profile.niche && profile.tone && profile.defaultVoice),
-    channels.length > 0,
+    Boolean(user?.verified !== false),
   ];
   const completedCount = completion.filter(Boolean).length;
 
@@ -45,7 +45,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
     { title: 'Write a short bio', description: 'Tell people what you create and who it is for.', page: 'profile-details' },
     { title: 'Add a public link', description: 'Connect your website or a social profile.', page: 'profile-details' },
     { title: 'Set your content preferences', description: 'Choose defaults for your next script or voiceover.', page: 'profile-preferences' },
-    { title: 'Connect a YouTube channel', description: 'Bring your channel activity into the Studio.', page: 'profile-channels' },
+    { title: 'Account security & sign-in', description: 'Review your sign-in security and verification.', page: 'profile-security' },
   ];
   const nextStepIndex = completion.findIndex((isComplete) => !isComplete);
 
@@ -257,44 +257,86 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       </div>
 
-      {/* ── 4. Connected Channels & Account Usage Cards ── */}
+      {/* ── 4. YouTube Studio Hub Link & Account Usage Cards ── */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base font-bold text-white">Connected channels</h2>
-              <p className="mt-1 text-xs text-[#9CA3AF]">Your linked YouTube accounts.</p>
+        <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6 flex flex-col justify-between">
+          <div>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+                  <Youtube className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">YouTube Studio &amp; Channels</h2>
+                  <p className="mt-0.5 text-xs text-[#9CA3AF]">Manage connected channel, video publishing &amp; analytics</p>
+                </div>
+              </div>
+              <Button type="button" variant="primary" size="sm" onClick={() => onNavigate('youtube')}>
+                Open Studio →
+              </Button>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => onNavigate('profile-channels')}>Manage</Button>
+
+            {loading ? (
+              <p className="text-sm text-[#9CA3AF]">Loading YouTube channel status…</p>
+            ) : channels.length ? (
+              <div className="rounded-xl border border-[#262626] bg-[#121212] p-3.5 space-y-2.5">
+                <div className="flex items-center gap-3">
+                  {channels[0].avatarUrl ? (
+                    <img src={channels[0].avatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover border border-[#2F2F2F]" />
+                  ) : (
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
+                      <Youtube className="h-5 w-5" />
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-semibold text-white">{channels[0].name}</p>
+                      {channels[0].verified && <Badge variant="green">Verified</Badge>}
+                    </div>
+                    <p className="truncate text-xs text-[#9CA3AF] font-mono-studio">
+                      {channels[0].handle} · {channels[0].subscribers.toLocaleString()} subscribers
+                    </p>
+                  </div>
+                  <Badge variant="blue">Active</Badge>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-[#262626] text-xs text-[#9CA3AF]">
+                  <span>Auto-upload: {channels[0].isAutoUploadEnabled ? 'Active' : 'Off'}</span>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('youtube')}
+                    className="text-[#60A5FA] hover:underline cursor-pointer"
+                  >
+                    Open YouTube Studio →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#2F2F2F] p-4 text-center">
+                <Youtube className="mx-auto h-6 w-6 text-[#6B7280]" />
+                <p className="mt-2 text-xs text-[#9CA3AF]">No YouTube channel connected yet.</p>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => onNavigate('youtube')}
+                >
+                  Connect in YouTube Studio
+                </Button>
+              </div>
+            )}
           </div>
-          {loading ? <p className="text-sm text-[#9CA3AF]">Loading channels…</p> : channels.length ? (
-            <ul className="space-y-3">
-              {channels.map((channel) => (
-                <li key={channel.id} className="flex min-w-0 items-center gap-3 rounded-xl border border-[#262626] bg-[#121212] p-3">
-                  {channel.avatarUrl
-                    ? <img src={channel.avatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover border border-[#2F2F2F]" />
-                    : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400 border border-red-500/20"><Youtube className="h-5 w-5" /></span>}
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-white">{channel.name}</span>
-                      {channel.verified && <Badge variant="green">Verified</Badge>}
-                    </span>
-                    <span className="mt-0.5 block truncate text-xs text-[#9CA3AF] font-mono-studio">{channel.handle} · {channel.subscribers.toLocaleString()} subscribers</span>
-                    <span className="mt-0.5 block text-[11px] text-[#6B7280]">{channel.niche} · {channel.videosUploaded.toLocaleString()} videos</span>
-                    <span className="mt-0.5 block text-[11px] text-[#6B7280]">
-                      Connected {formatDate(channel.connectedAt)} · Auto-publish {channel.isAutoUploadEnabled ? 'on' : 'off'}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="rounded-xl border border-dashed border-[#2F2F2F] px-4 py-6 text-center">
-              <Youtube className="mx-auto h-6 w-6 text-[#6B7280]" />
-              <p className="mt-2 text-sm text-[#9CA3AF]">No YouTube channels connected.</p>
-              <Button type="button" variant="primary" size="sm" className="mt-3" onClick={() => onNavigate('profile-channels')}>Connect a channel</Button>
-            </div>
-          )}
+
+          <div className="mt-4 pt-3 border-t border-[#262626] flex items-center justify-between text-xs text-[#9CA3AF]">
+            <span>All uploads, Shorts, and analytics are managed in YouTube Studio</span>
+            <button
+              type="button"
+              onClick={() => onNavigate('youtube')}
+              className="text-red-400 hover:text-red-300 font-semibold cursor-pointer"
+            >
+              Go to YouTube Studio
+            </button>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6">

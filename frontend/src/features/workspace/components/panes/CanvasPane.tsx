@@ -195,9 +195,9 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
-      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
             <LayoutTemplate className="w-3.5 h-3.5" />
@@ -213,7 +213,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         <button
           type="button"
           onClick={() => handleSelectBg('#000000')}
-          className="h-7 px-2.5 rounded-lg bg-[#222226] hover:bg-[#2C2C32] text-[11px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#323238] flex items-center gap-1.5"
+          className="h-7 px-2.5 rounded-lg bg-white/[0.06] hover:bg-[#1F2538] text-[11px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer border border-white/[0.12] flex items-center gap-1.5"
           title="Reset canvas to default black"
         >
           <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
@@ -222,8 +222,8 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
-        <div className="grid grid-cols-5 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
+        <div className="grid grid-cols-5 gap-1 p-1 bg-[#151926] rounded-none border-0">
           {[
             { id: 'ratio', label: 'Ratio', icon: Layers, color: 'text-blue-400' },
             { id: 'luts', label: 'LUTs', icon: Sparkles, color: 'text-amber-400' },
@@ -240,12 +240,12 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
                   isActive
-                    ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
-                    : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
                 }`}
                 title={tab.label}
               >
-                <Icon className={`w-3 h-3 shrink-0 ${isActive ? tab.color : 'text-[#8E8E93]'}`} />
+                <Icon className={`w-3 h-3 shrink-0 ${isActive ? tab.color : 'text-slate-400'}`} />
                 <span className="truncate">{tab.label}</span>
               </button>
             );
@@ -285,7 +285,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     className={`p-2.5 rounded-xl border text-left flex flex-col gap-1.5 transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg'
-                        : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
+                        : 'bg-[#141824] border-white/[0.08] hover:border-white/[0.12] hover:bg-[#1B2132]'
                     }`}
                   >
                     <div
@@ -300,7 +300,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-white truncate">{lut.name}</p>
-                      <p className="text-[10px] text-[#A1A1AA] truncate">{lut.desc}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{lut.desc}</p>
                     </div>
                   </button>
                 );
@@ -312,7 +312,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         {/* ── Tab 1: Platform Aspect Ratios ── */}
         {activeTab === 'ratio' && (
           <div className="flex flex-col gap-2.5">
-            <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
+            <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider">
               Target Output Platforms
             </span>
 
@@ -333,13 +333,13 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     className={`p-3 rounded-xl border transition-all flex items-center justify-between text-left cursor-pointer ${
                       isSelected
                         ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-md'
-                        : 'bg-[#1C1C20] border-[#2A2A30] hover:border-[#3A3A42] hover:bg-[#222228]'
+                        : 'bg-[#141824] border-white/[0.08] hover:border-white/[0.12] hover:bg-[#1B2132]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                          isSelected ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A32] text-[#60A5FA]'
+                          isSelected ? 'bg-[#3B82F6] text-white' : 'bg-[#1B2132] text-[#60A5FA]'
                         }`}
                       >
                         <Icon className="w-5 h-5" />
@@ -351,7 +351,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                             {p.platform}
                           </span>
                         </div>
-                        <p className="text-[10px] text-[#A1A1AA] mt-0.5">{p.resolution}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{p.resolution}</p>
                       </div>
                     </div>
 
@@ -371,7 +371,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         {activeTab === 'solid' && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider">
                 Studio Solid Swatches
               </span>
 
@@ -379,7 +379,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
               <button
                 type="button"
                 onClick={() => colorInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#2A2A32] hover:bg-[#34343E] text-white text-[10px] font-semibold transition-colors cursor-pointer border border-[#3A3A44]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1B2132] hover:bg-[#34343E] text-white text-[10px] font-semibold transition-colors cursor-pointer border border-[#3A3A44]"
               >
                 <Pipette className="w-3 h-3 text-[#60A5FA]" />
                 <span>Custom Hex</span>
@@ -403,7 +403,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-between transition-all cursor-pointer relative overflow-hidden ${
                       isActive
                         ? 'border-white ring-2 ring-white/50 scale-105 shadow-lg'
-                        : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                        : 'border-white/[0.08] hover:border-white/[0.12]'
                     }`}
                     style={{ backgroundColor: c.value }}
                   >
@@ -424,16 +424,16 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         {activeTab === 'gradient' && (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider">
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider">
                 Cinematic Multi-Stop Gradients
               </span>
-              <span className="text-[9px] font-mono-studio text-[#71717A] shrink-0">
+              <span className="text-[9px] font-mono-studio text-slate-500 shrink-0">
                 {STUDIO_GRADIENTS.length.toLocaleString()}+
               </span>
             </div>
 
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="search"
                 value={gradientSearch}
@@ -442,7 +442,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                   setVisibleGradientCount(24);
                 }}
                 placeholder="Search gradients or colors..."
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+                className="w-full bg-[#141824] border border-white/[0.08] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
               />
             </div>
 
@@ -460,7 +460,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     className={`h-20 rounded-xl border p-2 flex flex-col justify-end text-left transition-all cursor-pointer relative overflow-hidden group ${
                       isActive
                         ? 'border-white ring-2 ring-white/50 shadow-lg'
-                        : 'border-[#2A2A30] hover:border-[#3A3A42]'
+                        : 'border-white/[0.08] hover:border-white/[0.12]'
                     }`}
                     style={{ background: g.value }}
                   >
@@ -483,7 +483,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
               <button
                 type="button"
                 onClick={() => setVisibleGradientCount((count) => count + 24)}
-                className="w-full py-2 rounded-lg border border-[#2A2A30] bg-[#1C1C20] hover:bg-[#222228] text-[10px] font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                className="w-full py-2 rounded-lg border border-white/[0.08] bg-[#141824] hover:bg-[#1B2132] text-[10px] font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 Show more gradients
               </button>
@@ -493,9 +493,9 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
         {/* ── Tab 4: Custom Gradient Builder ── */}
         {activeTab === 'builder' && (
-          <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3.5 flex flex-col gap-3">
+          <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
             <span className="text-xs font-bold text-white">Gradient Studio Builder</span>
-            <p className="text-[11px] text-[#A1A1AA]">
+            <p className="text-[11px] text-slate-400">
               Blend custom colors and customize gradient angles for unique reel backgrounds.
             </p>
 
@@ -506,7 +506,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                 className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                   gradType === 'linear'
                     ? 'bg-[#1E2330] text-white border-[#3B82F6]'
-                    : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
+                    : 'bg-[#0B0E17] text-slate-400 border-white/[0.08]'
                 }`}
               >
                 Linear Direction
@@ -517,7 +517,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                 className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                   gradType === 'radial'
                     ? 'bg-[#1E2330] text-white border-[#3B82F6]'
-                    : 'bg-[#141417] text-[#A1A1AA] border-[#2A2A30]'
+                    : 'bg-[#0B0E17] text-slate-400 border-white/[0.08]'
                 }`}
               >
                 Radial Glow
@@ -526,8 +526,8 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Color 1</label>
-                <div className="flex items-center gap-2 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-slate-500">Color 1</label>
+                <div className="flex items-center gap-2 bg-[#0B0E17] border border-white/[0.08] rounded-lg p-1.5">
                   <input
                     type="color"
                     value={gradColor1}
@@ -539,8 +539,8 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">Color 2</label>
-                <div className="flex items-center gap-2 bg-[#141417] border border-[#2A2A30] rounded-lg p-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-slate-500">Color 2</label>
+                <div className="flex items-center gap-2 bg-[#0B0E17] border border-white/[0.08] rounded-lg p-1.5">
                   <input
                     type="color"
                     value={gradColor2}
@@ -556,7 +556,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
             {gradType === 'linear' && (
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                  <span className="text-[#71717A]">ANGLE</span>
+                  <span className="text-slate-500">ANGLE</span>
                   <span className="text-[#60A5FA] font-bold">{gradAngle}°</span>
                 </div>
                 <input
@@ -572,7 +572,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
             {/* Live Gradient Preview */}
             <div
-              className="w-full h-16 rounded-xl border border-[#2A2A30] shadow-inner mt-1"
+              className="w-full h-16 rounded-none border-0 shadow-inner mt-1"
               style={{
                 background:
                   gradType === 'linear'

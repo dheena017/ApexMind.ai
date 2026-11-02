@@ -119,9 +119,9 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   const estimatedSpeechSeconds = Math.round((totalWords / 150) * 60);
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B]">
+    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Header Bar (Matching Right Inspector Pane) ── */}
-      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <FileText className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="text-xs font-bold text-white truncate">
@@ -135,7 +135,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             <button
               type="button"
               onClick={onStartNewVideo}
-              className="h-7 px-2.5 rounded-md bg-[#222226] hover:bg-[#2C2C32] text-[11px] font-medium text-white transition-colors cursor-pointer border border-[#323238] flex items-center gap-1"
+              className="h-7 px-2.5 rounded-md bg-white/[0.06] hover:bg-[#1F2538] text-[11px] font-medium text-white transition-colors cursor-pointer border border-white/[0.12] flex items-center gap-1"
               title="Start a new script from scratch"
             >
               <Plus className="w-3.5 h-3.5 text-emerald-400" />
@@ -148,12 +148,12 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             <button
               type="button"
               onClick={onSwitchToAgent}
-              className="h-7 flex items-center gap-1.5 px-2.5 rounded-md bg-[#26262B] hover:bg-[#303036] hover:border-[#42424A] text-[11px] font-semibold text-white transition-all cursor-pointer border border-[#36363D] shadow-xs group"
+              className="h-7 flex items-center gap-1.5 px-2.5 rounded-md bg-[#26262B] hover:bg-[#303036] hover:border-[#42424A] text-[11px] font-semibold text-white transition-all cursor-pointer border border-white/[0.12] shadow-xs group"
               title="Click to switch to AI Prompt Studio"
             >
               <FileText className="w-3.5 h-3.5 text-emerald-400" />
               <span className="truncate">Script Editor</span>
-              <ArrowLeftRight className="w-3 h-3 text-[#A1A1AA] group-hover:text-white transition-colors" />
+              <ArrowLeftRight className="w-3 h-3 text-slate-400 group-hover:text-white transition-colors" />
             </button>
           )}
 
@@ -161,18 +161,18 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
-        <div className="grid grid-cols-2 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-none border-0">
           <button
             type="button"
             onClick={() => setActiveTab('content')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'content'
-                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
             }`}
           >
-            <FileText className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'content' ? 'text-emerald-400' : 'text-[#8E8E93]'}`} />
+            <FileText className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'content' ? 'text-emerald-400' : 'text-slate-400'}`} />
             <span className="truncate">Script Content</span>
           </button>
           <button
@@ -180,11 +180,11 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             onClick={() => setActiveTab('subtitles')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'subtitles'
-                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
             }`}
           >
-            <Type className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'subtitles' ? 'text-amber-400' : 'text-[#8E8E93]'}`} />
+            <Type className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'subtitles' ? 'text-amber-400' : 'text-slate-400'}`} />
             <span className="truncate">Subtitles</span>
             <span
               className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
@@ -207,7 +207,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             {/* Reel Title */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <span className="text-[#71717A] uppercase font-bold">Reel Title</span>
+                <span className="text-slate-500 uppercase font-bold">Reel Title</span>
                 <button
                   type="button"
                   onClick={() => setShowTitleIdeas(!showTitleIdeas)}
@@ -223,7 +223,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 value={script.title || ''}
                 onChange={(e) => updateField('title', e.target.value)}
                 placeholder="Title of this video..."
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-[#3B82F6]"
+                className="w-full bg-[#141824] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-[#3B82F6]"
               />
 
               {showTitleIdeas && (
@@ -250,7 +250,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                         className={`text-left p-1.5 rounded-lg text-xs transition-all flex flex-col gap-0.5 border cursor-pointer ${
                           isSelected
                             ? 'bg-emerald-500/20 border-emerald-500/50 text-white shadow-xs'
-                            : 'bg-[#1C1C22] border-[#2A2A32] text-zinc-300 hover:border-zinc-500 hover:text-white'
+                            : 'bg-[#1C1C22] border-white/[0.08] text-zinc-300 hover:border-zinc-500 hover:text-white'
                         }`}
                       >
                         <div className="flex items-center justify-between text-[9px] font-mono-studio">
@@ -278,14 +278,14 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                   <button
                     type="button"
                     onClick={() => formatSelection('hook', 'caps')}
-                    className="px-1.5 py-0.5 rounded bg-[#2A2A32] text-zinc-300 hover:text-white"
+                    className="px-1.5 py-0.5 rounded bg-[#1B2132] text-zinc-300 hover:text-white"
                   >
                     CAPS
                   </button>
                   <button
                     type="button"
                     onClick={() => playTextPreview(script.hook, 1.05)}
-                    className="p-1 rounded bg-[#2A2A32] text-zinc-300 hover:text-white"
+                    className="p-1 rounded bg-[#1B2132] text-zinc-300 hover:text-white"
                     title="Audition TTS"
                   >
                     <Volume2 className="w-3 h-3" />
@@ -295,7 +295,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
 
               {/* AI Multi-Hook Variation Selector */}
               {script.hooks && script.hooks.length > 0 && (
-                <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-[#141418] border border-amber-500/20 mb-1">
+                <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-[#0B0E17] border border-amber-500/20 mb-1">
                   <div className="flex items-center justify-between text-[10px]">
                     <span className="text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
                       ⚡ AI Viral Hook Angles ({script.hooks.length})
@@ -320,7 +320,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                           className={`text-left p-2 rounded-lg text-xs transition-all flex flex-col gap-0.5 border ${
                             isSelected
                               ? 'bg-amber-500/15 border-amber-500/50 text-amber-200 shadow-sm'
-                              : 'bg-[#1C1C22] border-[#2A2A32] text-zinc-300 hover:border-zinc-500'
+                              : 'bg-[#1C1C22] border-white/[0.08] text-zinc-300 hover:border-zinc-500'
                           }`}
                         >
                           <div className="flex items-center justify-between text-[9px] font-mono-studio">
@@ -343,7 +343,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 onChange={(e) => updateField('hook', e.target.value)}
                 placeholder="The aggressive hook to stop scrolling..."
                 rows={2}
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3 text-xs text-white outline-none focus:border-amber-500/60 resize-none font-semibold leading-relaxed"
+                className="w-full bg-[#141824] border border-white/[0.08] rounded-xl p-3 text-xs text-white outline-none focus:border-amber-500/60 resize-none font-semibold leading-relaxed"
               />
             </div>
 
@@ -357,7 +357,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 <button
                   type="button"
                   onClick={() => playTextPreview(script.quote, 0.90)}
-                  className="p-1 rounded bg-[#2A2A32] text-zinc-300 hover:text-white"
+                  className="p-1 rounded bg-[#1B2132] text-zinc-300 hover:text-white"
                   title="Audition TTS"
                 >
                   <Volume2 className="w-3 h-3" />
@@ -369,7 +369,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 onChange={(e) => updateField('quote', e.target.value)}
                 placeholder="The deep motivational philosophical body..."
                 rows={4}
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-3 text-xs text-white outline-none focus:border-[#3B82F6]/60 resize-none leading-relaxed"
+                className="w-full bg-[#141824] border border-white/[0.08] rounded-xl p-3 text-xs text-white outline-none focus:border-[#3B82F6]/60 resize-none leading-relaxed"
               />
             </div>
 
@@ -383,7 +383,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 <button
                   type="button"
                   onClick={() => playTextPreview(script.cta, 1.00)}
-                  className="p-1 rounded bg-[#2A2A32] text-zinc-300 hover:text-white"
+                  className="p-1 rounded bg-[#1B2132] text-zinc-300 hover:text-white"
                   title="Audition TTS"
                 >
                   <Volume2 className="w-3 h-3" />
@@ -394,12 +394,12 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 value={script.cta || ''}
                 onChange={(e) => updateField('cta', e.target.value)}
                 placeholder="e.g. Follow for daily mental mastery."
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#3B82F6]"
+                className="w-full bg-[#141824] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#3B82F6]"
               />
             </div>
 
             {/* Quick Hashtags Strip */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#16161B] border border-[#26262E] text-xs">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#16161B] border border-white/[0.08] text-xs">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Hash className="w-3.5 h-3.5 text-red-400 shrink-0" />
                 <span className="text-[11px] text-zinc-300 truncate">
@@ -413,7 +413,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
 
             {/* AI Scene Plan */}
             {(script.shotPacing || script.transitionStyle || script.subtitleMotion || script.textAnimation || script.cameraMovement || script.sceneStructure) && (
-              <div className="flex flex-col gap-2.5 rounded-xl border border-[#2A2A30] bg-[#18181B] p-3">
+              <div className="flex flex-col gap-2.5 rounded-none border-0 bg-[#18181B] p-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
                   <span className="text-[10px] uppercase font-mono-studio font-bold text-white">AI Scene Plan</span>
@@ -421,59 +421,59 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
 
                 <div className="grid grid-cols-1 gap-2 text-[11px] text-[#E4E4E7]">
                   {script.shotPacing && (
-                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
-                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Shot pacing</div>
+                    <div className="rounded-lg border border-white/[0.08] bg-[#141824] p-2">
+                      <div className="text-[9px] uppercase text-slate-400 mb-1">Shot pacing</div>
                       <div>{script.shotPacing}</div>
                     </div>
                   )}
 
                   {script.transitionStyle && (
-                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
-                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Transition style</div>
+                    <div className="rounded-lg border border-white/[0.08] bg-[#141824] p-2">
+                      <div className="text-[9px] uppercase text-slate-400 mb-1">Transition style</div>
                       <div>{script.transitionStyle}</div>
                     </div>
                   )}
 
                   {script.subtitleMotion && (
-                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
-                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Subtitle motion</div>
+                    <div className="rounded-lg border border-white/[0.08] bg-[#141824] p-2">
+                      <div className="text-[9px] uppercase text-slate-400 mb-1">Subtitle motion</div>
                       <div>{script.subtitleMotion}</div>
                     </div>
                   )}
 
                   {script.textAnimation && (
-                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
-                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Text animation</div>
+                    <div className="rounded-lg border border-white/[0.08] bg-[#141824] p-2">
+                      <div className="text-[9px] uppercase text-slate-400 mb-1">Text animation</div>
                       <div>{script.textAnimation}</div>
                     </div>
                   )}
 
                   {script.cameraMovement && (
-                    <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2">
-                      <div className="text-[9px] uppercase text-[#A1A1AA] mb-1">Camera movement</div>
+                    <div className="rounded-lg border border-white/[0.08] bg-[#141824] p-2">
+                      <div className="text-[9px] uppercase text-slate-400 mb-1">Camera movement</div>
                       <div>{script.cameraMovement}</div>
                     </div>
                   )}
                 </div>
 
                 {script.sceneStructure && (
-                  <div className="rounded-lg border border-[#2A2A30] bg-[#1C1C20] p-2 flex flex-col gap-2 text-[11px] text-[#E4E4E7]">
-                    <div className="text-[9px] uppercase text-[#A1A1AA]">Scene structure</div>
+                  <div className="rounded-lg border border-white/[0.08] bg-[#141824] p-2 flex flex-col gap-2 text-[11px] text-[#E4E4E7]">
+                    <div className="text-[9px] uppercase text-slate-400">Scene structure</div>
                     {script.sceneStructure.hookPlacement && (
-                      <div><span className="text-[#A1A1AA]">Hook:</span> {script.sceneStructure.hookPlacement}</div>
+                      <div><span className="text-slate-400">Hook:</span> {script.sceneStructure.hookPlacement}</div>
                     )}
                     {script.sceneStructure.ctaTiming && (
-                      <div><span className="text-[#A1A1AA]">CTA timing:</span> {script.sceneStructure.ctaTiming}</div>
+                      <div><span className="text-slate-400">CTA timing:</span> {script.sceneStructure.ctaTiming}</div>
                     )}
                     {script.sceneStructure.shotPlan && (
-                      <div><span className="text-[#A1A1AA]">Shot plan:</span> {script.sceneStructure.shotPlan}</div>
+                      <div><span className="text-slate-400">Shot plan:</span> {script.sceneStructure.shotPlan}</div>
                     )}
                     {script.sceneStructure.subtitlePriority && (
-                      <div><span className="text-[#A1A1AA]">Subtitle priority:</span> {script.sceneStructure.subtitlePriority}</div>
+                      <div><span className="text-slate-400">Subtitle priority:</span> {script.sceneStructure.subtitlePriority}</div>
                     )}
                     {Array.isArray(script.sceneStructure.emphasisPoints) && script.sceneStructure.emphasisPoints.length > 0 && (
                       <div>
-                        <div className="text-[#A1A1AA] mb-1">Emphasis points</div>
+                        <div className="text-slate-400 mb-1">Emphasis points</div>
                         <ul className="list-disc pl-4 space-y-1">
                           {script.sceneStructure.emphasisPoints.map((point, index) => (
                             <li key={`emphasis-${index}`}>{point}</li>
@@ -493,7 +493,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono-studio text-[#71717A] uppercase">
+                <span className="text-[10px] font-mono-studio text-slate-500 uppercase">
                   Timeline Subtitles
                 </span>
                 <button
@@ -516,7 +516,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             </div>
 
             {(script.subtitles || []).length === 0 ? (
-              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-6 text-center text-xs text-[#A1A1AA]">
+              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-6 text-center text-xs text-slate-400">
                 No subtitle cues generated yet. Click &ldquo;Add Cue&rdquo; to start.
               </div>
             ) : (
@@ -524,7 +524,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 {script.subtitles.map((sub, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl border border-[#2A2A30] bg-[#1C1C20] flex flex-col gap-2"
+                    className="p-3 rounded-none border-0 bg-[#141824] flex flex-col gap-2"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-mono-studio text-[#60A5FA]">
@@ -540,7 +540,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                             onChange={(e) =>
                               handleUpdateSubtitle(idx, { start: Number(e.target.value) })
                             }
-                            className="w-12 bg-[#141417] border border-[#2A2A30] rounded px-1 text-center text-white"
+                            className="w-12 bg-[#0B0E17] border border-white/[0.08] rounded px-1 text-center text-white"
                           />
                           <span>s +</span>
                           <input
@@ -550,7 +550,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                             onChange={(e) =>
                               handleUpdateSubtitle(idx, { duration: Number(e.target.value) })
                             }
-                            className="w-12 bg-[#141417] border border-[#2A2A30] rounded px-1 text-center text-white"
+                            className="w-12 bg-[#0B0E17] border border-white/[0.08] rounded px-1 text-center text-white"
                           />
                           <span>s</span>
                         </div>
@@ -570,7 +570,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                       type="text"
                       value={sub.text}
                       onChange={(e) => handleUpdateSubtitle(idx, { text: e.target.value })}
-                      className="w-full bg-[#141417] border border-[#2A2A30] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#3B82F6]"
+                      className="w-full bg-[#0B0E17] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#3B82F6]"
                     />
                   </div>
                 ))}

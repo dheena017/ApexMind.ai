@@ -154,41 +154,44 @@ export default function AppLayout({
           Other Pages: Standard Application Header, Main Framing, and Slide Drawer
           ========================================================================= */}
       {isWorkspace ? (
-        <div className="flex-1 w-full h-full flex flex-col sm:flex-row min-h-0 overflow-hidden">
-          {/* Desktop Left Sidebar: Full height / length from top to bottom */}
-          <WorkspaceSidebar
-            mode="desktop-only"
+        <div className="flex-1 w-full h-full flex flex-col min-h-0 overflow-hidden">
+          {/* Top Full-Width Studio Header */}
+          <WorkspaceHeader
+            user={user}
+            unreadCount={unreadCount}
+            onNavigate={onNavigate}
+          />
+          {/* Mobile Tab Bar: Visible only below 640px, directly under header */}
+          <WorkspaceMobileTabs
             activeTab={activeWorkspacePane}
             onTabChange={(tab) => onWorkspacePaneChange(tab)}
             onNavigate={onNavigate}
           />
 
-          {/* Right Area: Header at top (side to the sidebar), content, and status bar */}
-          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-            <WorkspaceHeader
-              user={user}
-              unreadCount={unreadCount}
-              onNavigate={onNavigate}
-            />
-            {/* Mobile Tab Bar: Visible only below 640px, under the header */}
-            <WorkspaceMobileTabs
+          {/* Main Studio Body: Sidebar on the left under header, docked panes in center */}
+          <div className="flex-1 w-full flex flex-row min-h-0 overflow-hidden">
+            <WorkspaceSidebar
+              mode="desktop-only"
               activeTab={activeWorkspacePane}
               onTabChange={(tab) => onWorkspacePaneChange(tab)}
               onNavigate={onNavigate}
             />
-            <main className="flex-1 min-w-0 min-h-0 p-1 sm:p-1.5 overflow-y-auto lg:overflow-hidden flex flex-col bg-[#0A0A0A]">
+
+            <main className="flex-1 min-w-0 min-h-0 p-0 overflow-hidden flex flex-col bg-[#090B10]">
               <div className="w-full h-full flex-1 min-h-0">
                 {children}
               </div>
             </main>
-            <WorkspaceStatusBar
-              activePage={activePage}
-              onNavigate={onNavigate}
-              activeWorkspacePane={activeWorkspacePane}
-              onWorkspacePaneChange={onWorkspacePaneChange}
-              workspaceStatus={workspaceStatus}
-            />
           </div>
+
+          {/* Bottom Docked Status Bar */}
+          <WorkspaceStatusBar
+            activePage={activePage}
+            onNavigate={onNavigate}
+            activeWorkspacePane={activeWorkspacePane}
+            onWorkspacePaneChange={onWorkspacePaneChange}
+            workspaceStatus={workspaceStatus}
+          />
         </div>
       ) : (
         <>

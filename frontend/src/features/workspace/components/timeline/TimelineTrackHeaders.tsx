@@ -430,7 +430,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         dragOverTrackId === 'video' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
       } ${draggedTrackId === 'video' ? 'opacity-40' : ''} ${
         selectedClip?.track === 'video'
-          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F59E0B]'
+          ? 'bg-[#141824] shadow-[inset_3px_0_0_#F59E0B]'
           : 'hover:bg-white/[0.03] border-l-2 border-l-[#F59E0B]/50'
       }`}
       title="V1 Video Track • Click to inspect & adjust (Drag or click arrows to move up/down)"
@@ -472,7 +472,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         dragOverTrackId === 'image' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
       } ${draggedTrackId === 'image' ? 'opacity-40' : ''} ${
         selectedClip?.track === 'image'
-          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F43F5E]'
+          ? 'bg-[#141824] shadow-[inset_3px_0_0_#F43F5E]'
           : 'hover:bg-white/[0.03] border-l-2 border-l-[#F43F5E]/50'
       }`}
       title="V2 Image Track • Click to inspect & adjust (Drag or click arrows to move up/down)"
@@ -513,7 +513,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         dragOverTrackId === 'overlay' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
       } ${draggedTrackId === 'overlay' ? 'opacity-40' : ''} ${
         selectedClip?.track === 'overlay'
-          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#8B5CF6]'
+          ? 'bg-[#141824] shadow-[inset_3px_0_0_#8B5CF6]'
           : 'hover:bg-white/[0.03] border-l-2 border-l-[#8B5CF6]/50'
       }`}
       title="O1 Overlays Track • Stickers, motion graphics, and watermarks (Drag or click arrows to move up/down)"
@@ -554,7 +554,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         dragOverTrackId === 'captions' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
       } ${draggedTrackId === 'captions' ? 'opacity-40' : ''} ${
         selectedClip?.track === 'caption'
-          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#06B6D4]'
+          ? 'bg-[#141824] shadow-[inset_3px_0_0_#06B6D4]'
           : 'hover:bg-white/[0.03] border-l-2 border-l-[#06B6D4]/50'
       }`}
       title="T1 Captions Track • Synced typography and dynamic subtitles (Drag or click arrows to move up/down)"
@@ -598,7 +598,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         dragOverTrackId === 'title' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
       } ${draggedTrackId === 'title' ? 'opacity-40' : ''} ${
         selectedClip?.track === 'title'
-          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#38BDF8]'
+          ? 'bg-[#141824] shadow-[inset_3px_0_0_#38BDF8]'
           : 'hover:bg-white/[0.03] border-l-2 border-l-[#38BDF8]/50'
       }`}
       title="T2 Titles Track • Main video headlines & hook titles (Drag or click arrows to move up/down)"
@@ -634,7 +634,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         dragOverTrackId === 'voice' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
       } ${draggedTrackId === 'voice' ? 'opacity-40' : ''} ${
         selectedClip?.track === 'voice'
-          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#10B981]'
+          ? 'bg-[#141824] shadow-[inset_3px_0_0_#10B981]'
           : 'hover:bg-white/[0.03] border-l-2 border-l-[#10B981]/50'
       }`}
       title="A1 Voiceover Track • 24kHz studio voice narration (Drag or click arrows to move up/down)"
@@ -675,7 +675,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         dragOverTrackId === 'music' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
       } ${draggedTrackId === 'music' ? 'opacity-40' : ''} ${
         selectedClip?.track === 'music'
-          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#D946EF]'
+          ? 'bg-[#141824] shadow-[inset_3px_0_0_#D946EF]'
           : 'hover:bg-white/[0.03] border-l-2 border-l-[#D946EF]/50'
       }`}
       title="A2 Music Track • Background soundtrack & beat ducking (Drag or click arrows to move up/down)"
@@ -716,7 +716,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         dragOverTrackId === 'sfx' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
       } ${draggedTrackId === 'sfx' ? 'opacity-40' : ''} ${
         selectedClip?.track === 'sfx'
-          ? 'bg-[#1C1C20] shadow-[inset_3px_0_0_#F97316]'
+          ? 'bg-[#141824] shadow-[inset_3px_0_0_#F97316]'
           : 'hover:bg-white/[0.03] border-l-2 border-l-[#F97316]/50'
       }`}
       title="A3 Sound FX Track • Transition whooshes, impacts, and risers (Drag or click arrows to move up/down)"
@@ -757,7 +757,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     >
       {/* ── Ruler Corner Header - Sticky at top ────────────────────── */}
       {showCornerHeader && (
-        <div className="h-6 border-b border-[#262626] bg-[#111113] flex items-center justify-between px-2.5 text-[9px] font-mono-studio text-[#8E8E93] uppercase tracking-wider shrink-0 sticky top-0 z-30">
+        <div className="h-6 border-b border-[#262626] bg-[#111113] flex items-center justify-between px-2.5 text-[9px] font-mono-studio text-slate-400 uppercase tracking-wider shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-1.5 font-bold text-white tracking-widest">
             <span>TRACKS</span>
             <span className="text-[8px] px-1 py-0.2 rounded bg-white/10 text-zinc-300 font-mono-studio font-normal">

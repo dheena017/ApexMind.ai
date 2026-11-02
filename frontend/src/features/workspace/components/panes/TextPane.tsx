@@ -373,11 +373,11 @@ export const TextPane: React.FC<TextPaneProps> = ({
   }, [combinedPresets, selectedPresetId]);
 
   return (
-    <div className="flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-xl border border-[#26262B]">
+    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Header Title Bar ── */}
-      <div className="relative h-12 px-3.5 bg-[#141416] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-12 px-3.5 bg-[#141416] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#222226] border border-[#33333A] text-white">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.06] border border-[#33333A] text-white">
             <Type className="w-3.5 h-3.5" />
           </div>
           <div className="flex items-center gap-2">
@@ -389,78 +389,78 @@ export const TextPane: React.FC<TextPaneProps> = ({
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
-        <div className="grid grid-cols-5 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setActiveTab("presets")}
-            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "presets"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Presets"
           >
-            <Sparkles className={`w-3 h-3 shrink-0 ${activeTab === "presets" ? "text-amber-400" : "text-[#8E8E93]"}`} />
-            <span className="truncate">Presets</span>
+            <Sparkles className={`w-3 h-3 shrink-0 ${activeTab === "presets" ? "text-amber-400" : "text-slate-400"}`} />
+            <span>Presets</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("quick")}
-            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "quick"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Insert"
           >
-            <Plus className={`w-3 h-3 shrink-0 ${activeTab === "quick" ? "text-amber-400" : "text-[#8E8E93]"}`} />
-            <span className="truncate">Insert</span>
+            <Plus className={`w-3 h-3 shrink-0 ${activeTab === "quick" ? "text-amber-400" : "text-slate-400"}`} />
+            <span>Insert</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("hooks")}
-            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "hooks"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Hooks"
           >
-            <Zap className={`w-3 h-3 shrink-0 ${activeTab === "hooks" ? "text-amber-400" : "text-[#8E8E93]"}`} />
-            <span className="truncate">Hooks</span>
+            <Zap className={`w-3 h-3 shrink-0 ${activeTab === "hooks" ? "text-amber-400" : "text-slate-400"}`} />
+            <span>Hooks</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("overrides")}
-            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "overrides"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Style"
           >
-            <Sliders className={`w-3 h-3 shrink-0 ${activeTab === "overrides" ? "text-amber-400" : "text-[#8E8E93]"}`} />
-            <span className="truncate">Style</span>
+            <Sliders className={`w-3 h-3 shrink-0 ${activeTab === "overrides" ? "text-amber-400" : "text-slate-400"}`} />
+            <span>Style</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("custom")}
-            className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "custom"
-                ? "bg-[#272730] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
+                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
             }`}
             title="Saved"
           >
-            <Bookmark className={`w-3 h-3 shrink-0 ${activeTab === "custom" ? "text-amber-400" : "text-[#8E8E93]"}`} />
-            <span className="truncate">Saved</span>
+            <Bookmark className={`w-3 h-3 shrink-0 ${activeTab === "custom" ? "text-amber-400" : "text-slate-400"}`} />
+            <span>Saved</span>
           </button>
         </div>
       </div>
       {/* ── Unified Search, Dropdown & Mood Bar (Presets & Hooks) ── */}
       {(activeTab === 'presets' || activeTab === 'hooks') && (
-        <div className="flex flex-col gap-2 border-b border-[#26262B] bg-[#141416] p-3 shrink-0">
+        <div className="flex flex-col gap-2 border-b border-white/[0.08] bg-[#141416] p-3 shrink-0">
           {/* Search Row */}
           <div className="relative w-full">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -473,7 +473,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                   ? 'Search 10M+ typography styles (Hormozi, MrBeast, Vox, Minimal)...'
                   : 'Search viral hooks (stoic, fitness, wealth)...'
               }
-              className="w-full bg-[#1C1C20] border border-[#2A2A30] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
+              className="w-full bg-[#141824] border border-white/[0.08] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
             />
             {searchQuery && (
               <button
@@ -500,7 +500,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
                     isActive
                       ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-                      : 'bg-[#1C1C20] text-zinc-400 hover:text-white hover:bg-[#25252A] border-[#2A2A30]'
+                      : 'bg-[#141824] text-zinc-400 hover:text-white hover:bg-[#25252A] border-white/[0.08]'
                   }`}
                 >
                   {pill.label}
@@ -519,7 +519,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
             {/* Presets & Generated Styles Grid */}
             {filteredPresets.length === 0 ? (
-              <div className="bg-[#1C1C20] border border-[#2A2A30] rounded-xl p-8 text-center text-xs text-[#A1A1AA] flex flex-col items-center gap-2">
+              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-8 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
                 <Search className="w-6 h-6 text-zinc-600" />
                 <p>No presets matching &ldquo;{searchQuery}&rdquo;</p>
                 <button
@@ -542,10 +542,10 @@ export const TextPane: React.FC<TextPaneProps> = ({
                       key={preset.id}
                       onClick={() => handleApplyPreset(preset)}
                       style={{ contentVisibility: 'auto', containIntrinsicSize: '78px' }}
-                      className={`group relative rounded-xl border p-2 bg-[#18181C] hover:bg-[#1D1D22] transition-all cursor-pointer flex flex-col gap-1.5 transform-gpu ${
+                      className={`group relative rounded-xl border p-2 bg-[#141824] hover:bg-[#1D1D22] transition-all cursor-pointer flex flex-col gap-1.5 transform-gpu ${
                         isSelected
                           ? 'border-blue-500 ring-1 ring-blue-500/50 shadow-lg shadow-blue-500/10'
-                          : 'border-[#26262B] hover:border-[#383842]'
+                          : 'border-white/[0.08] hover:border-[#383842]'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -595,7 +595,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                       </div>
 
                       <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5 px-0.5">
-                        <span className="truncate">{preset.styleDescription}</span>
+                        <span>{preset.styleDescription}</span>
                         {isSelected && (
                           <span className="text-blue-400 font-semibold shrink-0 ml-2">
                             Active
@@ -631,12 +631,12 @@ export const TextPane: React.FC<TextPaneProps> = ({
         {/* ── TAB 2: QUICK INSERT ── */}
         {activeTab === 'quick' && (
           <div className="flex flex-col gap-3">
-            <div className="bg-[#18181C] border border-[#26262B] rounded-xl p-4 flex flex-col gap-3">
+            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-4 flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <Heading className="w-4 h-4 text-[#60A5FA]" />
                 <span className="text-xs font-bold text-white">One-Click Text Insertion</span>
               </div>
-              <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+              <p className="text-[11px] text-slate-400 leading-relaxed">
                 Click any button to instantly add stylized text layers to your reel with the current font and active preset styling:
               </p>
 
@@ -644,7 +644,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 <button
                   type="button"
                   onClick={() => handleQuickInsert('ADD A BOLD HEADING', 'heading')}
-                  className="w-full p-3 rounded-xl bg-[#141418] hover:bg-[#1E1E24] border border-[#2B2B34] hover:border-blue-500/50 text-left transition-all flex items-center justify-between group cursor-pointer"
+                  className="w-full p-3 rounded-xl bg-[#0B0E17] hover:bg-[#181D2B] border border-[#2B2B34] hover:border-blue-500/50 text-left transition-all flex items-center justify-between group cursor-pointer"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase">
@@ -660,7 +660,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 <button
                   type="button"
                   onClick={() => handleQuickInsert('Viral Punchy Subheading', 'subheading')}
-                  className="w-full p-3 rounded-xl bg-[#141418] hover:bg-[#1E1E24] border border-[#2B2B34] hover:border-blue-500/50 text-left transition-all flex items-center justify-between group cursor-pointer"
+                  className="w-full p-3 rounded-xl bg-[#0B0E17] hover:bg-[#181D2B] border border-[#2B2B34] hover:border-blue-500/50 text-left transition-all flex items-center justify-between group cursor-pointer"
                 >
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-zinc-200 group-hover:text-blue-400 transition-colors">
@@ -676,7 +676,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 <button
                   type="button"
                   onClick={() => handleQuickInsert('Captions flow word by word with the voice narration.', 'body')}
-                  className="w-full p-3 rounded-xl bg-[#141418] hover:bg-[#1E1E24] border border-[#2B2B34] hover:border-blue-500/50 text-left transition-all flex items-center justify-between group cursor-pointer"
+                  className="w-full p-3 rounded-xl bg-[#0B0E17] hover:bg-[#181D2B] border border-[#2B2B34] hover:border-blue-500/50 text-left transition-all flex items-center justify-between group cursor-pointer"
                 >
                   <div className="flex flex-col">
                     <span className="text-xs font-medium text-zinc-300 group-hover:text-blue-400 transition-colors">
@@ -692,7 +692,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
             </div>
 
             {/* Active Style Quick Card */}
-            <div className="bg-[#18181C] border border-[#26262B] rounded-xl p-3.5 flex flex-col gap-2">
+            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-blue-400" />
@@ -703,7 +703,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                   style={{ backgroundColor: colorOverride || activePreset.color }}
                 />
               </div>
-              <div className="bg-[#0D0D10] border border-[#23232A] rounded-lg p-2.5 text-center">
+              <div className="bg-[#0B0E17] border border-[#23232A] rounded-lg p-2.5 text-center">
                 <span className={`text-xs ${activePreset.className}`}>
                   {activePreset.previewText}
                 </span>
@@ -734,16 +734,16 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 <div
                   key={idx}
                   style={{ contentVisibility: 'auto', containIntrinsicSize: '88px' }}
-                  className="rounded-xl border border-[#26262B] bg-[#18181C] hover:border-[#383842] transition-colors flex flex-col gap-2 p-3 transform-gpu"
+                  className="rounded-none border-0 bg-[#141824] hover:border-[#383842] transition-colors flex flex-col gap-2 p-3 transform-gpu"
                 >
-                  <div className="bg-[#0E0E12] border border-[#23232A] rounded-lg p-2.5 flex items-center justify-center text-center min-h-[46px]">
+                  <div className="bg-[#0B0E17] border border-[#23232A] rounded-lg p-2.5 flex items-center justify-center text-center min-h-[46px]">
                     <p className="text-xs font-bold text-white tracking-wide leading-snug">
                       &ldquo;{item.hook}&rdquo;
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-0.5">
-                    <span className="px-2 py-0.5 rounded-full border border-[#2C2C34] bg-[#141418] text-[9px] font-semibold text-zinc-400">
+                    <span className="px-2 py-0.5 rounded-full border border-[#2C2C34] bg-[#0B0E17] text-[9px] font-semibold text-zinc-400">
                       {item.category}
                     </span>
 
@@ -758,7 +758,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                       <button
                         type="button"
                         onClick={() => handleInsertQuote(item.hook)}
-                        className="px-2.5 py-1 rounded-lg border border-[#303038] bg-[#222228] hover:bg-[#2A2A32] text-zinc-200 text-[10px] font-medium transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg border border-[#303038] bg-[#1B2132] hover:bg-[#1B2132] text-zinc-200 text-[10px] font-medium transition-colors cursor-pointer"
                       >
                         Set Quote
                       </button>
@@ -773,7 +773,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
         {/* ── TAB 4: STYLE STUDIO & OVERRIDES (Using CustomSelect) ── */}
         {activeTab === 'overrides' && (
           <div className="flex flex-col gap-3">
-            <div className="bg-[#18181C] border border-[#26262B] rounded-xl p-3.5 flex flex-col gap-3.5">
+            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Sliders className="w-3.5 h-3.5 text-blue-400" />
@@ -806,8 +806,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
                   value={fontOverride}
                   onChange={(val) => setFontOverride(val)}
                   placeholder="Preset Default Font"
-                  buttonClassName="!bg-[#141418] !border-[#2B2B34] !text-xs !py-2"
-                  menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                  buttonClassName="!bg-[#0B0E17] !border-[#2B2B34] !text-xs !py-2"
+                  menuClassName="!bg-[#141824] !border-white/[0.08]"
                 />
               </div>
 
@@ -822,8 +822,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
                     value={sizeOverride}
                     onChange={(val) => setSizeOverride(val)}
                     placeholder="Default Size"
-                    buttonClassName="!bg-[#141418] !border-[#2B2B34] !text-xs !py-2"
-                    menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                    buttonClassName="!bg-[#0B0E17] !border-[#2B2B34] !text-xs !py-2"
+                    menuClassName="!bg-[#141824] !border-white/[0.08]"
                   />
                 </div>
 
@@ -836,8 +836,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
                     value={weightOverride}
                     onChange={(val) => setWeightOverride(val)}
                     placeholder="Default Weight"
-                    buttonClassName="!bg-[#141418] !border-[#2B2B34] !text-xs !py-2"
-                    menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                    buttonClassName="!bg-[#0B0E17] !border-[#2B2B34] !text-xs !py-2"
+                    menuClassName="!bg-[#141824] !border-white/[0.08]"
                   />
                 </div>
               </div>
@@ -852,8 +852,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
                   value={caseOverride}
                   onChange={(val) => setCaseOverride(val as any)}
                   placeholder="Preset Default Case"
-                  buttonClassName="!bg-[#141418] !border-[#2B2B34] !text-xs !py-2"
-                  menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                  buttonClassName="!bg-[#0B0E17] !border-[#2B2B34] !text-xs !py-2"
+                  menuClassName="!bg-[#141824] !border-white/[0.08]"
                 />
               </div>
 
@@ -892,7 +892,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
                   {/* Native Color Wheel Input */}
                   <label
-                    className="relative flex h-5 w-5 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-[#4A4A54] bg-[#141418] hover:border-blue-400 transition-colors"
+                    className="relative flex h-5 w-5 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-[#4A4A54] bg-[#0B0E17] hover:border-blue-400 transition-colors"
                     title="Choose Custom Color"
                   >
                     <Palette className="pointer-events-none h-3 w-3 text-zinc-400" />
@@ -917,7 +917,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
               </div>
 
               {/* Real-time Overrides Preview Box */}
-              <div className="mt-1 bg-[#0E0E12] border border-[#26262E] rounded-xl p-3 flex flex-col items-center justify-center text-center min-h-[64px]">
+              <div className="mt-1 bg-[#0B0E17] border border-white/[0.08] rounded-xl p-3 flex flex-col items-center justify-center text-center min-h-[64px]">
                 <span
                   className="text-sm font-bold transition-all"
                   style={{
@@ -952,7 +952,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
         {/* ── TAB 5: SAVED VAULT ── */}
         {activeTab === 'custom' && (
           <div className="flex flex-col gap-3">
-            <div className="bg-[#18181C] border border-[#26262B] rounded-xl p-3.5 flex flex-col gap-2.5">
+            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-2.5">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Bookmark className="w-3.5 h-3.5 text-blue-400" />
                 Save Custom Hook or Quote
@@ -962,7 +962,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 onChange={(e) => setNewSnippetInput(e.target.value)}
                 placeholder="Type or paste a viral hook or quote..."
                 rows={3}
-                className="w-full bg-[#121216] border border-[#2A2A32] rounded-xl p-2.5 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500 resize-none transition-colors"
+                className="w-full bg-[#121216] border border-white/[0.08] rounded-xl p-2.5 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500 resize-none transition-colors"
               />
               <button
                 type="button"
@@ -976,7 +976,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
             </div>
 
             {savedSnippets.length === 0 ? (
-              <div className="bg-[#18181C] border border-[#26262B] rounded-xl p-6 text-center text-xs text-zinc-500 flex flex-col items-center gap-1">
+              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-6 text-center text-xs text-zinc-500 flex flex-col items-center gap-1">
                 <Bookmark className="w-6 h-6 text-zinc-600" />
                 <p className="font-semibold text-zinc-400 mt-1">No custom snippets saved yet</p>
                 <p className="text-[11px] text-zinc-500">
@@ -988,7 +988,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 {savedSnippets.map((snippet, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl border border-[#26262B] bg-[#18181C] hover:border-[#383842] transition-colors flex flex-col gap-2"
+                    className="p-3 rounded-none border-0 bg-[#141824] hover:border-[#383842] transition-colors flex flex-col gap-2"
                   >
                     <div className="bg-[#101014] border border-[#23232A] rounded-lg p-2.5 flex items-center min-h-[40px]">
                       <p className="text-xs font-medium text-white leading-snug">

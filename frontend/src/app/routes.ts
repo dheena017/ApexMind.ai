@@ -20,11 +20,7 @@ export type PageRoute =
   | 'youtube-shorts'
   | 'youtube-playlists'
   | 'youtube-posts'
-  | 'youtube-analytics'
-  | 'youtube-seo'
-  | 'youtube-trending'
   | 'youtube-schedules'
-  | 'youtube-settings'
   | 'notifications'
   | 'profile'
   | 'profile-details'
@@ -81,11 +77,7 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'youtube-shorts', path: '/youtube/shorts', title: 'Channel Shorts - ApexMind Studio', aliases: ['/channel/shorts', '/shorts', '/youtube-shorts'] },
   { id: 'youtube-playlists', path: '/youtube/playlists', title: 'Channel Playlists - ApexMind Studio', aliases: ['/channel/playlists', '/playlists'] },
   { id: 'youtube-posts', path: '/youtube/community', title: 'Community Posts - ApexMind Studio', aliases: ['/youtube/posts', '/channel/community', '/community'] },
-  { id: 'youtube-seo', path: '/youtube/seo', title: 'SEO & Tags Generator - ApexMind Studio', aliases: ['/youtube/tags', '/seo', '/tags'] },
-  { id: 'youtube-trending', path: '/youtube/trending', title: 'Viral Trending Shorts - ApexMind Studio', aliases: ['/youtube/viral', '/trending', '/viral'] },
   { id: 'youtube-schedules', path: '/youtube/schedules', title: 'Auto Upload Schedules - ApexMind Studio', aliases: ['/schedules', '/automation'] },
-  { id: 'youtube-analytics', path: '/youtube/analytics', title: 'Realtime Channel Analytics - ApexMind Studio', aliases: ['/analytics', '/channel/analytics'] },
-  { id: 'youtube-settings', path: '/youtube/settings', title: 'YouTube Channel Settings - ApexMind Studio', aliases: ['/youtube/config'] },
 
   // ── 5. Creator Profile & Badges ──
   { id: 'profile', path: '/profile', title: 'Profile & Badges - ApexMind', aliases: ['/account'] },

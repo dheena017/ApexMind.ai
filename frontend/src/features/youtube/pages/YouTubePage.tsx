@@ -15,10 +15,6 @@ import { YouTubeVideosPage } from './YouTubeVideosPage';
 import { YouTubeShortsPage } from './YouTubeShortsPage';
 import { YouTubePlaylistsPage } from './YouTubePlaylistsPage';
 import { YouTubePostsPage } from './YouTubePostsPage';
-import { YouTubeAnalyticsPage } from './YouTubeAnalyticsPage';
-import { YouTubeSettingsPage } from './YouTubeSettingsPage';
-import { YouTubeSeoPage } from './YouTubeSeoPage';
-import { YouTubeTrendingPage } from './YouTubeTrendingPage';
 import { YouTubeSchedulesPage } from './YouTubeSchedulesPage';
 import { YouTubeVideoDetailsModal } from '../components/YouTubeVideoDetailsModal';
 import { youtubeApi } from '../api/youtubeApi';
@@ -247,7 +243,7 @@ export default function YouTubePage({
       <div className="space-y-3">
         <YouTubeChannelBannerHeader
           channel={channel}
-          onCustomiseChannel={() => handleTabChange('settings')}
+          onCustomiseChannel={() => window.open('https://studio.youtube.com', '_blank')}
           onManageVideos={() => handleTabChange('videos')}
           onSyncLive={() => loadChannelLive(currentChannelQuery)}
           onConnectChannel={handleConnectWithGoogle}
@@ -331,30 +327,9 @@ export default function YouTubePage({
         />
       )}
 
-      {/* ── Tab 5: SEO & KEYWORDS ── */}
-      {activeTab === 'seo' && <YouTubeSeoPage />}
-
-      {/* ── Tab 6: TRENDING SHORTS ── */}
-      {activeTab === 'trending' && (
-        <YouTubeTrendingPage
-          onPlayShort={(short) => setActivePlayingVideo(short)}
-          onNavigate={onNavigate}
-        />
-      )}
-
-      {/* ── Tab 7: COMMUNITY ── */}
+      {/* ── Tab 5: COMMUNITY ── */}
       {activeTab === 'posts' && (
         <YouTubePostsPage channels={channelsList} loading={loading} />
-      )}
-
-      {/* ── Tab 8: ANALYTICS ── */}
-      {activeTab === 'analytics' && (
-        <YouTubeAnalyticsPage
-          videos={[]}
-          channels={channelsList}
-          liveVideos={liveVideos}
-          loading={loading}
-        />
       )}
 
       {/* ── Tab: DAILY SCHEDULES & AUTOMATIONS ── */}
@@ -365,18 +340,6 @@ export default function YouTubePage({
           onToggleAuto={handleToggleAuto}
           onRefresh={loadAutomations}
           onNavigate={onNavigate}
-        />
-      )}
-
-      {/* ── Tab 9: SETTINGS ── */}
-      {activeTab === 'settings' && (
-        <YouTubeSettingsPage
-          channels={channelsList}
-          copiedId={null}
-          onCopyId={() => {}}
-          onOpenCorrectModal={handleConnectWithGoogle}
-          onDisconnectChannel={handleDisconnectChannel}
-          onOpenConnectModal={handleConnectWithGoogle}
         />
       )}
 

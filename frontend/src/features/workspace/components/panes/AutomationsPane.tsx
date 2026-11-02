@@ -435,9 +435,9 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   };
 
   return (
-    <div className={`flex flex-col h-full bg-[#121214] text-white font-sans-studio select-none overflow-hidden rounded-2xl border border-[#26262B] ${className}`}>
+    <div className={`flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0 ${className}`}>
       {/* ── Top Header Bar ── */}
-      <div className="relative h-11 px-3.5 bg-[#17171A] border-b border-[#26262B] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
             <CalendarClock className="w-3.5 h-3.5" />
@@ -469,7 +469,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             type="button"
             onClick={loadAutomations}
             disabled={loading}
-            className="w-7 h-7 rounded-md bg-[#222226] hover:bg-[#2C2C32] text-[#A1A1AA] hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-[#323238]"
+            className="w-7 h-7 rounded-md bg-white/[0.06] hover:bg-[#1F2538] text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-white/[0.12]"
             title="Refresh Schedules"
           >
             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
@@ -483,30 +483,30 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               e.preventDefault();
               window.open('/youtube/schedules', '_blank');
             }}
-            className="h-7 px-2 rounded-md bg-[#222226] hover:bg-[#2C2C32] text-[11px] font-medium text-white transition-colors cursor-pointer border border-[#323238] flex items-center gap-1 shrink-0"
+            className="h-7 px-2 rounded-md bg-white/[0.06] hover:bg-[#1F2538] text-[11px] font-medium text-white transition-colors cursor-pointer border border-white/[0.12] flex items-center gap-1 shrink-0"
             title="Open Automations Hub in a new tab"
           >
-            <ExternalLink className="w-3 h-3 text-[#A1A1AA]" />
+            <ExternalLink className="w-3 h-3 text-slate-400" />
             <span className="hidden sm:inline">Hub</span>
           </a>
         </div>
       </div>
 
       {/* ── Subtabs Segmented Control (High-Precision Studio Navigation) ── */}
-      <div className="p-2.5 bg-[#141417] border-b border-[#26262B] shrink-0">
-        <div className="grid grid-cols-3 gap-1 p-1 bg-[#1A1A1E] rounded-xl border border-[#272730]">
+      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
+        <div className="grid grid-cols-3 gap-1 p-1 bg-[#151926] rounded-none border-0">
           {/* Tab 1: Pipelines */}
           <button
             type="button"
             onClick={() => setActiveSubTab('pipelines')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'pipelines'
-                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
             }`}
             title="Active Autonomous Pipelines"
           >
-            <Zap className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'pipelines' ? 'text-amber-400' : 'text-[#8E8E93]'}`} />
+            <Zap className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'pipelines' ? 'text-amber-400' : 'text-slate-400'}`} />
             <span className="truncate">Pipelines</span>
             <span
               className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
@@ -525,12 +525,12 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             onClick={() => setActiveSubTab('create')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'create'
-                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
             }`}
             title="Configure New Automation Schedule"
           >
-            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'create' ? 'text-blue-400' : 'text-[#8E8E93]'}`} />
+            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'create' ? 'text-blue-400' : 'text-slate-400'}`} />
             <span className="truncate">Schedule</span>
           </button>
 
@@ -540,12 +540,12 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             onClick={() => setActiveSubTab('channel')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'channel'
-                ? 'bg-[#272730] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
             }`}
             title="Publishing Destination & Channel Target"
           >
-            <Youtube className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'channel' ? 'text-red-500' : 'text-[#8E8E93]'}`} />
+            <Youtube className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'channel' ? 'text-red-500' : 'text-slate-400'}`} />
             <span className="truncate">Channel</span>
             {authStatus?.connected ? (
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.8)]" title="Connected to YouTube" />
@@ -560,7 +560,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {activeSubTab === 'pipelines' && (
         <div className="flex-1 flex flex-col min-h-0">
           {/* Executive Unified Status Header */}
-          <div className="px-3.5 py-2.5 bg-gradient-to-r from-[#17171C] via-[#141418] to-[#17171C] border-b border-[#26262E] flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0">
+          <div className="px-3.5 py-2.5 bg-gradient-to-r from-[#17171C] via-[#141418] to-[#17171C] border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0">
             {/* Target Channel Info */}
             <div className="flex items-center gap-2.5 min-w-0">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
@@ -615,7 +615,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           {/* Main Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5">
             {/* Section Heading */}
-            <div className="text-[10px] uppercase font-mono-studio text-[#A1A1AA] font-bold tracking-wider">
+            <div className="text-[10px] uppercase font-mono-studio text-slate-400 font-bold tracking-wider">
               Configured Pipelines ({automations.length})
             </div>
 
@@ -623,14 +623,14 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             {loading ? (
               <div className="space-y-2.5 animate-pulse">
                 {[1, 2].map((i) => (
-                  <div key={i} className="p-3.5 rounded-xl bg-[#17171C] border border-[#26262E] space-y-2">
+                  <div key={i} className="p-3.5 rounded-xl bg-[#17171C] border border-white/[0.08] space-y-2">
                     <div className="h-3.5 bg-zinc-800 rounded w-2/3" />
                     <div className="h-2.5 bg-zinc-800 rounded w-1/2" />
                   </div>
                 ))}
               </div>
             ) : automations.length === 0 ? (
-              <div className="p-5 rounded-xl bg-[#17171C] border border-[#26262E] text-center flex flex-col items-center gap-3">
+              <div className="p-5 rounded-xl bg-[#17171C] border border-white/[0.08] text-center flex flex-col items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
                   <Clock className="w-5 h-5" />
                 </div>
@@ -1285,7 +1285,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
           {/* Theme */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+            <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
               Niche / Theme
             </label>
             <CustomSelect
@@ -1293,14 +1293,14 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               value={theme}
               onChange={(val) => setTheme(val)}
               className="w-full text-xs"
-              buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-              menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+              buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+              menuClassName="!bg-[#141824] !border-white/[0.08]"
             />
           </div>
 
           {/* AI Model Selection */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider flex items-center justify-between">
+            <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider flex items-center justify-between">
               <span>AI Engine / Model</span>
               <span className="text-[9px] text-blue-400 font-mono">Dynamic Selection</span>
             </label>
@@ -1309,15 +1309,15 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               value={aiModel}
               onChange={(val) => setAiModel(val)}
               className="w-full text-xs"
-              buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-              menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+              buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+              menuClassName="!bg-[#141824] !border-white/[0.08]"
             />
           </div>
 
           {/* Aspect Ratio & Video Length */}
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+              <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
                 Aspect Ratio
               </label>
               <CustomSelect
@@ -1325,12 +1325,12 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 value={aspectRatio}
                 onChange={(val) => setAspectRatio(val as any)}
                 className="w-full text-xs"
-                buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-                menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+                menuClassName="!bg-[#141824] !border-white/[0.08]"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+              <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
                 Target Length
               </label>
               <CustomSelect
@@ -1338,28 +1338,28 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 value={length}
                 onChange={(val) => setLength(val)}
                 className="w-full text-xs"
-                buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-                menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+                menuClassName="!bg-[#141824] !border-white/[0.08]"
               />
             </div>
           </div>
 
           {/* Schedule Frequency (Segmented Pill Toggle) */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+            <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
               Schedule Frequency
             </label>
-            <div className="grid grid-cols-2 p-1 bg-[#101013] rounded-xl border border-[#26262B] gap-1">
+            <div className="grid grid-cols-2 p-1 bg-[#101013] rounded-none border-0 gap-1">
               <button
                 type="button"
                 onClick={() => setFrequencyType('interval')}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   frequencyType === 'interval'
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-[#71717A] hover:text-white hover:bg-[#16161A]'
+                    : 'text-slate-500 hover:text-white hover:bg-[#141824]'
                 }`}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${frequencyType === 'interval' ? 'text-white' : 'text-[#71717A]'}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${frequencyType === 'interval' ? 'text-white' : 'text-slate-500'}`} />
                 <span>Every X Hours / Mins</span>
               </button>
               <button
@@ -1368,10 +1368,10 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   frequencyType === 'daily'
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-[#71717A] hover:text-white hover:bg-[#16161A]'
+                    : 'text-slate-500 hover:text-white hover:bg-[#141824]'
                 }`}
               >
-                <Clock className={`w-3.5 h-3.5 ${frequencyType === 'daily' ? 'text-white' : 'text-[#71717A]'}`} />
+                <Clock className={`w-3.5 h-3.5 ${frequencyType === 'daily' ? 'text-white' : 'text-slate-500'}`} />
                 <span>Daily at Time</span>
               </button>
             </div>
@@ -1382,7 +1382,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             <div className="flex flex-col gap-2">
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+                  <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
                     Interval (e.g. 3h, 8h)
                   </label>
                   <CustomSelect
@@ -1390,13 +1390,13 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                     value={intervalSelection}
                     onChange={(val) => setIntervalSelection(val)}
                     className="w-full text-xs"
-                    buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-                    menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                    buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+                    menuClassName="!bg-[#141824] !border-white/[0.08]"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+                  <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
                     YouTube Release
                   </label>
                   <CustomSelect
@@ -1407,15 +1407,15 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                     value={privacyStatus}
                     onChange={(val) => setPrivacyStatus(val as any)}
                     className="w-full text-xs"
-                    buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-                    menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                    buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+                    menuClassName="!bg-[#141824] !border-white/[0.08]"
                   />
                 </div>
               </div>
 
               {/* Custom interval builder when 'custom' is selected */}
               {intervalSelection === 'custom' && (
-                <div className="p-2.5 rounded-lg bg-[#141418] border border-blue-500/25 flex items-center gap-2">
+                <div className="p-2.5 rounded-lg bg-[#0B0E17] border border-blue-500/25 flex items-center gap-2">
                   <span className="text-xs text-zinc-300 font-medium shrink-0">Run every:</span>
                   <input
                     type="number"
@@ -1423,7 +1423,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                     max="720"
                     value={customValue}
                     onChange={(e) => setCustomValue(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="w-16 bg-[#101013] border border-[#26262B] rounded-md px-2 py-1 text-xs text-white text-center font-bold"
+                    className="w-16 bg-[#101013] border border-white/[0.08] rounded-md px-2 py-1 text-xs text-white text-center font-bold"
                   />
                   <CustomSelect
                     options={[
@@ -1433,8 +1433,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                     value={customUnit}
                     onChange={(val) => setCustomUnit(val as any)}
                     className="flex-1 text-xs"
-                    buttonClassName="!bg-[#101013] !border-[#26262B] !py-1 !rounded-md text-xs"
-                    menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                    buttonClassName="!bg-[#101013] !border-white/[0.08] !py-1 !rounded-md text-xs"
+                    menuClassName="!bg-[#141824] !border-white/[0.08]"
                   />
                 </div>
               )}
@@ -1442,7 +1442,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+                <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
                   Time (UTC)
                 </label>
                 <input
@@ -1450,12 +1450,12 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                   value={publishTime}
                   onChange={(e) => setPublishTime(e.target.value)}
                   required
-                  className="w-full bg-[#151518] border border-[#26262B] focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                  className="w-full bg-[#151518] border border-white/[0.08] focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+                <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
                   YouTube Release
                 </label>
                 <CustomSelect
@@ -1466,8 +1466,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                   value={privacyStatus}
                   onChange={(val) => setPrivacyStatus(val as any)}
                   className="w-full text-xs"
-                  buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-                  menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+                  buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+                  menuClassName="!bg-[#141824] !border-white/[0.08]"
                 />
               </div>
             </div>
@@ -1475,7 +1475,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
           {/* AI Voice Persona */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+            <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
               Gemini Voice Persona
             </label>
             <CustomSelect
@@ -1483,14 +1483,14 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               value={voice}
               onChange={(val) => setVoice(val)}
               className="w-full text-xs"
-              buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-              menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+              buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+              menuClassName="!bg-[#141824] !border-white/[0.08]"
             />
           </div>
 
           {/* Soundtrack */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+            <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
               Soundtrack
             </label>
             <CustomSelect
@@ -1498,8 +1498,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               value={musicTrack}
               onChange={(val) => setMusicTrack(val)}
               className="w-full text-xs"
-              buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
-              menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+              buttonClassName="!bg-[#151518] !border-white/[0.08] !py-2 !rounded-lg text-xs"
+              menuClassName="!bg-[#141824] !border-white/[0.08]"
             />
           </div>
 
@@ -1520,7 +1520,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             <button
               type="button"
               onClick={() => setActiveSubTab('pipelines')}
-              className="px-3.5 py-2 rounded-lg bg-[#222226] text-xs text-[#A1A1AA] hover:text-white font-medium cursor-pointer transition-colors"
+              className="px-3.5 py-2 rounded-lg bg-white/[0.06] text-xs text-slate-400 hover:text-white font-medium cursor-pointer transition-colors"
             >
               Cancel
             </button>
@@ -1540,7 +1540,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {activeSubTab === 'channel' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in">
           {/* Target Channel Card */}
-          <div className="p-4 rounded-xl bg-[#18181C] border border-[#2E2E38] shadow-md flex flex-col gap-3">
+          <div className="p-4 rounded-xl bg-[#141824] border border-white/[0.08] shadow-md flex flex-col gap-3">
             <div className="flex items-center justify-between pb-2.5 border-b border-[#24242A]">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 shrink-0">
@@ -1564,7 +1564,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
             {authStatus?.connected ? (
               <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-[#121215] border border-[#24242A] flex items-center gap-3">
+                <div className="p-3 rounded-lg bg-[#0E121B] border border-[#24242A] flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400 font-bold text-xs shrink-0">
                     {authStatus.channel?.name?.charAt(0) || 'Y'}
                   </div>
@@ -1589,7 +1589,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                       if (onNavigate) onNavigate('youtube-channels');
                       else window.open('/youtube/channels', '_blank');
                     }}
-                    className="px-2.5 py-1 rounded-md bg-[#222226] hover:bg-[#2C2C32] text-[11px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#323238] flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-md bg-white/[0.06] hover:bg-[#1F2538] text-[11px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-white/[0.12] flex items-center gap-1"
                   >
                     <span>Manage Channel</span>
                     <ExternalLink className="w-3 h-3 text-zinc-400" />
@@ -1622,7 +1622,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           </div>
 
           {/* Engine & Pipeline Architecture Diagnostic */}
-          <div className="p-3.5 rounded-xl bg-[#141418] border border-[#222226] text-xs text-zinc-400 flex flex-col gap-2.5">
+          <div className="p-3.5 rounded-xl bg-[#0B0E17] border border-[#222226] text-xs text-zinc-400 flex flex-col gap-2.5">
             <span className="text-white font-semibold text-[11px] flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
               <span>Cron Daemon &amp; Engine Diagnostic</span>
