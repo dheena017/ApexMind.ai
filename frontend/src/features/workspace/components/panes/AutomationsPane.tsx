@@ -29,6 +29,7 @@ import {
   History,
   BarChart3,
   Globe,
+  Square,
 } from 'lucide-react';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
 import { AutomationJob, AutomationHistoryEntry } from '@/src/features/youtube/types';
@@ -56,6 +57,26 @@ const THEME_OPTIONS = [
   'Deep Focus & Flow',
   'Calm & Resilience',
   'Unstoppable Motivation',
+];
+
+const AI_MODEL_OPTIONS = [
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive & High Quality • Recommended)' },
+  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Next-Gen Speed & Storyboarding)' },
+  { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (Rapid & Lightweight)' },
+  { value: 'gemini-flash-latest', label: 'Gemini Flash Latest (Cutting-Edge)' },
+];
+
+const ASPECT_RATIO_OPTIONS = [
+  { value: '9:16', label: '9:16 (Vertical • Shorts / Reels / TikTok)' },
+  { value: '16:9', label: '16:9 (Landscape • YouTube Video)' },
+  { value: '1:1', label: '1:1 (Square • Instagram / Feed)' },
+];
+
+const LENGTH_OPTIONS = [
+  { value: '15 seconds', label: '15 Seconds (Fast Cut)' },
+  { value: '30 seconds', label: '30 Seconds (Standard • Recommended)' },
+  { value: '45 seconds', label: '45 Seconds (Extended)' },
+  { value: '60 seconds', label: '60 Seconds (Deep Dive)' },
 ];
 
 const VOICE_OPTIONS = [
@@ -105,6 +126,9 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const [customValue, setCustomValue] = useState(3);
   const [customUnit, setCustomUnit] = useState<'hours' | 'minutes'>('hours');
   const [voice, setVoice] = useState('Fenrir');
+  const [aiModel, setAiModel] = useState('gemini-2.5-flash');
+  const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
+  const [length, setLength] = useState('30 seconds');
   const [musicTrack, setMusicTrack] = useState('Epic Cinematic');
   const [privacyStatus, setPrivacyStatus] = useState<'public' | 'scheduled'>('public');
 
@@ -221,24 +245,42 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     }
   };
 
+  const runningTimersRef = React.useRef<any[]>([]);
+
+  const getJobStageIndex = (job: AutomationJob): number => {
+    if (runningJobId === job.id) return activePipelinePhase;
+    if (!job.lastRunMessage) return 0;
+    const m = job.lastRunMessage.match(/Stage (\d)\/6/i);
+    return m ? Math.max(0, parseInt(m[1], 10) - 1) : 0;
+  };
+
+  const handleStopPipeline = async (id: string) => {
+    runningTimersRef.current.forEach(clearTimeout);
+    runningTimersRef.current = [];
+    setRunningJobId(null);
+    setActivePipelinePhase(0);
+    try {
+      await youtubeApi.stopAutomation(id);
+      toast.info('Pipeline execution stopped');
+    } catch {
+      toast.error('Failed to stop pipeline');
+    }
+    await loadAutomations();
+  };
+
   const handleRunNow = async (id: string, jobTheme: string) => {
     setRunningJobId(id);
     setActivePipelinePhase(0);
 
-    // Poll backend state every 1.5s to accurately advance phases based on real execution status
-    const pollInterval = setInterval(async () => {
-      try {
-        const jobs = await youtubeApi.getAutomations();
-        const currentJob = jobs.find((j) => j.id === id);
-        if (currentJob?.lastRunMessage) {
-          const match = currentJob.lastRunMessage.match(/Stage\s*([1-6])\/6/i);
-          if (match) {
-            const stageNum = parseInt(match[1], 10);
-            setActivePipelinePhase(stageNum - 1);
-          }
-        }
-      } catch {}
-    }, 1500);
+    // Dynamic phase progression based on realistic pipeline stage durations (zero network polling)
+    const timers = [
+      setTimeout(() => setActivePipelinePhase(1), 16000), // Stage 2: Voice (Script takes ~16s)
+      setTimeout(() => setActivePipelinePhase(2), 23000), // Stage 3: B-Roll
+      setTimeout(() => setActivePipelinePhase(3), 32000), // Stage 4: Captions
+      setTimeout(() => setActivePipelinePhase(4), 42000), // Stage 5: Render
+      setTimeout(() => setActivePipelinePhase(5), 58000), // Stage 6: Publish
+    ];
+    runningTimersRef.current = timers;
 
     try {
       toast.info(`Executing autonomous 6-stage pipeline for "${jobTheme}"...`);
@@ -263,7 +305,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       await loadAutomations();
       await loadHistory(id, true);
     } finally {
-      clearInterval(pollInterval);
+      timers.forEach(clearTimeout);
       setRunningJobId(null);
       setActivePipelinePhase(0);
     }
@@ -294,6 +336,9 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         publishTime: finalPublishTime,
         schedule: finalSchedule,
         voice,
+        aiModel,
+        aspectRatio,
+        length,
         musicTrack,
         privacyStatus,
         active: true,
@@ -725,7 +770,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                         <div className="p-2 rounded-xl bg-[#131318] border border-[#22222A]">
                           <div className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Specs &amp; Engine</div>
-                          <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate">1080p • Gemini 3.8</div>
+                          <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate">1080p • {job.aspectRatio || '9:16'} • {job.length ? job.length.replace(' seconds', 's') : '30s'} • {job.aiModel || 'Gemini 2.5'}</div>
                         </div>
                       </div>
 
@@ -758,21 +803,22 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                               <span>Autonomous 6-Stage Pipeline Live</span>
                             </span>
                             <span className="font-mono text-[10px] text-emerald-300 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                              Stage {activePipelinePhase + 1} of 6
+                              Stage {Math.min(6, getJobStageIndex(job) + 1)} of 6
                             </span>
                           </div>
 
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-0.5">
                             {[
-                              { name: '1. Script', desc: 'Gemini 3.8 Flash' },
+                              { name: '1. Script', desc: job.aiModel || 'Gemini 2.5 Flash' },
                               { name: '2. Voice', desc: job.voice || 'Fenrir TTS' },
                               { name: '3. B-Roll', desc: '4K Pexels/Pixabay' },
                               { name: '4. Captions', desc: 'Acoustic Sync' },
                               { name: '5. Render', desc: '1080p MP4' },
                               { name: '6. Publish', desc: job.privacyStatus === 'scheduled' ? 'Schedule' : 'Shorts Live' },
                             ].map((step, idx) => {
-                              const isDone = activePipelinePhase > idx;
-                              const isCurrent = activePipelinePhase === idx;
+                              const curStage = getJobStageIndex(job);
+                              const isDone = curStage > idx;
+                              const isCurrent = curStage === idx;
 
                               return (
                                 <div
@@ -1043,78 +1089,90 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
                       {/* ── 7. BOTTOM ACTION TOOLBAR ── */}
                       <div className="flex items-center gap-2 pt-0.5">
-                        {/* Run Now Primary Button */}
-                        <button
-                          type="button"
-                          disabled={isRunning}
-                          onClick={() => handleRunNow(job.id, job.theme)}
-                          className={`flex-1 h-9 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-[0.99] ${
-                            isRunning
-                              ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 cursor-not-allowed shadow-inner'
-                              : isPaused
-                              ? 'bg-[#1C1C24] hover:bg-[#252530] text-zinc-200 hover:text-white border border-[#2A2A38] hover:border-zinc-500'
-                              : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
-                          }`}
-                          title={
-                            isRunning
-                              ? 'Autonomous pipeline currently executing'
-                              : isPaused
-                              ? 'Trigger manual pipeline execution for paused schedule'
-                              : 'Trigger full generation and publish now'
-                          }
-                        >
-                          {isRunning ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                        {isRunning ? (
+                          <>
+                            {/* Running Progress Indicator */}
+                            <div
+                              className="flex-1 h-9 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 shadow-inner overflow-hidden select-none"
+                              title="Autonomous pipeline currently executing"
+                            >
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400 shrink-0" />
                               <span className="truncate">
-                                {activePipelinePhase === 0
-                                  ? 'Stage 1/6: Writing Script with Gemini...'
-                                  : activePipelinePhase === 1
-                                  ? 'Stage 2/6: Synthesizing Neural Voice...'
-                                  : activePipelinePhase === 2
-                                  ? 'Stage 3/6: Resolving 4K Stock B-Roll...'
-                                  : activePipelinePhase === 3
-                                  ? 'Stage 4/6: Aligning Word Captions...'
-                                  : activePipelinePhase === 4
-                                  ? 'Stage 5/6: Rendering 1080p MP4 Video...'
-                                  : 'Stage 6/6: Uploading to YouTube Shorts...'}
+                                {runningJobId === job.id
+                                  ? (activePipelinePhase === 0
+                                      ? 'Stage 1/6: Writing Script with Gemini...'
+                                      : activePipelinePhase === 1
+                                      ? 'Stage 2/6: Synthesizing Neural Voice...'
+                                      : activePipelinePhase === 2
+                                      ? 'Stage 3/6: Resolving 4K Stock B-Roll...'
+                                      : activePipelinePhase === 3
+                                      ? 'Stage 4/6: Aligning Word Captions...'
+                                      : activePipelinePhase === 4
+                                      ? 'Stage 5/6: Rendering 1080p MP4 Video...'
+                                      : 'Stage 6/6: Uploading to YouTube Shorts...')
+                                  : (job.lastRunMessage || 'Stage 1/6: Writing Script with Gemini...')}
                               </span>
-                            </>
-                          ) : (
-                            <>
+                            </div>
+
+                            {/* Stop Active Pipeline Execution */}
+                            <button
+                              type="button"
+                              onClick={() => handleStopPipeline(job.id)}
+                              className="h-9 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm shrink-0 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white border-rose-500/50 hover:border-rose-400 active:scale-95"
+                              title="Stop autonomous pipeline execution"
+                            >
+                              <Square className="w-3 h-3 fill-current text-rose-400 shrink-0" />
+                              <span>Stop</span>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {/* Run Now Primary Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleRunNow(job.id, job.theme)}
+                              className={`flex-1 h-9 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-[0.99] ${
+                                isPaused
+                                  ? 'bg-[#1C1C24] hover:bg-[#252530] text-zinc-200 hover:text-white border border-[#2A2A38] hover:border-zinc-500'
+                                  : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
+                              }`}
+                              title={
+                                isPaused
+                                  ? 'Trigger manual pipeline execution for paused schedule'
+                                  : 'Trigger full generation and publish now'
+                              }
+                            >
                               <Play className="w-3.5 h-3.5 fill-current text-white shrink-0" />
                               <span>{isPaused ? 'Run Pipeline (Manual)' : 'Run Pipeline Now'}</span>
-                            </>
-                          )}
-                        </button>
+                            </button>
 
-                        {/* Stop / Resume Secondary Button */}
-                        {!isRunning && (
-                          <button
-                            type="button"
-                            disabled={isToggling}
-                            onClick={() => handleToggle(job.id)}
-                            className={`h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm shrink-0 ${
-                              isActive
-                                ? 'bg-[#1C1C24] hover:bg-amber-500/15 text-zinc-300 hover:text-amber-300 border-[#2A2A38] hover:border-amber-500/40'
-                                : 'bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border-emerald-500/40'
-                            }`}
-                            title={isActive ? "Stop automated recurring generation" : "Resume automated recurring generation"}
-                          >
-                            {isToggling ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : isActive ? (
-                              <>
-                                <Pause className="w-3 h-3 fill-current text-amber-400" />
-                                <span>Stop</span>
-                              </>
-                            ) : (
-                              <>
-                                <Play className="w-3 h-3 fill-current text-emerald-400" />
-                                <span>Resume</span>
-                              </>
-                            )}
-                          </button>
+                            {/* Pause / Resume Schedule Secondary Button */}
+                            <button
+                              type="button"
+                              disabled={isToggling}
+                              onClick={() => handleToggle(job.id)}
+                              className={`h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm shrink-0 ${
+                                isActive
+                                  ? 'bg-[#1C1C24] hover:bg-amber-500/15 text-zinc-300 hover:text-amber-300 border-[#2A2A38] hover:border-amber-500/40'
+                                  : 'bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border-emerald-500/40'
+                              }`}
+                              title={isActive ? "Pause automated recurring generation" : "Resume automated recurring generation"}
+                            >
+                              {isToggling ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : isActive ? (
+                                <>
+                                  <Pause className="w-3 h-3 fill-current text-amber-400" />
+                                  <span>Pause</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3 h-3 fill-current text-emerald-400" />
+                                  <span>Resume</span>
+                                </>
+                              )}
+                            </button>
+                          </>
                         )}
 
                         {/* Delete Schedule Button */}
@@ -1203,6 +1261,52 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
               menuClassName="!bg-[#16161A] !border-[#2E2E38]"
             />
+          </div>
+
+          {/* AI Model Selection */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider flex items-center justify-between">
+              <span>AI Engine / Model</span>
+              <span className="text-[9px] text-blue-400 font-mono">Dynamic Selection</span>
+            </label>
+            <CustomSelect
+              options={AI_MODEL_OPTIONS}
+              value={aiModel}
+              onChange={(val) => setAiModel(val)}
+              className="w-full text-xs"
+              buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
+              menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+            />
+          </div>
+
+          {/* Aspect Ratio & Video Length */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+                Aspect Ratio
+              </label>
+              <CustomSelect
+                options={ASPECT_RATIO_OPTIONS}
+                value={aspectRatio}
+                onChange={(val) => setAspectRatio(val as any)}
+                className="w-full text-xs"
+                buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
+                menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-mono-studio uppercase text-[#A1A1AA] font-semibold tracking-wider">
+                Target Length
+              </label>
+              <CustomSelect
+                options={LENGTH_OPTIONS}
+                value={length}
+                onChange={(val) => setLength(val)}
+                className="w-full text-xs"
+                buttonClassName="!bg-[#151518] !border-[#26262B] !py-2 !rounded-lg text-xs"
+                menuClassName="!bg-[#16161A] !border-[#2E2E38]"
+              />
+            </div>
           </div>
 
           {/* Schedule Frequency (Segmented Pill Toggle) */}

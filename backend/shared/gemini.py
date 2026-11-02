@@ -52,27 +52,28 @@ SCRIPT_FALLBACK_MODELS: list[str] = [
 ]
 
 # TTS Voiceover Models & Fallbacks
-DEFAULT_TTS_MODEL: str = settings.DEFAULT_TTS_MODEL
+DEFAULT_TTS_MODEL: str = "gemini-2.0-flash"
 
 SUPPORTED_TTS_MODELS: dict[str, str] = {
-    # Active Gemini 3.8 TTS Models (Primary)
-    "gemini-3.8-flash-tts": "gemini-3.8-flash-tts",
-    "gemini-3.8-flash-lite-tts": "gemini-3.8-flash-lite-tts",
-    "gemini-3.1-flash-tts": "gemini-3.8-flash-tts",
-    # Active Multimodal / GenerateContent models
+    # Active Multimodal Audio Models
     "gemini-2.0-flash": "gemini-2.0-flash",
-    "gemini-2.5-flash": "gemini-3.8-flash-tts",
+    "gemini-2.5-flash": "gemini-2.0-flash",
+    "gemini-2.0-flash-exp": "gemini-2.0-flash",
+    # Active Gemini 3.8 TTS Models (Aliases)
+    "gemini-3.8-flash-tts": "gemini-2.0-flash",
+    "gemini-3.8-flash-lite-tts": "gemini-2.0-flash",
+    "gemini-3.1-flash-tts": "gemini-2.0-flash",
     # Legacy fallbacks & aliases
-    "gemini-2.5-flash-tts": "gemini-3.8-flash-tts",
-    "gemini-2.5-flash-preview-tts": "gemini-3.8-flash-tts",
-    "gemini-2.5-pro": "gemini-3.8-flash-tts",
-    "gemini-2.0-flash-preview-tts": "gemini-3.8-flash-tts",
+    "gemini-2.5-flash-tts": "gemini-2.0-flash",
+    "gemini-2.5-flash-preview-tts": "gemini-2.0-flash",
+    "gemini-2.5-pro": "gemini-2.0-flash",
+    "gemini-2.0-flash-preview-tts": "gemini-2.0-flash",
 }
 
 TTS_FALLBACK_MODELS: list[str] = [
-    "gemini-3.8-flash-tts",
-    "gemini-3.8-flash-lite-tts",
     "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-3.8-flash-tts",
 ]
 
 # Fixed System Instructions & Production Directives

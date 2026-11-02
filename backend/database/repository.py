@@ -479,9 +479,21 @@ def get_automations() -> List[Dict[str, Any]]:
     cursor.execute("SELECT * FROM automation_jobs ORDER BY active DESC, next_run ASC")
     rows = cursor.fetchall()
     conn.close()
-    logger.debug(f"Queried automation schedules -> Found {len(rows)} job(s)")
-    return [
-        {
+
+    try:
+        from backend.features.youtube.automation_service import _RUNNING_JOB_IDS, _JOB_LOCK
+        with _JOB_LOCK:
+            running_set = set(_RUNNING_JOB_IDS)
+    except Exception:
+        running_set = set()
+
+    result = []
+    for r in rows:
+        st = r["last_status"] if "last_status" in r.keys() else "idle"
+        # If DB says running, but the backend process is not actually executing it, treat as idle
+        if st == "running" and r["id"] not in running_set:
+            st = "idle"
+        result.append({
             "id": r["id"],
             "theme": r["theme"],
             "schedule": r["schedule"],
@@ -493,14 +505,16 @@ def get_automations() -> List[Dict[str, Any]]:
             "privacyStatus": r["privacy_status"] if "privacy_status" in r.keys() else "public",
             "publishTime": r["publish_time"] if "publish_time" in r.keys() else "08:00",
             "lastRun": r["last_run"] if "last_run" in r.keys() else None,
-            "lastStatus": r["last_status"] if "last_status" in r.keys() else "idle",
+            "lastStatus": st,
             "lastVideoTitle": r["last_video_title"] if "last_video_title" in r.keys() else None,
             "lastVideoUrl": r["last_video_url"] if "last_video_url" in r.keys() else None,
             "lastRunMessage": r["last_run_message"] if "last_run_message" in r.keys() else None,
             "lastIsLive": bool(r["last_is_live"]) if "last_is_live" in r.keys() and r["last_is_live"] is not None else False,
-        }
-        for r in rows
-    ]
+            "aiModel": r["ai_model"] if "ai_model" in r.keys() and r["ai_model"] else "gemini-2.5-flash",
+            "aspectRatio": r["aspect_ratio"] if "aspect_ratio" in r.keys() and r["aspect_ratio"] else "9:16",
+            "length": r["length"] if "length" in r.keys() and r["length"] else "30 seconds",
+        })
+    return result
 
 def get_automation_by_id(job_id: str) -> Optional[Dict[str, Any]]:
     conn = get_connection()
@@ -527,6 +541,9 @@ def get_automation_by_id(job_id: str) -> Optional[Dict[str, Any]]:
         "lastVideoUrl": r["last_video_url"] if "last_video_url" in r.keys() else None,
         "lastRunMessage": r["last_run_message"] if "last_run_message" in r.keys() else None,
         "lastIsLive": bool(r["last_is_live"]) if "last_is_live" in r.keys() and r["last_is_live"] is not None else False,
+        "aiModel": r["ai_model"] if "ai_model" in r.keys() and r["ai_model"] else "gemini-2.5-flash",
+        "aspectRatio": r["aspect_ratio"] if "aspect_ratio" in r.keys() and r["aspect_ratio"] else "9:16",
+        "length": r["length"] if "length" in r.keys() and r["length"] else "30 seconds",
     }
 
 def create_automation_job(
@@ -538,6 +555,9 @@ def create_automation_job(
     privacy_status: str = "public",
     publish_time: str = "08:00",
     active: bool = True,
+    ai_model: str = "gemini-2.5-flash",
+    aspect_ratio: str = "9:16",
+    length: str = "30 seconds",
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -550,9 +570,9 @@ def create_automation_job(
         next_run = (now_utc + timedelta(days=1)).isoformat()
 
     cursor.execute("""
-    INSERT INTO automation_jobs (id, theme, schedule, voice, music_track, active, next_run, channel_id, privacy_status, publish_time, last_status, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', ?)
-    """, (job_id, theme, schedule, voice, music_track, 1 if active else 0, next_run, channel_id, privacy_status, publish_time, now_utc.isoformat()))
+    INSERT INTO automation_jobs (id, theme, schedule, voice, music_track, active, next_run, channel_id, privacy_status, publish_time, last_status, ai_model, aspect_ratio, length, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', ?, ?, ?, ?)
+    """, (job_id, theme, schedule, voice, music_track, 1 if active else 0, next_run, channel_id, privacy_status, publish_time, ai_model, aspect_ratio, length, now_utc.isoformat()))
     conn.commit()
     conn.close()
     logger.info(f"Created automation job '{job_id}' (Theme: '{theme}', Schedule: '{schedule}')")
@@ -739,8 +759,20 @@ def update_automation_run_state(
 def toggle_automation(job_id: str) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE automation_jobs SET active = CASE WHEN active = 1 THEN 0 ELSE 1 END WHERE id = ?", (job_id,))
-    conn.commit()
+    cursor.execute("SELECT active, publish_time, schedule FROM automation_jobs WHERE id = ?", (job_id,))
+    row = cursor.fetchone()
+    if row:
+        new_active = 0 if row["active"] == 1 else 1
+        if new_active == 1:
+            try:
+                from backend.features.youtube.automation_service import calculate_next_run_iso
+                next_run = calculate_next_run_iso(row["publish_time"], row["schedule"])
+            except Exception:
+                next_run = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+            cursor.execute("UPDATE automation_jobs SET active = 1, next_run = ?, last_status = 'idle' WHERE id = ?", (next_run, job_id))
+        else:
+            cursor.execute("UPDATE automation_jobs SET active = 0, last_status = 'idle' WHERE id = ?", (job_id,))
+        conn.commit()
     conn.close()
     logger.info(f"Toggled automation job status (Job ID: {job_id})")
     return get_automations()

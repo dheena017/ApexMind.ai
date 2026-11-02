@@ -169,6 +169,9 @@ export interface AutomationJob {
   theme: string;
   schedule: string;
   voice: string;
+  aiModel?: string;
+  aspectRatio?: '9:16' | '16:9' | '1:1';
+  length?: string;
   musicTrack: string;
   active: boolean;
   nextRun: string;

@@ -756,6 +756,9 @@ async def create_automation_schedule_route(payload: dict):
     privacy = payload.get("privacyStatus", "public")
     channel_id = payload.get("channelId")
     active = payload.get("active", True)
+    ai_model = payload.get("aiModel") or payload.get("ai_model") or "gemini-2.5-flash"
+    aspect_ratio = payload.get("aspectRatio") or payload.get("aspect_ratio") or "9:16"
+    length = payload.get("length") or "30 seconds"
 
     job = create_automation_job(
         theme=theme,
@@ -766,6 +769,9 @@ async def create_automation_schedule_route(payload: dict):
         privacy_status=privacy,
         publish_time=publish_time,
         active=active,
+        ai_model=ai_model,
+        aspect_ratio=aspect_ratio,
+        length=length,
     )
     return {"success": True, "data": job, "message": "Automation schedule created successfully."}
 
@@ -848,6 +854,29 @@ async def execute_schedule_immediately_route(job_id: str, payload: Optional[Dict
         return {"success": True, "data": result, "message": "Automation pipeline completed successfully."}
     except Exception as e:
         logger.error(f"Manual automation execution failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/api/schedules/{job_id}/stop",
+    tags=["Schedules & Automations"],
+    summary="Stop Running Schedule Pipeline",
+)
+@router.post(
+    "/api/automations/{job_id}/stop",
+    include_in_schema=False,
+)
+@router.post(
+    "/api/youtube/automations/{job_id}/stop",
+    include_in_schema=False,
+)
+async def stop_schedule_execution_route(job_id: str):
+    from .automation_service import stop_automation_job
+    try:
+        res = stop_automation_job(job_id)
+        return {"success": True, "data": res, "message": "Pipeline execution stopped."}
+    except Exception as e:
+        logger.error(f"Stopping automation execution failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

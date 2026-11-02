@@ -336,6 +336,14 @@ export const youtubeApi = {
     return res.json();
   },
 
+  async stopAutomation(jobId: string): Promise<any> {
+    const res = await fetch(apiUrl(`/api/schedules/${jobId}/stop`), {
+      method: 'POST',
+    });
+    if (!res.ok) return false;
+    return res.json();
+  },
+
   async getAutomationHistory(jobId: string): Promise<import('../types').AutomationHistoryEntry[]> {
     const res = await fetch(apiUrl(`/api/schedules/${jobId}/history`));
     if (!res.ok) return [];

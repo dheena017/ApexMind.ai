@@ -8,6 +8,7 @@ and publishes or schedules directly to YouTube at configured times.
 import asyncio
 import logging
 import re
+import threading
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -32,6 +33,32 @@ from .youtube_live_service import (
 )
 
 logger = logging.getLogger("ApexMind.YouTube.Automation")
+
+_RUNNING_JOB_IDS: set[str] = set()
+_STOP_REQUESTED_JOB_IDS: set[str] = set()
+_JOB_LOCK = threading.Lock()
+
+
+def stop_automation_job(job_id: str) -> Dict[str, Any]:
+    """Stops an active executing pipeline job and resets its state."""
+    job = get_automation_by_id(job_id)
+    with _JOB_LOCK:
+        _STOP_REQUESTED_JOB_IDS.add(job_id)
+        _RUNNING_JOB_IDS.discard(job_id)
+
+    # Recalculate next upcoming schedule so the background scheduler NEVER immediately re-triggers
+    publish_time = job.get("publishTime", "08:00") if job else "08:00"
+    schedule = job.get("schedule") if job else None
+    next_run = calculate_next_run_iso(publish_time, schedule)
+
+    update_automation_run_state(
+        job_id,
+        last_status="idle",
+        next_run=next_run,
+        last_run_message="Pipeline execution stopped by user.",
+    )
+    logger.info(f"[Automation/Stop] Job '{job_id}' marked as stopped. Next scheduled run: {next_run}")
+    return {"success": True, "jobId": job_id, "nextRun": next_run, "message": "Pipeline run stopped."}
 
 
 def calculate_next_run_iso(publish_time: str = "08:00", schedule: Optional[str] = None) -> str:
@@ -60,17 +87,22 @@ def calculate_next_run_iso(publish_time: str = "08:00", schedule: Optional[str] 
         elif unit == 'm':
             return (now_utc + timedelta(minutes=max(1, val))).isoformat()
 
-    # 4. Fallback: specific daily time HH:MM
-    try:
-        parts = publish_time.split(":")
-        hour = int(parts[0])
-        minute = int(parts[1]) if len(parts) > 1 else 0
+    # 4. Specific daily time: parse HH:MM (e.g. "08:00", "08:00 AM", "Daily at 08:00 UTC", "at 14:30")
+    m_time = re.search(r'(\d{1,2}):(\d{2})', publish_time or combined)
+    if m_time:
+        hour = int(m_time.group(1))
+        minute = int(m_time.group(2))
+        # Handle 12-hour AM/PM if present
+        if 'pm' in combined and hour < 12:
+            hour += 12
+        elif 'am' in combined and hour == 12:
+            hour = 0
         candidate = now_utc.replace(hour=hour, minute=minute, second=0, microsecond=0)
         if candidate <= now_utc:
             candidate += timedelta(days=1)
         return candidate.isoformat()
-    except Exception:
-        return (now_utc + timedelta(days=1)).isoformat()
+
+    return (now_utc + timedelta(days=1)).isoformat()
 
 
 import re
@@ -97,9 +129,33 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
     privacy = job.get("privacyStatus", "public")
     publish_time = job.get("publishTime", "08:00")
     channel_id = job.get("channelId")
+    ai_model = job.get("aiModel") or job.get("ai_model") or "gemini-2.5-flash"
+    aspect_ratio = job.get("aspectRatio") or job.get("aspect_ratio") or "9:16"
+    length_str = job.get("length") or "30 seconds"
+    m_sec = re.search(r'(\d+)', length_str)
+    target_sec = float(m_sec.group(1)) if m_sec else 30.0
+
+    with _JOB_LOCK:
+        if job_id in _RUNNING_JOB_IDS:
+            logger.warning(f"[Automation/6-Stage] Job '{job_id}' is already executing! Skipping duplicate trigger.")
+            return job
+        _RUNNING_JOB_IDS.add(job_id)
+
+    # Immediately calculate and persist advanced nextRun so scheduler does not consider it due
+    next_run = calculate_next_run_iso(publish_time, job.get("schedule"))
+    update_automation_run_state(
+        job_id,
+        last_status="running",
+        next_run=next_run,
+        last_run_message="Stage 1/6: Generating viral script & multi-scene storyboard with Gemini AI...",
+    )
 
     logger.info(f"[Automation/6-Stage] Starting pipeline for Job '{job_id}' | Theme: '{theme}' | Voice: '{voice}'")
     start_time = time.perf_counter()
+
+    def check_stop_requested():
+        with _JOB_LOCK:
+            return job_id in _STOP_REQUESTED_JOB_IDS
 
     try:
         title = None
@@ -132,20 +188,24 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             music_url = override_data.get("musicUrl")
             actual_duration = float(override_data.get("duration") or 20.0)
         else:
+            if check_stop_requested():
+                logger.info(f"[Automation/6-Stage] Job '{job_id}' stop requested before Stage 1. Halting.")
+                return {"success": False, "jobId": job_id, "message": "Pipeline execution stopped by user.", "stopped": True}
+
             # ── STAGE 1: SCRIPT WRITING (POST /api/studio/generate-script) ──
             update_automation_run_state(
                 job_id,
                 last_status="running",
-                last_run_message="Stage 1/6: Generating viral script & multi-scene storyboard with Gemini AI...",
+                last_run_message=f"Stage 1/6: Generating viral script with {ai_model}...",
             )
-            logger.info(f"[Automation/Stage-1] Writing script for '{theme}'")
+            logger.info(f"[Automation/Stage-1] Writing script for '{theme}' with model '{ai_model}'")
             script_resp = run_studio_script(
                 category=theme,
                 topic=theme,
                 tone="motivational",
-                length="30 seconds",
-                model="gemini-2.5-flash",
-                aspect_ratio="9:16",
+                length=length_str,
+                model=ai_model,
+                aspect_ratio=aspect_ratio,
                 voice_name=voice,
             )
             script_data = script_resp.get("data") or {}
@@ -160,6 +220,10 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             music_url = script_data.get("soundDesign", {}).get("audioUrl") or None
             sfx_events = script_data.get("soundDesign", {}).get("sfxEvents") or []
 
+            if check_stop_requested():
+                logger.info(f"[Automation/6-Stage] Job '{job_id}' stop requested before Stage 2. Halting.")
+                return {"success": False, "jobId": job_id, "message": "Pipeline execution stopped by user.", "stopped": True}
+
             # ── STAGE 2: VOICEOVER SYNTHESIS (POST /api/studio/synthesize-voice) ──
             update_automation_run_state(
                 job_id,
@@ -172,7 +236,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                 voice_name=voice,
                 storyboard=storyboard,
                 full_narration_text=full_narration,
-                target_duration_seconds=25.0,
+                target_duration_seconds=target_sec,
             )
             actual_duration = float(voice_resp.get("durationSeconds") or 20.0)
 
@@ -202,6 +266,10 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             if aligned_sb and len(aligned_sb) > 0:
                 storyboard = aligned_sb
 
+            if check_stop_requested():
+                logger.info(f"[Automation/6-Stage] Job '{job_id}' stop requested before Stage 3. Halting.")
+                return {"success": False, "jobId": job_id, "message": "Pipeline execution stopped by user.", "stopped": True}
+
             # ── STAGE 3: B-ROLL MEDIA RESOLUTION (POST /api/studio/resolve-media) ──
             update_automation_run_state(
                 job_id,
@@ -212,7 +280,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             try:
                 media_resp = run_studio_media(
                     scenes=storyboard,
-                    aspect_ratio="9:16",
+                    aspect_ratio=aspect_ratio,
                     sfx_events=sfx_events,
                 )
                 media_data = media_resp.get("data") or {}
@@ -254,6 +322,10 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                     f"Please verify Pexels / Pixabay stock media configuration or queries."
                 )
 
+            if check_stop_requested():
+                logger.info(f"[Automation/6-Stage] Job '{job_id}' stop requested before Stage 4. Halting.")
+                return {"success": False, "jobId": job_id, "message": "Pipeline execution stopped by user.", "stopped": True}
+
             # ── STAGE 4: SYLLABLE CAPTIONS ALIGNMENT (POST /api/studio/generate-captions) ──
             update_automation_run_state(
                 job_id,
@@ -267,7 +339,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                     duration_seconds=actual_duration,
                     full_narration_text=full_narration,
                     style_preset="yellow_pop",
-                    aspect_ratio="9:16",
+                    aspect_ratio=aspect_ratio,
                     caption_color="#FACC15",
                     caption_font_family="Impact",
                 )
@@ -280,6 +352,10 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             if not subtitles:
                 raise RuntimeError("Stage 4 (Captions) Error: No subtitles generated for video.")
 
+        if check_stop_requested():
+            logger.info(f"[Automation/6-Stage] Job '{job_id}' stop requested before Stage 5. Halting.")
+            return {"success": False, "jobId": job_id, "message": "Pipeline execution stopped by user.", "stopped": True}
+
         # ── STAGE 5: FULL HD MP4 VIDEO RENDER (POST /api/workspace/render-video) ──
         update_automation_run_state(
             job_id,
@@ -291,7 +367,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         try:
             rendered = render_studio_video(
                 title=title or theme,
-                aspect_ratio="9:16",
+                aspect_ratio=aspect_ratio,
                 duration=actual_duration,
                 exact_duration=actual_duration,
                 audio_url=audio_path,
@@ -329,6 +405,10 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
 
         if not video_path or not Path(video_path).exists():
             raise RuntimeError("Stage 5 (Render) Error: FFmpeg failed to produce 1080x1920 MP4 file.")
+
+        if check_stop_requested():
+            logger.info(f"[Automation/6-Stage] Job '{job_id}' stop requested before Stage 6. Halting.")
+            return {"success": False, "jobId": job_id, "message": "Pipeline execution stopped by user.", "stopped": True}
 
         # ── STAGE 6: YOUTUBE LIVE SHORTS PUBLISH (POST /api/youtube/publish) ──
         update_automation_run_state(
@@ -460,6 +540,12 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         }
 
     except Exception as e:
+        with _JOB_LOCK:
+            was_stopped = job_id in _STOP_REQUESTED_JOB_IDS
+        if was_stopped:
+            logger.info(f"[Automation/6-Stage] Job '{job_id}' execution aborted due to stop request.")
+            return {"success": False, "jobId": job_id, "message": "Pipeline execution stopped by user.", "stopped": True}
+
         logger.error(f"[Automation/6-Stage] Execution failed for job '{job_id}': {e}", exc_info=True)
         update_automation_run_state(
             job_id,
@@ -487,11 +573,34 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             priority="high",
         )
         raise RuntimeError(f"Automation pipeline failed: {str(e)}")
+    finally:
+        with _JOB_LOCK:
+            _RUNNING_JOB_IDS.discard(job_id)
+            _STOP_REQUESTED_JOB_IDS.discard(job_id)
 
 
 async def automation_scheduler_loop():
     """Background asyncio worker that periodically checks and triggers due automation jobs."""
     logger.info("[Automation Scheduler] Background scheduler initialized and running.")
+
+    # Reset any stale orphan 'running' jobs from prior server sessions
+    try:
+        startup_jobs = get_automations()
+        for j in startup_jobs:
+            if j.get("lastStatus") == "running":
+                p_time = j.get("publishTime", "08:00")
+                sched = j.get("schedule")
+                n_run = calculate_next_run_iso(p_time, sched)
+                update_automation_run_state(
+                    j["id"],
+                    last_status="idle",
+                    next_run=n_run,
+                    last_run_message="Scheduler initialized. Waiting for scheduled time.",
+                )
+                logger.info(f"[Automation Scheduler] Reset orphan running job '{j['id']}' to idle.")
+    except Exception as boot_err:
+        logger.warning(f"[Automation Scheduler] Startup cleanup note: {boot_err}")
+
     while True:
         try:
             await asyncio.sleep(60)  # Check every 60 seconds
@@ -501,17 +610,49 @@ async def automation_scheduler_loop():
             for job in jobs:
                 if not job.get("active"):
                     continue
+
+                job_id = job["id"]
+
+                # Never trigger if already executing
+                with _JOB_LOCK:
+                    if job_id in _RUNNING_JOB_IDS:
+                        continue
+
                 next_run_str = job.get("nextRun")
                 if not next_run_str:
                     continue
 
                 try:
                     next_run_dt = datetime.fromisoformat(next_run_str.replace("Z", "+00:00"))
+                    time_diff = (now_utc - next_run_dt).total_seconds()
+
+                    # Guard against stale dates (e.g. from app downtime): advance to upcoming cycle instead of triggering randomly
+                    if time_diff > 3600:
+                        new_next = calculate_next_run_iso(job.get("publishTime", "08:00"), job.get("schedule"))
+                        update_automation_run_state(job_id, last_status="idle", next_run=new_next)
+                        logger.info(f"[Automation Scheduler] Advanced stale job '{job_id}' to upcoming scheduled time: {new_next}")
+                        continue
+
+                    # Exact timing check: trigger only when scheduled time arrives
                     if now_utc >= next_run_dt:
-                        logger.info(f"[Automation Scheduler] Job '{job['id']}' is due (Scheduled: {next_run_str}, Now: {now_utc.isoformat()}). Triggering...")
-                        # Run pipeline in a background thread so async loop isn't blocked by FFmpeg
+                        with _JOB_LOCK:
+                            if job_id in _RUNNING_JOB_IDS:
+                                continue
+                            _RUNNING_JOB_IDS.add(job_id)
+
+                        # Advance nextRun in DB immediately so it cannot be triggered again
+                        adv_next = calculate_next_run_iso(job.get("publishTime", "08:00"), job.get("schedule"))
+                        update_automation_run_state(
+                            job_id,
+                            last_status="running",
+                            next_run=adv_next,
+                            last_run_message="Stage 1/6: Generating viral script & multi-scene storyboard with Gemini AI...",
+                        )
+
+                        logger.info(f"[Automation Scheduler] Triggering job '{job_id}' at scheduled time (Scheduled: {next_run_str}, Next: {adv_next})")
                         loop = asyncio.get_running_loop()
-                        await loop.run_in_executor(None, execute_automation_job, job["id"])
+                        asyncio.create_task(loop.run_in_executor(None, execute_automation_job, job_id))
+
                 except Exception as job_err:
                     logger.error(f"[Automation Scheduler] Error processing job '{job.get('id')}': {job_err}")
 

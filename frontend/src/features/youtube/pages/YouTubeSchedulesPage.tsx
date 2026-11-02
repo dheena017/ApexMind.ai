@@ -25,6 +25,7 @@ import {
   History,
   Globe,
   Search,
+  Square,
 } from 'lucide-react';
 import { Card, Badge } from '@/src/shared/ui/common';
 import { AutomationJob, AutomationHistoryEntry } from '../types';
@@ -44,6 +45,26 @@ const THEME_OPTIONS = [
   'Deep Focus & Flow',
   'Calm & Resilience',
   'Unstoppable Motivation',
+];
+
+const AI_MODEL_OPTIONS = [
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive & High Quality • Recommended)' },
+  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Next-Gen Speed & Storyboarding)' },
+  { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (Rapid & Lightweight)' },
+  { value: 'gemini-flash-latest', label: 'Gemini Flash Latest (Cutting-Edge)' },
+];
+
+const ASPECT_RATIO_OPTIONS = [
+  { value: '9:16', label: '9:16 (Vertical • Shorts / Reels / TikTok)' },
+  { value: '16:9', label: '16:9 (Landscape • YouTube Video)' },
+  { value: '1:1', label: '1:1 (Square • Instagram / Feed)' },
+];
+
+const LENGTH_OPTIONS = [
+  { value: '15 seconds', label: '15 Seconds (Fast Cut)' },
+  { value: '30 seconds', label: '30 Seconds (Standard • Recommended)' },
+  { value: '45 seconds', label: '45 Seconds (Extended)' },
+  { value: '60 seconds', label: '60 Seconds (Deep Dive)' },
 ];
 
 const VOICE_OPTIONS = [
@@ -140,6 +161,9 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
   const [customValue, setCustomValue] = useState(3);
   const [customUnit, setCustomUnit] = useState<'hours' | 'minutes'>('hours');
   const [voice, setVoice] = useState('Fenrir');
+  const [aiModel, setAiModel] = useState('gemini-2.5-flash');
+  const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
+  const [length, setLength] = useState('30 seconds');
   const [musicTrack, setMusicTrack] = useState('Epic Cinematic');
   const [privacyStatus, setPrivacyStatus] = useState<'public' | 'scheduled'>('public');
 
@@ -178,6 +202,9 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
         publishTime: finalPublishTime,
         schedule: finalSchedule,
         voice,
+        aiModel,
+        aspectRatio,
+        length,
         musicTrack,
         privacyStatus,
         active: true,
@@ -203,26 +230,44 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
     }
   };
 
+  const getAutoStageIndex = (job: AutomationJob): number => {
+    if (runningJobId === job.id) return activePipelinePhase;
+    if (!job.lastRunMessage) return 0;
+    const m = job.lastRunMessage.match(/Stage (\d)\/6/i);
+    return m ? Math.max(0, parseInt(m[1], 10) - 1) : 0;
+  };
+
+  const runningTimersRef = React.useRef<any[]>([]);
+
+  const handleStopPipeline = async (id: string) => {
+    runningTimersRef.current.forEach(clearTimeout);
+    runningTimersRef.current = [];
+    setRunningJobId(null);
+    setActivePipelinePhase(0);
+    try {
+      await youtubeApi.stopAutomation(id);
+      setRunSuccessNotice('Pipeline execution stopped');
+    } catch {
+      setErrorMessage('Failed to stop pipeline');
+    }
+    onRefresh?.();
+  };
+
   const handleRunPipelineNow = async (id: string, jobTheme: string) => {
     setRunningJobId(id);
     setActivePipelinePhase(0);
     setRunSuccessNotice(null);
     setErrorMessage(null);
 
-    // Poll backend state every 1.5s to accurately advance phases based on real execution status
-    const pollInterval = setInterval(async () => {
-      try {
-        const jobs = await youtubeApi.getAutomations();
-        const currentJob = jobs.find((j) => j.id === id);
-        if (currentJob?.lastRunMessage) {
-          const match = currentJob.lastRunMessage.match(/Stage\s*([1-6])\/6/i);
-          if (match) {
-            const stageNum = parseInt(match[1], 10);
-            setActivePipelinePhase(stageNum - 1);
-          }
-        }
-      } catch {}
-    }, 1500);
+    // Dynamic phase progression based on realistic pipeline stage durations (zero network polling)
+    const timers = [
+      setTimeout(() => setActivePipelinePhase(1), 16000), // Stage 2: Voice (Script takes ~16s)
+      setTimeout(() => setActivePipelinePhase(2), 23000), // Stage 3: B-Roll
+      setTimeout(() => setActivePipelinePhase(3), 32000), // Stage 4: Captions
+      setTimeout(() => setActivePipelinePhase(4), 42000), // Stage 5: Render
+      setTimeout(() => setActivePipelinePhase(5), 58000), // Stage 6: Publish
+    ];
+    runningTimersRef.current = timers;
 
     try {
       const res = await youtubeApi.runAutomationNow(id);
@@ -239,7 +284,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
       setErrorMessage(err.message || 'Pipeline execution failed');
       onRefresh?.();
     } finally {
-      clearInterval(pollInterval);
+      timers.forEach(clearTimeout);
       setRunningJobId(null);
       setActivePipelinePhase(0);
     }
@@ -666,11 +711,11 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                     <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
                       <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Render Specs</div>
-                      <div className="text-xs font-bold text-zinc-200 mt-0.5">1080×1920 MP4 • 60 FPS</div>
+                      <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate">{auto.aspectRatio || '9:16'} • {auto.length ? auto.length.replace(' seconds', 's') : '30s'} • 1080p</div>
                     </div>
                     <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
                       <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Pipeline Engine</div>
-                      <div className="text-xs font-bold text-zinc-300 mt-0.5 truncate">Gemini 3.8 Flash + TTS</div>
+                      <div className="text-xs font-bold text-zinc-300 mt-0.5 truncate">{auto.aiModel || 'Gemini 2.5 Flash'}</div>
                     </div>
                   </div>
 
@@ -703,21 +748,22 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                           <span>Autonomous 6-Stage Pipeline Live</span>
                         </span>
                         <span className="font-mono text-xs text-emerald-300 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                          Stage {activePipelinePhase + 1} of 6
+                          Stage {Math.min(6, getAutoStageIndex(auto) + 1)} of 6
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
                         {[
-                          { name: '1. Script', desc: 'Gemini 3.8 Flash' },
+                          { name: '1. Script', desc: auto.aiModel || 'Gemini 2.5 Flash' },
                           { name: '2. Voice', desc: auto.voice || 'Fenrir TTS' },
                           { name: '3. B-Roll', desc: '4K Pexels/Pixabay' },
                           { name: '4. Captions', desc: 'Acoustic Sync' },
                           { name: '5. Render', desc: '1080p MP4' },
                           { name: '6. Publish', desc: auto.privacyStatus === 'scheduled' ? 'Scheduled' : 'Shorts Live' },
                         ].map((step, idx) => {
-                          const isDone = activePipelinePhase > idx;
-                          const isCurrent = activePipelinePhase === idx;
+                          const curStage = getAutoStageIndex(auto);
+                          const isDone = curStage > idx;
+                          const isCurrent = curStage === idx;
 
                           return (
                             <div
@@ -975,75 +1021,87 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
 
                   {/* ── 7. BOTTOM ACTION TOOLBAR ── */}
                   <div className="flex items-center justify-between gap-2.5 pt-1">
-                    {/* Run Now Primary Button */}
-                    <button
-                      type="button"
-                      disabled={isRunning}
-                      onClick={() => handleRunPipelineNow(auto.id, auto.theme)}
-                      className={`flex-1 h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.99] ${
-                        isRunning
-                          ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 cursor-not-allowed shadow-inner'
-                          : isPaused
-                          ? 'bg-[#1F1F27] hover:bg-[#282834] text-zinc-200 hover:text-white border border-[#2E2E3E] hover:border-zinc-500'
-                          : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
-                      }`}
-                      title={
-                        isRunning
-                          ? 'Autonomous pipeline currently executing'
-                          : isPaused
-                          ? 'Trigger manual pipeline execution for paused schedule'
-                          : 'Trigger full generation and publish now'
-                      }
-                    >
-                      {isRunning ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-                          <span>
-                            {activePipelinePhase === 0
-                              ? 'Stage 1/6: Generating Script with Gemini 3.8...'
-                              : activePipelinePhase === 1
-                              ? 'Stage 2/6: Synthesizing Neural Voiceover...'
-                              : activePipelinePhase === 2
-                              ? 'Stage 3/6: Resolving 4K Stock B-Roll...'
-                              : activePipelinePhase === 3
-                              ? 'Stage 4/6: Aligning Word Syllable Captions...'
-                              : activePipelinePhase === 4
-                              ? 'Stage 5/6: Rendering 1080x1920 MP4 Video...'
-                              : 'Stage 6/6: Publishing to YouTube Shorts...'}
+                    {isRunning ? (
+                      <>
+                        {/* Running Status Indicator */}
+                        <div
+                          className="flex-1 h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 shadow-inner overflow-hidden select-none"
+                          title="Autonomous pipeline currently executing"
+                        >
+                          <Loader2 className="w-4 h-4 animate-spin text-emerald-400 shrink-0" />
+                          <span className="truncate">
+                            {runningJobId === auto.id
+                              ? (activePipelinePhase === 0
+                                  ? 'Stage 1/6: Generating Script with Gemini...'
+                                  : activePipelinePhase === 1
+                                  ? 'Stage 2/6: Synthesizing Neural Voiceover...'
+                                  : activePipelinePhase === 2
+                                  ? 'Stage 3/6: Resolving 4K Stock B-Roll...'
+                                  : activePipelinePhase === 3
+                                  ? 'Stage 4/6: Aligning Word Syllable Captions...'
+                                  : activePipelinePhase === 4
+                                  ? 'Stage 5/6: Rendering 1080x1920 MP4 Video...'
+                                  : 'Stage 6/6: Publishing to YouTube Shorts...')
+                              : (auto.lastRunMessage || 'Stage 1/6: Generating Script with Gemini...')}
                           </span>
-                        </>
-                      ) : (
-                        <>
+                        </div>
+
+                        {/* Stop Active Pipeline Execution */}
+                        <button
+                          type="button"
+                          onClick={() => handleStopPipeline(auto.id)}
+                          className="h-10 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm shrink-0 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white border-rose-500/50 hover:border-rose-400 active:scale-95"
+                          title="Stop pipeline execution"
+                        >
+                          <Square className="w-3.5 h-3.5 fill-current text-rose-400 shrink-0" />
+                          <span>Stop</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Run Now Primary Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRunPipelineNow(auto.id, auto.theme)}
+                          className={`flex-1 h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.99] ${
+                            isPaused
+                              ? 'bg-[#1F1F27] hover:bg-[#282834] text-zinc-200 hover:text-white border border-[#2E2E3E] hover:border-zinc-500'
+                              : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
+                          }`}
+                          title={
+                            isPaused
+                              ? 'Trigger manual pipeline execution for paused schedule'
+                              : 'Trigger full generation and publish now'
+                          }
+                        >
                           <Play className="w-4 h-4 fill-current text-white" />
                           <span>{isPaused ? 'Run Pipeline (Manual)' : 'Run Pipeline Now'}</span>
-                        </>
-                      )}
-                    </button>
+                        </button>
 
-                    {/* Stop / Resume Button in bottom bar */}
-                    {!isRunning && (
-                      <button
-                        type="button"
-                        onClick={() => onToggleAuto(auto.id)}
-                        className={`h-10 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
-                          isActive
-                            ? 'bg-[#1F1F27] hover:bg-amber-500/15 text-zinc-300 hover:text-amber-300 border-[#2E2E3E] hover:border-amber-500/40'
-                            : 'bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border-emerald-500/40'
-                        }`}
-                        title={isActive ? "Stop automated recurring generation" : "Resume automated recurring generation"}
-                      >
-                        {isActive ? (
-                          <>
-                            <Clock className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Stop</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
-                            <span>Resume</span>
-                          </>
-                        )}
-                      </button>
+                        {/* Pause / Resume Button in bottom bar */}
+                        <button
+                          type="button"
+                          onClick={() => onToggleAuto(auto.id)}
+                          className={`h-10 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
+                            isActive
+                              ? 'bg-[#1F1F27] hover:bg-amber-500/15 text-zinc-300 hover:text-amber-300 border-[#2E2E3E] hover:border-amber-500/40'
+                              : 'bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border-emerald-500/40'
+                          }`}
+                          title={isActive ? "Pause automated recurring generation" : "Resume automated recurring generation"}
+                        >
+                          {isActive ? (
+                            <>
+                              <Clock className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Pause</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
+                              <span>Resume</span>
+                            </>
+                          )}
+                        </button>
+                      </>
                     )}
 
                     {/* Delete Schedule Button */}
@@ -1152,6 +1210,61 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* AI Script Engine / Model */}
+              <div>
+                <label className="block text-xs font-semibold text-white mb-1.5 flex items-center justify-between">
+                  <span>AI Script Engine / Model</span>
+                  <span className="text-[10px] text-blue-400 font-mono">Dynamic Selection</span>
+                </label>
+                <select
+                  value={aiModel}
+                  onChange={(e) => setAiModel(e.target.value)}
+                  className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer font-medium"
+                >
+                  {AI_MODEL_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Aspect Ratio & Video Length */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-white mb-1.5">
+                    Aspect Ratio
+                  </label>
+                  <select
+                    value={aspectRatio}
+                    onChange={(e) => setAspectRatio(e.target.value as any)}
+                    className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer font-medium"
+                  >
+                    {ASPECT_RATIO_OPTIONS.map((a) => (
+                      <option key={a.value} value={a.value}>
+                        {a.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-white mb-1.5">
+                    Target Length
+                  </label>
+                  <select
+                    value={length}
+                    onChange={(e) => setLength(e.target.value)}
+                    className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer font-medium"
+                  >
+                    {LENGTH_OPTIONS.map((l) => (
+                      <option key={l.value} value={l.value}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Schedule Frequency Mode Tabs (Studio Panel Tab Style) */}
