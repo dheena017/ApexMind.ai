@@ -115,6 +115,8 @@ class GeneratedScriptData(BaseModel):
     hook: str
     quote: str
     cta: str
+    description: Optional[str] = None
+    titleIdeas: Optional[List[Dict[str, Any]]] = None
     hooks: Optional[List[HookOptionItem]] = None
     soundDesign: Optional[SoundDesignData] = None
     retentionStrategy: Optional[dict] = None
@@ -566,3 +568,33 @@ class CreateCustomBadgeRequest(BaseModel):
 class CreateCustomBadgeResponse(BaseModel):
     success: bool = True
     element: VisualElementItem
+
+
+class GenerateMetadataRequest(BaseModel):
+    category: Optional[str] = "Stoic Mindset & Discipline"
+    topic: Optional[str] = "Daily discipline and focus"
+    title: Optional[str] = ""
+    hook: Optional[str] = ""
+    quote: Optional[str] = ""
+    cta: Optional[str] = ""
+    model: Optional[str] = None
+
+
+class TitleIdeaItem(BaseModel):
+    title: str
+    angle: str = "High CTR"
+    viralityScore: int = 95
+
+
+class CategorizedHashtags(BaseModel):
+    trending: List[str] = []
+    niche: List[str] = []
+    growth: List[str] = []
+
+
+class GenerateMetadataResponse(BaseModel):
+    success: bool = True
+    titles: List[TitleIdeaItem] = []
+    description: str = ""
+    hashtags: CategorizedHashtags = CategorizedHashtags()
+    allHashtags: List[str] = []

@@ -16,6 +16,9 @@ import {
   Sparkles,
   Type,
   AlignLeft,
+  ChevronDown,
+  ChevronUp,
+  Hash,
 } from 'lucide-react';
 import { GeneratedScript, ScriptSubtitle } from '../../types';
 
@@ -33,6 +36,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   onStartNewVideo,
 }) => {
   const [activeTab, setActiveTab] = useState<'content' | 'subtitles'>('content');
+  const [showTitleIdeas, setShowTitleIdeas] = useState(false);
   const hookRef = useRef<HTMLTextAreaElement | null>(null);
   const quoteRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -202,9 +206,18 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
           <div className="flex flex-col gap-3">
             {/* Reel Title */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#71717A]">
-                Reel Title
-              </label>
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <span className="text-[#71717A] uppercase font-bold">Reel Title</span>
+                <button
+                  type="button"
+                  onClick={() => setShowTitleIdeas(!showTitleIdeas)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[9px] font-semibold cursor-pointer transition-colors"
+                >
+                  <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
+                  <span>AI Titles</span>
+                  {showTitleIdeas ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+                </button>
+              </div>
               <input
                 type="text"
                 value={script.title || ''}
@@ -212,6 +225,46 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 placeholder="Title of this video..."
                 className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-[#3B82F6]"
               />
+
+              {showTitleIdeas && (
+                <div className="flex flex-col gap-1 p-2 rounded-xl bg-[#15151A] border border-emerald-500/25 animate-scale-up">
+                  <div className="flex items-center justify-between text-[9px] text-emerald-400 font-bold uppercase tracking-wider">
+                    <span>⚡ AI High-CTR Title Angles</span>
+                    <span className="text-zinc-500">Click to apply</span>
+                  </div>
+                  {(script.titleIdeas && script.titleIdeas.length > 0 ? script.titleIdeas : [
+                    { title: script.title || 'The Stoic Discipline Code', angle: 'Primary Hook', viralityScore: 98 },
+                    { title: 'Stop Waiting for Motivation (Brutal Truth)', angle: 'Brutal Truth', viralityScore: 96 },
+                    { title: 'The Quiet Rule Marcus Aurelius Never Broke', angle: 'Curiosity Gap', viralityScore: 94 },
+                    { title: "Why Weak Men Seek Comfort (And Strong Men Don't)", angle: "Direct Challenge", viralityScore: 92 },
+                  ]).map((opt, oIdx) => {
+                    const isSelected = script.title?.trim() === opt.title?.trim();
+                    return (
+                      <button
+                        key={oIdx}
+                        type="button"
+                        onClick={() => {
+                          updateField('title', opt.title);
+                          setShowTitleIdeas(false);
+                        }}
+                        className={`text-left p-1.5 rounded-lg text-xs transition-all flex flex-col gap-0.5 border cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-white shadow-xs'
+                            : 'bg-[#1C1C22] border-[#2A2A32] text-zinc-300 hover:border-zinc-500 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[9px] font-mono-studio">
+                          <span className="text-emerald-400 font-semibold">{opt.angle}</span>
+                          <span className="px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold">
+                            CTR: {opt.viralityScore}%
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-medium leading-snug">{opt.title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Hook Field */}
@@ -343,6 +396,19 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 placeholder="e.g. Follow for daily mental mastery."
                 className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#3B82F6]"
               />
+            </div>
+
+            {/* Quick Hashtags Strip */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#16161B] border border-[#26262E] text-xs">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Hash className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                <span className="text-[11px] text-zinc-300 truncate">
+                  {(script.hashtags || []).length > 0 ? (script.hashtags || []).slice(0, 4).join(' ') : '#Shorts #Stoicism #Discipline'}
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-300 border border-red-500/30 shrink-0">
+                {(script.hashtags || []).length || 6} Tags
+              </span>
             </div>
 
             {/* AI Scene Plan */}

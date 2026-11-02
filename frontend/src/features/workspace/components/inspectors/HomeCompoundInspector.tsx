@@ -66,7 +66,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'audit' | 'distribute' | 'codec'>('overview');
   const [copiedMetadata, setCopiedMetadata] = useState(false);
-  const [platform, setPlatform] = useState<'youtube' | 'instagram' | 'tiktok' | 'twitter'>('youtube');
   const [savedDraft, setSavedDraft] = useState(false);
 
   // Dynamic user-customizable Codec & Export settings
@@ -240,33 +239,10 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
         {/* ─────── AUDIT TAB ─────── */}
         {activeSubTab === 'audit' && (
           <div className="flex flex-col gap-3 pt-0.5">
-            {/* Platform Selection */}
-            <div className="grid grid-cols-4 gap-1.5">
-              {[
-                { id: 'youtube' as const, label: 'YouTube', icon: '▶' },
-                { id: 'instagram' as const, label: 'Reels', icon: '◈' },
-                { id: 'tiktok' as const, label: 'TikTok', icon: '♪' },
-                { id: 'twitter' as const, label: 'X / Social', icon: '𝕏' },
-              ].map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPlatform(p.id)}
-                  className={`py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide cursor-pointer border transition-all text-center ${
-                    platform === p.id
-                      ? 'bg-[#3B82F6] text-white border-transparent shadow'
-                      : 'bg-[#18181C] border-[#282830] text-[#71717A] hover:text-white'
-                  }`}
-                >
-                  <span className="mr-1">{p.icon}</span>{p.label}
-                </button>
-              ))}
-            </div>
-
             {/* Platform Requirements */}
             <div className="p-3 rounded-xl bg-[#1C1C20] border border-[#2A2A30] flex flex-col gap-2">
               <span className="text-[10px] font-mono-studio text-[#71717A] uppercase tracking-wider font-bold">
-                {platform === 'youtube' ? 'YouTube Shorts' : platform === 'instagram' ? 'Instagram Reels' : platform === 'tiktok' ? 'TikTok' : 'X'} Checks
+                YouTube Shorts Checks
               </span>
               {[
                 {
@@ -289,16 +265,10 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                   label: `Export: ${selectedContainer.toUpperCase()} / ${selectedCodec.toUpperCase()}`,
                   pass: selectedContainer === 'mp4' && selectedCodec === 'h264',
                 },
-                ...(platform === 'youtube' ? [
-                  { label: `Video title: ${title.trim().length}/100 characters`, pass: title.trim().length > 0 && title.trim().length <= 100 },
-                ] : platform === 'instagram' ? [
-                  { label: `Unique hashtags: ${uniqueHashtags.length} (suggested 3–10)`, pass: uniqueHashtags.length >= 3 && uniqueHashtags.length <= 10 },
-                  { label: `Resolution: ${selectedResolution} (1080×1920 target)`, pass: selectedResolution === '1080x1920' },
-                ] : platform === 'tiktok' ? [
-                  { label: `Resolution: ${selectedResolution} (1080×1920 target)`, pass: selectedResolution === '1080x1920' },
-                ] : [
-                  { label: 'Post text available', pass: Boolean(normalizeText(`${title} ${script?.quote ?? ''}`)) },
-                ]),
+                {
+                  label: `Video title: ${title.trim().length}/100 characters`,
+                  pass: title.trim().length > 0 && title.trim().length <= 100,
+                },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
                   {item.pass

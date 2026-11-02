@@ -31,11 +31,14 @@ from .schemas import (
     RecommendedElementsResponse,
     CreateCustomBadgeRequest,
     CreateCustomBadgeResponse,
+    GenerateMetadataRequest,
+    GenerateMetadataResponse,
 )
 from .service import (
     generate_script,
     synthesize_voiceover,
     get_media_library,
+    generate_metadata,
 )
 
 logger = logging.getLogger("ApexMind.features.workspace")
@@ -567,3 +570,28 @@ async def post_convert_to_mp4(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Conversion failed: {e}",
         )
+
+@router.post(
+    "/api/workspace/generate-metadata",
+    response_model=GenerateMetadataResponse,
+    summary="Generate viral titles, description, and hashtags",
+    description="Generate high-CTR titles, optimized description, and categorized hashtags via AI.",
+)
+def post_generate_metadata(payload: GenerateMetadataRequest):
+    try:
+        data = generate_metadata(
+            category=payload.category or "Stoic Mindset & Discipline",
+            topic=payload.topic or "Daily discipline and focus",
+            title=payload.title or "",
+            hook=payload.hook or "",
+            quote=payload.quote or "",
+            cta=payload.cta or "",
+            model=payload.model,
+        )
+        return {
+            "success": True,
+            **data,
+        }
+    except Exception as e:
+        logger.error(f"Generate metadata error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

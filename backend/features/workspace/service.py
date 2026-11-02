@@ -108,3 +108,24 @@ def get_media_library() -> Dict[str, Any]:
     logger.debug(f"Retrieved media library catalog: {len(catalog.get('audioTracks', []))} tracks | {len(catalog.get('backdrops', []))} backdrops | {len(catalog.get('voices', []))} voice presets")
     return {"success": True, "data": catalog}
 
+
+
+def generate_metadata(
+    category: str = "Stoic Mindset & Discipline",
+    topic: str = "Daily discipline and focus",
+    title: str = "",
+    hook: str = "",
+    quote: str = "",
+    cta: str = "",
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    from backend.shared.gemini import generate_gemini_metadata
+    return generate_gemini_metadata(
+        category=category,
+        topic=topic,
+        title=title,
+        hook=hook,
+        quote=quote,
+        cta=cta,
+        model=model,
+    )

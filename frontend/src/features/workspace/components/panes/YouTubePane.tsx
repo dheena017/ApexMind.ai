@@ -23,10 +23,16 @@ import {
   Film,
   Sparkles,
   ArrowUpRight,
+  Wand2,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  Shuffle,
 } from 'lucide-react';
 import { GeneratedScript } from '../../types';
 import type { YouTubeChannel } from '@/src/features/youtube/types';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
+import { workspaceApi } from '../../api/workspaceApi';
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
 import { YouTubeIcon } from '@/src/features/youtube/components/YouTubeIcon';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -109,15 +115,64 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   const [madeForKids, setMadeForKids] = useState(false);
 
   // Hashtags (Managed in SEO & embedded into video description)
-  const [tags, setTags] = useState<string[]>([
-    '#Shorts',
-    '#ApexMind',
-    '#Motivation',
-    '#Stoicism',
-    '#Discipline',
-    '#Mindset',
-  ]);
+  const [tags, setTags] = useState<string[]>(() => {
+    if (script?.hashtags && script.hashtags.length > 0) return script.hashtags;
+    if (script?.tags && script.tags.length > 0) return script.tags;
+    return ['#Shorts', '#ApexMind', '#Motivation', '#Stoicism', '#Discipline', '#Mindset'];
+  });
   const [newTagInput, setNewTagInput] = useState('');
+
+  // AI Metadata Generation States
+  const [isGeneratingMeta, setIsGeneratingMeta] = useState<boolean>(false);
+  const [generatingSection, setGeneratingSection] = useState<'all' | 'title' | 'desc' | 'tags' | null>(null);
+  const [showTitleDrawer, setShowTitleDrawer] = useState<boolean>(false);
+  const [copiedDescription, setCopiedDescription] = useState<boolean>(false);
+
+  const [titleSuggestions, setTitleSuggestions] = useState<Array<{ title: string; angle: string; viralityScore: number }>>(() => [
+    { title: script?.title || 'The Stoic Discipline Code', angle: 'Primary Hook', viralityScore: 98 },
+    ...(script?.titleIdeas || [
+      { title: 'Stop Waiting for Motivation (Brutal Truth)', angle: 'Brutal Truth', viralityScore: 96 },
+      { title: 'The Quiet Rule Marcus Aurelius Never Broke', angle: 'Curiosity Gap', viralityScore: 94 },
+      { title: 'Why Weak Men Seek Comfort (And Strong Men Don\'t)', angle: 'Direct Challenge', viralityScore: 92 },
+      { title: 'How to Conquer Your Mind in Total Silence', angle: 'Stoic Insight', viralityScore: 90 },
+    ]),
+  ]);
+
+  const [categorizedTags, setCategorizedTags] = useState<{
+    trending: string[];
+    niche: string[];
+    growth: string[];
+  }>({
+    trending: ['#Shorts', '#YouTubeShorts', '#ViralShorts', '#ShortsFeed'],
+    niche: ['#Stoicism', '#MarcusAurelius', '#StoicMindset', '#DailyDiscipline', '#InnerStrength'],
+    growth: ['#Motivation', '#SelfImprovement', '#Discipline', '#Mindset', '#Success'],
+  });
+
+  const [customDescription, setCustomDescription] = useState<string>(() => {
+    if (script?.description) return script.description;
+    const h = script?.hook || '';
+    const q = script?.quote || '';
+    const c = script?.cta || '';
+    const t = (script?.hashtags && script.hashtags.length > 0 ? script.hashtags : tags).join(' ');
+    return q || h
+      ? `${h ? `⚡ ${h}\n\n` : ''}📜 ${q ? `${q}\n\n` : ''}${c ? `🎯 ${c}\n\n` : ''}${t}\n\nCreated with ApexMind AI Studio.`
+      : 'Transform your mindset. Conquer your inner storm.\n\n#Shorts #Motivation #Discipline';
+  });
+
+  useEffect(() => {
+    if (script?.description && script.description !== customDescription) {
+      setCustomDescription(script.description);
+    }
+    if (script?.titleIdeas && script.titleIdeas.length > 0) {
+      setTitleSuggestions([
+        { title: script.title || 'The Stoic Discipline Code', angle: 'Primary Hook', viralityScore: 98 },
+        ...script.titleIdeas,
+      ]);
+    }
+    if (script?.hashtags && script.hashtags.length > 0) {
+      setTags(script.hashtags);
+    }
+  }, [script?.description, script?.titleIdeas, script?.hashtags]);
 
   // Connected Channel State
   const [channel, setChannel] = useState<YouTubeChannel | null>(null);
@@ -302,9 +357,111 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
     ? `${hookText ? `${hookText}\n\n` : ''}${quoteText ? `${quoteText}\n\n` : ''}${ctaText ? `${ctaText}\n\n` : ''}${tagsText}\n\nCreated with ApexMind AI Studio.`
     : 'Transform your mindset. Conquer your inner storm.\n\n#Shorts #Motivation #Discipline';
 
+  const handleUpdateDescription = (newDesc: string) => {
+    setCustomDescription(newDesc);
+    onUpdateScript?.({ description: newDesc });
+  };
+
+  const handleSelectTitle = (chosenTitle: string) => {
+    onUpdateScript?.({ title: chosenTitle });
+    toast.success(`Title applied: "${chosenTitle}"`);
+    setShowTitleDrawer(false);
+  };
+
+  const handleApplyDescriptionTemplate = (type: 'viral' | 'takeaways' | 'minimal') => {
+    const h = script?.hook || 'Stop waiting for motivation to strike.';
+    const q = script?.quote || 'Discipline is an unyielding contract you honor with yourself in total silence.';
+    const c = script?.cta || 'Subscribe for daily mental mastery.';
+    const t = tags.join(' ');
+
+    let generated = '';
+    if (type === 'viral') {
+      generated = `⚡ ${h}\n\n${q}\n\n🎯 ${c}\n\n${t}\n\nProduced with ApexMind AI Studio.`;
+    } else if (type === 'takeaways') {
+      generated = `⚡ ${h}\n\n📜 ${q}\n\nKey Takeaways:\n• Action creates momentum, not waiting for mood.\n• The obstacle in front of you becomes your path.\n• Silence and execution beat loud excuses.\n\n🎯 ${c}\n\n${t}\n\nProduced with ApexMind AI Studio.`;
+    } else {
+      generated = `${q}\n\n${t}`;
+    }
+    handleUpdateDescription(generated);
+    toast.success(`Applied ${type === 'viral' ? 'Viral Shorts' : type === 'takeaways' ? 'Deep Takeaways' : 'Minimal'} template`);
+  };
+
+  const handleGenerateMetadata = async (mode: 'all' | 'title' | 'desc' | 'tags' = 'all') => {
+    setIsGeneratingMeta(true);
+    setGeneratingSection(mode);
+    try {
+      const result = await workspaceApi.generateMetadata({
+        category,
+        topic: videoTitle || script?.category || 'Stoic Mindset & Discipline',
+        title: videoTitle,
+        hook: hookText,
+        quote: quoteText,
+        cta: ctaText,
+      });
+
+      if (mode === 'all' || mode === 'title') {
+        if (result.titles && result.titles.length > 0) {
+          setTitleSuggestions(result.titles);
+          if (mode === 'all' && !videoTitle.trim()) {
+            onUpdateScript?.({ title: result.titles[0].title });
+          }
+          if (mode === 'title') setShowTitleDrawer(true);
+        }
+      }
+
+      if (mode === 'all' || mode === 'desc') {
+        if (result.description) {
+          handleUpdateDescription(result.description);
+        }
+      }
+
+      if (mode === 'all' || mode === 'tags') {
+        if (result.hashtags) {
+          setCategorizedTags(result.hashtags);
+        }
+        if (mode === 'tags' || (mode === 'all' && tags.length < 3)) {
+          const freshTags = result.allHashtags.slice(0, 8);
+          setTags(freshTags);
+          onUpdateScript?.({ hashtags: freshTags, tags: freshTags });
+        }
+      }
+
+      toast.success(
+        mode === 'all'
+          ? 'AI generated fresh titles, description, and hashtags!'
+          : mode === 'title'
+          ? 'AI generated 5 viral title hooks!'
+          : mode === 'desc'
+          ? 'AI crafted rich SEO description!'
+          : 'AI generated fresh trending hashtags!'
+      );
+    } catch (err: any) {
+      toast.error('Could not generate metadata: ' + (err.message || 'Error'));
+    } finally {
+      setIsGeneratingMeta(false);
+      setGeneratingSection(null);
+    }
+  };
+
+  const handleAddAllFromCategory = (catKey: 'trending' | 'niche' | 'growth') => {
+    const list = categorizedTags[catKey] || [];
+    const combined = Array.from(new Set([...tags, ...list]));
+    setTags(combined);
+    onUpdateScript?.({ hashtags: combined, tags: combined });
+    toast.success(`Added ${list.length} tags from ${catKey}`);
+  };
+
+  const handleClearAllTags = () => {
+    setTags([]);
+    onUpdateScript?.({ hashtags: [], tags: [] });
+    toast.info('All hashtags cleared');
+  };
+
   const handleCopyDescription = () => {
-    navigator.clipboard.writeText(description);
+    navigator.clipboard.writeText(customDescription);
+    setCopiedDescription(true);
     toast.success('Description copied to clipboard');
+    setTimeout(() => setCopiedDescription(false), 2000);
   };
 
   // Dynamic Viral / SEO readiness score
@@ -581,46 +738,206 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             ═══════════════════════════════════════════════════════════ */}
         {activeSubTab === 'meta' && (
           <div className="flex flex-col gap-3.5">
-            {/* Video Title */}
+            {/* AI Global Quick Generation Banner */}
+            <div className="p-2.5 rounded-xl bg-gradient-to-r from-red-950/40 via-[#1C1C24] to-red-950/20 border border-red-500/30 flex items-center justify-between gap-2 shadow-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded-lg bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-red-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-white leading-tight">AI Metadata Engine</div>
+                  <div className="text-[9px] text-zinc-400 truncate">Generate viral Title, Description &amp; Hashtags in 1-click</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isGeneratingMeta}
+                onClick={() => handleGenerateMetadata('all')}
+                className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold text-[10px] flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50 shrink-0"
+              >
+                <Wand2 className={`w-3 h-3 ${isGeneratingMeta && generatingSection === 'all' ? 'animate-spin' : ''}`} />
+                <span>{isGeneratingMeta && generatingSection === 'all' ? 'Generating…' : 'AI Generate All'}</span>
+              </button>
+            </div>
+
+            {/* Video Title & AI Suggestions */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
                 <span className="text-[#A1A1AA] uppercase font-bold flex items-center gap-1">
                   <Youtube className="w-3 h-3 text-red-500" /> Shorts Video Title
                 </span>
-                <span className={`text-[10px] ${videoTitle.length > 90 ? 'text-amber-400' : 'text-[#71717A]'}`}>
-                  {videoTitle.length}/100
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowTitleDrawer(!showTitleDrawer)}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-semibold cursor-pointer transition-colors"
+                    title="Toggle AI Title Ideas"
+                  >
+                    <Sparkles className="w-2.5 h-2.5 text-red-400" />
+                    <span>AI Titles ({titleSuggestions.length})</span>
+                    {showTitleDrawer ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+                  </button>
+                  <span className={`text-[10px] ${videoTitle.length > 80 ? 'text-amber-400' : 'text-[#71717A]'}`}>
+                    {videoTitle.length}/100
+                  </span>
+                </div>
               </div>
-              <input
-                type="text"
-                value={videoTitle}
-                onChange={(e) => onUpdateScript?.({ title: e.target.value })}
-                placeholder="Enter compelling YouTube video title..."
-                maxLength={100}
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white font-medium outline-none focus:border-red-500/80 transition-colors"
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={videoTitle}
+                  onChange={(e) => onUpdateScript?.({ title: e.target.value })}
+                  placeholder="Enter compelling YouTube video title..."
+                  maxLength={100}
+                  className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-white font-semibold outline-none focus:border-red-500/80 transition-colors"
+                />
+              </div>
+
+              {/* Expandable AI Title Suggestions Drawer */}
+              {showTitleDrawer && (
+                <div className="p-2.5 rounded-xl bg-[#15151A] border border-red-500/25 flex flex-col gap-2 animate-scale-up">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-red-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                      ⚡ High-CTR Viral Hook Titles
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isGeneratingMeta}
+                      onClick={() => handleGenerateMetadata('title')}
+                      className="text-[9px] text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                    >
+                      <Shuffle className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'title' ? 'animate-spin text-red-400' : ''}`} />
+                      <span>{isGeneratingMeta && generatingSection === 'title' ? 'Refining…' : 'Generate More'}</span>
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {titleSuggestions.map((item, idx) => {
+                      const isSelected = videoTitle.trim() === item.title.trim();
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSelectTitle(item.title)}
+                          className={`text-left p-2 rounded-lg text-xs transition-all flex flex-col gap-1 border cursor-pointer ${
+                            isSelected
+                              ? 'bg-red-500/20 border-red-500/50 text-white shadow-xs'
+                              : 'bg-[#1C1C22] border-[#2A2A32] text-zinc-300 hover:border-zinc-500 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[9px] font-mono-studio">
+                            <span className="text-red-400 font-semibold">{item.angle}</span>
+                            <span className="px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-bold">
+                              CTR: {item.viralityScore}%
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-medium leading-snug">{item.title}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Video Description (Fully Editable + AI Polish + Formatting Templates) */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[#A1A1AA] uppercase font-bold">Video Description</span>
+                  <span className="text-[9px] text-zinc-500">
+                    {customDescription.length} chars • {customDescription.trim().split(/\s+/).filter(Boolean).length} words
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={isGeneratingMeta}
+                    onClick={() => handleGenerateMetadata('desc')}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#2A2A32] hover:bg-[#32323D] text-zinc-300 hover:text-white transition-colors cursor-pointer text-[10px]"
+                    title="AI Polish Description"
+                  >
+                    <Wand2 className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'desc' ? 'animate-spin text-red-400' : 'text-red-400'}`} />
+                    <span>{isGeneratingMeta && generatingSection === 'desc' ? 'Writing…' : 'AI Polish'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyDescription}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#2A2A32] hover:bg-[#32323D] text-zinc-300 hover:text-white transition-colors cursor-pointer text-[10px]"
+                    title="Copy description"
+                  >
+                    {copiedDescription ? (
+                      <Check className="w-2.5 h-2.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-2.5 h-2.5" />
+                    )}
+                    <span>{copiedDescription ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Preset Formatting Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
+                <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Presets:</span>
+                {[
+                  { id: 'viral' as const, label: '⚡ Viral Shorts' },
+                  { id: 'takeaways' as const, label: '📖 Deep Takeaways' },
+                  { id: 'minimal' as const, label: '🎯 Minimal' },
+                ].map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => handleApplyDescriptionTemplate(tpl.id)}
+                    className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-[#1A1A20] hover:bg-[#25252E] text-zinc-400 hover:text-white border border-[#2D2D36] transition-colors cursor-pointer shrink-0"
+                  >
+                    {tpl.label}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                rows={5}
+                value={customDescription}
+                onChange={(e) => handleUpdateDescription(e.target.value)}
+                placeholder="Write or generate rich YouTube video description..."
+                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-zinc-200 font-sans outline-none focus:border-red-500/80 resize-none custom-scrollbar leading-relaxed"
               />
             </div>
 
-            {/* Video Description (With Auto-Appended Hashtags & Copy) */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <span className="text-[#A1A1AA] uppercase font-bold">Video Description</span>
+            {/* Quick Hashtags Strip in Meta Tab */}
+            <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#16161B] border border-[#26262D]">
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-[#A1A1AA] uppercase font-bold font-mono-studio flex items-center gap-1">
+                  <Hash className="w-3 h-3 text-red-400" /> Attached Hashtags ({tags.length})
+                </span>
                 <button
                   type="button"
-                  onClick={handleCopyDescription}
-                  className="flex items-center gap-1 text-[#71717A] hover:text-white transition-colors cursor-pointer"
-                  title="Copy description"
+                  onClick={() => setActiveSubTab('seo')}
+                  className="text-[10px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
                 >
-                  <Copy className="w-3 h-3" />
-                  <span>Copy</span>
+                  Manage in SEO →
                 </button>
               </div>
-              <textarea
-                rows={4}
-                readOnly
-                value={description}
-                className="w-full bg-[#1C1C20] border border-[#2A2A30] rounded-xl px-3 py-2 text-xs text-zinc-300 font-sans outline-none resize-none custom-scrollbar leading-relaxed"
-              />
+              <div className="flex flex-wrap gap-1">
+                {tags.slice(0, 8).map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1E2A3A] border border-[#2A3A5A] text-[10px] text-[#60A5FA] font-medium"
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(t)}
+                      className="text-[#93C5FD] hover:text-white cursor-pointer ml-0.5"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                ))}
+                {tags.length > 8 && (
+                  <span className="text-[10px] text-zinc-500 self-center">+{tags.length - 8} more</span>
+                )}
+              </div>
             </div>
 
             {/* Visibility / Privacy */}
@@ -713,19 +1030,50 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             </div>
 
             {/* Viral Hashtags & Suggested Tags Manager */}
-            <div className="p-3 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2">
+            <div className="p-3.5 rounded-xl bg-[#18181C] border border-[#282830] flex flex-col gap-2.5 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono-studio text-[#A1A1AA] uppercase tracking-wider font-bold flex items-center gap-1">
-                  <Hash className="w-3 h-3 text-red-400" /> Viral Hashtags ({tags.length})
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopyAllHashtags}
-                  className="text-[10px] text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-1 font-medium"
-                >
-                  <Copy className="w-2.5 h-2.5" />
-                  <span>Copy All</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono-studio text-[#A1A1AA] uppercase tracking-wider font-bold flex items-center gap-1">
+                    <Hash className="w-3.5 h-3.5 text-red-400" /> Active Hashtags ({tags.length})
+                  </span>
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                    tags.length >= 3 && tags.length <= 8
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-amber-500/20 text-amber-300'
+                  }`}>
+                    {tags.length >= 3 && tags.length <= 8 ? 'Optimal (3-8)' : '3-8 Recommended'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={isGeneratingMeta}
+                    onClick={() => handleGenerateMetadata('tags')}
+                    className="text-[10px] px-2 py-0.5 rounded bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-semibold cursor-pointer flex items-center gap-1 transition-colors"
+                  >
+                    <Sparkles className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'tags' ? 'animate-spin text-red-400' : 'text-red-400'}`} />
+                    <span>{isGeneratingMeta && generatingSection === 'tags' ? 'Generating…' : 'AI Generate'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyAllHashtags}
+                    className="text-[10px] text-zinc-400 hover:text-white cursor-pointer flex items-center gap-1 font-medium"
+                  >
+                    <Copy className="w-2.5 h-2.5" />
+                    <span>Copy</span>
+                  </button>
+                  {tags.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearAllTags}
+                      className="text-[10px] text-zinc-500 hover:text-red-400 cursor-pointer flex items-center gap-0.5 font-medium"
+                      title="Clear all hashtags"
+                    >
+                      <Trash2 className="w-2.5 h-2.5" />
+                      <span>Clear</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Tag Input */}
@@ -740,7 +1088,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                       handleAddHashtag();
                     }
                   }}
-                  placeholder="Add hashtag (e.g. #Stoic)..."
+                  placeholder="Add custom hashtag (e.g. #StoicGrit)..."
                   className="flex-1 bg-[#121215] border border-[#2A2A30] focus:border-red-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
                 />
                 <button
@@ -753,43 +1101,127 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
 
               {/* Active Tag Cloud */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#1E2A3A] border border-[#2A3A5A] text-[10px] text-[#60A5FA] font-medium"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="text-[#93C5FD] hover:text-white cursor-pointer ml-0.5"
+              <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-lg bg-[#121215] border border-[#222228]">
+                {tags.length === 0 ? (
+                  <span className="text-[11px] text-zinc-500 italic py-0.5">No hashtags added yet. Click suggestions below or AI Generate.</span>
+                ) : (
+                  tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#1E2A3A] border border-[#2A3A5A] text-[10px] text-[#60A5FA] font-medium animate-scale-up"
                     >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  </span>
-                ))}
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="text-[#93C5FD] hover:text-white cursor-pointer ml-0.5"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  ))
+                )}
               </div>
 
-              {/* Suggested Trending Tags */}
-              <div className="flex flex-col gap-1 pt-2 border-t border-[#25252A]">
-                <span className="text-[9px] text-[#71717A] uppercase font-bold">Suggested Trending Tags:</span>
-                <div className="flex flex-wrap gap-1">
-                  {['#Shorts', '#Viral', '#Mindset', '#Motivation', '#Discipline', '#Success', '#StoicMindset'].map((sug) => (
+              {/* Categorized Smart Tag Recommendations */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-[#25252A]">
+                {/* 1. Trending Shorts Cluster */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[9px]">
+                    <span className="text-red-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                      🔥 High-Velocity Shorts Tags
+                    </span>
                     <button
-                      key={sug}
                       type="button"
-                      onClick={() => handleAddHashtag(sug)}
-                      disabled={tags.includes(sug)}
-                      className={`text-[9px] px-2 py-0.5 rounded border transition-colors cursor-pointer ${
-                        tags.includes(sug)
-                          ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                          : 'bg-[#1C1C22] border-[#2A2A32] text-[#A1A1AA] hover:text-white hover:border-red-500/60'
-                      }`}
+                      onClick={() => handleAddAllFromCategory('trending')}
+                      className="text-[9px] text-red-300 hover:text-white cursor-pointer font-semibold"
                     >
-                      + {sug}
+                      + Add All ({categorizedTags.trending.length})
                     </button>
-                  ))}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {categorizedTags.trending.map((sug) => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => handleAddHashtag(sug)}
+                        disabled={tags.includes(sug)}
+                        className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                          tags.includes(sug)
+                            ? 'opacity-30 border-transparent bg-transparent cursor-default'
+                            : 'bg-[#1C1C22] border-[#2A2A32] text-[#A1A1AA] hover:text-white hover:border-red-500/60 active:scale-95'
+                        }`}
+                      >
+                        + {sug}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Niche Mindset & Topic Cluster */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[9px]">
+                    <span className="text-[#60A5FA] font-bold uppercase tracking-wider flex items-center gap-1">
+                      🧠 Category &amp; Niche Authority
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAddAllFromCategory('niche')}
+                      className="text-[9px] text-[#93C5FD] hover:text-white cursor-pointer font-semibold"
+                    >
+                      + Add All ({categorizedTags.niche.length})
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {categorizedTags.niche.map((sug) => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => handleAddHashtag(sug)}
+                        disabled={tags.includes(sug)}
+                        className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                          tags.includes(sug)
+                            ? 'opacity-30 border-transparent bg-transparent cursor-default'
+                            : 'bg-[#1C1C22] border-[#2A2A32] text-[#A1A1AA] hover:text-white hover:border-blue-500/60 active:scale-95'
+                        }`}
+                      >
+                        + {sug}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. High-Reach Growth Cluster */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[9px]">
+                    <span className="text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                      🚀 Algorithm Growth &amp; Reach
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAddAllFromCategory('growth')}
+                      className="text-[9px] text-emerald-300 hover:text-white cursor-pointer font-semibold"
+                    >
+                      + Add All ({categorizedTags.growth.length})
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {categorizedTags.growth.map((sug) => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => handleAddHashtag(sug)}
+                        disabled={tags.includes(sug)}
+                        className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                          tags.includes(sug)
+                            ? 'opacity-30 border-transparent bg-transparent cursor-default'
+                            : 'bg-[#1C1C22] border-[#2A2A32] text-[#A1A1AA] hover:text-white hover:border-emerald-500/60 active:scale-95'
+                        }`}
+                      >
+                        + {sug}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

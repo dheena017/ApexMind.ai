@@ -111,6 +111,8 @@ export interface StoryboardScene {
 
 export interface GeneratedScript {
   title: string;
+  description?: string;
+  titleIdeas?: { title: string; angle: string; viralityScore: number }[];
   hook: string;
   quote: string;
   cta: string;

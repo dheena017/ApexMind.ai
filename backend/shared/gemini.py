@@ -1327,6 +1327,24 @@ Output MUST be a single raw JSON object matching this exact schema:
         result["targetDurationSeconds"] = target_seconds
         result["durationSeconds"] = target_seconds
         result["estimatedDuration"] = f"{target_seconds}s"
+        if not result.get("hashtags"):
+            result["hashtags"] = result.get("tags") or ["#Shorts", "#Motivation", "#Discipline", "#Mindset", "#StoicMindset", "#ApexMind"]
+        if not result.get("tags"):
+            result["tags"] = result.get("hashtags")
+        if not result.get("description"):
+            h_line = result.get("hook", "")
+            q_line = result.get("quote", "")
+            c_line = result.get("cta", "")
+            t_line = " ".join(result.get("hashtags", []))
+            result["description"] = f"⚡ {h_line}\n\n📜 {q_line}\n\nKey Takeaways:\n• Discipline is an unyielding contract with yourself.\n• The obstacle in front of you becomes your path forward.\n• Silence and execution beat loud excuses.\n\n🎯 {c_line}\n\n{t_line}\n\nProduced with ApexMind AI Studio."
+        if not result.get("titleIdeas"):
+            orig_t = result.get("title") or "The Stoic Discipline Code"
+            result["titleIdeas"] = [
+                {"title": orig_t, "angle": "Curiosity Gap", "viralityScore": 98},
+                {"title": f"Stop Waiting for Motivation ({category})", "angle": "Brutal Truth", "viralityScore": 95},
+                {"title": "The Rule Marcus Aurelius Never Broke", "angle": "Stoic Insight", "viralityScore": 93},
+                {"title": "Why 99% Fail Before 6:00 AM", "angle": "Direct Challenge", "viralityScore": 91},
+            ]
         if not result.get("outputFormat"):
             result["outputFormat"] = f"{target_aspect_ratio} Vertical Video (1080x1920)" if target_aspect_ratio == "9:16" else f"{target_aspect_ratio} Video"
 
@@ -1568,3 +1586,139 @@ def generate_gemini_voiceover(
         raise RuntimeError(f"Voiceover synthesis failed: {e}")
 
 
+
+
+def generate_gemini_metadata(
+    category: str,
+    topic: str,
+    title: str = "",
+    hook: str = "",
+    quote: str = "",
+    cta: str = "",
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Generates viral titles, rich YouTube description, and categorized hashtags via Gemini AI with resilient heuristic fallback."""
+    import re
+    target_model = resolve_script_model(model)
+    clean_cat = (category or "Stoic Mindset & Discipline").strip()
+    clean_topic = (topic or "Daily discipline, focus, and mental toughness").strip()
+    clean_hook = (hook or "").strip()
+    clean_quote = (quote or "").strip()
+    clean_cta = (cta or "Subscribe for daily discipline.").strip()
+
+    def _build_fallback_metadata() -> dict[str, Any]:
+        core_kw = re.sub(r'[^a-zA-Z0-9s]', ' ', clean_topic).split()
+        top_kws = [w.capitalize() for w in core_kw if len(w) > 3][:3]
+        topic_title = " ".join(top_kws) or "Unshakable Focus"
+
+        cat_tag = re.sub(r'[^a-zA-Z0-9]', '', clean_cat.title())
+        topic_tag = re.sub(r'[^a-zA-Z0-9]', '', top_kws[0]) if top_kws else "Mindset"
+
+        fallback_titles = [
+            {"title": f"The Stoic Code: {topic_title}", "angle": "Stoic Principle", "viralityScore": 98},
+            {"title": f"Stop Waiting for Motivation ({topic_title})", "angle": "Brutal Truth", "viralityScore": 95},
+            {"title": f"The Rule Marcus Aurelius Never Broke", "angle": "Curiosity Gap", "viralityScore": 94},
+            {"title": f"Can You Master Pure Focus for 24 Hours?", "angle": "Direct Challenge", "viralityScore": 91},
+            {"title": f"Why 99% Fail at {topic_title}", "angle": "Action Question", "viralityScore": 89},
+        ]
+
+        trending_tags = ["#Shorts", "#YouTubeShorts", "#ViralShorts", "#ShortsFeed"]
+        niche_tags = [
+            f"#{cat_tag}" if cat_tag else "#StoicMindset",
+            f"#{topic_tag}" if topic_tag else "#Discipline",
+            "#MarcusAurelius",
+            "#MentalToughness",
+            "#InnerStrength",
+            "#DailyGrit",
+        ]
+        growth_tags = ["#Motivation", "#SelfImprovement", "#Discipline", "#Mindset", "#Success"]
+        all_unique = list(dict.fromkeys(trending_tags + niche_tags + growth_tags))
+
+        fallback_desc = (
+            f"⚡ {clean_hook or 'Transform your mindset and conquer the quiet battles within.'}\n\n"
+            f"📜 {clean_quote or 'Discipline is the unyielding contract you honor with yourself in total silence.'}\n\n"
+            f"Key Takeaways:\n"
+            f"• Action creates momentum, not waiting for motivation.\n"
+            f"• The obstacle in front of you becomes your path forward.\n"
+            f"• Silence and compounding execution beat loud excuses.\n\n"
+            f"🎯 {clean_cta}\n\n"
+            f"{' '.join(all_unique[:8])}\n\n"
+            f"Produced with ApexMind AI Studio."
+        )
+
+        return {
+            "titles": fallback_titles,
+            "description": fallback_desc,
+            "hashtags": {
+                "trending": trending_tags,
+                "niche": niche_tags,
+                "growth": growth_tags,
+            },
+            "allHashtags": all_unique,
+        }
+
+    prompt = f"""You are an elite YouTube Shorts & TikTok Virality Strategist.
+Generate high-CTR title variations, an engaging description, and categorized hashtags for this motivational Short:
+
+CATEGORY/THEME: {clean_cat}
+TOPIC: {clean_topic}
+CURRENT TITLE: {title or 'Untitled'}
+OPENING HOOK: {clean_hook or 'Stop waiting for motivation to strike.'}
+CORE MONOLOGUE: {clean_quote or 'Discipline is the bridge between goals and accomplishment.'}
+CALL TO ACTION: {clean_cta}
+
+CRITICAL MANDATE:
+1. TITLES: Generate exactly 5 high-CTR titles (under 60 characters) with different psychological angles:
+   - Curiosity Gap
+   - Brutal Truth
+   - Direct Challenge
+   - Stoic Principle
+   - Action Question
+2. DESCRIPTION: Write a formatted YouTube Shorts description with hook summary, quote insight, key takeaways bullet points, CTA, and hashtags.
+3. HASHTAGS: Provide 3 categorized lists:
+   - trending (4-5 general Shorts tags)
+   - niche (5-6 tags specific to {clean_cat} and {clean_topic})
+   - growth (4-5 motivation/mindset tags)
+
+Output strictly a single raw JSON object matching:
+{{
+  "titles": [
+    {{ "title": "Title string under 60 chars", "angle": "Angle Name", "viralityScore": 96 }}
+  ],
+  "description": "Formatted description string",
+  "hashtags": {{
+    "trending": ["#Shorts", "#ViralShorts"],
+    "niche": ["#Stoicism", "#Discipline"],
+    "growth": ["#Motivation", "#Mindset"]
+  }}
+}}
+"""
+
+    try:
+        raw_res, used_model = _generate_script_with_fallback(
+            prompt=prompt,
+            target_model=target_model,
+            system_instruction="You are a specialized viral YouTube metadata optimizer. Respond strictly in valid JSON.",
+        )
+        if raw_res and isinstance(raw_res, dict) and raw_res.get("titles"):
+            titles = raw_res.get("titles", [])
+            desc = raw_res.get("description", "")
+            tags_obj = raw_res.get("hashtags", {})
+            trending = tags_obj.get("trending", [])
+            niche = tags_obj.get("niche", [])
+            growth = tags_obj.get("growth", [])
+            all_tags = list(dict.fromkeys(trending + niche + growth))
+            return {
+                "titles": titles,
+                "description": desc,
+                "hashtags": {
+                    "trending": trending,
+                    "niche": niche,
+                    "growth": growth,
+                },
+                "allHashtags": all_tags,
+            }
+    except Exception as e:
+        logger.warning(f"[Studio/Metadata] Online metadata generation fallback: {e}")
+
+    return _build_fallback_metadata()
