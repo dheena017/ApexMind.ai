@@ -281,7 +281,7 @@ export const workspaceApi = {
   },
 
   // Render Broadcast Full HD MP4 Video via /api/workspace/render-video
-  async renderVideo(payload: any): Promise<{ success: boolean; videoUrl?: string; filename?: string; duration?: number }> {
+  async renderVideo(payload: any): Promise<{ success: boolean; videoUrl?: string; filename?: string; duration?: number; thumbnailUrl?: string; downloadUrl?: string }> {
     consoleLogger.info('Workspace', `[RenderVideo] Calling render API for 1080p MP4...`, payload);
     const start = performance.now();
     const res = await fetch(apiUrl('/api/workspace/render-video'), {

@@ -1044,6 +1044,7 @@ export default function WorkspacePage({
       // ── Stage 1: Render the video frames via render API ───────────────────────
       toast.info('Stage 1/2: Rendering timeline video preview with FFmpeg...', { duration: 4000 });
       let renderedVideoUrl: string | undefined;
+      let renderedThumbnailUrl: string | null = null;
 
       // 1a. Try client-side preview frame transcode if available
       if (typeof (window as any).__apexmind_render_preview_video === 'function') {
@@ -1089,6 +1090,7 @@ export default function WorkspacePage({
 
         if (renderRes?.videoUrl) {
           renderedVideoUrl = renderRes.videoUrl;
+          renderedThumbnailUrl = renderRes.thumbnailUrl || null;
         }
       }
 
@@ -1136,13 +1138,14 @@ export default function WorkspacePage({
       });
 
       // Save to website video library automatically
+      const resolvedLibraryCover = renderedThumbnailUrl || (renderedVideoUrl && renderedVideoUrl.endsWith('.mp4') ? renderedVideoUrl.replace(/\.mp4$/i, '_thumb.jpg') : '') || realCover || currentBackdrop?.imageUrl || '';
       await videosApi.createVideo({
         title: publishTitle,
         quote: publishQuote,
         hook: script.hook || '',
         cta: script.cta || '',
         category,
-        coverImageUrl: realCover,
+        coverImageUrl: resolvedLibraryCover,
         videoUrl: resolvedVideoUrl,
         audioUrl: audioUrl || '',
         voice: selectedVoice,
@@ -1231,6 +1234,8 @@ export default function WorkspacePage({
         '';
 
       const realCover = await resolveRealCoverImage();
+      const currentBg = backdrops.find((b) => b.id === selectedBackdrop);
+      const resolvedLibCover = (resolvedVideoUrl && resolvedVideoUrl.endsWith('.mp4') ? resolvedVideoUrl.replace(/\.mp4$/i, '_thumb.jpg') : '') || realCover || currentBg?.imageUrl || '';
 
       await videosApi.createVideo({
         title: script.title || 'Untitled Short',
@@ -1238,7 +1243,7 @@ export default function WorkspacePage({
         hook: script.hook || '',
         cta: script.cta || '',
         category,
-        coverImageUrl: realCover,
+        coverImageUrl: resolvedLibCover,
         videoUrl: resolvedVideoUrl,
         audioUrl: audioUrl || '',
         voice: selectedVoice,

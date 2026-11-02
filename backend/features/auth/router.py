@@ -9,18 +9,43 @@ from fastapi import APIRouter, HTTPException, status, Header
 from .schemas import (
     GoogleAuthRequest,
     EmailLoginRequest,
+    ChannelAuthRequest,
     AuthResponse,
     UserProfileDTO,
     LogoutResponse,
 )
 from .service import (
     authenticate_google_user,
+    authenticate_channel_user,
     authenticate_email_user,
     get_current_user_profile,
 )
 
 logger = logging.getLogger("ApexMind.features.auth")
-router = APIRouter(prefix="/api/auth", tags=["Authentication & Google Identity"])
+router = APIRouter(prefix="/api/auth", tags=["Authentication & YouTube Identity"])
+
+@router.post(
+    "/channel",
+    response_model=AuthResponse,
+    summary="Sign in with YouTube Channel",
+    description="Authenticate or register a creator profile using a YouTube Channel."
+)
+async def post_channel_auth(payload: ChannelAuthRequest):
+    try:
+        data = authenticate_channel_user(
+            handle=payload.handle,
+            name=payload.name,
+            avatar_url=payload.avatarUrl,
+            channel_id=payload.channelId,
+        )
+        logger.info(f"YouTube Channel authenticated: '{data['user']['name']}' ({data['user']['email']})")
+        return data
+    except Exception as e:
+        logger.error(f"YouTube Channel authentication failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"YouTube Channel authentication failed: {str(e)}"
+        )
 
 @router.post(
     "/google",

@@ -3,9 +3,18 @@ export interface UserProfile {
   email: string;
   name: string;
   avatarUrl: string;
-  provider: 'google' | 'email';
+  provider: 'youtube_oauth' | 'youtube' | 'google' | 'email' | 'local';
   verified: boolean;
   lastLoginAt?: string;
+  channelId?: string;
+  handle?: string;
+}
+
+export interface ChannelAuthPayload {
+  handle: string;
+  name?: string;
+  avatarUrl?: string;
+  channelId?: string;
 }
 
 export interface GoogleAuthPayload {

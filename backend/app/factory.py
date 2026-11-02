@@ -203,20 +203,24 @@ def create_app() -> FastAPI:
     def get_video_file(filename: str):
         from fastapi.responses import FileResponse
         from pathlib import Path
+        import urllib.parse
+        clean_name = urllib.parse.unquote(filename)
         for folder in ["backend/data/rendered_shorts", "backend/data/media", "backend/data"]:
-            file_path = Path(folder) / filename
-            if file_path.exists() and file_path.is_file():
-                if filename.endswith(".png"):
-                    media_type = "image/png"
-                elif filename.endswith(".jpg") or filename.endswith(".jpeg"):
-                    media_type = "image/jpeg"
-                elif filename.endswith(".svg"):
-                    media_type = "image/svg+xml"
-                elif filename.endswith(".mp4"):
-                    media_type = "video/mp4"
-                else:
-                    media_type = "video/webm"
-                return FileResponse(file_path, media_type=media_type)
+            for candidate in [clean_name, filename]:
+                file_path = Path(folder) / candidate
+                if file_path.exists() and file_path.is_file():
+                    ext = candidate.lower()
+                    if ext.endswith(".png"):
+                        media_type = "image/png"
+                    elif ext.endswith(".jpg") or ext.endswith(".jpeg"):
+                        media_type = "image/jpeg"
+                    elif ext.endswith(".svg"):
+                        media_type = "image/svg+xml"
+                    elif ext.endswith(".mp4"):
+                        media_type = "video/mp4"
+                    else:
+                        media_type = "video/webm"
+                    return FileResponse(file_path, media_type=media_type)
         raise HTTPException(status_code=404, detail="Media file not found")
 
     # Set custom OpenAPI schema

@@ -17,7 +17,7 @@ import { Badge } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHeader';
-import { WorkspaceSidebar, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
+import { WorkspaceSidebar, WorkspaceMobileTabs, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
 import { WorkspaceStatusBar } from '@/src/features/workspace/components/WorkspaceStatusBar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
 
@@ -150,34 +150,44 @@ export default function AppLayout({
       {/* =========================================================================
           Workspace Pages (/workspace, /workspace/canvas, /workspace/script, etc.):
           Dedicated Studio Header & Sidebar (Main page header is hidden)
+          Sidebar extends full height on the left; Header sits to the side of the bar.
           Other Pages: Standard Application Header, Main Framing, and Slide Drawer
           ========================================================================= */}
       {isWorkspace ? (
-        <>
-          <WorkspaceHeader
-            user={user}
-            unreadCount={unreadCount}
-            onNavigate={onNavigate}
+        <div className="flex-1 w-full h-full flex flex-col sm:flex-row min-h-0 overflow-hidden">
+          {/* Desktop Left Sidebar: Full height / length from top to bottom */}
+          <WorkspaceSidebar
+            mode="desktop-only"
+            activeTab={activeWorkspacePane}
+            onTabChange={(tab) => onWorkspacePaneChange(tab)}
           />
-          <div className="flex-1 w-full flex flex-col sm:flex-row min-h-0 overflow-hidden">
-            <WorkspaceSidebar
+
+          {/* Right Area: Header at top (side to the sidebar), content, and status bar */}
+          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+            <WorkspaceHeader
+              user={user}
+              unreadCount={unreadCount}
+              onNavigate={onNavigate}
+            />
+            {/* Mobile Tab Bar: Visible only below 640px, under the header */}
+            <WorkspaceMobileTabs
               activeTab={activeWorkspacePane}
               onTabChange={(tab) => onWorkspacePaneChange(tab)}
             />
-            <main className="flex-1 min-w-0 h-full p-1 sm:p-1.5 overflow-y-auto lg:overflow-hidden flex flex-col min-h-0 bg-[#0A0A0A]">
+            <main className="flex-1 min-w-0 min-h-0 p-1 sm:p-1.5 overflow-y-auto lg:overflow-hidden flex flex-col bg-[#0A0A0A]">
               <div className="w-full h-full flex-1 min-h-0">
                 {children}
               </div>
             </main>
+            <WorkspaceStatusBar
+              activePage={activePage}
+              onNavigate={onNavigate}
+              activeWorkspacePane={activeWorkspacePane}
+              onWorkspacePaneChange={onWorkspacePaneChange}
+              workspaceStatus={workspaceStatus}
+            />
           </div>
-          <WorkspaceStatusBar
-            activePage={activePage}
-            onNavigate={onNavigate}
-            activeWorkspacePane={activeWorkspacePane}
-            onWorkspacePaneChange={onWorkspacePaneChange}
-            workspaceStatus={workspaceStatus}
-          />
-        </>
+        </div>
       ) : (
         <>
           {/* Standard Top Bar Header (Compact Sleek Height) */}
@@ -367,8 +377,12 @@ export default function AppLayout({
               <span className="flex-1 min-w-0">
                 <span className="flex items-center gap-1.5">
                   <span className="text-[11px] font-bold text-white truncate">{user.name || 'Creator'}</span>
-                  <span className="text-[9px] bg-blue-500/15 text-[#60A5FA] px-1 py-0.5 rounded font-bold shrink-0">
-                    Google
+                  <span className={`text-[9px] px-1 py-0.5 rounded font-bold shrink-0 ${
+                    user.provider === 'google'
+                      ? 'bg-blue-500/15 text-[#60A5FA]'
+                      : 'bg-red-500/15 text-red-400'
+                  }`}>
+                    {user.provider === 'google' ? 'Google' : 'YouTube'}
                   </span>
                 </span>
                 <span className="block text-[10px] text-[#9CA3AF] truncate">{user.email}</span>

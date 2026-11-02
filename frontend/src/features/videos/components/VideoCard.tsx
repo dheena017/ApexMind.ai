@@ -73,15 +73,23 @@ export const VideoCard: React.FC<VideoCardProps> = ({
     return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);
   }, [video.videoUrl]);
 
-  // Resolve cover image properly (supports relative /api/media/... paths)
+  // Resolve cover image properly (supports companion _thumb.jpg and fallback backdrop)
   const coverSrc = React.useMemo(() => {
-    if (imgError || !video?.coverImageUrl) return '';
-    const raw = video.coverImageUrl.trim();
-    if ((raw.startsWith('http') && !raw.includes('127.0.0.1') && !raw.includes('localhost')) || raw.startsWith('data:') || raw.startsWith('blob:')) {
-      return raw;
+    if (imgError) {
+      return 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80';
     }
-    return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);
-  }, [video?.coverImageUrl, imgError]);
+    if (video?.coverImageUrl && !video.coverImageUrl.startsWith('data:image/svg')) {
+      const raw = video.coverImageUrl.trim();
+      if ((raw.startsWith('http') && !raw.includes('127.0.0.1') && !raw.includes('localhost')) || raw.startsWith('data:') || raw.startsWith('blob:')) {
+        return raw;
+      }
+      return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);
+    }
+    if (video?.videoUrl && video.videoUrl.endsWith('.mp4')) {
+      return apiUrl(video.videoUrl.replace(/\.mp4$/i, '_thumb.jpg'));
+    }
+    return 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80';
+  }, [video?.coverImageUrl, video?.videoUrl, imgError]);
 
   const handleMouseEnter = () => {
     setIsHovered(true);

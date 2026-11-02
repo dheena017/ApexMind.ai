@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, GoogleAuthPayload } from '../types';
+import { UserProfile, GoogleAuthPayload, ChannelAuthPayload } from '../types';
 import { authApi } from '../api/authApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -7,6 +7,7 @@ interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  loginWithChannel: (payload: ChannelAuthPayload) => Promise<UserProfile>;
   loginWithGoogle: (payload?: GoogleAuthPayload) => Promise<UserProfile>;
   loginWithEmail: (email: string, password?: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
@@ -16,6 +17,21 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  loginWithChannel: async (payload) => {
+    try {
+      const authData = await authApi.channelLogin(payload);
+      localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
+      localStorage.setItem('apexmind_token', authData.token);
+      localStorage.setItem('apexmind_auth_timestamp', Date.now().toString());
+      if (payload.handle) {
+        localStorage.setItem('apexmind_yt_active_channel', payload.handle);
+      }
+      return authData.user;
+    } catch (error) {
+      consoleLogger.error('Auth', `YouTube channel login failed: ${error}`);
+      throw error;
+    }
+  },
   loginWithGoogle: async (payload) => {
     if (!payload) {
       throw new Error('Google account details are required to sign in.');
@@ -155,6 +171,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const loginWithChannel = async (payload: ChannelAuthPayload): Promise<UserProfile> => {
+    setIsLoading(true);
+    try {
+      const authData = await authApi.channelLogin(payload);
+      setUser(authData.user);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authData.user));
+      localStorage.setItem(AUTH_TOKEN_KEY, authData.token);
+      localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
+      if (payload.handle) {
+        localStorage.setItem('apexmind_yt_active_channel', payload.handle);
+      }
+      return authData.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loginWithGoogle = async (payload?: GoogleAuthPayload): Promise<UserProfile> => {
     setIsLoading(true);
     try {
@@ -239,6 +272,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user && isSessionValid(),
         isLoading,
+        loginWithChannel,
         loginWithGoogle,
         loginWithEmail,
         logout,

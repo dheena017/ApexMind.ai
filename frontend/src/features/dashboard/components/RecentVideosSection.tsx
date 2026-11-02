@@ -83,21 +83,26 @@ export const RecentVideosSection: React.FC<RecentVideosSectionProps> = ({
             >
               {/* Media Thumbnail Container */}
               <div className="relative aspect-video w-full bg-[#1A1A1A] overflow-hidden">
-                {video.coverImageUrl ? (
-                  <img
-                    src={apiUrl(video.coverImageUrl)}
-                    alt={video.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1A1A1A] to-[#0E0E0E]">
-                    <Film className="w-8 h-8 text-[#444444]" />
-                  </div>
-                )}
+                <img
+                  src={
+                    video.coverImageUrl && !video.coverImageUrl.startsWith('data:image/svg')
+                      ? apiUrl(video.coverImageUrl)
+                      : video.videoUrl && video.videoUrl.endsWith('.mp4')
+                      ? apiUrl(video.videoUrl.replace(/\.mp4$/i, '_thumb.jpg'))
+                      : 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'
+                  }
+                  alt={video.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    if (!target.src.includes('unsplash.com')) {
+                      target.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80';
+                    }
+                  }}
+                />
+                {/* Ambient Cinematic Vignette */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
 
                 {/* Play Overlay Button */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">

@@ -1034,6 +1034,35 @@ def add_community_post(
 # Website Studio Videos (Website-created videos with cover images)
 # =============================================================================
 
+def _resolve_companion_cover(cover_image_url: Optional[str], video_url: Optional[str]) -> str:
+    """Resiliently resolve video cover thumbnail to companion _thumb.jpg or high-res backdrop."""
+    import urllib.parse
+    from pathlib import Path
+
+    if cover_image_url and isinstance(cover_image_url, str):
+        trimmed = cover_image_url.strip()
+        if trimmed.startswith("http://") or trimmed.startswith("https://"):
+            return trimmed
+        if trimmed.startswith("/api/videos/") or trimmed.startswith("/api/media/"):
+            fname = urllib.parse.unquote(trimmed.split("/")[-1])
+            for d in ["backend/data/rendered_shorts", "backend/data/media", "backend/data"]:
+                if (Path(d) / fname).exists():
+                    return trimmed
+
+    if video_url and isinstance(video_url, str) and video_url.endswith(".mp4"):
+        raw_name = urllib.parse.unquote(video_url.split("/")[-1])
+        base_stem = raw_name[:-4]
+        candidate_thumb = f"{base_stem}_thumb.jpg"
+        for d in ["backend/data/rendered_shorts", "backend/data/media", "backend/data"]:
+            if (Path(d) / candidate_thumb).exists():
+                return f"/api/videos/{candidate_thumb}"
+
+    if cover_image_url and not cover_image_url.startswith("data:"):
+        return cover_image_url
+
+    return "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
+
+
 def get_website_videos(category: Optional[str] = None, search: Optional[str] = None) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -1056,6 +1085,7 @@ def get_website_videos(category: Optional[str] = None, search: Optional[str] = N
 
     result: List[Dict[str, Any]] = []
     for r in rows:
+        resolved_cover = _resolve_companion_cover(r["cover_image_url"], r["video_url"])
         result.append({
             "id": r["id"],
             "title": r["title"],
@@ -1063,7 +1093,7 @@ def get_website_videos(category: Optional[str] = None, search: Optional[str] = N
             "hook": r["hook"] or "",
             "cta": r["cta"] or "",
             "category": r["category"],
-            "coverImageUrl": r["cover_image_url"],
+            "coverImageUrl": resolved_cover,
             "videoUrl": r["video_url"] or "",
             "audioUrl": r["audio_url"] or "",
             "voice": r["voice"],
@@ -1087,6 +1117,7 @@ def get_website_video_by_id(video_id: str) -> Optional[Dict[str, Any]]:
     conn.close()
     if not r:
         return None
+    resolved_cover = _resolve_companion_cover(r["cover_image_url"], r["video_url"])
     return {
         "id": r["id"],
         "title": r["title"],
@@ -1094,7 +1125,7 @@ def get_website_video_by_id(video_id: str) -> Optional[Dict[str, Any]]:
         "hook": r["hook"] or "",
         "cta": r["cta"] or "",
         "category": r["category"],
-        "coverImageUrl": r["cover_image_url"],
+        "coverImageUrl": resolved_cover,
         "videoUrl": r["video_url"] or "",
         "audioUrl": r["audio_url"] or "",
         "voice": r["voice"],

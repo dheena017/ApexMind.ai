@@ -109,6 +109,75 @@ def authenticate_google_user(
     }
 
 
+def authenticate_channel_user(
+    handle: str,
+    name: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+    channel_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Authenticates a creator session using their YouTube Channel details.
+    """
+    clean_handle = (handle or "creator").strip()
+    if clean_handle.startswith("@"):
+        clean_handle = clean_handle[1:]
+    if not clean_handle:
+        clean_handle = "creator"
+
+    channel_name = name or clean_handle.capitalize()
+    avatar = avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={channel_name}"
+    ch_id = channel_id
+
+    # Check if this channel exists in the local database to enrich details
+    try:
+        from backend.database.repository import get_channels, get_oauth_channel
+        oauth_ch = get_oauth_channel()
+        if oauth_ch:
+            stored_handle = (oauth_ch.get("handle") or "").replace("@", "").strip()
+            if stored_handle.lower() == clean_handle.lower() or not handle:
+                channel_name = oauth_ch.get("name") or channel_name
+                avatar = oauth_ch.get("avatar_url") or avatar
+                ch_id = oauth_ch.get("id") or ch_id
+
+        for ch in get_channels():
+            stored_handle = (ch.get("handle") or "").replace("@", "").strip()
+            if stored_handle.lower() == clean_handle.lower() or ch.get("id") == ch_id:
+                channel_name = ch.get("name") or channel_name
+                avatar = ch.get("avatar_url") or avatar
+                ch_id = ch.get("id") or ch_id
+                break
+    except Exception as e:
+        logger.debug(f"Channel lookup note during auth: {e}")
+
+    email = f"{clean_handle.lower()}@youtube.com"
+
+    user = upsert_user(
+        email=email,
+        name=channel_name,
+        avatar_url=avatar,
+        google_id=ch_id or "",
+        provider="youtube_oauth",
+    )
+
+    token = f"yt_{uuid.uuid4().hex}"
+    logger.info(f"YouTube Channel login successful for user: {user['name']} (@{clean_handle})")
+
+    return {
+        "success": True,
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "name": user["name"],
+            "avatarUrl": user["avatarUrl"],
+            "provider": user.get("provider", "youtube_oauth"),
+            "verified": True,
+            "lastLoginAt": user["lastLoginAt"],
+        },
+        "token": token,
+        "message": f"Welcome, {user['name']}!",
+    }
+
+
 def authenticate_email_user(email: str, password: Optional[str] = None) -> Dict[str, Any]:
     """Fallback email login."""
     clean_email = email.strip()

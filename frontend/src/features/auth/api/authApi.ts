@@ -1,8 +1,31 @@
-import { UserProfile, GoogleAuthPayload } from '../types';
+import { UserProfile, GoogleAuthPayload, ChannelAuthPayload } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
 
 export const authApi = {
+  // Sign in with YouTube Channel
+  async channelLogin(payload: ChannelAuthPayload): Promise<{ user: UserProfile; token: string }> {
+    const start = performance.now();
+    consoleLogger.info('Auth', `Attempting YouTube channel authentication for ${payload.handle}...`);
+    const endpoint = apiUrl('/api/auth/channel');
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const duration = performance.now() - start;
+    consoleLogger.api('POST', '/api/auth/channel', res.status, duration);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'YouTube channel sign-in failed' }));
+      throw new Error(err.detail || 'YouTube channel sign-in failed');
+    }
+
+    const data = await res.json();
+    consoleLogger.success('Auth', `Successfully logged in via YouTube Channel: ${data.user.name}`, data.user);
+    return data;
+  },
+
   // Sign in with Google
   async googleLogin(payload: GoogleAuthPayload): Promise<{ user: UserProfile; token: string }> {
     const start = performance.now();

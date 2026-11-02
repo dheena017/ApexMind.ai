@@ -19,6 +19,12 @@ class EmailLoginRequest(BaseModel):
     email: str = Field(..., description="User email address")
     password: Optional[str] = Field(default=None, description="User password")
 
+class ChannelAuthRequest(BaseModel):
+    handle: str = Field(..., description="YouTube channel handle or identifier")
+    name: Optional[str] = Field(default=None, description="YouTube channel display name")
+    avatarUrl: Optional[str] = Field(default=None, description="YouTube channel avatar URL")
+    channelId: Optional[str] = Field(default=None, description="YouTube channel ID")
+
 class UserProfileDTO(BaseModel):
     id: str
     email: str
