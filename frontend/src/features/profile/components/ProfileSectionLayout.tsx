@@ -11,8 +11,6 @@ import {
   Check,
   ExternalLink,
   LogOut,
-  Volume2,
-  Flame,
   CheckCircle2,
   Eye,
   Video,
@@ -90,18 +88,21 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
   const avatarUrl = profile.avatarUrl || ytChannel?.avatarUrl || user?.avatarUrl || '';
   const channelUrl = ytChannel?.channelUrl || `https://www.youtube.com/${creatorHandle.startsWith('@') ? creatorHandle : `@${creatorHandle}`}`;
 
-  const profileLinks = [
-    { label: 'YouTube', value: channelUrl },
-    { label: 'Website', value: profile.websiteUrl },
-    { label: 'Instagram', value: profile.instagramUrl },
-    { label: 'TikTok', value: profile.tiktokUrl },
-  ].filter((link) => link.value && link.value.trim());
+  // Clean description: strip raw markdown asterisks and leading newlines
+  const rawBio = profile.bio || ytChannel?.description || '';
+  const cleanBio = rawBio
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/^\s+|\s+$/g, '')
+    .replace(/\n+/g, ' ');
+
+  const subscribersCount = ytChannel?.subscribers ?? 0;
+  const videosCount = ytChannel?.videosUploaded ?? 0;
 
   return (
-    <div className="flex h-full w-full flex-col gap-5 overflow-y-auto p-2 sm:p-5 lg:p-7 font-sans-studio text-[#E5E5E5] bg-[#0A0A0A]">
+    <div className="flex h-full w-full flex-col gap-6 overflow-y-auto p-3 sm:p-6 lg:p-8 font-sans-studio text-[#E5E5E5] bg-[#0A0A0A]">
       
-      {/* ── 1. Wide Hero Creator Banner (Custom Cover or Live YouTube Banner) ── */}
-      <div className="relative w-full h-36 sm:h-48 md:h-56 lg:h-64 rounded-3xl overflow-hidden border border-[#2F2F2F] shadow-2xl group bg-[#0C101D]">
+      {/* ── 1. Hero Creator Banner (Proportional Aspect Ratio & Clean Rounded Edges) ── */}
+      <div className="relative w-full aspect-[16/6] min-h-[160px] max-h-[240px] sm:max-h-[280px] rounded-2xl sm:rounded-3xl overflow-hidden border border-[#27272A] shadow-2xl group bg-[#0C101D]">
         {bannerUrl ? (
           <img
             src={bannerUrl}
@@ -115,11 +116,11 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
             <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-48 h-48 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
 
             <div
-              className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"
+              className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"
               aria-hidden="true"
             />
 
-            <div className="relative z-10 space-y-1 max-w-lg">
+            <div className="relative z-10 space-y-1.5 max-w-lg">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-sky-300 text-[10px] font-bold uppercase tracking-wider shadow-[0_0_12px_rgba(56,189,248,0.25)]">
                 <Sparkles className="w-3 h-3 text-sky-400" />
                 <span>ApexMind Creator Studio</span>
@@ -134,26 +135,26 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
           </div>
         )}
 
-        {/* Gradient Shadow Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/25 pointer-events-none" />
+        {/* Subtle Dark Gradient Overlay for Contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />
 
         {/* Floating Quick Action Pills on Top Right */}
-        <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+        <div className="absolute top-3.5 right-3.5 flex items-center gap-2 z-10">
           <button
             type="button"
             onClick={handleShareProfile}
-            className="px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 hover:border-white/20 text-xs font-semibold text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-lg"
+            className="px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 hover:border-white/20 text-xs font-semibold text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
             title="Share profile link"
           >
             {copiedLink ? (
               <>
                 <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-emerald-400">Link Copied!</span>
+                <span className="text-emerald-400 font-bold">Link Copied!</span>
               </>
             ) : (
               <>
                 <Share2 className="h-3.5 w-3.5 text-slate-300" />
-                <span className="hidden sm:inline">Share</span>
+                <span>Share</span>
               </>
             )}
           </button>
@@ -162,24 +163,25 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
             href={channelUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-full bg-black/60 hover:bg-red-500/20 backdrop-blur-md border border-white/10 hover:border-red-500/40 text-xs font-semibold text-white transition-all flex items-center gap-1.5 shadow-lg"
-            title="View YouTube Channel"
+            className="px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-red-500/25 backdrop-blur-md border border-white/10 hover:border-red-500/40 text-xs font-semibold text-white transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
+            title="View Official Channel on YouTube"
           >
             <Youtube className="w-3.5 h-3.5 text-red-500 fill-current" />
-            <span className="hidden sm:inline">YouTube</span>
+            <span>YouTube</span>
             <ExternalLink className="h-3 w-3 text-slate-400" />
           </a>
         </div>
       </div>
 
-      {/* ── 2. Creator Identity Row (Overlapping the Banner) ── */}
-      <div className="relative px-2 sm:px-4 -mt-10 sm:-mt-14 md:-mt-16 flex flex-col md:flex-row items-start md:items-end justify-between gap-4 z-10">
+      {/* ── 2. Creator Identity Row (Carefully Proportioned Avatar & Details) ── */}
+      <div className="relative px-2 sm:px-4 -mt-10 sm:-mt-14 md:-mt-16 flex flex-col lg:flex-row lg:items-end justify-between gap-5 z-10">
         
-        {/* Left: Avatar + Identity Text */}
-        <div className="flex items-start sm:items-end gap-4 sm:gap-5 min-w-0">
-          {/* Circular Avatar */}
+        {/* Left: Avatar + Title & Bio */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5 min-w-0">
+          
+          {/* Circular Channel Avatar */}
           <div className="relative shrink-0">
-            <div className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1 bg-[#0A0A0A] shadow-2xl border-2 border-[#2F2F2F]">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-1 bg-[#0A0A0A] shadow-2xl border-2 border-[#2F2F2F]">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
@@ -188,12 +190,12 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
                 />
               ) : (
                 <div className="w-full h-full rounded-full flex items-center justify-center bg-gradient-to-br from-[#1E293B] to-[#0F172A] text-[#60A5FA] border border-white/10">
-                  <UserRound className="w-8 h-8 sm:w-12 sm:h-12" />
+                  <UserRound className="w-8 h-8 sm:w-10 sm:h-10" />
                 </div>
               )}
             </div>
 
-            {/* Verified Pro Status Badge Dot */}
+            {/* Verified Account Badge Dot */}
             <span
               className="absolute bottom-1 right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-emerald-500 border-2 border-[#0A0A0A] flex items-center justify-center shadow-md"
               title="Verified YouTube Creator Account"
@@ -202,76 +204,67 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
             </span>
           </div>
 
-          {/* Name & Handle Information */}
-          <div className="space-y-1 min-w-0 pb-1">
+          {/* Name, Badges & Meta */}
+          <div className="space-y-1.5 min-w-0 pb-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight truncate">
                 {displayName}
               </h1>
               <Badge variant="green">Verified</Badge>
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/25 font-mono-studio flex items-center gap-1">
-                <Youtube className="w-2.5 h-2.5 fill-current" />
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/25 text-[10px] font-bold tracking-wider">
+                <Youtube className="w-3 h-3 fill-current" />
                 <span>YOUTUBE CREATOR</span>
               </span>
             </div>
 
-            <p className="text-xs text-slate-400 flex flex-wrap items-center gap-2 font-mono-studio">
-              <span className="text-white font-semibold">{creatorHandle}</span>
-              <span>•</span>
-              <span className="text-slate-300 font-sans-studio">{profile.niche || 'Stoic Mindset & Discipline'}</span>
-            </p>
+            {/* Handle, Niche & Stats Summary */}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              <span className="font-semibold text-white">{creatorHandle}</span>
+              <span className="text-[#52525B]">•</span>
+              <span className="text-slate-400">{profile.niche || 'Stoic Mindset & Discipline'}</span>
+              <span className="text-[#52525B]">•</span>
+              <span className="text-slate-400 font-mono-studio">
+                {loadingChannel ? '—' : `${subscribersCount.toLocaleString()} subscribers`}
+              </span>
+              <span className="text-[#52525B]">•</span>
+              <span className="text-slate-400 font-mono-studio">
+                {loadingChannel ? '—' : `${videosCount.toLocaleString()} videos`}
+              </span>
+            </div>
 
-            {(profile.bio || ytChannel?.description) && (
-              <p className="text-xs text-slate-300 max-w-xl leading-relaxed line-clamp-2 pt-0.5">
-                {profile.bio || ytChannel?.description}
+            {/* Cleaned Description (No asterisks) */}
+            {cleanBio && (
+              <p className="text-xs sm:text-[13px] text-slate-300 max-w-2xl leading-relaxed line-clamp-2 pt-0.5">
+                {cleanBio}
               </p>
-            )}
-
-            {/* Social Link Pills */}
-            {profileLinks.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                {profileLinks.map((link) => (
-                  <a
-                    key={link.label}
-                    href={link.value.startsWith('http') ? link.value : `https://${link.value}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors"
-                  >
-                    {link.label === 'YouTube' ? <Youtube className="w-3 h-3 text-red-500 fill-current" /> : null}
-                    <span>{link.label}</span>
-                    <ExternalLink className="w-2.5 h-2.5 text-[#60A5FA]" />
-                  </a>
-                ))}
-              </div>
             )}
           </div>
         </div>
 
-        {/* Right: Action Buttons Group (Pill Buttons) */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-end pb-1">
+        {/* Right: Action Buttons Group */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0 self-start lg:self-end pb-1">
           <button
             type="button"
             onClick={() => onNavigate('profile-channels')}
-            className="px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 hover:border-red-500/50 text-xs font-semibold text-red-400 hover:text-red-300 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] hover:border-[#3F3F46] text-xs font-semibold text-slate-200 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95"
           >
-            <Youtube className="w-3.5 h-3.5 fill-current" />
+            <Youtube className="w-3.5 h-3.5 text-red-400 fill-current" />
             <span>Channel Details</span>
           </button>
 
           <button
             type="button"
             onClick={() => onNavigate('profile-details')}
-            className="px-4 py-2 rounded-full bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 text-xs font-semibold text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            className="px-4 py-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] hover:border-[#3F3F46] text-xs font-semibold text-slate-200 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95"
           >
-            <UserRound className="w-3.5 h-3.5 text-slate-300" />
+            <UserRound className="w-3.5 h-3.5 text-slate-400" />
             <span>Edit Profile</span>
           </button>
 
           <button
             type="button"
             onClick={() => onNavigate('youtube')}
-            className="px-4 py-2 rounded-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 active:scale-95 text-xs font-bold text-white transition-all cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.4)] flex items-center gap-1.5 border border-white/20"
+            className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 active:bg-red-700 text-xs font-bold text-white transition-all cursor-pointer shadow-md shadow-red-950/40 flex items-center gap-1.5 active:scale-95"
           >
             <Youtube className="w-3.5 h-3.5 fill-current" />
             <span>YouTube Studio</span>
@@ -280,17 +273,17 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
           <button
             type="button"
             onClick={handleSignOut}
-            className="px-3 py-2 rounded-full bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/30 text-xs font-semibold text-slate-400 hover:text-red-400 transition-all cursor-pointer flex items-center gap-1"
+            className="p-2 rounded-xl bg-[#18181B] hover:bg-red-500/15 border border-[#27272A] hover:border-red-500/30 text-slate-400 hover:text-red-400 transition-all cursor-pointer shadow-sm active:scale-95"
             title="Sign out of ApexMind Studio"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
 
       </div>
 
       {/* ── 3. High-Contrast Segmented Pill Navigation Bar ── */}
-      <div className="w-full flex items-center justify-between gap-2 overflow-x-auto p-1.5 bg-[#141414] border border-[#242424] rounded-2xl">
+      <div className="w-full flex items-center justify-between gap-2 overflow-x-auto p-1.5 bg-[#141416] border border-[#27272A] rounded-2xl shadow-sm">
         <nav aria-label="Profile navigation" className="flex items-center gap-1 min-w-max">
           {sections.map((section) => {
             const selected = activePage === section.id || (section.id === 'profile-details' && activePage === 'profile');
@@ -300,11 +293,13 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
                 type="button"
                 aria-current={selected ? 'page' : undefined}
                 onClick={() => onNavigate(section.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  selected ? 'bg-[#2563EB] text-white shadow-xs font-bold border border-[#60A5FA]/40' : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10'
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
+                  selected
+                    ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
+                    : 'text-[#A1A1AA] hover:text-white hover:bg-[#1E1E22]'
                 }`}
               >
-                <span className={selected ? 'text-white' : 'text-[#9CA3AF] group-hover:text-white'}>
+                <span className={selected ? 'text-white' : 'text-[#A1A1AA] group-hover:text-white'}>
                   {section.icon}
                 </span>
                 <span>{section.label}</span>
@@ -317,7 +312,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
       {/* ── 4. Four Creator Info Cards Row with Real YouTube Metrics ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: YouTube Subscribers */}
-        <div className="p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] hover:border-red-500/40 transition-colors flex items-center gap-3">
+        <div className="p-4 rounded-2xl bg-[#141416] border border-[#27272A] hover:border-red-500/40 transition-colors flex items-center gap-3 shadow-sm">
           <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
           </div>
@@ -331,7 +326,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
         </div>
 
         {/* Card 2: Videos & Shorts Uploaded */}
-        <div className="p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] hover:border-sky-500/40 transition-colors flex items-center gap-3">
+        <div className="p-4 rounded-2xl bg-[#141416] border border-[#27272A] hover:border-sky-500/40 transition-colors flex items-center gap-3 shadow-sm">
           <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
             <Video className="w-5 h-5" />
           </div>
@@ -345,7 +340,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
         </div>
 
         {/* Card 3: Total Lifetime Views */}
-        <div className="p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] hover:border-emerald-500/40 transition-colors flex items-center gap-3">
+        <div className="p-4 rounded-2xl bg-[#141416] border border-[#27272A] hover:border-emerald-500/40 transition-colors flex items-center gap-3 shadow-sm">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
             <Eye className="w-5 h-5" />
           </div>
@@ -359,7 +354,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
         </div>
 
         {/* Card 4: Channel Status */}
-        <div className="p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] hover:border-amber-500/40 transition-colors flex items-center gap-3">
+        <div className="p-4 rounded-2xl bg-[#141416] border border-[#27272A] hover:border-amber-500/40 transition-colors flex items-center gap-3 shadow-sm">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
@@ -375,7 +370,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
       </div>
 
       {/* ── 5. Active Sub-Page Content Container ── */}
-      <div className="rounded-2xl border border-[#242424] bg-[#141414] p-5 sm:p-7 shadow-xl">
+      <div className="rounded-2xl border border-[#27272A] bg-[#141416] p-5 sm:p-7 shadow-xl">
         {children}
       </div>
 
