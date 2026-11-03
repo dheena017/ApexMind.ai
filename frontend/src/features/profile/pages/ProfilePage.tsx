@@ -200,7 +200,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
               ['Display name', displayName],
               ['Creator handle', profile.creatorHandle || 'Not added'],
               ['Avatar image', profile.avatarUrl ? 'Custom image' : user?.avatarUrl ? 'Using account photo' : 'Not added'],
-              ['Account email', user?.email || 'durgumkumar2011@gmail.com'],
+              ['Channel email', user?.email || (user?.handle ? `${user.handle.replace(/^@/, '').toLowerCase()}@youtube.com` : '—')],
               ['Bio', profile.bio || 'Not added'],
             ].map(([label, value]) => (
               <div key={label} className="min-w-0">

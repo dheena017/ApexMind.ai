@@ -86,7 +86,8 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     if (isAuthenticated || isSessionValid()) {
       const destination = getPostLoginRedirect() || 'dashboard';
       clearPostLoginRedirect();
-      onNavigate(destination);
+      // Small tick delay ensures React has committed the auth state before routing
+      window.setTimeout(() => onNavigate(destination), 50);
     }
   }, [isAuthenticated, onNavigate]);
 
@@ -140,7 +141,8 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
             avatarUrl: connectedChannel.avatarUrl,
             channelId: connectedChannel.id,
           });
-          handleSuccessfulAuth();
+          setNotice('Signed in! Redirecting to Studio...');
+          // Navigation handled reactively by the isAuthenticated useEffect
         } catch (err: any) {
           setNotice(err.message || 'Failed to authenticate channel session');
         }
@@ -174,10 +176,10 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
       });
       setShowChannelModal(false);
-      handleSuccessfulAuth();
+      setNotice('Signed in! Redirecting to Studio...');
+      // Navigation is handled reactively by the isAuthenticated useEffect below
     } catch (err: any) {
       setNotice(err.message || 'YouTube channel sign-in failed. Please check handle details.');
-    } finally {
       setChannelLoading(false);
     }
   };
@@ -508,7 +510,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       </footer>
 
       {/* YouTube Channel Login Modal */}
-      <Modal isOpen={showChannelModal} onClose={() => setShowChannelModal(false)} title="Sign In with YouTube Channel">
+      <Modal isOpen={showChannelModal} onClose={() => { setShowChannelModal(false); setChannelHandleInput(''); setChannelNameInput(''); }} title="Sign In with YouTube Channel">
         <div className="space-y-4">
           <p className="text-xs text-[#9CA3AF]">
             Enter your YouTube Channel handle or title to authenticate your creator workspace:
@@ -543,7 +545,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               label="YouTube Channel Handle"
               value={channelHandleInput}
               onChange={(e) => setChannelHandleInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && channelHandleInput.trim()) {
+                  handleDirectChannelLogin(channelHandleInput.trim(), channelNameInput.trim());
+                }
+              }}
               placeholder="e.g. @DailyStoicShorts or ApexCreator"
+              autoFocus
               required
             />
             <Input
