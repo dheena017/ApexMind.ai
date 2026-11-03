@@ -177,7 +177,7 @@ export default function AppLayout({
               onNavigate={onNavigate}
             />
 
-            <main className="flex-1 min-w-0 min-h-0 p-0 overflow-hidden flex flex-col bg-[#090B10]">
+            <main className="flex-1 min-w-0 min-h-0 p-0 overflow-hidden flex flex-col bg-[#0A0A0A]">
               <div className="w-full h-full flex-1 min-h-0">
                 {children}
               </div>

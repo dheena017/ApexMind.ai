@@ -147,9 +147,9 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
-      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0 text-blue-400">
             <Shapes className="w-3.5 h-3.5" />
@@ -164,8 +164,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
-        <div className="grid grid-cols-6 gap-1 p-1 bg-[#151926] rounded-none border-0">
+      <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
+        <div className="grid grid-cols-6 gap-1 p-1 bg-[#181818] rounded-none border-0">
           {[
             { id: 'badges', label: 'Badge', icon: Award, color: 'text-amber-400' },
             { id: 'fx', label: 'FX', icon: Sparkles, color: 'text-purple-400' },
@@ -183,8 +183,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
                   isActive
-                    ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
+                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
                 }`}
                 title={tab.label}
               >
@@ -201,7 +201,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         {/* ── Tab: Visual FX Sliders ── */}
         {activeTab === 'fx' && (
           <div className="flex flex-col gap-3.5">
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
                 Cinematic Visual Texture Overlays
@@ -266,7 +266,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div
                 onClick={() => handleApply('fx-crt', 'CRT Scanlines', 'shape', 'shape-scanlines')}
-                className="p-3 rounded-xl border bg-[#141824] hover:border-[#3B82F6] hover:bg-[#1B2132] transition-all text-left flex flex-col gap-2 cursor-pointer border-white/[0.08]"
+                className="p-3 rounded-xl border bg-[#181818] hover:border-[#3B82F6] hover:bg-[#1E1E1E] transition-all text-left flex flex-col gap-2 cursor-pointer border-[#242424]"
               >
                 <div className="flex items-center gap-1.5 text-[#60A5FA]">
                   <Tv className="w-3.5 h-3.5" />
@@ -277,7 +277,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
               <div
                 onClick={() => handleApply('fx-spotlight', 'Center Spotlight', 'shape', 'shape-spotlight')}
-                className="p-3 rounded-xl border bg-[#141824] hover:border-[#3B82F6] hover:bg-[#1B2132] transition-all text-left flex flex-col gap-2 cursor-pointer border-white/[0.08]"
+                className="p-3 rounded-xl border bg-[#181818] hover:border-[#3B82F6] hover:bg-[#1E1E1E] transition-all text-left flex flex-col gap-2 cursor-pointer border-[#242424]"
               >
                 <div className="flex items-center gap-1.5 text-amber-400">
                   <Circle className="w-3.5 h-3.5" />
@@ -299,10 +299,10 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                   key={tag.id}
                   onClick={() => handleApply(tag.id, tag.name, 'badge', tag.defaultVal)}
                   style={{ contentVisibility: 'auto', containIntrinsicSize: '64px' }}
-                  className="p-3 rounded-xl border bg-[#141824] hover:border-[#3B82F6] hover:bg-[#1B2132] transition-all flex items-center justify-between gap-3 cursor-pointer border-white/[0.08] transform-gpu"
+                  className="p-3 rounded-xl border bg-[#181818] hover:border-[#3B82F6] hover:bg-[#1E1E1E] transition-all flex items-center justify-between gap-3 cursor-pointer border-[#242424] transform-gpu"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-[#1B2132] flex items-center justify-center text-[#60A5FA] shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#1E1E1E] flex items-center justify-center text-[#60A5FA] shrink-0">
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
@@ -328,7 +328,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                   key={b.id}
                   onClick={() => handleApply(b.id, b.label, 'badge', b.label)}
                   style={{ contentVisibility: 'auto', containIntrinsicSize: '68px' }}
-                  className="p-3 rounded-xl border bg-[#141824] hover:border-[#3B82F6] hover:bg-[#1B2132] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer border-white/[0.08] transform-gpu"
+                  className="p-3 rounded-xl border bg-[#181818] hover:border-[#3B82F6] hover:bg-[#1E1E1E] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer border-[#242424] transform-gpu"
                 >
                   <div
                     className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white bg-gradient-to-r ${b.color} shadow-md flex items-center gap-1`}
@@ -354,9 +354,9 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                   key={s.id}
                   onClick={() => handleApply(s.id, s.name, 'shape', s.id)}
                   style={{ contentVisibility: 'auto', containIntrinsicSize: '64px' }}
-                  className="p-3 rounded-xl border bg-[#141824] hover:border-[#3B82F6] hover:bg-[#1B2132] transition-all flex items-center gap-3 text-left cursor-pointer border-white/[0.08] transform-gpu"
+                  className="p-3 rounded-xl border bg-[#181818] hover:border-[#3B82F6] hover:bg-[#1E1E1E] transition-all flex items-center gap-3 text-left cursor-pointer border-[#242424] transform-gpu"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-[#1B2132] flex items-center justify-center text-[#60A5FA] shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-[#1E1E1E] flex items-center justify-center text-[#60A5FA] shrink-0">
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
@@ -377,7 +377,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
               <div
                 key={p.id}
                 onClick={() => handleApply(p.id, p.name, 'progress', p.id)}
-                className="p-3 rounded-xl border bg-[#141824] hover:border-[#3B82F6] hover:bg-[#1B2132] transition-all flex flex-col gap-1.5 text-left cursor-pointer border-white/[0.08]"
+                className="p-3 rounded-xl border bg-[#181818] hover:border-[#3B82F6] hover:bg-[#1E1E1E] transition-all flex flex-col gap-1.5 text-left cursor-pointer border-[#242424]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white">{p.name}</span>
@@ -397,7 +397,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
         {/* ── Tab 4: Custom Badge Creator ── */}
         {activeTab === 'custom' && (
-          <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+          <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
             <span className="text-xs font-bold text-white">Create Custom Badge</span>
             <p className="text-[11px] text-slate-400">
               Generate a personalized motivational pill badge to pin above your captions.
@@ -410,7 +410,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                 value={customBadgeText}
                 onChange={(e) => setCustomBadgeText(e.target.value)}
                 placeholder="e.g. CHAPTER 1 • AWAKENING"
-                className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
               />
             </div>
 
@@ -442,7 +442,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
             {/* Preview */}
             {customBadgeText.trim() && (
-              <div className="mt-2 p-3 rounded-lg bg-[#0B0E17] border border-white/[0.08] flex items-center justify-center">
+              <div className="mt-2 p-3 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-black uppercase text-white bg-gradient-to-r ${customBadgeGradient} shadow-md`}
                 >

@@ -321,7 +321,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* Hidden Audio Elements */}
       <audio
         ref={previewAudioRef}
@@ -340,7 +340,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       />
 
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
-      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Music className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="text-xs font-bold text-white truncate">
@@ -352,7 +352,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           {isLoadingBackend && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
-          <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/[0.08]">
+          <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-[#242424]">
             {activeTab === 'soundtracks'
               ? `${filteredSoundtracks.length} Tracks`
               : activeTab === 'sfx'
@@ -363,8 +363,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
-        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-xl border border-white/[0.06] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="p-2 bg-[#111111] border-b border-[#242424] shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-xl border border-[#242424] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {[
             { id: 'soundtracks', label: 'Music', icon: Music },
             { id: 'sfx', label: 'SFX', icon: Volume2 },
@@ -382,8 +382,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap shrink-0 ${
                   isActive
-                    ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10 text-sky-300'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40 text-sky-300'
+                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
                 }`}
                 title={tab.label}
               >
@@ -396,7 +396,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       </div>
       {/* ── Genre / Category Chips ── */}
       {activeTab === 'soundtracks' && (
-        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[0.08] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#0E121B]">
+        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#242424] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141414]">
           {[
             { id: 'all', label: 'All Vibes' },
             { id: 'cinematic', label: 'Cinematic' },
@@ -412,7 +412,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
                 selectedGenre === cat.id
                   ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
-                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-white/[0.08]'
+                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-[#242424]'
               }`}
             >
               {cat.label}
@@ -422,7 +422,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       )}
 
       {activeTab === 'sfx' && (
-        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[0.08] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#0E121B]">
+        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#242424] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141414]">
           {[
             { id: 'all', label: 'All SFX' },
             { id: 'Impact', label: '💥 Impacts' },
@@ -437,7 +437,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
                 selectedSfxCategory === cat.id
                   ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
-                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-white/[0.08]'
+                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-[#242424]'
               }`}
             >
               {cat.label}
@@ -457,7 +457,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search sound effects (boom, whoosh, riser)..."
-              className="w-full bg-[#141824] border border-[#27272F] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500/60 transition-colors"
+              className="w-full bg-[#181818] border border-[#27272F] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500/60 transition-colors"
             />
           </div>
         )}
@@ -465,7 +465,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         {/* ── Tab: Audio Mixer ── */}
         {activeTab === 'mixer' && (
           <div className="flex flex-col gap-3.5">
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
                 Reel Audio Level Mixing
@@ -504,7 +504,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               </div>
 
               {/* Auto-Ducking Switch */}
-              <div className="flex items-center justify-between pt-2 border-t border-white/[0.08]">
+              <div className="flex items-center justify-between pt-2 border-t border-[#242424]">
                 <div>
                   <p className="text-xs font-semibold text-white">Smart Music Ducking</p>
                   <p className="text-[10px] text-slate-400">Lower music volume when voiceover speaks</p>
@@ -526,7 +526,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             </div>
 
             {/* Room Ambience */}
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-2">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-2">
               <span className="text-[10px] uppercase font-mono-studio text-slate-500">
                 Voiceover Room Reverb
               </span>
@@ -543,7 +543,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     className={`p-2 rounded-lg text-xs font-semibold border transition-all ${
                       reverbRoom === r.id
                         ? 'bg-[#1E2330] text-white border-[#3B82F6]'
-                        : 'bg-[#0B0E17] text-slate-400 border-white/[0.08]'
+                        : 'bg-[#111111] text-slate-400 border-[#242424]'
                     }`}
                   >
                     {r.label}
@@ -565,7 +565,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search vibes, phonk, lofi, BPM..."
-                className="w-full bg-[#141824] border border-[#27272F] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30 transition-all"
+                className="w-full bg-[#181818] border border-[#27272F] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30 transition-all"
               />
               {searchQuery && (
                 <button
@@ -594,7 +594,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                         ? 'bg-[#181D2A] border-blue-500/80 ring-1 ring-blue-500/40 shadow-sm'
                         : isPending
                         ? 'bg-[#1A1E29] border-blue-500/50'
-                        : 'bg-[#141824] border-white/[0.08] hover:border-[#3E3E4B] hover:bg-[#1A1A20]'
+                        : 'bg-[#181818] border-[#242424] hover:border-[#3E3E4B] hover:bg-[#1A1A20]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -604,7 +604,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                         className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
                           isPlaying
                             ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
-                            : 'bg-[#1B2132] text-zinc-300 hover:text-white hover:bg-blue-600'
+                            : 'bg-[#1E1E1E] text-zinc-300 hover:text-white hover:bg-blue-600'
                         }`}
                         title={isPlaying ? 'Pause preview' : 'Play preview'}
                       >
@@ -658,7 +658,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 <div
                   key={sfx.id}
                   style={{ contentVisibility: 'auto', containIntrinsicSize: '54px' }}
-                  className="p-2.5 rounded-none border-0 bg-[#141824] hover:border-white/[0.12] transition-all flex items-center justify-between gap-3 transform-gpu"
+                  className="p-2.5 rounded-none border-0 bg-[#181818] hover:border-[#2E2E2E] transition-all flex items-center justify-between gap-3 transform-gpu"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <button
@@ -667,7 +667,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
                         isPlaying
                           ? 'bg-[#3B82F6] text-white'
-                          : 'bg-[#1B2132] text-slate-400 hover:text-white'
+                          : 'bg-[#1E1E1E] text-slate-400 hover:text-white'
                       }`}
                     >
                       {isPlaying ? (
@@ -696,7 +696,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                         onAddSfxToTimeline(sfx);
                       }
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1B2132] hover:bg-[#3B82F6] text-white text-[10px] font-semibold transition-all shrink-0 cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1E1E1E] hover:bg-[#3B82F6] text-white text-[10px] font-semibold transition-all shrink-0 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                     Timeline
@@ -730,7 +730,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       sound.play();
                     } catch {}
                   }}
-                  className="p-3 rounded-none border-0 bg-[#141824] hover:border-amber-500/50 hover:bg-[#1F2538] active:scale-[0.98] transition-all cursor-pointer flex flex-col gap-1.5 group relative"
+                  className="p-3 rounded-none border-0 bg-[#181818] hover:border-amber-500/50 hover:bg-[#222222] active:scale-[0.98] transition-all cursor-pointer flex flex-col gap-1.5 group relative"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xl select-none">{item.emoji}</span>
@@ -774,12 +774,12 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         {/* ── Tab 3: Studio Voice Record ── */}
         {activeTab === 'record' && (
           <div className="flex flex-col gap-4">
-            <div className="bg-[#141824] border border-white/[0.08] rounded-2xl p-5 flex flex-col items-center text-center gap-3 shadow-sm">
+            <div className="bg-[#181818] border border-[#242424] rounded-2xl p-5 flex flex-col items-center text-center gap-3 shadow-sm">
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
                   status === 'recording'
                     ? 'bg-rose-500/20 text-rose-500 ring-4 ring-rose-500/30 animate-pulse'
-                    : 'bg-[#1B2132] text-white hover:bg-[#242C40]'
+                    : 'bg-[#1E1E1E] text-white hover:bg-[#242C40]'
                 }`}
               >
                 <Mic className="w-8 h-8" />
@@ -828,7 +828,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
             {/* Waveform & Playback of Recorded Voice */}
             {mediaBlobUrl && (
-              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+              <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-mono-studio text-slate-500">
                     Recorded Waveform
@@ -848,7 +848,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   <button
                     type="button"
                     onClick={() => wavesurferInstance.current?.playPause()}
-                    className="flex-1 bg-[#1B2132] hover:bg-[#34343E] text-white rounded-xl py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 bg-[#1E1E1E] hover:bg-[#34343E] text-white rounded-xl py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5" />
                     Preview
@@ -869,7 +869,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
         {/* ── Tab 5: Custom Audio URL ── */}
         {activeTab === 'url' && (
-          <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+          <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <ExternalLink className="w-4 h-4 text-[#60A5FA]" />
               <span className="text-xs font-bold text-white">Import Direct Audio URL</span>
@@ -885,7 +885,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 value={customAudioTitle}
                 onChange={(e) => setCustomAudioTitle(e.target.value)}
                 placeholder="e.g. Dark Phonk Master"
-                className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
               />
             </div>
 
@@ -896,7 +896,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 value={customAudioUrl}
                 onChange={(e) => setCustomAudioUrl(e.target.value)}
                 placeholder="https://cdn.pixabay.com/download/audio/..."
-                className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
               />
             </div>
 
@@ -917,7 +917,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   }
                 }}
                 disabled={!customAudioUrl.trim()}
-                className="flex-1 bg-[#1B2132] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 bg-[#1E1E1E] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 {customAudioPlaying ? (
                   <>

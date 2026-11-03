@@ -256,9 +256,9 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Bar: Active Compound Indicator, Home Button & Switcher Dropdown ── */}
-      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`w-6 h-6 rounded-lg ${compoundMetadata.badgeBg} border ${compoundMetadata.badgeBorder} flex items-center justify-center shrink-0`}>
             <CurrentIcon className={`w-3.5 h-3.5 ${compoundMetadata.color}`} />
@@ -266,7 +266,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
           <span className="text-xs font-bold text-white truncate">
             {compoundMetadata.label}
           </span>
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-white/[0.06] text-[#A1A1AA] border border-white/10 uppercase shrink-0">
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono-studio font-bold bg-white/[0.06] text-[#A1A1AA] border border-[#2A2A2A] uppercase shrink-0">
             {compoundMetadata.tag}
           </span>
         </div>
@@ -280,7 +280,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border ${
               activeCompound === 'home' || activeCompound === 'project'
                 ? 'bg-blue-600/30 text-sky-200 border-sky-400/40 shadow-xs font-semibold'
-                : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border-white/[0.08]'
+                : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border-[#242424]'
             }`}
             title="Go to Project Home Studio"
           >
@@ -293,7 +293,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             <button
               type="button"
               onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[10px] text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/[0.08]"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[10px] text-slate-300 hover:text-white transition-colors cursor-pointer border border-[#242424]"
               title="Switch inspector compound"
             >
               <span>Switch</span>

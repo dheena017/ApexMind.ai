@@ -480,9 +480,9 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   viralScore = Math.min(100, viralScore);
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Header Bar (Ambient glow, refined micro-actions) ── */}
-      <div className="relative h-12 px-3.5 bg-gradient-to-r from-red-950/25 via-[#17171C] to-[#15151A] border-b border-white/[0.06] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-12 px-3.5 bg-gradient-to-r from-red-950/25 via-[#17171C] to-[#15151A] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-red-950/40">
             <Youtube className="w-4 h-4 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
@@ -504,7 +504,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               href={channel.channelUrl || `https://www.youtube.com/${channel.handle}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-7 px-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white transition-all flex items-center gap-1.5 border border-white/[0.08] hover:border-white/[0.15] shadow-xs cursor-pointer group"
+              className="h-7 px-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white transition-all flex items-center gap-1.5 border border-[#242424] hover:border-white/[0.15] shadow-xs cursor-pointer group"
               title="Open Channel on YouTube"
             >
               <span>View</span>
@@ -515,7 +515,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               type="button"
               disabled={isSyncingStats}
               onClick={handleRefreshLiveStats}
-              className="h-7 w-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white transition-all border border-white/[0.08] hover:border-white/[0.15] flex items-center justify-center cursor-pointer disabled:opacity-50 shadow-xs"
+              className="h-7 w-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white transition-all border border-[#242424] hover:border-white/[0.15] flex items-center justify-center cursor-pointer disabled:opacity-50 shadow-xs"
               title="Sync Live Channel Statistics"
             >
               <RefreshCw className={`w-3 h-3 ${isSyncingStats ? 'animate-spin text-red-400' : ''}`} />
@@ -527,7 +527,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               className={`h-7 w-7 rounded-lg transition-all border flex items-center justify-center cursor-pointer shadow-xs ${
                 showHandleSearch
                   ? 'bg-red-500/20 border-red-500/50 text-red-400'
-                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white border-white/[0.08] hover:border-white/[0.15]'
+                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white border-[#242424] hover:border-white/[0.15]'
               }`}
               title="Switch or Search Channel"
             >
@@ -537,7 +537,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             <button
               type="button"
               onClick={handleDisconnectChannel}
-              className="h-7 w-7 rounded-lg bg-white/[0.04] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all border border-white/[0.08] hover:border-red-500/30 flex items-center justify-center cursor-pointer shadow-xs"
+              className="h-7 w-7 rounded-lg bg-white/[0.04] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all border border-[#242424] hover:border-red-500/30 flex items-center justify-center cursor-pointer shadow-xs"
               title="Disconnect Channel"
             >
               <Unlink className="w-3 h-3" />
@@ -547,7 +547,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
       </div>
 
       {/* ── Connected YouTube Channel Identity & Metrics Card ── */}
-      <div className="p-3.5 bg-gradient-to-b from-[#16161B] to-[#121215] border-b border-white/[0.06] shrink-0">
+      <div className="p-3.5 bg-gradient-to-b from-[#16161B] to-[#121215] border-b border-[#242424] shrink-0">
         {loadingChannel ? (
           <div className="flex items-center gap-3 animate-pulse">
             <div className="w-10 h-10 rounded-full bg-zinc-800 shrink-0" />
@@ -578,7 +578,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     </div>
                   )}
                   {/* Micro YouTube badge overlay */}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#141824] border border-white/10 flex items-center justify-center shadow-xs">
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#181818] border border-[#2A2A2A] flex items-center justify-center shadow-xs">
                     <Youtube className="w-2 h-2 text-red-500" />
                   </div>
                 </div>
@@ -618,7 +618,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
 
               {/* Center Micro-Metrics Pill Cluster (Subs, Videos, Views) */}
-              <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 py-1 bg-[#0B0E17] border border-white/[0.08] rounded-lg shadow-inner">
+              <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 py-1 bg-[#111111] border border-[#242424] rounded-lg shadow-inner">
                 <div className="flex items-center gap-1 text-[11px] font-mono">
                   <span className="text-zinc-500 text-[10px] font-sans font-medium">Subs:</span>
                   <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
@@ -655,7 +655,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   value={customHandleInput}
                   onChange={(e) => setCustomHandleInput(e.target.value)}
                   placeholder="Enter YouTube handle (@channel)..."
-                  className="flex-1 bg-[#0B0E17] border border-white/[0.1] rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-red-500/80 transition-colors"
+                  className="flex-1 bg-[#111111] border border-white/[0.1] rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-red-500/80 transition-colors"
                 />
                 <button
                   type="submit"
@@ -693,15 +693,15 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
-        <div className="grid grid-cols-2 gap-1 p-1 bg-[#151926] rounded-none border-0">
+      <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-[#181818] rounded-none border-0">
           <button
             type="button"
             onClick={() => setActiveSubTab('meta')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'meta'
-                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
-                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
             }`}
           >
             <Upload className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'meta' ? 'text-red-500' : 'text-slate-400'}`} />
@@ -712,8 +712,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             onClick={() => setActiveSubTab('seo')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'seo'
-                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
-                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
             }`}
           >
             <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'seo' ? 'text-amber-400' : 'text-slate-400'}`} />
@@ -790,7 +790,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   onChange={(e) => onUpdateScript?.({ title: e.target.value })}
                   placeholder="Enter compelling YouTube video title..."
                   maxLength={100}
-                  className="w-full bg-[#141824] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white font-semibold outline-none focus:border-red-500/80 transition-colors"
+                  className="w-full bg-[#181818] border border-[#242424] rounded-xl px-3 py-2 text-xs text-white font-semibold outline-none focus:border-red-500/80 transition-colors"
                 />
               </div>
 
@@ -822,7 +822,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                           className={`text-left p-2 rounded-lg text-xs transition-all flex flex-col gap-1 border cursor-pointer ${
                             isSelected
                               ? 'bg-red-500/20 border-red-500/50 text-white shadow-xs'
-                              : 'bg-[#1C1C22] border-white/[0.08] text-zinc-300 hover:border-zinc-500 hover:text-white'
+                              : 'bg-[#1C1C22] border-[#242424] text-zinc-300 hover:border-zinc-500 hover:text-white'
                           }`}
                         >
                           <div className="flex items-center justify-between text-[9px] font-mono-studio">
@@ -854,7 +854,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     type="button"
                     disabled={isGeneratingMeta}
                     onClick={() => handleGenerateMetadata('desc')}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1B2132] hover:bg-[#32323D] text-zinc-300 hover:text-white transition-colors cursor-pointer text-[10px]"
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1E1E1E] hover:bg-[#32323D] text-zinc-300 hover:text-white transition-colors cursor-pointer text-[10px]"
                     title="AI Polish Description"
                   >
                     <Wand2 className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'desc' ? 'animate-spin text-red-400' : 'text-red-400'}`} />
@@ -863,7 +863,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyDescription}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1B2132] hover:bg-[#32323D] text-zinc-300 hover:text-white transition-colors cursor-pointer text-[10px]"
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1E1E1E] hover:bg-[#32323D] text-zinc-300 hover:text-white transition-colors cursor-pointer text-[10px]"
                     title="Copy description"
                   >
                     {copiedDescription ? (
@@ -888,7 +888,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     key={tpl.id}
                     type="button"
                     onClick={() => handleApplyDescriptionTemplate(tpl.id)}
-                    className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-[#1A1A20] hover:bg-[#25252E] text-zinc-400 hover:text-white border border-white/[0.08] transition-colors cursor-pointer shrink-0"
+                    className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-[#1A1A20] hover:bg-[#25252E] text-zinc-400 hover:text-white border border-[#242424] transition-colors cursor-pointer shrink-0"
                   >
                     {tpl.label}
                   </button>
@@ -900,12 +900,12 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 value={customDescription}
                 onChange={(e) => handleUpdateDescription(e.target.value)}
                 placeholder="Write or generate rich YouTube video description..."
-                className="w-full bg-[#141824] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-zinc-200 font-sans outline-none focus:border-red-500/80 resize-none custom-scrollbar leading-relaxed"
+                className="w-full bg-[#181818] border border-[#242424] rounded-xl px-3 py-2 text-xs text-zinc-200 font-sans outline-none focus:border-red-500/80 resize-none custom-scrollbar leading-relaxed"
               />
             </div>
 
             {/* Quick Hashtags Strip in Meta Tab */}
-            <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#16161B] border border-white/[0.08]">
+            <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#16161B] border border-[#242424]">
               <div className="flex items-center justify-between text-[10px]">
                 <span className="text-slate-400 uppercase font-bold font-mono-studio flex items-center gap-1">
                   <Hash className="w-3 h-3 text-red-400" /> Attached Hashtags ({tags.length})
@@ -961,7 +961,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                       className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-red-500/15 border-red-500/50 text-white shadow-xs'
-                          : 'bg-[#141824] border-white/[0.08] text-slate-400 hover:text-white hover:bg-[#202026]'
+                          : 'bg-[#181818] border-[#242424] text-slate-400 hover:text-white hover:bg-[#202026]'
                       }`}
                     >
                       <Icon className={`w-3.5 h-3.5 mb-1 ${isSelected ? 'text-red-400' : 'text-slate-400'}`} />
@@ -1030,7 +1030,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             </div>
 
             {/* Viral Hashtags & Suggested Tags Manager */}
-            <div className="p-3.5 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5 shadow-sm">
+            <div className="p-3.5 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1">
@@ -1089,7 +1089,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     }
                   }}
                   placeholder="Add custom hashtag (e.g. #StoicGrit)..."
-                  className="flex-1 bg-[#0E121B] border border-white/[0.08] focus:border-red-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                  className="flex-1 bg-[#141414] border border-[#242424] focus:border-red-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
                 />
                 <button
                   type="button"
@@ -1101,7 +1101,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
 
               {/* Active Tag Cloud */}
-              <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-lg bg-[#0E121B] border border-[#222228]">
+              <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-lg bg-[#141414] border border-[#222228]">
                 {tags.length === 0 ? (
                   <span className="text-[11px] text-zinc-500 italic py-0.5">No hashtags added yet. Click suggestions below or AI Generate.</span>
                 ) : (
@@ -1149,7 +1149,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                         className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
                           tags.includes(sug)
                             ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                            : 'bg-[#1C1C22] border-white/[0.08] text-slate-400 hover:text-white hover:border-red-500/60 active:scale-95'
+                            : 'bg-[#1C1C22] border-[#242424] text-slate-400 hover:text-white hover:border-red-500/60 active:scale-95'
                         }`}
                       >
                         + {sug}
@@ -1182,7 +1182,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                         className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
                           tags.includes(sug)
                             ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                            : 'bg-[#1C1C22] border-white/[0.08] text-slate-400 hover:text-white hover:border-blue-500/60 active:scale-95'
+                            : 'bg-[#1C1C22] border-[#242424] text-slate-400 hover:text-white hover:border-blue-500/60 active:scale-95'
                         }`}
                       >
                         + {sug}
@@ -1215,7 +1215,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                         className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
                           tags.includes(sug)
                             ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                            : 'bg-[#1C1C22] border-white/[0.08] text-slate-400 hover:text-white hover:border-emerald-500/60 active:scale-95'
+                            : 'bg-[#1C1C22] border-[#242424] text-slate-400 hover:text-white hover:border-emerald-500/60 active:scale-95'
                         }`}
                       >
                         + {sug}
@@ -1227,12 +1227,12 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             </div>
 
             {/* Retention & Content Signals */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <span className="text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold">
                 Viewer Retention Signals
               </span>
 
-              <div className="flex items-center justify-between p-2 rounded-lg bg-[#0B0E17] border border-[#24242A] text-xs">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-[#111111] border border-[#24242A] text-xs">
                 <div>
                   <div className="text-[11px] font-semibold text-white">First 3 Seconds Hook</div>
                   <div className="text-[10px] text-zinc-400 truncate max-w-[220px]">
@@ -1244,7 +1244,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-2 rounded-lg bg-[#0B0E17] border border-[#24242A] text-xs">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-[#111111] border border-[#24242A] text-xs">
                 <div>
                   <div className="text-[11px] font-semibold text-white">Call-To-Action (CTA)</div>
                   <div className="text-[10px] text-zinc-400 truncate max-w-[220px]">
@@ -1258,7 +1258,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             </div>
 
             {/* Dynamic SEO Algorithm Checklist */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-1.5">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-1.5">
               <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
                 Algorithm Discovery Checklist
               </span>
@@ -1272,7 +1272,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               ].map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-1.5 rounded-lg bg-[#0B0E17] border border-[#24242A] text-xs"
+                  className="flex items-center justify-between p-1.5 rounded-lg bg-[#111111] border border-[#24242A] text-xs"
                 >
                   <div className="flex items-center gap-2">
                     {item.pass ? (
@@ -1295,7 +1295,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
       </div>
 
       {/* ── Sticky Bottom Action Bar (With Live Published YouTube Video Link) ── */}
-      <div className="p-3 bg-[#151518] border-t border-white/[0.08] shrink-0 flex flex-col gap-2.5">
+      <div className="p-3 bg-[#151518] border-t border-[#242424] shrink-0 flex flex-col gap-2.5">
         {publishedSuccess && (publishedVideoUrl || channel) ? (
           <div className="flex flex-col gap-2">
             <a
@@ -1320,7 +1320,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   }
                   toast.success('Ready to upload another video to YouTube!');
                 }}
-                className="h-9 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-[#202026] hover:bg-[#1F2538] text-zinc-200 hover:text-white border border-white/[0.12] hover:border-sky-500/50 transition-all cursor-pointer shadow-sm"
+                className="h-9 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-[#202026] hover:bg-[#222222] text-zinc-200 hover:text-white border border-[#2E2E2E] hover:border-sky-500/50 transition-all cursor-pointer shadow-sm"
                 title="Publish current edited video or re-upload to YouTube"
               >
                 <Upload className="w-3.5 h-3.5 text-sky-400" />
@@ -1404,7 +1404,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 href={publishedVideoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:text-blue-300 underline font-mono truncate flex items-center justify-between gap-1 p-1.5 rounded bg-[#0E121B] border border-white/[0.08]"
+                className="text-xs text-blue-400 hover:text-blue-300 underline font-mono truncate flex items-center justify-between gap-1 p-1.5 rounded bg-[#141414] border border-[#242424]"
               >
                 <span className="truncate">{publishedVideoUrl}</span>
                 <ExternalLink className="w-3 h-3 shrink-0 text-zinc-400" />

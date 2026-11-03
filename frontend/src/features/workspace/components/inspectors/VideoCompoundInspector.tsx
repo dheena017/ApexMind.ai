@@ -508,10 +508,10 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   }, [isImageMode]);
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar ── */}
-      <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-white/[0.08] bg-[#0B0E17]">
-        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-xl border border-white/[0.08] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-[#242424] bg-[#111111]">
+        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-xl border border-[#242424] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {subtabsConfig.map((t) => {
             const Icon = t.icon;
             const isActive = activeSubTab === t.id;
@@ -522,8 +522,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 onClick={() => setActiveSubTab(t.id)}
                 className={`flex-1 min-w-[52px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
+                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
                 }`}
               >
                 <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
@@ -556,7 +556,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         {activeSubTab === 'transform' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Aspect Ratio Selector */}
-            <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#141824] border border-white/[0.08]">
+            <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#181818] border border-[#242424]">
               <div className="flex items-center justify-between text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
                 <span>Canvas Aspect Ratio</span>
                 <span className="text-sky-400 font-bold">{canvasAspectRatio}</span>
@@ -581,7 +581,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                       className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-[#1E293B] border-sky-500 text-sky-400 shadow-sm'
-                          : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-[#D4D4D8]'
+                          : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-[#D4D4D8]'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5 mb-1" />
@@ -609,7 +609,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     className={`py-2 px-1.5 rounded-xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
                       fitMode === mode
                         ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-md'
-                        : 'bg-[#141824] border-white/[0.08] text-slate-400 hover:text-white hover:bg-[#1B2132]'
+                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:text-white hover:bg-[#1E1E1E]'
                     }`}
                   >
                     {icon}
@@ -621,7 +621,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             </div>
 
             {/* Scale Slider + Numeric Input */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 flex items-center gap-1.5 font-medium">
                   Scale Zoom
@@ -641,7 +641,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     max="400"
                     value={scale}
                     onChange={(e) => setScale(Math.max(10, Math.min(400, Number(e.target.value) || 100)))}
-                    className="w-14 bg-[#0E121B] border border-white/[0.08] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
+                    className="w-14 bg-[#141414] border border-[#242424] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
                   />
                   <span className="text-[10px] text-slate-500">%</span>
                 </div>
@@ -657,7 +657,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             </div>
 
             {/* Position Offset XY with Numeric Inputs */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Position Offset (Anchor)</span>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -673,7 +673,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                         max="100"
                         value={ctrl.value}
                         onChange={(e) => ctrl.setter(Math.max(0, Math.min(100, Number(e.target.value) || 50)))}
-                        className="w-11 bg-[#0E121B] border border-white/[0.08] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none"
+                        className="w-11 bg-[#141414] border border-[#242424] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none"
                       />
                     </div>
                     <input
@@ -690,14 +690,14 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             </div>
 
             {/* Flip & Rotation */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Rotation & Orientation</span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setFlipH(!flipH)}
                   className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border transition-colors cursor-pointer text-xs font-semibold ${
-                    flipH ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#0B0E17] border-white/[0.08] text-slate-400 hover:bg-[#202026]'
+                    flipH ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#202026]'
                   }`}
                   title="Flip Horizontal"
                 >
@@ -708,7 +708,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setFlipV(!flipV)}
                   className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border transition-colors cursor-pointer text-xs font-semibold ${
-                    flipV ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#0B0E17] border-white/[0.08] text-slate-400 hover:bg-[#202026]'
+                    flipV ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#202026]'
                   }`}
                   title="Flip Vertical"
                 >
@@ -718,12 +718,12 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
-                  className="w-9 h-9 rounded-lg bg-[#0B0E17] border border-white/[0.08] flex items-center justify-center text-[#D4D4D8] hover:bg-[#202026] cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-[#D4D4D8] hover:bg-[#202026] cursor-pointer"
                   title="Rotate +90°"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
-                <div className="flex items-center bg-[#0B0E17] border border-white/[0.08] rounded-lg px-2 h-9 gap-1.5">
+                <div className="flex items-center bg-[#111111] border border-[#242424] rounded-lg px-2 h-9 gap-1.5">
                   <button type="button" onClick={() => setRotation((r) => (r - 15 + 360) % 360)} className="text-slate-500 hover:text-white cursor-pointer"><Minus className="w-3 h-3" /></button>
                   <span className="text-xs font-mono-studio text-white font-bold w-9 text-center">{rotation}°</span>
                   <button type="button" onClick={() => setRotation((r) => (r + 15) % 360)} className="text-slate-500 hover:text-white cursor-pointer"><Plus className="w-3 h-3" /></button>
@@ -732,7 +732,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             </div>
 
             {/* Canvas Background Color Chooser */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Canvas Background Color</span>
                 <span className="font-mono-studio text-[11px] text-white">{canvasBackground}</span>
@@ -742,7 +742,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   type="color"
                   value={canvasBackground.startsWith('#') ? canvasBackground : '#050505'}
                   onChange={(e) => onCanvasBackgroundChange?.(e.target.value)}
-                  className="w-8 h-8 rounded-lg border border-white/[0.08] bg-transparent cursor-pointer shrink-0"
+                  className="w-8 h-8 rounded-lg border border-[#242424] bg-transparent cursor-pointer shrink-0"
                 />
                 <div className="flex flex-wrap gap-1.5 flex-1">
                   {CANVAS_BG_PRESETS.map((bg) => (
@@ -764,7 +764,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             {/* Active Backdrop Card & Preset Selector */}
             <div className="flex flex-col gap-2">
               {(customVideoUrl || customImageUrl || activeBackdrop?.id) && (
-                <div className="w-full aspect-video rounded-xl overflow-hidden border border-white/[0.08] bg-[#111114] relative">
+                <div className="w-full aspect-video rounded-xl overflow-hidden border border-[#242424] bg-[#111114] relative">
                   {customVideoUrl ? (
                     <video src={customVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
                   ) : customImageUrl ? (
@@ -807,8 +807,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     ? 'Custom Image active — switch to preset...'
                     : 'Choose backdrop preset...'
                 }
-                buttonClassName="bg-[#141824] border-white/[0.08] hover:border-[#3B82F6]/50"
-                menuClassName="bg-[#141824] border-white/[0.08]"
+                buttonClassName="bg-[#181818] border-[#242424] hover:border-[#3B82F6]/50"
+                menuClassName="bg-[#181818] border-[#242424]"
               />
             </div>
 
@@ -816,7 +816,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             <button
               type="button"
               onClick={handleResetTransform}
-              className="w-full py-2 rounded-xl bg-[#141824] hover:bg-[#282830] border border-white/[0.08] text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-2 rounded-xl bg-[#181818] hover:bg-[#282830] border border-[#242424] text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Reset All Transform Values
@@ -828,13 +828,13 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         {activeSubTab === 'animations' && (
           <div className="flex flex-col gap-3 pt-0.5 select-none">
             {/* In / Out Direction Segmented Pill Switcher */}
-            <div className="grid grid-cols-2 p-1 rounded-xl bg-[#141824] border border-white/[0.08]">
+            <div className="grid grid-cols-2 p-1 rounded-xl bg-[#181818] border border-[#242424]">
               <button
                 type="button"
                 onClick={() => setAnimDirection('in')}
                 className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   animDirection === 'in'
-                    ? 'bg-[#282834] text-white shadow-xs border border-white/10'
+                    ? 'bg-[#282834] text-white shadow-xs border border-[#2A2A2A]'
                     : 'text-slate-500 hover:text-white'
                 }`}
               >
@@ -845,7 +845,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 onClick={() => setAnimDirection('out')}
                 className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   animDirection === 'out'
-                    ? 'bg-[#282834] text-white shadow-xs border border-white/10'
+                    ? 'bg-[#282834] text-white shadow-xs border border-[#2A2A2A]'
                     : 'text-slate-500 hover:text-white'
                 }`}
               >
@@ -854,7 +854,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             </div>
 
             {/* Animation Duration Slider */}
-            <div className="p-2.5 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-2.5 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-medium">
                   {animDirection === 'in' ? 'In Animation Duration' : 'Out Animation Duration'}
@@ -880,7 +880,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                       handleOutAnimChange(animationOut, d);
                     }
                   }}
-                  className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#1F2538] rounded-lg"
+                  className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#222222] rounded-lg"
                 />
                 <div className="flex gap-1 shrink-0">
                   {[0.3, 0.5, 0.8, 1.0].map((d) => (
@@ -899,7 +899,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                       className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
                         Math.abs((animDirection === 'in' ? animationInDuration : animationOutDuration) - d) < 0.05
                           ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
-                          : 'bg-[#0B0E17] text-slate-500 hover:text-white border border-white/[0.08]'
+                          : 'bg-[#111111] text-slate-500 hover:text-white border border-[#242424]'
                       }`}
                     >
                       {d}s
@@ -926,7 +926,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'fade',
                   label: 'Fade',
                   icon: (
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-zinc-200 via-zinc-400 to-zinc-700/30 border border-white/10 shadow-inner" />
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-zinc-200 via-zinc-400 to-zinc-700/30 border border-[#2A2A2A] shadow-inner" />
                   ),
                 },
                 {
@@ -952,7 +952,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   label: 'Zoom Out',
                   icon: (
                     <div className="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center relative shadow-xs">
-                      <div className="w-7 h-7 rounded-lg bg-[#1B2132] flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg bg-[#1E1E1E] flex items-center justify-center">
                         <div className="w-4 h-4 rounded-md bg-[#121216] border border-white/20" />
                       </div>
                     </div>
@@ -973,7 +973,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'soft-reveal',
                   label: 'Soft Reveal',
                   icon: (
-                    <div className="w-9 h-9 rounded-xl overflow-hidden relative bg-[#1c1c24] border border-white/10">
+                    <div className="w-9 h-9 rounded-xl overflow-hidden relative bg-[#1c1c24] border border-[#2A2A2A]">
                       <div className="absolute inset-0 bg-gradient-to-br from-white via-zinc-300 to-transparent" />
                     </div>
                   ),
@@ -995,7 +995,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'slide-left',
                   label: 'Slide Left',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
                       <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs -translate-x-1">
                         <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                       </div>
@@ -1006,7 +1006,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'slide-right',
                   label: 'Slide Right',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
                       <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs translate-x-1">
                         <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                       </div>
@@ -1017,7 +1017,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'slide-up',
                   label: 'Slide Up',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
                       <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs -translate-y-1">
                         <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
                       </div>
@@ -1028,7 +1028,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'slide-down',
                   label: 'Slide Down',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
                       <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs translate-y-1">
                         <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
                       </div>
@@ -1039,7 +1039,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'spin',
                   label: 'Spin 360',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
                       <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-sky-400 to-indigo-300 rotate-45 shadow-sm flex items-center justify-center">
                         <div className="w-2.5 h-2.5 rounded-xs bg-zinc-900" />
                       </div>
@@ -1050,7 +1050,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'bounce',
                   label: 'Bounce',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
                       <div className="w-7 h-7 rounded-xl bg-white shadow-md flex items-center justify-center scale-105">
                         <div className="w-3 h-3 rounded-md bg-amber-500" />
                       </div>
@@ -1061,7 +1061,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'flip-x',
                   label: 'Flip 3D',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative overflow-hidden">
                       <div className="w-4 h-7 rounded-sm bg-gradient-to-r from-white to-zinc-400 shadow-sm transform -skew-y-12" />
                     </div>
                   ),
@@ -1070,7 +1070,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'flip-y',
                   label: 'Tilt 3D',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative overflow-hidden">
                       <div className="w-7 h-4 rounded-sm bg-gradient-to-b from-white to-zinc-400 shadow-sm transform -skew-x-12" />
                     </div>
                   ),
@@ -1099,7 +1099,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'diamond',
                   label: 'Diamond',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
                       <div className="w-6 h-6 bg-white rotate-45 rounded-sm shadow-xs" />
                     </div>
                   ),
@@ -1108,7 +1108,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   id: 'flash',
                   label: 'Flash Glow',
                   icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-white/15 flex items-center justify-center relative">
+                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
                       <div className="w-6 h-6 rounded-full bg-amber-300 blur-[2px] shadow-lg shadow-amber-400/50 flex items-center justify-center">
                         <div className="w-2.5 h-2.5 rounded-full bg-white" />
                       </div>
@@ -1146,7 +1146,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                       className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 flex items-center justify-center bg-[#15151A] ${
                         isSelected
                           ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
-                          : 'border-white/[0.08] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30'
+                          : 'border-[#242424] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30'
                       }`}
                     >
                       {item.icon}
@@ -1196,7 +1196,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
                         isCur
                           ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-xs'
-                          : 'bg-[#141824] text-slate-400 border-white/[0.08] hover:text-white hover:border-[#383842]'
+                          : 'bg-[#181818] text-slate-400 border-[#242424] hover:text-white hover:border-[#383842]'
                       }`}
                     >
                       {p.label}
@@ -1211,7 +1211,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               <button
                 type="button"
                 onClick={handleResetAdjustments}
-                className="w-full py-1.5 rounded-lg bg-[#1B2132] hover:bg-[#1F2538] text-xs font-semibold text-zinc-300 hover:text-white border border-[#303038] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-1.5 rounded-lg bg-[#1E1E1E] hover:bg-[#222222] text-xs font-semibold text-zinc-300 hover:text-white border border-[#303038] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3 text-amber-400" />
                 Reset Tone & Adjustments
@@ -1220,7 +1220,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
             {/* Sliders Groups */}
             {adjustmentGroups.map((group) => (
-              <div key={group.title} className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-3">
+              <div key={group.title} className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-3">
                 <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
                   {group.title}
                 </span>
@@ -1242,7 +1242,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                         max={item.max}
                         value={item.value}
                         onChange={(e) => item.setter(Number(e.target.value))}
-                        className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#1F2538] rounded-lg"
+                        className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#222222] rounded-lg"
                       />
                       {item.value !== item.def && (
                         <button
@@ -1266,7 +1266,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Top Sub-category Navigation Pills + Quick Reset */}
             <div className="flex items-center justify-between pb-0.5">
-              <div className="flex items-center gap-1 bg-[#141824] p-0.5 rounded-lg border border-white/[0.08]">
+              <div className="flex items-center gap-1 bg-[#181818] p-0.5 rounded-lg border border-[#242424]">
                 {[
                   { id: 'all', label: 'All' },
                   { id: 'looks', label: 'Looks' },
@@ -1315,7 +1315,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       activeStyle === preset.label
                         ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-md'
-                        : 'bg-[#141824] border-white/[0.08] text-slate-400 hover:bg-[#202026] hover:text-white'
+                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-0.5">
@@ -1332,7 +1332,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
             {/* 3D LUT Film Emulation */}
             {(styleSection === 'all' || styleSection === 'lut') && (
-              <div className={styleSection === 'all' ? "border-t border-white/[0.08] pt-3 flex flex-col gap-2" : "flex flex-col gap-2"}>
+              <div className={styleSection === 'all' ? "border-t border-[#242424] pt-3 flex flex-col gap-2" : "flex flex-col gap-2"}>
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><Film className="w-3 h-3 text-sky-400" />3D LUT Film Emulation</span>
                 <span className="font-mono-studio text-[10px] text-slate-400">
@@ -1348,7 +1348,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
                       activeLUT === lut.id
                         ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                        : 'bg-[#141824] border-white/[0.08] text-slate-400 hover:bg-[#202026] hover:text-white'
+                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
                     }`}
                   >
                     <div className="flex flex-col gap-2">
@@ -1361,7 +1361,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               </div>
 
               {activeLUT !== 'none' && (
-                <div className="mt-2.5 p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+                <div className="mt-2.5 p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400">LUT Blend Mix</span>
                     <span className="font-mono-studio text-white font-bold">{lutIntensity}%</span>
@@ -1381,7 +1381,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
             {/* Color & Tone Adjustments Grouped */}
             {(styleSection === 'all' || styleSection === 'adjust') && (
-              <div className={`flex flex-col gap-3 ${styleSection === 'all' ? 'border-t border-white/[0.08] pt-3.5' : 'pt-0.5'}`}>
+              <div className={`flex flex-col gap-3 ${styleSection === 'all' ? 'border-t border-[#242424] pt-3.5' : 'pt-0.5'}`}>
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider flex items-center gap-1.5">
                     <Sliders className="w-3.5 h-3.5 text-blue-400" />
@@ -1419,7 +1419,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                             <div
                               key={ctrl.label}
                               className={`p-2.5 rounded-xl border transition-colors flex flex-col gap-1.5 ${
-                                isModified ? 'bg-[#1A1A22] border-[#3B82F6]/40' : 'bg-[#141824] border-white/[0.08]'
+                                isModified ? 'bg-[#1A1A22] border-[#3B82F6]/40' : 'bg-[#181818] border-[#242424]'
                               }`}
                             >
                               <div className="flex items-center justify-between text-xs">
@@ -1436,7 +1436,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                                     max={ctrl.max}
                                     value={ctrl.value}
                                     onChange={(e) => ctrl.setter(Number(e.target.value))}
-                                    className="w-12 bg-[#0E121B] border border-white/[0.08] focus:border-[#3B82F6] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none transition-colors"
+                                    className="w-12 bg-[#141414] border border-[#242424] focus:border-[#3B82F6] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none transition-colors"
                                   />
                                   <span className="text-[10px] text-slate-500 w-3">{ctrl.unit}</span>
                                   <button
@@ -1476,7 +1476,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         {/* ── SPEED TAB ── */}
         {activeSubTab === 'speed' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Playback Velocity Multiplier</span>
               <div className="grid grid-cols-4 gap-1.5">
                 {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((rate) => (
@@ -1487,7 +1487,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     className={`py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                       playbackRate === rate
                         ? 'bg-[#3B82F6] border-transparent text-white shadow-sm'
-                        : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
+                        : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
                     }`}
                   >
                     {rate}x
@@ -1496,7 +1496,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex items-center justify-between">
               <div className="flex flex-col gap-2">
                 <p className="text-xs font-semibold text-white">Loop Backdrop Clip</p>
                 <p className="text-[10px] text-slate-500">Automatically restart video at end</p>
@@ -1521,7 +1521,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         {/* ── AUDIO TAB ── */}
         {activeSubTab === 'audio' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 flex items-center gap-1.5 font-medium">
                   {muteVideo ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
@@ -1545,7 +1545,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setMuteVideo(!muteVideo)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
-                    muteVideo ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[#0B0E17] border-white/[0.08] text-slate-400 hover:text-white'
+                    muteVideo ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[#111111] border-[#242424] text-slate-400 hover:text-white'
                   }`}
                 >
                   {muteVideo ? 'Unmute Track' : 'Mute Track'}
@@ -1553,7 +1553,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => { setVideoVolume(100); setMuteVideo(false); }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0B0E17] border border-white/[0.08] text-slate-400 hover:text-white cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#111111] border border-[#242424] text-slate-400 hover:text-white cursor-pointer"
                 >
                   100%
                 </button>
@@ -1564,8 +1564,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
 
         {/* ── TIME TAB ── */}
         {activeSubTab === 'time' && (
-          <div className={`flex flex-col gap-3 ${styleSection === 'all' ? 'border-t border-white/[0.08] pt-3.5 mt-2' : 'pt-0.5'}`}>
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+          <div className={`flex flex-col gap-3 ${styleSection === 'all' ? 'border-t border-[#242424] pt-3.5 mt-2' : 'pt-0.5'}`}>
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-medium">Active Clip Duration</span>
                 <span className="font-mono-studio text-white font-bold">{formatTimeDigital(localDuration)}</span>
@@ -1574,7 +1574,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => handleDurationChange(localDuration - 1)}
-                  className="w-9 h-9 rounded-lg bg-[#0B0E17] border border-white/[0.08] flex items-center justify-center text-white hover:bg-[#1B2132] cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white hover:bg-[#1E1E1E] cursor-pointer"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -1585,19 +1585,19 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   max="300"
                   value={localDuration}
                   onChange={(e) => handleDurationChange(Number(e.target.value) || 1)}
-                  className="flex-1 bg-[#0E121B] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-center font-mono-studio text-sm text-white font-bold outline-none"
+                  className="flex-1 bg-[#141414] border border-[#242424] rounded-lg px-2.5 py-1.5 text-center font-mono-studio text-sm text-white font-bold outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => handleDurationChange(localDuration + 1)}
-                  className="w-9 h-9 rounded-lg bg-[#0B0E17] border border-white/[0.08] flex items-center justify-center text-white hover:bg-[#1B2132] cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white hover:bg-[#1E1E1E] cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-1.5 text-[11px] font-mono-studio">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-1.5 text-[11px] font-mono-studio">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Timeline Diagnostics</span>
               <div className="flex justify-between"><span className="text-slate-500">Framerate</span><span className="text-white">30.00 fps</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Total Frames</span><span className="text-white">{Math.round(localDuration * 30)} frames</span></div>

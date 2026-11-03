@@ -255,10 +255,10 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   const tabs = ['audio', 'eq', 'effects', 'sfx', 'time'] as const;
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar ── */}
-      <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-white/[0.08] bg-[#0B0E17]">
-        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-xl border border-white/[0.08] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-[#242424] bg-[#111111]">
+        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-xl border border-[#242424] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {(
             [
               { id: 'audio', label: 'Mix', icon: Sliders },
@@ -277,8 +277,8 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 onClick={() => setActiveSubTab(t.id)}
                 className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
+                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
                 }`}
               >
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
@@ -296,7 +296,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
         {activeSubTab === 'audio' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Real-time Spectrum Bar Visualizer */}
-            <div className="p-3 rounded-xl bg-[#0B0E17] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#111111] border border-[#242424] flex flex-col gap-2">
               <div className="flex items-center justify-between text-[10px] font-mono-studio text-slate-500 uppercase font-bold">
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -304,7 +304,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 </span>
                 <span className="text-emerald-400 font-bold">{isMuted ? 'Muted' : `${localVolume}%`}</span>
               </div>
-              <div className="h-10 flex items-end gap-1 px-1 bg-[#0B0E17] rounded-lg p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="h-10 flex items-end gap-1 px-1 bg-[#111111] rounded-lg p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                 {spectrumBars.map((h, i) => (
                   <div
                     key={i}
@@ -327,7 +327,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             </div>
 
             {/* Volume Gain Slider with Gain Boost (0-200%) */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 flex items-center gap-1.5 font-medium">
                   {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
@@ -340,7 +340,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     max="200"
                     value={isMuted ? 0 : localVolume}
                     onChange={(e) => handleApplyVolume(Number(e.target.value))}
-                    className="w-12 bg-[#0E121B] border border-white/[0.08] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
+                    className="w-12 bg-[#141414] border border-[#242424] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
                   />
                   <span className="text-[10px] text-slate-500">%</span>
                 </div>
@@ -358,7 +358,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setIsMuted(!isMuted)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
-                    isMuted ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[#0B0E17] border-white/[0.08] text-slate-400 hover:text-white'
+                    isMuted ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[#111111] border-[#242424] text-slate-400 hover:text-white'
                   }`}
                 >
                   {isMuted ? 'Unmute' : 'Mute Track'}
@@ -366,7 +366,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => handleApplyVolume(100)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0B0E17] border border-white/[0.08] text-slate-400 hover:text-white cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#111111] border border-[#242424] text-slate-400 hover:text-white cursor-pointer"
                 >
                   100% (Unity)
                 </button>
@@ -389,14 +389,14 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   }))}
                   icon={<Mic className="w-3.5 h-3.5 text-emerald-400" />}
                   placeholder="Select speech voice..."
-                  buttonClassName="bg-[#141824] border-white/[0.08] hover:border-emerald-500/50"
-                  menuClassName="bg-[#141824] border-white/[0.08]"
+                  buttonClassName="bg-[#181818] border-[#242424] hover:border-emerald-500/50"
+                  menuClassName="bg-[#181818] border-[#242424]"
                 />
                 <button
                   type="button"
                   onClick={() => onTestVoice(selectedVoice)}
                   disabled={Boolean(testingVoiceId)}
-                  className="w-full py-2 rounded-xl bg-[#141824] hover:bg-[#25252C] border border-white/[0.08] text-xs font-semibold text-[#D4D4D8] hover:text-white flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-2 rounded-xl bg-[#181818] hover:bg-[#25252C] border border-[#242424] text-xs font-semibold text-[#D4D4D8] hover:text-white flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Headphones className="w-3.5 h-3.5 text-emerald-400" />
                   {testingVoiceId === selectedVoice ? 'Auditioning Voice...' : 'Audition Sample Audio'}
@@ -407,7 +407,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             )}
 
             {/* ── AI VOICE TONE & EMOTION MODULATION ── */}
-            <div className="p-3.5 rounded-xl bg-[#141416] border border-white/[0.08] flex flex-col gap-3 shadow-lg relative overflow-hidden">
+            <div className="p-3.5 rounded-xl bg-[#141416] border border-[#242424] flex flex-col gap-3 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
 
               <div className="flex items-center justify-between">
@@ -448,7 +448,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   className={`p-2 rounded-lg border transition-all flex flex-col gap-1 ${
                     currentBeat === 'hook'
                       ? 'bg-amber-500/20 border-amber-500/60 shadow-sm'
-                      : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+                      : 'bg-white/[0.03] border-[#2A2A2A] hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -472,7 +472,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   className={`p-2 rounded-lg border transition-all flex flex-col gap-1 ${
                     currentBeat === 'quote'
                       ? 'bg-blue-500/20 border-blue-500/60 shadow-sm'
-                      : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+                      : 'bg-white/[0.03] border-[#2A2A2A] hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -496,7 +496,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   className={`p-2 rounded-lg border transition-all flex flex-col gap-1 ${
                     currentBeat === 'cta'
                       ? 'bg-emerald-500/20 border-emerald-500/60 shadow-sm'
-                      : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+                      : 'bg-white/[0.03] border-[#2A2A2A] hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -520,7 +520,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
               <button
                 type="button"
                 onClick={handleAuditionModulation}
-                className="w-full py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-[#2A2A2A] text-neutral-300 hover:text-white text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Waves className="w-3 h-3 text-blue-400" />
                 Audition Tone & Cadence Demo
@@ -528,7 +528,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             </div>
 
             {/* Speaking Rate / Speed Multiplier */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400">Audio Speed Velocity</span>
                 <span className="font-mono-studio text-white font-bold">{playbackRate}x</span>
@@ -542,7 +542,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     className={`py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                       playbackRate === rate
                         ? 'bg-[#3B82F6] border-transparent text-white'
-                        : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-white'
+                        : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
                     }`}
                   >
                     {rate}x
@@ -568,7 +568,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
                       activeEQ === preset.id
                         ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                        : 'bg-[#141824] border-white/[0.08] text-slate-400 hover:bg-[#202026] hover:text-white'
+                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
                     }`}
                   >
                     <p className="text-xs font-bold text-white mb-0.5">{preset.label}</p>
@@ -579,7 +579,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             </div>
 
             {/* 3-Band Parametric Sliders with Direct Numeric Inputs */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-3">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-3">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">3-Band Frequency Equalizer</span>
               {[
                 { label: 'Bass (Low 100Hz)', value: bass, setter: setBass, color: 'accent-amber-500' },
@@ -599,7 +599,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                           band.setter(Math.max(-12, Math.min(12, Number(e.target.value) || 0)));
                           setActiveEQ('custom');
                         }}
-                        className="w-11 bg-[#0E121B] border border-white/[0.08] rounded px-1 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
+                        className="w-11 bg-[#141414] border border-[#242424] rounded px-1 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
                       />
                       <span className="text-[10px] text-slate-500">dB</span>
                     </div>
@@ -625,7 +625,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
         {activeSubTab === 'effects' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Reverb System */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Acoustic Reverb Space</span>
               <div className="flex flex-col gap-1">
                 {REVERB_PRESETS.map((rev) => (
@@ -636,7 +636,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition-colors ${
                       reverb === rev.id
                         ? 'bg-[#1E2A3A] border-[#3B82F6] text-white'
-                        : 'bg-[#0B0E17] border-white/[0.08] text-slate-400 hover:text-white'
+                        : 'bg-[#111111] border-[#242424] text-slate-400 hover:text-white'
                     }`}
                   >
                     <div>
@@ -667,7 +667,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             </div>
 
             {/* Fade In & Fade Out */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Envelope Fades</span>
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
@@ -705,7 +705,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             </div>
 
             {/* Stereo Pan & Width */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Stereo Spatialization</span>
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between text-xs items-center">
@@ -744,7 +744,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             </div>
 
             {/* AI Auto-Ducking & Noise Reduction Toggles */}
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-white">AI Speech Ducking</p>
@@ -788,7 +788,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
               {SFX_ITEMS.map((sfx) => (
                 <div
                   key={sfx.id}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-[#141824] border border-white/[0.08] hover:border-[#3B82F6]/50 transition-colors"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-[#181818] border border-[#242424] hover:border-[#3B82F6]/50 transition-colors"
                 >
                   <div>
                     <span className="text-xs font-bold text-white block">{sfx.name}</span>
@@ -799,7 +799,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                       type="button"
                       onClick={() => handlePlaySfxPreview(sfx)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                        previewingSfx === sfx.id ? 'bg-emerald-600 text-white' : 'bg-[#0B0E17] border border-white/[0.08] text-[#D4D4D8] hover:text-white'
+                        previewingSfx === sfx.id ? 'bg-emerald-600 text-white' : 'bg-[#111111] border border-[#242424] text-[#D4D4D8] hover:text-white'
                       }`}
                     >
                       <Play className="w-3 h-3" />
@@ -829,7 +829,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
         {/* ── TIME & TRIM TAB ── */}
         {activeSubTab === 'time' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
               <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Precision Audio Boundaries</span>
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
@@ -871,7 +871,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-white">Loop Audio Segment</p>
                 <p className="text-[10px] text-slate-500">Seamlessly loop when playhead reaches end</p>

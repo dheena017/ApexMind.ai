@@ -130,8 +130,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 h-11 shrink-0 z-30 w-full overflow-hidden bg-[#0B0E17]/95 backdrop-blur-2xl border-b border-white/[0.08] px-3 sm:px-4 flex items-center justify-between gap-2.5 font-sans-studio select-none text-slate-100 shadow-sm">
-      {/* ── Left: Studio Title & Brand Pill ── */}
+    <header className="sticky top-0 h-11 shrink-0 z-30 w-full overflow-hidden bg-[#111111]/98 backdrop-blur-2xl border-b border-[#242424] px-3 sm:px-4 flex items-center justify-between gap-2.5 font-sans-studio select-none text-[#E5E5E5] shadow-sm">
+      {/* ── Left: Studio Title, Brand Logo, Breadcrumb & Project Title ── */}
       <div className="flex items-center gap-2.5 shrink-0 min-w-0">
         {/* Creator Dashboard Home Shortcut */}
         <button
@@ -139,34 +139,33 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           onClick={() => onNavigate('dashboard')}
           aria-label="Creator Dashboard"
           title="Back to Creator Dashboard"
-          className="h-8 w-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.16] flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer shadow-xs group"
+          className="h-8 w-8 rounded-lg bg-[#181818] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] flex items-center justify-center text-[#9CA3AF] hover:text-white transition-all cursor-pointer shadow-xs group"
         >
-          <LayoutDashboard className="w-4 h-4 text-sky-400 transition-transform group-hover:scale-105" />
+          <LayoutDashboard className="w-4 h-4 text-[#60A5FA] transition-transform group-hover:scale-105" />
         </button>
 
-        <div className="h-4 w-px bg-white/[0.08] hidden min-[440px]:block" />
+        <div className="h-4 w-px bg-[#262626] hidden min-[440px]:block" />
 
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-2">
-          <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center text-white shadow-[0_0_12px_rgba(56,189,248,0.35)]">
+          <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]">
             <Sparkles className="w-3.5 h-3.5" />
           </div>
           <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap hidden min-[440px]:inline">
-            ApexMind <span className="text-sky-400">Studio</span>
+            ApexMind <span className="text-[#60A5FA]">Studio</span>
           </span>
           <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap min-[440px]:hidden">
             ApexMind
           </span>
         </div>
-      </div>
 
         {/* Project Breadcrumb & Title Input */}
-        <div className="hidden md:flex items-center gap-2 min-w-0">
-          <div className="h-4 w-px bg-white/[0.08]" />
-          <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap">
+        <div className="hidden md:flex items-center gap-2 min-w-0 ml-1">
+          <div className="h-4 w-px bg-[#262626]" />
+          <span className="text-[11px] font-medium text-[#9CA3AF] whitespace-nowrap">
             Shorts Director
           </span>
-          <span className="text-slate-600">/</span>
+          <span className="text-[#52525B]">/</span>
           <div className="relative flex items-center min-w-0 max-w-[200px] xl:max-w-[280px]">
             <input
               type="text"
@@ -174,16 +173,17 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               onChange={(e) => handleTitleChange(e.target.value)}
               placeholder="Untitled Project"
               aria-label="Video project title"
-              className="h-7 w-full px-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] focus:bg-[#121622] border border-white/[0.08] focus:border-sky-400/50 text-[11px] font-medium text-slate-200 focus:text-white placeholder:text-slate-500 focus:outline-none transition-all truncate shadow-inner"
+              className="h-7 w-full px-2.5 rounded-lg bg-[#161616] hover:bg-[#1A1A1A] focus:bg-[#1E1E1E] border border-[#2A2A2A] focus:border-[#3B82F6]/60 text-[11px] font-medium text-white placeholder:text-[#737373] focus:outline-none transition-all truncate shadow-inner"
             />
           </div>
         </div>
+      </div>
 
       {/* ── Right: Panel Toggles + Actions + Settings + Profile ── */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Notice Badge */}
         {notice && (
-          <span className="text-[10px] text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/15 animate-pulse hidden xl:inline">
+          <span className="text-[10px] text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full border border-[#333333] animate-pulse hidden xl:inline">
             {notice}
           </span>
         )}
@@ -192,25 +192,25 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('workspace:open-command-palette'))}
-          className="hidden md:flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.16] text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer group"
+          className="hidden md:flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[11px] text-[#9CA3AF] hover:text-white transition-all cursor-pointer group"
           title="Open Command Palette (⌘K or Ctrl+K)"
         >
-          <Search className="w-3 h-3 text-slate-400 group-hover:text-sky-400 transition-colors" />
-          <span className="text-[10px] font-medium text-slate-300">Quick Actions</span>
-          <kbd className="text-[9px] font-mono px-1.5 py-0.2 bg-black/40 border border-white/10 rounded text-slate-400">
+          <Search className="w-3 h-3 text-[#737373] group-hover:text-[#60A5FA] transition-colors" />
+          <span className="text-[10px] font-medium text-[#D4D4D8]">Quick Actions</span>
+          <kbd className="text-[9px] font-mono px-1.5 py-0.2 bg-[#0A0A0A] border border-[#262626] rounded text-[#737373]">
             ⌘K
           </kbd>
         </button>
 
         {/* Panel Layout Toggles (Left, Bottom, Right) Pill Group */}
-        <div className="hidden sm:flex items-center gap-0.5 bg-[#121622] p-0.5 rounded-lg border border-white/[0.08]">
+        <div className="hidden sm:flex items-center gap-0.5 bg-[#141414] p-0.5 rounded-lg border border-[#242424]">
           <button
             type="button"
             onClick={() => handleTogglePanel('left')}
             className={`p-1 rounded-md transition-all cursor-pointer ${
               showLeftPane
-                ? 'bg-blue-600/25 text-sky-300 border border-sky-400/30 shadow-xs'
-                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/40 shadow-xs'
+                : 'text-[#737373] hover:text-white hover:bg-[#202020] border border-transparent'
             }`}
             title={showLeftPane ? 'Hide Left Panel' : 'Show Left Panel'}
             aria-label="Toggle Left Panel"
@@ -223,8 +223,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             onClick={() => handleTogglePanel('bottom')}
             className={`p-1 rounded-md transition-all cursor-pointer ${
               showTimeline
-                ? 'bg-blue-600/25 text-sky-300 border border-sky-400/30 shadow-xs'
-                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/40 shadow-xs'
+                : 'text-[#737373] hover:text-white hover:bg-[#202020] border border-transparent'
             }`}
             title={showTimeline ? 'Hide Bottom Timeline' : 'Show Bottom Timeline'}
             aria-label="Toggle Bottom Timeline"
@@ -237,8 +237,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             onClick={() => handleTogglePanel('right')}
             className={`p-1 rounded-md transition-all cursor-pointer ${
               showRightPane
-                ? 'bg-blue-600/25 text-sky-300 border border-sky-400/30 shadow-xs'
-                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/40 shadow-xs'
+                : 'text-[#737373] hover:text-white hover:bg-[#202020] border border-transparent'
             }`}
             title={showRightPane ? 'Hide Right Inspector' : 'Show Right Inspector'}
             aria-label="Toggle Right Inspector"
@@ -247,17 +247,17 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           </button>
         </div>
 
-        <div className="h-4 w-px bg-white/10 mx-0.5 hidden sm:block" />
+        <div className="h-4 w-px bg-[#262626] mx-0.5 hidden sm:block" />
 
         {/* Export MP4 (Pill Button) */}
         <button
           type="button"
           onClick={handleExport}
           disabled={exporting}
-          className="hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.16] text-[10.5px] font-semibold text-slate-200 hover:text-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          className="hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[10.5px] font-semibold text-[#D4D4D8] hover:text-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           title={exporting ? 'Rendering the final video' : 'Export the composed video preview'}
         >
-          <Download className="w-3 h-3 text-sky-400" />
+          <Download className="w-3 h-3 text-[#60A5FA]" />
           <span>{exporting ? (notice?.startsWith('Rendering') ? notice : 'Exporting...') : 'Export MP4'}</span>
         </button>
 
@@ -265,7 +265,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         <button
           type="button"
           onClick={handleSaveDraft}
-          className="hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.16] text-[10.5px] font-semibold text-slate-200 hover:text-white transition-all cursor-pointer"
+          className="hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[10.5px] font-semibold text-[#D4D4D8] hover:text-white transition-all cursor-pointer"
         >
           <Bookmark className="w-3 h-3 text-amber-400" />
           <span>Save Draft</span>
@@ -278,8 +278,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           disabled={!canPublish}
           className={`hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg text-[10.5px] font-semibold transition-all cursor-pointer border ${
             canPublish
-              ? 'bg-blue-500/10 text-sky-300 border-sky-400/30 hover:bg-blue-500/20 hover:border-sky-400/60 shadow-xs'
-              : 'bg-white/5 text-slate-500 border-white/5 cursor-not-allowed'
+              ? 'bg-[#161616] hover:bg-[#202020] text-[#60A5FA] border-[#2A2A2A] hover:border-[#3B82F6]/40 shadow-xs'
+              : 'bg-[#121212] text-[#52525B] border-[#1F1F1F] cursor-not-allowed'
           }`}
           title="Save this video to your Website Video Library"
         >
@@ -296,8 +296,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             publishedSuccess
               ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
               : !canPublish || publishing
-              ? 'bg-white/5 text-slate-500 border border-white/10 cursor-not-allowed'
-              : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-[0_0_14px_rgba(37,99,235,0.35)] border border-sky-400/30 active:scale-95'
+              ? 'bg-[#121212] text-[#52525B] border border-[#242424] cursor-not-allowed'
+              : 'bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white shadow-[0_0_14px_rgba(37,99,235,0.35)] border border-[#60A5FA]/30 active:scale-95'
           }`}
         >
           {publishing ? (
@@ -315,38 +315,38 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           </span>
         </button>
 
-        <div className="h-4 w-px bg-white/10 mx-0.5 hidden sm:block" />
+        <div className="h-4 w-px bg-[#262626] mx-0.5 hidden sm:block" />
 
-        {/* Settings button (Pill Shape) */}
+        {/* Settings button */}
         <button
           type="button"
           onClick={() => onNavigate('settings')}
-          className="h-7.5 w-7.5 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+          className="h-7.5 w-7.5 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-white hover:bg-[#202020] border border-transparent hover:border-[#2A2A2A] transition-all cursor-pointer"
           title="Studio Settings"
           aria-label="Studio Settings"
         >
           <Settings className="w-3.5 h-3.5" />
         </button>
 
-        {/* Profile button (Pill Avatar) */}
+        {/* Profile button */}
         <button
           type="button"
           onClick={() => onNavigate('profile')}
-          className="flex items-center gap-1 p-0.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+          className="flex items-center gap-1 p-0.5 rounded-full text-[#9CA3AF] hover:text-white hover:bg-[#202020] border border-transparent hover:border-[#2A2A2A] transition-all cursor-pointer"
           title={user ? `${user.name} (${user.email})` : 'Profile'}
         >
           {user?.avatarUrl ? (
             <img
               src={user.avatarUrl}
               alt={user.name}
-              className="w-6 h-6 rounded-full bg-[#1E1E1E] border border-white/20 object-cover shadow-xs"
+              className="w-6 h-6 rounded-full bg-[#181818] border border-[#2A2A2A] object-cover shadow-xs"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 border border-white/20 flex items-center justify-center text-[9px] font-bold text-white shadow-xs">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] border border-[#60A5FA]/30 flex items-center justify-center text-[9px] font-bold text-white shadow-xs">
               {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AM'}
             </div>
           )}
-          <ChevronDown className="w-3 h-3 text-slate-400" />
+          <ChevronDown className="w-3 h-3 text-[#737373]" />
         </button>
       </div>
     </header>

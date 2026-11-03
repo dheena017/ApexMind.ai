@@ -215,7 +215,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-y-auto custom-scrollbar p-3 gap-3.5">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-y-auto custom-scrollbar p-3 gap-3.5">
       {/* ── Active Clip Target Header ── */}
       {targetClipId ? (
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs">
@@ -245,7 +245,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
 
 
       {/* ── Transition Duration Slider & Quick Presets ── */}
-      <div className="p-3 rounded-xl bg-[#141824] border border-white/[0.08] flex flex-col gap-2.5">
+      <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
         <div className="flex justify-between items-center text-xs">
           <span className="text-slate-400 font-medium flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-sky-400" />
@@ -267,7 +267,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
               setTransitionDuration(d);
               handleTransitionChange(activeTransition, d);
             }}
-            className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#1F2538] rounded-lg"
+            className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#222222] rounded-lg"
           />
           <div className="flex gap-1 shrink-0">
             {[0.3, 0.5, 0.8, 1.0, 1.5].map((d) => (
@@ -281,7 +281,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
                 className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
                   Math.abs(transitionDuration - d) < 0.05
                     ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
-                    : 'bg-[#0B0E17] text-slate-500 hover:text-white border border-white/[0.08]'
+                    : 'bg-[#111111] text-slate-500 hover:text-white border border-[#242424]'
                 }`}
               >
                 {d}s
@@ -310,7 +310,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
             className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors shrink-0 ${
               transitionCategory === cat.id
                 ? 'bg-[#282834] text-white border border-white/30 shadow-xs'
-                : 'bg-[#141824] text-slate-500 hover:text-white border border-transparent'
+                : 'bg-[#181818] text-slate-500 hover:text-white border border-transparent'
             }`}
           >
             {cat.label}
@@ -338,7 +338,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
                 className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 ${
                   isSelected
                     ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
-                    : 'border-white/[0.08] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30 bg-[#141824]'
+                    : 'border-[#242424] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30 bg-[#181818]'
                 }`}
               >
                 {isNone ? (
@@ -354,7 +354,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
                     </svg>
                   </div>
                 ) : (
-                  <div className="w-full h-full relative overflow-hidden bg-[#0B0E17]">
+                  <div className="w-full h-full relative overflow-hidden bg-[#111111]">
                     <img
                       src={previewThumbnail}
                       alt={t.label}
@@ -379,7 +379,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
       </div>
 
       {/* ── Bottom Actions Floating Bar ── */}
-      <div className="mt-auto pt-3 border-t border-white/[0.08] flex items-center justify-between gap-2">
+      <div className="mt-auto pt-3 border-t border-[#242424] flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[11px] text-slate-400 truncate">
             Active:{' '}
@@ -403,7 +403,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
           className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs shrink-0 ${
             appliedNotice
               ? 'bg-emerald-600 text-white border-emerald-400'
-              : 'bg-[#252530] hover:bg-[#323240] border-white/10 hover:border-white/30 text-white'
+              : 'bg-[#252530] hover:bg-[#323240] border-[#2A2A2A] hover:border-white/30 text-white'
           }`}
           title="Apply this transition to all cut seams on the selected track"
         >

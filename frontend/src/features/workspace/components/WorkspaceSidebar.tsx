@@ -68,7 +68,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {showMobile && (
         <nav
           aria-label="Studio tools navigation"
-          className="flex sm:hidden w-full h-11 px-2.5 bg-[#0A0E1A]/95 border-b border-white/10 overflow-x-auto scrollbar-none items-center gap-1.5 shrink-0 z-20 select-none font-sans-studio backdrop-blur-xl"
+          className="flex sm:hidden w-full h-11 px-2.5 bg-[#111111]/95 border-b border-[#2A2A2A] overflow-x-auto scrollbar-none items-center gap-1.5 shrink-0 z-20 select-none font-sans-studio backdrop-blur-xl"
         >
           {onNavigate && (
             <button
@@ -76,7 +76,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               onClick={() => onNavigate('dashboard')}
               aria-label="Creator Dashboard"
               title="Creator Dashboard"
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border border-white/10 bg-white/5 text-slate-300 hover:text-white shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border border-[#2A2A2A] bg-white/5 text-slate-300 hover:text-white shrink-0"
             >
               <LayoutDashboard className="h-3.5 w-3.5 shrink-0 text-sky-400" />
               <span className="text-[11px] leading-none">Home</span>
@@ -97,8 +97,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
                   isActive
-                    ? 'border-sky-400/50 bg-gradient-to-r from-blue-600/30 to-sky-500/30 text-white shadow-[0_0_12px_rgba(56,189,248,0.3)]'
-                    : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs'
+                    : 'border-[#242424] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
                 }`}
               >
                 <IconComp className={`h-3.5 w-3.5 shrink-0 ${item.id === 'youtube' && isActive ? 'text-red-400' : item.id === 'automations' && isActive ? 'text-emerald-400' : ''}`} />
@@ -111,7 +111,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
       {/* ── Desktop Vertical Left Sidebar (>= 640px) ── */}
       {showDesktop && (
-        <aside className="hidden sm:flex relative w-14 shrink-0 h-full bg-[#0B0E17]/95 border-r border-white/[0.08] flex-col items-center justify-between py-2.5 z-20 select-none font-sans-studio backdrop-blur-xl">
+        <aside className="hidden sm:flex relative w-14 shrink-0 h-full bg-[#111111]/95 border-r border-[#242424] flex-col items-center justify-between py-2.5 z-20 select-none font-sans-studio backdrop-blur-xl">
           <div className="flex w-full flex-col items-center gap-1.5 px-1.5 pt-1">
             {SIDEBAR_ITEMS.map((item) => {
               const IconComp = item.icon;
@@ -133,8 +133,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                         ? 'border-red-500/40 bg-red-950/25 text-red-200 shadow-[0_0_12px_rgba(239,68,68,0.25)]'
                         : item.id === 'automations'
                         ? 'border-emerald-500/40 bg-emerald-950/25 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
-                        : 'border-sky-400/40 bg-blue-600/20 text-white shadow-[0_0_12px_rgba(56,189,248,0.2)]'
-                      : 'border-transparent text-slate-400 hover:border-white/[0.08] hover:bg-white/[0.04] hover:text-slate-200'
+                        : 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#60A5FA] shadow-[0_0_12px_rgba(59,130,246,0.25)]'
+                      : 'border-transparent text-[#9CA3AF] hover:border-[#2A2A2A] hover:bg-[#1A1A1A] hover:text-white'
                   }`}
                 >
                   <IconComp
@@ -143,15 +143,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                         ? (isActive ? 'text-red-400' : 'group-hover:text-red-400')
                         : item.id === 'automations'
                         ? (isActive ? 'text-emerald-400' : 'group-hover:text-emerald-400')
-                        : isActive ? 'text-sky-300' : ''
+                        : isActive ? 'text-[#60A5FA]' : ''
                     }`}
                   />
-                  <span className={`text-[8.5px] font-semibold mt-1 tracking-tight truncate max-w-[44px] leading-none ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                  <span className={`text-[8.5px] font-semibold mt-1 tracking-tight truncate max-w-[44px] leading-none ${isActive ? 'text-[#60A5FA]' : 'text-[#9CA3AF] group-hover:text-white'}`}>
                     {item.shortLabel}
                   </span>
 
                   {/* Flyout Tooltip (Pill Style) */}
-                  <span className="pointer-events-none absolute left-14 top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-lg border border-white/15 bg-[#121622] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
+                  <span className="pointer-events-none absolute left-14 top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[#333333] bg-[#1A1A1A] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
                     {item.label}
                   </span>
                 </button>

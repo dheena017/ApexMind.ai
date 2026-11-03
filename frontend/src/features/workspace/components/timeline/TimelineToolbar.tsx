@@ -96,7 +96,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   const addTrackAnchorRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex flex-nowrap items-center justify-between px-3 py-1.5 bg-[#0C0F17] border-b border-white/[0.08] gap-3 overflow-x-auto select-none min-w-0">
+    <div className="flex flex-nowrap items-center justify-between px-3 py-1.5 bg-[#121212] border-b border-[#242424] gap-3 overflow-x-auto select-none min-w-0">
       {/* Left: Title, Track Indicators, Editing Tools & Hero Playback Cluster */}
       <div className="flex items-center gap-2 shrink-0">
         <button
@@ -116,14 +116,14 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             Timeline
           </span>
           <span
-            className="text-[9.5px] font-mono-studio text-slate-400 bg-[#1A1A22] border border-[#2B2B36] px-2 py-0.5 rounded-full"
+            className="text-[9.5px] font-mono-studio text-slate-400 bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-0.5 rounded-full"
             title="Tracks containing content"
           >
             {activeTracksCount} Tracks
           </span>
         </div>
 
-        <div className="h-4 w-px bg-[#262630] mx-0.5" />
+        <div className="h-4 w-px bg-[#262626] mx-0.5" />
 
         {/* ── Action Tools: Split, Duplicate, Delete ── */}
         <div className="flex items-center gap-1">
@@ -132,7 +132,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             onClick={onSplitClip}
             disabled={!hasSelection}
             className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 ${hasSelection
-                ? 'border-[#333340] bg-[#16161E] text-[#D4D4D8] hover:bg-[#22222D] hover:text-white hover:border-[#4B4B5C] shadow-sm'
+                ? 'border-[#2A2A2A] bg-[#181818] text-[#D4D4D8] hover:bg-[#222222] hover:text-white hover:border-[#383838] shadow-sm'
                 : 'border-transparent text-[#52525B] opacity-35 cursor-not-allowed'
               }`}
             title={hasSelection ? 'Split clip at playhead (S or Ctrl+B)' : 'Select a clip to split'}
@@ -146,7 +146,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             onClick={onDuplicateClip}
             disabled={!hasSelection}
             className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 ${hasSelection
-                ? 'border-[#333340] bg-[#16161E] text-[#D4D4D8] hover:bg-[#22222D] hover:text-white hover:border-[#4B4B5C] shadow-sm'
+                ? 'border-[#2A2A2A] bg-[#181818] text-[#D4D4D8] hover:bg-[#222222] hover:text-white hover:border-[#383838] shadow-sm'
                 : 'border-transparent text-[#52525B] opacity-35 cursor-not-allowed'
               }`}
             title={hasSelection ? 'Duplicate clip (Ctrl+D)' : 'Select a clip to duplicate'}
@@ -174,7 +174,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             onClick={() => {
               window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'transitions' }));
             }}
-            className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-[#333340] bg-[#16161E] text-[#D4D4D8] hover:bg-[#22222D] hover:text-white hover:border-amber-400/50 shadow-sm transition-all cursor-pointer text-[10.5px] font-semibold"
+            className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-[#2A2A2A] bg-[#181818] text-[#D4D4D8] hover:bg-[#222222] hover:text-white hover:border-amber-400/50 shadow-sm transition-all cursor-pointer text-[10.5px] font-semibold"
             title="Open Transitions Studio"
             aria-label="Open Transitions Studio"
           >
@@ -183,7 +183,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           </button>
         </div>
 
-        <div className="h-4 w-px bg-[#262630] mx-0.5" />
+        <div className="h-4 w-px bg-[#262626] mx-0.5" />
 
         {/* ── Playback Controls: Jump to Start, Hero Play/Pause Pill, Jump to End & Timecode ── */}
         <div className="flex items-center gap-1.5 shrink-0">
@@ -230,7 +230,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
 
           {/* Time Readout: Playhead / Media Duration */}
           <div
-            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#080A10] border border-white/[0.08] text-[10.5px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
+            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#0A0A0A] border border-[#242424] text-[10.5px] font-mono-studio text-white flex items-center gap-1.5 shadow-inner select-none shrink-0"
             title={`Playhead: ${formatTime(currentTime)} | Duration: ${formatTime(displayDuration)}`}
             aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
           >
@@ -265,10 +265,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           />
         </div>
 
-        <div className="h-4 w-px bg-[#262630] mx-0.5" />
+        <div className="h-4 w-px bg-[#262626] mx-0.5" />
 
         {/* ── Zoom Controls & Shortcuts ── */}
-        <div className="flex items-center h-7 bg-[#14141C] border border-[#272733] rounded-lg p-0.5 text-[#9CA3AF]">
+        <div className="flex items-center h-7 bg-[#161616] border border-[#262626] rounded-lg p-0.5 text-[#9CA3AF]">
           <button
             type="button"
             onClick={onZoomFit}
@@ -307,7 +307,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
         <button
           type="button"
           popoverTarget="timeline-shortcuts"
-          className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-[#272733] bg-[#14141C] text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+          className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-[#262626] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
           title="Keyboard shortcuts"
           aria-label="Show keyboard shortcuts"
         >
@@ -319,7 +319,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           popover="auto"
           role="dialog"
           aria-labelledby="timeline-shortcuts-title"
-          className="fixed bottom-4 right-4 m-0 w-60 rounded-xl border border-[#33333E] bg-[#121218] p-3.5 text-[#E5E5E5] shadow-2xl backdrop-blur-xl"
+          className="fixed bottom-4 right-4 m-0 w-60 rounded-xl border border-[#2E2E2E] bg-[#1A1A1A] p-3.5 text-[#E5E5E5] shadow-2xl backdrop-blur-xl"
         >
           <h3 id="timeline-shortcuts-title" className="mb-2.5 text-[11px] font-bold text-white flex items-center gap-1.5">
             <Keyboard className="w-3.5 h-3.5 text-slate-400" />

@@ -4695,7 +4695,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   };
   return (
-    <div className="w-full bg-[#0C0F17] overflow-hidden transition-all font-sans-studio select-none relative group/timeline-card">
+    <div className="w-full bg-[#121212] overflow-hidden transition-all font-sans-studio select-none relative group/timeline-card">
       {/* ── Top Header Bar / Timeline Toolbar ──────────────────────── */}
       <TimelineToolbar
         isCollapsed={isCollapsed}
@@ -4735,9 +4735,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
       {/* ── Collapsible Tracks Body ───────────────────────────────── */}
       {!isCollapsed && (
-        <div className="flex flex-col bg-[#0C0F17]">
+        <div className="flex flex-col bg-[#121212]">
           {/* ── Time Ruler Row (Placed Above Scrollable Tracks Area) ── */}
-          <div className="flex border-b border-white/[0.08] bg-[#0E121B] select-none shrink-0 z-20">
+          <div className="flex border-b border-[#242424] bg-[#141414] select-none shrink-0 z-20">
             {/* Time Ruler & Track Labels Header (synced with horizontal scroll of tracks) */}
             <div
               ref={rulerScrollRef}
@@ -4752,7 +4752,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 {/* Corner Track Labels Header (moves together with horizontal scroll) */}
                 <div
                   style={{ width: `${trackHeadersWidth}px` }}
-                  className="shrink-0 h-6 border-r border-white/[0.08] flex items-center justify-between px-2.5 text-[9px] font-mono-studio text-slate-400 uppercase tracking-wider relative group/corner-header select-none bg-[#0E121B]"
+                  className="shrink-0 h-6 border-r border-[#242424] flex items-center justify-between px-2.5 text-[9px] font-mono-studio text-slate-400 uppercase tracking-wider relative group/corner-header select-none bg-[#141414]"
                 >
                   <span className="truncate">Track Labels</span>
                   <div

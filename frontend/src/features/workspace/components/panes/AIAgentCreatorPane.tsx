@@ -167,9 +167,9 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   const activeCategoryShort = category ? category.split('&')[0].trim() : 'AI Video';
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Bar: Active Mode Indicator & Switcher Dropdown ── */}
-      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Wand2 className="w-4 h-4 shrink-0 text-[#60A5FA]" />
           <span className="text-xs font-bold text-white truncate">
@@ -183,7 +183,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             <button
               type="button"
               onClick={onStartNewVideo}
-              className="h-7 px-2.5 rounded-md bg-white/[0.06] hover:bg-[#1F2538] text-[11px] font-medium text-white transition-colors cursor-pointer border border-white/[0.12] flex items-center gap-1"
+              className="h-7 px-2.5 rounded-md bg-white/[0.06] hover:bg-[#222222] text-[11px] font-medium text-white transition-colors cursor-pointer border border-[#2E2E2E] flex items-center gap-1"
               title="Start a new script from scratch"
             >
               <Plus className="w-3.5 h-3.5 text-[#60A5FA]" />
@@ -196,7 +196,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             <button
               type="button"
               onClick={onSwitchToEditor}
-              className="h-7 flex items-center gap-1.5 px-2.5 rounded-md bg-[#26262B] hover:bg-[#303036] hover:border-[#42424A] text-[11px] font-semibold text-white transition-all cursor-pointer border border-white/[0.12] shadow-xs group"
+              className="h-7 flex items-center gap-1.5 px-2.5 rounded-md bg-[#26262B] hover:bg-[#303036] hover:border-[#42424A] text-[11px] font-semibold text-white transition-all cursor-pointer border border-[#2E2E2E] shadow-xs group"
               title="Click to switch to Script Editor"
             >
               <Wand2 className="w-3.5 h-3.5 text-[#60A5FA]" />
@@ -208,15 +208,15 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
-        <div className="grid grid-cols-2 gap-1 p-1 bg-[#151926] rounded-none border-0">
+      <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-[#181818] rounded-none border-0">
           <button
             type="button"
             onClick={() => setActiveTab('prompt')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'prompt'
-                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
-                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
             }`}
           >
             <Wand2 className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'prompt' ? 'text-blue-400' : 'text-slate-400'}`} />
@@ -227,8 +227,8 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             onClick={() => setActiveTab('voice')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'voice'
-                ? 'bg-[#222838] text-white shadow-sm font-bold border border-white/10'
-                : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
             }`}
           >
             <Mic className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'voice' ? 'text-emerald-400' : 'text-slate-400'}`} />
@@ -317,7 +317,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                       className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-[#1E293B] border-[#38BDF8] text-[#38BDF8] shadow-sm shadow-[#38BDF8]/20 ring-1 ring-[#38BDF8]/40'
-                          : 'bg-[#0B0E17] border-white/[0.08] text-slate-500 hover:text-[#D4D4D8] hover:border-white/[0.12]'
+                          : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-[#D4D4D8] hover:border-[#2E2E2E]'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5 mb-1" />
@@ -343,7 +343,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                   onChange={(e) => onPromptChange(e.target.value)}
                   placeholder="What core truth or motivational message should this reel deliver? (e.g., The power of silence and daily non-negotiable standards)..."
                   rows={4}
-                  className="w-full bg-[#18181B] border border-white/[0.08] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/40 transition-all resize-none leading-relaxed"
+                  className="w-full bg-[#18181B] border border-[#242424] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/40 transition-all resize-none leading-relaxed"
                 />
                 {agentPrompt.trim().length > 0 && (
                   <button
@@ -363,8 +363,8 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             </div>
 
             {/* ── Pacing & Model Configuration Card ── */}
-            <div className="bg-[#18181B] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3.5">
-              <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.08]">
+            <div className="bg-[#18181B] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3.5">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#242424]">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
                   <span className="text-xs font-bold text-white tracking-wide">Pacing &amp; Model Engine</span>
@@ -417,7 +417,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                         className={`py-2 px-1 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center ${
                           isSelected
                             ? 'bg-[#1E293B] border-[#38BDF8] text-[#38BDF8] shadow-sm shadow-[#38BDF8]/20 ring-1 ring-[#38BDF8]/40'
-                            : 'bg-[#0B0E17] text-slate-400 border-white/[0.08] hover:text-white hover:border-white/[0.12]'
+                            : 'bg-[#111111] text-slate-400 border-[#242424] hover:text-white hover:border-[#2E2E2E]'
                         }`}
                       >
                         <span className="text-xs font-bold leading-tight">{opt.label}</span>
@@ -446,7 +446,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                         className={`p-2.5 rounded-xl border transition-all text-left flex items-start gap-2.5 cursor-pointer ${
                           isSelected
                             ? 'bg-[#1E2330] text-white border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
-                            : 'bg-[#0B0E17] text-slate-400 border-white/[0.08] hover:text-white hover:border-white/[0.12]'
+                            : 'bg-[#111111] text-slate-400 border-[#242424] hover:text-white hover:border-[#2E2E2E]'
                         }`}
                       >
                         <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? 'text-[#60A5FA]' : 'text-slate-500'}`} />
@@ -485,7 +485,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isSelected
                         ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
-                        : 'bg-[#18181B] border-white/[0.08] hover:border-white/[0.12] hover:bg-[#181D2B]'
+                        : 'bg-[#18181B] border-[#242424] hover:border-[#2E2E2E] hover:bg-[#181D2B]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -518,7 +518,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                           className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                             isTesting
                               ? 'bg-[#3B82F6]/20 text-[#60A5FA] border-[#3B82F6]/50'
-                              : 'bg-[#26262B] hover:bg-[#34343E] text-zinc-300 hover:text-white border-white/[0.12]'
+                              : 'bg-[#26262B] hover:bg-[#34343E] text-zinc-300 hover:text-white border-[#2E2E2E]'
                           }`}
                           title="Audition voice"
                         >
@@ -540,7 +540,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       </div>
 
       {/* ── Bottom Action Footer ── */}
-      <div className="px-3.5 py-2.5 border-t border-white/[0.08] bg-[#111520] shrink-0 flex flex-col gap-1.5">
+      <div className="px-3.5 py-2.5 border-t border-[#242424] bg-[#141414] shrink-0 flex flex-col gap-1.5">
         <Button
           size="sm"
           onClick={() => {

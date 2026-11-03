@@ -335,7 +335,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
       {/* =========================================================================
           WORKSPACE BOTTOM STATUS & NOTIFICATION BAR (ApexMind Studio Theme)
           ========================================================================= */}
-      <footer className="h-6 shrink-0 border-t border-white/[0.08] bg-[#0B0E17] px-2.5 sm:px-3 flex items-center justify-between gap-2.5 font-mono-studio text-[9.5px] text-slate-400 select-none z-30 relative">
+      <footer className="h-6 shrink-0 border-t border-[#242424] bg-[#111111] px-2.5 sm:px-3 flex items-center justify-between gap-2.5 font-mono-studio text-[9.5px] text-slate-400 select-none z-30 relative">
         {/* Left: Studio Metrics & Context */}
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {isWorkspace ? (

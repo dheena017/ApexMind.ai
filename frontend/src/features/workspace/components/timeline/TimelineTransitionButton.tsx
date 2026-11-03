@@ -245,12 +245,12 @@ export const TimelineTransitionButton: React.FC<TimelineTransitionButtonProps> =
       }}
       className={`group absolute z-40 pointer-events-auto flex items-center justify-center cursor-pointer select-none transition-all duration-150 hover:scale-115 active:scale-95 shadow-md ${
         isTransitionActive
-          ? 'p-[2px] rounded-[6px] bg-[#0B0E17] border border-black/80 ring-1 ring-white/15 hover:ring-white/30'
+          ? 'p-[2px] rounded-[6px] bg-[#111111] border border-black/80 ring-1 ring-white/15 hover:ring-white/30'
           : 'w-[16px] h-[16px] rounded-[4px] bg-[#1A1A20] hover:bg-[#262630] border border-white/20 hover:border-amber-400/80 text-neutral-400 hover:text-white'
       }`}
     >
       {/* Immediate Floating Hover Tooltip */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 rounded-md bg-[#141824]/95 border border-[#3B82F6]/60 text-[10px] font-mono-studio text-white whitespace-nowrap shadow-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 flex items-center gap-1.5 backdrop-blur-md">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 rounded-md bg-[#181818]/95 border border-[#3B82F6]/60 text-[10px] font-mono-studio text-white whitespace-nowrap shadow-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 flex items-center gap-1.5 backdrop-blur-md">
         <span className={`w-1.5 h-1.5 rounded-full ${isTransitionActive ? 'bg-amber-400' : 'bg-blue-400'}`} />
         <span className="font-semibold text-zinc-100">{isTransitionActive ? styleConfig.label : 'Cut Seam'}</span>
         <span className="text-[9px] text-slate-400">{isTransitionActive ? `(${duration.toFixed(1)}s)` : 'Click to add'}</span>

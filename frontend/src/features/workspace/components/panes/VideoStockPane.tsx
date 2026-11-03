@@ -116,10 +116,10 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
-      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#0B0E17] transition-all cursor-pointer text-left flex flex-col justify-between transform-gpu ${
+      className={`group relative rounded-xl border overflow-hidden aspect-[9/14] bg-[#111111] transition-all cursor-pointer text-left flex flex-col justify-between transform-gpu ${
         isSelected
           ? 'border-blue-500 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/10'
-          : 'border-white/[0.08] hover:border-white/[0.12] hover:shadow-md'
+          : 'border-[#242424] hover:border-[#2E2E2E] hover:shadow-md'
       }`}
     >
       {/* ── Visual Media: High-performance lazy image by default, video mounted ONLY on intentional hover ── */}
@@ -156,7 +156,7 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
       {/* Top Badges (Crisp solid translucent instead of GPU-heavy backdrop-blur) */}
       <div className="relative z-10 p-2 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-1">
-          <span className="px-2 py-0.5 rounded-full bg-black/80 text-[9px] font-semibold text-zinc-200 border border-white/10 uppercase tracking-wider">
+          <span className="px-2 py-0.5 rounded-full bg-black/80 text-[9px] font-semibold text-zinc-200 border border-[#2A2A2A] uppercase tracking-wider">
             {vid.category}
           </span>
           {vid.source && (
@@ -172,7 +172,7 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
               {Math.round(vid.aestheticScore)}
             </span>
           )}
-          <span className="px-1.5 py-0.5 rounded-full bg-black/80 text-[9px] font-mono text-zinc-300 border border-white/10">
+          <span className="px-1.5 py-0.5 rounded-full bg-black/80 text-[9px] font-mono text-zinc-300 border border-[#2A2A2A]">
             {vid.duration}
           </span>
         </div>
@@ -496,9 +496,9 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   const filteredVideos = baseFiltered.filter((vid) => !hideUsed || !timelineVideoUrls.has(vid.videoUrl));
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
-      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Film className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="text-xs font-bold text-white truncate">
@@ -510,22 +510,22 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
           {isLoadingBackend && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
-          <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/[0.08]">
+          <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-[#242424]">
             {filteredVideos.length} Clips
           </span>
         </div>
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
-        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setActiveTab("catalog")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "catalog"
-                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent"
             }`}
             title="Catalog"
           >
@@ -537,8 +537,8 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             onClick={() => setActiveTab("settings")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "settings"
-                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent"
             }`}
             title="Mood"
           >
@@ -550,8 +550,8 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             onClick={() => setActiveTab("url")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "url"
-                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent"
             }`}
             title="Direct URL"
           >
@@ -563,8 +563,8 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             onClick={() => setActiveTab("saved")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "saved"
-                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent"
             }`}
             title="Saved"
           >
@@ -575,14 +575,14 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
       </div>
       {/* ── Category Filter Chips (In Catalog Mode) ── */}
       {activeTab === 'catalog' && (
-        <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-white/[0.08]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
+        <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#242424]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
           <button
             type="button"
             onClick={() => setHideUsed(!hideUsed)}
             className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
               hideUsed
                 ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-xs'
-                : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-white/[0.08]'
+                : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-[#242424]'
             }`}
             title="Filter out videos already in project so they cannot be reused"
           >
@@ -615,7 +615,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
                 selectedCategory === cat.id
                   ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
-                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-white/[0.08]'
+                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-[#242424]'
               }`}
             >
               {cat.label}
@@ -629,7 +629,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         {activeTab === 'settings' ? (
           /* Motion Speed & Mood Grading Tab */
           <div className="flex flex-col gap-4">
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Gauge className="w-3.5 h-3.5 text-[#60A5FA]" />
                 Video Loop Playback Speed
@@ -652,7 +652,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     className={`py-2 rounded-xl text-xs font-bold border transition-all ${
                       playbackSpeed === s.val
                         ? 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-[#3B82F6]/20'
-                        : 'bg-[#0B0E17] text-slate-400 border-white/[0.08] hover:text-white'
+                        : 'bg-[#111111] text-slate-400 border-[#242424] hover:text-white'
                     }`}
                   >
                     {s.label}
@@ -662,7 +662,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             </div>
 
             {/* Video Color Mood Preset */}
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-2.5">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-2.5">
               <span className="text-xs font-bold text-white">Video Color Mood</span>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -678,7 +678,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     className={`p-2.5 rounded-lg border text-xs font-semibold text-left transition-all ${
                       colorMood === m.id
                         ? 'bg-[#1E2330] text-white border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
-                        : 'bg-[#0B0E17] text-slate-400 border-white/[0.08] hover:text-white'
+                        : 'bg-[#111111] text-slate-400 border-[#242424] hover:text-white'
                     }`}
                   >
                     {m.name}
@@ -690,7 +690,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         ) : activeTab === 'url' ? (
           /* Custom Video URL Input Form */
           <div className="flex flex-col gap-4">
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <ExternalLink className="w-4 h-4 text-[#60A5FA]" />
                 <span className="text-xs font-bold text-white">Import Custom Video URL</span>
@@ -706,7 +706,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                   value={customTitleInput}
                   onChange={(e) => setCustomTitleInput(e.target.value)}
                   placeholder="e.g. Cinematic Rain Drone"
-                  className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                  className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
@@ -720,13 +720,13 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     setUrlVideoValid(null);
                   }}
                   placeholder="https://example.com/video.mp4"
-                  className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                  className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
               {/* Video Preview */}
               {customUrlInput.trim() && (
-                <div className="mt-2 rounded-xl overflow-hidden border border-white/[0.08] bg-[#0E121B] aspect-[9/12] max-h-56 relative flex items-center justify-center">
+                <div className="mt-2 rounded-xl overflow-hidden border border-[#242424] bg-[#141414] aspect-[9/12] max-h-56 relative flex items-center justify-center">
                   <video
                     ref={previewVideoRef}
                     src={customUrlInput.trim()}
@@ -760,7 +760,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                   type="button"
                   onClick={() => handleAddCustomUrl(true)}
                   disabled={!customUrlInput.trim()}
-                  className="bg-[#1B2132] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#3A3A44]"
+                  className="bg-[#1E1E1E] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#3A3A44]"
                   title="Save to My Clips"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -781,7 +781,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search motion clips or #tags..."
-                  className="w-full bg-[#141824] border border-white/[0.08] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
+                  className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
                 />
                 {searchQuery && (
                   <button
@@ -822,7 +822,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
             {/* Empty Saved State */}
             {activeTab === 'saved' && savedVideos.length === 0 ? (
-              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
+              <div className="bg-[#181818] border border-[#242424] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
                 <Bookmark className="w-8 h-8 text-[#52525B]" />
                 <p className="text-xs font-bold text-white">No Saved Clips Yet</p>
                 <p className="text-[11px] text-slate-400 max-w-xs">
@@ -841,7 +841,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 {Array.from({ length: 6 }).map((_, idx) => (
                   <div
                     key={`vskel-${idx}`}
-                    className="rounded-none border-0 aspect-[9/16] bg-[#151926] animate-pulse flex flex-col justify-end p-2.5"
+                    className="rounded-none border-0 aspect-[9/16] bg-[#181818] animate-pulse flex flex-col justify-end p-2.5"
                   >
                     <div className="h-3 w-3/4 bg-zinc-800 rounded mb-1" />
                     <div className="h-2.5 w-1/2 bg-zinc-800/60 rounded mb-2" />
@@ -850,7 +850,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 ))}
               </div>
             ) : filteredVideos.length === 0 ? (
-              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-8 text-center text-xs text-slate-400">
+              <div className="bg-[#181818] border border-[#242424] rounded-xl p-8 text-center text-xs text-slate-400">
                 No video clips matching &ldquo;{searchQuery}&rdquo;
               </div>
             ) : (
@@ -874,7 +874,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
               {/* Load More / Next Page button (Appends down by down like Image pane) */}
               {activeTab === 'catalog' && filteredVideos.length > 0 && (
-                <div className="pt-3 pb-2 flex flex-col items-center gap-2 border-t border-white/[0.08]">
+                <div className="pt-3 pb-2 flex flex-col items-center gap-2 border-t border-[#242424]">
                   {hasMore && (
                     <button
                       type="button"

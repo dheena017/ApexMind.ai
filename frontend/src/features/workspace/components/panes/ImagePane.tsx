@@ -109,10 +109,10 @@ const ImageCard = React.memo<ImageCardProps>(({
         }
       }}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
-      className={`group relative rounded-xl border overflow-hidden aspect-[9/16] bg-[#141824] transition-all cursor-pointer text-left transform-gpu ${
+      className={`group relative rounded-xl border overflow-hidden aspect-[9/16] bg-[#181818] transition-all cursor-pointer text-left transform-gpu ${
         isSelected
           ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg shadow-blue-500/10'
-          : 'border-white/[0.08] hover:border-white/[0.12]'
+          : 'border-[#242424] hover:border-[#2E2E2E]'
       }`}
     >
       <img
@@ -511,9 +511,9 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0E121B] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
+    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
-      <div className="relative h-11 px-3.5 bg-[#111520] border-b border-white/[0.08] flex items-center justify-between z-20 shrink-0">
+      <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <ImageIcon className="w-4 h-4 shrink-0 text-blue-400" />
           <span className="text-xs font-bold text-white truncate">
@@ -526,22 +526,22 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
 
-          <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/[0.08]">
+          <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-[#242424]">
             {totalFound} Photos
           </span>
         </div>
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2.5 bg-[#0B0E17] border-b border-white/[0.08] shrink-0">
-        <div className="flex items-center gap-1 p-1 bg-[#151926] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setActiveTab("catalog")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "catalog"
-                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent"
             }`}
             title="Catalog"
           >
@@ -553,8 +553,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             onClick={() => setActiveTab("filters")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "filters"
-                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent"
             }`}
             title="Filters"
           >
@@ -566,8 +566,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             onClick={() => setActiveTab("url")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "url"
-                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent"
             }`}
             title="Direct URL"
           >
@@ -579,8 +579,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             onClick={() => setActiveTab("saved")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "saved"
-                ? "bg-[#222838] text-white shadow-sm font-bold border border-white/10"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                ? "bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent"
             }`}
             title="Saved"
           >
@@ -591,7 +591,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       </div>
       {/* ── Search & Provider Bar (When in Catalog) ── */}
       {activeTab === 'catalog' && (
-        <div className="flex flex-col gap-2 border-b border-white/[0.08] bg-[#141416] p-3 shrink-0">
+        <div className="flex flex-col gap-2 border-b border-[#242424] bg-[#141416] p-3 shrink-0">
           {/* Unified Search Input + Provider Select */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -604,7 +604,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   setSelectedCategory('all');
                 }}
                 placeholder="Search 100M+ stock photos (e.g. rain, gym, stoic, neon)..."
-                className="w-full bg-[#141824] border border-white/[0.08] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
+                className="w-full bg-[#181818] border border-[#242424] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
               />
               {searchQuery && (
                 <button
@@ -627,8 +627,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                 value={selectedProvider}
                 onChange={handleProviderSelect}
                 variant="compact"
-                buttonClassName="!w-full !justify-between !bg-[#151926] !border-white/[0.08] !text-[11px] !py-2 !px-3 font-semibold hover:!border-blue-500/60"
-                menuClassName="!w-64 !bg-[#141824] !border-white/[0.08] shadow-2xl"
+                buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-[11px] !py-2 !px-3 font-semibold hover:!border-blue-500/60"
+                menuClassName="!w-64 !bg-[#181818] !border-[#242424] shadow-2xl"
               />
             </div>
           </div>
@@ -647,7 +647,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
                     isActive
                       ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-                      : 'bg-[#141824] text-zinc-400 hover:text-white hover:bg-[#25252A] border-white/[0.08]'
+                      : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#25252A] border-[#242424]'
                   }`}
                 >
                   {pill.label}
@@ -662,7 +662,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
         {activeTab === 'filters' ? (
           <div className="flex flex-col gap-4">
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
@@ -749,7 +749,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
 
               {/* Vignette Toggle */}
-              <div className="flex items-center justify-between pt-2 border-t border-white/[0.08]">
+              <div className="flex items-center justify-between pt-2 border-t border-[#242424]">
                 <span className="text-xs text-zinc-300">Cinematic Vignette Shadow</span>
                 <button
                   type="button"
@@ -768,7 +768,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             </div>
 
             {/* Filter Presets */}
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-2">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-2">
               <span className="text-[10px] uppercase font-mono-studio text-slate-500">
                 Quick Cinematic Color Presets
               </span>
@@ -788,7 +788,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       setSaturation(p.s);
                       setBlur(p.bl);
                     }}
-                    className="p-2 rounded-lg bg-[#0B0E17] hover:bg-[#1B2132] border border-white/[0.08] text-left text-[11px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                    className="p-2 rounded-lg bg-[#111111] hover:bg-[#1E1E1E] border border-[#242424] text-left text-[11px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
                   >
                     {p.name}
                   </button>
@@ -799,7 +799,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         ) : activeTab === 'url' ? (
           /* Custom Image URL Importer */
           <div className="flex flex-col gap-4">
-            <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <ExternalLink className="w-4 h-4 text-[#60A5FA]" />
                 <span className="text-xs font-bold text-white">Import Custom Image URL</span>
@@ -815,7 +815,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   value={customTitleInput}
                   onChange={(e) => setCustomTitleInput(e.target.value)}
                   placeholder="e.g. Cinematic Mountain Sunset"
-                  className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                  className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
@@ -829,13 +829,13 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                     setUrlPreviewValid(null);
                   }}
                   placeholder="https://images.unsplash.com/photo-..."
-                  className="bg-[#0B0E17] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                  className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
               {/* Preview Container */}
               {customUrlInput.trim() && (
-                <div className="mt-2 rounded-xl overflow-hidden border border-white/[0.08] bg-[#0E121B] aspect-[9/12] max-h-56 relative flex items-center justify-center">
+                <div className="mt-2 rounded-xl overflow-hidden border border-[#242424] bg-[#141414] aspect-[9/12] max-h-56 relative flex items-center justify-center">
                   <img
                     src={customUrlInput.trim()}
                     alt="Preview"
@@ -866,7 +866,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   type="button"
                   onClick={() => handleAddCustomUrl(true)}
                   disabled={!customUrlInput.trim()}
-                  className="bg-[#1B2132] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#3A3A44]"
+                  className="bg-[#1E1E1E] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#3A3A44]"
                   title="Save to My Library"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -905,7 +905,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       key={rec.id}
                       type="button"
                       onClick={() => handleApply(rec)}
-                      className="w-16 h-20 rounded-lg overflow-hidden border border-white/[0.08] hover:border-[#3B82F6] shrink-0 relative group cursor-pointer"
+                      className="w-16 h-20 rounded-lg overflow-hidden border border-[#242424] hover:border-[#3B82F6] shrink-0 relative group cursor-pointer"
                     >
                       <img
                         src={rec.thumbnail}
@@ -934,7 +934,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
             {/* Empty Saved State */}
             {activeTab === 'saved' && savedImages.length === 0 ? (
-              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
+              <div className="bg-[#181818] border border-[#242424] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
                 <Bookmark className="w-8 h-8 text-[#52525B]" />
                 <p className="text-xs font-bold text-white">No Saved Images Yet</p>
                 <p className="text-[11px] text-slate-400 max-w-xs">
@@ -953,7 +953,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                 {Array.from({ length: 6 }).map((_, idx) => (
                   <div
                     key={`skel-${idx}`}
-                    className="rounded-none border-0 aspect-[9/16] bg-[#151926] animate-pulse flex flex-col justify-end p-2.5"
+                    className="rounded-none border-0 aspect-[9/16] bg-[#181818] animate-pulse flex flex-col justify-end p-2.5"
                   >
                     <div className="h-3 w-3/4 bg-zinc-800 rounded mb-1" />
                     <div className="h-2.5 w-1/2 bg-zinc-800/60 rounded mb-2" />
@@ -962,7 +962,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                 ))}
               </div>
             ) : sourceList.length === 0 && !isLoadingLive ? (
-              <div className="bg-[#141824] border border-white/[0.08] rounded-xl p-6 text-center text-xs text-slate-400 flex flex-col items-center gap-2.5">
+              <div className="bg-[#181818] border border-[#242424] rounded-xl p-6 text-center text-xs text-slate-400 flex flex-col items-center gap-2.5">
                 <Search className="w-6 h-6 text-zinc-600" />
                 <p>No photos found{searchQuery ? ` matching "${searchQuery}"` : ''} on {selectedProvider.toUpperCase()}</p>
                 <button
