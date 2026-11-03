@@ -6,7 +6,7 @@ import {
   Crop, FlipHorizontal, FlipVertical, RotateCw, Minus, Plus, Film,
   Sliders, Zap, Palette, Clock, Volume2, VolumeX, RefreshCw,
   Sun, Contrast, Eye, Layers, Sparkles, Image as ImageIcon,
-  Check, Maximize2, Lock, Unlock, Play, ChevronRight, Gauge,
+  Check, Maximize2, Minimize2, Lock, Unlock, Play, ChevronRight, Gauge,
   Smartphone, Monitor, Square,
 } from 'lucide-react';
 import { VisualBackdrop, DEFAULT_VISUAL_BACKDROPS } from '../../types';
@@ -541,17 +541,18 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         {activeSubTab === 'transform' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Aspect Ratio Selector */}
-            <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#181818] border border-[#242424]">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
+            <div className="flex flex-col gap-2 p-3 rounded-xl bg-[#181818] border border-[#242424]">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold">
                 <span>Canvas Aspect Ratio</span>
-                <span className="text-sky-400 font-bold">{canvasAspectRatio}</span>
+                <span className="text-[#60A5FA] font-bold">{canvasAspectRatio}</span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-5 gap-1.5">
                 {[
-                  { id: '9:16' as const, label: '9:16', desc: 'Shorts/Reels', icon: Smartphone },
+                  { id: '9:16' as const, label: '9:16', desc: 'Shorts', icon: Smartphone },
                   { id: '16:9' as const, label: '16:9', desc: 'Landscape', icon: Monitor },
                   { id: '1:1' as const, label: '1:1', desc: 'Square', icon: Square },
                   { id: '4:5' as const, label: '4:5', desc: 'Portrait', icon: Maximize2 },
+                  { id: '21:9' as const, label: '21:9', desc: 'Cinema', icon: Film },
                 ].map((aspect) => {
                   const Icon = aspect.icon;
                   const isSelected = canvasAspectRatio === aspect.id;
@@ -563,15 +564,17 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                         onCanvasAspectRatioChange?.(aspect.id);
                         window.dispatchEvent(new CustomEvent('workspace:aspect-ratio-change', { detail: { aspectRatio: aspect.id } }));
                       }}
-                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-xl border transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                          : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-[#D4D4D8]'
+                          ? 'bg-[#2563EB] border-[#60A5FA]/50 text-white shadow-md ring-1 ring-[#60A5FA]/25'
+                          : 'bg-[#141416] border-[#26262E] text-zinc-400 hover:text-white hover:bg-[#1E1E24] hover:border-white/10'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5 mb-1" />
+                      <Icon className={`w-3.5 h-3.5 mb-1.5 ${isSelected ? 'text-white' : 'text-zinc-400'}`} />
                       <span className="text-[10px] font-bold leading-none">{aspect.label}</span>
-                      <span className="text-[8px] text-slate-500 mt-0.5">{aspect.desc}</span>
+                      <span className={`text-[8.5px] mt-1 font-medium leading-none ${isSelected ? 'text-blue-100' : 'text-zinc-500'}`}>
+                        {aspect.desc}
+                      </span>
                     </button>
                   );
                 })}
@@ -579,29 +582,34 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
             </div>
 
             {/* Fit Mode Cards */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Fit & Scaling Mode</span>
+            <div className="flex flex-col gap-2 p-3 rounded-xl bg-[#181818] border border-[#242424]">
+              <span className="text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold">Fit &amp; Scaling Mode</span>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { mode: 'fill' as const, label: 'Cover / Fill', desc: 'No letterbox', icon: <Maximize2 className="w-4 h-4" /> },
-                  { mode: 'fit' as const, label: 'Fit Aspect', desc: 'Full frame visible', icon: <div className="w-3 h-4 border border-white/70 rounded-xs" /> },
+                  { mode: 'fit' as const, label: 'Fit Aspect', desc: 'Full frame visible', icon: <Minimize2 className="w-4 h-4" /> },
                   { mode: 'crop' as const, label: 'Center Crop', desc: 'Punch in center', icon: <Crop className="w-4 h-4" /> },
-                ].map(({ mode, label, desc, icon }) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setFitMode(mode)}
-                    className={`py-2 px-1.5 rounded-xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
-                      fitMode === mode
-                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:text-white hover:bg-[#26262C] hover:border-white/10'
-                    }`}
-                  >
-                    {icon}
-                    <span className="text-[10px] font-bold leading-none">{label}</span>
-                    <span className="text-[8px] text-slate-500">{desc}</span>
-                  </button>
-                ))}
+                ].map(({ mode, label, desc, icon }) => {
+                  const isSelected = fitMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setFitMode(mode)}
+                      className={`py-2.5 px-2 rounded-xl flex flex-col items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#2563EB] border-[#60A5FA]/50 text-white shadow-md ring-1 ring-[#60A5FA]/25'
+                          : 'bg-[#141416] border-[#26262E] text-zinc-300 hover:text-white hover:bg-[#1E1E24] hover:border-white/10'
+                      }`}
+                    >
+                      <span className={isSelected ? 'text-white' : 'text-zinc-400'}>{icon}</span>
+                      <span className="text-[10px] font-bold leading-none">{label}</span>
+                      <span className={`text-[8.5px] font-medium leading-none ${isSelected ? 'text-blue-100' : 'text-zinc-500'}`}>
+                        {desc}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
