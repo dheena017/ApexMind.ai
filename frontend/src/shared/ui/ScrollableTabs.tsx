@@ -19,23 +19,30 @@ export interface ScrollableTabContainerProps {
 /**
  * ScrollableTabContainer
  * Wraps any horizontal strip of buttons/pills with smooth left/right scroll navigation arrows.
- * Arrows automatically appear when the content overflows and disappears when at the edges.
+ * Uses soft gradient fade masks and scroll-padding to ensure tabs are NEVER chopped in half or hidden under arrows.
  */
 export const ScrollableTabContainer: React.FC<ScrollableTabContainerProps> = ({
   children,
   className = '',
-  scrollStep = 140,
+  scrollStep,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  // Mouse drag-to-scroll state
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasMovedRef = useRef(false);
+
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     const { scrollLeft, scrollWidth, clientWidth } = el;
-    setCanScrollLeft(scrollLeft > 3);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 3);
+    const isOverflow = scrollWidth > clientWidth + 3;
+    setCanScrollLeft(isOverflow && scrollLeft > 6);
+    setCanScrollRight(isOverflow && scrollLeft < scrollWidth - clientWidth - 6);
   }, []);
 
   useEffect(() => {
@@ -44,13 +51,11 @@ export const ScrollableTabContainer: React.FC<ScrollableTabContainerProps> = ({
 
     checkScroll();
 
-    // ResizeObserver catches container or child size changes
     const resizeObserver = new ResizeObserver(() => {
       checkScroll();
     });
     resizeObserver.observe(el);
 
-    // Also observe all direct children
     Array.from(el.children).forEach((child) => {
       resizeObserver.observe(child);
     });
@@ -68,54 +73,98 @@ export const ScrollableTabContainer: React.FC<ScrollableTabContainerProps> = ({
   const handleScroll = (direction: 'left' | 'right') => {
     const el = scrollRef.current;
     if (!el) return;
-    const offset = direction === 'left' ? -scrollStep : scrollStep;
+    const step = scrollStep || Math.max(120, Math.floor(el.clientWidth * 0.65));
+    const offset = direction === 'left' ? -step : step;
     el.scrollBy({ left: offset, behavior: 'smooth' });
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
     if (!el) return;
-    // Map vertical mouse wheel to horizontal scrolling if content overflows
     if (e.deltaY !== 0 && el.scrollWidth > el.clientWidth) {
       el.scrollLeft += e.deltaY;
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    isDraggingRef.current = true;
+    startXRef.current = e.pageX - el.offsetLeft;
+    scrollLeftRef.current = el.scrollLeft;
+    hasMovedRef.current = false;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - startXRef.current) * 1.3;
+    if (Math.abs(walk) > 4) {
+      hasMovedRef.current = true;
+    }
+    el.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const handleMouseUp = () => {
+    isDraggingRef.current = false;
+  };
+
   return (
-    <div className={`relative flex items-center group/scrolltabs w-full min-w-0 ${className}`}>
-      {/* Left Scroll Arrow */}
+    <div className={`relative flex items-center w-full min-w-0 group/scrolltabs ${className}`}>
+      {/* Left Scroll Arrow with Smooth Gradient Fade Mask */}
       {canScrollLeft && (
-        <button
-          type="button"
-          onClick={() => handleScroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-7 w-5 rounded-r-md bg-[#141414]/95 border-y border-r border-[#333333] shadow-lg flex items-center justify-center text-zinc-300 hover:text-white hover:bg-[#2563EB] hover:border-[#60A5FA]/50 transition-all cursor-pointer backdrop-blur-xs select-none"
-          title="Scroll Left"
-          aria-label="Scroll Left"
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-        </button>
+        <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-0.5 pr-3 bg-gradient-to-r from-[#181818] via-[#181818]/90 to-transparent pointer-events-none rounded-l-xl">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleScroll('left');
+            }}
+            className="pointer-events-auto w-5 h-[26px] rounded-md bg-[#24242C] hover:bg-[#2563EB] text-zinc-300 hover:text-white border border-[#383846] hover:border-[#60A5FA]/50 shadow-md flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            title="Scroll Left"
+            aria-label="Scroll Left"
+          >
+            <ChevronLeft className="w-3 h-3" />
+          </button>
+        </div>
       )}
 
-      {/* Scrollable Track */}
+      {/* Scrollable Track with Snap Alignment & Scroll Padding */}
       <div
         ref={scrollRef}
         onWheel={handleWheel}
-        className="flex items-center gap-1 w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth select-none min-w-0"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        style={{
+          scrollPaddingLeft: canScrollLeft ? '28px' : '4px',
+          scrollPaddingRight: canScrollRight ? '28px' : '4px',
+        }}
+        className="flex-1 flex items-center gap-1 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth select-none min-w-0 cursor-grab active:cursor-grabbing px-0.5"
       >
         {children}
       </div>
 
-      {/* Right Scroll Arrow */}
+      {/* Right Scroll Arrow with Smooth Gradient Fade Mask */}
       {canScrollRight && (
-        <button
-          type="button"
-          onClick={() => handleScroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-7 w-5 rounded-l-md bg-[#141414]/95 border-y border-l border-[#333333] shadow-lg flex items-center justify-center text-zinc-300 hover:text-white hover:bg-[#2563EB] hover:border-[#60A5FA]/50 transition-all cursor-pointer backdrop-blur-xs select-none"
-          title="Scroll Right"
-          aria-label="Scroll Right"
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+        <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center pr-0.5 pl-3 bg-gradient-to-l from-[#181818] via-[#181818]/90 to-transparent pointer-events-none rounded-r-xl">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleScroll('right');
+            }}
+            className="pointer-events-auto w-5 h-[26px] rounded-md bg-[#24242C] hover:bg-[#2563EB] text-zinc-300 hover:text-white border border-[#383846] hover:border-[#60A5FA]/50 shadow-md flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            title="Scroll Right"
+            aria-label="Scroll Right"
+          >
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
       )}
     </div>
   );
@@ -134,7 +183,7 @@ export interface ScrollableTabsProps<T extends string = string> {
 /**
  * ScrollableTabs
  * Standardized studio tab control with smooth scroll navigation arrows and active highlighting.
- * Ensures tab labels are never truncated (like "Gradi...") and remain legible across all screen sizes.
+ * Ensures active tabs are gracefully centered without harsh cutoffs, and tab labels remain legible.
  */
 export function ScrollableTabs<T extends string = string>({
   tabs,
@@ -143,23 +192,23 @@ export function ScrollableTabs<T extends string = string>({
   className = '',
   pillClassName = '',
   containerBgClassName = 'bg-[#181818]',
-  scrollStep = 140,
+  scrollStep,
 }: ScrollableTabsProps<T>) {
   const activeTabRef = useRef<HTMLButtonElement>(null);
 
-  // Auto-scroll active tab into view if outside visible viewport
+  // Auto-scroll active tab gracefully to center of viewport
   useEffect(() => {
     if (activeTabRef.current) {
       activeTabRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
-        inline: 'nearest',
+        inline: 'center',
       });
     }
   }, [activeTab]);
 
   return (
-    <div className={`p-1 ${containerBgClassName} rounded-xl border border-[#242424] min-w-0 ${className}`}>
+    <div className={`p-1 ${containerBgClassName} rounded-xl border border-[#242424] min-w-0 relative ${className}`}>
       <ScrollableTabContainer scrollStep={scrollStep}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -170,9 +219,9 @@ export function ScrollableTabs<T extends string = string>({
               ref={isActive ? activeTabRef : undefined}
               type="button"
               onClick={() => onChange(tab.id)}
-              className={`flex-1 min-w-fit shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
+              className={`flex-1 min-w-fit shrink-0 snap-start flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
                 isActive
-                  ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
+                  ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40 ring-1 ring-[#60A5FA]/20'
                   : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
               } ${pillClassName}`}
               title={tab.title || tab.label}
@@ -187,7 +236,7 @@ export function ScrollableTabs<T extends string = string>({
               <span>{tab.label}</span>
               {tab.badge !== undefined && (
                 <span
-                  className={`text-[9px] px-1 py-0.2 rounded-full font-bold ml-0.5 ${
+                  className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ml-0.5 ${
                     isActive ? 'bg-white/20 text-white' : 'bg-[#242424] text-zinc-400'
                   }`}
                 >
@@ -203,4 +252,3 @@ export function ScrollableTabs<T extends string = string>({
 }
 
 export default ScrollableTabs;
-
