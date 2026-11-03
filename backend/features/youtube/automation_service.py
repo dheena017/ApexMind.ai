@@ -434,10 +434,10 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
         is_scheduled = privacy == "scheduled"
         publish_at_iso = None
 
-        # Build viral hashtags and rich description
+        # Build viral hashtags and rich description with AI disclosure
         theme_tag = re.sub(r'[^a-zA-Z0-9]', '', theme)
-        viral_tags = ["#Shorts", "#Motivation", "#Discipline", f"#{theme_tag}", "#ViralShorts", "#DailyMindset"]
-        clean_desc = f"{quote_text}\n\n{cta_text}\n\n{' '.join(viral_tags)}\n\nGenerated autonomously with ApexMind Studio AI."
+        viral_tags = ["#Shorts", "#Motivation", "#Discipline", f"#{theme_tag}", "#AI", "#AIGenerated", "#ViralShorts", "#DailyMindset"]
+        clean_desc = f"{quote_text}\n\n{cta_text}\n\n🤖 AI Content Disclosure: This video and audio were created with AI (ApexMind AI).\n\n{' '.join(viral_tags)}"
 
         upload_warning = None
         if yt_client:

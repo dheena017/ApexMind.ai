@@ -1141,8 +1141,8 @@ export default function WorkspacePage({
           : undefined,
         aspectRatio: canvasAspectRatio,
         duration: Math.round(duration || timelineDuration || 15),
-        description: script.hook || script.quote ? `${script.hook ? `${script.hook}\n\n` : ''}${script.quote ? `${script.quote}\n\n` : ''}${script.cta ? `${script.cta}\n\n` : ''}${(script.hashtags || []).join(' ')}\n\nCreated with ApexMind AI Studio.` : undefined,
-        tags: script.hashtags && script.hashtags.length > 0 ? script.hashtags : ['#Shorts', '#ApexMind', '#Motivation'],
+        description: script.description || (script.hook || script.quote ? `${script.hook ? `${script.hook}\n\n` : ''}${script.quote ? `${script.quote}\n\n` : ''}${script.cta ? `${script.cta}\n\n` : ''}🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n${(script.hashtags || ['#Shorts', '#ApexMind', '#Motivation', '#AI', '#AIGenerated']).join(' ')}` : undefined),
+        tags: script.hashtags && script.hashtags.length > 0 ? Array.from(new Set([...script.hashtags, '#AI', '#AIGenerated'])) : ['#Shorts', '#ApexMind', '#Motivation', '#AI', '#AIGenerated'],
       });
 
       // Save to website video library automatically

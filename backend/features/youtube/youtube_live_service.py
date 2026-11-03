@@ -1167,10 +1167,18 @@ def upload_video_to_live_youtube(
 
     clean_title = f"{title[:90]}" if title else "ApexMind Video"
     clean_desc = (description or kwargs.get("quote") or "").strip()
-    full_desc = f"{clean_desc}\n\nUploaded via ApexMind Studio." if clean_desc else "Uploaded via ApexMind Studio."
-    tag_list = tags or kwargs.get("tags") or ["#ApexMind", "#YouTubeStudio"]
+    ai_disclosure = "🤖 AI Content Disclosure: This video and audio were created with AI using ApexMind AI Studio."
+    if "created with ai" not in clean_desc.lower() and "ai disclosure" not in clean_desc.lower() and "generated with ai" not in clean_desc.lower():
+        clean_desc = f"{clean_desc}\n\n{ai_disclosure}".strip() if clean_desc else ai_disclosure
+
+    full_desc = f"{clean_desc}\n\nUploaded via ApexMind Studio." if clean_desc else f"{ai_disclosure}\n\nUploaded via ApexMind Studio."
+    tag_list = tags or kwargs.get("tags") or ["#ApexMind", "#YouTubeStudio", "#AI", "#AIGenerated"]
     if isinstance(tag_list, str):
         tag_list = [t.strip() for t in tag_list.split(",") if t.strip()]
+    if "#AI" not in tag_list and "AI" not in tag_list:
+        tag_list.append("#AI")
+    if "#AIGenerated" not in tag_list and "AIGenerated" not in tag_list:
+        tag_list.append("#AIGenerated")
 
     # Normalize privacy status strictly to lowercase required by YouTube Data API
     norm_privacy = (privacy_status or "public").strip().lower()

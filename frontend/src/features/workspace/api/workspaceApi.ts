@@ -104,6 +104,7 @@ export const workspaceApi = {
       trending: string[];
       niche: string[];
       growth: string[];
+      ai?: string[];
     };
     allHashtags: string[];
   }> {
@@ -128,7 +129,7 @@ export const workspaceApi = {
     const cleanCat = (params.category || 'Mindset').trim();
     const tagBase = cleanTopic.replace(/[^a-zA-Z0-9]/g, '');
 
-    const trending = ['#Shorts', '#YouTubeShorts', '#ViralShorts', '#ShortsFeed'];
+    const trending = ['#Shorts', '#YouTubeShorts', '#AI', '#AIGenerated', '#ViralShorts', '#ShortsFeed'];
     const niche = [
       `#${tagBase || 'Stoicism'}`,
       '#StoicMindset',
@@ -137,16 +138,17 @@ export const workspaceApi = {
       '#DailyDiscipline',
       '#InnerStrength',
     ];
-    const growth = ['#Motivation', '#SelfImprovement', '#Discipline', '#Mindset', '#Success'];
-    const allHashtags = Array.from(new Set([...trending, ...niche, ...growth]));
+    const growth = ['#Motivation', '#SelfImprovement', '#Discipline', '#Mindset', '#Success', '#AIVideo'];
+    const ai = ['#AI', '#AIGenerated', '#AICreation', '#ApexMindAI', '#AIVideo'];
+    const allHashtags = Array.from(new Set([...trending, ...niche, ...growth, ...ai]));
 
     const fallbackDesc = [
       params.hook ? `⚡ ${params.hook}` : '⚡ Stop waiting for motivation to strike.',
       params.quote ? `📜 ${params.quote}` : '📜 Discipline is an unyielding contract you honor with yourself in total silence.',
       'Key Takeaways:\n• Action creates momentum, not waiting for mood.\n• The obstacle in front of you becomes your path.\n• Silence and execution beat loud excuses.',
       params.cta ? `🎯 ${params.cta}` : '🎯 Subscribe for daily mental mastery.',
+      '🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).',
       allHashtags.slice(0, 8).join(' '),
-      'Produced with ApexMind AI Studio.',
     ].join('\n\n');
 
     return {
@@ -162,6 +164,7 @@ export const workspaceApi = {
         trending,
         niche,
         growth,
+        ai,
       },
       allHashtags,
     };

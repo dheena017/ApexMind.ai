@@ -1622,7 +1622,7 @@ def generate_gemini_metadata(
             {"title": f"Why 99% Fail at {topic_title}", "angle": "Action Question", "viralityScore": 89},
         ]
 
-        trending_tags = ["#Shorts", "#YouTubeShorts", "#ViralShorts", "#ShortsFeed"]
+        trending_tags = ["#Shorts", "#YouTubeShorts", "#ViralShorts", "#ShortsFeed", "#AI", "#AIGenerated"]
         niche_tags = [
             f"#{cat_tag}" if cat_tag else "#StoicMindset",
             f"#{topic_tag}" if topic_tag else "#Discipline",
@@ -1630,9 +1630,11 @@ def generate_gemini_metadata(
             "#MentalToughness",
             "#InnerStrength",
             "#DailyGrit",
+            "#ApexMindAI",
         ]
-        growth_tags = ["#Motivation", "#SelfImprovement", "#Discipline", "#Mindset", "#Success"]
-        all_unique = list(dict.fromkeys(trending_tags + niche_tags + growth_tags))
+        growth_tags = ["#Motivation", "#SelfImprovement", "#Discipline", "#Mindset", "#Success", "#AIVideo", "#AICreation"]
+        ai_tags = ["#AI", "#AIGenerated", "#AICreation", "#ApexMindAI", "#AIVideo"]
+        all_unique = list(dict.fromkeys(trending_tags + niche_tags + growth_tags + ai_tags))
 
         fallback_desc = (
             f"⚡ {clean_hook or 'Transform your mindset and conquer the quiet battles within.'}\n\n"
@@ -1642,8 +1644,8 @@ def generate_gemini_metadata(
             f"• The obstacle in front of you becomes your path forward.\n"
             f"• Silence and compounding execution beat loud excuses.\n\n"
             f"🎯 {clean_cta}\n\n"
-            f"{' '.join(all_unique[:8])}\n\n"
-            f"Produced with ApexMind AI Studio."
+            f"🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n"
+            f"{' '.join(all_unique[:8])}"
         )
 
         return {
@@ -1653,6 +1655,7 @@ def generate_gemini_metadata(
                 "trending": trending_tags,
                 "niche": niche_tags,
                 "growth": growth_tags,
+                "ai": ai_tags,
             },
             "allHashtags": all_unique,
         }
@@ -1674,22 +1677,24 @@ CRITICAL MANDATE:
    - Direct Challenge
    - Stoic Principle
    - Action Question
-2. DESCRIPTION: Write a formatted YouTube Shorts description with hook summary, quote insight, key takeaways bullet points, CTA, and hashtags.
-3. HASHTAGS: Provide 3 categorized lists:
-   - trending (4-5 general Shorts tags)
-   - niche (5-6 tags specific to {clean_cat} and {clean_topic})
-   - growth (4-5 motivation/mindset tags)
+2. DESCRIPTION: Write a formatted YouTube Shorts description with hook summary, quote insight, key takeaways bullet points, CTA, mandatory AI disclosure statement ("🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio)."), and relevant hashtags.
+3. HASHTAGS: Provide categorized hashtag lists (must include relevant AI creation tags like #AI, #AIGenerated, #ApexMindAI, #AIVideo):
+   - trending (4-5 general Shorts & AI tags including #Shorts, #AI, #AIGenerated)
+   - niche (5-6 tags specific to {clean_cat} and {clean_topic}, plus #ApexMindAI)
+   - growth (4-5 motivation/mindset tags including #Motivation, #Discipline, #AIVideo)
+   - ai (4-5 AI-specific discovery tags: ["#AI", "#AIGenerated", "#AICreation", "#ApexMindAI", "#AIVideo"])
 
 Output strictly a single raw JSON object matching:
 {{
   "titles": [
     {{ "title": "Title string under 60 chars", "angle": "Angle Name", "viralityScore": 96 }}
   ],
-  "description": "Formatted description string",
+  "description": "Formatted description string including AI disclosure statement",
   "hashtags": {{
-    "trending": ["#Shorts", "#ViralShorts"],
-    "niche": ["#Stoicism", "#Discipline"],
-    "growth": ["#Motivation", "#Mindset"]
+    "trending": ["#Shorts", "#ViralShorts", "#AI", "#AIGenerated"],
+    "niche": ["#Stoicism", "#Discipline", "#ApexMindAI"],
+    "growth": ["#Motivation", "#Mindset", "#AIVideo"],
+    "ai": ["#AI", "#AIGenerated", "#AICreation", "#ApexMindAI"]
   }}
 }}
 """
@@ -1703,11 +1708,21 @@ Output strictly a single raw JSON object matching:
         if raw_res and isinstance(raw_res, dict) and raw_res.get("titles"):
             titles = raw_res.get("titles", [])
             desc = raw_res.get("description", "")
+            # Ensure AI disclosure is present in generated description per YouTube guidelines
+            if "created with ai" not in desc.lower() and "ai disclosure" not in desc.lower():
+                desc = f"{desc.strip()}\n\n🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio)."
+
             tags_obj = raw_res.get("hashtags", {})
             trending = tags_obj.get("trending", [])
             niche = tags_obj.get("niche", [])
             growth = tags_obj.get("growth", [])
-            all_tags = list(dict.fromkeys(trending + niche + growth))
+            ai_tags = tags_obj.get("ai", ["#AI", "#AIGenerated", "#ApexMindAI", "#AIVideo"])
+            all_tags = list(dict.fromkeys(trending + niche + growth + ai_tags))
+            # Ensure #AI and #AIGenerated are in all_tags
+            for must_tag in ["#AI", "#AIGenerated"]:
+                if must_tag not in all_tags:
+                    all_tags.append(must_tag)
+
             return {
                 "titles": titles,
                 "description": desc,
@@ -1715,6 +1730,7 @@ Output strictly a single raw JSON object matching:
                     "trending": trending,
                     "niche": niche,
                     "growth": growth,
+                    "ai": ai_tags,
                 },
                 "allHashtags": all_tags,
             }

@@ -118,7 +118,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   const [tags, setTags] = useState<string[]>(() => {
     if (script?.hashtags && script.hashtags.length > 0) return script.hashtags;
     if (script?.tags && script.tags.length > 0) return script.tags;
-    return ['#Shorts', '#ApexMind', '#Motivation', '#Stoicism', '#Discipline', '#Mindset'];
+    return ['#Shorts', '#ApexMind', '#Motivation', '#Stoicism', '#Discipline', '#Mindset', '#AI', '#AIGenerated'];
   });
   const [newTagInput, setNewTagInput] = useState('');
 
@@ -142,10 +142,12 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
     trending: string[];
     niche: string[];
     growth: string[];
+    ai: string[];
   }>({
-    trending: ['#Shorts', '#YouTubeShorts', '#ViralShorts', '#ShortsFeed'],
+    trending: ['#Shorts', '#YouTubeShorts', '#AI', '#AIGenerated', '#ViralShorts', '#ShortsFeed'],
     niche: ['#Stoicism', '#MarcusAurelius', '#StoicMindset', '#DailyDiscipline', '#InnerStrength'],
     growth: ['#Motivation', '#SelfImprovement', '#Discipline', '#Mindset', '#Success'],
+    ai: ['#AI', '#AIGenerated', '#AICreation', '#ApexMindAI', '#AIVideo'],
   });
 
   const [customDescription, setCustomDescription] = useState<string>(() => {
@@ -155,8 +157,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
     const c = script?.cta || '';
     const t = (script?.hashtags && script.hashtags.length > 0 ? script.hashtags : tags).join(' ');
     return q || h
-      ? `${h ? `⚡ ${h}\n\n` : ''}📜 ${q ? `${q}\n\n` : ''}${c ? `🎯 ${c}\n\n` : ''}${t}\n\nCreated with ApexMind AI Studio.`
-      : 'Transform your mindset. Conquer your inner storm.\n\n#Shorts #Motivation #Discipline';
+      ? `${h ? `⚡ ${h}\n\n` : ''}📜 ${q ? `${q}\n\n` : ''}${c ? `🎯 ${c}\n\n` : ''}🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n${t}`
+      : 'Transform your mindset. Conquer your inner storm.\n\n🤖 AI Disclosure: This video and audio were created with AI tools using ApexMind AI.\n\n#Shorts #Motivation #Discipline #AI #AIGenerated';
   });
 
   useEffect(() => {
@@ -354,8 +356,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   const tagsText = tags.join(' ');
 
   const description = quoteText || hookText
-    ? `${hookText ? `${hookText}\n\n` : ''}${quoteText ? `${quoteText}\n\n` : ''}${ctaText ? `${ctaText}\n\n` : ''}${tagsText}\n\nCreated with ApexMind AI Studio.`
-    : 'Transform your mindset. Conquer your inner storm.\n\n#Shorts #Motivation #Discipline';
+    ? `${hookText ? `${hookText}\n\n` : ''}${quoteText ? `${quoteText}\n\n` : ''}${ctaText ? `${ctaText}\n\n` : ''}🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n${tagsText}`
+    : 'Transform your mindset. Conquer your inner storm.\n\n🤖 AI Disclosure: This video and audio were created with AI tools using ApexMind AI.\n\n#Shorts #Motivation #Discipline #AI #AIGenerated';
 
   const handleUpdateDescription = (newDesc: string) => {
     setCustomDescription(newDesc);
@@ -376,11 +378,11 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
     let generated = '';
     if (type === 'viral') {
-      generated = `⚡ ${h}\n\n${q}\n\n🎯 ${c}\n\n${t}\n\nProduced with ApexMind AI Studio.`;
+      generated = `⚡ ${h}\n\n${q}\n\n🎯 ${c}\n\n🤖 AI Disclosure: Video & audio generated with AI by ApexMind AI Studio.\n\n${t}`;
     } else if (type === 'takeaways') {
-      generated = `⚡ ${h}\n\n📜 ${q}\n\nKey Takeaways:\n• Action creates momentum, not waiting for mood.\n• The obstacle in front of you becomes your path.\n• Silence and execution beat loud excuses.\n\n🎯 ${c}\n\n${t}\n\nProduced with ApexMind AI Studio.`;
+      generated = `⚡ ${h}\n\n📜 ${q}\n\nKey Takeaways:\n• Action creates momentum, not waiting for mood.\n• The obstacle in front of you becomes your path.\n• Silence and execution beat loud excuses.\n\n🎯 ${c}\n\n🤖 AI Disclosure: Video & audio generated with AI by ApexMind AI Studio.\n\n${t}`;
     } else {
-      generated = `${q}\n\n${t}`;
+      generated = `${q}\n\n🤖 Video created with AI.\n\n${t}`;
     }
     handleUpdateDescription(generated);
     toast.success(`Applied ${type === 'viral' ? 'Viral Shorts' : type === 'takeaways' ? 'Deep Takeaways' : 'Minimal'} template`);
@@ -417,7 +419,14 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
       if (mode === 'all' || mode === 'tags') {
         if (result.hashtags) {
-          setCategorizedTags(result.hashtags);
+          setCategorizedTags({
+            trending: result.hashtags.trending || [],
+            niche: result.hashtags.niche || [],
+            growth: result.hashtags.growth || [],
+            ai: (result.hashtags.ai && result.hashtags.ai.length > 0)
+              ? result.hashtags.ai
+              : ['#AI', '#AIGenerated', '#AICreation', '#ApexMindAI', '#AIVideo'],
+          });
         }
         if (mode === 'tags' || (mode === 'all' && tags.length < 3)) {
           const freshTags = result.allHashtags.slice(0, 8);
@@ -443,7 +452,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
     }
   };
 
-  const handleAddAllFromCategory = (catKey: 'trending' | 'niche' | 'growth') => {
+  const handleAddAllFromCategory = (catKey: 'trending' | 'niche' | 'growth' | 'ai') => {
     const list = categorizedTags[catKey] || [];
     const combined = Array.from(new Set([...tags, ...list]));
     setTags(combined);
@@ -886,6 +895,23 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     {tpl.label}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const aiDisclosure = '\n\n🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).';
+                    if (!customDescription.toLowerCase().includes('created with ai') && !customDescription.toLowerCase().includes('ai disclosure')) {
+                      handleUpdateDescription(customDescription.trim() + aiDisclosure);
+                      toast.success('AI creation disclosure added to description');
+                    } else {
+                      toast.info('AI disclosure is already in the description');
+                    }
+                  }}
+                  className="px-2.5 py-0.5 rounded-full text-[9px] font-medium bg-[#2563EB]/15 hover:bg-[#2563EB]/25 text-[#60A5FA] hover:text-white border border-[#3B82F6]/30 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                  title="Insert mandatory AI Content Disclosure"
+                >
+                  <span>🤖</span>
+                  <span>+ AI Disclosure</span>
+                </button>
               </div>
 
               <textarea
@@ -1199,6 +1225,39 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {categorizedTags.growth.map((sug) => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => handleAddHashtag(sug)}
+                        disabled={tags.includes(sug)}
+                        className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                          tags.includes(sug)
+                            ? 'opacity-30 border-transparent bg-transparent cursor-default'
+                            : 'bg-[#181818] border-[#242424] text-zinc-400 hover:text-white hover:bg-[#26262C] hover:border-white/10 active:scale-95'
+                        }`}
+                      >
+                        + {sug}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. AI Content & Disclosure Cluster */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[9px]">
+                    <span className="text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                      🤖 AI Content &amp; Disclosure
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAddAllFromCategory('ai')}
+                      className="text-[9px] text-zinc-400 hover:text-white cursor-pointer font-semibold"
+                    >
+                      + Add All ({(categorizedTags.ai || []).length})
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(categorizedTags.ai || []).map((sug) => (
                       <button
                         key={sug}
                         type="button"

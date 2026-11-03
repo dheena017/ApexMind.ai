@@ -590,6 +590,7 @@ class CategorizedHashtags(BaseModel):
     trending: List[str] = []
     niche: List[str] = []
     growth: List[str] = []
+    ai: List[str] = []
 
 
 class GenerateMetadataResponse(BaseModel):

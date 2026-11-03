@@ -109,7 +109,7 @@ const INTERVAL_OPTIONS = [
   { value: 'custom', label: 'Custom Interval...', schedule: 'Custom' },
 ];
 
-const DEFAULT_MINDSET_FORGE_CHANNEL = {
+const TARGET_CHANNEL = {
   id: 'UCH0jnQrHaBOglbsLCBRoklg',
   name: 'Mindset Forge',
   handle: '@mindsetforge-v3q',
@@ -154,7 +154,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     } catch {
       // ignore
     }
-    return { connected: true, channel: DEFAULT_MINDSET_FORGE_CHANNEL };
+    return { connected: true, channel: TARGET_CHANNEL };
   });
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
   const [activePipelinePhase, setActivePipelinePhase] = useState<number>(0);
@@ -215,18 +215,18 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   };
 
   const activeChannel = {
-    name: authStatus?.channel?.name || DEFAULT_MINDSET_FORGE_CHANNEL.name,
-    handle: authStatus?.channel?.handle || DEFAULT_MINDSET_FORGE_CHANNEL.handle,
-    avatarUrl: authStatus?.channel?.avatarUrl || authStatus?.channel?.avatar_url || DEFAULT_MINDSET_FORGE_CHANNEL.avatarUrl,
-    bannerUrl: authStatus?.channel?.bannerUrl || authStatus?.channel?.banner_url || DEFAULT_MINDSET_FORGE_CHANNEL.bannerUrl,
-    channelUrl: authStatus?.channel?.channelUrl || authStatus?.channel?.channel_url || DEFAULT_MINDSET_FORGE_CHANNEL.channelUrl,
+    name: authStatus?.channel?.name || TARGET_CHANNEL.name,
+    handle: authStatus?.channel?.handle || TARGET_CHANNEL.handle,
+    avatarUrl: authStatus?.channel?.avatarUrl || authStatus?.channel?.avatar_url || TARGET_CHANNEL.avatarUrl,
+    bannerUrl: authStatus?.channel?.bannerUrl || authStatus?.channel?.banner_url || TARGET_CHANNEL.bannerUrl,
+    channelUrl: authStatus?.channel?.channelUrl || authStatus?.channel?.channel_url || TARGET_CHANNEL.channelUrl,
   };
 
   const loadAuthStatus = async () => {
     try {
       const res = await youtubeApi.getAuthStatus();
       if (res && res.success) {
-        const channel = res.channel || DEFAULT_MINDSET_FORGE_CHANNEL;
+        const channel = res.channel || TARGET_CHANNEL;
         setAuthStatus({ connected: Boolean(res.connected !== false), channel });
         try {
           localStorage.setItem('apexmind_yt_channel', JSON.stringify(channel));
@@ -235,7 +235,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         }
       }
     } catch {
-      setAuthStatus({ connected: true, channel: DEFAULT_MINDSET_FORGE_CHANNEL });
+      setAuthStatus({ connected: true, channel: TARGET_CHANNEL });
     }
   };
 
@@ -729,43 +729,34 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           {/* Target Channel Destination */}
                           <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-[#202026] text-xs">
                             <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
-                              <Globe className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                              <span>Publish Target:</span>
+                              <Youtube className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              <span>Target Channel:</span>
                             </span>
-                            {authStatus?.connected !== false ? (
-                              <a
-                                href={activeChannel.channelUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group flex items-center gap-1.5 min-w-0 max-w-[72%] justify-end hover:opacity-90 transition-opacity"
-                                title={`Publishing automated Shorts directly to ${activeChannel.name} (${activeChannel.handle}) on YouTube`}
-                              >
-                                <div className="relative shrink-0 flex items-center">
-                                  {activeChannel.avatarUrl ? (
-                                    <img
-                                      src={activeChannel.avatarUrl}
-                                      alt={activeChannel.name}
-                                      className="w-4 h-4 rounded-full object-cover ring-1 ring-red-500/50 shadow-xs"
-                                    />
-                                  ) : (
-                                    <Youtube className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                                  )}
-                                  <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full ring-1 ring-[#141416]" />
-                                </div>
-                                <span className="font-semibold text-zinc-200 group-hover:text-red-400 transition-colors truncate">
-                                  {activeChannel.name}
-                                </span>
-                                <span className="text-[10px] text-zinc-400 font-mono truncate hidden sm:inline">
-                                  {activeChannel.handle}
-                                </span>
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/15 text-red-400 border border-red-500/30 shrink-0 flex items-center gap-0.5">
-                                  <Youtube className="w-2.5 h-2.5" />
-                                  <span>Shorts Live</span>
-                                </span>
-                              </a>
-                            ) : (
-                              <span className="font-semibold text-amber-300 truncate">Studio Video Library</span>
-                            )}
+                            <a
+                              href={TARGET_CHANNEL.channelUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-center gap-1.5 min-w-0 max-w-[70%] justify-end hover:opacity-95 transition-opacity"
+                              title={`Target Channel: ${TARGET_CHANNEL.name} (${TARGET_CHANNEL.handle}) on YouTube`}
+                            >
+                              <div className="relative shrink-0 flex items-center">
+                                <img
+                                  src={TARGET_CHANNEL.avatarUrl}
+                                  alt={TARGET_CHANNEL.name}
+                                  className="w-4 h-4 rounded-full object-cover ring-1 ring-red-500/50 shadow-xs"
+                                />
+                                <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full ring-1 ring-[#141416]" />
+                              </div>
+                              <span className="font-semibold text-zinc-200 group-hover:text-white transition-colors truncate">
+                                {TARGET_CHANNEL.name}
+                              </span>
+                              <span className="text-[10px] text-zinc-400 font-mono truncate">
+                                {TARGET_CHANNEL.handle}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/15 text-red-400 border border-red-500/30 shrink-0 flex items-center gap-0.5">
+                                <span>Shorts</span>
+                              </span>
+                            </a>
                           </div>
 
                           {/* 4 Clean Attribute Tags in a 2x2 Grid (No overflowing or truncated pills) */}
@@ -1539,38 +1530,26 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           <div className="p-3 rounded-xl bg-[#141416] border border-[#26262E] flex items-center justify-between gap-2.5 text-[11px]">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="relative shrink-0">
-                {activeChannel.avatarUrl ? (
-                  <img
-                    src={activeChannel.avatarUrl}
-                    alt={activeChannel.name}
-                    className="w-7 h-7 rounded-lg object-cover ring-1 ring-red-500/40"
-                  />
-                ) : (
-                  <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/25 flex items-center justify-center shrink-0">
-                    <Youtube className="w-3.5 h-3.5 text-red-500" />
-                  </div>
-                )}
+                <img
+                  src={TARGET_CHANNEL.avatarUrl}
+                  alt={TARGET_CHANNEL.name}
+                  className="w-7 h-7 rounded-lg object-cover ring-1 ring-red-500/40"
+                />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full ring-1 ring-[#141416]" />
               </div>
               <div className="text-zinc-300 min-w-0">
                 <div className="text-[10px] text-zinc-500 font-mono uppercase">Target Channel</div>
                 <div className="font-semibold text-white truncate flex items-center gap-1.5">
-                  <span>{activeChannel.name}</span>
+                  <span>{TARGET_CHANNEL.name}</span>
                   <span className="text-[10px] text-zinc-400 font-mono font-normal">
-                    {activeChannel.handle}
+                    {TARGET_CHANNEL.handle}
                   </span>
                 </div>
               </div>
             </div>
-            {authStatus?.connected ? (
-              <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold shrink-0">
-                Verified
-              </span>
-            ) : (
-              <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold shrink-0">
-                Local Only
-              </span>
-            )}
+            <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold shrink-0">
+              Target
+            </span>
           </div>
 
           {/* Action Buttons */}
@@ -1598,106 +1577,52 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {activeSubTab === 'channel' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in">
           {/* ── YouTube Channel Banner Card ── */}
-          <div className="rounded-xl overflow-hidden border border-[#242424] shadow-lg flex flex-col">
-
+          <div className="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden shadow-xl">
             {/* Banner Image */}
             <div className="relative w-full h-24 bg-gradient-to-r from-[#0B0F19] via-[#131127] to-[#0A0A0A] overflow-hidden shrink-0">
-              {activeChannel.bannerUrl ? (
-                <img
-                  src={activeChannel.bannerUrl}
-                  alt="Channel Banner"
-                  className="w-full h-full object-cover object-center"
-                />
-              ) : authStatus?.connected ? (
-                <div className="w-full h-full bg-gradient-to-r from-[#141414] via-[#111111] to-[#0A0A0A] flex items-center px-4">
-                  <div className="space-y-0.5">
-                    <span className="text-[9px] font-bold tracking-widest text-blue-400 uppercase block">ApexMind Creator Studio</span>
-                    <p className="text-sm font-extrabold text-white">{authStatus.channel?.name || 'Your Channel'}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-full bg-gradient-to-r from-red-950/40 via-[#18181B] to-black flex items-center px-4">
-                  <div className="space-y-0.5">
-                    <span className="text-[9px] font-bold tracking-widest text-red-400 uppercase block">YouTube Creator Hub</span>
-                    <p className="text-sm font-extrabold text-white">Connect Your Channel</p>
-                  </div>
-                </div>
-              )}
-              {/* Gradient overlay */}
+              <img
+                src={TARGET_CHANNEL.bannerUrl}
+                alt="Target Channel Banner"
+                className="w-full h-full object-cover object-center"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
-              {/* Connected badge top-right */}
               <div className="absolute top-2 right-2">
-                <span className={`px-2 py-0.5 text-[9.5px] font-bold rounded-full border ${
-                  authStatus?.connected
-                    ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
-                    : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                }`}>
-                  {authStatus?.connected ? 'Connected' : 'Studio Mode'}
+                <span className="px-2 py-0.5 text-[9.5px] font-bold rounded-full border bg-emerald-500/20 border-emerald-500/30 text-emerald-400">
+                  Target Channel
                 </span>
               </div>
             </div>
 
             {/* Avatar + Info row */}
             <div className="bg-[#111111] border-t border-[#1E1E1E] px-3 py-2.5 flex items-center gap-3">
-              {/* Avatar */}
               <div className="relative shrink-0 -mt-6">
-                {activeChannel.avatarUrl ? (
-                  <img
-                    src={activeChannel.avatarUrl}
-                    alt={activeChannel.name}
-                    className="w-10 h-10 rounded-full border-2 border-[#111111] object-cover shadow-lg"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full border-2 border-[#111111] bg-red-600/20 border-red-500/30 flex items-center justify-center text-red-400 font-bold text-sm shadow-lg">
-                    {activeChannel.name.charAt(0) || <Youtube className="w-4 h-4" />}
-                  </div>
-                )}
+                <img
+                  src={TARGET_CHANNEL.avatarUrl}
+                  alt={TARGET_CHANNEL.name}
+                  className="w-10 h-10 rounded-full border-2 border-[#111111] object-cover shadow-lg"
+                />
               </div>
 
               {/* Name + Handle + Stats */}
               <div className="flex-1 min-w-0 pt-1">
-                {authStatus?.connected !== false ? (
-                  <>
-                    <p className="text-xs font-bold text-white truncate leading-tight">{activeChannel.name}</p>
-                    <p className="text-[10px] text-zinc-500 truncate leading-tight">{activeChannel.handle}</p>
-                    {authStatus.channel?.subscribers != null && (
-                      <p className="text-[10px] text-zinc-400 mt-0.5 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                        <span>{authStatus.channel.subscribers.toLocaleString()} subscribers</span>
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-[11px] text-zinc-400 leading-snug">Connect your YouTube account to publish Shorts live.</p>
-                )}
+                <p className="text-xs font-bold text-white truncate leading-tight">{TARGET_CHANNEL.name}</p>
+                <p className="text-[10px] text-zinc-500 truncate leading-tight">{TARGET_CHANNEL.handle}</p>
+                <p className="text-[10px] text-emerald-400 mt-0.5 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span>Target Publishing Destination</span>
+                </p>
               </div>
 
               {/* Action button */}
-              {authStatus?.connected ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onNavigate) onNavigate('youtube-channels');
-                    else window.open('/youtube/channels', '_blank');
-                  }}
-                  className="shrink-0 px-2.5 py-1 rounded-lg bg-[#181818] hover:bg-[#26262C] text-[10.5px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#242424] hover:border-white/10 flex items-center gap-1"
-                >
-                  <span>Manage</span>
-                  <ExternalLink className="w-3 h-3 text-zinc-400" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onNavigate) onNavigate('youtube-channels');
-                    else window.open('/youtube/channels', '_blank');
-                  }}
-                  className="shrink-0 px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[10.5px] flex items-center gap-1 cursor-pointer shadow-md transition-all"
-                >
-                  <Youtube className="w-3 h-3" />
-                  <span>Connect</span>
-                </button>
-              )}
+              <a
+                href={TARGET_CHANNEL.channelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 px-2.5 py-1 rounded-lg bg-[#181818] hover:bg-[#26262C] text-[10.5px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#242424] hover:border-white/10 flex items-center gap-1"
+              >
+                <span>View Channel</span>
+                <ExternalLink className="w-3 h-3 text-zinc-400" />
+              </a>
             </div>
 
             {/* Footer info strip */}
