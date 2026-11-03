@@ -290,10 +290,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
                 <label className="uppercase text-slate-500 flex items-center gap-1.5 tracking-wider">
-                  <Smartphone className="w-3.5 h-3.5 text-[#38BDF8]" />
+                  <Smartphone className="w-3.5 h-3.5 text-[#60A5FA]" />
                   Video Aspect Ratio
                 </label>
-                <span className="text-[#38BDF8] font-bold">
+                <span className="text-[#60A5FA] font-bold">
                   {aspectRatio === '9:16'
                     ? '9:16 • 1080×1920 (Vertical)'
                     : aspectRatio === '16:9'
@@ -316,13 +316,13 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                       onClick={() => onAspectRatioChange?.(item.value)}
                       className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-[#1E293B] border-[#38BDF8] text-[#38BDF8] shadow-sm shadow-[#38BDF8]/20 ring-1 ring-[#38BDF8]/40'
-                          : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-[#D4D4D8] hover:border-[#2E2E2E]'
+                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs font-bold'
+                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:text-white hover:bg-[#26262C] hover:border-white/10'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5 mb-1" />
                       <span className="text-[10px] font-bold leading-none">{item.label}</span>
-                      <span className="text-[8px] opacity-70 mt-0.5 truncate w-full text-center">{item.desc.split('/')[0].trim()}</span>
+                      <span className={`text-[8.5px] mt-0.5 truncate w-full text-center ${isSelected ? 'text-blue-100 font-medium' : 'text-zinc-500'}`}>{item.desc.split('/')[0].trim()}</span>
                     </button>
                   );
                 })}
@@ -343,7 +343,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                   onChange={(e) => onPromptChange(e.target.value)}
                   placeholder="What core truth or motivational message should this reel deliver? (e.g., The power of silence and daily non-negotiable standards)..."
                   rows={4}
-                  className="w-full bg-[#18181B] border border-[#242424] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/40 transition-all resize-none leading-relaxed"
+                  className="w-full bg-[#181818] border border-[#242424] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#2563EB] transition-all resize-none leading-relaxed"
                 />
                 {agentPrompt.trim().length > 0 && (
                   <button
@@ -363,13 +363,13 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             </div>
 
             {/* ── Pacing & Model Configuration Card ── */}
-            <div className="bg-[#18181B] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3.5">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3.5">
               <div className="flex items-center justify-between pb-2.5 border-b border-[#242424]">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
                   <span className="text-xs font-bold text-white tracking-wide">Pacing &amp; Model Engine</span>
                 </div>
-                <span className="text-[10px] font-mono-studio text-[#60A5FA] bg-[#3B82F6]/10 px-2 py-0.5 rounded-md border border-[#3B82F6]/20">
+                <span className="text-[10px] font-mono-studio text-white font-bold bg-[#2563EB] px-2 py-0.5 rounded-md border border-[#60A5FA]/40 shadow-xs">
                   AI Script Tuning
                 </span>
               </div>
@@ -392,10 +392,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono-studio">
                   <label className="uppercase text-slate-500 flex items-center gap-1.5 tracking-wider">
-                    <Gauge className="w-3 h-3 text-[#38BDF8]" />
+                    <Gauge className="w-3 h-3 text-[#60A5FA]" />
                     Target Video Duration
                   </label>
-                  <span className="text-[#38BDF8] font-bold">
+                  <span className="text-[#60A5FA] font-bold">
                     {targetLength ? targetLength.replace('seconds', 's').replace('second', 's').trim() : '30s'}
                   </span>
                 </div>
@@ -416,12 +416,12 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                         onClick={() => onTargetLengthChange(opt.value)}
                         className={`py-2 px-1 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center ${
                           isSelected
-                            ? 'bg-[#1E293B] border-[#38BDF8] text-[#38BDF8] shadow-sm shadow-[#38BDF8]/20 ring-1 ring-[#38BDF8]/40'
-                            : 'bg-[#111111] text-slate-400 border-[#242424] hover:text-white hover:border-[#2E2E2E]'
+                            ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs font-bold'
+                            : 'bg-[#181818] text-zinc-400 border-[#242424] hover:text-white hover:bg-[#26262C] hover:border-white/10'
                         }`}
                       >
                         <span className="text-xs font-bold leading-tight">{opt.label}</span>
-                        <span className="text-[8px] font-normal opacity-70 mt-0.5">{opt.badge}</span>
+                        <span className={`text-[8.5px] font-normal mt-0.5 ${isSelected ? 'text-blue-100 font-medium' : 'text-zinc-500'}`}>{opt.badge}</span>
                       </button>
                     );
                   })}
@@ -445,16 +445,16 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                         onClick={() => handleSelectTone(tone.id)}
                         className={`p-2.5 rounded-xl border transition-all text-left flex items-start gap-2.5 cursor-pointer ${
                           isSelected
-                            ? 'bg-[#1E2330] text-white border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
-                            : 'bg-[#111111] text-slate-400 border-[#242424] hover:text-white hover:border-[#2E2E2E]'
+                            ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-bold'
+                            : 'bg-[#181818] text-zinc-400 border-[#242424] hover:text-white hover:bg-[#26262C] hover:border-white/10'
                         }`}
                       >
-                        <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? 'text-[#60A5FA]' : 'text-slate-500'}`} />
+                        <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? 'text-white' : 'text-zinc-400'}`} />
                         <div className="min-w-0">
                           <div className={`text-[11px] font-semibold leading-tight ${isSelected ? 'text-white' : 'text-[#D4D4D8]'}`}>
                             {tone.label}
                           </div>
-                          <div className="text-[9px] text-slate-500 mt-0.5 truncate">
+                          <div className={`text-[9.5px] mt-0.5 truncate ${isSelected ? 'text-blue-100 font-medium' : 'text-zinc-500'}`}>
                             {tone.desc}
                           </div>
                         </div>
@@ -484,14 +484,14 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                     onClick={() => onVoiceChange?.(v.id || v.name)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-sm shadow-[#3B82F6]/20'
-                        : 'bg-[#18181B] border-[#242424] hover:border-[#2E2E2E] hover:bg-[#181D2B]'
+                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
+                        : 'bg-[#181818] border-[#242424] hover:border-white/10 hover:bg-[#26262C]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                          isSelected ? 'bg-[#3B82F6] text-white' : 'bg-[#26262B] text-[#60A5FA]'
+                          isSelected ? 'bg-white/20 text-white' : 'bg-[#141414] text-zinc-400 border border-[#242424]'
                         }`}
                       >
                         <Mic className="w-4 h-4" />
@@ -503,7 +503,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                             {v.gender}
                           </span>
                         </div>
-                        <p className="text-[10px] text-slate-400 truncate mt-0.5">{v.style}</p>
+                        <p className={`text-[10px] truncate mt-0.5 ${isSelected ? 'text-blue-100 font-medium' : 'text-zinc-400'}`}>{v.style}</p>
                       </div>
                     </div>
 
@@ -526,7 +526,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                         </button>
                       )}
                       {isSelected && (
-                        <div className="p-1 rounded-full bg-[#3B82F6] text-white">
+                        <div className="p-1 rounded-full bg-white text-[#2563EB]">
                           <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       )}
@@ -554,7 +554,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             onRunAgent();
           }}
           disabled={loadingAgent}
-          className="w-full h-10 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-md shadow-blue-500/25 active:scale-[0.99] transition-all py-2 text-xs flex items-center justify-center gap-2 cursor-pointer border-0"
+          className="w-full h-10 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] disabled:opacity-50 text-white font-bold rounded-xl shadow-[0_0_18px_rgba(37,99,235,0.35)] active:scale-[0.99] transition-all py-2 text-xs flex items-center justify-center gap-2 cursor-pointer border border-[#60A5FA]/40"
         >
           {loadingAgent ? (
             <>

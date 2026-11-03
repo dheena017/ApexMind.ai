@@ -82,10 +82,10 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
         onClick={() => onOpenChange(false)}
       />
 
-      <div className="w-full max-w-xl bg-[#141416] border border-[#2A2A30] rounded-2xl shadow-2xl overflow-hidden text-white font-sans-studio ring-1 ring-white/10">
+      <div className="w-full max-w-xl bg-[#141414] border border-[#242424] rounded-2xl shadow-2xl overflow-hidden text-white font-sans-studio ring-1 ring-white/10">
         <Command label="Studio Command Menu" className="w-full flex flex-col">
           {/* Top Search Input */}
-          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#26262B] bg-[#17171A]">
+          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#242424] bg-[#111111]">
             <Search className="w-4 h-4 text-[#71717A] shrink-0" />
             <Command.Input
               autoFocus
@@ -115,7 +115,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
                       } catch {}
                     }, 'Generating AI Reel Script...')
                   }
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <Sparkles className="w-4 h-4 text-[#60A5FA]" />
                   <span>Generate AI Viral Script</span>
@@ -125,7 +125,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
               {onCaptureSnapshot && (
                 <Command.Item
                   onSelect={() => runAction(onCaptureSnapshot, 'Snapshotting Canvas Frame')}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <Camera className="w-4 h-4 text-[#10B981]" />
                   <span>Take High-Res Canvas Snapshot</span>
@@ -135,7 +135,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
               {onTogglePlay && (
                 <Command.Item
                   onSelect={() => runAction(onTogglePlay, 'Toggled Video Playback')}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <Play className="w-4 h-4 text-amber-400" />
                   <span>Play / Pause Video Preview</span>
@@ -145,7 +145,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
               {onToggleMute && (
                 <Command.Item
                   onSelect={() => runAction(onToggleMute, 'Toggled Audio Mute')}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <Volume2 className="w-4 h-4 text-blue-400" />
                   <span>Toggle Audio Volume Mute</span>
@@ -155,7 +155,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
               {onToggleTimeline && (
                 <Command.Item
                   onSelect={() => runAction(onToggleTimeline, 'Toggled Bottom Timeline')}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <LayoutTemplate className="w-4 h-4 text-cyan-400" />
                   <span>Toggle Multi-Track Timeline</span>
@@ -167,7 +167,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
             <Command.Group heading="STUDIO PANELS" className="text-[10px] uppercase font-mono text-zinc-400 px-2 py-1.5 mt-2 border-t border-[#26262B]">
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('prompt'), 'Switched to AI Agent Studio')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <Wand2 className="w-4 h-4 text-[#60A5FA]" />
                 <span>AI Script Studio (Agent Prompt)</span>
@@ -175,7 +175,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('editor'), 'Switched to Script & Subtitles')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <FileText className="w-4 h-4 text-emerald-400" />
                 <span>Script &amp; Subtitles Editor</span>
@@ -183,7 +183,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('canvas'), 'Switched to Canvas & Frame')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <LayoutTemplate className="w-4 h-4 text-amber-400" />
                 <span>Canvas Format &amp; Gradients</span>
@@ -191,7 +191,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('media'), 'Switched to Project Media')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <FolderOpen className="w-4 h-4 text-blue-400" />
                 <span>Project Media Assets Bin</span>
@@ -199,7 +199,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('text'), 'Switched to Typography')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <Type className="w-4 h-4 text-pink-400" />
                 <span>Typography, Fonts &amp; Hook Vault</span>
@@ -207,7 +207,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('elements'), 'Switched to Elements')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <Shapes className="w-4 h-4 text-rose-400" />
                 <span>Badges, Frames &amp; Overlays</span>
@@ -215,7 +215,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('audio'), 'Switched to Audio & SFX')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <Music className="w-4 h-4 text-indigo-400" />
                 <span>Audio Mixer, SFX &amp; Voiceover</span>
@@ -223,7 +223,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('image'), 'Switched to Backdrop Images')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <ImageIcon className="w-4 h-4 text-blue-400" />
                 <span>Stock Photos &amp; Color Grading</span>
@@ -231,7 +231,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
               <Command.Item
                 onSelect={() => runAction(() => onSelectPane('video'), 'Switched to Stock Video Clips')}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
               >
                 <Film className="w-4 h-4 text-emerald-400" />
                 <span>Motion Stock Video Loops</span>
@@ -243,7 +243,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
               <Command.Group heading="CANVAS ASPECT RATIO" className="text-[10px] uppercase font-mono text-zinc-400 px-2 py-1.5 mt-2 border-t border-[#26262B]">
                 <Command.Item
                   onSelect={() => runAction(() => onSelectAspectRatio('9:16'), 'Aspect Ratio: 9:16 Shorts/Reels')}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <span className="font-mono text-zinc-400">9:16</span>
                   <span>Shorts, Reels, TikTok (1080×1920)</span>
@@ -251,7 +251,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
                 <Command.Item
                   onSelect={() => runAction(() => onSelectAspectRatio('16:9'), 'Aspect Ratio: 16:9 Widescreen')}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <span className="font-mono text-zinc-400">16:9</span>
                   <span>YouTube Standard (1920×1080)</span>
@@ -259,7 +259,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
 
                 <Command.Item
                   onSelect={() => runAction(() => onSelectAspectRatio('1:1'), 'Aspect Ratio: 1:1 Square Post')}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-white hover:bg-[#3B82F6]/20 hover:text-[#60A5FA] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <span className="font-mono text-zinc-400">1:1</span>
                   <span>Instagram Square Post (1080×1080)</span>

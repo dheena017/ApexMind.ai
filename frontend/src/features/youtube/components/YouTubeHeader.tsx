@@ -78,7 +78,7 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
 
   const renderIcon = (id: YouTubeTab, isActive: boolean) => {
     const iconClass = `w-4 h-4 shrink-0 transition-colors ${
-      isActive ? 'text-gray-950' : 'transition-transform group-hover:scale-110'
+      isActive ? 'text-white' : 'transition-transform group-hover:scale-110'
     }`;
 
     switch (id) {

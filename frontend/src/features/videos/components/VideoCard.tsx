@@ -112,7 +112,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
         onClick={() => onPlay(video)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 sm:p-4 rounded-2xl bg-[#141414] hover:bg-[#181818] border border-[#262626] hover:border-[#3B82F6]/50 transition-all duration-200 cursor-pointer shadow-lg"
+        className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 sm:p-4 rounded-2xl bg-[#141414] hover:bg-[#181818] border border-[#242424] hover:border-white/10 transition-all duration-200 cursor-pointer shadow-lg"
       >
         {/* Left: Thumbnail / Live Video Preview & Main Info */}
         <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
@@ -174,7 +174,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
           {/* Info Details */}
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs">
                 {video.category}
               </span>
               <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
@@ -206,7 +206,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
         <div className="flex items-center gap-2 shrink-0 self-end sm:self-center" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onPlay(video)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold border border-[#60A5FA]/40 shadow-xs transition-all cursor-pointer"
             title="Preview Video Player"
           >
             <Play className="w-3.5 h-3.5 fill-white" />
@@ -215,7 +215,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
 
           <button
             onClick={() => onEditInStudio(video)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F1F1F] hover:bg-[#282828] text-[#9CA3AF] hover:text-white text-xs font-semibold border border-[#303030] hover:border-[#404040] transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white text-xs font-semibold border border-[#242424] hover:border-white/10 transition-colors cursor-pointer"
             title="Open in AI Video Studio"
           >
             <Wand2 className="w-3.5 h-3.5 text-[#60A5FA]" />
@@ -224,7 +224,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
 
           <button
             onClick={handleCopyQuote}
-            className="p-2 rounded-xl bg-[#1A1A1A] hover:bg-[#222222] text-[#9CA3AF] hover:text-white border border-[#2E2E2E] transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border border-[#242424] hover:border-white/10 transition-colors cursor-pointer"
             title={copied ? 'Quote Copied!' : 'Copy Quote Text'}
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -233,7 +233,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
           <button
             onClick={handleDeleteClick}
             disabled={deleting}
-            className="p-2 rounded-xl bg-[#1A1A1A] hover:bg-red-500/15 text-[#9CA3AF] hover:text-red-400 border border-[#2E2E2E] hover:border-red-500/30 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[#181818] hover:bg-rose-500/10 text-zinc-300 hover:text-rose-400 border border-[#242424] hover:border-rose-500/30 transition-colors cursor-pointer"
             title="Delete Video"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -249,7 +249,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
       onClick={() => onPlay(video)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="group relative flex flex-col rounded-2xl bg-[#131313] hover:bg-[#161616] border border-[#262626] hover:border-[#3B82F6]/50 transition-all duration-300 overflow-hidden cursor-pointer shadow-xl hover:shadow-[#3B82F6]/15 flex-1"
+      className="group relative flex flex-col rounded-2xl bg-[#141414] hover:bg-[#181818] border border-[#242424] hover:border-white/10 transition-all duration-300 overflow-hidden cursor-pointer shadow-xl hover:shadow-[#3B82F6]/15 flex-1"
     >
       {/* ── Prominent Video Preview / Cover Section ── */}
       <div className="relative w-full aspect-[9/14] sm:aspect-[9/13] overflow-hidden bg-black">
@@ -318,7 +318,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
                 e.stopPropagation();
                 onPlay(video);
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold shadow-2xl transition-all cursor-pointer scale-100 hover:scale-105"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold border border-[#60A5FA]/40 shadow-xs transition-all cursor-pointer scale-100 hover:scale-105"
             >
               <Play className="w-4 h-4 fill-white" />
               <span>Play Video</span>
@@ -373,7 +373,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={handleCopyQuote}
-              className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#202020] transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:text-white transition-colors cursor-pointer"
               title={copied ? 'Quote Copied!' : 'Copy Quote'}
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -381,7 +381,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
 
             <button
               onClick={() => onEditInStudio(video)}
-              className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-[#60A5FA] hover:bg-[#3B82F6]/10 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-[#60A5FA] hover:bg-[#26262C] hover:text-[#60A5FA] transition-colors cursor-pointer"
               title="Edit in Studio"
             >
               <Wand2 className="w-3.5 h-3.5" />

@@ -280,8 +280,8 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
                 }}
                 className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
                   Math.abs(transitionDuration - d) < 0.05
-                    ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
-                    : 'bg-[#111111] text-slate-500 hover:text-white border border-[#242424]'
+                    ? 'bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40 shadow-xs'
+                    : 'bg-[#181818] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white border border-[#242424]'
                 }`}
               >
                 {d}s
@@ -309,8 +309,8 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
             onClick={() => setTransitionCategory(cat.id)}
             className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors shrink-0 ${
               transitionCategory === cat.id
-                ? 'bg-[#282834] text-white border border-white/30 shadow-xs'
-                : 'bg-[#181818] text-slate-500 hover:text-white border border-transparent'
+                ? 'bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40 shadow-xs'
+                : 'bg-[#181818] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white border border-transparent'
             }`}
           >
             {cat.label}
@@ -337,12 +337,12 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
               <div
                 className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 ${
                   isSelected
-                    ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
-                    : 'border-[#242424] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30 bg-[#181818]'
+                    ? 'border-2 border-[#2563EB] ring-2 ring-[#2563EB]/40 shadow-md shadow-blue-500/20'
+                    : 'border-[#242424] hover:border-white/10 hover:bg-[#26262C] bg-[#181818]'
                 }`}
               >
                 {isNone ? (
-                  <div className="w-full h-full bg-[#1A1A22] flex items-center justify-center">
+                  <div className="w-full h-full bg-[#141414] flex items-center justify-center">
                     <svg
                       viewBox="0 0 24 24"
                       className="w-7 h-7 text-slate-500 stroke-[1.8]"
@@ -390,7 +390,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
           <button
             type="button"
             onClick={handleReplayPreview}
-            className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer shrink-0"
             title="Replay transition preview on canvas"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
@@ -403,7 +403,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
           className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs shrink-0 ${
             appliedNotice
               ? 'bg-emerald-600 text-white border-emerald-400'
-              : 'bg-[#252530] hover:bg-[#323240] border-[#2A2A2A] hover:border-white/30 text-white'
+              : 'bg-[#181818] hover:bg-[#26262C] border-[#242424] hover:border-white/10 text-zinc-300 hover:text-white'
           }`}
           title="Apply this transition to all cut seams on the selected track"
         >

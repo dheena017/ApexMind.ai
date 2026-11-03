@@ -133,19 +133,6 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
     <header className="sticky top-0 h-11 shrink-0 z-30 w-full overflow-hidden bg-[#111111]/98 backdrop-blur-2xl border-b border-[#242424] px-3 sm:px-4 flex items-center justify-between gap-2.5 font-sans-studio select-none text-[#E5E5E5] shadow-sm">
       {/* ── Left: Studio Title, Brand Logo, Breadcrumb & Project Title ── */}
       <div className="flex items-center gap-2.5 shrink-0 min-w-0">
-        {/* Creator Dashboard Home Shortcut */}
-        <button
-          type="button"
-          onClick={() => onNavigate('dashboard')}
-          aria-label="Creator Dashboard"
-          title="Back to Creator Dashboard"
-          className="h-8 w-8 rounded-lg bg-[#181818] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] flex items-center justify-center text-[#9CA3AF] hover:text-white transition-all cursor-pointer shadow-xs group"
-        >
-          <LayoutDashboard className="w-4 h-4 text-[#60A5FA] transition-transform group-hover:scale-105" />
-        </button>
-
-        <div className="h-4 w-px bg-[#262626] hidden min-[440px]:block" />
-
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-2">
           <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]">

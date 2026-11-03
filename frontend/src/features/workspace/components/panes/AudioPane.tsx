@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Gauge,
 } from 'lucide-react';
+import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { workspaceApi } from '../../api/workspaceApi';
 
 import { toast } from 'sonner';
@@ -394,58 +395,6 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           })}
         </div>
       </div>
-      {/* ── Genre / Category Chips ── */}
-      {activeTab === 'soundtracks' && (
-        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#242424] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141414]">
-          {[
-            { id: 'all', label: 'All Vibes' },
-            { id: 'cinematic', label: 'Cinematic' },
-            { id: 'drone', label: 'Bass Drone' },
-            { id: 'synthwave', label: 'Synthwave' },
-            { id: 'phonk', label: 'Phonk' },
-            { id: 'piano', label: 'Piano' },
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setSelectedGenre(cat.id)}
-              className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
-                selectedGenre === cat.id
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
-                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-[#242424]'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {activeTab === 'sfx' && (
-        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#242424] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-[#141414]">
-          {[
-            { id: 'all', label: 'All SFX' },
-            { id: 'Impact', label: '💥 Impacts' },
-            { id: 'Transition', label: '⚡ Transitions' },
-            { id: 'Tension', label: '⏳ Tension' },
-            { id: 'Action', label: '🎯 Actions' },
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setSelectedSfxCategory(cat.id)}
-              className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
-                selectedSfxCategory === cat.id
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
-                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-[#242424]'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
         {/* Search Bar for SFX only (Soundtracks has its dedicated Jamendo integrated search) */}
@@ -542,7 +491,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     onClick={() => setReverbRoom(r.id as any)}
                     className={`p-2 rounded-lg text-xs font-semibold border transition-all ${
                       reverbRoom === r.id
-                        ? 'bg-[#1E2330] text-white border-[#3B82F6]'
+                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
                         : 'bg-[#111111] text-slate-400 border-[#242424]'
                     }`}
                   >
@@ -557,25 +506,44 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         {/* ── Tab 1: Soundtracks ── */}
         {activeTab === 'soundtracks' && (
           <div className="flex flex-col gap-2.5">
-            {/* Search Input */}
-            <div className="relative w-full">
-              <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search vibes, phonk, lofi, BPM..."
-                className="w-full bg-[#181818] border border-[#27272F] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+            {/* Search & Category Filter in One Row */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-[140px]">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search vibes, phonk, lofi, BPM..."
+                  className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="shrink-0 w-32 sm:w-36">
+                <CustomSelect
+                  value={selectedGenre}
+                  onChange={(val) => setSelectedGenre(val)}
+                  options={[
+                    { value: 'all', label: 'All Vibes' },
+                    { value: 'cinematic', label: 'Cinematic' },
+                    { value: 'drone', label: 'Bass Drone' },
+                    { value: 'synthwave', label: 'Synthwave' },
+                    { value: 'phonk', label: 'Phonk' },
+                    { value: 'piano', label: 'Piano' },
+                  ]}
+                  variant="compact"
+                  align="right"
+                  buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-2 pt-1">
@@ -591,7 +559,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     style={{ contentVisibility: 'auto', containIntrinsicSize: '64px' }}
                     className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 transform-gpu ${
                       isSelected
-                        ? 'bg-[#181D2A] border-blue-500/80 ring-1 ring-blue-500/40 shadow-sm'
+                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
                         : isPending
                         ? 'bg-[#1A1E29] border-blue-500/50'
                         : 'bg-[#181818] border-[#242424] hover:border-[#3E3E4B] hover:bg-[#1A1A20]'
@@ -603,8 +571,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                         onClick={(e) => togglePlayTrack(track, e)}
                         className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
                           isPlaying
-                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
-                            : 'bg-[#1E1E1E] text-zinc-300 hover:text-white hover:bg-blue-600'
+                            ? 'bg-[#2563EB] text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
+                            : 'bg-[#1E1E1E] text-zinc-300 hover:text-white hover:bg-[#2563EB]'
                         }`}
                         title={isPlaying ? 'Pause preview' : 'Play preview'}
                       >
@@ -617,30 +585,28 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
                       <div className="min-w-0 flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <p className="text-xs font-semibold text-white truncate group-hover:text-blue-300 transition-colors">
+                          <p className={`text-xs font-semibold truncate transition-colors ${isSelected ? 'text-white' : 'text-white group-hover:text-blue-300'}`}>
                             {track.title}
                           </p>
                           {isSelected && (
-                            <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 border border-blue-500/40 font-bold shrink-0">
+                            <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/20 text-white border border-white/30 font-bold shrink-0">
                               ACTIVE
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                          <span className="px-1.5 py-0.2 rounded bg-zinc-800/80 text-zinc-300 text-[9px] uppercase font-mono tracking-wider">
+                        <div className={`flex items-center gap-1.5 text-[10px] ${isSelected ? 'text-blue-100/90' : 'text-zinc-400'}`}>
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] uppercase font-mono tracking-wider ${isSelected ? 'bg-white/20 text-white' : 'bg-zinc-800/80 text-zinc-300'}`}>
                             {track.genre}
                           </span>
-                          <span className="px-1.5 py-0.2 rounded bg-blue-950/40 text-blue-400 border border-blue-900/30 text-[9px] font-mono">
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono ${isSelected ? 'bg-white/20 text-white border border-white/20' : 'bg-[#1E1E1E] text-zinc-300 border border-[#2E2E2E]'}`}>
                             {track.bpm} BPM
                           </span>
-                          <span className="text-zinc-500 font-mono text-[10px]">
+                          <span className={`font-mono text-[10px] ${isSelected ? 'text-blue-100/90' : 'text-zinc-500'}`}>
                             {track.duration}
                           </span>
                         </div>
                       </div>
                     </div>
-
-                    
                   </div>
                 );
               })}
@@ -650,7 +616,45 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
         {/* ── Tab 2: Sound Effects ── */}
         {activeTab === 'sfx' && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
+            {/* Search & SFX Category in One Row */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-[140px]">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search sound effects..."
+                  className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="shrink-0 w-32 sm:w-36">
+                <CustomSelect
+                  value={selectedSfxCategory}
+                  onChange={(val) => setSelectedSfxCategory(val)}
+                  options={[
+                    { value: 'all', label: 'All SFX' },
+                    { value: 'Impact', label: '💥 Impacts' },
+                    { value: 'Transition', label: '⚡ Transitions' },
+                    { value: 'Tension', label: '⏳ Tension' },
+                    { value: 'Action', label: '🎯 Actions' },
+                  ]}
+                  variant="compact"
+                  align="right"
+                  buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
+                />
+              </div>
+            </div>
             {filteredSfx.map((sfx) => {
               const isPlaying = playingSfxId === sfx.id;
 

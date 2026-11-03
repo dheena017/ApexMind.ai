@@ -203,7 +203,7 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
             <div className="flex items-center gap-2.5">
               <h1 className="text-2xl font-extrabold tracking-tight text-white">Notifications & Alerts</h1>
               {counts.unread > 0 && (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#3B82F6]/20 text-[#60A5FA] border border-[#3B82F6]/30">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs">
                   {counts.unread} unread
                 </span>
               )}

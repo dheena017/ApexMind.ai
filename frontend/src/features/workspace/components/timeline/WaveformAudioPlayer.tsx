@@ -91,7 +91,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
       const ws = WaveSurfer.create({
         container: waveformContainerRef.current,
         waveColor: '#374151',
-        progressColor: '#3B82F6',
+        progressColor: '#2563EB',
         cursorColor: '#60A5FA',
         cursorWidth: 2,
         height: 28,
@@ -171,7 +171,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
         {/* Fallback Progress Line */}
         <div className="absolute bottom-0 inset-x-0 h-0.5 bg-[#262626] rounded-full overflow-hidden pointer-events-none">
           <div
-            className="h-full bg-[#3B82F6] transition-all"
+            className="h-full bg-[#2563EB] transition-all"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -196,7 +196,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
             type="button"
             onClick={onTogglePlay}
             aria-label={isPlaying ? 'Pause' : 'Play'}
-            className="w-6 h-6 rounded-full bg-[#3B82F6] hover:bg-[#2563EB] text-white flex items-center justify-center transition-all cursor-pointer border border-[#60A5FA]/30 active:scale-95 shadow-sm"
+            className="w-6 h-6 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white flex items-center justify-center transition-all cursor-pointer border border-[#60A5FA]/40 active:scale-95 shadow-sm"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
@@ -210,7 +210,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
           <button
             type="button"
             onClick={stepBackward}
-            className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+            className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer"
             title="Rewind 5s (←)"
             aria-label="Rewind 5 seconds"
           >
@@ -221,7 +221,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
           <button
             type="button"
             onClick={stepForward}
-            className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+            className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer"
             title="Forward 5s (→)"
             aria-label="Forward 5 seconds"
           >
@@ -245,8 +245,8 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
               onClick={onToggleLoop}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 isLooping
-                  ? 'bg-[#3B82F6]/20 text-[#60A5FA] border border-[#3B82F6]/30'
-                  : 'text-[#6B7280] hover:text-white hover:bg-white/[0.06]'
+                  ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40'
+                  : 'text-[#6B7280] hover:text-white hover:bg-[#26262C]'
               }`}
               title={isLooping ? 'Loop: Active' : 'Loop: Off'}
               aria-label="Toggle loop playback"
@@ -262,8 +262,8 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
               onClick={onToggleGuides}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 showGuides
-                  ? 'bg-[#3B82F6]/20 text-[#60A5FA] border border-[#3B82F6]/30'
-                  : 'text-[#6B7280] hover:text-white hover:bg-white/[0.06]'
+                  ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40'
+                  : 'text-[#6B7280] hover:text-white hover:bg-[#26262C]'
               }`}
               title={showGuides ? 'Hide Safe Zone' : 'Show Shorts Safe Zone'}
               aria-label="Toggle Shorts Safe Zone"
@@ -277,7 +277,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
             <button
               type="button"
               onClick={onOpenImageEditor}
-              className="p-1 rounded text-[#9CA3AF] hover:text-[#60A5FA] hover:bg-white/[0.06] transition-colors cursor-pointer"
+              className="p-1 rounded text-[#9CA3AF] hover:text-[#60A5FA] hover:bg-[#26262C] transition-colors cursor-pointer"
               title="Edit visual backdrop filters"
               aria-label="Open image editor"
             >
@@ -290,7 +290,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
             <button
               type="button"
               onClick={onToggleMute}
-              className="p-0.5 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+              className="p-0.5 rounded text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer"
               title={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted || volume === 0 ? (
@@ -310,7 +310,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
               value={isMuted ? 0 : volume}
               onChange={(e) => onVolumeChange(Number(e.target.value))}
               aria-label="Volume slider"
-              className="w-10 h-1 bg-[#262626] rounded-full accent-[#3B82F6] cursor-pointer"
+              className="w-10 h-1 bg-[#262626] rounded-full accent-[#2563EB] cursor-pointer"
             />
           </div>
 
@@ -338,8 +338,8 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
                     }}
                     className={`px-2 py-0.5 text-[9px] font-mono-studio rounded-md text-left transition-colors cursor-pointer ${
                       playbackRate === rate
-                        ? 'bg-[#3B82F6]/20 text-[#60A5FA] font-bold'
-                        : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.04]'
+                        ? 'bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40'
+                        : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C]'
                     }`}
                   >
                     {rate}x
@@ -353,7 +353,7 @@ export const WaveformAudioPlayer: React.FC<WaveformAudioPlayerProps> = ({
           <button
             type="button"
             onClick={onToggleFullscreen}
-            className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+            className="p-1 rounded text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? (

@@ -458,55 +458,56 @@ export const TextPane: React.FC<TextPaneProps> = ({
           </button>
         </div>
       </div>
-      {/* ── Unified Search, Dropdown & Mood Bar (Presets & Hooks) ── */}
+      {/* ── Unified Search & Dropdown Bar (Presets & Hooks) ── */}
       {(activeTab === 'presets' || activeTab === 'hooks') && (
-        <div className="flex flex-col gap-2 border-b border-[#242424] bg-[#141416] p-3 shrink-0">
-          {/* Search Row */}
-          <div className="relative w-full">
-            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                activeTab === 'presets'
-                  ? 'Search 10M+ typography styles (Hormozi, MrBeast, Vox, Minimal)...'
-                  : 'Search viral hooks (stoic, fitness, wealth)...'
-              }
-              className="w-full bg-[#181818] border border-[#242424] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Curated Style & Mood Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pt-0.5 pb-0.5">
-            {CURATED_STYLE_PILLS.map((pill) => {
-              const isActive =
-                (pill.query === '' && !searchQuery && selectedCategory === 'all') ||
-                (pill.query !== '' && searchQuery.toLowerCase() === pill.query.toLowerCase());
-              return (
+        <div className="border-b border-[#242424] bg-[#141416] p-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-[140px]">
+              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
+                  activeTab === 'presets'
+                    ? 'Search 10M+ typography styles...'
+                    : 'Search viral hooks (stoic, fitness, wealth)...'
+                }
+                className="w-full bg-[#181818] border border-[#242424] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-all"
+              />
+              {searchQuery && (
                 <button
-                  key={pill.id}
                   type="button"
-                  onClick={() => handleMoodPillSelect(pill)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
-                    isActive
-                      ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-                      : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#25252A] border-[#242424]'
-                  }`}
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
                 >
-                  {pill.label}
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              );
-            })}
+              )}
+            </div>
+
+            <div className="shrink-0 w-36 sm:w-40">
+              <CustomSelect
+                value={
+                  CURATED_STYLE_PILLS.find(
+                    (p) =>
+                      (p.query === '' && !searchQuery && selectedCategory === 'all') ||
+                      (p.query !== '' && searchQuery.toLowerCase() === p.query.toLowerCase())
+                  )?.id || 'all'
+                }
+                onChange={(val) => {
+                  const pill = CURATED_STYLE_PILLS.find((p) => p.id === val);
+                  if (pill) handleMoodPillSelect(pill);
+                }}
+                options={CURATED_STYLE_PILLS.map((p) => ({
+                  value: p.id,
+                  label: p.label,
+                }))}
+                variant="compact"
+                align="right"
+                buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -559,7 +560,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                             </span>
                           )}
                           {preset.animationType && (
-                            <span className="text-[9px] font-mono-studio text-blue-400 bg-blue-950/60 px-1 rounded border border-blue-500/30 shrink-0">
+                            <span className="text-[9px] font-mono-studio text-zinc-300 bg-[#1E1E1E] px-1 rounded border border-[#2E2E2E] shrink-0">
                               {preset.animationType}
                             </span>
                           )}

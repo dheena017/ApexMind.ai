@@ -198,7 +198,7 @@ export const TimelineAddTrackMenu: React.FC<TimelineAddTrackMenuProps> = ({
   return createPortal(
     <div
       ref={menuRef}
-      className="fixed w-64 overflow-y-auto bg-[#16161B] border border-[#2B2B36] shadow-2xl p-2 z-[99999] flex flex-col gap-1 rounded-xl select-none"
+      className="fixed w-64 overflow-y-auto bg-[#141414] border border-[#242424] shadow-2xl p-2 z-[99999] flex flex-col gap-1 rounded-xl select-none"
       style={{
         ...(position.top !== undefined ? { top: `${position.top}px` } : {}),
         ...(position.bottom !== undefined ? { bottom: `${position.bottom}px` } : {}),

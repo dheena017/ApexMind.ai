@@ -418,7 +418,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   <div>
                     <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
                       AI Voice Tone & Emotion Modulation
-                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-950/60 text-blue-400 border border-blue-500/30 font-mono">
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#1E1E1E] text-zinc-300 border border-[#2E2E2E] font-mono">
                         Active
                       </span>
                     </h4>
@@ -541,7 +541,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     onClick={() => onPlaybackRateChange?.(rate)}
                     className={`py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                       playbackRate === rate
-                        ? 'bg-[#3B82F6] border-transparent text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
                         : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
                     }`}
                   >
@@ -567,12 +567,12 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     onClick={() => handleApplyEQ(preset)}
                     className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
                       activeEQ === preset.id
-                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                        : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                     }`}
                   >
                     <p className="text-xs font-bold text-white mb-0.5">{preset.label}</p>
-                    <p className="text-[9px] text-slate-500">{preset.desc}</p>
+                    <p className={`text-[9.5px] ${activeEQ === preset.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{preset.desc}</p>
                   </button>
                 ))}
               </div>
@@ -635,7 +635,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     onClick={() => setReverb(rev.id)}
                     className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition-colors ${
                       reverb === rev.id
-                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
                         : 'bg-[#111111] border-[#242424] text-slate-400 hover:text-white'
                     }`}
                   >
@@ -754,7 +754,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setDucking(!ducking)}
                   className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    ducking ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                    ducking ? 'bg-[#2563EB]' : 'bg-[#242424]'
                   }`}
                 >
                   <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${ducking ? 'left-5' : 'left-1'}`} />
@@ -880,7 +880,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 type="button"
                 onClick={() => setLoopAudio(!loopAudio)}
                 className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                  loopAudio ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                  loopAudio ? 'bg-[#2563EB]' : 'bg-[#242424]'
                 }`}
               >
                 <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${loopAudio ? 'left-5' : 'left-1'}`} />

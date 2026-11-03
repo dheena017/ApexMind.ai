@@ -291,78 +291,35 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     },
   });
 
-  // ── Render Move Controls (Drag Handle + Up / Down Arrows) ─────────────
+  // ── Render Move Controls (Enhanced UI/UX Drag Handle) ─────────────────
   const renderMoveControls = (trackId: TrackId) => {
-    const isFirst = visibleEnabledTracks[0] === trackId;
-    const isLast = visibleEnabledTracks[visibleEnabledTracks.length - 1] === trackId;
+    const isDraggingThis = draggedTrackId === trackId;
 
     return (
-      <div className="flex items-center gap-0.5 shrink-0 -ml-0.5 mr-1">
-        {/* Drag Reorder Handle */}
-        <div
-          draggable
-          onDragStart={(e) => {
-            e.stopPropagation();
-            e.dataTransfer.setData('text/plain', trackId);
-            e.dataTransfer.effectAllowed = 'move';
-            setDraggedTrackId(trackId);
-          }}
-          onDragEnd={() => {
-            setDraggedTrackId(null);
-            setDragOverTrackId(null);
-          }}
-          className={`flex items-center justify-center w-5 h-5 rounded cursor-grab active:cursor-grabbing transition-all duration-150 ${
-            draggedTrackId === trackId
-              ? 'text-amber-400 bg-amber-500/20 scale-110'
-              : 'text-zinc-600 hover:text-zinc-200 hover:bg-white/10 active:bg-white/20'
-          }`}
-          title="Drag up or down to reorder track"
-          aria-label={`Drag to reorder ${trackId} track`}
-        >
-          <GripVertical className="w-3 h-3" />
-        </div>
-
-        {/* Move Up / Down Buttons */}
-        <div className="flex flex-col items-center justify-center gap-px">
-          <button
-            type="button"
-            disabled={isFirst}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMove(trackId, 'up');
-            }}
-            title={isFirst ? 'Already at top' : 'Move track up'}
-            aria-label={`Move ${trackId} track up`}
-            className={`flex items-center justify-center w-4 h-3.5 rounded-sm transition-all duration-150 ${
-              isFirst
-                ? 'opacity-15 cursor-not-allowed text-zinc-700'
-                : 'text-zinc-400 hover:text-white hover:bg-white/15 cursor-pointer active:scale-90 active:bg-amber-500/20 active:text-amber-300'
-            }`}
-          >
-            <ChevronUp className="w-2.5 h-2.5" />
-          </button>
-          <button
-            type="button"
-            disabled={isLast}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMove(trackId, 'down');
-            }}
-            title={isLast ? 'Already at bottom' : 'Move track down'}
-            aria-label={`Move ${trackId} track down`}
-            className={`flex items-center justify-center w-4 h-3.5 rounded-sm transition-all duration-150 ${
-              isLast
-                ? 'opacity-15 cursor-not-allowed text-zinc-700'
-                : 'text-zinc-400 hover:text-white hover:bg-white/15 cursor-pointer active:scale-90 active:bg-amber-500/20 active:text-amber-300'
-            }`}
-          >
-            <ChevronDown className="w-2.5 h-2.5" />
-          </button>
-        </div>
+      <div
+        draggable
+        onDragStart={(e) => {
+          e.stopPropagation();
+          e.dataTransfer.setData('text/plain', trackId);
+          e.dataTransfer.effectAllowed = 'move';
+          setDraggedTrackId(trackId);
+        }}
+        onDragEnd={() => {
+          setDraggedTrackId(null);
+          setDragOverTrackId(null);
+        }}
+        className={`flex items-center justify-center w-5 h-6 rounded-md cursor-grab active:cursor-grabbing transition-all duration-150 shrink-0 select-none ${
+          isDraggingThis
+            ? 'text-[#60A5FA] bg-blue-500/25 ring-1 ring-[#3B82F6] scale-105 shadow-md shadow-blue-950/40'
+            : 'text-zinc-600 hover:text-zinc-200 hover:bg-white/[0.08] active:scale-95'
+        }`}
+        title="Drag up or down to reorder track position"
+        aria-label={`Drag to reorder ${trackId} track`}
+      >
+        <GripVertical className="w-3.5 h-3.5" />
       </div>
     );
   };
-
   // ── Render standard Visibility Button (Eye) ──────────────────────────
   const renderEyeButton = (isVisible: boolean, onToggle: () => void, label: string) => (
     <button
@@ -431,7 +388,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onClick={() => onSelectClip({ track: 'video', all: true }, 'video')}
       style={{ height: `${videoTrackHeight}px` }}
       className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
-        dragOverTrackId === 'video' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+        dragOverTrackId === 'video' ? 'bg-blue-500/15 border-t-2 border-t-[#3B82F6] shadow-inner' : ''
       } ${draggedTrackId === 'video' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'video'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F59E0B]'
@@ -473,7 +430,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onClick={() => onSelectClip({ track: 'image', all: true }, 'video')}
       style={{ height: `${imageTrackHeight}px` }}
       className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
-        dragOverTrackId === 'image' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+        dragOverTrackId === 'image' ? 'bg-blue-500/15 border-t-2 border-t-[#3B82F6] shadow-inner' : ''
       } ${draggedTrackId === 'image' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'image'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F43F5E]'
@@ -514,7 +471,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onClick={() => onSelectClip({ track: 'overlay', all: true }, 'overlay')}
       style={{ height: `${overlayTrackHeight}px` }}
       className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
-        dragOverTrackId === 'overlay' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+        dragOverTrackId === 'overlay' ? 'bg-blue-500/15 border-t-2 border-t-[#3B82F6] shadow-inner' : ''
       } ${draggedTrackId === 'overlay' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'overlay'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#8B5CF6]'
@@ -555,7 +512,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onClick={() => onSelectClip({ track: 'caption', all: true }, 'text')}
       style={{ height: `${captionTrackHeight}px` }}
       className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
-        dragOverTrackId === 'captions' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+        dragOverTrackId === 'captions' ? 'bg-blue-500/15 border-t-2 border-t-[#3B82F6] shadow-inner' : ''
       } ${draggedTrackId === 'captions' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'caption'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#06B6D4]'
@@ -599,7 +556,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onClick={() => onSelectClip({ track: 'title', all: true }, 'text')}
       style={{ height: `${titleTrackHeight}px` }}
       className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
-        dragOverTrackId === 'title' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+        dragOverTrackId === 'title' ? 'bg-blue-500/15 border-t-2 border-t-[#3B82F6] shadow-inner' : ''
       } ${draggedTrackId === 'title' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'title'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#38BDF8]'
@@ -635,7 +592,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onClick={() => onSelectClip({ track: 'voice', all: true }, 'voice')}
       style={{ height: `${voiceTrackHeight}px` }}
       className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
-        dragOverTrackId === 'voice' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+        dragOverTrackId === 'voice' ? 'bg-blue-500/15 border-t-2 border-t-[#3B82F6] shadow-inner' : ''
       } ${draggedTrackId === 'voice' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'voice'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#10B981]'
@@ -676,7 +633,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onClick={() => onSelectClip({ track: 'music', all: true }, 'music')}
       style={{ height: `${musicTrackHeight}px` }}
       className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
-        dragOverTrackId === 'music' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+        dragOverTrackId === 'music' ? 'bg-blue-500/15 border-t-2 border-t-[#3B82F6] shadow-inner' : ''
       } ${draggedTrackId === 'music' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'music'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#D946EF]'
@@ -717,7 +674,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       onClick={() => onSelectClip({ track: 'sfx', all: true }, 'music')}
       style={{ height: `${sfxTrackHeight}px` }}
       className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
-        dragOverTrackId === 'sfx' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
+        dragOverTrackId === 'sfx' ? 'bg-blue-500/15 border-t-2 border-t-[#3B82F6] shadow-inner' : ''
       } ${draggedTrackId === 'sfx' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'sfx'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F97316]'

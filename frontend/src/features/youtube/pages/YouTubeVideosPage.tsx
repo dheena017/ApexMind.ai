@@ -68,12 +68,12 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search channel videos and quizzes..."
-            className="w-full bg-[#121212] border border-[#2F2F2F] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-[#6B7280] outline-none focus:border-[#3B82F6] transition-colors"
+            className="w-full bg-[#141414] border border-[#242424] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-[#6B7280] outline-none focus:border-[#3B82F6] transition-colors"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[#121212] border border-[#2F2F2F]">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-[#141414] border border-[#242424]">
             {(['latest', 'popular', 'oldest'] as const).map((sort) => (
               <button
                 key={sort}
@@ -81,8 +81,8 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
                 onClick={() => setActiveSort(sort)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer ${
                   activeSort === sort
-                    ? 'bg-[#3B82F6]/20 border border-[#3B82F6]/40 text-[#60A5FA]'
-                    : 'text-[#9CA3AF] hover:text-white border border-transparent'
+                    ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs'
+                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
                 }`}
               >
                 {sort}
@@ -103,7 +103,7 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
       </div>
 
       {/* ── Channel Videos Grid ── */}
-      <Card className="bg-[#141414] border-[#2F2F2F] p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl space-y-5">
+      <Card className="bg-[#141414] border-[#242424] p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#262626]">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
@@ -147,7 +147,7 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
               <div
                 key={video.id}
                 onClick={() => setSelectedVideo(video)}
-                className="rounded-2xl bg-[#121212] border border-[#2F2F2F] overflow-hidden hover:border-[#3B82F6] transition-all flex flex-col justify-between group cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-black/60"
+                className="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden hover:border-[#3B82F6] transition-all flex flex-col justify-between group cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-black/60"
               >
                 {/* 16:9 Thumbnail Image */}
                 <div className="aspect-video w-full relative overflow-hidden bg-[#0A0A0A] border-b border-[#262626]">

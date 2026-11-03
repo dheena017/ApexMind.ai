@@ -154,44 +154,47 @@ export default function AppLayout({
           Other Pages: Standard Application Header, Main Framing, and Slide Drawer
           ========================================================================= */}
       {isWorkspace ? (
-        <div className="flex-1 w-full h-full flex flex-col min-h-0 overflow-hidden">
-          {/* Top Full-Width Studio Header */}
-          <WorkspaceHeader
-            user={user}
-            unreadCount={unreadCount}
-            onNavigate={onNavigate}
-          />
-          {/* Mobile Tab Bar: Visible only below 640px, directly under header */}
-          <WorkspaceMobileTabs
+        <div className="flex-1 w-full h-full flex flex-row min-h-0 overflow-hidden">
+          {/* Left Vertical Studio Sidebar - Full Screen Height */}
+          <WorkspaceSidebar
+            mode="desktop-only"
             activeTab={activeWorkspacePane}
             onTabChange={(tab) => onWorkspacePaneChange(tab)}
             onNavigate={onNavigate}
           />
 
-          {/* Main Studio Body: Sidebar on the left under header, docked panes in center */}
-          <div className="flex-1 w-full flex flex-row min-h-0 overflow-hidden">
-            <WorkspaceSidebar
-              mode="desktop-only"
+          {/* Right Main Studio Column: Header at top, Panes in center, Status bar at bottom */}
+          <div className="flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden">
+            {/* Studio Header sits to the right of the full-height left bar */}
+            <WorkspaceHeader
+              user={user}
+              unreadCount={unreadCount}
+              onNavigate={onNavigate}
+            />
+
+            {/* Mobile Tab Bar: Visible only below 640px, under header */}
+            <WorkspaceMobileTabs
               activeTab={activeWorkspacePane}
               onTabChange={(tab) => onWorkspacePaneChange(tab)}
               onNavigate={onNavigate}
             />
 
+            {/* Main Studio Body: Docked panes in center */}
             <main className="flex-1 min-w-0 min-h-0 p-0 overflow-hidden flex flex-col bg-[#0A0A0A]">
               <div className="w-full h-full flex-1 min-h-0">
                 {children}
               </div>
             </main>
-          </div>
 
-          {/* Bottom Docked Status Bar */}
-          <WorkspaceStatusBar
-            activePage={activePage}
-            onNavigate={onNavigate}
-            activeWorkspacePane={activeWorkspacePane}
-            onWorkspacePaneChange={onWorkspacePaneChange}
-            workspaceStatus={workspaceStatus}
-          />
+            {/* Bottom Docked Status Bar */}
+            <WorkspaceStatusBar
+              activePage={activePage}
+              onNavigate={onNavigate}
+              activeWorkspacePane={activeWorkspacePane}
+              onWorkspacePaneChange={onWorkspacePaneChange}
+              workspaceStatus={workspaceStatus}
+            />
+          </div>
         </div>
       ) : (
         <>
@@ -244,7 +247,7 @@ export default function AppLayout({
 
               <button
                 onClick={() => onNavigate('profile')}
-                className="h-7.5 w-7.5 rounded-lg border border-[#2A2A2A] bg-[#161616] hover:bg-[#1E1E1E] hover:border-[#3D3D3D] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/40"
+                className="h-7.5 w-7.5 rounded-lg border border-[#2A2A2A] bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/40"
                 title={user ? `${user.name} (${user.email})` : 'Profile & Badges'}
                 aria-label="Open profile"
               >
@@ -264,8 +267,8 @@ export default function AppLayout({
           </header>
 
           {/* Standard Main Framing */}
-          <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A] p-2 sm:p-3.5 lg:p-4">
-            <div className="w-full rounded-2xl sm:rounded-3xl bg-[#101010]/80 border border-[#2F2F2F] shadow-2xl p-3.5 sm:p-5 lg:p-6 transition-all">
+          <main className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-[#0A0A0A] p-3 sm:p-5 lg:p-6 custom-scrollbar">
+            <div className="w-full max-w-7xl mx-auto space-y-6 transition-all">
               {children}
             </div>
           </main>
@@ -309,7 +312,7 @@ export default function AppLayout({
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-[#2F2F2F] hover:border-[#4A4A4A] transition-all cursor-pointer"
+            className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#26262C] border border-[#242424] hover:border-white/10 transition-all cursor-pointer"
             aria-label="Close sidebar"
             title="Close sidebar"
           >
@@ -339,7 +342,7 @@ export default function AppLayout({
                   <div className="flex items-center gap-3.5">
                     <span
                       className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all ${
-                        isActive ? 'bg-white/20 border-white/30 text-white' : 'bg-[#181818] border-[#242424] text-[#9CA3AF] group-hover:text-white group-hover:bg-[#202026]'
+                        isActive ? 'bg-white/20 border-white/30 text-white' : 'bg-[#181818] border-[#242424] text-[#9CA3AF] group-hover:text-white group-hover:bg-[#26262C]'
                       }`}
                     >
                       {item.icon}
@@ -359,7 +362,7 @@ export default function AppLayout({
           {user && (
             <button
               onClick={() => handleNavClick('profile')}
-              className="w-full p-2.5 rounded-xl bg-[#0A0A0A] border border-[#2F2F2F] hover:border-[#3B82F6]/35 hover:bg-[#111827]/50 flex items-center gap-2.5 text-left transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50"
+              className="w-full p-2.5 rounded-xl bg-[#0A0A0A] border border-[#2F2F2F] hover:border-[#3B82F6]/35 hover:bg-[#26262C] hover:border-white/10 flex items-center gap-2.5 text-left transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50"
               aria-label="Open profile and badges"
             >
               {user.avatarUrl ? (

@@ -184,7 +184,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   onSelectImage,
   activeImageUrl,
 }) => {
-  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'filters' | 'saved'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'filters' | 'saved' | 'history'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>('all');
@@ -459,7 +459,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     setVignette(true);
   };
 
-  const sourceList = activeTab === 'saved' ? savedImages : images;
+  const sourceList = activeTab === 'saved' ? savedImages : activeTab === 'history' ? recentImages : images;
 
   // Render provider badge
   const renderSourceBadge = (source?: string) => {
@@ -589,12 +589,11 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           </button>
         </div>
       </div>
-      {/* ── Search & Provider Bar (When in Catalog) ── */}
+      {/* ── Search & Filter Bar (When in Catalog) ── */}
       {activeTab === 'catalog' && (
         <div className="flex flex-col gap-2 border-b border-[#242424] bg-[#141416] p-3 shrink-0">
-          {/* Unified Search Input + Provider Select */}
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-[140px]">
               <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
@@ -603,8 +602,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   setSearchQuery(e.target.value);
                   setSelectedCategory('all');
                 }}
-                placeholder="Search 100M+ stock photos (e.g. rain, gym, stoic, neon)..."
-                className="w-full bg-[#181818] border border-[#242424] focus:border-blue-500/70 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
+                placeholder="Search 100M+ stock photos..."
+                className="w-full bg-[#181818] border border-[#242424] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-all"
               />
               {searchQuery && (
                 <button
@@ -620,40 +619,54 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               )}
             </div>
 
-            {/* Provider Dropdown */}
-            <div className="shrink-0 w-44 sm:w-48">
+            {/* Mood / Theme Dropdown */}
+            <div className="shrink-0 w-36 sm:w-40">
               <CustomSelect
-                options={providerSelectOptions}
-                value={selectedProvider}
-                onChange={handleProviderSelect}
+                options={CURATED_MOOD_PILLS.map((p) => ({
+                  value: p.id,
+                  label: p.label,
+                }))}
+                value={
+                  CURATED_MOOD_PILLS.find(
+                    (p) =>
+                      (p.query === '' && !searchQuery && selectedCategory === 'all') ||
+                      (p.query !== '' && searchQuery.toLowerCase() === p.query.toLowerCase())
+                  )?.id || 'all'
+                }
+                onChange={(val) => {
+                  const pill = CURATED_MOOD_PILLS.find((p) => p.id === val);
+                  if (pill) handleMoodPillSelect(pill);
+                }}
                 variant="compact"
-                buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-[11px] !py-2 !px-3 font-semibold hover:!border-blue-500/60"
-                menuClassName="!w-64 !bg-[#181818] !border-[#242424] shadow-2xl"
+                align="right"
+                buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
               />
             </div>
           </div>
 
-          {/* Curated Mood / Theme Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pt-0.5 pb-0.5">
-            {CURATED_MOOD_PILLS.map((pill) => {
-              const isActive =
-                (pill.query === '' && !searchQuery) ||
-                (pill.query !== '' && searchQuery.toLowerCase() === pill.query);
-              return (
-                <button
-                  key={pill.id}
-                  type="button"
-                  onClick={() => handleMoodPillSelect(pill)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
-                    isActive
-                      ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-                      : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#25252A] border-[#242424]'
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              );
-            })}
+          {/* Provider Quick Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {[
+              { id: 'all', label: '✨ All (100M+)' },
+              { id: 'unsplash', label: 'Unsplash' },
+              { id: 'pexels', label: 'Pexels' },
+              { id: 'pixabay', label: 'Pixabay' },
+              { id: 'wikimedia', label: 'Wikimedia' },
+              { id: 'flickr', label: 'Flickr HD' },
+            ].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => handleProviderSelect(p.id)}
+                className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
+                  selectedProvider === p.id
+                    ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
+                    : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#26262C] border border-[#242424]'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -875,16 +888,18 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
             </div>
           </div>
-        ) : activeTab === 'catalog' || activeTab === 'saved' ? (
+        ) : activeTab === 'catalog' || activeTab === 'saved' || activeTab === 'history' ? (
           /* Catalog or Saved Images Grid */
           <>
-            {/* Recently Used Carousel */}
-            {activeTab === 'catalog' && recentImages.length > 0 && !searchQuery && (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono-studio text-slate-500 uppercase flex items-center gap-1">
-                    <History className="w-3 h-3" /> Recently Used
-                  </span>
+            {/* Dedicated History Tab Header with Clear button */}
+            {activeTab === 'history' && (
+              <div className="flex items-center justify-between pb-1 border-b border-[#242424]">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                  <History className="w-3.5 h-3.5 text-[#60A5FA]" />
+                  <span>Recently Used Images</span>
+                  <span className="text-[10px] font-mono font-normal text-zinc-400">({recentImages.length})</span>
+                </div>
+                {recentImages.length > 0 && (
                   <button
                     type="button"
                     onClick={() => {
@@ -893,42 +908,31 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                         localStorage.removeItem(RECENT_IMAGES_KEY);
                       } catch {}
                     }}
-                    className="text-[9px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-                    title="Clear Recently Used"
+                    className="text-[10px] text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer flex items-center gap-1"
+                    title="Clear Recently Used History"
                   >
-                    Clear
+                    <Trash2 className="w-3 h-3" />
+                    <span>Clear</span>
                   </button>
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-                  {recentImages.map((rec) => (
-                    <button
-                      key={rec.id}
-                      type="button"
-                      onClick={() => handleApply(rec)}
-                      className="w-16 h-20 rounded-lg overflow-hidden border border-[#242424] hover:border-[#3B82F6] shrink-0 relative group cursor-pointer"
-                    >
-                      <img
-                        src={rec.thumbnail}
-                        alt={rec.title}
-                        className="w-full h-full object-cover"
-                        onError={() => {
-                          setRecentImages((prev) => {
-                            const filtered = prev.filter((item) => item.id !== rec.id);
-                            try {
-                              localStorage.setItem(RECENT_IMAGES_KEY, JSON.stringify(filtered));
-                            } catch {}
-                            return filtered;
-                          });
-                        }}
-                      />
-                      {activeImageUrl === rec.url && (
-                        <div className="absolute inset-0 bg-[#3B82F6]/40 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white stroke-[3]" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                )}
+              </div>
+            )}
+
+            {/* Empty History State */}
+            {activeTab === 'history' && recentImages.length === 0 && (
+              <div className="bg-[#181818] border border-[#242424] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
+                <History className="w-8 h-8 text-[#52525B]" />
+                <p className="text-xs font-bold text-white">No Recent Images</p>
+                <p className="text-[11px] text-slate-400 max-w-xs">
+                  Images you apply to your canvas will appear here for fast access.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('catalog')}
+                  className="mt-2 bg-[#3B82F6] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#2563EB] transition-colors cursor-pointer"
+                >
+                  Browse Catalog
+                </button>
               </div>
             )}
 

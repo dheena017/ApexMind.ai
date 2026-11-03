@@ -19,10 +19,10 @@ export const Button: React.FC<ButtonProps> = ({
   const base = 'inline-flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0 rounded-xl';
 
   const variants = {
-    primary: 'bg-[#3B82F6] hover:bg-[#2563EB] text-white border border-[#3B82F6] active:scale-[0.99]',
-    secondary: 'bg-[#121212] hover:bg-[#1E1E1E] text-[#E5E5E5] border border-[#2F2F2F]',
-    outline: 'border border-[#2F2F2F] hover:border-[#3B82F6]/50 hover:bg-[#3B82F6]/10 text-[#9CA3AF] hover:text-[#E5E5E5]',
-    ghost: 'hover:bg-[#1E1E1E] text-[#9CA3AF] hover:text-[#E5E5E5]',
+    primary: 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white border border-[#60A5FA]/40 shadow-xs active:scale-[0.99]',
+    secondary: 'bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border border-[#242424] hover:border-white/10',
+    outline: 'border border-[#242424] hover:border-white/10 hover:bg-[#26262C] text-[#9CA3AF] hover:text-white',
+    ghost: 'hover:bg-[#26262C] text-[#9CA3AF] hover:text-white',
     danger: 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30',
   };
 
@@ -54,8 +54,8 @@ export const Card: React.FC<{
   return (
     <div
       onClick={onClick}
-      className={`bg-[#1E1E1E] border border-[#2F2F2F] rounded-2xl p-5 ${
-        hoverable ? 'hover:border-[#4A4A4A] transition-all cursor-pointer' : ''
+      className={`bg-[#141414] border border-[#242424] rounded-2xl p-5 ${
+        hoverable ? 'hover:bg-[#181818] hover:border-white/10 transition-all cursor-pointer' : ''
       } ${className}`}
     >
       {children}
@@ -76,7 +76,7 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
       <div className="relative flex items-center">
         {icon && <div className="absolute left-3.5 text-[#6B7280] pointer-events-none">{icon}</div>}
         <input
-          className={`w-full bg-[#121212] border border-[#2F2F2F] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30 text-[#E5E5E5] placeholder-[#6B7280] text-sm rounded-xl py-2.5 ${
+          className={`w-full bg-[#181818] border border-[#242424] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 text-[#E5E5E5] placeholder-[#6B7280] text-sm rounded-xl py-2.5 ${
             icon ? 'pl-10' : 'pl-3.5'
           } pr-3.5 transition-colors outline-none`}
           {...props}
@@ -93,9 +93,9 @@ export const Badge: React.FC<{ children: React.ReactNode; variant?: 'blue' | 'pu
   className = '',
 }) => {
   const styles = {
-    blue: 'bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#60A5FA]',
-    purple: 'bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#60A5FA]',
-    cyan: 'bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#60A5FA]',
+    blue: 'bg-[#2563EB] border border-[#60A5FA]/40 text-white font-bold shadow-xs',
+    purple: 'bg-[#181818] border border-[#242424] text-purple-400',
+    cyan: 'bg-[#181818] border border-[#242424] text-cyan-400',
     green: 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400',
     amber: 'bg-amber-500/10 border border-amber-500/20 text-amber-300',
     crimson: 'bg-red-500/10 border border-red-500/20 text-red-400',
@@ -120,12 +120,12 @@ export const Modal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-[#1E1E1E] border border-[#2F2F2F] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up">
-        <div className="flex items-center justify-between p-5 border-b border-[#2F2F2F]">
+      <div className="bg-[#141414] border border-[#242424] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up">
+        <div className="flex items-center justify-between p-5 border-b border-[#242424]">
           <h3 className="text-lg font-bold text-[#E5E5E5]">{title}</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#2A2A2A] transition-colors"
+            className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#26262C] hover:text-white transition-colors"
           >
             ✕
           </button>
@@ -144,7 +144,7 @@ export const Tabs: React.FC<{
   className?: string;
 }> = ({ options, activeId, onChange, className = '' }) => {
   return (
-    <div className={`flex items-center gap-1 p-1 bg-[#121212] border border-[#2F2F2F] rounded-xl ${className}`}>
+    <div className={`flex items-center gap-1 p-1 bg-[#141414] border border-[#242424] rounded-xl ${className}`}>
       {options.map((opt) => (
         <button
           key={opt.id}

@@ -568,7 +568,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                     onClick={() => setImportUse(option.id)}
                     className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
                       importUse === option.id
-                        ? 'bg-[#1E293B] text-[#BFDBFE] border-[#3B82F6]'
+                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
                         : 'bg-[#111111] text-slate-400 border-[#242424] hover:text-white'
                     }`}
                   >

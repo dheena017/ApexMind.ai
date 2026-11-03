@@ -280,7 +280,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border ${
               activeCompound === 'home' || activeCompound === 'project'
                 ? 'bg-blue-600/30 text-sky-200 border-sky-400/40 shadow-xs font-semibold'
-                : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border-[#242424]'
+                : 'bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border-[#242424] hover:border-white/10'
             }`}
             title="Go to Project Home Studio"
           >
@@ -293,7 +293,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             <button
               type="button"
               onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[10px] text-slate-300 hover:text-white transition-colors cursor-pointer border border-[#242424]"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#181818] hover:bg-[#26262C] text-[10px] text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#242424] hover:border-white/10"
               title="Switch inspector compound"
             >
               <span>Switch</span>
@@ -302,7 +302,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
 
             {/* Switcher Menu Popup */}
             {isSwitcherOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-52 bg-[#18181C] border border-[#2E2E36] rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-scale-up">
+              <div className="absolute right-0 top-full mt-1.5 w-52 bg-[#141414] border border-[#242424] rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-scale-up">
                 {[
                   { id: 'home' as CompoundType, label: 'Home (Project Studio)', icon: Home },
                   { id: 'video' as CompoundType, label: customImageUrl ? 'Image Inspector (V2)' : 'Video Backdrop (V1)', icon: customImageUrl ? ImageIcon : Film },
@@ -321,8 +321,8 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
                       onClick={() => handleSwitchCompound(c.id)}
                       className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer text-left ${
                         isCurrent
-                          ? 'bg-[#3B82F6]/20 text-white font-medium'
-                          : 'text-[#9CA3AF] hover:text-white hover:bg-[#222228]'
+                          ? 'bg-[#2563EB] text-white font-medium border border-[#60A5FA]/40'
+                          : 'text-zinc-400 hover:text-white hover:bg-[#26262C]'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />

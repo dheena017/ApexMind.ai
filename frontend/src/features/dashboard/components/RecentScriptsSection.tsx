@@ -81,7 +81,7 @@ export const RecentScriptsSection: React.FC<RecentScriptsSectionProps> = ({
             >
               <div className="space-y-1 flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-[#60A5FA] bg-[#3B82F6]/10 px-2 py-0.5 rounded border border-[#3B82F6]/20">
+                  <span className="text-[10px] font-bold text-white bg-[#2563EB] px-2 py-0.5 rounded border border-[#60A5FA]/40 shadow-xs">
                     {script.category || 'Stoic Mindset'}
                   </span>
                   <span className="text-xs font-bold text-white truncate">

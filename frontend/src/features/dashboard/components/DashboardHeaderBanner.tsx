@@ -31,7 +31,7 @@ export const DashboardHeaderBanner: React.FC<DashboardHeaderBannerProps> = ({
   });
 
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#141414] via-[#121212] to-[#0D1526] border border-[#2F2F2F] p-5 sm:p-7 shadow-2xl">
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#111116] via-[#14141A] to-[#0D1526] border border-[#24242A] p-5 sm:p-7 shadow-2xl">
       {/* Background Ambient Glows */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-[#3B82F6]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
       <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-[#2563EB]/5 rounded-full blur-2xl pointer-events-none" />
@@ -40,7 +40,7 @@ export const DashboardHeaderBanner: React.FC<DashboardHeaderBannerProps> = ({
         {/* Left: User greeting and inspirational title */}
         <div className="space-y-2.5 max-w-2xl">
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-            <span className="px-2.5 py-1 rounded-full bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30 flex items-center gap-1.5">
+            <span className="px-2.5 py-1 rounded-full bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
               AI Motivational Studio
             </span>

@@ -190,7 +190,7 @@ export const RecentStudioActivity: React.FC<RecentStudioActivityProps> = ({
                   onClick={() => setFilterType('all')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     filterType === 'all'
-                      ? 'bg-[#1E293B] text-white border border-[#3B82F6]/40'
+                      ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs'
                       : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >

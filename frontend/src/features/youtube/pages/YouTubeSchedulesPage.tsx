@@ -334,7 +334,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
     if (lower.includes('focus') || lower.includes('flow')) {
       return { icon: '🧠', gradient: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300', dot: 'bg-indigo-400', badgeText: 'Deep Focus' };
     }
-    return { icon: '⚡', gradient: 'bg-blue-500/15 border-blue-500/30 text-blue-300', dot: 'bg-blue-400', badgeText: 'Motivation' };
+    return { icon: '⚡', gradient: 'bg-[#181818] border-[#242424] text-zinc-300', dot: 'bg-white', badgeText: 'Motivation' };
   };
 
   const formatScheduleLabel = (val?: string): string => {
@@ -443,7 +443,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Daily Schedule</span>
@@ -510,7 +510,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all shadow-lg shadow-blue-500/20 flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs transition-all shadow-lg shadow-blue-500/20 flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Daily Schedule</span>
@@ -546,7 +546,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Create First Schedule</span>
@@ -680,7 +680,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                           nextRunInfo.isPast
                             ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
-                            : 'bg-blue-500/15 text-blue-300 border-blue-500/30 font-mono'
+                            : 'bg-[#2563EB] text-white border border-[#60A5FA]/40 font-mono shadow-xs'
                         }`}>
                           ⏳ {nextRunInfo.relative}
                         </span>
@@ -859,7 +859,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                                   isSuccess
                                     ? isLiveShort
                                       ? 'bg-[#151B18] border-emerald-500/30 hover:border-emerald-500/50'
-                                      : 'bg-[#15151A] border-[#262630] hover:border-[#383844]'
+                                      : 'bg-[#181818] border-[#242424] hover:bg-[#26262C] hover:border-white/10'
                                     : 'bg-[#1D1418] border-rose-500/30 hover:border-rose-500/50'
                                 }`}
                               >
@@ -1480,7 +1480,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-500/20 disabled:opacity-50"
                 >
                   {submitting ? (
                     <>

@@ -102,7 +102,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="p-1 rounded-md text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+          className="p-1 rounded-md text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer"
           title={isCollapsed ? 'Expand Timeline' : 'Collapse Timeline'}
           aria-label={isCollapsed ? 'Expand timeline' : 'Collapse timeline'}
           aria-expanded={!isCollapsed}
@@ -190,7 +190,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           <button
             type="button"
             onClick={() => onSeek(0)}
-            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
+            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer shrink-0"
             title="Jump to Start (00:00)"
             aria-label="Jump to start"
           >
@@ -201,7 +201,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           <button
             type="button"
             onClick={onTogglePlay}
-            className="h-7 px-4 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0 border border-[#60A5FA]/40"
+            className="h-7 px-4 rounded-full bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0 border border-[#60A5FA]/40"
             title={isPlaying ? 'Pause Timeline (Space)' : 'Play Timeline (Space)'}
             aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
           >
@@ -221,7 +221,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           <button
             type="button"
             onClick={() => onSeek(displayDuration)}
-            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
+            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer shrink-0"
             title={`Jump to End (${formatTime(displayDuration)})`}
             aria-label="Jump to end"
           >
@@ -248,7 +248,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           <button
             type="button"
             onClick={onToggleAddTrackMenu}
-            className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg text-[10.5px] font-sans-studio font-medium text-[#E4E4E7] bg-[#16161E] border border-[#333340] hover:bg-[#22222D] hover:border-[#4B4B5C] hover:text-white transition-all cursor-pointer shadow-sm"
+            className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg text-[10.5px] font-sans-studio font-medium text-[#E4E4E7] bg-[#181818] border border-[#242424] hover:bg-[#26262C] hover:border-white/10 hover:text-white transition-all cursor-pointer shadow-sm"
             title="Add a new track from media categories"
             aria-label="Add track"
             aria-expanded={addTrackMenuOpen}
@@ -273,7 +273,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onZoomFit}
             disabled={zoomLevel === 1}
-            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-white/[0.08] disabled:opacity-30 cursor-pointer transition-colors"
+            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-[#26262C] disabled:opacity-30 cursor-pointer transition-colors"
             title="Fit full project in timeline"
             aria-label="Fit timeline to project"
           >
@@ -283,7 +283,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onZoomOut}
             disabled={zoomLevel <= MIN_TIMELINE_ZOOM}
-            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-white/[0.08] disabled:opacity-30 cursor-pointer transition-colors"
+            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-[#26262C] disabled:opacity-30 cursor-pointer transition-colors"
             title="Zoom Out"
             aria-label="Zoom out"
           >
@@ -296,7 +296,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onZoomIn}
             disabled={zoomLevel >= MAX_TIMELINE_ZOOM}
-            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-white/[0.08] disabled:opacity-30 cursor-pointer transition-colors"
+            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-[#26262C] disabled:opacity-30 cursor-pointer transition-colors"
             title="Zoom In"
             aria-label="Zoom in"
           >
@@ -307,7 +307,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
         <button
           type="button"
           popoverTarget="timeline-shortcuts"
-          className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-[#262626] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+          className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-[#262626] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer"
           title="Keyboard shortcuts"
           aria-label="Show keyboard shortcuts"
         >

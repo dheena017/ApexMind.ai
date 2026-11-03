@@ -580,7 +580,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                       }}
                       className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-[#1E293B] border-sky-500 text-sky-400 shadow-sm'
+                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
                           : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-[#D4D4D8]'
                       }`}
                     >
@@ -608,8 +608,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     onClick={() => setFitMode(mode)}
                     className={`py-2 px-1.5 rounded-xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
                       fitMode === mode
-                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-md'
-                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:text-white hover:bg-[#1E1E1E]'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:text-white hover:bg-[#26262C] hover:border-white/10'
                     }`}
                   >
                     {icon}
@@ -697,7 +697,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setFlipH(!flipH)}
                   className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border transition-colors cursor-pointer text-xs font-semibold ${
-                    flipH ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#202026]'
+                    flipH ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10'
                   }`}
                   title="Flip Horizontal"
                 >
@@ -708,7 +708,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setFlipV(!flipV)}
                   className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border transition-colors cursor-pointer text-xs font-semibold ${
-                    flipV ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#202026]'
+                    flipV ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10'
                   }`}
                   title="Flip Vertical"
                 >
@@ -718,7 +718,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
-                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-[#D4D4D8] hover:bg-[#202026] cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-[#D4D4D8] hover:bg-[#26262C] hover:border-white/10 cursor-pointer"
                   title="Rotate +90°"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
@@ -1211,7 +1211,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               <button
                 type="button"
                 onClick={handleResetAdjustments}
-                className="w-full py-1.5 rounded-lg bg-[#1E1E1E] hover:bg-[#222222] text-xs font-semibold text-zinc-300 hover:text-white border border-[#303038] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-1.5 rounded-lg bg-[#1E1E1E] hover:bg-[#26262C] hover:border-white/10 text-xs font-semibold text-zinc-300 hover:text-white border border-[#303038] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3 text-amber-400" />
                 Reset Tone & Adjustments
@@ -1279,7 +1279,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     onClick={() => setStyleSection(sec.id as any)}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${
                       styleSection === sec.id
-                        ? 'bg-[#2A2A36] text-white shadow-xs'
+                        ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs'
                         : 'text-slate-500 hover:text-slate-400'
                     }`}
                   >
@@ -1293,7 +1293,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               <button
                 type="button"
                 onClick={handleResetAdjustments}
-                className="text-[10px] text-slate-500 hover:text-white flex items-center gap-1 cursor-pointer transition-colors px-2 py-1 rounded hover:bg-[#181D2B]"
+                className="text-[10px] text-slate-500 hover:text-white flex items-center gap-1 cursor-pointer transition-colors px-2 py-1 rounded hover:bg-[#26262C]"
                 title="Reset all look presets, LUTs, and color adjustments to default"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
@@ -1314,15 +1314,15 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     onClick={() => applyStylePreset(preset)}
                     className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       activeStyle === preset.label
-                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-md'
-                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-0.5">
                       <span className="text-xs font-bold text-white">{preset.label}</span>
-                      {activeStyle === preset.label && <Check className="w-3 h-3 text-[#3B82F6]" />}
+                      {activeStyle === preset.label && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    <p className="text-[9px] text-slate-500 leading-tight">{preset.desc}</p>
+                    <p className={`text-[9.5px] leading-tight ${activeStyle === preset.label ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{preset.desc}</p>
                   </button>
                 ))}
               </div>
@@ -1347,15 +1347,15 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     onClick={() => setActiveLUT(lut.id)}
                     className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
                       activeLUT === lut.id
-                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                     }`}
                   >
                     <div className="flex flex-col gap-2">
                       <span className="text-xs font-semibold text-white block">{lut.label}</span>
-                      <span className="text-[10px] text-slate-500">{lut.desc}</span>
+                      <span className={`text-[10px] ${activeLUT === lut.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{lut.desc}</span>
                     </div>
-                    {activeLUT === lut.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                    {activeLUT === lut.id && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
                   </button>
                 ))}
               </div>
@@ -1486,8 +1486,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                     onClick={() => onPlaybackRateChange?.(rate)}
                     className={`py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                       playbackRate === rate
-                        ? 'bg-[#3B82F6] border-transparent text-white shadow-sm'
-                        : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                        : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                     }`}
                   >
                     {rate}x
@@ -1505,7 +1505,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 type="button"
                 onClick={() => setLoopVideo(!loopVideo)}
                 className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                  loopVideo ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                  loopVideo ? 'bg-[#2563EB]' : 'bg-[#242424]'
                 }`}
               >
                 <div
@@ -1574,7 +1574,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => handleDurationChange(localDuration - 1)}
-                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white hover:bg-[#1E1E1E] cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white hover:bg-[#26262C] hover:border-white/10 cursor-pointer"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -1590,7 +1590,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => handleDurationChange(localDuration + 1)}
-                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white hover:bg-[#1E1E1E] cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white hover:bg-[#26262C] hover:border-white/10 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>

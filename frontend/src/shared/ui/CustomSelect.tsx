@@ -127,11 +127,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   // Variant & size classes
   const triggerBase = isCompact
-    ? `inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#141417] border border-[#2B2B32] text-xs font-semibold text-[#E5E5E5] hover:border-[#3B82F6]/60 hover:text-white hover:bg-[#1E1E24] transition-all cursor-pointer shadow-xs select-none ${
-        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/40 text-white bg-[#1E1E24]' : ''
+    ? `inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#181818] border border-[#242424] text-xs font-semibold text-[#E5E5E5] hover:border-white/10 hover:text-white hover:bg-[#26262C] transition-all cursor-pointer shadow-xs select-none ${
+        isOpen ? 'border-[#60A5FA]/40 ring-1 ring-[#2563EB]/40 text-white bg-[#181818]' : ''
       }`
-    : `w-full flex items-center justify-between gap-2 rounded-xl bg-[#141417] border border-[#2B2B32] px-3.5 py-2.5 text-xs text-[#E5E5E5] hover:border-[#4A4A54] focus:outline-none transition-all cursor-pointer select-none ${
-        isOpen ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/40 text-white' : ''
+    : `w-full flex items-center justify-between gap-2 rounded-xl bg-[#181818] border border-[#242424] px-3.5 py-2.5 text-xs text-[#E5E5E5] hover:border-white/10 hover:bg-[#26262C] focus:outline-none transition-all cursor-pointer select-none ${
+        isOpen ? 'border-[#60A5FA]/40 ring-1 ring-[#2563EB]/40 text-white' : ''
       }`;
 
   return (
@@ -182,7 +182,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         <div
           role="listbox"
           tabIndex={-1}
-          className={`absolute z-50 mt-1.5 p-1.5 rounded-xl bg-[#16161A] border border-[#2D2D36] shadow-2xl shadow-black/90 custom-scrollbar max-h-72 overflow-y-auto ${
+          className={`absolute z-50 mt-1.5 p-1.5 rounded-xl bg-[#141414] border border-[#242424] shadow-2xl shadow-black/90 custom-scrollbar max-h-72 overflow-y-auto ${
             isCompact
               ? align === 'right'
                 ? 'right-0 min-w-[210px]'

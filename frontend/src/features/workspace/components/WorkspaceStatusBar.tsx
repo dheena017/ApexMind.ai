@@ -104,7 +104,7 @@ const getNotificationTheme = (item: WorkspaceNotification): NotificationTheme =>
     titleLower.includes('export')
   ) {
     return {
-      iconBg: 'bg-blue-950/40 border border-blue-500/30',
+      iconBg: 'bg-[#2563EB]/15 border border-[#60A5FA]/30',
       iconColor: 'text-[#60A5FA]',
       badge: {
         label: 'RENDER',
@@ -141,7 +141,7 @@ const getNotificationTheme = (item: WorkspaceNotification): NotificationTheme =>
     titleLower.includes('sfx')
   ) {
     return {
-      iconBg: 'bg-blue-950/40 border border-blue-500/30',
+      iconBg: 'bg-[#2563EB]/15 border border-[#60A5FA]/30',
       iconColor: 'text-blue-400',
       badge: {
         label: 'AUDIO',
@@ -404,7 +404,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
           <span
             className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md ${
               workspaceStatus.isExporting
-                ? 'text-[#3B82F6] bg-[#1E2A3A] border border-[#3B82F6]/30'
+                ? 'text-[#60A5FA] bg-[#2563EB]/15 border border-[#60A5FA]/30'
                 : workspaceStatus.isPlaying
                 ? 'text-[#10B981] bg-emerald-500/10 border border-emerald-500/20'
                 : 'text-[#9CA3AF]'
@@ -426,7 +426,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
             onClick={() => setIsOpen((prev) => !prev)}
             className={`relative flex items-center gap-1.5 px-2 py-0.5 rounded-md cursor-pointer transition-colors border ${
               isOpen
-                ? 'bg-[#1E2A3A] text-white border-[#3B82F6]'
+                ? 'bg-[#2563EB] text-white border-[#60A5FA]/40'
                 : unreadCount > 0
                 ? 'bg-[#1E1E1E] text-[#E5E5E5] border-[#3A3A3A] hover:bg-[#2A2A2A]'
                 : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border-transparent hover:border-[#2F2F2F]'
@@ -472,7 +472,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                     Workspace Production Alerts
                   </h3>
                   {unreadCount > 0 && (
-                    <span className="px-1.5 py-0.5 text-[9px] font-mono-studio font-bold rounded-md bg-[#1E2A3A] text-[#60A5FA] border border-[#3B82F6]/30 whitespace-nowrap shrink-0 leading-none">
+                    <span className="px-1.5 py-0.5 text-[9px] font-mono-studio font-bold rounded-md bg-[#2563EB]/15 text-[#60A5FA] border border-[#60A5FA]/30 whitespace-nowrap shrink-0 leading-none">
                       {unreadCount} unread
                     </span>
                   )}
@@ -488,7 +488,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                 <button
                   type="button"
                   onClick={markAllRead}
-                  className="px-2 py-1 rounded-lg text-[#60A5FA] hover:text-white bg-[#1E2A3A] hover:bg-[#25354A] border border-[#3B82F6]/30 transition-colors cursor-pointer text-[10px] font-semibold flex items-center gap-1 whitespace-nowrap"
+                  className="px-2 py-1 rounded-lg text-[#60A5FA] hover:text-white bg-[#2563EB] hover:bg-[#1D4ED8] border border-[#60A5FA]/40 transition-colors cursor-pointer text-[10px] font-semibold flex items-center gap-1 whitespace-nowrap"
                   title="Mark all as read"
                 >
                   <CheckCheck className="w-3 h-3" />
@@ -559,7 +559,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                   className={`px-2.5 py-1 rounded-lg text-[10.5px] whitespace-nowrap transition-all cursor-pointer border ${
                     isActive
                       ? 'bg-[#3B82F6] text-white font-semibold border-[#3B82F6] shadow-xs'
-                      : 'bg-[#18181C] text-[#9CA3AF] hover:text-white hover:bg-[#202026] border-[#26262E]'
+                      : 'bg-[#181818] text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border-[#242424]'
                   }`}
                 >
                   {tab.label}
@@ -693,7 +693,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                     actionLabel: 'Audio Settings',
                   });
                 }}
-                className="px-2 py-0.5 rounded bg-[#18181C] hover:bg-[#202026] text-[#9CA3AF] hover:text-white border border-[#26262E] transition-colors cursor-pointer font-medium"
+                className="px-2 py-0.5 rounded bg-[#181818] hover:bg-[#26262C] text-[#9CA3AF] hover:text-white border border-[#242424] hover:border-white/10 transition-colors cursor-pointer font-medium"
               >
                 + Voice
               </button>
@@ -709,7 +709,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                     actionLabel: 'Preview',
                   });
                 }}
-                className="px-2 py-0.5 rounded bg-[#18181C] hover:bg-[#202026] text-[#9CA3AF] hover:text-white border border-[#26262E] transition-colors cursor-pointer font-medium"
+                className="px-2 py-0.5 rounded bg-[#181818] hover:bg-[#26262C] text-[#9CA3AF] hover:text-white border border-[#242424] hover:border-white/10 transition-colors cursor-pointer font-medium"
               >
                 + Render
               </button>
@@ -725,7 +725,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
                     actionLabel: 'Canvas',
                   });
                 }}
-                className="px-2 py-0.5 rounded bg-[#18181C] hover:bg-[#202026] text-[#9CA3AF] hover:text-white border border-[#26262E] transition-colors cursor-pointer font-medium"
+                className="px-2 py-0.5 rounded bg-[#181818] hover:bg-[#26262C] text-[#9CA3AF] hover:text-white border border-[#242424] hover:border-white/10 transition-colors cursor-pointer font-medium"
               >
                 + Layout
               </button>

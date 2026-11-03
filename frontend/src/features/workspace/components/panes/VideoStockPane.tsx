@@ -20,6 +20,7 @@ import {
   VolumeX,
   Maximize2,
 } from 'lucide-react';
+import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { workspaceApi } from '../../api/workspaceApi';
 import { toast } from 'sonner';
 
@@ -160,7 +161,7 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
             {vid.category}
           </span>
           {vid.source && (
-            <span className="px-1.5 py-0.5 rounded-full bg-blue-950/90 text-[8.5px] font-bold text-blue-300 border border-blue-500/30 uppercase">
+            <span className="px-1.5 py-0.5 rounded-full bg-[#2563EB]/15 text-[8.5px] font-bold text-[#60A5FA] border border-[#60A5FA]/30 uppercase">
               {vid.source}
             </span>
           )}
@@ -573,57 +574,6 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
           </button>
         </div>
       </div>
-      {/* ── Category Filter Chips (In Catalog Mode) ── */}
-      {activeTab === 'catalog' && (
-        <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#242424]/70 bg-[#141416] overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
-          <button
-            type="button"
-            onClick={() => setHideUsed(!hideUsed)}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-              hideUsed
-                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-xs'
-                : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-[#242424]'
-            }`}
-            title="Filter out videos already in project so they cannot be reused"
-          >
-            <span>{hideUsed ? '🚫 Used Hidden' : '👁️ Hide Used'}</span>
-            {timelineVideoUrls.size > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-[9px] font-mono">
-                {timelineVideoUrls.size}
-              </span>
-            )}
-          </button>
-          {(
-            [
-              { id: 'all', label: '✨ All Free Loops' },
-              { id: 'nature', label: '🌲 Nature' },
-              { id: 'mountains', label: '⛰️ Mountains' },
-              { id: 'ocean', label: '🌊 Ocean Waves' },
-              { id: 'city', label: '🏙️ City & Cyber' },
-              { id: 'gym', label: '💪 Gym & Fitness' },
-              { id: 'clouds', label: '☁️ Sky & Storm' },
-              { id: 'fire', label: '🔥 Fire & Action' },
-              { id: 'sunset', label: '🌅 Golden Hour' },
-              { id: 'space', label: '🌌 Space' },
-              { id: 'abstract', label: '🌀 Dark & Stoic' },
-            ] as const
-          ).map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => handleCategoryChange(cat.id)}
-              className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
-                selectedCategory === cat.id
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-semibold'
-                  : 'bg-[#1C1C22] text-slate-400 hover:text-white hover:bg-[#26262E] border border-[#242424]'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* ── Main Content Area ── */}
       <div ref={contentScrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3.5">
         {activeTab === 'settings' ? (
@@ -677,7 +627,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     onClick={() => setColorMood(m.id as any)}
                     className={`p-2.5 rounded-lg border text-xs font-semibold text-left transition-all ${
                       colorMood === m.id
-                        ? 'bg-[#1E2330] text-white border-[#3B82F6] ring-1 ring-[#3B82F6]/50'
+                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
                         : 'bg-[#111111] text-slate-400 border-[#242424] hover:text-white'
                     }`}
                   >
@@ -772,25 +722,52 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         ) : (
           /* Motion Catalog / Saved Clips */
           <>
-            {/* Search Input & Provider Selector */}
+            {/* Search Input & Category Dropdown in One Row */}
             <div className="flex flex-col gap-2">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder="Search motion clips or #tags..."
-                  className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-[#525252] outline-none focus:border-[#3B82F6]/60 transition-colors"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 min-w-[140px]">
+                  <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder="Search motion clips or #tags..."
+                    className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {activeTab === 'catalog' && (
+                  <div className="shrink-0 w-36 sm:w-40">
+                    <CustomSelect
+                      value={selectedCategory}
+                      onChange={(val) => handleCategoryChange(val as any)}
+                      options={[
+                        { value: 'all', label: '✨ All Free Loops' },
+                        { value: 'nature', label: '🌲 Nature' },
+                        { value: 'mountains', label: '⛰️ Mountains' },
+                        { value: 'ocean', label: '🌊 Ocean' },
+                        { value: 'city', label: '🏙️ City & Cyber' },
+                        { value: 'gym', label: '💪 Gym & Fitness' },
+                        { value: 'clouds', label: '☁️ Sky & Storm' },
+                        { value: 'fire', label: '🔥 Fire & Action' },
+                        { value: 'sunset', label: '🌅 Golden Hour' },
+                        { value: 'space', label: '🌌 Space' },
+                        { value: 'abstract', label: '🌀 Dark & Stoic' },
+                      ]}
+                      variant="compact"
+                      align="right"
+                      buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
+                    />
+                  </div>
                 )}
               </div>
 
@@ -798,10 +775,10 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
               {activeTab === 'catalog' && (
                 <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {[
-                    { id: 'all', label: '✨ All (Pexels + Pixabay + Wikimedia)' },
-                    { id: 'pixabay', label: '🎥 Pixabay (Free)' },
-                    { id: 'pexels', label: '🎬 Pexels (Free)' },
-                    { id: 'wikimedia', label: '🌐 Wikimedia (Public Domain)' },
+                    { id: 'all', label: '✨ All' },
+                    { id: 'pixabay', label: '🎥 Pixabay' },
+                    { id: 'pexels', label: '🎬 Pexels' },
+                    { id: 'wikimedia', label: '🌐 Wikimedia' },
                   ].map((p) => (
                     <button
                       key={p.id}
@@ -809,8 +786,8 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       onClick={() => handleProviderChange(p.id)}
                       className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
                         selectedProvider === p.id
-                          ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40 font-semibold'
-                          : 'bg-[#18181B] text-slate-500 hover:text-[#D4D4D8] border border-[#27272A]'
+                          ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
+                          : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#26262C] border border-[#242424]'
                       }`}
                     >
                       {p.label}

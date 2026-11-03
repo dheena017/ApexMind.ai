@@ -744,7 +744,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     onClick={() => setTextTarget(tgt.id)}
                     className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer text-center ${
                       textTarget === tgt.id
-                        ? 'bg-[#1E293B] border-[#3B82F6] text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
                         : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
                     }`}
                   >
@@ -840,7 +840,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     type="button"
                     onClick={() => setTextTransform(tr.id)}
                     className={`flex-1 py-1 rounded-md text-[10px] font-bold border cursor-pointer transition-colors ${
-                      textTransform === tr.id ? 'bg-[#3B82F6] border-transparent text-white' : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
+                      textTransform === tr.id ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs' : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                     }`}
                   >
                     {tr.label}
@@ -967,7 +967,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     key={combo.label}
                     type="button"
                     onClick={() => applyStyleCombo(combo)}
-                    className="p-2.5 rounded-xl bg-[#181818] hover:bg-[#202026] border border-[#242424] hover:border-[#3B82F6]/50 text-left cursor-pointer transition-all group"
+                    className="p-2.5 rounded-xl bg-[#181818] hover:bg-[#26262C] hover:border-white/10 border border-[#242424] hover:border-[#3B82F6]/50 text-left cursor-pointer transition-all group"
                   >
                     <p className="text-xs font-bold text-white mb-0.5" style={{ color: combo.color }}>{combo.label}</p>
                     <p className="text-[9px] text-slate-500">{combo.font} • {combo.weight}</p>
@@ -987,15 +987,15 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     onClick={() => setTextFont(f.id)}
                     className={`flex items-center justify-between p-2 rounded-xl border text-left cursor-pointer transition-colors ${
                       textFont === f.id
-                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                     }`}
                   >
                     <div>
                       <span className="text-xs font-bold block" style={{ fontFamily: f.id }}>{f.label}</span>
-                      <span className="text-[9px] text-slate-500">{f.style}</span>
+                      <span className={`text-[9px] ${textFont === f.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{f.style}</span>
                     </div>
-                    {textFont === f.id && <Check className="w-3.5 h-3.5 text-[#3B82F6]" />}
+                    {textFont === f.id && <Check className="w-3.5 h-3.5 text-white" />}
                   </button>
                 ))}
               </div>
@@ -1011,7 +1011,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     type="button"
                     onClick={() => setTextWeight(w)}
                     className={`py-1.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
-                      textWeight === w ? 'bg-[#3B82F6] border-transparent text-white' : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
+                      textWeight === w ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs' : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                     }`}
                   >
                     {w}
@@ -1034,15 +1034,15 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                   onClick={() => setActiveAnimation(anim.id)}
                   className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
                     activeAnimation === anim.id
-                      ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                      : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
+                      ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                      : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{anim.icon}</span>
                     <div>
                       <span className="text-xs font-semibold text-white block">{anim.label}</span>
-                      <span className="text-[10px] text-slate-500">{anim.desc}</span>
+                      <span className={`text-[10px] ${activeAnimation === anim.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{anim.desc}</span>
                     </div>
                   </div>
                   {activeAnimation === anim.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
@@ -1088,7 +1088,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     onClick={() => setPosY(pos.y)}
                     className={`p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
                       Math.abs(posY - pos.y) <= 4
-                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
                         : 'bg-[#111111] border-[#242424] text-slate-400 hover:text-white'
                     }`}
                   >
@@ -1132,7 +1132,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => setDisplayDuration((p) => Math.max(0.5, parseFloat((p - 0.5).toFixed(1))))}
-                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#202026]"
+                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#26262C] hover:border-white/10"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -1148,7 +1148,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => setDisplayDuration((p) => Math.min(60, parseFloat((p + 0.5).toFixed(1))))}
-                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#202026]"
+                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#26262C] hover:border-white/10"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -1230,7 +1230,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setStrokeOutline(!strokeOutline)}
                   className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    strokeOutline ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                    strokeOutline ? 'bg-[#2563EB]' : 'bg-[#242424]'
                   }`}
                 >
                   <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${strokeOutline ? 'left-5' : 'left-1'}`} />
@@ -1272,7 +1272,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setDropShadow(!dropShadow)}
                   className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    dropShadow ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                    dropShadow ? 'bg-[#2563EB]' : 'bg-[#242424]'
                   }`}
                 >
                   <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${dropShadow ? 'left-5' : 'left-1'}`} />
@@ -1305,7 +1305,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                   type="button"
                   onClick={() => setNeonGlow(!neonGlow)}
                   className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    neonGlow ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                    neonGlow ? 'bg-[#2563EB]' : 'bg-[#242424]'
                   }`}
                 >
                   <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${neonGlow ? 'left-5' : 'left-1'}`} />

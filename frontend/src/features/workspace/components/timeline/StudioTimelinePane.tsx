@@ -66,11 +66,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const isTimelineExpanded = timelineHeight !== undefined ? timelineHeight > 220 : isTimelineExpandedLocal;
   const timelineViewportHeight = isTimelineExpanded ? 'max-h-[600px]' : 'max-h-[170px]';
 
-  const DEFAULT_TRACK_HEADERS_WIDTH = 210;
+  const DEFAULT_TRACK_HEADERS_WIDTH = 224;
   const [trackHeadersWidth, setTrackHeadersWidth] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('apexmind:timeline-track-width');
-      return saved ? Math.max(175, Math.min(380, Number(saved))) : DEFAULT_TRACK_HEADERS_WIDTH;
+      return saved ? Math.max(200, Math.min(400, Number(saved))) : DEFAULT_TRACK_HEADERS_WIDTH;
     } catch {
       return DEFAULT_TRACK_HEADERS_WIDTH;
     }
@@ -94,7 +94,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
       const handlePointerMove = (ev: PointerEvent) => {
         const delta = ev.clientX - trackResizeStartXRef.current;
-        const newWidth = Math.max(130, Math.min(360, Math.round(trackResizeStartWidthRef.current + delta)));
+        const newWidth = Math.max(180, Math.min(400, Math.round(trackResizeStartWidthRef.current + delta)));
         setTrackHeadersWidth(newWidth);
       };
 
@@ -105,7 +105,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         window.removeEventListener('pointermove', handlePointerMove);
         window.removeEventListener('pointerup', handlePointerUp);
         try {
-          localStorage.setItem('apexmind:timeline-track-width', String(trackHeadersWidth));
+          localStorage.setItem('apexmind:timeline-track-width', String(newWidth));
         } catch {}
       };
 

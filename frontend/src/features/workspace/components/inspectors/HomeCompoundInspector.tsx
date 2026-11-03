@@ -163,7 +163,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       if (onSelectCompound) onSelectCompound(c.id, c.videoTab);
                       window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: c.id }));
                     }}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#181818] hover:bg-[#1E1E1E] border border-[#242424] hover:border-[#333333] transition-all cursor-pointer text-left group shadow-xs"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 transition-all cursor-pointer text-left group shadow-xs"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-6 h-6 rounded-lg ${c.bg} flex items-center justify-center shrink-0`}>
@@ -189,7 +189,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               <button
                 type="button"
                 onClick={handleCopyMetadata}
-                className="flex-1 py-2 rounded-xl bg-[#181818] hover:bg-[#25252C] border border-[#242424] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="flex-1 py-2 rounded-xl bg-[#181818] hover:bg-[#26262C] hover:border-white/10 border border-[#242424] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Copy className="w-3 h-3 text-[#3B82F6]" />
                 {copiedMetadata ? 'Copied!' : 'Copy Meta'}
@@ -197,7 +197,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               <button
                 type="button"
                 onClick={handleSaveDraft}
-                className="flex-1 py-2 rounded-xl bg-[#181818] hover:bg-[#25252C] border border-[#242424] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="flex-1 py-2 rounded-xl bg-[#181818] hover:bg-[#26262C] hover:border-white/10 border border-[#242424] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Bookmark className="w-3 h-3 text-amber-400" />
                 {savedDraft ? 'Saved!' : 'Save Draft'}
@@ -227,7 +227,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                 onClick={() => {
                   window.dispatchEvent(new CustomEvent('workspace:reset-publish'));
                 }}
-                className="w-full mt-2 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-[#202026] hover:bg-[#222222] text-zinc-200 hover:text-white border border-[#2E2E2E] cursor-pointer transition-colors shadow-xs"
+                className="w-full mt-2 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border border-[#242424] hover:border-white/10 cursor-pointer transition-colors shadow-xs"
               >
                 <Upload className="w-3.5 h-3.5 text-sky-400" />
                 <span>Upload Another Video to YouTube</span>
@@ -351,7 +351,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                     type="button"
                     onClick={item.action}
                     disabled={item.disabled}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-[#181818] hover:bg-[#252529] border border-[#242424] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-left group"
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-[#181818] hover:bg-[#26262C] hover:border-white/10 border border-[#242424] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-left group"
                   >
                     <Icon className={`w-4 h-4 ${item.color} shrink-0`} />
                     <div className="min-w-0 flex-1">
@@ -402,12 +402,12 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                     onClick={() => setSelectedResolution(res.id)}
                     className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
                       selectedResolution === res.id
-                        ? 'bg-[#1E293B] border-blue-500 text-white'
-                        : 'bg-[#111111] border-[#242424] text-slate-400 hover:text-white'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                        : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                     }`}
                   >
                     <p className="text-[11px] font-bold leading-tight">{res.label}</p>
-                    <span className="text-[9px] text-slate-500">{res.badge}</span>
+                    <span className={`text-[9px] ${selectedResolution === res.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{res.badge}</span>
                   </button>
                 ))}
               </div>
@@ -428,8 +428,8 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       onClick={() => setSelectedFps(fps)}
                       className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                         selectedFps === fps
-                          ? 'bg-[#3B82F6] border-transparent text-white'
-                          : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
+                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                       }`}
                     >
                       {fps} FPS
@@ -456,8 +456,8 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       onClick={() => setSelectedBitrate(bit.id)}
                       className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                         selectedBitrate === bit.id
-                          ? 'bg-[#3B82F6] border-transparent text-white'
-                          : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
+                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                       }`}
                     >
                       {bit.label}
@@ -484,12 +484,12 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       onClick={() => setSelectedCodec(codec.id)}
                       className={`p-2 rounded-lg border text-left cursor-pointer transition-colors ${
                         selectedCodec === codec.id
-                          ? 'bg-[#1E293B] border-blue-500 text-white'
-                          : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
+                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                       }`}
                     >
                       <p className="text-[10px] font-bold">{codec.label}</p>
-                      <p className="text-[8px] text-slate-500">{codec.desc}</p>
+                      <p className={`text-[8.5px] ${selectedCodec === codec.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{codec.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -505,8 +505,8 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       onClick={() => setSelectedContainer(cnt)}
                       className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase border transition-colors cursor-pointer ${
                         selectedContainer === cnt
-                          ? 'bg-emerald-600 border-transparent text-white'
-                          : 'bg-[#111111] border-[#242424] text-slate-500 hover:text-white'
+                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                       }`}
                     >
                       .{cnt}

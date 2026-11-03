@@ -151,12 +151,12 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
       {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0 text-blue-400">
+          <div className="w-6 h-6 rounded-lg bg-[#181818] border border-[#242424] flex items-center justify-center shrink-0 text-white">
             <Shapes className="w-3.5 h-3.5" />
           </div>
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-xs font-bold text-white truncate">Elements &amp; Overlays</span>
-            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/30 shrink-0">
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40 shadow-xs shrink-0">
               FX Studio
             </span>
           </div>

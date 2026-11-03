@@ -227,7 +227,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               />
 
               {showTitleIdeas && (
-                <div className="flex flex-col gap-1 p-2 rounded-xl bg-[#15151A] border border-emerald-500/25 animate-scale-up">
+                <div className="flex flex-col gap-1 p-2 rounded-xl bg-[#141414] border border-[#242424] animate-scale-up">
                   <div className="flex items-center justify-between text-[9px] text-emerald-400 font-bold uppercase tracking-wider">
                     <span>⚡ AI High-CTR Title Angles</span>
                     <span className="text-zinc-500">Click to apply</span>
@@ -399,14 +399,14 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             </div>
 
             {/* Quick Hashtags Strip */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#16161B] border border-[#242424] text-xs">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#141414] border border-[#242424] text-xs">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Hash className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />
                 <span className="text-[11px] text-zinc-300 truncate">
                   {(script.hashtags || []).length > 0 ? (script.hashtags || []).slice(0, 4).join(' ') : '#Shorts #Stoicism #Discipline'}
                 </span>
               </div>
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-[#93C5FD] border border-blue-500/30 shrink-0">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs shrink-0">
                 {(script.hashtags || []).length || 6} Tags
               </span>
             </div>

@@ -30,7 +30,7 @@ export const RecentVideosSection: React.FC<RecentVideosSectionProps> = ({
       {/* Section Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center text-[#60A5FA]">
+          <div className="w-8 h-8 rounded-lg bg-[#181818] border border-[#242424] flex items-center justify-center text-white">
             <Film className="w-4 h-4" />
           </div>
           <div>

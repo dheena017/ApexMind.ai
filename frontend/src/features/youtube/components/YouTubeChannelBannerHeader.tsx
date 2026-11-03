@@ -90,7 +90,7 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
             className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.01]"
           />
         ) : isConnected ? (
-          <div className="w-full h-full flex items-center justify-between px-6 sm:px-12 bg-gradient-to-r from-blue-950/80 via-blue-950/40 to-black/90">
+          <div className="w-full h-full flex items-center justify-between px-6 sm:px-12 bg-gradient-to-r from-[#141414] via-[#111111] to-[#0A0A0A]">
             <div className="space-y-1">
               <span className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-400 uppercase">YouTube Official Creator Feed</span>
               <h2 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">{channelName}</h2>

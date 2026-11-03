@@ -62,7 +62,7 @@ const THEME_OPTIONS = [
 ];
 
 const AI_MODEL_OPTIONS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive & High Quality • Recommended)' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 3.8 Flash (Ultra-Fast & High Quality • Recommended)' },
   { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Next-Gen Speed & Storyboarding)' },
   { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (Rapid & Lightweight)' },
   { value: 'gemini-flash-latest', label: 'Gemini Flash Latest (Cutting-Edge)' },
@@ -144,7 +144,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [historyByJob, setHistoryByJob] = useState<Record<string, AutomationHistoryEntry[]>>({});
   const [loadingHistoryByJob, setLoadingHistoryByJob] = useState<Record<string, boolean>>({});
-  const [expandedHistoryJobId, setExpandedHistoryJobId] = useState<string | null>(null);
+  const [expandedHistoryJobs, setExpandedHistoryJobs] = useState<Record<string, boolean>>({});
   const [confirmDeleteJobId, setConfirmDeleteJobId] = useState<string | null>(null);
   const [togglingJobId, setTogglingJobId] = useState<string | null>(null);
 
@@ -427,7 +427,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     if (lower.includes('focus') || lower.includes('flow')) {
       return { icon: '🧠', gradient: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300', dot: 'bg-indigo-400', badgeText: 'Deep Focus' };
     }
-    return { icon: '⚡', gradient: 'bg-blue-500/15 border-blue-500/30 text-blue-300', dot: 'bg-blue-400', badgeText: 'Motivation' };
+    return { icon: '⚡', gradient: 'bg-[#181818] border-[#242424] text-zinc-300', dot: 'bg-white', badgeText: 'Motivation' };
   };
 
   const formatNextRun = (isoString?: string) => {
@@ -439,12 +439,12 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {/* ── Top Header Bar ── */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-lg bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center shrink-0 text-[#60A5FA]">
+          <div className="w-6 h-6 rounded-lg bg-[#181818] border border-[#242424] flex items-center justify-center shrink-0 text-white">
             <CalendarClock className="w-3.5 h-3.5" />
           </div>
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-xs font-bold text-white truncate">Daily Automations</span>
-            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#3B82F6]/15 text-[#60A5FA] font-semibold border border-[#3B82F6]/30 shrink-0">
+            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40 shadow-xs shrink-0">
               {activeCount} Active
             </span>
           </div>
@@ -455,7 +455,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             type="button"
             onClick={() => setActiveSubTab('create')}
             className={`h-7 px-2.5 rounded-md font-semibold text-[11px] transition-all flex items-center gap-1 cursor-pointer shadow-sm ${
-              activeSubTab === 'create' ? 'bg-[#3B82F6]/25 text-[#60A5FA] border border-[#3B82F6]/40' : 'bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white border border-[#60A5FA]/30 shadow-xs'
+              activeSubTab === 'create' ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white border border-[#60A5FA]/40 shadow-xs'
             }`}
             title="Configure New Automation Schedule"
           >
@@ -509,7 +509,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             <span
               className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
                 activeSubTab === 'pipelines'
-                  ? 'bg-[#3B82F6]/20 text-[#60A5FA] font-bold border border-[#3B82F6]/30'
+                  ? 'bg-white/20 text-white font-bold border border-white/30'
                   : 'bg-[#26262B] text-zinc-400'
               }`}
             >
@@ -578,7 +578,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               </div>
             ) : automations.length === 0 ? (
               <div className="p-5 rounded-xl bg-[#17171C] border border-[#242424] text-center flex flex-col items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#181818] text-zinc-300 border border-[#242424] flex items-center justify-center">
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
@@ -590,7 +590,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('create')}
-                  className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
+                  className="px-3.5 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer border border-[#60A5FA]/40 shadow-xs transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Create First Schedule</span>
@@ -629,114 +629,113 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                       key={job.id}
                       className={`p-3.5 sm:p-4 rounded-2xl transition-all flex flex-col gap-3.5 shadow-lg border ${
                         isRunning
-                          ? 'bg-gradient-to-b from-[#181820] via-[#141419] to-[#121216] border-emerald-500/40 shadow-lg shadow-emerald-950/20'
+                          ? 'bg-gradient-to-b from-[#181820] via-[#141419] to-[#121216] border-blue-500/35 shadow-lg shadow-blue-950/20'
                           : isPaused
                           ? 'bg-gradient-to-b from-[#16161B] via-[#131317] to-[#111114] border-zinc-800/80 opacity-95'
                           : 'bg-[#161616] border border-[#242424] hover:border-[#383838]'
                       }`}
                     >
-                      {/* ── 1. HEADER ROW: ICON + TITLE + STATUS PILL ── */}
-                      <div className="flex items-start justify-between gap-2.5 pb-2.5 border-b border-[#23232D]">
-                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border text-lg ${themeMeta.gradient} shadow-sm`}>
-                            <span>{themeMeta.icon}</span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <h4 className="text-xs font-bold text-white tracking-tight leading-snug break-words">
-                                {job.theme}
-                              </h4>
-                              <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-semibold border shrink-0 ${themeMeta.gradient}`}>
-                                {themeMeta.badgeText}
-                              </span>
+                      {/* ── 1. UNIFIED PIPELINE CONTROL & STATUS CARD ── */}
+                      <div className="flex flex-col gap-3">
+                        {/* Header: Icon + Title + Status Badge */}
+                        <div className="flex items-center justify-between gap-2.5">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/10 border border-blue-500/25 text-base shadow-sm">
+                              <span>{themeMeta.icon}</span>
                             </div>
-                            {/* Badges strip */}
-                            <div className="flex items-center gap-1.5 text-[9.5px] text-zinc-400 font-mono mt-2 flex-wrap">
-                              <span className="px-2 py-0.5 rounded-md bg-[#18181C] text-zinc-200 border border-[#2A2A32] flex items-center gap-1">
-                                <Clock className="w-2.5 h-2.5 text-[#60A5FA] shrink-0" />
-                                <span>{scheduleLabel}</span>
+                            <h4 className="text-sm font-bold text-white tracking-tight leading-tight truncate" title={job.theme}>
+                              {job.theme}
+                            </h4>
+                          </div>
+
+                          <div className="shrink-0">
+                            {isRunning ? (
+                              <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2563EB] border border-[#60A5FA]/40 text-white text-[10px] font-bold shadow-xs">
+                                <Loader2 className="w-2.5 h-2.5 animate-spin text-white" />
+                                <span>Running</span>
                               </span>
-                              <span className="px-2 py-0.5 rounded-md bg-[#18181C] text-zinc-200 border border-[#2A2A32] flex items-center gap-1">
-                                <Volume2 className="w-2.5 h-2.5 text-purple-400 shrink-0" />
+                            ) : isActive ? (
+                              <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2563EB] border border-[#60A5FA]/40 text-white text-[10px] font-bold shadow-xs">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                <span>Active</span>
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
+                                <Pause className="w-2.5 h-2.5 fill-current text-[#60A5FA]" />
+                                <span>Paused</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Unified Information Deck */}
+                        <div className="p-3.5 rounded-xl bg-[#141416] border border-[#24242A] text-xs flex flex-col gap-3">
+                          {/* Schedule / Next Run Row */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <Clock className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />
+                              <span className="text-zinc-400 text-xs font-medium">Schedule:</span>
+                              <span className="text-white text-xs font-semibold font-mono truncate">{scheduleLabel}</span>
+                            </div>
+                            {isActive && (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
+                                nextRunInfo.isPast
+                                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
+                                  : 'bg-[#2563EB] text-white border border-[#60A5FA]/40 font-mono shadow-xs'
+                              }`}>
+                                {nextRunInfo.relative}
+                              </span>
+                            )}
+                            {isPaused && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
+                                Suspended
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Target Channel Destination */}
+                          <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-[#202026] text-xs">
+                            <span className="flex items-center gap-1.5 text-zinc-400">
+                              <Globe className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                              <span>Publish Target:</span>
+                            </span>
+                            {authStatus?.connected ? (
+                              <span className="font-semibold text-zinc-200 flex items-center gap-1.5 truncate">
+                                <Youtube className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                <span className="truncate">YouTube Shorts Live</span>
+                              </span>
+                            ) : (
+                              <span className="font-semibold text-amber-300 truncate">Studio Video Library</span>
+                            )}
+                          </div>
+
+                          {/* 4 Clean Attribute Tags in a 2x2 Grid (No overflowing or truncated pills) */}
+                          <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-[#202026]">
+                            <div className="p-2 rounded-lg bg-[#101014] border border-[#22222A] flex flex-col justify-center">
+                              <span className="text-[9.5px] text-zinc-500 font-mono uppercase tracking-wider">Niche / Category</span>
+                              <span className="text-xs font-bold text-[#93C5FD] truncate mt-0.5">{themeMeta.badgeText}</span>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-[#101014] border border-[#22222A] flex flex-col justify-center">
+                              <span className="text-[9.5px] text-zinc-500 font-mono uppercase tracking-wider">Voice & Audio</span>
+                              <span className="text-xs font-bold text-white truncate mt-0.5 flex items-center gap-1">
+                                <Volume2 className="w-3 h-3 text-blue-400 shrink-0" />
                                 <span>{job.voice || 'Fenrir'}</span>
                               </span>
-                              <span className="px-2 py-0.5 rounded-md bg-[#18181C] text-zinc-400 border border-[#2A2A32]">
-                                {job.privacyStatus === 'scheduled' ? '📅 Scheduled' : '🌐 Public'}
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-[#101014] border border-[#22222A] flex flex-col justify-center">
+                              <span className="text-[9.5px] text-zinc-500 font-mono uppercase tracking-wider">Completed Runs</span>
+                              <span className="text-xs font-bold text-white font-mono mt-0.5">{totalRunsCount} {totalRunsCount === 1 ? 'Video' : 'Videos'}</span>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-[#101014] border border-[#22222A] flex flex-col justify-center">
+                              <span className="text-[9.5px] text-zinc-500 font-mono uppercase tracking-wider">Resolution & Engine</span>
+                              <span className="text-xs font-bold text-white font-mono mt-0.5 truncate">
+                                1080p • <span className="text-[#60A5FA]">{job.aiModel?.includes('flash') ? 'Flash' : 'Gemini'}</span>
                               </span>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Top-Right: Clean single status pill */}
-                        <div className="shrink-0 pt-0.5">
-                          {isRunning ? (
-                            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                              <Loader2 className="w-2.5 h-2.5 animate-spin text-emerald-400" />
-                              <span>Running</span>
-                            </span>
-                          ) : isActive ? (
-                            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-[#60A5FA] text-[10px] font-bold shadow-xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#60A5FA] animate-pulse" />
-                              <span>Active</span>
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
-                              <Pause className="w-2.5 h-2.5 fill-current text-[#60A5FA]" />
-                              <span>Paused</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* ── 2. NEXT START SCHEDULE & TARGET BANNER ── */}
-                      <div className="p-2.5 rounded-xl bg-[#141416] border border-[#24242A] text-xs flex flex-col gap-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                            <Clock className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />
-                            <span className="text-zinc-400 text-[11px]">Next:</span>
-                            <span className="text-white text-[11px] font-bold font-mono truncate">{nextRunInfo.display}</span>
-                          </div>
-                          {isActive && (
-                            <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-bold border shrink-0 ${
-                              nextRunInfo.isPast
-                                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
-                                : 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30 font-mono'
-                            }`}>
-                              {nextRunInfo.relative}
-                            </span>
-                          )}
-                          {isPaused && (
-                            <span className="px-2 py-0.5 rounded-full text-[9.5px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
-                              Suspended
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-[#222228] text-[10.5px]">
-                          <span className="flex items-center gap-1 text-zinc-400">
-                            <Globe className="w-3 h-3 text-zinc-500 shrink-0" />
-                            <span>Target:</span>
-                          </span>
-                          {authStatus?.connected ? (
-                            <span className="font-semibold text-zinc-200 flex items-center gap-1.5 truncate">
-                              <Youtube className="w-3 h-3 text-red-500 shrink-0" />
-                              <span className="truncate">YouTube Shorts Live</span>
-                            </span>
-                          ) : (
-                            <span className="font-semibold text-amber-300 truncate">Studio Video Library</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* ── 3. PERFORMANCE & TELEMETRY STRIP (2 Balanced Cards) ── */}
-                      <div className="grid grid-cols-2 gap-2 text-center">
-                        <div className="p-2.5 rounded-xl bg-[#141416] border border-[#24242A] flex flex-col justify-center">
-                          <div className="text-[9px] text-zinc-400 font-mono uppercase tracking-wider">Completed Runs</div>
-                          <div className="text-xs font-bold text-white mt-0.5 font-mono">{totalRunsCount} {totalRunsCount === 1 ? 'Video' : 'Videos'}</div>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-[#141416] border border-[#24242A] flex flex-col justify-center min-w-0" title={`1080p • ${job.aspectRatio || '9:16'} • ${job.aiModel || 'Gemini 3.8'}`}>
-                          <div className="text-[9px] text-zinc-400 font-mono uppercase tracking-wider">Specs &amp; Engine</div>
-                          <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate font-mono">1080p • {job.aspectRatio || '9:16'} • {job.aiModel?.includes('flash') ? 'Flash' : 'Gemini'}</div>
                         </div>
                       </div>
 
@@ -763,24 +762,25 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                       {/* ── 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) ── */}
                       {isRunning && (
                         <div className="p-3 rounded-xl bg-[#111116] border border-[#252532] flex flex-col gap-2.5 animate-fade-in shadow-inner">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-bold text-zinc-200 flex items-center gap-1.5">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                              <span>Autonomous 6-Stage Pipeline Live</span>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-white flex items-center gap-2">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#60A5FA]" />
+                              <span>Autonomous Pipeline</span>
                             </span>
-                            <span className="font-mono text-[10px] text-emerald-300 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                            <span className="font-mono text-[10px] text-white font-bold bg-[#2563EB] px-2.5 py-0.5 rounded-full border border-[#60A5FA]/40 shadow-xs">
                               Stage {Math.min(6, getJobStageIndex(job) + 1)} of 6
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-0.5">
+                          {/* 2-column layout to allow labels and status pills to breathe without clipping */}
+                          <div className="grid grid-cols-2 gap-2 pt-0.5">
                             {[
-                              { name: '1. Script', desc: job.aiModel || 'Gemini 2.5 Flash' },
-                              { name: '2. Voice', desc: job.voice || 'Fenrir TTS' },
-                              { name: '3. B-Roll', desc: '4K Pexels/Pixabay' },
-                              { name: '4. Captions', desc: 'Acoustic Sync' },
-                              { name: '5. Render', desc: '1080p MP4' },
-                              { name: '6. Publish', desc: job.privacyStatus === 'scheduled' ? 'Schedule' : 'Shorts Live' },
+                              { num: '1', name: 'Script', desc: job.aiModel?.includes('flash') ? 'Gemini Flash' : 'Gemini AI' },
+                              { num: '2', name: 'Voice', desc: job.voice || 'Fenrir' },
+                              { num: '3', name: 'B-Roll', desc: '4K B-Roll' },
+                              { num: '4', name: 'Captions', desc: 'Sync Subtitles' },
+                              { num: '5', name: 'Render', desc: '1080p MP4' },
+                              { num: '6', name: 'Publish', desc: job.privacyStatus === 'scheduled' ? 'Scheduled' : 'YouTube Shorts' },
                             ].map((step, idx) => {
                               const curStage = getJobStageIndex(job);
                               const isDone = curStage > idx;
@@ -788,30 +788,37 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
                               return (
                                 <div
-                                  key={step.name}
-                                  className={`p-2 rounded-xl border flex flex-col gap-1 transition-all ${
+                                  key={step.num}
+                                  className={`p-2.5 rounded-xl border flex flex-col gap-1 transition-all ${
                                     isDone
-                                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                                      ? 'bg-blue-500/10 border-blue-500/30 text-blue-200'
                                       : isCurrent
-                                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 ring-1 ring-emerald-500/50 shadow-sm'
-                                      : 'bg-[#15151C] border-[#22222C] text-zinc-500'
+                                      ? 'bg-blue-500/20 border-[#3B82F6] text-white ring-1 ring-blue-500/40 shadow-sm'
+                                      : 'bg-[#141418] border-[#22222A] text-zinc-500'
                                   }`}
                                 >
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[11px] font-bold text-white truncate">{step.name}</span>
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${
+                                        isDone || isCurrent ? 'bg-[#3B82F6] text-white' : 'bg-[#22222A] text-zinc-400'
+                                      }`}>
+                                        {step.num}
+                                      </span>
+                                      <span className="text-xs font-bold text-white truncate">{step.name}</span>
+                                    </div>
                                     {isDone ? (
-                                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded shrink-0">
-                                        <Check className="w-2.5 h-2.5 stroke-[3] text-emerald-400" /> Done
+                                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white bg-[#2563EB] px-2 py-0.5 rounded-md shrink-0 border border-[#60A5FA]/40">
+                                        <Check className="w-2.5 h-2.5 stroke-[3] text-[#60A5FA]" /> Done
                                       </span>
                                     ) : isCurrent ? (
-                                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-300 bg-emerald-500/25 px-1.5 py-0.5 rounded shrink-0 animate-pulse">
-                                        <Loader2 className="w-2.5 h-2.5 animate-spin text-emerald-400" /> Working
+                                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#93C5FD] bg-blue-500/25 px-1.5 py-0.5 rounded-md shrink-0 animate-pulse">
+                                        <Loader2 className="w-2.5 h-2.5 animate-spin text-[#60A5FA]" /> Active
                                       </span>
                                     ) : (
                                       <span className="text-[9px] text-zinc-500 font-mono shrink-0">Pending</span>
                                     )}
                                   </div>
-                                  <div className="text-[9px] text-zinc-400 truncate">{step.desc}</div>
+                                  <div className="text-[10px] text-zinc-400 truncate pl-5">{step.desc}</div>
                                 </div>
                               );
                             })}
@@ -819,12 +826,15 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                       )}
 
-                      {/* ── 5. EXECUTION & VIDEO HISTORY SECTION (PROMINENT & CLEAN) ── */}
+                      {/* ── 5. EXECUTION & VIDEO HISTORY SECTION (DROPDOWN / COLLAPSIBLE ACCORDION) ── */}
                       <div className="rounded-xl bg-[#141414] border border-[#242424] overflow-hidden">
-                        {/* History Header Bar */}
-                        <div className="px-3 py-2 bg-[#181818] border-b border-[#242424] flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <History className="w-3.5 h-3.5 text-blue-400" />
+                        {/* History Header Bar (Accordion Trigger) */}
+                        <div
+                          onClick={() => setExpandedHistoryJobs((prev) => ({ ...prev, [job.id]: !prev[job.id] }))}
+                          className="px-3 py-2 bg-[#181818] hover:bg-[#1E1E22] transition-colors cursor-pointer flex items-center justify-between gap-2 select-none"
+                        >
+                          <div className="flex items-center gap-2">
+                            <History className="w-3.5 h-3.5 text-[#60A5FA]" />
                             <span className="text-xs font-bold text-white">Execution History</span>
                             <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#1A1A1A] text-[#9CA3AF] font-mono font-semibold border border-[#2A2A2A]">
                               {historyList.length}
@@ -834,7 +844,10 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => loadHistory(job.id, true)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                loadHistory(job.id, true);
+                              }}
                               disabled={isHistoryLoading}
                               className="p-1 rounded-md bg-[#1F1F28] hover:bg-[#282834] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#2A2A38]"
                               title="Refresh History"
@@ -845,17 +858,30 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                             {historyList.length > 0 && (
                               <button
                                 type="button"
-                                onClick={() => handleClearHistory(job.id)}
-                                className="text-[9px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleClearHistory(job.id);
+                                }}
+                                className="text-[9px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer font-medium px-1"
                               >
                                 Clear
                               </button>
                             )}
+
+                            {/* Chevron Toggle Icon */}
+                            <span className="text-zinc-400 transition-transform duration-200">
+                              {expandedHistoryJobs[job.id] ? (
+                                <ChevronUp className="w-3.5 h-3.5 text-[#60A5FA]" />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                              )}
+                            </span>
                           </div>
                         </div>
 
-                        {/* History Content */}
-                        <div className="p-2.5">
+                        {/* Collapsible History Content Body */}
+                        {expandedHistoryJobs[job.id] && (
+                        <div className="p-2.5 border-t border-[#242424] animate-fade-in">
                           {isHistoryLoading && historyList.length === 0 ? (
                             <div className="py-4 flex items-center justify-center gap-2 text-xs text-zinc-400">
                               <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
@@ -878,43 +904,41 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                 return (
                                   <div
                                     key={entry.id}
-                                    className={`p-2.5 rounded-xl border flex flex-col gap-1.5 transition-all ${
+                                    className={`p-3 rounded-xl border flex flex-col gap-2 transition-all shadow-xs ${
                                       isSuccess
-                                        ? isLiveShort
-                                          ? 'bg-[#181818] border border-[#242424] hover:border-[#383838]'
-                                          : 'bg-[#181818] border border-[#242424] hover:border-[#383838]'
-                                        : 'bg-[#1B1216] border-rose-500/30 hover:border-rose-500/50'
+                                        ? 'bg-[#141414] border-[#242424] hover:border-[#303030]'
+                                        : 'bg-[#181113] border-rose-500/30 hover:border-rose-500/50'
                                     }`}
                                   >
                                     {/* Top Status & Timestamp */}
-                                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                    <div className="flex items-center justify-between gap-2 min-w-0">
                                       <div className="flex items-center gap-1.5">
                                         {isSuccess ? (
                                           isLiveShort ? (
-                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[9px] font-bold">
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/25 text-[9.5px] font-semibold">
                                               <Youtube className="w-3 h-3 text-red-500 shrink-0" />
                                               <span>YouTube Short</span>
                                             </span>
                                           ) : (
-                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#1F1F28] text-zinc-300 border border-[#2B2B38] text-[9px] font-bold">
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#181818] text-zinc-300 border border-[#282828] text-[9.5px] font-semibold">
                                               <Video className="w-3 h-3 text-zinc-400 shrink-0" />
                                               <span>Studio Video</span>
                                             </span>
                                           )
                                         ) : entry.status === 'stopped' ? (
-                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] font-bold">
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[9.5px] font-semibold">
                                             <Square className="w-2.5 h-2.5 shrink-0" />
                                             <span>Stopped</span>
                                           </span>
                                         ) : (
-                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px] font-bold">
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/25 text-[9.5px] font-semibold">
                                             <AlertCircle className="w-3 h-3 shrink-0" />
                                             <span>Failed</span>
                                           </span>
                                         )}
                                       </div>
 
-                                      <span className="text-[9px] font-mono text-zinc-400">
+                                      <span className="text-[10px] font-mono text-zinc-500 shrink-0">
                                         {new Date(entry.executedAt).toLocaleString([], {
                                           month: 'short',
                                           day: 'numeric',
@@ -925,33 +949,34 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                       </span>
                                     </div>
 
-                                    {/* Video Title */}
-                                    {entry.videoTitle && (
-                                      <div className="text-[11px] font-bold text-white flex items-center gap-1">
-                                        <span className="text-zinc-400 font-normal">Video:</span>
-                                        <span className="text-zinc-100 italic truncate">"{entry.videoTitle}"</span>
+                                    {/* Video Title + Message */}
+                                    {(entry.videoTitle || entry.message) && (
+                                      <div className="flex flex-col gap-0.5 min-w-0">
+                                        {entry.videoTitle && (
+                                          <p className="text-xs font-semibold text-zinc-100 italic line-clamp-1">
+                                            "{entry.videoTitle}"
+                                          </p>
+                                        )}
+                                        {entry.message && (
+                                          <p className="text-[10.5px] text-zinc-400 leading-snug line-clamp-1">
+                                            {entry.message}
+                                          </p>
+                                        )}
                                       </div>
                                     )}
 
-                                    {/* Message */}
-                                    {entry.message && (
-                                      <p className="text-[10px] text-zinc-400 leading-snug line-clamp-2">
-                                        {entry.message}
-                                      </p>
-                                    )}
-
-                                    {/* Action Links Row */}
-                                    <div className="flex items-center gap-1.5 pt-1 border-t border-white/5 flex-wrap">
+                                    {/* Action Buttons Grid */}
+                                    <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-[#242424]">
                                       {entry.youtubeUrl && (
                                         <a
                                           href={entry.youtubeUrl}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-[10px] font-semibold text-red-400 hover:text-white transition-colors"
+                                          className="h-8 px-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-semibold flex items-center justify-center gap-1.5 border border-[#60A5FA]/40 shadow-xs truncate transition-colors"
                                         >
-                                          <Youtube className="w-3 h-3 text-red-500" />
+                                          <Youtube className="w-3 h-3 text-white shrink-0" />
                                           <span>Watch Short</span>
-                                          <ExternalLink className="w-2.5 h-2.5 text-red-400" />
+                                          <ExternalLink className="w-2.5 h-2.5 text-blue-200 shrink-0" />
                                         </a>
                                       )}
 
@@ -960,11 +985,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                           href={entry.videoUrl}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1E1E1E] hover:bg-[#262626] border border-[#2A2A2A] text-[10px] font-semibold text-[#D4D4D8] hover:text-white transition-colors"
+                                          className="h-8 px-2.5 rounded-lg bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white text-[10.5px] font-medium flex items-center justify-center gap-1.5 border border-[#242424] hover:border-white/10 truncate transition-colors"
                                         >
-                                          <Video className="w-3 h-3 text-zinc-400" />
+                                          <Video className="w-3 h-3 text-zinc-400 shrink-0" />
                                           <span>Open MP4</span>
-                                          <ExternalLink className="w-2.5 h-2.5 text-zinc-400" />
+                                          <ExternalLink className="w-2.5 h-2.5 text-zinc-500 shrink-0" />
                                         </a>
                                       )}
 
@@ -992,10 +1017,10 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                             if (onPaneChange) onPaneChange('editor');
                                             if (onNavigate) onNavigate('workspace-editor');
                                           }}
-                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#3B82F6]/15 hover:bg-[#3B82F6]/25 border border-[#3B82F6]/30 text-[10px] font-semibold text-[#60A5FA] hover:text-white transition-colors cursor-pointer"
+                                          className="h-8 px-2.5 rounded-lg bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white text-[10.5px] font-medium flex items-center justify-center gap-1.5 border border-[#242424] hover:border-white/10 truncate transition-colors cursor-pointer"
                                           title="Load this video project into Studio Timeline for manual edits"
                                         >
-                                          <Sparkles className="w-2.5 h-2.5 text-[#60A5FA]" />
+                                          <Sparkles className="w-3 h-3 text-[#60A5FA] shrink-0" />
                                           <span>Edit in Timeline</span>
                                         </button>
                                       )}
@@ -1004,16 +1029,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                         <button
                                           type="button"
                                           onClick={() => handleCopyLink(entry.youtubeUrl || entry.videoUrl!, entry.id)}
-                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1E1E1E] hover:bg-[#262626] border border-[#2A2A2A] text-[10px] font-medium text-[#9CA3AF] hover:text-white transition-colors cursor-pointer ml-auto"
+                                          className="h-8 px-2.5 rounded-lg bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white text-[10.5px] font-medium flex items-center justify-center gap-1.5 transition-all border border-[#242424] hover:border-white/10 cursor-pointer truncate"
                                         >
                                           {copiedJobId === entry.id ? (
                                             <>
-                                              <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                              <Check className="w-3 h-3 text-emerald-400 shrink-0" />
                                               <span className="text-emerald-400 font-bold">Copied</span>
                                             </>
                                           ) : (
                                             <>
-                                              <Copy className="w-2.5 h-2.5" />
+                                              <Copy className="w-3 h-3 shrink-0" />
                                               <span>Copy Link</span>
                                             </>
                                           )}
@@ -1024,7 +1049,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                         <button
                                           type="button"
                                           onClick={() => handleRunNow(job.id, job.theme)}
-                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-[10px] font-bold text-rose-300 transition-colors cursor-pointer"
+                                          className="h-8 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:text-white text-[10.5px] font-medium flex items-center justify-center gap-1.5 truncate transition-colors cursor-pointer col-span-2"
                                         >
                                           <RefreshCw className="w-2.5 h-2.5" />
                                           <span>Retry</span>
@@ -1037,6 +1062,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                             </div>
                           )}
                         </div>
+                        )}
                       </div>
 
                       {/* ── 6. SAFE DELETE CONFIRMATION ALERT (when delete clicked) ── */}
@@ -1075,10 +1101,10 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           <>
                             {/* Running Progress Indicator */}
                             <div
-                              className="flex-1 h-9 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 shadow-inner overflow-hidden select-none"
+                              className="flex-1 h-9 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-[#181818] text-white border border-[#242424] shadow-xs overflow-hidden select-none"
                               title="Autonomous pipeline currently executing"
                             >
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400 shrink-0" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#60A5FA] shrink-0" />
                               <span className="truncate">
                                 {runningJobId === job.id
                                   ? (activePipelinePhase === 0
@@ -1217,16 +1243,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {activeSubTab === 'create' && (
         <form
           onSubmit={handleCreate}
-          className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-4 animate-fade-in"
+          className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in max-w-xl mx-auto w-full"
         >
-          {/* Header intro */}
-          <div className="flex flex-col gap-1 pb-2 border-b border-[#242428]">
+          {/* Header intro card */}
+          <div className="p-3 rounded-xl bg-[#161616] border border-[#242424] flex flex-col gap-1">
             <span className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
               <span>Configure New Publishing Rule</span>
             </span>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              ApexMind will autonomously generate, narrate, render 9:16 vertical MP4, and upload to YouTube on your schedule.
+              ApexMind autonomously scripts, voices, renders 9:16 vertical Shorts, and publishes on your automated schedule.
             </p>
           </div>
 
@@ -1240,7 +1266,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               value={theme}
               onChange={(val) => setTheme(val)}
               className="w-full text-xs"
-              buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+              buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
               menuClassName="!bg-[#181818] !border-[#242424]"
             />
           </div>
@@ -1256,7 +1282,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               value={aiModel}
               onChange={(val) => setAiModel(val)}
               className="w-full text-xs"
-              buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+              buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
               menuClassName="!bg-[#181818] !border-[#242424]"
             />
           </div>
@@ -1272,7 +1298,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 value={aspectRatio}
                 onChange={(val) => setAspectRatio(val as any)}
                 className="w-full text-xs"
-                buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+                buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
                 menuClassName="!bg-[#181818] !border-[#242424]"
               />
             </div>
@@ -1285,7 +1311,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 value={length}
                 onChange={(val) => setLength(val)}
                 className="w-full text-xs"
-                buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+                buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
                 menuClassName="!bg-[#181818] !border-[#242424]"
               />
             </div>
@@ -1296,17 +1322,17 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
               Schedule Frequency
             </label>
-            <div className="grid grid-cols-2 p-1 bg-[#101013] rounded-none border-0 gap-1">
+            <div className="grid grid-cols-2 p-1 bg-[#101013] rounded-xl border border-[#242428] gap-1">
               <button
                 type="button"
                 onClick={() => setFrequencyType('interval')}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   frequencyType === 'interval'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-white hover:bg-[#181818]'
+                    ? 'bg-[#3B82F6] text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-[#18181C]'
                 }`}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${frequencyType === 'interval' ? 'text-white' : 'text-slate-500'}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${frequencyType === 'interval' ? 'text-white' : 'text-slate-400'}`} />
                 <span>Every X Hours / Mins</span>
               </button>
               <button
@@ -1314,11 +1340,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 onClick={() => setFrequencyType('daily')}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   frequencyType === 'daily'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-white hover:bg-[#181818]'
+                    ? 'bg-[#3B82F6] text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-[#18181C]'
                 }`}
               >
-                <Clock className={`w-3.5 h-3.5 ${frequencyType === 'daily' ? 'text-white' : 'text-slate-500'}`} />
+                <Clock className={`w-3.5 h-3.5 ${frequencyType === 'daily' ? 'text-white' : 'text-slate-400'}`} />
                 <span>Daily at Time</span>
               </button>
             </div>
@@ -1337,7 +1363,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                     value={intervalSelection}
                     onChange={(val) => setIntervalSelection(val)}
                     className="w-full text-xs"
-                    buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+                    buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
                     menuClassName="!bg-[#181818] !border-[#242424]"
                   />
                 </div>
@@ -1354,7 +1380,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                     value={privacyStatus}
                     onChange={(val) => setPrivacyStatus(val as any)}
                     className="w-full text-xs"
-                    buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+                    buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
                     menuClassName="!bg-[#181818] !border-[#242424]"
                   />
                 </div>
@@ -1413,7 +1439,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                   value={privacyStatus}
                   onChange={(val) => setPrivacyStatus(val as any)}
                   className="w-full text-xs"
-                  buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+                  buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
                   menuClassName="!bg-[#181818] !border-[#242424]"
                 />
               </div>
@@ -1430,7 +1456,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               value={voice}
               onChange={(val) => setVoice(val)}
               className="w-full text-xs"
-              buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+              buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
               menuClassName="!bg-[#181818] !border-[#242424]"
             />
           </div>
@@ -1445,21 +1471,35 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               value={musicTrack}
               onChange={(val) => setMusicTrack(val)}
               className="w-full text-xs"
-              buttonClassName="!bg-[#151518] !border-[#242424] !py-2 !rounded-lg text-xs"
+              buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
               menuClassName="!bg-[#181818] !border-[#242424]"
             />
           </div>
 
           {/* Target Channel Notification */}
-          <div className="p-3 rounded-xl bg-[#151518] border border-[#24242A] flex items-center gap-2.5 text-[11px]">
-            <Youtube className={`w-4 h-4 shrink-0 ${authStatus?.connected ? 'text-red-500' : 'text-zinc-500'}`} />
-            <div className="text-zinc-300 min-w-0 truncate">
-              {authStatus?.connected ? (
-                <span>Publishing target: <strong className="text-emerald-400">{authStatus.channel?.name || '@channel'}</strong></span>
-              ) : (
-                <span>Publishing target: <strong className="text-amber-400/90">Studio Library</strong> (Connect channel to auto-publish)</span>
-              )}
+          <div className="p-3 rounded-xl bg-[#141416] border border-[#26262E] flex items-center justify-between gap-2.5 text-[11px]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/25 flex items-center justify-center shrink-0">
+                <Youtube className="w-3.5 h-3.5 text-red-500" />
+              </div>
+              <div className="text-zinc-300 min-w-0">
+                <div className="text-[10px] text-zinc-500 font-mono uppercase">Target Channel</div>
+                {authStatus?.connected ? (
+                  <div className="font-semibold text-white truncate">{authStatus.channel?.name || '@channel'}</div>
+                ) : (
+                  <div className="font-semibold text-amber-300 truncate">Studio Library (Offline Mode)</div>
+                )}
+              </div>
             </div>
+            {authStatus?.connected ? (
+              <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold shrink-0">
+                Verified
+              </span>
+            ) : (
+              <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold shrink-0">
+                Local Only
+              </span>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -1486,84 +1526,117 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {/* ── Subtab 3: Channel & Target ── */}
       {activeSubTab === 'channel' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in">
-          {/* Target Channel Card */}
-          <div className="p-4 rounded-xl bg-[#181818] border border-[#242424] shadow-md flex flex-col gap-3">
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#24242A]">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 shrink-0">
-                  <Youtube className="w-4 h-4" />
+          {/* ── YouTube Channel Banner Card ── */}
+          <div className="rounded-xl overflow-hidden border border-[#242424] shadow-lg flex flex-col">
+
+            {/* Banner Image */}
+            <div className="relative w-full h-24 bg-gradient-to-r from-[#0B0F19] via-[#131127] to-[#0A0A0A] overflow-hidden shrink-0">
+              {authStatus?.connected && authStatus.channel?.bannerUrl ? (
+                <img
+                  src={authStatus.channel.bannerUrl}
+                  alt="Channel Banner"
+                  className="w-full h-full object-cover object-center"
+                />
+              ) : authStatus?.connected ? (
+                <div className="w-full h-full bg-gradient-to-r from-[#141414] via-[#111111] to-[#0A0A0A] flex items-center px-4">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-bold tracking-widest text-blue-400 uppercase block">ApexMind Creator Studio</span>
+                    <p className="text-sm font-extrabold text-white">{authStatus.channel?.name || 'Your Channel'}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-white truncate">YouTube Target Channel</h4>
-                  <p className="text-[10px] text-zinc-400">Autonomous Video Publishing Destination</p>
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-red-950/40 via-[#18181B] to-black flex items-center px-4">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-bold tracking-widest text-red-400 uppercase block">YouTube Creator Hub</span>
+                    <p className="text-sm font-extrabold text-white">Connect Your Channel</p>
+                  </div>
                 </div>
-              </div>
-              <span
-                className={`px-2 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${
+              )}
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
+              {/* Connected badge top-right */}
+              <div className="absolute top-2 right-2">
+                <span className={`px-2 py-0.5 text-[9.5px] font-bold rounded-full border ${
                   authStatus?.connected
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                    ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
                     : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                }`}
-              >
-                {authStatus?.connected ? 'Connected' : 'Studio Mode'}
-              </span>
+                }`}>
+                  {authStatus?.connected ? 'Connected' : 'Studio Mode'}
+                </span>
+              </div>
             </div>
 
-            {authStatus?.connected ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-[#141414] border border-[#24242A] flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400 font-bold text-xs shrink-0">
-                    {authStatus.channel?.name?.charAt(0) || 'Y'}
+            {/* Avatar + Info row */}
+            <div className="bg-[#111111] border-t border-[#1E1E1E] px-3 py-2.5 flex items-center gap-3">
+              {/* Avatar */}
+              <div className="relative shrink-0 -mt-6">
+                {authStatus?.connected && authStatus.channel?.avatarUrl ? (
+                  <img
+                    src={authStatus.channel.avatarUrl}
+                    alt={authStatus.channel?.name || 'Channel'}
+                    className="w-10 h-10 rounded-full border-2 border-[#111111] object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full border-2 border-[#111111] bg-red-600/20 border-red-500/30 flex items-center justify-center text-red-400 font-bold text-sm shadow-lg">
+                    {authStatus?.channel?.name?.charAt(0) || <Youtube className="w-4 h-4" />}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-white truncate">{authStatus.channel?.name || 'Connected Channel'}</p>
-                    <p className="text-[10px] text-emerald-400 font-medium mt-0.5 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#60A5FA] animate-pulse" />
-                      <span>Ready for Instant Shorts Publishing</span>
-                    </p>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  All automated scheduled pipeline runs will render in 1080x1920 MP4 format and upload live directly to your channel's YouTube Shorts catalog.
-                </p>
-
-                <div className="pt-2 border-t border-[#24242A] flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-500 font-mono">OAuth 2.0 Token Active</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onNavigate) onNavigate('youtube-channels');
-                      else window.open('/youtube/channels', '_blank');
-                    }}
-                    className="px-2.5 py-1 rounded-md bg-white/[0.06] hover:bg-[#222222] text-[11px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#2E2E2E] flex items-center gap-1"
-                  >
-                    <span>Manage Channel</span>
-                    <ExternalLink className="w-3 h-3 text-zinc-400" />
-                  </button>
-                </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-amber-950/20 border border-amber-500/30 flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div className="text-[11px] text-amber-200/90 leading-relaxed">
-                    <strong className="text-amber-300 block font-semibold">Local Studio Storage Mode</strong>
-                    Videos are synthesized, rendered into Full HD 1080x1920 MP4, and saved to your Studio Library catalog. Connect your Google YouTube account to enable zero-click live uploads.
-                  </div>
-                </div>
 
+              {/* Name + Handle + Stats */}
+              <div className="flex-1 min-w-0 pt-1">
+                {authStatus?.connected ? (
+                  <>
+                    <p className="text-xs font-bold text-white truncate leading-tight">{authStatus.channel?.name || 'Connected Channel'}</p>
+                    <p className="text-[10px] text-zinc-500 truncate leading-tight">{authStatus.channel?.handle || ''}</p>
+                    {authStatus.channel?.subscribers != null && (
+                      <p className="text-[10px] text-zinc-400 mt-0.5 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                        <span>{authStatus.channel.subscribers.toLocaleString()} subscribers</span>
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[11px] text-zinc-400 leading-snug">Connect your YouTube account to publish Shorts live.</p>
+                )}
+              </div>
+
+              {/* Action button */}
+              {authStatus?.connected ? (
                 <button
                   type="button"
                   onClick={() => {
                     if (onNavigate) onNavigate('youtube-channels');
                     else window.open('/youtube/channels', '_blank');
                   }}
-                  className="w-full py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all"
+                  className="shrink-0 px-2.5 py-1 rounded-lg bg-[#181818] hover:bg-[#26262C] text-[10.5px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#242424] hover:border-white/10 flex items-center gap-1"
                 >
-                  <Youtube className="w-3.5 h-3.5" />
-                  <span>Connect YouTube Channel</span>
+                  <span>Manage</span>
+                  <ExternalLink className="w-3 h-3 text-zinc-400" />
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onNavigate) onNavigate('youtube-channels');
+                    else window.open('/youtube/channels', '_blank');
+                  }}
+                  className="shrink-0 px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[10.5px] flex items-center gap-1 cursor-pointer shadow-md transition-all"
+                >
+                  <Youtube className="w-3 h-3" />
+                  <span>Connect</span>
+                </button>
+              )}
+            </div>
+
+            {/* Footer info strip */}
+            {authStatus?.connected && (
+              <div className="bg-[#0D0D0D] border-t border-[#1E1E1E] px-3 py-1.5 flex items-center justify-between">
+                <span className="text-[9.5px] text-zinc-600 font-mono">OAuth 2.0 Token Active</span>
+                <span className="text-[9.5px] text-emerald-500 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Ready for Shorts Publishing
+                </span>
               </div>
             )}
           </div>

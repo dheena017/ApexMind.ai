@@ -284,7 +284,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     }}
                     className={`p-2.5 rounded-xl border text-left flex flex-col gap-1.5 transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg'
+                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
                         : 'bg-[#181818] border-[#242424] hover:border-[#2E2E2E] hover:bg-[#1E1E1E]'
                     }`}
                   >
@@ -332,7 +332,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     onClick={() => handleSelectOutputPreset(p)}
                     className={`p-3 rounded-xl border transition-all flex items-center justify-between text-left cursor-pointer ${
                       isSelected
-                        ? 'bg-[#1E2330] border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-md'
+                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
                         : 'bg-[#181818] border-[#242424] hover:border-[#2E2E2E] hover:bg-[#1E1E1E]'
                     }`}
                   >
@@ -505,7 +505,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                 onClick={() => setGradType('linear')}
                 className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                   gradType === 'linear'
-                    ? 'bg-[#1E2330] text-white border-[#3B82F6]'
+                    ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
                     : 'bg-[#111111] text-slate-400 border-[#242424]'
                 }`}
               >
@@ -516,7 +516,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                 onClick={() => setGradType('radial')}
                 className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                   gradType === 'radial'
-                    ? 'bg-[#1E2330] text-white border-[#3B82F6]'
+                    ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
                     : 'bg-[#111111] text-slate-400 border-[#242424]'
                 }`}
               >

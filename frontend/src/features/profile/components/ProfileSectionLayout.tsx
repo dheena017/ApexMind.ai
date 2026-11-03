@@ -201,7 +201,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
                     href={link.value.startsWith('http') ? link.value : `https://${link.value}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#181818] hover:bg-[#222222] border border-[#2F2F2F] text-[11px] text-slate-300 hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors"
                   >
                     <span>{link.label}</span>
                     <ExternalLink className="w-2.5 h-2.5 text-[#60A5FA]" />
@@ -217,7 +217,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
           <button
             type="button"
             onClick={() => onNavigate('profile-details')}
-            className="px-4 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-white/20 text-xs font-semibold text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            className="px-4 py-2 rounded-full bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 text-xs font-semibold text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
           >
             <UserRound className="w-3.5 h-3.5 text-slate-300" />
             <span>Edit Details</span>
@@ -254,7 +254,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
       </div>
 
       {/* ── 3. High-Contrast Segmented Pill Navigation Bar (Matching User Reference) ── */}
-      <div className="w-full flex items-center justify-between gap-2 overflow-x-auto p-1.5 bg-[#141414] border border-[#2F2F2F] rounded-2xl">
+      <div className="w-full flex items-center justify-between gap-2 overflow-x-auto p-1.5 bg-[#141414] border border-[#242424] rounded-2xl">
         <nav aria-label="Profile navigation" className="flex items-center gap-1 min-w-max">
           {sections.map((section) => {
             const selected = activePage === section.id || (section.id === 'profile-details' && activePage === 'profile');
@@ -265,9 +265,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
                 aria-current={selected ? 'page' : undefined}
                 onClick={() => onNavigate(section.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  selected
-                    ? 'bg-white text-black shadow-md'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                  selected ? 'bg-[#2563EB] text-white shadow-xs font-bold border border-[#60A5FA]/40' : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10'
                 }`}
               >
                 <span className={selected ? 'text-white' : 'text-[#9CA3AF] group-hover:text-white'}>
@@ -332,7 +330,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
       </div>
 
       {/* ── 5. Active Sub-Page Content Container ── */}
-      <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-7 shadow-xl">
+      <div className="rounded-2xl border border-[#242424] bg-[#141414] p-5 sm:p-7 shadow-xl">
         {children}
       </div>
 

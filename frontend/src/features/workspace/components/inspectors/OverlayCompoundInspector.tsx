@@ -212,7 +212,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                       }}
                       className={`rounded flex flex-col items-center justify-center text-[9px] font-semibold border transition-all cursor-pointer ${
                         isNear
-                          ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
+                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
                           : 'bg-[#181818] border-[#25252A] text-slate-500 hover:text-white'
                       }`}
                     >
@@ -299,7 +299,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                   type="button"
                   onClick={() => setFlipH(!flipH)}
                   className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border text-xs font-semibold cursor-pointer transition-colors ${
-                    flipH ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#202026]'
+                    flipH ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs' : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                   }`}
                 >
                   <FlipHorizontal className="w-3.5 h-3.5" />
@@ -309,7 +309,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                   type="button"
                   onClick={() => setFlipV(!flipV)}
                   className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border text-xs font-semibold cursor-pointer transition-colors ${
-                    flipV ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#202026]'
+                    flipV ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs' : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                   }`}
                 >
                   <FlipVertical className="w-3.5 h-3.5" />
@@ -318,7 +318,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                 <button
                   type="button"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
-                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-[#D4D4D8] hover:bg-[#202026] cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-[#D4D4D8] hover:bg-[#26262C] hover:border-white/10 cursor-pointer"
                   title="Rotate +90°"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
@@ -355,18 +355,18 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                   onClick={() => setAnimation(anim.id)}
                   className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
                     animation === anim.id
-                      ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
-                      : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#202026] hover:text-white'
+                      ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
+                      : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{anim.icon}</span>
                     <div>
                       <span className="text-xs font-semibold text-white block">{anim.label}</span>
-                      <span className="text-[10px] text-slate-500">{anim.desc}</span>
+                      <span className={`text-[10px] ${animation === anim.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{anim.desc}</span>
                     </div>
                   </div>
-                  {animation === anim.id && <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                  {animation === anim.id && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
                 </button>
               ))}
             </div>
@@ -423,7 +423,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                     onClick={() => setBlendMode(b.id)}
                     className={`p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
                       blendMode === b.id
-                        ? 'bg-[#1E2A3A] border-[#3B82F6] text-white shadow-sm'
+                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
                         : 'bg-[#181818] border-[#242424] text-slate-400 hover:text-white'
                     }`}
                   >
@@ -495,7 +495,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                   type="button"
                   onClick={() => setGlow(!glow)}
                   className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    glow ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                    glow ? 'bg-[#2563EB]' : 'bg-[#242424]'
                   }`}
                 >
                   <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${glow ? 'left-5' : 'left-1'}`} />
@@ -540,7 +540,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                   type="button"
                   onClick={() => setShadow(!shadow)}
                   className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    shadow ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                    shadow ? 'bg-[#2563EB]' : 'bg-[#242424]'
                   }`}
                 >
                   <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${shadow ? 'left-5' : 'left-1'}`} />
@@ -579,7 +579,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                 <button
                   type="button"
                   onClick={() => setDisplayDuration((p) => Math.max(0.5, parseFloat((p - 0.5).toFixed(1))))}
-                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#202026]"
+                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#26262C] hover:border-white/10"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -595,7 +595,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                 <button
                   type="button"
                   onClick={() => setDisplayDuration((p) => Math.min(60, parseFloat((p + 0.5).toFixed(1))))}
-                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#202026]"
+                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#26262C] hover:border-white/10"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -611,7 +611,7 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
                 type="button"
                 onClick={() => setLoopAnim(!loopAnim)}
                 className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                  loopAnim ? 'bg-[#3B82F6]' : 'bg-[#2A2A30]'
+                  loopAnim ? 'bg-[#2563EB]' : 'bg-[#242424]'
                 }`}
               >
                 <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${loopAnim ? 'left-5' : 'left-1'}`} />
