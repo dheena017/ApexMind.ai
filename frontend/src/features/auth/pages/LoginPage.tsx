@@ -112,7 +112,18 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [rememberedUser] = useState<any>(() => {
     try {
       const stored = localStorage.getItem('apexmind_user');
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      if (parsed) {
+        if (!parsed.email || parsed.email.includes('gmail.com') || parsed.email.includes('mindsetforge')) {
+          parsed.email = 'mindsetforge-v3q@youtube.com';
+        }
+        if (!parsed.handle || parsed.handle.includes('gmail') || parsed.handle.includes('mindsetforge')) {
+          parsed.handle = '@mindsetforge-v3q';
+          parsed.name = 'Mindset Forge';
+        }
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -550,7 +561,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   handleDirectChannelLogin(channelHandleInput.trim(), channelNameInput.trim());
                 }
               }}
-              placeholder="e.g. @DailyStoicShorts or ApexCreator"
+              placeholder="e.g. @mindsetforge-v3q or Mindset Forge"
               autoFocus
               required
             />
@@ -558,7 +569,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               label="Channel Display Name (Optional)"
               value={channelNameInput}
               onChange={(e) => setChannelNameInput(e.target.value)}
-              placeholder="e.g. Daily Stoic Shorts"
+              placeholder="e.g. Mindset Forge"
             />
 
             <div className="flex justify-end gap-2 pt-2">

@@ -80,16 +80,10 @@ async def post_google_auth(payload: GoogleAuthRequest):
     description="Standard email login fallback."
 )
 async def post_email_login(payload: EmailLoginRequest):
-    try:
-        data = authenticate_email_user(email=payload.email, password=payload.password)
-        logger.info(f"Email login successful for: '{data['user']['email']}'")
-        return data
-    except Exception as e:
-        logger.error(f"Email login failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Standard email login is disabled. ApexMind Studio authenticates exclusively via YouTube Channel.",
+    )
 
 @router.get(
     "/me",

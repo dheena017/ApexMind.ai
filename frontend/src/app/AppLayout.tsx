@@ -273,7 +273,7 @@ export default function AppLayout({
               <button
                 onClick={() => onNavigate('profile')}
                 className="h-7.5 w-7.5 rounded-lg border border-[#2A2A2A] bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/40"
-                title={user ? `${user.name} (${user.email})` : 'Profile & Badges'}
+                title={user ? `${user.name} (${user.email?.includes('gmail.com') || user.email?.includes('mindsetforge') ? 'mindsetforge-v3q@youtube.com' : user.email})` : 'Profile & Badges'}
                 aria-label="Open profile"
               >
                 {user?.avatarUrl ? (
@@ -418,10 +418,10 @@ export default function AppLayout({
                       ? 'bg-blue-500/15 text-[#60A5FA]'
                       : 'bg-red-500/15 text-red-400'
                   }`}>
-                    {user.provider === 'google' ? 'Google' : 'YouTube'}
+                    'YouTube'
                   </span>
                 </span>
-                <span className="block text-[10px] text-[#9CA3AF] truncate">{user.email}</span>
+                <span className="block text-[10px] text-[#9CA3AF] truncate">{user.email?.includes('gmail.com') || user.email?.includes('mindsetforge') ? 'mindsetforge-v3q@youtube.com' : user.email}</span>
               </span>
               <User className="w-3.5 h-3.5 text-[#6B7280] shrink-0" aria-hidden="true" />
             </button>

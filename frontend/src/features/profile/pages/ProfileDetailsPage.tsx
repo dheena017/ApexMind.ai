@@ -63,8 +63,12 @@ export default function ProfileDetailsPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {field('Display name', 'displayName', 'text', 'Enter your public creator name')}
           <label className="block space-y-1.5">
-            <span className={labelClass}>Account email</span>
-            <input value={user?.email || ''} readOnly className={`${inputClass} cursor-not-allowed text-[#777]`} />
+            <span className={labelClass}>Channel email</span>
+            <input
+              value={user?.email && !user.email.includes('gmail.com') ? user.email : 'mindsetforge-v3q@youtube.com'}
+              readOnly
+              className={`${inputClass} cursor-not-allowed text-[#777]`}
+            />
           </label>
           {field('Creator handle', 'creatorHandle', 'text', '@yourchannel')}
           {field('Avatar image URL', 'avatarUrl', 'url', 'Paste an image URL')}

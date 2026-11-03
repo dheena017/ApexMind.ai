@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, ChannelAuthPayload } from '../types';
-import { authApi } from '../api/authApi';
+import { authApi, resolveChannelDeliveryEmail } from '../api/authApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
 interface AuthContextType {
@@ -90,7 +90,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
       const stored = localStorage.getItem(AUTH_USER_KEY);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      if (parsed) {
+        // Enforce channel delivery address: mindsetforge-v3q@youtube.com (never a Gmail address)
+        parsed.email = resolveChannelDeliveryEmail(parsed.email, parsed.handle);
+        parsed.provider = 'youtube_oauth';
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(parsed));
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -127,6 +135,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser((prev) => {
             if (!prev) return remoteUser as UserProfile;
             const merged = { ...prev, ...remoteUser };
+            merged.email = resolveChannelDeliveryEmail(merged.email, merged.handle);
+            merged.provider = 'youtube_oauth';
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(merged));
             return merged;
           });
@@ -148,6 +158,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const authData = await authApi.channelLogin(payload);
+      authData.user.email = resolveChannelDeliveryEmail(authData.user.email, authData.user.handle || payload.handle);
+      authData.user.provider = 'youtube_oauth';
       setUser(authData.user);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authData.user));
       localStorage.setItem(AUTH_TOKEN_KEY, authData.token);

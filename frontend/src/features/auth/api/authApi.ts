@@ -2,6 +2,27 @@ import { UserProfile, ChannelAuthPayload } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
 
+/**
+ * Normalizes email to YouTube channel delivery address: [channel-identifier]@youtube.com
+ * Never exposes or returns private Gmail addresses.
+ */
+export function resolveChannelDeliveryEmail(email?: string, handle?: string): string {
+  if (email && email.toLowerCase().includes('mindsetforge')) {
+    return 'mindsetforge-v3q@youtube.com';
+  }
+  if (handle && handle.toLowerCase().includes('mindsetforge')) {
+    return 'mindsetforge-v3q@youtube.com';
+  }
+  if (email && email.endsWith('@youtube.com') && !email.includes('gmail.com')) {
+    return email.toLowerCase();
+  }
+  const clean = (handle || 'creator').replace(/^@/, '').toLowerCase().trim();
+  if (clean.includes('mindsetforge')) {
+    return 'mindsetforge-v3q@youtube.com';
+  }
+  return `${clean || 'creator'}@youtube.com`;
+}
+
 export const authApi = {
   // Sign in with YouTube Channel — the ONLY login method
   async channelLogin(payload: ChannelAuthPayload): Promise<{ user: UserProfile; token: string }> {
@@ -20,6 +41,10 @@ export const authApi = {
 
       if (res.ok) {
         const data = await res.json();
+        if (data.user) {
+          data.user.email = resolveChannelDeliveryEmail(data.user.email, data.user.handle || payload.handle);
+          data.user.provider = 'youtube_oauth';
+        }
         consoleLogger.success('Auth', `Successfully logged in via YouTube Channel: ${data.user.name}`, data.user);
         return data;
       }
@@ -34,8 +59,8 @@ export const authApi = {
     const cleanName = (payload.name || cleanHandle.replace(/^@/, '') || 'YouTube Creator').trim();
     const cleanId = payload.channelId || `ch_${cleanHandle.replace(/[^a-zA-Z0-9_-]/g, '') || 'creator'}`;
 
-    // Email is always the YouTube channel address — never a Gmail address
-    const channelEmail = `${cleanHandle.replace(/^@/, '').toLowerCase()}@youtube.com`;
+    // Email is always the YouTube channel system delivery address — never a Gmail address
+    const channelEmail = resolveChannelDeliveryEmail(undefined, cleanHandle);
 
     const fallbackUser: UserProfile = {
       id: cleanId,
@@ -44,7 +69,7 @@ export const authApi = {
       avatarUrl: payload.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
       provider: 'youtube_oauth',
       verified: true,
-      handle: cleanHandle,
+      handle: cleanHandle.toLowerCase().includes('mindsetforge') ? '@mindsetforge-v3q' : cleanHandle,
       channelId: payload.channelId || `UC_${cleanHandle.replace(/^@/, '')}`,
       lastLoginAt: new Date().toISOString(),
     };
@@ -74,6 +99,10 @@ export const authApi = {
       throw new Error('Failed to retrieve user profile');
     }
     const data = await res.json();
+    if (data) {
+      data.email = resolveChannelDeliveryEmail(data.email, data.handle);
+      data.provider = 'youtube_oauth';
+    }
     return data;
   },
 

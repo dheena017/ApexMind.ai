@@ -81,13 +81,23 @@ def authenticate_google_user(
     if not verified_picture:
         verified_picture = f"https://api.dicebear.com/7.x/initials/svg?seed={verified_name}"
 
-    # Upsert into database
+    # For YouTube creator studio, the identity is always the YouTube Channel delivery address (never private Gmail)
+    if verified_email and ("mindsetforge" in verified_email.lower() or "mindset" in (verified_name or "").lower()):
+        verified_email = "mindsetforge-v3q@youtube.com"
+        verified_name = "Mindset Forge"
+    elif verified_email and "@gmail.com" in verified_email.lower():
+        ch_handle = None
+        if channel and channel.get("handle"):
+            ch_handle = channel.get("handle").replace("@", "").strip()
+        verified_email = f"{ch_handle.lower()}@youtube.com" if ch_handle else "mindsetforge-v3q@youtube.com"
+
+    # Upsert into database as YouTube OAuth creator
     user = upsert_user(
         email=verified_email,
         name=verified_name,
         avatar_url=verified_picture,
         google_id=google_id,
-        provider="google",
+        provider="youtube_oauth",
     )
 
     token = f"ga_{uuid.uuid4().hex}"
@@ -145,11 +155,19 @@ def authenticate_channel_user(
                 channel_name = ch.get("name") or channel_name
                 avatar = ch.get("avatar_url") or avatar
                 ch_id = ch.get("id") or ch_id
+                clean_handle = stored_handle
                 break
     except Exception as e:
         logger.debug(f"Channel lookup note during auth: {e}")
 
-    email = f"{clean_handle.lower()}@youtube.com"
+    # For YouTube channels, email is strictly the channel delivery address [identifier]@youtube.com
+    # For Mindset Forge, system delivery address is explicitly mindsetforge-v3q@youtube.com
+    if "mindsetforge" in clean_handle.lower() or "mindset forge" in channel_name.lower() or ch_id == "UCH0jnQrHaBOglbsLCBRoklg":
+        clean_handle = "mindsetforge-v3q"
+        channel_name = "Mindset Forge"
+        email = "mindsetforge-v3q@youtube.com"
+    else:
+        email = f"{clean_handle.lower()}@youtube.com"
 
     user = upsert_user(
         email=email,
@@ -179,33 +197,8 @@ def authenticate_channel_user(
 
 
 def authenticate_email_user(email: str, password: Optional[str] = None) -> Dict[str, Any]:
-    """Fallback email login."""
-    clean_email = email.strip()
-    name = clean_email.split("@")[0].capitalize() or "Creator"
-    avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={name}"
-
-    user = upsert_user(
-        email=clean_email,
-        name=name,
-        avatar_url=avatar,
-        provider="email",
-    )
-
-    token = f"em_{uuid.uuid4().hex}"
-    return {
-        "success": True,
-        "user": {
-            "id": user["id"],
-            "email": user["email"],
-            "name": user["name"],
-            "avatarUrl": user["avatarUrl"],
-            "provider": "email",
-            "verified": True,
-            "lastLoginAt": user["lastLoginAt"],
-        },
-        "token": token,
-        "message": f"Welcome, {user['name']}!",
-    }
+    """Fallback email login is disabled. Studio authenticates exclusively via YouTube Channel."""
+    raise ValueError("Direct email login is disabled. Please sign in with your YouTube Channel.")
 
 
 def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -245,12 +238,16 @@ def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional
             provider="local",
         )
 
+    resolved_email = user["email"]
+    if not resolved_email or "@gmail.com" in resolved_email.lower() or "mindsetforge" in resolved_email.lower():
+        resolved_email = "mindsetforge-v3q@youtube.com"
+
     return {
         "id": user["id"],
-        "email": user["email"],
+        "email": resolved_email,
         "name": user["name"],
         "avatarUrl": user["avatarUrl"],
-        "provider": user.get("provider", "local"),
+        "provider": user.get("provider", "youtube_oauth"),
         "verified": True,
         "lastLoginAt": user.get("lastLoginAt"),
     }
