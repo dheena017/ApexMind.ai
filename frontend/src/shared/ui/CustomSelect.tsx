@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useId } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
 export interface SelectOption {
@@ -26,6 +26,7 @@ export interface CustomSelectProps {
   variant?: 'compact' | 'form';
   size?: 'sm' | 'md' | 'lg';
   align?: 'left' | 'right';
+  autoPosition?: boolean;
   disabled?: boolean;
   className?: string;
   buttonClassName?: string;
@@ -68,7 +69,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   icon,
   variant = 'form',
   size = 'md',
-  align = 'left',
+  align,
+  autoPosition = true,
   disabled = false,
   className = '',
   buttonClassName = '',
@@ -77,12 +79,104 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   title,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
+  const [horizontalAlign, setHorizontalAlign] = useState<'left' | 'right'>(align || 'left');
+  const [maxMenuHeight, setMaxMenuHeight] = useState<number>(280);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const generatedId = useId();
   const selectId = id || generatedId;
 
   const normalizedOptions = options.map(normalizeOption);
   const selectedOption = normalizedOptions.find((opt) => opt.value === value);
+
+  // Dynamic Auto-Positioning (Vertical Flip & Horizontal Alignment)
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+
+    // Detect nearest scrollable ancestor container if any
+    let scrollParent: HTMLElement | null = null;
+    let parent = triggerRef.current.parentElement;
+    while (parent && parent !== document.body) {
+      const style = window.getComputedStyle(parent);
+      if (
+        (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+        parent.scrollHeight > parent.clientHeight
+      ) {
+        scrollParent = parent;
+        break;
+      }
+      parent = parent.parentElement;
+    }
+
+    let spaceBelow = vh - rect.bottom;
+    let spaceAbove = rect.top;
+    let spaceRight = vw - rect.left;
+    let spaceLeft = rect.right;
+
+    if (scrollParent) {
+      const parentRect = scrollParent.getBoundingClientRect();
+      spaceBelow = Math.min(spaceBelow, parentRect.bottom - rect.bottom);
+      spaceAbove = Math.min(spaceAbove, rect.top - parentRect.top);
+      spaceRight = Math.min(spaceRight, parentRect.right - rect.left);
+      spaceLeft = Math.min(spaceLeft, rect.right - parentRect.left);
+    }
+
+    // Vertical placement: flip upwards if space below is too tight and space above has more room
+    const estimatedHeight = 220;
+    let nextPlacement: 'bottom' | 'top' = 'bottom';
+    if (autoPosition && spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
+      nextPlacement = 'top';
+    }
+    setPlacement(nextPlacement);
+
+    // Dynamic max-height clamped to available space
+    const availableSpace = nextPlacement === 'top' ? spaceAbove - 12 : spaceBelow - 12;
+    setMaxMenuHeight(Math.max(130, Math.min(availableSpace, 300)));
+
+    // Horizontal alignment: if opening left-aligned would cause right overflow, align to right
+    if (align) {
+      setHorizontalAlign(align);
+    } else if (autoPosition) {
+      if (spaceRight < 230 && spaceLeft >= 200) {
+        setHorizontalAlign('right');
+      } else {
+        setHorizontalAlign('left');
+      }
+    }
+  }, [align, autoPosition]);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+  }, [isOpen, updatePosition]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleScrollOrResize = () => {
+      updatePosition();
+    };
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+    };
+  }, [isOpen, updatePosition]);
+
+  // Auto-scroll selected item into view when menu opens
+  useEffect(() => {
+    if (!isOpen || !menuRef.current) return;
+    const activeItem = menuRef.current.querySelector('[aria-selected="true"]');
+    if (activeItem) {
+      activeItem.scrollIntoView({ block: 'nearest' });
+    }
+  }, [isOpen]);
 
   // Close on outside click
   useEffect(() => {
@@ -150,6 +244,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
       {/* Dropdown Trigger Button */}
       <button
+        ref={triggerRef}
         id={selectId}
         type="button"
         disabled={disabled}
@@ -180,14 +275,18 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       {/* Dropdown Menu Popover */}
       {isOpen && (
         <div
+          ref={menuRef}
           role="listbox"
           tabIndex={-1}
-          className={`absolute z-50 mt-1.5 p-1.5 rounded-xl bg-[#141414] border border-[#242424] shadow-2xl shadow-black/90 custom-scrollbar max-h-72 overflow-y-auto ${
+          style={{ maxHeight: `${maxMenuHeight}px` }}
+          className={`absolute z-50 p-1.5 rounded-xl bg-[#141414] border border-[#242424] shadow-2xl shadow-black/90 custom-scrollbar overflow-y-auto ${
+            placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          } ${
+            horizontalAlign === 'right' ? 'right-0 left-auto' : 'left-0 right-auto'
+          } ${
             isCompact
-              ? align === 'right'
-                ? 'right-0 min-w-[210px]'
-                : 'left-0 min-w-[210px]'
-              : 'left-0 right-0 w-full'
+              ? 'min-w-[210px] w-max max-w-[calc(100vw-32px)]'
+              : 'min-w-full w-max min-w-[230px] max-w-[calc(100vw-32px)] sm:max-w-xs'
           } ${menuClassName}`}
         >
           {normalizedOptions.length === 0 ? (
@@ -223,12 +322,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                       : isSelected ? 'bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40 shadow-xs' : 'text-[#D4D4D8] hover:bg-[#26262C] hover:text-white hover:border-white/10 border border-transparent'
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0 truncate">
+                  <div className="flex items-center gap-2 min-w-0">
                     {opt.icon && <span className="shrink-0">{opt.icon}</span>}
-                    <div className="truncate">
-                      <div className="truncate font-medium">{opt.label}</div>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-white truncate">{opt.label}</div>
                       {opt.description && (
-                        <div className="text-[10px] text-[#6B7280] truncate mt-0.5">{opt.description}</div>
+                        <div className={`text-[10px] mt-0.5 truncate ${isSelected ? 'text-blue-100/90' : 'text-zinc-400'}`}>
+                          {opt.description}
+                        </div>
                       )}
                     </div>
                   </div>
