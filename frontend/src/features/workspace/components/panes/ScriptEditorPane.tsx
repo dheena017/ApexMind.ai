@@ -401,12 +401,12 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             {/* Quick Hashtags Strip */}
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#16161B] border border-[#242424] text-xs">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Hash className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                <Hash className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />
                 <span className="text-[11px] text-zinc-300 truncate">
                   {(script.hashtags || []).length > 0 ? (script.hashtags || []).slice(0, 4).join(' ') : '#Shorts #Stoicism #Discipline'}
                 </span>
               </div>
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-300 border border-red-500/30 shrink-0">
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-[#93C5FD] border border-blue-500/30 shrink-0">
                 {(script.hashtags || []).length || 6} Tags
               </span>
             </div>

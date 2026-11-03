@@ -557,58 +557,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {/* ── Subtab 1: Pipelines ── */}
       {activeSubTab === 'pipelines' && (
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Executive Unified Status Header */}
-          <div className="px-3.5 py-2.5 bg-[#161616] border-b border-[#242424] flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0">
-            {/* Target Channel Info */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
-                authStatus?.connected
-                  ? 'bg-red-500/10 border-red-500/30 text-red-500 shadow-[0_0_12px_rgba(239,68,68,0.15)]'
-                  : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-400'
-              }`}>
-                <Youtube className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 leading-tight">
-                <div className="text-[10px] uppercase font-mono text-zinc-500 tracking-wider">Publish Target</div>
-                {authStatus?.connected ? (
-                  <div className="flex items-center gap-1.5 truncate mt-0.5">
-                    <span className="text-xs font-bold text-white truncate">{authStatus.channel?.name || '@channel'}</span>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30 font-semibold shrink-0">
-                      Live Shorts
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-xs font-semibold text-amber-300">Studio Library</span>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0">
-                      Local MP4
-                    </span>
-                    {onNavigate && (
-                      <button
-                        type="button"
-                        onClick={() => onNavigate('youtube-channels')}
-                        className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold underline ml-1 cursor-pointer"
-                      >
-                        Connect
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* 24/7 Daemon Pulse */}
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#181818] border border-[#242424] shadow-sm ml-auto shrink-0">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3B82F6] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#60A5FA]"></span>
-              </span>
-              <div className="text-right">
-                <div className="text-[10px] font-bold text-[#60A5FA] leading-tight">24/7 Daemon Active</div>
-                <div className="text-[9px] text-zinc-500 font-mono leading-tight">Pulse: 60s</div>
-              </div>
-            </div>
-          </div>
 
           {/* Main Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5">
@@ -702,16 +651,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                               </span>
                             </div>
                             {/* Badges strip */}
-                            <div className="flex items-center gap-1.5 text-[9px] text-zinc-400 font-mono mt-1.5 flex-wrap">
-                              <span className="px-1.5 py-0.5 rounded bg-[#1E1E1E] text-[#D4D4D8] border border-[#2A2A2A] flex items-center gap-1">
+                            <div className="flex items-center gap-1.5 text-[9.5px] text-zinc-400 font-mono mt-2 flex-wrap">
+                              <span className="px-2 py-0.5 rounded-md bg-[#18181C] text-zinc-200 border border-[#2A2A32] flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5 text-[#60A5FA] shrink-0" />
                                 <span>{scheduleLabel}</span>
                               </span>
-                              <span className="px-1.5 py-0.5 rounded bg-[#1E1E1E] text-[#D4D4D8] border border-[#2A2A2A] flex items-center gap-1">
+                              <span className="px-2 py-0.5 rounded-md bg-[#18181C] text-zinc-200 border border-[#2A2A32] flex items-center gap-1">
                                 <Volume2 className="w-2.5 h-2.5 text-purple-400 shrink-0" />
                                 <span>{job.voice || 'Fenrir'}</span>
                               </span>
-                              <span className="px-1.5 py-0.5 rounded bg-[#1E1E1E] text-[#9CA3AF] border border-[#2A2A2A]">
+                              <span className="px-2 py-0.5 rounded-md bg-[#18181C] text-zinc-400 border border-[#2A2A32]">
                                 {job.privacyStatus === 'scheduled' ? '📅 Scheduled' : '🌐 Public'}
                               </span>
                             </div>
@@ -740,15 +689,15 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                       </div>
 
                       {/* ── 2. NEXT START SCHEDULE & TARGET BANNER ── */}
-                      <div className="p-2.5 rounded-xl bg-[#181818] border border-[#242424] text-xs flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="p-2.5 rounded-xl bg-[#141416] border border-[#24242A] text-xs flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <Clock className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />
                             <span className="text-zinc-400 text-[11px]">Next:</span>
-                            <strong className="text-white text-[11px] font-mono truncate">{nextRunInfo.display}</strong>
+                            <span className="text-white text-[11px] font-bold font-mono truncate">{nextRunInfo.display}</span>
                           </div>
                           {isActive && (
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border shrink-0 ${
+                            <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-bold border shrink-0 ${
                               nextRunInfo.isPast
                                 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
                                 : 'bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30 font-mono'
@@ -757,19 +706,19 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                             </span>
                           )}
                           {isPaused && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
+                            <span className="px-2 py-0.5 rounded-full text-[9.5px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
                               Suspended
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#242424] text-[10px] text-zinc-400">
-                          <span className="flex items-center gap-1">
+                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-[#222228] text-[10.5px]">
+                          <span className="flex items-center gap-1 text-zinc-400">
                             <Globe className="w-3 h-3 text-zinc-500 shrink-0" />
                             <span>Target:</span>
                           </span>
                           {authStatus?.connected ? (
-                            <span className="font-bold text-[#E5E5E5] flex items-center gap-1.5 truncate">
+                            <span className="font-semibold text-zinc-200 flex items-center gap-1.5 truncate">
                               <Youtube className="w-3 h-3 text-red-500 shrink-0" />
                               <span className="truncate">YouTube Shorts Live</span>
                             </span>
@@ -781,13 +730,13 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
                       {/* ── 3. PERFORMANCE & TELEMETRY STRIP (2 Balanced Cards) ── */}
                       <div className="grid grid-cols-2 gap-2 text-center">
-                        <div className="p-2 rounded-xl bg-[#181818] border border-[#242424]">
-                          <div className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Completed Runs</div>
+                        <div className="p-2.5 rounded-xl bg-[#141416] border border-[#24242A] flex flex-col justify-center">
+                          <div className="text-[9px] text-zinc-400 font-mono uppercase tracking-wider">Completed Runs</div>
                           <div className="text-xs font-bold text-white mt-0.5 font-mono">{totalRunsCount} {totalRunsCount === 1 ? 'Video' : 'Videos'}</div>
                         </div>
-                        <div className="p-2 rounded-xl bg-[#181818] border border-[#242424] min-w-0" title={`1080p • ${job.aspectRatio || '9:16'} • ${job.length ? job.length.replace(' seconds', 's') : '30s'} • ${job.aiModel || 'Gemini 3.8'}`}>
-                          <div className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Specs &amp; Engine</div>
-                          <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate font-mono">1080p • {job.aspectRatio || '9:16'} • job.aiModel?.includes('flash') ? 'Gemini Flash' : 'Gemini 3.8'</div>
+                        <div className="p-2.5 rounded-xl bg-[#141416] border border-[#24242A] flex flex-col justify-center min-w-0" title={`1080p • ${job.aspectRatio || '9:16'} • ${job.aiModel || 'Gemini 3.8'}`}>
+                          <div className="text-[9px] text-zinc-400 font-mono uppercase tracking-wider">Specs &amp; Engine</div>
+                          <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate font-mono">1080p • {job.aspectRatio || '9:16'} • {job.aiModel?.includes('flash') ? 'Flash' : 'Gemini'}</div>
                         </div>
                       </div>
 

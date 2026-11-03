@@ -547,7 +547,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
       </div>
 
       {/* ── Connected YouTube Channel Identity & Metrics Card ── */}
-      <div className="p-3.5 bg-gradient-to-b from-[#16161B] to-[#121215] border-b border-[#242424] shrink-0">
+      <div className="p-2.5 bg-[#141414] border-b border-[#242424] shrink-0">
         {loadingChannel ? (
           <div className="flex items-center gap-3 animate-pulse">
             <div className="w-10 h-10 rounded-full bg-zinc-800 shrink-0" />
@@ -558,84 +558,90 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
           </div>
         ) : channel ? (
           <div className="flex flex-col gap-2">
-            {/* Row 1: Avatar + Name & Handle */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="relative shrink-0">
-                {channel.avatarUrl ? (
-                  <img
-                    src={channel.avatarUrl}
-                    alt={channel.name}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] shadow-md shadow-black/40"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] flex items-center justify-center text-white font-bold text-xs shadow-md">
-                    {channel.name?.slice(0, 2).toUpperCase() || 'YT'}
-                  </div>
-                )}
-                {/* Micro YouTube badge overlay */}
-                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#181818] border border-[#2A2A2A] flex items-center justify-center shadow-xs">
-                  <Youtube className="w-2 h-2 text-red-500" />
-                </div>
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs font-bold text-white tracking-tight truncate hover:text-red-300 transition-colors">
-                    {channel.name}
-                  </h3>
-                  {channel.verified && (
-                    <span className="text-[10px] text-blue-400 shrink-0" title="Verified Creator">
-                      ✓
-                    </span>
-                  )}
-                  {/* Subtle live indicator dot next to name */}
-                  <span className="relative flex h-2 w-2 ml-auto shrink-0" title="Channel Connected">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (channel.handle) {
-                      navigator.clipboard.writeText(channel.handle);
-                      setCopiedHandle(true);
-                      setTimeout(() => setCopiedHandle(false), 2000);
-                      toast.success(`Copied handle ${channel.handle}`);
-                    }
-                  }}
-                  className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 font-mono transition-colors group cursor-pointer"
-                  title="Click to copy handle"
-                >
-                  <span>{channel.handle || '@channel'}</span>
-                  {copiedHandle ? (
-                    <Check className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+            {/* Single Unified Row: Avatar + Identity + Metrics + Live Status */}
+            <div className="flex items-center justify-between gap-2.5 min-w-0">
+              {/* Left: Avatar + Name & Handle */}
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="relative shrink-0">
+                  {channel.avatarUrl ? (
+                    <img
+                      src={channel.avatarUrl}
+                      alt={channel.name}
+                      className="w-8 h-8 rounded-full object-cover ring-1.5 ring-red-500/30 ring-offset-1 ring-offset-[#141418] shadow-sm"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
                   ) : (
-                    <Copy className="w-2.5 h-2.5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-red-700 ring-1.5 ring-red-500/30 ring-offset-1 ring-offset-[#141418] flex items-center justify-center text-white font-bold text-[10px] shadow-sm">
+                      {channel.name?.slice(0, 2).toUpperCase() || 'YT'}
+                    </div>
                   )}
-                </button>
-              </div>
-            </div>
+                  {/* Micro YouTube badge overlay */}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#181818] border border-[#2A2A2A] flex items-center justify-center shadow-xs">
+                    <Youtube className="w-1.5 h-1.5 text-red-500" />
+                  </div>
+                </div>
 
-            {/* Row 2: Full-width Metrics Pill Cluster (Subs, Videos, Views) */}
-            <div className="flex items-center justify-between px-3 py-1.5 bg-[#111111] border border-[#242424] rounded-lg shadow-inner w-full min-w-0">
-              <div className="flex items-center gap-1 text-[11px] font-mono">
-                <span className="text-zinc-500 text-[10px] font-sans font-medium">Subs:</span>
-                <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1">
+                    <h3 className="text-xs font-bold text-white tracking-tight truncate hover:text-red-300 transition-colors" title={channel.name}>
+                      {channel.name}
+                    </h3>
+                    {channel.verified && (
+                      <span className="text-[10px] text-blue-400 shrink-0" title="Verified Creator">
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (channel.handle) {
+                        navigator.clipboard.writeText(channel.handle);
+                        setCopiedHandle(true);
+                        setTimeout(() => setCopiedHandle(false), 2000);
+                        toast.success(`Copied handle ${channel.handle}`);
+                      }
+                    }}
+                    className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 font-mono transition-colors group cursor-pointer truncate"
+                    title="Click to copy handle"
+                  >
+                    <span className="truncate">{channel.handle || '@channel'}</span>
+                    {copiedHandle ? (
+                      <Check className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <Copy className="w-2.5 h-2.5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </button>
+                </div>
               </div>
-              <span className="text-white/20">•</span>
-              <div className="flex items-center gap-1 text-[11px] font-mono">
-                <span className="text-zinc-500 text-[10px] font-sans font-medium">Videos:</span>
-                <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
-              </div>
-              <span className="text-white/20">•</span>
-              <div className="flex items-center gap-1 text-[11px] font-mono">
-                <span className="text-zinc-500 text-[10px] font-sans font-medium">Views:</span>
-                <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
+
+              {/* Right: Inline Metrics Pill + Connected Status Indicator */}
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 px-2.5 py-1 bg-[#111111] border border-[#242424] rounded-lg shadow-inner text-[10.5px] font-mono">
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-500 text-[10px] font-sans font-medium">Subs:</span>
+                    <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
+                  </div>
+                  <span className="text-white/20">•</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-500 text-[10px] font-sans font-medium">Videos:</span>
+                    <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
+                  </div>
+                  <span className="text-white/20">•</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-500 text-[10px] font-sans font-medium">Views:</span>
+                    <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
+                  </div>
+                </div>
+
+                {/* Subtle live indicator dot */}
+                <span className="relative flex h-2 w-2 shrink-0" title="Channel Connected">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
               </div>
             </div>
 
@@ -731,10 +737,10 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         {activeSubTab === 'meta' && (
           <div className="flex flex-col gap-3.5">
             {/* AI Global Quick Generation Banner */}
-            <div className="p-2.5 rounded-xl bg-gradient-to-r from-red-950/40 via-[#1C1C24] to-red-950/20 border border-red-500/30 flex items-center justify-between gap-2 shadow-xs">
+            <div className="p-2.5 rounded-xl bg-gradient-to-r from-blue-950/40 via-[#161922] to-blue-950/20 border border-blue-500/30 flex items-center justify-between gap-2 shadow-xs">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 text-red-400" />
+                <div className="w-6 h-6 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-[11px] font-bold text-white leading-tight">AI Metadata Engine</div>
@@ -745,7 +751,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 type="button"
                 disabled={isGeneratingMeta}
                 onClick={() => handleGenerateMetadata('all')}
-                className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold text-[10px] flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50 shrink-0"
+                className="px-2.5 py-1 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] active:scale-95 text-white font-bold text-[10px] flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50 shrink-0"
               >
                 <Wand2 className={`w-3 h-3 ${isGeneratingMeta && generatingSection === 'all' ? 'animate-spin' : ''}`} />
                 <span>{isGeneratingMeta && generatingSection === 'all' ? 'Generating…' : 'AI Generate All'}</span>
@@ -762,10 +768,10 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowTitleDrawer(!showTitleDrawer)}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-semibold cursor-pointer transition-colors"
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/15 hover:bg-blue-500/25 text-[#93C5FD] border border-blue-500/30 font-semibold cursor-pointer transition-colors"
                     title="Toggle AI Title Ideas"
                   >
-                    <Sparkles className="w-2.5 h-2.5 text-red-400" />
+                    <Sparkles className="w-2.5 h-2.5 text-[#60A5FA]" />
                     <span>AI Titles ({titleSuggestions.length})</span>
                     {showTitleDrawer ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
                   </button>
@@ -782,7 +788,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   onChange={(e) => onUpdateScript?.({ title: e.target.value })}
                   placeholder="Enter compelling YouTube video title..."
                   maxLength={100}
-                  className="w-full bg-[#181818] border border-[#242424] rounded-xl px-3 py-2 text-xs text-white font-semibold outline-none focus:border-red-500/80 transition-colors"
+                  className="w-full bg-[#181818] border border-[#242424] rounded-xl px-3 py-2 text-xs text-white font-semibold outline-none focus:border-[#3B82F6] transition-colors"
                 />
               </div>
 
@@ -892,7 +898,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 value={customDescription}
                 onChange={(e) => handleUpdateDescription(e.target.value)}
                 placeholder="Write or generate rich YouTube video description..."
-                className="w-full bg-[#181818] border border-[#242424] rounded-xl px-3 py-2 text-xs text-zinc-200 font-sans outline-none focus:border-red-500/80 resize-none custom-scrollbar leading-relaxed"
+                className="w-full bg-[#181818] border border-[#242424] rounded-xl px-3 py-2 text-xs text-zinc-200 font-sans outline-none focus:border-[#3B82F6] resize-none custom-scrollbar leading-relaxed"
               />
             </div>
 
@@ -900,12 +906,12 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#16161B] border border-[#242424]">
               <div className="flex items-center justify-between text-[10px]">
                 <span className="text-slate-400 uppercase font-bold font-mono-studio flex items-center gap-1">
-                  <Hash className="w-3 h-3 text-red-400" /> Attached Hashtags ({tags.length})
+                  <Hash className="w-3 h-3 text-[#60A5FA]" /> Attached Hashtags ({tags.length})
                 </span>
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('seo')}
-                  className="text-[10px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
+                  className="text-[10px] text-[#60A5FA] hover:text-[#93C5FD] font-medium cursor-pointer"
                 >
                   Manage in SEO →
                 </button>
@@ -952,11 +958,11 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                       onClick={() => setPrivacy(item.id as any)}
                       className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-red-500/15 border-red-500/50 text-white shadow-xs'
+                          ? 'bg-blue-500/15 border-[#3B82F6]/50 text-white shadow-xs'
                           : 'bg-[#181818] border-[#242424] text-slate-400 hover:text-white hover:bg-[#202026]'
                       }`}
                     >
-                      <Icon className={`w-3.5 h-3.5 mb-1 ${isSelected ? 'text-red-400' : 'text-slate-400'}`} />
+                      <Icon className={`w-3.5 h-3.5 mb-1 ${isSelected ? 'text-[#60A5FA]' : 'text-slate-400'}`} />
                       <span className="text-[11px] font-semibold">{item.label}</span>
                       <span className="text-[9px] text-slate-500">{item.desc}</span>
                     </button>
