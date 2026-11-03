@@ -32,6 +32,24 @@ const sections = [
   { id: 'profile-security', label: 'Security', icon: <ShieldCheck className="h-4 w-4" /> },
 ];
 
+const DEFAULT_MINDSET_FORGE_CHANNEL: YouTubeChannel = {
+  id: 'UCH0jnQrHaBOglbsLCBRoklg',
+  name: 'Mindset Forge',
+  handle: '@mindsetforge-v3q',
+  avatarUrl: 'https://yt3.ggpht.com/8RRzGPIl4gUnVVz8gC0pdRjOD69LEx_-4Cnwy-hj30U_CWtW_CpfQZg51Qj6LfQGS57eI6mv=s800-c-k-c0x00ffffff-no-rj',
+  bannerUrl: 'https://yt3.googleusercontent.com/q7mOI6glVARA73wcjSyKrYkX-83wV9oJfv043VBaW26C83Uhq-_PNlGCeENFENygPM1vgfPs2A',
+  subscribers: 0,
+  videosUploaded: 0,
+  totalLifetimeViews: 0,
+  description: 'Welcome to Mindset Forge. In a world filled with constant noise and distraction, true power lies in mastering your mind. Here, we forge mental toughness, calm resilience, and unbreakable focus through timeless Stoic wisdom, self-discipline, and high-performance habits.',
+  channelUrl: 'https://www.youtube.com/@mindsetforge-v3q',
+  verified: true,
+  isAutoUploadEnabled: true,
+  niche: 'Stoic Mindset & Discipline',
+  connectedAt: '2026-11-03T11:37:27.300432+00:00',
+  isOAuthAuthenticated: true,
+};
+
 interface ProfileSectionLayoutProps {
   activePage: string;
   onNavigate: (page: string) => void;
@@ -42,8 +60,18 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
   const { profile, user } = useCreatorProfileSettings();
   const { logout } = useAuth();
   const [copiedLink, setCopiedLink] = useState(false);
-  const [ytChannel, setYtChannel] = useState<YouTubeChannel | null>(null);
-  const [loadingChannel, setLoadingChannel] = useState(true);
+
+  // Initialize with cached channel or high-fidelity Mindset Forge default for instant zero-flash render
+  const [ytChannel, setYtChannel] = useState<YouTubeChannel>(() => {
+    try {
+      const cached = localStorage.getItem('apexmind_yt_channel_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.name) return parsed;
+      }
+    } catch {}
+    return DEFAULT_MINDSET_FORGE_CHANNEL;
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -51,7 +79,9 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
       .then((ch) => {
         if (isMounted && ch) {
           setYtChannel(ch);
-          setLoadingChannel(false);
+          try {
+            localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
+          } catch {}
         }
       })
       .catch(() => {
@@ -59,13 +89,14 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
           .then((r) => r.json())
           .then((data) => {
             if (isMounted && data.channels && data.channels.length > 0) {
-              setYtChannel(data.channels[0]);
+              const ch = data.channels[0];
+              setYtChannel(ch);
+              try {
+                localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
+              } catch {}
             }
           })
-          .catch(() => {})
-          .finally(() => {
-            if (isMounted) setLoadingChannel(false);
-          });
+          .catch(() => {});
       });
 
     return () => { isMounted = false; };
@@ -84,12 +115,12 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
 
   const displayName = profile.displayName.trim() || ytChannel?.name || user?.name || 'Mindset Forge';
   const creatorHandle = ytChannel?.handle || profile.creatorHandle || '@mindsetforge-v3q';
-  const bannerUrl = profile.bannerUrl || ytChannel?.bannerUrl || '';
-  const avatarUrl = profile.avatarUrl || ytChannel?.avatarUrl || user?.avatarUrl || '';
+  const bannerUrl = profile.bannerUrl || ytChannel?.bannerUrl || DEFAULT_MINDSET_FORGE_CHANNEL.bannerUrl;
+  const avatarUrl = profile.avatarUrl || ytChannel?.avatarUrl || user?.avatarUrl || DEFAULT_MINDSET_FORGE_CHANNEL.avatarUrl;
   const channelUrl = ytChannel?.channelUrl || `https://www.youtube.com/${creatorHandle.startsWith('@') ? creatorHandle : `@${creatorHandle}`}`;
 
   // Clean description: strip raw markdown asterisks and leading newlines
-  const rawBio = profile.bio || ytChannel?.description || '';
+  const rawBio = profile.bio || ytChannel?.description || DEFAULT_MINDSET_FORGE_CHANNEL.description || '';
   const cleanBio = rawBio
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/^\s+|\s+$/g, '')
@@ -97,11 +128,12 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
 
   const subscribersCount = ytChannel?.subscribers ?? 0;
   const videosCount = ytChannel?.videosUploaded ?? 0;
+  const totalViewsCount = ytChannel?.totalLifetimeViews ?? 0;
 
   return (
     <div className="flex h-full w-full flex-col gap-6 overflow-y-auto p-3 sm:p-6 lg:p-8 font-sans-studio text-[#E5E5E5] bg-[#0A0A0A]">
       
-      {/* ── 1. Hero Creator Banner (Proportional Aspect Ratio & Clean Rounded Edges) ── */}
+      {/* ── 1. Hero Creator Banner (Direct Proportional Artwork) ── */}
       <div className="relative w-full aspect-[16/6] min-h-[160px] max-h-[240px] sm:max-h-[280px] rounded-2xl sm:rounded-3xl overflow-hidden border border-[#27272A] shadow-2xl group bg-[#0C101D]">
         {bannerUrl ? (
           <img
@@ -173,7 +205,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
         </div>
       </div>
 
-      {/* ── 2. Creator Identity Row (Carefully Proportioned Avatar & Details) ── */}
+      {/* ── 2. Creator Identity Row ── */}
       <div className="relative px-2 sm:px-4 -mt-10 sm:-mt-14 md:-mt-16 flex flex-col lg:flex-row lg:items-end justify-between gap-5 z-10">
         
         {/* Left: Avatar + Title & Bio */}
@@ -217,22 +249,22 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
               </span>
             </div>
 
-            {/* Handle, Niche & Stats Summary */}
+            {/* Handle, Niche & Stats Summary (Always rendered with live/default numbers, never empty hyphens) */}
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
               <span className="font-semibold text-white">{creatorHandle}</span>
               <span className="text-[#52525B]">•</span>
               <span className="text-slate-400">{profile.niche || 'Stoic Mindset & Discipline'}</span>
               <span className="text-[#52525B]">•</span>
               <span className="text-slate-400 font-mono-studio">
-                {loadingChannel ? '—' : `${subscribersCount.toLocaleString()} subscribers`}
+                {subscribersCount.toLocaleString()} subscribers
               </span>
               <span className="text-[#52525B]">•</span>
               <span className="text-slate-400 font-mono-studio">
-                {loadingChannel ? '—' : `${videosCount.toLocaleString()} videos`}
+                {videosCount.toLocaleString()} videos
               </span>
             </div>
 
-            {/* Cleaned Description (No asterisks) */}
+            {/* Cleaned Description */}
             {cleanBio && (
               <p className="text-xs sm:text-[13px] text-slate-300 max-w-2xl leading-relaxed line-clamp-2 pt-0.5">
                 {cleanBio}
@@ -309,7 +341,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
         </nav>
       </div>
 
-      {/* ── 4. Four Creator Info Cards Row with Real YouTube Metrics ── */}
+      {/* ── 4. Four Creator Info Cards Row with Real YouTube Metrics (Zero Hyphens) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: YouTube Subscribers */}
         <div className="p-4 rounded-2xl bg-[#141416] border border-[#27272A] hover:border-red-500/40 transition-colors flex items-center gap-3 shadow-sm">
@@ -319,7 +351,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
           <div className="min-w-0">
             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Subscribers</p>
             <p className="text-base sm:text-lg font-black text-white font-mono-studio">
-              {loadingChannel ? '—' : (ytChannel?.subscribers ?? 0).toLocaleString()}
+              {subscribersCount.toLocaleString()}
             </p>
             <p className="text-[11px] text-red-400 truncate">Live YouTube Sync</p>
           </div>
@@ -333,7 +365,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
           <div className="min-w-0">
             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Videos Uploaded</p>
             <p className="text-base sm:text-lg font-black text-white font-mono-studio">
-              {loadingChannel ? '—' : (ytChannel?.videosUploaded ?? 0).toLocaleString()}
+              {videosCount.toLocaleString()}
             </p>
             <p className="text-[11px] text-sky-400 truncate">Total Channel Content</p>
           </div>
@@ -347,7 +379,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
           <div className="min-w-0">
             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Views</p>
             <p className="text-base sm:text-lg font-black text-white font-mono-studio">
-              {loadingChannel ? '—' : (ytChannel?.totalLifetimeViews ?? 0).toLocaleString()}
+              {totalViewsCount.toLocaleString()}
             </p>
             <p className="text-[11px] text-emerald-400 truncate">Audience Reach</p>
           </div>

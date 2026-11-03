@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserRound, Save, Calendar, CheckCircle2, Youtube, Sparkles, Clock, ExternalLink } from 'lucide-react';
-import { Card, Button, Badge } from '@/src/shared/ui/common';
+import { UserRound, Save, Calendar, CheckCircle2, Youtube, Clock } from 'lucide-react';
+import { Button, Badge } from '@/src/shared/ui/common';
 import { useCreatorProfileSettings } from '../hooks/useCreatorProfileSettings';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
 import type { YouTubeChannel } from '@/src/features/youtube/types';
@@ -8,6 +8,25 @@ import { apiUrl } from '@/src/shared/utils/api';
 
 const inputClass = 'w-full rounded-xl border border-[#2F2F2F] bg-[#121212] px-3.5 py-2.5 text-sm text-[#E5E5E5] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30';
 const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]';
+
+const DEFAULT_MINDSET_FORGE_CHANNEL: YouTubeChannel = {
+  id: 'UCH0jnQrHaBOglbsLCBRoklg',
+  name: 'Mindset Forge',
+  handle: '@mindsetforge-v3q',
+  avatarUrl: 'https://yt3.ggpht.com/8RRzGPIl4gUnVVz8gC0pdRjOD69LEx_-4Cnwy-hj30U_CWtW_CpfQZg51Qj6LfQGS57eI6mv=s800-c-k-c0x00ffffff-no-rj',
+  bannerUrl: 'https://yt3.googleusercontent.com/q7mOI6glVARA73wcjSyKrYkX-83wV9oJfv043VBaW26C83Uhq-_PNlGCeENFENygPM1vgfPs2A',
+  subscribers: 0,
+  videosUploaded: 0,
+  totalLifetimeViews: 0,
+  description: 'Welcome to Mindset Forge. In a world filled with constant noise and distraction, true power lies in mastering your mind. Here, we forge mental toughness, calm resilience, and unbreakable focus through timeless Stoic wisdom, self-discipline, and high-performance habits.',
+  channelUrl: 'https://www.youtube.com/@mindsetforge-v3q',
+  verified: true,
+  isAutoUploadEnabled: true,
+  niche: 'Stoic Mindset & Discipline',
+  connectedAt: '2026-11-03T11:37:27.300432+00:00',
+  isOAuthAuthenticated: true,
+  joinedDate: '2026-10-13',
+};
 
 function formatPrettyDate(dateStr?: string | null): string {
   if (!dateStr) return '—';
@@ -22,8 +41,18 @@ function formatPrettyDate(dateStr?: string | null): string {
 export default function ProfileDetailsPage() {
   const { profile, setProfile, save, error, user } = useCreatorProfileSettings();
   const [notice, setNotice] = useState<string | null>(null);
-  const [ytChannel, setYtChannel] = useState<YouTubeChannel | null>(null);
-  const [loadingChannel, setLoadingChannel] = useState(true);
+
+  // Initialize with cached channel or default for instant zero-flash render
+  const [ytChannel, setYtChannel] = useState<YouTubeChannel>(() => {
+    try {
+      const cached = localStorage.getItem('apexmind_yt_channel_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.name) return parsed;
+      }
+    } catch {}
+    return DEFAULT_MINDSET_FORGE_CHANNEL;
+  });
 
   // Fetch YouTube channel data to auto-populate all channel fields & dates
   useEffect(() => {
@@ -32,8 +61,10 @@ export default function ProfileDetailsPage() {
       .then((ch) => {
         if (!isMounted || !ch) return;
         setYtChannel(ch);
+        try {
+          localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
+        } catch {}
 
-        // Auto-fill any unset profile fields with the live YouTube channel data
         setProfile((prev) => {
           const cleanBio = (ch.description || '')
             .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -44,8 +75,8 @@ export default function ProfileDetailsPage() {
             ...prev,
             displayName: prev.displayName || ch.name || user?.name || 'Mindset Forge',
             creatorHandle: prev.creatorHandle || ch.handle || '@mindsetforge-v3q',
-            avatarUrl: prev.avatarUrl || ch.avatarUrl || user?.avatarUrl || '',
-            bannerUrl: prev.bannerUrl || ch.bannerUrl || '',
+            avatarUrl: prev.avatarUrl || ch.avatarUrl || user?.avatarUrl || DEFAULT_MINDSET_FORGE_CHANNEL.avatarUrl,
+            bannerUrl: prev.bannerUrl || ch.bannerUrl || DEFAULT_MINDSET_FORGE_CHANNEL.bannerUrl,
             youtubeUrl: prev.youtubeUrl || ch.channelUrl || `https://www.youtube.com/${(ch.handle || '@mindsetforge-v3q').replace(/^@?/, '@')}`,
             websiteUrl: prev.websiteUrl || ch.channelUrl || 'https://www.youtube.com/@mindsetforge-v3q',
             bio: prev.bio || cleanBio,
@@ -59,20 +90,20 @@ export default function ProfileDetailsPage() {
             if (isMounted && data.channels && data.channels.length > 0) {
               const ch = data.channels[0];
               setYtChannel(ch);
+              try {
+                localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
+              } catch {}
               setProfile((prev) => ({
                 ...prev,
                 displayName: prev.displayName || ch.name || 'Mindset Forge',
                 creatorHandle: prev.creatorHandle || ch.handle || '@mindsetforge-v3q',
-                avatarUrl: prev.avatarUrl || ch.avatarUrl || '',
-                bannerUrl: prev.bannerUrl || ch.bannerUrl || '',
+                avatarUrl: prev.avatarUrl || ch.avatarUrl || DEFAULT_MINDSET_FORGE_CHANNEL.avatarUrl,
+                bannerUrl: prev.bannerUrl || ch.bannerUrl || DEFAULT_MINDSET_FORGE_CHANNEL.bannerUrl,
                 youtubeUrl: prev.youtubeUrl || `https://www.youtube.com/${ch.handle || '@mindsetforge-v3q'}`,
               }));
             }
           })
           .catch(() => {});
-      })
-      .finally(() => {
-        if (isMounted) setLoadingChannel(false);
       });
 
     return () => { isMounted = false; };
@@ -88,7 +119,7 @@ export default function ProfileDetailsPage() {
       <span className={labelClass}>{label}</span>
       <input
         type={type}
-        value={profile[key] || ''}
+        value={profile[key] || DEFAULT_MINDSET_FORGE_CHANNEL[key as keyof YouTubeChannel] || ''}
         onChange={(event) => {
           setProfile((current) => ({ ...current, [key]: event.target.value }));
         }}
@@ -104,9 +135,9 @@ export default function ProfileDetailsPage() {
     setNotice(save(profile) ? 'Creator details and YouTube metadata saved on this browser.' : null);
   };
 
-  const channelJoinedDate = ytChannel?.joinedDate ? formatPrettyDate(ytChannel.joinedDate) : 'Oct 13, 2026';
-  const studioConnectedDate = ytChannel?.connectedAt ? formatPrettyDate(ytChannel.connectedAt) : 'Nov 3, 2026';
-  const lastActiveDate = user?.lastLoginAt ? formatPrettyDate(user.lastLoginAt) : 'Today';
+  const channelJoinedDate = formatPrettyDate(ytChannel?.joinedDate || DEFAULT_MINDSET_FORGE_CHANNEL.joinedDate);
+  const studioConnectedDate = formatPrettyDate(ytChannel?.connectedAt || DEFAULT_MINDSET_FORGE_CHANNEL.connectedAt);
+  const lastActiveDate = formatPrettyDate(user?.lastLoginAt) || 'Today';
 
   return (
     <div className="w-full space-y-6">
@@ -131,7 +162,7 @@ export default function ProfileDetailsPage() {
         </Badge>
       </div>
 
-      {/* ── Channel Timeline Dates Row ── */}
+      {/* ── Channel Timeline Dates Row (Immediate, Zero Flash) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="p-3.5 rounded-xl border border-[#27272A] bg-[#121214] flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
@@ -140,7 +171,7 @@ export default function ProfileDetailsPage() {
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">YouTube Channel Created</p>
             <p className="text-xs sm:text-sm font-bold text-white font-mono-studio">
-              {loadingChannel ? 'Loading…' : channelJoinedDate}
+              {channelJoinedDate}
             </p>
           </div>
         </div>
@@ -152,7 +183,7 @@ export default function ProfileDetailsPage() {
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Studio Connected Date</p>
             <p className="text-xs sm:text-sm font-bold text-white font-mono-studio">
-              {loadingChannel ? 'Loading…' : studioConnectedDate}
+              {studioConnectedDate}
             </p>
           </div>
         </div>
@@ -196,13 +227,13 @@ export default function ProfileDetailsPage() {
         <label className="block space-y-1.5">
           <span className={labelClass}>Short bio</span>
           <textarea
-            value={profile.bio || ''}
+            value={profile.bio || DEFAULT_MINDSET_FORGE_CHANNEL.description || ''}
             onChange={(event) => setProfile((current) => ({ ...current, bio: event.target.value }))}
             className={`${inputClass} min-h-28 resize-y`}
             maxLength={280}
             placeholder="Channel description from YouTube..."
           />
-          <span className="block text-right text-[11px] text-[#6B7280]">{(profile.bio || '').length}/280</span>
+          <span className="block text-right text-[11px] text-[#6B7280]">{(profile.bio || DEFAULT_MINDSET_FORGE_CHANNEL.description || '').length}/280</span>
         </label>
 
         {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
