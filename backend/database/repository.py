@@ -119,8 +119,15 @@ def get_oauth_channel() -> Optional[Dict[str, Any]]:
         if not r:
             return None
         res = dict(r)
+        # Normalise to camelCase for the frontend
         res["videosUploaded"] = r["videos_uploaded"]
-        res["avatarUrl"] = r["avatar_url"]
+        res["avatarUrl"]      = r["avatar_url"]
+        res["bannerUrl"]      = r["banner_url"] if "banner_url" in r.keys() else None
+        handle = r["handle"] or ""
+        res["channelUrl"]     = f"https://www.youtube.com/{handle}" if handle else "https://www.youtube.com/@mindsetforge-v3q"
+        # Ensure name & handle always present with Mindset Forge as fallback
+        res["name"]   = r["name"]   or "Mindset Forge"
+        res["handle"] = handle      or "@mindsetforge-v3q"
         return res
     except sqlite3.OperationalError:
         conn.close()
@@ -131,7 +138,17 @@ def get_oauth_channel() -> Optional[Dict[str, Any]]:
         cursor.execute("SELECT * FROM youtube_channels WHERE is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != '') ORDER BY connected_at DESC LIMIT 1")
         r = cursor.fetchone()
         conn.close()
-        return dict(r) if r else None
+        if not r:
+            return None
+        res = dict(r)
+        res["videosUploaded"] = r["videos_uploaded"]
+        res["avatarUrl"]      = r["avatar_url"]
+        res["bannerUrl"]      = r["banner_url"] if "banner_url" in r.keys() else None
+        handle = r["handle"] or ""
+        res["channelUrl"]     = f"https://www.youtube.com/{handle}" if handle else "https://www.youtube.com/@mindsetforge-v3q"
+        res["name"]   = r["name"]   or "Mindset Forge"
+        res["handle"] = handle      or "@mindsetforge-v3q"
+        return res
 
 def add_channel(
     name: str,
