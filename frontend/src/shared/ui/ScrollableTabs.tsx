@@ -203,3 +203,4 @@ export function ScrollableTabs<T extends string = string>({
 }
 
 export default ScrollableTabs;
+

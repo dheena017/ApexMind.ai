@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   Shapes,
   Square,
@@ -165,35 +166,18 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
       {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="grid grid-cols-6 gap-1 p-1 bg-[#181818] rounded-none border-0">
-          {[
+        <ScrollableTabs
+          tabs={[
             { id: 'badges', label: 'Badge', icon: Award, color: 'text-amber-400' },
             { id: 'fx', label: 'FX', icon: Sparkles, color: 'text-purple-400' },
             { id: 'social', label: 'Social', icon: Share2, color: 'text-rose-400' },
             { id: 'shapes', label: 'Frame', icon: Square, color: 'text-blue-400' },
             { id: 'progress', label: 'Bar', icon: Layers, color: 'text-emerald-400' },
             { id: 'custom', label: 'Custom', icon: Plus, color: 'text-cyan-400' },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
-                  isActive
-                    ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-                }`}
-                title={tab.label}
-              >
-                <Icon className={`w-3 h-3 shrink-0 ${isActive ? tab.color : 'text-slate-400'}`} />
-                <span className="truncate">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab as any)}
+        />
       </div>
 
       {/* ── Main Content Area ── */}

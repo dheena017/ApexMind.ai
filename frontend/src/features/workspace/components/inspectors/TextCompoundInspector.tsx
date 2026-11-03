@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Minus, Plus, Type,
   Sparkles, Bold, Italic, Underline, Strikethrough, LetterSpacing,
@@ -575,36 +576,18 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none">
       {/* ── Subtabs Header Bar ── */}
       <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-[#242424] bg-[#111111]">
-        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-xl border border-[#242424] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {(
-            [
-              { id: 'text', label: 'Text', icon: Type },
-              { id: 'style', label: 'Style', icon: Palette },
-              { id: 'animation', label: 'Motion', icon: Sparkles },
-              { id: 'position', label: 'Layout', icon: Move },
-              { id: 'background', label: 'Back', icon: Square },
-              { id: 'shadow', label: 'Shadow', icon: Layers },
-            ] as const
-          ).map((t) => {
-            const Icon = t.icon;
-            const isActive = activeSubTab === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setActiveSubTab(t.id)}
-                className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-                }`}
-              >
-                <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-white' : 'text-[#9CA3AF] group-hover:text-white'}`} />
-                <span>{t.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'text', label: 'Text', icon: Type },
+            { id: 'style', label: 'Style', icon: Palette },
+            { id: 'animation', label: 'Motion', icon: Sparkles },
+            { id: 'position', label: 'Layout', icon: Move },
+            { id: 'background', label: 'Back', icon: Square },
+            { id: 'shadow', label: 'Shadow', icon: Layers },
+          ]}
+          activeTab={activeSubTab}
+          onChange={(tab) => setActiveSubTab(tab as any)}
+        />
       </div>
 
       {/* ── Tab Content Area ── */}

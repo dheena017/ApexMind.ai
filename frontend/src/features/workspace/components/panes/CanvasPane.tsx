@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   LayoutTemplate,
   RectangleHorizontal,
@@ -223,35 +224,19 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
       {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="grid grid-cols-5 gap-1 p-1 bg-[#181818] rounded-none border-0">
-          {[
+        <ScrollableTabs
+          tabs={[
             { id: 'ratio', label: 'Ratio', icon: Layers, color: 'text-blue-400' },
             { id: 'luts', label: 'LUTs', icon: Sparkles, color: 'text-amber-400' },
             { id: 'solid', label: 'Solid', icon: Square, color: 'text-emerald-400' },
             { id: 'gradient', label: 'Gradient', icon: Palette, color: 'text-purple-400' },
             { id: 'builder', label: 'Build', icon: Sliders, color: 'text-cyan-400' },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none min-w-0 ${
-                  isActive
-                    ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-                }`}
-                title={tab.label}
-              >
-                <Icon className={`w-3 h-3 shrink-0 ${isActive ? tab.color : 'text-slate-400'}`} />
-                <span className="truncate">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab as any)}
+        />
       </div>
+
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
         {/* ── Tab: Cinematic Color LUTs ── */}

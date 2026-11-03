@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ScrollableTabs, ScrollableTabContainer } from '@/src/shared/ui/ScrollableTabs';
 import {
   Film,
   Play,
@@ -519,61 +520,18 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
       {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <button
-            type="button"
-            onClick={() => setActiveTab("catalog")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "catalog"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Catalog"
-          >
-            <Film className={`w-3.5 h-3.5 shrink-0 ${activeTab === "catalog" ? "text-blue-400" : "text-slate-400"}`} />
-            <span className="truncate">Catalog</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("settings")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "settings"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Mood"
-          >
-            <Sliders className={`w-3.5 h-3.5 shrink-0 ${activeTab === "settings" ? "text-blue-400" : "text-slate-400"}`} />
-            <span className="truncate">Mood</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("url")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "url"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Direct URL"
-          >
-            <ExternalLink className={`w-3.5 h-3.5 shrink-0 ${activeTab === "url" ? "text-blue-400" : "text-slate-400"}`} />
-            <span>URL</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("saved")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "saved"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Saved"
-          >
-            <Bookmark className={`w-3.5 h-3.5 shrink-0 ${activeTab === "saved" ? "text-blue-400" : "text-slate-400"}`} />
-            <span className="truncate">Saved</span>
-          </button>
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'catalog', label: 'Catalog', icon: Film, color: 'text-blue-400' },
+            { id: 'settings', label: 'Mood', icon: Sliders, color: 'text-blue-400' },
+            { id: 'url', label: 'URL', icon: ExternalLink, color: 'text-blue-400' },
+            { id: 'saved', label: 'Saved', icon: Bookmark, color: 'text-blue-400' },
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab as any)}
+        />
       </div>
+
       {/* ── Main Content Area ── */}
       <div ref={contentScrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3.5">
         {activeTab === 'settings' ? (
@@ -773,7 +731,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
               {/* Provider Quick Pills */}
               {activeTab === 'catalog' && (
-                <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <ScrollableTabContainer className="pt-0.5">
                   {[
                     { id: 'all', label: '✨ All' },
                     { id: 'pixabay', label: '🎥 Pixabay' },
@@ -793,7 +751,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       {p.label}
                     </button>
                   ))}
-                </div>
+                </ScrollableTabContainer>
               )}
             </div>
 

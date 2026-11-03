@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import WaveSurfer from 'wavesurfer.js';
 import { useReactMediaRecorder } from 'react-media-recorder';
 import {
@@ -364,37 +365,21 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       </div>
 
       {/* ── Subtabs Segmented Control ── */}
-      <div className="p-2 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-xl border border-[#242424] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {[
+      <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
+        <ScrollableTabs
+          tabs={[
             { id: 'soundtracks', label: 'Music', icon: Music },
             { id: 'sfx', label: 'SFX', icon: Volume2 },
             { id: 'soundboard', label: 'Board', icon: Sparkles },
             { id: 'mixer', label: 'Mixer', icon: Sliders },
             { id: 'record', label: 'Voice', icon: Mic },
             { id: 'url', label: 'URL', icon: ExternalLink },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap shrink-0 ${
-                  isActive
-                    ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-                }`}
-                title={tab.label}
-              >
-                <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-[#9CA3AF] group-hover:text-white'}`} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab as any)}
+        />
       </div>
+
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
         {/* Search Bar for SFX only (Soundtracks has its dedicated Jamendo integrated search) */}

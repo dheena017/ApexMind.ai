@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   Image as ImageIcon,
   Search,
@@ -534,61 +535,19 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
       {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <button
-            type="button"
-            onClick={() => setActiveTab("catalog")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "catalog"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Catalog"
-          >
-            <ImageIcon className={`w-3.5 h-3.5 shrink-0 ${activeTab === "catalog" ? "text-blue-400" : "text-slate-400"}`} />
-            <span className="truncate">Catalog</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("filters")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "filters"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Filters"
-          >
-            <Sliders className={`w-3.5 h-3.5 shrink-0 ${activeTab === "filters" ? "text-blue-400" : "text-slate-400"}`} />
-            <span className="truncate">Filters</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("url")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "url"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Direct URL"
-          >
-            <ExternalLink className={`w-3.5 h-3.5 shrink-0 ${activeTab === "url" ? "text-blue-400" : "text-slate-400"}`} />
-            <span>URL</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("saved")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "saved"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Saved"
-          >
-            <Bookmark className={`w-3.5 h-3.5 shrink-0 ${activeTab === "saved" ? "text-blue-400" : "text-slate-400"}`} />
-            <span className="truncate">Saved</span>
-          </button>
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'catalog', label: 'Catalog', icon: ImageIcon, color: 'text-blue-400' },
+            { id: 'filters', label: 'Filters', icon: Sliders, color: 'text-blue-400' },
+            { id: 'url', label: 'URL', icon: ExternalLink, color: 'text-blue-400' },
+            { id: 'saved', label: 'Saved', icon: Bookmark, color: 'text-blue-400' },
+            { id: 'history', label: 'History', icon: History, color: 'text-blue-400', badge: recentImages.length > 0 ? recentImages.length : undefined },
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab as any)}
+        />
       </div>
+
       {/* ── Search & Filter Bar (When in Catalog) ── */}
       {activeTab === 'catalog' && (
         <div className="flex flex-col gap-2 border-b border-[#242424] bg-[#141416] p-3 shrink-0">

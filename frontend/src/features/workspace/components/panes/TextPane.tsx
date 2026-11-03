@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   Type,
   Search,
@@ -390,74 +391,19 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
       {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="flex items-center gap-1 p-1 bg-[#181818] rounded-none border-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <button
-            type="button"
-            onClick={() => setActiveTab("presets")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "presets"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Presets"
-          >
-            <Sparkles className={`w-3 h-3 shrink-0 ${activeTab === "presets" ? "text-amber-400" : "text-slate-400"}`} />
-            <span>Presets</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("quick")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "quick"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Insert"
-          >
-            <Plus className={`w-3 h-3 shrink-0 ${activeTab === "quick" ? "text-amber-400" : "text-slate-400"}`} />
-            <span>Insert</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("hooks")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "hooks"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Hooks"
-          >
-            <Zap className={`w-3 h-3 shrink-0 ${activeTab === "hooks" ? "text-amber-400" : "text-slate-400"}`} />
-            <span>Hooks</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("overrides")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "overrides"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Style"
-          >
-            <Sliders className={`w-3 h-3 shrink-0 ${activeTab === "overrides" ? "text-amber-400" : "text-slate-400"}`} />
-            <span>Style</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("custom")}
-            className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === "custom"
-                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
-            }`}
-            title="Saved"
-          >
-            <Bookmark className={`w-3 h-3 shrink-0 ${activeTab === "custom" ? "text-amber-400" : "text-slate-400"}`} />
-            <span>Saved</span>
-          </button>
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'presets', label: 'Presets', icon: Sparkles, color: 'text-amber-400' },
+            { id: 'quick', label: 'Insert', icon: Plus, color: 'text-amber-400' },
+            { id: 'hooks', label: 'Hooks', icon: Zap, color: 'text-amber-400' },
+            { id: 'overrides', label: 'Style', icon: Sliders, color: 'text-amber-400' },
+            { id: 'custom', label: 'Saved', icon: Bookmark, color: 'text-amber-400' },
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab as any)}
+        />
       </div>
+
       {/* ── Unified Search & Dropdown Bar (Presets & Hooks) ── */}
       {(activeTab === 'presets' || activeTab === 'hooks') && (
         <div className="border-b border-[#242424] bg-[#141416] p-3 shrink-0">

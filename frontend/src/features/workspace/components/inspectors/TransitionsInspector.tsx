@@ -1,3 +1,4 @@
+import { ScrollableTabContainer } from '@/src/shared/ui/ScrollableTabs';
 import React, { useState, useEffect } from 'react';
 import {
   Check,
@@ -292,7 +293,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
       </div>
 
       {/* ── Category Filter Pills ── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs select-none">
+      <ScrollableTabContainer className="pb-1 text-xs select-none">
         {(
           [
             { id: 'all', label: 'All' },
@@ -316,7 +317,7 @@ export const TransitionsInspector: React.FC<TransitionsInspectorProps> = ({
             {cat.label}
           </button>
         ))}
-      </div>
+      </ScrollableTabContainer>
 
       {/* ── Transition Cards Grid (24 Presets) ── */}
       <div className="grid grid-cols-4 gap-2.5 pt-0.5">
