@@ -1,9 +1,10 @@
 export interface UserProfile {
   id: string;
+  /** Always in the form handle@youtube.com — never a Gmail address */
   email: string;
   name: string;
   avatarUrl: string;
-  provider: 'youtube_oauth' | 'youtube' | 'google' | 'email' | 'local';
+  provider: 'youtube_oauth' | 'youtube';
   verified: boolean;
   lastLoginAt?: string;
   channelId?: string;
@@ -15,14 +16,4 @@ export interface ChannelAuthPayload {
   name?: string;
   avatarUrl?: string;
   channelId?: string;
-}
-
-export interface GoogleAuthPayload {
-  credential?: string;
-  email?: string;
-  name?: string;
-  picture?: string;
-  sub?: string;
-  accessToken?: string;
-  channel?: any;
 }

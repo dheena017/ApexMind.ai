@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, GoogleAuthPayload, ChannelAuthPayload } from '../types';
+import { UserProfile, ChannelAuthPayload } from '../types';
 import { authApi } from '../api/authApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -7,9 +7,8 @@ interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** The only login method — YouTube channel OAuth */
   loginWithChannel: (payload: ChannelAuthPayload) => Promise<UserProfile>;
-  loginWithGoogle: (payload?: GoogleAuthPayload) => Promise<UserProfile>;
-  loginWithEmail: (email: string, password?: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
 }
 
@@ -29,32 +28,6 @@ export const AuthContext = createContext<AuthContextType>({
       return authData.user;
     } catch (error) {
       consoleLogger.error('Auth', `YouTube channel login failed: ${error}`);
-      throw error;
-    }
-  },
-  loginWithGoogle: async (payload) => {
-    if (!payload) {
-      throw new Error('Google account details are required to sign in.');
-    }
-
-    try {
-      const authData = await authApi.googleLogin(payload);
-      localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
-      localStorage.setItem('apexmind_token', authData.token);
-      return authData.user;
-    } catch (error) {
-      consoleLogger.error('Auth', `Google login failed: ${error}`);
-      throw error;
-    }
-  },
-  loginWithEmail: async (email, password) => {
-    try {
-      const authData = await authApi.emailLogin(email, password);
-      localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
-      localStorage.setItem('apexmind_token', authData.token);
-      return authData.user;
-    } catch (error) {
-      consoleLogger.error('Auth', `Email login failed: ${error}`);
       throw error;
     }
   },
@@ -188,70 +161,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async (payload?: GoogleAuthPayload): Promise<UserProfile> => {
-    setIsLoading(true);
-    try {
-      if (!payload) {
-        throw new Error('Google account details are required to sign in.');
-      }
-
-      const finalPayload: GoogleAuthPayload = { ...payload };
-
-      // If credential exists but email wasn't provided, decode JWT claims client-side
-      if (finalPayload.credential && !finalPayload.email) {
-        try {
-          const parts = finalPayload.credential.split('.');
-          if (parts.length >= 2) {
-            const base64Url = parts[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(
-              atob(base64)
-                .split('')
-                .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-                .join('')
-            );
-            const decoded = JSON.parse(jsonPayload);
-            if (decoded?.email) {
-              finalPayload.email = decoded.email;
-              finalPayload.name = finalPayload.name || decoded.name;
-              finalPayload.picture = finalPayload.picture || decoded.picture;
-              finalPayload.sub = finalPayload.sub || decoded.sub;
-            }
-          }
-        } catch {
-          // Handled by backend token verification
-        }
-      }
-
-      if (!finalPayload.email && !finalPayload.credential && !finalPayload.accessToken) {
-        throw new Error('Google account email is required to sign in.');
-      }
-
-      const authData = await authApi.googleLogin(finalPayload);
-      setUser(authData.user);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authData.user));
-      localStorage.setItem(AUTH_TOKEN_KEY, authData.token);
-      localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
-      return authData.user;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loginWithEmail = async (email: string, password?: string): Promise<UserProfile> => {
-    setIsLoading(true);
-    try {
-      const authData = await authApi.emailLogin(email, password);
-      setUser(authData.user);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authData.user));
-      localStorage.setItem(AUTH_TOKEN_KEY, authData.token);
-      localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
-      return authData.user;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = async (): Promise<void> => {
     setIsLoading(true);
     try {
@@ -273,8 +182,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user && isSessionValid(),
         isLoading,
         loginWithChannel,
-        loginWithGoogle,
-        loginWithEmail,
         logout,
       }}
     >
