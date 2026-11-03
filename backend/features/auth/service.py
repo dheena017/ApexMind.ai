@@ -1,122 +1,23 @@
 """
 backend/features/auth/service.py
-Authentication service supporting Google OAuth token verification, profile synchronization,
-and session management.
+Authentication service supporting YouTube Channel authentication,
+delivery address normalization ([channel]@youtube.com), and session management.
 """
 
-import os
 import uuid
-import base64
-import json
 import logging
 from typing import Dict, Any, Optional
 
-import requests
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
-
-from backend.shared.config import settings
 from backend.database.repository import (
     upsert_user,
     get_user_by_email,
     get_user_by_id,
     get_latest_user,
+    get_channels,
+    get_oauth_channel,
 )
 
 logger = logging.getLogger("ApexMind.Auth")
-
-
-def authenticate_google_user(
-    credential: Optional[str] = None,
-    email: Optional[str] = None,
-    name: Optional[str] = None,
-    picture: Optional[str] = None,
-    sub: Optional[str] = None,
-    access_token: Optional[str] = None,
-    channel: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
-    """
-    Authenticates a user via Google.
-    If credential (JWT ID token) is present, verifies with Google OAuth2 library if client ID configured.
-    Otherwise uses structured profile provided by the client (OAuth popup/One-Tap/Google login).
-    """
-    google_id = sub or ""
-    verified_email = email
-    verified_name = name
-    verified_picture = picture
-
-    if credential:
-        try:
-            client_id = settings.GOOGLE_CLIENT_ID
-            id_info = id_token.verify_oauth2_token(
-                credential,
-                google_requests.Request(),
-                client_id if client_id else None,
-            )
-            verified_email = id_info.get("email") or verified_email
-            verified_name = id_info.get("name") or verified_name
-            verified_picture = id_info.get("picture") or verified_picture
-            google_id = id_info.get("sub") or google_id
-            logger.info(f"Verified Google JWT token for: {verified_email}")
-        except Exception as e:
-            logger.warning(f"Google JWT token direct verification note: {e}")
-            try:
-                parts = credential.split(".")
-                if len(parts) >= 2:
-                    padding = "=" * (4 - len(parts[1]) % 4)
-                    payload_json = base64.urlsafe_b64decode(parts[1] + padding).decode("utf-8")
-                    claims = json.loads(payload_json)
-                    verified_email = claims.get("email") or verified_email
-                    verified_name = claims.get("name") or verified_name
-                    verified_picture = claims.get("picture") or verified_picture
-                    google_id = claims.get("sub") or google_id
-                    logger.info(f"Decoded Google OAuth credential payload for: {verified_email}")
-            except Exception as parse_err:
-                logger.error(f"Failed to decode Google credential payload: {parse_err}")
-
-    if not verified_email:
-        raise ValueError("Google authentication requires an email address.")
-    if not verified_name:
-        verified_name = verified_email.split("@")[0].capitalize() or "Creator"
-    if not verified_picture:
-        verified_picture = f"https://api.dicebear.com/7.x/initials/svg?seed={verified_name}"
-
-    # For YouTube creator studio, the identity is always the YouTube Channel delivery address (never private Gmail)
-    if verified_email and ("mindsetforge" in verified_email.lower() or "mindset" in (verified_name or "").lower()):
-        verified_email = "mindsetforge-v3q@youtube.com"
-        verified_name = "Mindset Forge"
-    elif verified_email and "@gmail.com" in verified_email.lower():
-        ch_handle = None
-        if channel and channel.get("handle"):
-            ch_handle = channel.get("handle").replace("@", "").strip()
-        verified_email = f"{ch_handle.lower()}@youtube.com" if ch_handle else "mindsetforge-v3q@youtube.com"
-
-    # Upsert into database as YouTube OAuth creator
-    user = upsert_user(
-        email=verified_email,
-        name=verified_name,
-        avatar_url=verified_picture,
-        google_id=google_id,
-        provider="youtube_oauth",
-    )
-
-    token = f"ga_{uuid.uuid4().hex}"
-    logger.info(f"Google login successful for user: {user['name']} ({user['email']})")
-
-    return {
-        "success": True,
-        "user": {
-            "id": user["id"],
-            "email": user["email"],
-            "name": user["name"],
-            "avatarUrl": user["avatarUrl"],
-            "provider": "google",
-            "verified": True,
-            "lastLoginAt": user["lastLoginAt"],
-        },
-        "token": token,
-        "message": f"Welcome back, {user['name']}! Signed in with Google.",
-    }
 
 
 def authenticate_channel_user(
@@ -127,6 +28,7 @@ def authenticate_channel_user(
 ) -> Dict[str, Any]:
     """
     Authenticates a creator session using their YouTube Channel details.
+    Enforces that email is always the YouTube channel system delivery address: [channel]@youtube.com.
     """
     clean_handle = (handle or "creator").strip()
     if clean_handle.startswith("@"):
@@ -140,7 +42,6 @@ def authenticate_channel_user(
 
     # Check if this channel exists in the local database to enrich details
     try:
-        from backend.database.repository import get_channels, get_oauth_channel
         oauth_ch = get_oauth_channel()
         if oauth_ch:
             stored_handle = (oauth_ch.get("handle") or "").replace("@", "").strip()
@@ -148,6 +49,7 @@ def authenticate_channel_user(
                 channel_name = oauth_ch.get("name") or channel_name
                 avatar = oauth_ch.get("avatar_url") or avatar
                 ch_id = oauth_ch.get("id") or ch_id
+                clean_handle = stored_handle
 
         for ch in get_channels():
             stored_handle = (ch.get("handle") or "").replace("@", "").strip()
@@ -162,7 +64,11 @@ def authenticate_channel_user(
 
     # For YouTube channels, email is strictly the channel delivery address [identifier]@youtube.com
     # For Mindset Forge, system delivery address is explicitly mindsetforge-v3q@youtube.com
-    if "mindsetforge" in clean_handle.lower() or "mindset forge" in channel_name.lower() or ch_id == "UCH0jnQrHaBOglbsLCBRoklg":
+    if (
+        "mindsetforge" in clean_handle.lower()
+        or "mindset forge" in channel_name.lower()
+        or ch_id == "UCH0jnQrHaBOglbsLCBRoklg"
+    ):
         clean_handle = "mindsetforge-v3q"
         channel_name = "Mindset Forge"
         email = "mindsetforge-v3q@youtube.com"
@@ -187,7 +93,7 @@ def authenticate_channel_user(
             "email": user["email"],
             "name": user["name"],
             "avatarUrl": user["avatarUrl"],
-            "provider": user.get("provider", "youtube_oauth"),
+            "provider": "youtube_oauth",
             "verified": True,
             "lastLoginAt": user["lastLoginAt"],
         },
@@ -196,13 +102,8 @@ def authenticate_channel_user(
     }
 
 
-def authenticate_email_user(email: str, password: Optional[str] = None) -> Dict[str, Any]:
-    """Fallback email login is disabled. Studio authenticates exclusively via YouTube Channel."""
-    raise ValueError("Direct email login is disabled. Please sign in with your YouTube Channel.")
-
-
 def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Retrieves profile of the active user, auto-resolving from OAuth channel or provisioning default creator."""
+    """Retrieves profile of the active creator, auto-resolving from connected YouTube channel."""
     user = None
     if user_id_or_email:
         user = get_user_by_id(user_id_or_email) or get_user_by_email(user_id_or_email)
@@ -213,12 +114,11 @@ def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional
     if not user:
         # Check if an authorized YouTube OAuth channel exists in the database
         try:
-            from backend.database.repository import get_oauth_channel
             oauth_ch = get_oauth_channel()
             if oauth_ch:
-                channel_title = oauth_ch.get("name") or "YouTube Creator"
-                clean_handle = (oauth_ch.get("handle") or "creator").replace("@", "").strip()
-                email = f"{clean_handle}@youtube.com"
+                channel_title = oauth_ch.get("name") or "Mindset Forge"
+                clean_handle = (oauth_ch.get("handle") or "mindsetforge-v3q").replace("@", "").strip()
+                email = "mindsetforge-v3q@youtube.com" if "mindset" in clean_handle.lower() else f"{clean_handle}@youtube.com"
                 avatar = oauth_ch.get("avatar_url") or f"https://api.dicebear.com/7.x/initials/svg?seed={channel_title}"
                 user = upsert_user(
                     email=email,
@@ -230,12 +130,12 @@ def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional
             logger.warning(f"Note checking OAuth channel for creator profile: {e}")
 
     if not user:
-        # Provide default Studio Creator profile so sessions never fail with 401
+        # Provide default Mindset Forge creator profile
         user = upsert_user(
-            email="creator@apexmind.ai",
-            name="ApexMind Creator",
-            avatar_url="https://api.dicebear.com/7.x/initials/svg?seed=ApexMind",
-            provider="local",
+            email="mindsetforge-v3q@youtube.com",
+            name="Mindset Forge",
+            avatar_url="https://yt3.ggpht.com/8RRzGPIl4gUnVVz8gC0pdRjOD69LEx_-4Cnwy-hj30U_CWtW_CpfQZg51Qj6LfQGS57eI6mv=s800-c-k-c0x00ffffff-no-rj",
+            provider="youtube_oauth",
         )
 
     resolved_email = user["email"]
@@ -247,7 +147,7 @@ def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional
         "email": resolved_email,
         "name": user["name"],
         "avatarUrl": user["avatarUrl"],
-        "provider": user.get("provider", "youtube_oauth"),
+        "provider": "youtube_oauth",
         "verified": True,
         "lastLoginAt": user.get("lastLoginAt"),
     }

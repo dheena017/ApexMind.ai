@@ -37,9 +37,9 @@ export const API_BASE_URL: string = (() => {
  * (e.g. from local database records) so they point to the correct live API base in production.
  *
  * Examples:
- *   apiUrl('/api/auth/login')
- *   -> In dev: '/api/auth/login'
- *   -> In Render prod: 'https://apexmind-backend-zxw7.onrender.com/api/auth/login'
+ *   apiUrl('/api/auth/channel')
+ *   -> In dev: '/api/auth/channel'
+ *   -> In Render prod: 'https://apexmind-backend-zxw7.onrender.com/api/auth/channel'
  *   apiUrl('http://127.0.0.1:8000/api/media/cover_123.jpg')
  *   -> In dev: '/api/media/cover_123.jpg'
  *   -> In Render prod: 'https://apexmind-backend-zxw7.onrender.com/api/media/cover_123.jpg'

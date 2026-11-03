@@ -1,28 +1,26 @@
 """
 backend/features/auth/router.py
-FastAPI router for Google Authentication and User Identity.
+FastAPI router for YouTube Channel Authentication and Creator Identity.
+Exclusively supports YouTube Channel sign-in and profile sessions.
 """
 
 import logging
 from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Header
 from .schemas import (
-    GoogleAuthRequest,
-    EmailLoginRequest,
     ChannelAuthRequest,
     AuthResponse,
     UserProfileDTO,
     LogoutResponse,
 )
 from .service import (
-    authenticate_google_user,
     authenticate_channel_user,
-    authenticate_email_user,
     get_current_user_profile,
 )
 
 logger = logging.getLogger("ApexMind.features.auth")
 router = APIRouter(prefix="/api/auth", tags=["Authentication & YouTube Identity"])
+
 
 @router.post(
     "/channel",
@@ -47,43 +45,6 @@ async def post_channel_auth(payload: ChannelAuthRequest):
             detail=f"YouTube Channel authentication failed: {str(e)}"
         )
 
-@router.post(
-    "/google",
-    response_model=AuthResponse,
-    summary="Sign in with Google",
-    description="Authenticate or register a creator profile using Google Identity."
-)
-async def post_google_auth(payload: GoogleAuthRequest):
-    try:
-        data = authenticate_google_user(
-            credential=payload.credential,
-            email=payload.email,
-            name=payload.name,
-            picture=payload.picture,
-            sub=payload.sub,
-            access_token=payload.accessToken,
-            channel=payload.channel,
-        )
-        logger.info(f"Google authenticated user: '{data['user']['name']}' ({data['user']['email']}) [Provider: {data['user'].get('provider', 'google')}]")
-        return data
-    except Exception as e:
-        logger.error(f"Google authentication failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google authentication failed: {str(e)}"
-        )
-
-@router.post(
-    "/login",
-    response_model=AuthResponse,
-    summary="Email Sign In",
-    description="Standard email login fallback."
-)
-async def post_email_login(payload: EmailLoginRequest):
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Standard email login is disabled. ApexMind Studio authenticates exclusively via YouTube Channel.",
-    )
 
 @router.get(
     "/me",
@@ -111,6 +72,8 @@ async def get_me(authorization: Optional[str] = Header(None)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve creator profile."
         )
+
+
 @router.post(
     "/logout",
     response_model=LogoutResponse,

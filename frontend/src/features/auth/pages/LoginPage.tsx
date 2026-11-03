@@ -1,73 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import {
   Check,
-  Sparkles,
   ArrowLeft,
   Youtube,
   AtSign,
-  ShieldCheck,
-  Radio,
-  Eye,
-  TrendingUp,
 } from 'lucide-react';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { Modal, Input, Button } from '@/src/shared/ui/common';
 import { useAuth, isSessionValid } from '../context/AuthContext';
 import { getPostLoginRedirect, clearPostLoginRedirect } from '@/src/app/routes';
 import { connectYouTubeWithGoogle, getGoogleClientId } from '@/src/features/youtube/utils/googleOAuthConnect';
 
-// ── 3D Tilt Card for Login ──
+// ── Static Card Container (Animations Removed) ──
 function Tilt3DCard({
   children,
   className = '',
-  maxTilt = 8,
-  perspective = 1000,
 }: {
   children: React.ReactNode;
   className?: string;
   maxTilt?: number;
   perspective?: number;
 }) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const mouseXSpring = useSpring(x, { stiffness: 180, damping: 18 });
-  const mouseYSpring = useSpring(y, { stiffness: 180, damping: 18 });
-
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [`${maxTilt}deg`, `-${maxTilt}deg`]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [`-${maxTilt}deg`, `${maxTilt}deg`]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-    x.set(xPct);
-    y.set(yPct);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
   return (
-    <div style={{ perspective: `${perspective}px` }} className="w-full flex justify-center">
-      <motion.div
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        style={{
-          rotateX,
-          rotateY,
-          transformStyle: 'preserve-3d',
-        }}
-        className={className}
-      >
+    <div className="w-full flex justify-center">
+      <div className={className}>
         {children}
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -112,18 +69,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [rememberedUser] = useState<any>(() => {
     try {
       const stored = localStorage.getItem('apexmind_user');
-      if (!stored) return null;
-      const parsed = JSON.parse(stored);
-      if (parsed) {
-        if (!parsed.email || parsed.email.includes('gmail.com') || parsed.email.includes('mindsetforge')) {
-          parsed.email = 'mindsetforge-v3q@youtube.com';
-        }
-        if (!parsed.handle || parsed.handle.includes('gmail') || parsed.handle.includes('mindsetforge')) {
-          parsed.handle = '@mindsetforge-v3q';
-          parsed.name = 'Mindset Forge';
-        }
-      }
-      return parsed;
+      return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
     }
@@ -224,27 +170,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   return (
     <main className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden bg-[#09090B] text-[#E5E5E5] font-sans-studio select-none selection:bg-[#2563EB]/40 selection:text-white">
       
-      {/* ── Background: Dynamic glowing ambient lights ── */}
+      {/* ── Background: Ambient lights (Static, no animation) ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <motion.div
-          animate={{
-            x: [0, 30, -20, 0],
-            y: [0, -30, 15, 0],
-            scale: [1, 1.1, 0.95, 1],
-            opacity: [0.2, 0.35, 0.2],
-          }}
-          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-[10%] left-[20%] w-[480px] h-[480px] rounded-full bg-gradient-to-br from-red-600/22 via-red-900/10 to-transparent blur-[130px]"
+        <div
+          className="absolute -top-[10%] left-[20%] w-[480px] h-[480px] rounded-full bg-gradient-to-br from-red-600/22 via-red-900/10 to-transparent blur-[130px] opacity-30"
         />
-        <motion.div
-          animate={{
-            x: [0, -30, 20, 0],
-            y: [0, 25, -20, 0],
-            scale: [1, 1.15, 1],
-            opacity: [0.15, 0.28, 0.15],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-          className="absolute bottom-[5%] right-[15%] w-[420px] h-[420px] rounded-full bg-gradient-to-tl from-[#2563EB]/22 via-blue-900/10 to-transparent blur-[140px]"
+        <div
+          className="absolute bottom-[5%] right-[15%] w-[420px] h-[420px] rounded-full bg-gradient-to-tl from-[#2563EB]/22 via-blue-900/10 to-transparent blur-[140px] opacity-25"
         />
       </div>
 
@@ -258,66 +190,45 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       />
 
       {/* ── Top Header ── */}
-      <motion.header
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="relative z-10 w-full max-w-4xl mx-auto px-4 pt-5 sm:pt-6 flex items-center justify-between"
-      >
-        <motion.button
+      <header className="relative z-10 w-full max-w-4xl mx-auto px-4 pt-5 sm:pt-6 flex items-center justify-between">
+        <button
           type="button"
           onClick={() => onNavigate('landing')}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer text-left"
+          className="flex items-center gap-2.5 hover:opacity-90 cursor-pointer text-left"
           aria-label="ApexMind Studio Home"
         >
           <div className="relative w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-900/40 border border-red-500/30">
             <Youtube className="w-4 h-4 fill-current" />
-            <div className="absolute inset-0 rounded-lg bg-white/20 animate-ping opacity-20 pointer-events-none" />
           </div>
           <div className="flex flex-col">
             <span className="text-base font-bold tracking-tight text-white leading-none">ApexMind</span>
             <span className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mt-0.5">YouTube Studio</span>
           </div>
-        </motion.button>
+        </button>
 
-        <motion.button
+        <button
           type="button"
           onClick={() => onNavigate('landing')}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#27272A] bg-[#141416]/80 backdrop-blur-md hover:bg-[#1C1C20] hover:border-[#3F3F46] text-xs font-medium text-[#A1A1AA] hover:text-white transition-all cursor-pointer shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#27272A] bg-[#141416]/80 backdrop-blur-md hover:bg-[#1C1C20] hover:border-[#3F3F46] text-xs font-medium text-[#A1A1AA] hover:text-white cursor-pointer shadow-sm"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Explore Platform</span>
-        </motion.button>
-      </motion.header>
+        </button>
+      </header>
 
-      {/* ── Center: YouTube Channel Sign-In Card with 3D Tilt ── */}
+      {/* ── Center: YouTube Channel Sign-In Card ── */}
       <div className="relative z-10 w-full flex-1 flex items-center justify-center px-4 py-8">
-        <Tilt3DCard maxTilt={10} perspective={1000} className="w-full max-w-[420px]">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            style={{ transformStyle: 'preserve-3d' }}
-            className="relative w-full rounded-2xl border border-[#27272A] bg-[#121215]/95 backdrop-blur-xl shadow-2xl p-7 sm:p-8 space-y-6"
-          >
+        <Tilt3DCard maxTilt={0} perspective={0} className="w-full max-w-[420px]">
+          <div className="relative w-full rounded-2xl border border-[#27272A] bg-[#121215]/95 backdrop-blur-xl shadow-2xl p-7 sm:p-8 space-y-6">
             {/* Card subtle top glow */}
             <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
 
-            {/* Card Header with 3D Popout */}
-            <div style={{ transform: 'translateZ(25px)' }} className="text-center space-y-2">
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.15 }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-red-500/30 bg-red-950/30 text-[10px] font-semibold uppercase tracking-wider text-red-400 mx-auto shadow-xs"
-              >
-                <Youtube className="h-3 w-3 fill-current animate-pulse" />
+            {/* Card Header */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-red-500/30 bg-red-950/30 text-[10px] font-semibold uppercase tracking-wider text-red-400 mx-auto shadow-xs">
+                <Youtube className="h-3 w-3 fill-current" />
                 <span>YouTube Creator Studio</span>
-              </motion.div>
+              </div>
               <h1 className="text-2xl font-bold tracking-tight text-white">
                 Sign In to ApexMind
               </h1>
@@ -327,16 +238,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
             </div>
 
             {/* ── Agreement Checkbox ── */}
-            <motion.div
-              style={{ transform: 'translateZ(20px)' }}
-              animate={showAgreementError ? { x: [-4, 4, -4, 4, 0] } : {}}
-              transition={{ duration: 0.3 }}
+            <div
               onClick={() => {
                 setAgreementChecked((prev) => !prev);
                 setShowAgreementError(false);
                 setNotice('');
               }}
-              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-all select-none ${
+              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 select-none ${
                 showAgreementError
                   ? 'border-red-500/60 bg-red-500/10 shadow-sm shadow-red-900/20'
                   : agreementChecked
@@ -358,9 +266,8 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   }}
                   className="peer sr-only"
                 />
-                <motion.div
-                  whileTap={{ scale: 0.85 }}
-                  className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
+                <div
+                  className={`flex h-4 w-4 items-center justify-center rounded border ${
                     agreementChecked
                       ? 'border-red-500 bg-red-600'
                       : showAgreementError
@@ -371,7 +278,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   {agreementChecked && (
                     <Check className="h-3 w-3 text-white" strokeWidth={3} />
                   )}
-                </motion.div>
+                </div>
               </div>
               <span className="text-xs leading-5 text-[#8E8E93]">
                 I agree to the ApexMind{' '}
@@ -382,7 +289,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                     e.preventDefault();
                     onNavigate('terms');
                   }}
-                  className="font-medium text-red-400 hover:text-white underline cursor-pointer transition-colors"
+                  className="font-medium text-red-400 hover:text-white underline cursor-pointer"
                 >
                   Terms of Service
                 </a>{' '}and{' '}
@@ -393,7 +300,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                     e.preventDefault();
                     onNavigate('privacy');
                   }}
-                  className="font-medium text-red-400 hover:text-white underline cursor-pointer transition-colors"
+                  className="font-medium text-red-400 hover:text-white underline cursor-pointer"
                 >
                   Privacy Policy
                 </a>.
@@ -401,17 +308,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   <span className="mt-1 block font-medium text-red-400">Please check this box before signing in.</span>
                 )}
               </span>
-            </motion.div>
+            </div>
 
             {/* ── Sign In Actions ── */}
-            <div style={{ transform: 'translateZ(30px)' }} className="space-y-3">
+            <div className="space-y-3">
               {/* Remembered Channel Fast-Continue Card */}
               {rememberedUser && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-950/20 p-3.5 transition-all shadow-sm hover:border-red-500/50"
-                >
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-950/20 p-3.5 shadow-sm hover:border-red-500/50">
                   <div className="flex min-w-0 items-center gap-3">
                     <img
                       src={rememberedUser.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rememberedUser.name || 'Channel')}`}
@@ -428,77 +331,66 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                       </p>
                     </div>
                   </div>
-                  <motion.button
+                  <button
                     type="button"
                     onClick={handleContinueRemembered}
                     disabled={channelLoading}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="shrink-0 rounded-lg bg-red-600 hover:bg-red-500 active:bg-red-700 px-3.5 py-2 text-xs font-bold text-white transition-all cursor-pointer shadow-md shadow-red-900/40 flex items-center gap-1.5"
+                    className="shrink-0 rounded-lg bg-red-600 hover:bg-red-500 active:bg-red-700 px-3.5 py-2 text-xs font-bold text-white cursor-pointer shadow-md shadow-red-900/40 flex items-center gap-1.5"
                   >
                     <span>Continue</span>
                     <span>→</span>
-                  </motion.button>
-                </motion.div>
+                  </button>
+                </div>
               )}
 
               {/* Primary YouTube Channel Sign In Button */}
-              <motion.button
+              <button
                 type="button"
                 onClick={handleYouTubeChannelAuth}
                 disabled={channelLoading || !agreementChecked}
                 title={!agreementChecked ? 'Please agree to the Terms of Service and Privacy Policy first' : undefined}
-                whileHover={{ scale: !agreementChecked || channelLoading ? 1 : 1.015 }}
-                whileTap={{ scale: !agreementChecked || channelLoading ? 1 : 0.985 }}
-                className="w-full rounded-xl bg-red-600 hover:bg-red-500 active:bg-red-700 px-5 py-3.5 text-sm font-bold text-white transition-all shadow-lg shadow-red-950/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-3 relative overflow-hidden group"
+                className="w-full rounded-xl bg-red-600 hover:bg-red-500 active:bg-red-700 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-950/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-3 relative overflow-hidden"
               >
                 {channelLoading ? (
                   <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
-                  <Youtube className="h-5 w-5 fill-current group-hover:scale-110 transition-transform" />
+                  <Youtube className="h-5 w-5 fill-current" />
                 )}
                 <span>Sign In with YouTube Channel</span>
-              </motion.button>
+              </button>
 
               {/* Direct Channel Handle Login Option */}
-              <motion.button
+              <button
                 type="button"
                 onClick={() => {
                   if (!requireAgreement()) return;
                   setShowChannelModal(true);
                 }}
                 disabled={channelLoading || !agreementChecked}
-                whileHover={{ scale: !agreementChecked || channelLoading ? 1 : 1.01 }}
-                whileTap={{ scale: !agreementChecked || channelLoading ? 1 : 0.99 }}
-                className="w-full rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#222226] hover:border-[#3F3F46] px-4 py-2.5 text-xs font-semibold text-[#D4D4D8] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#222226] hover:border-[#3F3F46] px-4 py-2.5 text-xs font-semibold text-[#D4D4D8] hover:text-white cursor-pointer flex items-center justify-center gap-2"
               >
                 <AtSign className="h-3.5 w-3.5 text-red-400" />
                 <span>Enter Channel Handle / Name Directly</span>
-              </motion.button>
+              </button>
             </div>
 
             {/* Notice banner */}
-            <AnimatePresence>
-              {notice && (
-                <motion.p
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  role="status"
-                  className="rounded-xl border border-amber-400/25 bg-amber-400/10 px-3.5 py-2.5 text-xs leading-5 text-amber-200"
-                >
-                  {notice}
-                </motion.p>
-              )}
-            </AnimatePresence>
+            {notice && (
+              <p
+                role="status"
+                className="rounded-xl border border-amber-400/25 bg-amber-400/10 px-3.5 py-2.5 text-xs leading-5 text-amber-200"
+              >
+                {notice}
+              </p>
+            )}
 
             {/* Security Trust Note */}
-            <div style={{ transform: 'translateZ(15px)' }} className="pt-3 border-t border-[#27272A] flex items-center justify-center gap-2 text-[11px] text-[#71717A]">
-              <Youtube className="h-3.5 w-3.5 text-red-500 fill-current animate-pulse" />
+            <div className="pt-3 border-t border-[#27272A] flex items-center justify-center gap-2 text-[11px] text-[#71717A]">
+              <Youtube className="h-3.5 w-3.5 text-red-500 fill-current" />
               <span>Official YouTube Partner API • Direct Channel OAuth 2.0</span>
             </div>
 
-          </motion.div>
+          </div>
         </Tilt3DCard>
       </div>
 
@@ -506,15 +398,15 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       <footer className="relative z-10 w-full max-w-4xl mx-auto px-4 py-4 text-center text-[11px] text-[#52525B] flex flex-wrap items-center justify-between gap-3">
         <span>© 2026 ApexMind.ai • Automated AI Shorts Studio</span>
         <div className="flex items-center gap-4">
-          <button type="button" onClick={() => onNavigate('terms')} className="hover:text-[#A1A1AA] transition-colors cursor-pointer">
+          <button type="button" onClick={() => onNavigate('terms')} className="hover:text-[#A1A1AA] cursor-pointer">
             Terms of Service
           </button>
           <span>•</span>
-          <button type="button" onClick={() => onNavigate('privacy')} className="hover:text-[#A1A1AA] transition-colors cursor-pointer">
+          <button type="button" onClick={() => onNavigate('privacy')} className="hover:text-[#A1A1AA] cursor-pointer">
             Privacy Policy
           </button>
           <span>•</span>
-          <a href="https://developers.google.com/youtube/terms/api-services-terms-of-service" target="_blank" rel="noopener noreferrer" className="hover:text-[#A1A1AA] transition-colors">
+          <a href="https://developers.google.com/youtube/terms/api-services-terms-of-service" target="_blank" rel="noopener noreferrer" className="hover:text-[#A1A1AA]">
             YouTube API Terms
           </a>
         </div>
@@ -528,12 +420,10 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
           </p>
 
           {rememberedUser && (
-            <motion.button
+            <button
               type="button"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
               onClick={() => handleDirectChannelLogin(rememberedUser.handle || rememberedUser.name, rememberedUser.name)}
-              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#121212] border border-[#2F2F2F] hover:border-red-500/50 transition-all text-left cursor-pointer group"
+              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#121212] border border-[#2F2F2F] hover:border-red-500/50 text-left cursor-pointer group"
             >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
@@ -545,7 +435,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 </div>
               </div>
               <Youtube className="w-4 h-4 text-red-500 fill-current opacity-70 group-hover:opacity-100" />
-            </motion.button>
+            </button>
           )}
 
           <div className={rememberedUser ? 'pt-3 border-t border-[#2F2F2F] space-y-3' : 'space-y-3'}>
@@ -561,7 +451,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   handleDirectChannelLogin(channelHandleInput.trim(), channelNameInput.trim());
                 }
               }}
-              placeholder="e.g. @mindsetforge-v3q or Mindset Forge"
+              placeholder="e.g. @DailyStoicShorts or ApexCreator"
               autoFocus
               required
             />
@@ -569,7 +459,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               label="Channel Display Name (Optional)"
               value={channelNameInput}
               onChange={(e) => setChannelNameInput(e.target.value)}
-              placeholder="e.g. Mindset Forge"
+              placeholder="e.g. Daily Stoic Shorts"
             />
 
             <div className="flex justify-end gap-2 pt-2">

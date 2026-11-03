@@ -32,7 +32,7 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
 
             {/* Live System Status Pill */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#121212] border border-[#2F2F2F] text-xs font-mono-studio text-[#9CA3AF]">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span>Gemini 3.8 Flash Operational</span>
             </div>
 

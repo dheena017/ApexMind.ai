@@ -1,23 +1,10 @@
 """
 backend/features/auth/schemas.py
-Pydantic schemas and DTOs for Google Authentication and User Sessions.
+Pydantic schemas and DTOs for YouTube Channel Authentication and Creator Sessions.
 """
 
 from typing import Optional
 from pydantic import BaseModel, Field
-
-class GoogleAuthRequest(BaseModel):
-    credential: Optional[str] = Field(default=None, description="Google JWT ID token from Google Identity Services")
-    email: Optional[str] = Field(default=None, description="Google user email")
-    name: Optional[str] = Field(default=None, description="Google user full name")
-    picture: Optional[str] = Field(default=None, description="Google profile picture / avatar URL")
-    sub: Optional[str] = Field(default=None, description="Google unique subject ID")
-    accessToken: Optional[str] = Field(default=None, description="Google OAuth 2.0 access token with YouTube permissions")
-    channel: Optional[dict] = Field(default=None, description="Connected YouTube channel metadata")
-
-class EmailLoginRequest(BaseModel):
-    email: str = Field(..., description="User email address")
-    password: Optional[str] = Field(default=None, description="User password")
 
 class ChannelAuthRequest(BaseModel):
     handle: str = Field(..., description="YouTube channel handle or identifier")
