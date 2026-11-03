@@ -130,12 +130,37 @@ export default function AppLayout({
 
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 text-[#60A5FA] shrink-0" /> },
-    { id: 'workspace', label: 'AI Video Studio', icon: <Wand2 className="w-5 h-5 shrink-0" /> },
-    { id: 'videos', label: 'Website Videos', icon: <Film className="w-5 h-5 shrink-0" /> },
-    { id: 'youtube', label: 'YouTube Manager', icon: <Youtube className="w-5 h-5 text-red-400 shrink-0" /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell className="w-5 h-5 shrink-0" />, badge: unreadCount > 0 ? unreadCount : undefined },
-    { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5 shrink-0" /> },
+    {
+      id: 'dashboard', label: 'Dashboard',
+      icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+      iconBg: 'bg-[#172033] border-[#2A3F5F]', iconColor: 'text-[#60A5FA]',
+    },
+    {
+      id: 'workspace', label: 'AI Video Studio',
+      icon: <Wand2 className="w-4 h-4 shrink-0" />,
+      iconBg: 'bg-[#1A1730] border-[#352D5A]', iconColor: 'text-[#A78BFA]',
+    },
+    {
+      id: 'videos', label: 'Website Videos',
+      icon: <Film className="w-4 h-4 shrink-0" />,
+      iconBg: 'bg-[#172033] border-[#2A3F5F]', iconColor: 'text-[#38BDF8]',
+    },
+    {
+      id: 'youtube', label: 'YouTube Manager',
+      icon: <Youtube className="w-4 h-4 shrink-0" />,
+      iconBg: 'bg-[#1F1515] border-[#3D2020]', iconColor: 'text-red-400',
+    },
+    {
+      id: 'notifications', label: 'Notifications',
+      icon: <Bell className="w-4 h-4 shrink-0" />,
+      iconBg: 'bg-[#1A1A10] border-[#3A3620]', iconColor: 'text-amber-400',
+      badge: unreadCount > 0 ? unreadCount : undefined,
+    },
+    {
+      id: 'settings', label: 'Settings',
+      icon: <Settings className="w-4 h-4 shrink-0" />,
+      iconBg: 'bg-[#181818] border-[#2A2A2A]', iconColor: 'text-[#9CA3AF]',
+    },
   ];
 
   const handleNavClick = (id: string) => {
@@ -321,8 +346,9 @@ export default function AppLayout({
         </div>
 
         {/* Navigation Items (Independent vertical scroll if needed) */}
-        <div className="flex-1 p-4 sm:p-5 overflow-y-auto">
-          <nav aria-label="Main navigation" className="space-y-2">
+        <div className="flex-1 px-3 py-3 overflow-y-auto">
+          <p className="px-2 mb-2 text-[9px] font-bold tracking-[0.12em] uppercase text-[#4A4A4A]">Navigation</p>
+          <nav aria-label="Main navigation" className="space-y-1">
             {navItems.map((item) => {
               const isActive =
                 activePage === item.id ||
@@ -335,21 +361,29 @@ export default function AppLayout({
                   onClick={() => handleNavClick(item.id)}
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={item.badge ? `${item.label}, ${item.badge} unread` : item.label}
-                  className={`group relative w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-xl min-h-[48px] cursor-pointer transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 motion-reduce:transition-none ${
-                    isActive ? 'bg-[#2563EB] text-white font-bold border-[#60A5FA]/40 shadow-xs' : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border-transparent'
+                  className={`group relative w-full flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 ${
+                    isActive
+                      ? 'bg-[#2563EB] text-white border-[#60A5FA]/30 shadow-[0_2px_12px_rgba(37,99,235,0.35)]'
+                      : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border-transparent hover:border-[#2A2A2A]'
                   }`}
                 >
-                  <div className="flex items-center gap-3.5">
+                  <div className="flex items-center gap-3">
                     <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all ${
-                        isActive ? 'bg-white/20 border-white/30 text-white' : 'bg-[#181818] border-[#242424] text-[#9CA3AF] group-hover:text-white group-hover:bg-[#26262C]'
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all shrink-0 ${
+                        isActive
+                          ? 'bg-white/20 border-white/25 text-white'
+                          : `${item.iconBg} ${item.iconColor} group-hover:brightness-125`
                       }`}
                     >
                       {item.icon}
                     </span>
-                    <span>{item.label}</span>
+                    <span className="text-[13px] font-semibold leading-none">{item.label}</span>
                   </div>
-                  {item.badge && <Badge variant="blue">{item.badge}</Badge>}
+                  {item.badge && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#2563EB] px-1.5 text-[10px] font-bold text-white shadow-[0_0_8px_rgba(37,99,235,0.5)]">
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

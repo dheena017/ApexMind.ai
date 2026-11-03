@@ -27,8 +27,9 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   onNavigate,
 }) => {
   const [publishing, setPublishing] = useState(false);
-  const [canPublish, setCanPublish] = useState(true);
+  const [canPublish, setCanPublish] = useState(false);
   const [publishedSuccess, setPublishedSuccess] = useState(false);
+  const [hasTimelineContent, setHasTimelineContent] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
@@ -44,11 +45,15 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         publishing: boolean;
         canPublish: boolean;
         publishedSuccess: boolean;
+        hasTimelineContent?: boolean;
       }>;
       if (customEvent.detail) {
         setPublishing(customEvent.detail.publishing);
         setCanPublish(customEvent.detail.canPublish);
         setPublishedSuccess(customEvent.detail.publishedSuccess);
+        if (customEvent.detail.hasTimelineContent !== undefined) {
+          setHasTimelineContent(customEvent.detail.hasTimelineContent);
+        }
       }
     };
 
@@ -122,6 +127,11 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   };
 
   const handleExport = () => {
+    if (!hasTimelineContent) {
+      setNotice('Add media to the timeline first');
+      window.setTimeout(() => setNotice(null), 3000);
+      return;
+    }
     window.dispatchEvent(new CustomEvent('workspace:export-video'));
   };
 
@@ -240,12 +250,24 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         <button
           type="button"
           onClick={handleExport}
-          disabled={exporting}
-          className="hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[10.5px] font-semibold text-[#D4D4D8] hover:text-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
-          title={exporting ? 'Rendering the final video' : 'Export the composed video preview'}
+          disabled={exporting || !hasTimelineContent}
+          className={`hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg text-[10.5px] font-semibold transition-all border ${
+            !hasTimelineContent
+              ? 'bg-[#121212] text-[#52525B] border-[#1F1F1F] cursor-not-allowed'
+              : exporting
+              ? 'bg-[#161616] text-[#D4D4D8] border-[#2A2A2A] cursor-wait opacity-60'
+              : 'bg-[#161616] hover:bg-[#202020] text-[#D4D4D8] hover:text-white border-[#2A2A2A] hover:border-[#383838] cursor-pointer'
+          }`}
+          title={
+            !hasTimelineContent
+              ? 'Add media to the timeline to export'
+              : exporting
+              ? 'Rendering the final video…'
+              : 'Export the composed video'
+          }
         >
-          <Download className="w-3 h-3 text-[#60A5FA]" />
-          <span>{exporting ? (notice?.startsWith('Rendering') ? notice : 'Exporting...') : 'Export MP4'}</span>
+          <Download className={`w-3 h-3 ${!hasTimelineContent ? 'text-[#3A3A3A]' : 'text-[#60A5FA]'}`} />
+          <span>{exporting ? (notice?.startsWith('Rendering') ? notice : 'Exporting…') : 'Export MP4'}</span>
         </button>
 
         {/* Save Draft (Pill Button) */}
@@ -268,7 +290,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               ? 'bg-[#161616] hover:bg-[#202020] text-[#60A5FA] border-[#2A2A2A] hover:border-[#3B82F6]/40 shadow-xs'
               : 'bg-[#121212] text-[#52525B] border-[#1F1F1F] cursor-not-allowed'
           }`}
-          title="Save this video to your Website Video Library"
+          title={!canPublish ? 'Generate a script first to save to library' : 'Save this video to your Website Library'}
         >
           <Film className="w-3 h-3" />
           <span>Save to Library</span>
@@ -279,6 +301,12 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           type="button"
           onClick={handlePublishClick}
           disabled={!canPublish || publishing}
+          title={
+            publishing ? 'Publishing to YouTube…' :
+            publishedSuccess ? 'Published successfully!' :
+            !canPublish ? 'Generate a script first to publish' :
+            'Publish to YouTube'
+          }
           className={`h-7.5 px-3.5 sm:px-4 text-[10.5px] font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
             publishedSuccess
               ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'

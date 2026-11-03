@@ -121,6 +121,7 @@ export default function WorkspacePage({
   const [publishingStage, setPublishingStage] = useState<'idle' | 'rendering' | 'uploading' | 'done'>('idle');
   const [publishedSuccess, setPublishedSuccess] = useState(false);
   const [publishedVideoUrl, setPublishedVideoUrl] = useState<string | null>(null);
+  const [hasTimelineContent, setHasTimelineContent] = useState(false);
 
   // Live timeline clips cached for publish & export operations
   const timelineClipsRef = useRef<{
@@ -284,6 +285,13 @@ export default function WorkspacePage({
         if (Array.isArray(detail.videoClips)) timelineClipsRef.current.videoClips = detail.videoClips;
         if (Array.isArray(detail.imageClips)) timelineClipsRef.current.imageClips = detail.imageClips;
         if (Array.isArray((detail as any).captionClips)) timelineClipsRef.current.captionClips = (detail as any).captionClips;
+
+        // Derive hasTimelineContent from live clip arrays
+        setHasTimelineContent(Boolean(
+          (timelineClipsRef.current.videoClips?.length ?? 0) > 0 ||
+          (timelineClipsRef.current.imageClips?.length ?? 0) > 0 ||
+          (timelineClipsRef.current.captionClips?.length ?? 0) > 0
+        ));
 
         if (detail.voiceMuted !== undefined) setVoiceTrackMuted(Boolean(detail.voiceMuted));
         if (detail.musicMuted !== undefined) setMusicTrackMuted(Boolean(detail.musicMuted));
@@ -1345,10 +1353,10 @@ export default function WorkspacePage({
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent('workspace:publish-state', {
-        detail: { publishing, canPublish, publishedSuccess },
+        detail: { publishing, canPublish, publishedSuccess, hasTimelineContent },
       })
     );
-  }, [publishing, canPublish, publishedSuccess]);
+  }, [publishing, canPublish, publishedSuccess, hasTimelineContent]);
 
   useEffect(() => {
     window.dispatchEvent(
