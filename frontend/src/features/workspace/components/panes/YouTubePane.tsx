@@ -700,8 +700,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             onClick={() => setActiveSubTab('meta')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'meta'
-                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
+                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
             }`}
           >
             <Upload className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'meta' ? 'text-red-500' : 'text-slate-400'}`} />
@@ -712,8 +712,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             onClick={() => setActiveSubTab('seo')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'seo'
-                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
+                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
             }`}
           >
             <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'seo' ? 'text-amber-400' : 'text-slate-400'}`} />

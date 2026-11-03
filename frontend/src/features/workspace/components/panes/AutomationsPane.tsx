@@ -499,8 +499,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             onClick={() => setActiveSubTab('pipelines')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'pipelines'
-                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
+                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
             }`}
             title="Active Autonomous Pipelines"
           >
@@ -523,8 +523,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             onClick={() => setActiveSubTab('create')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'create'
-                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
+                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
             }`}
             title="Configure New Automation Schedule"
           >
@@ -538,8 +538,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             onClick={() => setActiveSubTab('channel')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'channel'
-                ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
+                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
             }`}
             title="Publishing Destination & Channel Target"
           >

@@ -97,8 +97,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
                   isActive
-                    ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs'
-                    : 'border-[#242424] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
+                    ? 'bg-[#222226] text-white border-white/10 shadow-sm'
+                    : 'border-[#242424] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-white/[0.06]'
                 }`}
               >
                 <IconComp className={`h-3.5 w-3.5 shrink-0 ${item.id === 'youtube' && isActive ? 'text-red-400' : item.id === 'automations' && isActive ? 'text-emerald-400' : ''}`} />
@@ -127,26 +127,20 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   aria-label={item.label}
                   aria-current={isActive ? 'page' : undefined}
                   title={item.label}
-                  className={`group relative flex flex-col h-11 w-11 items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                  className={`group relative flex flex-col h-11 w-11 items-center justify-center rounded-2xl border transition-all cursor-pointer select-none ${
                     isActive
-                      ? item.id === 'youtube'
-                        ? 'border-red-500/40 bg-red-950/25 text-red-200 shadow-[0_0_12px_rgba(239,68,68,0.25)]'
-                        : item.id === 'automations'
-                        ? 'border-emerald-500/40 bg-emerald-950/25 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
-                        : 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#60A5FA] shadow-[0_0_12px_rgba(59,130,246,0.25)]'
-                      : 'border-transparent text-[#9CA3AF] hover:border-[#2A2A2A] hover:bg-[#1A1A1A] hover:text-white'
+                      ? 'bg-[#222226] border-white/10 text-white shadow-sm'
+                      : 'border-transparent text-[#9CA3AF] hover:bg-white/[0.06] hover:text-white hover:border-white/5'
                   }`}
                 >
                   <IconComp
                     className={`h-4 w-4 shrink-0 transition-transform group-hover:scale-105 ${
-                      item.id === 'youtube'
-                        ? (isActive ? 'text-red-400' : 'group-hover:text-red-400')
-                        : item.id === 'automations'
-                        ? (isActive ? 'text-emerald-400' : 'group-hover:text-emerald-400')
-                        : isActive ? 'text-[#60A5FA]' : ''
+                      isActive ? 'text-white' : 'text-[#9CA3AF] group-hover:text-white'
                     }`}
                   />
-                  <span className={`text-[8.5px] font-semibold mt-1 tracking-tight truncate max-w-[44px] leading-none ${isActive ? 'text-[#60A5FA]' : 'text-[#9CA3AF] group-hover:text-white'}`}>
+                  <span className={`text-[8.5px] font-semibold mt-1 tracking-tight truncate max-w-[44px] leading-none ${
+                    isActive ? 'text-white' : 'text-[#9CA3AF] group-hover:text-white'
+                  }`}>
                     {item.shortLabel}
                   </span>
 

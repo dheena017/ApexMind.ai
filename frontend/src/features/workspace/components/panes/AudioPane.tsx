@@ -382,8 +382,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap shrink-0 ${
                   isActive
-                    ? 'bg-[#3B82F6]/15 text-[#60A5FA] shadow-xs font-semibold border border-[#3B82F6]/40 text-sky-300'
-                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-transparent'
+                    ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10 text-sky-300'
+                    : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
                 }`}
                 title={tab.label}
               >
