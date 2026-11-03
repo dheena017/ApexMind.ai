@@ -297,7 +297,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     const isLast = visibleEnabledTracks[visibleEnabledTracks.length - 1] === trackId;
 
     return (
-      <div className="flex items-center gap-0.5 shrink-0 -ml-0.5 mr-0.5">
+      <div className="flex items-center gap-0.5 shrink-0 -ml-0.5 mr-1">
         {/* Drag Reorder Handle */}
         <div
           draggable
@@ -311,7 +311,11 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
             setDraggedTrackId(null);
             setDragOverTrackId(null);
           }}
-          className="text-zinc-500 hover:text-white cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-white/10 active:bg-amber-500/20 active:text-amber-300 active:scale-110 transition-all duration-150"
+          className={`flex items-center justify-center w-5 h-5 rounded cursor-grab active:cursor-grabbing transition-all duration-150 ${
+            draggedTrackId === trackId
+              ? 'text-amber-400 bg-amber-500/20 scale-110'
+              : 'text-zinc-600 hover:text-zinc-200 hover:bg-white/10 active:bg-white/20'
+          }`}
           title="Drag up or down to reorder track"
           aria-label={`Drag to reorder ${trackId} track`}
         >
@@ -319,7 +323,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         </div>
 
         {/* Move Up / Down Buttons */}
-        <div className="flex flex-col items-center justify-center -space-y-1">
+        <div className="flex flex-col items-center justify-center gap-px">
           <button
             type="button"
             disabled={isFirst}
@@ -329,10 +333,10 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
             }}
             title={isFirst ? 'Already at top' : 'Move track up'}
             aria-label={`Move ${trackId} track up`}
-            className={`p-0.2 rounded transition-colors ${
+            className={`flex items-center justify-center w-4 h-3.5 rounded-sm transition-all duration-150 ${
               isFirst
-                ? 'opacity-20 cursor-not-allowed text-zinc-600'
-                : 'text-zinc-400 hover:text-white hover:bg-white/15 cursor-pointer active:scale-90'
+                ? 'opacity-15 cursor-not-allowed text-zinc-700'
+                : 'text-zinc-400 hover:text-white hover:bg-white/15 cursor-pointer active:scale-90 active:bg-amber-500/20 active:text-amber-300'
             }`}
           >
             <ChevronUp className="w-2.5 h-2.5" />
@@ -346,10 +350,10 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
             }}
             title={isLast ? 'Already at bottom' : 'Move track down'}
             aria-label={`Move ${trackId} track down`}
-            className={`p-0.2 rounded transition-colors ${
+            className={`flex items-center justify-center w-4 h-3.5 rounded-sm transition-all duration-150 ${
               isLast
-                ? 'opacity-20 cursor-not-allowed text-zinc-600'
-                : 'text-zinc-400 hover:text-white hover:bg-white/15 cursor-pointer active:scale-90'
+                ? 'opacity-15 cursor-not-allowed text-zinc-700'
+                : 'text-zinc-400 hover:text-white hover:bg-white/15 cursor-pointer active:scale-90 active:bg-amber-500/20 active:text-amber-300'
             }`}
           >
             <ChevronDown className="w-2.5 h-2.5" />
@@ -426,12 +430,12 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       {...getDropProps('video')}
       onClick={() => onSelectClip({ track: 'video', all: true }, 'video')}
       style={{ height: `${videoTrackHeight}px` }}
-      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
         dragOverTrackId === 'video' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
-      } ${draggedTrackId === 'video' ? 'opacity-40' : ''} ${
+      } ${draggedTrackId === 'video' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'video'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F59E0B]'
-          : 'hover:bg-white/[0.03] border-l-2 border-l-[#F59E0B]/50'
+          : 'hover:bg-white/[0.05] border-l-2 border-l-[#F59E0B]/50'
       }`}
       title="V1 Video Track • Click to inspect & adjust (Drag or click arrows to move up/down)"
     >
@@ -468,12 +472,12 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       {...getDropProps('image')}
       onClick={() => onSelectClip({ track: 'image', all: true }, 'video')}
       style={{ height: `${imageTrackHeight}px` }}
-      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
         dragOverTrackId === 'image' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
-      } ${draggedTrackId === 'image' ? 'opacity-40' : ''} ${
+      } ${draggedTrackId === 'image' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'image'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F43F5E]'
-          : 'hover:bg-white/[0.03] border-l-2 border-l-[#F43F5E]/50'
+          : 'hover:bg-white/[0.05] border-l-2 border-l-[#F43F5E]/50'
       }`}
       title="V2 Image Track • Click to inspect & adjust (Drag or click arrows to move up/down)"
     >
@@ -509,12 +513,12 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       {...getDropProps('overlay')}
       onClick={() => onSelectClip({ track: 'overlay', all: true }, 'overlay')}
       style={{ height: `${overlayTrackHeight}px` }}
-      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
         dragOverTrackId === 'overlay' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
-      } ${draggedTrackId === 'overlay' ? 'opacity-40' : ''} ${
+      } ${draggedTrackId === 'overlay' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'overlay'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#8B5CF6]'
-          : 'hover:bg-white/[0.03] border-l-2 border-l-[#8B5CF6]/50'
+          : 'hover:bg-white/[0.05] border-l-2 border-l-[#8B5CF6]/50'
       }`}
       title="O1 Overlays Track • Stickers, motion graphics, and watermarks (Drag or click arrows to move up/down)"
     >
@@ -550,12 +554,12 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       {...getDropProps('captions')}
       onClick={() => onSelectClip({ track: 'caption', all: true }, 'text')}
       style={{ height: `${captionTrackHeight}px` }}
-      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
         dragOverTrackId === 'captions' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
-      } ${draggedTrackId === 'captions' ? 'opacity-40' : ''} ${
+      } ${draggedTrackId === 'captions' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'caption'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#06B6D4]'
-          : 'hover:bg-white/[0.03] border-l-2 border-l-[#06B6D4]/50'
+          : 'hover:bg-white/[0.05] border-l-2 border-l-[#06B6D4]/50'
       }`}
       title="T1 Captions Track • Synced typography and dynamic subtitles (Drag or click arrows to move up/down)"
     >
@@ -594,12 +598,12 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       {...getDropProps('title')}
       onClick={() => onSelectClip({ track: 'title', all: true }, 'text')}
       style={{ height: `${titleTrackHeight}px` }}
-      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
         dragOverTrackId === 'title' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
-      } ${draggedTrackId === 'title' ? 'opacity-40' : ''} ${
+      } ${draggedTrackId === 'title' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'title'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#38BDF8]'
-          : 'hover:bg-white/[0.03] border-l-2 border-l-[#38BDF8]/50'
+          : 'hover:bg-white/[0.05] border-l-2 border-l-[#38BDF8]/50'
       }`}
       title="T2 Titles Track • Main video headlines & hook titles (Drag or click arrows to move up/down)"
     >
@@ -630,12 +634,12 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       {...getDropProps('voice')}
       onClick={() => onSelectClip({ track: 'voice', all: true }, 'voice')}
       style={{ height: `${voiceTrackHeight}px` }}
-      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
         dragOverTrackId === 'voice' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
-      } ${draggedTrackId === 'voice' ? 'opacity-40' : ''} ${
+      } ${draggedTrackId === 'voice' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'voice'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#10B981]'
-          : 'hover:bg-white/[0.03] border-l-2 border-l-[#10B981]/50'
+          : 'hover:bg-white/[0.05] border-l-2 border-l-[#10B981]/50'
       }`}
       title="A1 Voiceover Track • 24kHz studio voice narration (Drag or click arrows to move up/down)"
     >
@@ -671,12 +675,12 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       {...getDropProps('music')}
       onClick={() => onSelectClip({ track: 'music', all: true }, 'music')}
       style={{ height: `${musicTrackHeight}px` }}
-      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
         dragOverTrackId === 'music' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
-      } ${draggedTrackId === 'music' ? 'opacity-40' : ''} ${
+      } ${draggedTrackId === 'music' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'music'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#D946EF]'
-          : 'hover:bg-white/[0.03] border-l-2 border-l-[#D946EF]/50'
+          : 'hover:bg-white/[0.05] border-l-2 border-l-[#D946EF]/50'
       }`}
       title="A2 Music Track • Background soundtrack & beat ducking (Drag or click arrows to move up/down)"
     >
@@ -712,12 +716,12 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       {...getDropProps('sfx')}
       onClick={() => onSelectClip({ track: 'sfx', all: true }, 'music')}
       style={{ height: `${sfxTrackHeight}px` }}
-      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all ${
+      className={`group relative box-border border-b border-[#242426] flex items-center justify-between px-2 text-xs text-white cursor-pointer transition-all duration-150 ${
         dragOverTrackId === 'sfx' ? 'bg-amber-500/15 border-t-2 border-t-amber-400' : ''
-      } ${draggedTrackId === 'sfx' ? 'opacity-40' : ''} ${
+      } ${draggedTrackId === 'sfx' ? 'opacity-30 scale-[0.99] saturate-50' : ''} ${
         selectedClip?.track === 'sfx'
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F97316]'
-          : 'hover:bg-white/[0.03] border-l-2 border-l-[#F97316]/50'
+          : 'hover:bg-white/[0.05] border-l-2 border-l-[#F97316]/50'
       }`}
       title="A3 Sound FX Track • Transition whooshes, impacts, and risers (Drag or click arrows to move up/down)"
     >
