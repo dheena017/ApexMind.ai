@@ -209,8 +209,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             onClick={() => handleTogglePanel('left')}
             className={`p-1 rounded-md transition-all cursor-pointer ${
               showLeftPane
-                ? 'bg-[#222226] text-white border border-white/10 shadow-sm'
-                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.06] border border-transparent'
+                ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs'
+                : 'text-[#8E8E93] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
             }`}
             title={showLeftPane ? 'Hide Left Panel' : 'Show Left Panel'}
             aria-label="Toggle Left Panel"
@@ -223,8 +223,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             onClick={() => handleTogglePanel('bottom')}
             className={`p-1 rounded-md transition-all cursor-pointer ${
               showTimeline
-                ? 'bg-[#222226] text-white border border-white/10 shadow-sm'
-                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.06] border border-transparent'
+                ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs'
+                : 'text-[#8E8E93] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
             }`}
             title={showTimeline ? 'Hide Bottom Timeline' : 'Show Bottom Timeline'}
             aria-label="Toggle Bottom Timeline"
@@ -237,8 +237,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             onClick={() => handleTogglePanel('right')}
             className={`p-1 rounded-md transition-all cursor-pointer ${
               showRightPane
-                ? 'bg-[#222226] text-white border border-white/10 shadow-sm'
-                : 'text-[#8E8E93] hover:text-white hover:bg-white/[0.06] border border-transparent'
+                ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs'
+                : 'text-[#8E8E93] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
             }`}
             title={showRightPane ? 'Hide Right Inspector' : 'Show Right Inspector'}
             aria-label="Toggle Right Inspector"

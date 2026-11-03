@@ -183,9 +183,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
                 key={cat}
                 onClick={() => setFilter((f) => ({ ...f, category: cat }))}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap border shrink-0 ${
-                  filter.category === cat
-                    ? 'bg-[#3B82F6]/20 text-[#60A5FA] border-[#3B82F6]/50'
-                    : 'bg-[#161616] text-[#9CA3AF] border-[#2A2A2A] hover:text-white hover:border-[#3A3A3A]'
+                  filter.category === cat ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs' : 'bg-[#161616] text-[#9CA3AF] border-[#242424] hover:text-white hover:bg-[#26262C] hover:border-white/10'
                 }`}
               >
                 {cat === 'All' ? 'All Videos' : cat.split('&')[0].trim()}
@@ -232,9 +230,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
             <button
               onClick={() => setFilter((f) => ({ ...f, viewMode: 'grid' }))}
               className={`p-2 rounded-lg transition-all cursor-pointer ${
-                filter.viewMode === 'grid'
-                  ? 'bg-[#3B82F6]/20 text-[#60A5FA]'
-                  : 'text-[#6B7280] hover:text-white'
+                filter.viewMode === 'grid' ? 'bg-[#2563EB] text-white shadow-xs' : 'text-[#8E8E93] hover:text-white hover:bg-[#26262C]'
               }`}
               title="Grid View"
             >
@@ -243,9 +239,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
             <button
               onClick={() => setFilter((f) => ({ ...f, viewMode: 'list' }))}
               className={`p-2 rounded-lg transition-all cursor-pointer ${
-                filter.viewMode === 'list'
-                  ? 'bg-[#3B82F6]/20 text-[#60A5FA]'
-                  : 'text-[#6B7280] hover:text-white'
+                filter.viewMode === 'list' ? 'bg-[#2563EB] text-white shadow-xs' : 'text-[#8E8E93] hover:text-white hover:bg-[#26262C]'
               }`}
               title="List View"
             >

@@ -150,9 +150,7 @@ export const Tabs: React.FC<{
           key={opt.id}
           onClick={() => onChange(opt.id)}
           className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-            activeId === opt.id
-              ? 'bg-gradient-to-r from-[#3B82F6]/20 to-[#2563EB]/20 text-[#60A5FA] border border-[#3B82F6]/40 shadow-sm'
-              : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1E1E1E]'
+            activeId === opt.id ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-sm font-bold' : 'text-[#9CA3AF] border border-transparent hover:text-white hover:bg-[#26262C] hover:border-white/10'
           }`}
         >
           {opt.icon && <span>{opt.icon}</span>}

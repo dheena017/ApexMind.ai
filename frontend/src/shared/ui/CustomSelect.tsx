@@ -220,9 +220,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   className={`flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-colors text-xs select-none ${
                     opt.disabled
                       ? 'opacity-40 cursor-not-allowed text-[#6B7280]'
-                      : isSelected
-                      ? 'bg-[#3B82F6]/20 text-[#60A5FA] font-bold border border-[#3B82F6]/40 shadow-xs'
-                      : 'text-[#D4D4D8] hover:bg-[#222228] hover:text-white'
+                      : isSelected ? 'bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40 shadow-xs' : 'text-[#D4D4D8] hover:bg-[#26262C] hover:text-white hover:border-white/10 border border-transparent'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0 truncate">
@@ -238,15 +236,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     {opt.badge && (
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                        isSelected
-                          ? 'bg-[#3B82F6]/25 border border-[#3B82F6]/50 text-[#93C5FD]'
-                          : 'bg-[#27272E] border border-[#363640] text-[#A1A1AA]'
+                        isSelected ? 'bg-white/20 border border-white/30 text-white' : 'bg-[#222226] border border-[#333338] text-[#9CA3AF]'
                       }`}>
                         {opt.badge}
                       </span>
                     )}
                     {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-[#60A5FA] stroke-[2.5]" />
+                      <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
                     )}
                   </div>
                 </div>

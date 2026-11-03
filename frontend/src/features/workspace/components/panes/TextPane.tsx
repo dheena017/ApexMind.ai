@@ -396,8 +396,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
             onClick={() => setActiveTab("presets")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "presets"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Presets"
           >
@@ -409,8 +409,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
             onClick={() => setActiveTab("quick")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "quick"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Insert"
           >
@@ -422,8 +422,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
             onClick={() => setActiveTab("hooks")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "hooks"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Hooks"
           >
@@ -435,8 +435,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
             onClick={() => setActiveTab("overrides")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "overrides"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Style"
           >
@@ -448,8 +448,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
             onClick={() => setActiveTab("custom")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "custom"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Saved"
           >

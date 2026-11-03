@@ -97,8 +97,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
                   isActive
-                    ? 'bg-[#222226] text-white border-white/10 shadow-sm'
-                    : 'border-[#242424] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-white/[0.06]'
+                    ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
+                    : 'border-[#242424] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-[#26262C]'
                 }`}
               >
                 <IconComp className={`h-3.5 w-3.5 shrink-0 ${item.id === 'youtube' && isActive ? 'text-red-400' : item.id === 'automations' && isActive ? 'text-emerald-400' : ''}`} />
@@ -129,8 +129,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   title={item.label}
                   className={`group relative flex flex-col h-11 w-11 items-center justify-center rounded-2xl border transition-all cursor-pointer select-none ${
                     isActive
-                      ? 'bg-[#222226] border-white/10 text-white shadow-sm'
-                      : 'border-transparent text-[#9CA3AF] hover:bg-white/[0.06] hover:text-white hover:border-white/5'
+                      ? 'bg-gradient-to-b from-[#2563EB] to-[#1D4ED8] border-[#60A5FA]/40 text-white shadow-[0_0_14px_rgba(37,99,235,0.35)]'
+                      : 'border-transparent text-[#9CA3AF] hover:bg-[#26262C] hover:text-white hover:border-white/10'
                   }`}
                 >
                   <IconComp

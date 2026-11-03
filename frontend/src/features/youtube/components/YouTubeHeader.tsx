@@ -119,9 +119,7 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
               type="button"
               onClick={() => onTabChange(tab.id)}
               className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none ${
-                isActive
-                  ? 'bg-white text-gray-950 font-bold shadow-md shadow-white/10 scale-[1.02]'
-                  : 'bg-[#141414] text-[#A1A1AA] hover:text-white hover:bg-[#202020] border border-[#262626] hover:border-[#383838] active:scale-95'
+                isActive ? 'bg-[#2563EB] text-white font-bold shadow-md shadow-[#2563EB]/25 border border-[#60A5FA]/40 scale-[1.02]' : 'bg-[#141414] text-[#9CA3AF] hover:text-white hover:bg-[#26262C] border border-[#262626] hover:border-white/10 active:scale-95'
               }`}
             >
               <span>{renderIcon(tab.id, isActive)}</span>
@@ -129,11 +127,7 @@ export const YouTubeHeader: React.FC<YouTubeHeaderProps> = ({
               {hasCount && (
                 <span
                   className={`text-[11px] px-2 py-0.5 rounded-full font-mono-studio font-bold leading-none transition-colors ${
-                    isActive
-                      ? 'bg-black/10 text-gray-950'
-                      : isNonZero
-                      ? 'bg-[#242424] text-white border border-white/10 group-hover:bg-[#2E2E2E]'
-                      : 'bg-[#1A1A1A] text-[#6B7280]'
+                    isActive ? 'bg-white/20 text-white' : isNonZero ? 'bg-[#222226] text-white border border-white/10 group-hover:bg-[#2A2A30]' : 'bg-[#1A1A1A] text-[#6B7280]'
                   }`}
                 >
                   {tab.badge}

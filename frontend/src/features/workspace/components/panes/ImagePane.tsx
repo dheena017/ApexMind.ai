@@ -540,8 +540,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             onClick={() => setActiveTab("catalog")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "catalog"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Catalog"
           >
@@ -553,8 +553,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             onClick={() => setActiveTab("filters")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "filters"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Filters"
           >
@@ -566,8 +566,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             onClick={() => setActiveTab("url")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "url"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Direct URL"
           >
@@ -579,8 +579,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             onClick={() => setActiveTab("saved")}
             className={`flex-1 min-w-[50px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === "saved"
-                ? "bg-[#222226] text-white shadow-sm font-bold border border-white/10"
-                : "text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent"
+                ? "bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40"
+                : "text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent"
             }`}
             title="Saved"
           >

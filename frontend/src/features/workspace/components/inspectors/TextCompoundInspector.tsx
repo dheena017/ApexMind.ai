@@ -595,11 +595,11 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                 onClick={() => setActiveSubTab(t.id)}
                 className={`flex-1 min-w-[50px] flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
-                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]'
+                    ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
+                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
                 }`}
               >
-                <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
+                <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-white' : 'text-[#9CA3AF] group-hover:text-white'}`} />
                 <span>{t.label}</span>
               </button>
             );

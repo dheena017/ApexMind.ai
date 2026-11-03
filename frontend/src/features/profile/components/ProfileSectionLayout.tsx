@@ -270,7 +270,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
                     : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
                 }`}
               >
-                <span className={selected ? 'text-black' : 'text-slate-400'}>
+                <span className={selected ? 'text-white' : 'text-[#9CA3AF] group-hover:text-white'}>
                   {section.icon}
                 </span>
                 <span>{section.label}</span>

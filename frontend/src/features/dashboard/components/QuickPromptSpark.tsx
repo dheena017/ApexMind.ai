@@ -95,9 +95,7 @@ export const QuickPromptSpark: React.FC<QuickPromptSparkProps> = ({
                   setCustomTopic('');
                 }}
                 className={`text-left p-3 rounded-xl border transition-all cursor-pointer relative ${
-                  isSelected
-                    ? 'bg-[#1D2E4D] border-[#3B82F6] text-white shadow-md'
-                    : 'bg-[#181818] border-[#2A2A2A] text-[#B0B0B0] hover:text-white hover:bg-[#1E1E1E] hover:border-[#383838]'
+                  isSelected ? 'bg-[#2563EB] border border-[#60A5FA]/40 text-white shadow-md' : 'bg-[#181818] border border-[#242424] text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10'
                 }`}
               >
                 <div className="flex items-center justify-between gap-1 mb-1">

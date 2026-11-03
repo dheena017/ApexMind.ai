@@ -206,9 +206,7 @@ export default function AppLayout({
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className={`h-7.5 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border text-xs font-medium ${
-                  sidebarOpen
-                    ? 'bg-[#1C1C1C] text-white border-[#3B82F6]/50 shadow-sm'
-                    : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#1A1A1A] border-[#2A2A2A] hover:border-[#3D3D3D]'
+                  sidebarOpen ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs' : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] border-[#242424] hover:border-white/10'
                 }`}
                 aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
                 title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
@@ -335,17 +333,13 @@ export default function AppLayout({
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={item.badge ? `${item.label}, ${item.badge} unread` : item.label}
                   className={`group relative w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-xl min-h-[48px] cursor-pointer transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 motion-reduce:transition-none ${
-                    isActive
-                      ? 'bg-[#3B82F6]/15 text-[#60A5FA] border-[#3B82F6]/30'
-                      : 'text-[#9CA3AF] hover:text-white hover:bg-[#1A1A1A] border-transparent hover:border-[#303030]'
+                    isActive ? 'bg-[#2563EB] text-white font-bold border-[#60A5FA]/40 shadow-xs' : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border-transparent'
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
                     <span
                       className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all ${
-                        isActive
-                          ? 'bg-[#1D2E4D] border-[#3B82F6]/35 text-[#60A5FA]'
-                          : 'bg-[#171717] border-[#2F2F2F] text-[#9CA3AF] group-hover:text-white group-hover:border-[#3A3A3A]'
+                        isActive ? 'bg-white/20 border-white/30 text-white' : 'bg-[#181818] border-[#242424] text-[#9CA3AF] group-hover:text-white group-hover:bg-[#202026]'
                       }`}
                     >
                       {item.icon}

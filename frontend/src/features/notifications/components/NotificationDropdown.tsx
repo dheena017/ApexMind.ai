@@ -157,9 +157,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`relative p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
-          isOpen
-            ? 'bg-[#1E1E1E] text-white border border-[#3B82F6]/50'
-            : 'text-[#9CA3AF] border border-[#3A3A3A] hover:text-[#E5E5E5] hover:bg-[#1E1E1E] hover:border-[#4B5563]'
+          isOpen ? 'bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs' : 'text-[#9CA3AF] border border-[#242424] hover:text-white hover:bg-[#26262C] hover:border-white/10'
         } ${buttonClassName}`}
         aria-label="Toggle notifications dropdown"
         title="Notifications"
@@ -218,7 +216,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 <div
                   key={n.id}
                   onClick={() => handleItemClick(n)}
-                  className={`group relative p-3.5 px-4 flex items-start gap-3 transition-colors cursor-pointer hover:bg-[#1C1C1C] ${
+                  className={`group relative p-3.5 px-4 flex items-start gap-3 transition-colors cursor-pointer hover:bg-[#26262C] ${
                     !n.read ? 'bg-[#181818]/60' : 'opacity-85'
                   }`}
                 >

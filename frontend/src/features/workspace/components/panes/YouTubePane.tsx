@@ -558,92 +558,84 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
           </div>
         ) : channel ? (
           <div className="flex flex-col gap-2">
-            {/* Top Identity Row: Avatar + Name & Handle | Compact Stats Cluster | Connected Badge */}
-            <div className="flex items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="relative shrink-0">
-                  {channel.avatarUrl ? (
-                    <img
-                      src={channel.avatarUrl}
-                      alt={channel.name}
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] shadow-md shadow-black/40"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-red-700 ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] flex items-center justify-center text-white font-bold text-xs shadow-md">
-                      {channel.name?.slice(0, 2).toUpperCase() || 'YT'}
-                    </div>
-                  )}
-                  {/* Micro YouTube badge overlay */}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#181818] border border-[#2A2A2A] flex items-center justify-center shadow-xs">
-                    <Youtube className="w-2 h-2 text-red-500" />
-                  </div>
-                </div>
-
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="text-xs font-bold text-white tracking-tight truncate hover:text-red-300 transition-colors">
-                      {channel.name}
-                    </h3>
-                    {channel.verified && (
-                      <span className="text-[10px] text-blue-400 shrink-0" title="Verified Creator">
-                        ✓
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (channel.handle) {
-                        navigator.clipboard.writeText(channel.handle);
-                        setCopiedHandle(true);
-                        setTimeout(() => setCopiedHandle(false), 2000);
-                        toast.success(`Copied handle ${channel.handle}`);
-                      }
+            {/* Row 1: Avatar + Name & Handle */}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative shrink-0">
+                {channel.avatarUrl ? (
+                  <img
+                    src={channel.avatarUrl}
+                    alt={channel.name}
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] shadow-md shadow-black/40"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
                     }}
-                    className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 font-mono transition-colors group cursor-pointer"
-                    title="Click to copy handle"
-                  >
-                    <span>{channel.handle || '@channel'}</span>
-                    {copiedHandle ? (
-                      <Check className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
-                    ) : (
-                      <Copy className="w-2.5 h-2.5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </button>
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 ring-2 ring-red-500/30 ring-offset-2 ring-offset-[#141418] flex items-center justify-center text-white font-bold text-xs shadow-md">
+                    {channel.name?.slice(0, 2).toUpperCase() || 'YT'}
+                  </div>
+                )}
+                {/* Micro YouTube badge overlay */}
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#181818] border border-[#2A2A2A] flex items-center justify-center shadow-xs">
+                  <Youtube className="w-2 h-2 text-red-500" />
                 </div>
               </div>
 
-              {/* Center Micro-Metrics Pill Cluster (Subs, Videos, Views) */}
-              <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 py-1 bg-[#111111] border border-[#242424] rounded-lg shadow-inner">
-                <div className="flex items-center gap-1 text-[11px] font-mono">
-                  <span className="text-zinc-500 text-[10px] font-sans font-medium">Subs:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
-                </div>
-                <span className="text-white/15">•</span>
-                <div className="flex items-center gap-1 text-[11px] font-mono">
-                  <span className="text-zinc-500 text-[10px] font-sans font-medium">Videos:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
-                </div>
-                <span className="text-white/15">•</span>
-                <div className="flex items-center gap-1 text-[11px] font-mono">
-                  <span className="text-zinc-500 text-[10px] font-sans font-medium">Views:</span>
-                  <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
-                </div>
-              </div>
-
-              {/* Status Badge with Live Pulsing Radar Dot */}
-              <div className="shrink-0 flex items-center">
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/[0.12] text-emerald-400 text-[10px] font-semibold border border-emerald-500/25 flex items-center gap-1.5 shadow-xs">
-                  <span className="relative flex h-1.5 w-1.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold text-white tracking-tight truncate hover:text-red-300 transition-colors">
+                    {channel.name}
+                  </h3>
+                  {channel.verified && (
+                    <span className="text-[10px] text-blue-400 shrink-0" title="Verified Creator">
+                      ✓
+                    </span>
+                  )}
+                  {/* Subtle live indicator dot next to name */}
+                  <span className="relative flex h-2 w-2 ml-auto shrink-0" title="Channel Connected">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                   </span>
-                  Connected
-                </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (channel.handle) {
+                      navigator.clipboard.writeText(channel.handle);
+                      setCopiedHandle(true);
+                      setTimeout(() => setCopiedHandle(false), 2000);
+                      toast.success(`Copied handle ${channel.handle}`);
+                    }
+                  }}
+                  className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 font-mono transition-colors group cursor-pointer"
+                  title="Click to copy handle"
+                >
+                  <span>{channel.handle || '@channel'}</span>
+                  {copiedHandle ? (
+                    <Check className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                  ) : (
+                    <Copy className="w-2.5 h-2.5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Row 2: Full-width Metrics Pill Cluster (Subs, Videos, Views) */}
+            <div className="flex items-center justify-between px-3 py-1.5 bg-[#111111] border border-[#242424] rounded-lg shadow-inner w-full min-w-0">
+              <div className="flex items-center gap-1 text-[11px] font-mono">
+                <span className="text-zinc-500 text-[10px] font-sans font-medium">Subs:</span>
+                <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
+              </div>
+              <span className="text-white/20">•</span>
+              <div className="flex items-center gap-1 text-[11px] font-mono">
+                <span className="text-zinc-500 text-[10px] font-sans font-medium">Videos:</span>
+                <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
+              </div>
+              <span className="text-white/20">•</span>
+              <div className="flex items-center gap-1 text-[11px] font-mono">
+                <span className="text-zinc-500 text-[10px] font-sans font-medium">Views:</span>
+                <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
               </div>
             </div>
 
@@ -700,8 +692,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             onClick={() => setActiveSubTab('meta')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'meta'
-                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
+                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
             }`}
           >
             <Upload className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'meta' ? 'text-red-500' : 'text-slate-400'}`} />
@@ -712,8 +704,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             onClick={() => setActiveSubTab('seo')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeSubTab === 'seo'
-                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
+                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
             }`}
           >
             <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'seo' ? 'text-amber-400' : 'text-slate-400'}`} />

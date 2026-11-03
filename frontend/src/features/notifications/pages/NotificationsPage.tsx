@@ -311,9 +311,7 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as NotificationCategory)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer border ${
-                  isActive
-                    ? 'bg-[#1E1E1E] text-white border-[#3B82F6]/50'
-                    : 'text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#181818] border-transparent'
+                  isActive ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs' : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border-transparent'
                 }`}
               >
                 <span>{tab.label}</span>

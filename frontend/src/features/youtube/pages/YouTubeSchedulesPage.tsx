@@ -421,9 +421,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                   type="button"
                   onClick={() => setStatusFilter(filter)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer flex items-center gap-1.5 ${
-                    statusFilter === filter
-                      ? 'bg-[#3B82F6]/20 border border-[#3B82F6]/40 text-[#60A5FA]'
-                      : 'text-[#9CA3AF] hover:text-white border border-transparent'
+                    statusFilter === filter ? 'bg-[#2563EB] border border-[#60A5FA]/40 text-white shadow-xs' : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
                   }`}
                 >
                   <span>{filter}</span>

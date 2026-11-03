@@ -215,8 +215,8 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             onClick={() => setActiveTab('prompt')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'prompt'
-                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
+                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
             }`}
           >
             <Wand2 className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'prompt' ? 'text-blue-400' : 'text-slate-400'}`} />
@@ -227,8 +227,8 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             onClick={() => setActiveTab('voice')}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'voice'
-                ? 'bg-[#222226] text-white shadow-sm font-bold border border-white/10'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] border border-transparent'
+                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
             }`}
           >
             <Mic className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'voice' ? 'text-emerald-400' : 'text-slate-400'}`} />
