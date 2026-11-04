@@ -29,7 +29,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
     onNavigate('login');
   };
 
-  const displayName = profile.displayName.trim() || user?.name || 'Dheena Dayalan';
+  const displayName = profile.displayName.trim() || user?.name || 'Creator Profile';
 
   const completion = [
     Boolean((profile.displayName.trim() || user?.name?.trim()) && (profile.avatarUrl.trim() || user?.avatarUrl)),
@@ -200,7 +200,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
               ['Display name', displayName],
               ['Creator handle', profile.creatorHandle || 'Not added'],
               ['Avatar image', profile.avatarUrl ? 'Custom image' : user?.avatarUrl ? 'Using account photo' : 'Not added'],
-              ['Channel email', user?.email && !user.email.includes('gmail.com') ? user.email : 'mindsetforge-v3q@youtube.com'],
+              ['Channel email', user?.email || 'Not connected'],
               ['Bio', profile.bio || 'Not added'],
             ].map(([label, value]) => (
               <div key={label} className="min-w-0">

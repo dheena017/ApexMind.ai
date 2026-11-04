@@ -32,23 +32,7 @@ const sections = [
   { id: 'profile-security', label: 'Security', icon: <ShieldCheck className="h-4 w-4" /> },
 ];
 
-const DEFAULT_MINDSET_FORGE_CHANNEL: YouTubeChannel = {
-  id: 'UCH0jnQrHaBOglbsLCBRoklg',
-  name: 'Mindset Forge',
-  handle: '@mindsetforge-v3q',
-  avatarUrl: 'https://yt3.ggpht.com/8RRzGPIl4gUnVVz8gC0pdRjOD69LEx_-4Cnwy-hj30U_CWtW_CpfQZg51Qj6LfQGS57eI6mv=s800-c-k-c0x00ffffff-no-rj',
-  bannerUrl: 'https://yt3.googleusercontent.com/q7mOI6glVARA73wcjSyKrYkX-83wV9oJfv043VBaW26C83Uhq-_PNlGCeENFENygPM1vgfPs2A',
-  subscribers: 0,
-  videosUploaded: 0,
-  totalLifetimeViews: 0,
-  description: 'Welcome to Mindset Forge. In a world filled with constant noise and distraction, true power lies in mastering your mind. Here, we forge mental toughness, calm resilience, and unbreakable focus through timeless Stoic wisdom, self-discipline, and high-performance habits.',
-  channelUrl: 'https://www.youtube.com/@mindsetforge-v3q',
-  verified: true,
-  isAutoUploadEnabled: true,
-  niche: 'Stoic Mindset & Discipline',
-  connectedAt: '2026-11-03T11:37:27.300432+00:00',
-  isOAuthAuthenticated: true,
-};
+
 
 interface ProfileSectionLayoutProps {
   activePage: string;
@@ -61,8 +45,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
   const { logout } = useAuth();
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Initialize with cached channel or high-fidelity Mindset Forge default for instant zero-flash render
-  const [ytChannel, setYtChannel] = useState<YouTubeChannel>(() => {
+  const [ytChannel, setYtChannel] = useState<YouTubeChannel | null>(() => {
     try {
       const cached = localStorage.getItem('apexmind_yt_channel_cache');
       if (cached) {
@@ -70,22 +53,22 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
         if (parsed && parsed.name) return parsed;
       }
     } catch {}
-    return DEFAULT_MINDSET_FORGE_CHANNEL;
+    return null;
   });
 
   useEffect(() => {
     let isMounted = true;
-    youtubeApi.getChannelDetails('mindsetforge-v3q')
-      .then((ch) => {
-        if (isMounted && ch) {
-          setYtChannel(ch);
+    youtubeApi.getAuthStatus()
+      .then((status) => {
+        if (!isMounted) return;
+        if (status?.connected && status.channel) {
+          setYtChannel(status.channel);
           try {
-            localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
+            localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(status.channel));
           } catch {}
+          return;
         }
-      })
-      .catch(() => {
-        fetch(apiUrl('/api/youtube/channels'))
+        return fetch(apiUrl('/api/youtube/channels'))
           .then((r) => r.json())
           .then((data) => {
             if (isMounted && data.channels && data.channels.length > 0) {
@@ -95,9 +78,9 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
                 localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
               } catch {}
             }
-          })
-          .catch(() => {});
-      });
+          });
+      })
+      .catch(() => {});
 
     return () => { isMounted = false; };
   }, []);
@@ -113,14 +96,14 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
     onNavigate('login');
   };
 
-  const displayName = profile.displayName.trim() || ytChannel?.name || user?.name || 'Mindset Forge';
-  const creatorHandle = ytChannel?.handle || profile.creatorHandle || '@mindsetforge-v3q';
-  const bannerUrl = profile.bannerUrl || ytChannel?.bannerUrl || DEFAULT_MINDSET_FORGE_CHANNEL.bannerUrl;
-  const avatarUrl = profile.avatarUrl || ytChannel?.avatarUrl || user?.avatarUrl || DEFAULT_MINDSET_FORGE_CHANNEL.avatarUrl;
-  const channelUrl = ytChannel?.channelUrl || `https://www.youtube.com/${creatorHandle.startsWith('@') ? creatorHandle : `@${creatorHandle}`}`;
+  const displayName = profile.displayName.trim() || ytChannel?.name || user?.name || 'Creator Profile';
+  const creatorHandle = ytChannel?.handle || profile.creatorHandle || '';
+  const bannerUrl = profile.bannerUrl || ytChannel?.bannerUrl || '';
+  const avatarUrl = profile.avatarUrl || ytChannel?.avatarUrl || user?.avatarUrl || '';
+  const channelUrl = ytChannel?.channelUrl || (creatorHandle ? `https://www.youtube.com/${creatorHandle.replace(/^@?/, '@')}` : '#');
 
   // Clean description: strip raw markdown asterisks and leading newlines
-  const rawBio = profile.bio || ytChannel?.description || DEFAULT_MINDSET_FORGE_CHANNEL.description || '';
+  const rawBio = profile.bio || ytChannel?.description || '';
   const cleanBio = rawBio
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/^\s+|\s+$/g, '')

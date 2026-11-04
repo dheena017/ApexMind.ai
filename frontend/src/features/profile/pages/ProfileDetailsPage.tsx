@@ -9,24 +9,7 @@ import { apiUrl } from '@/src/shared/utils/api';
 const inputClass = 'w-full rounded-xl border border-[#2F2F2F] bg-[#121212] px-3.5 py-2.5 text-sm text-[#E5E5E5] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30';
 const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]';
 
-const DEFAULT_MINDSET_FORGE_CHANNEL: YouTubeChannel = {
-  id: 'UCH0jnQrHaBOglbsLCBRoklg',
-  name: 'Mindset Forge',
-  handle: '@mindsetforge-v3q',
-  avatarUrl: 'https://yt3.ggpht.com/8RRzGPIl4gUnVVz8gC0pdRjOD69LEx_-4Cnwy-hj30U_CWtW_CpfQZg51Qj6LfQGS57eI6mv=s800-c-k-c0x00ffffff-no-rj',
-  bannerUrl: 'https://yt3.googleusercontent.com/q7mOI6glVARA73wcjSyKrYkX-83wV9oJfv043VBaW26C83Uhq-_PNlGCeENFENygPM1vgfPs2A',
-  subscribers: 0,
-  videosUploaded: 0,
-  totalLifetimeViews: 0,
-  description: 'Welcome to Mindset Forge. In a world filled with constant noise and distraction, true power lies in mastering your mind. Here, we forge mental toughness, calm resilience, and unbreakable focus through timeless Stoic wisdom, self-discipline, and high-performance habits.',
-  channelUrl: 'https://www.youtube.com/@mindsetforge-v3q',
-  verified: true,
-  isAutoUploadEnabled: true,
-  niche: 'Stoic Mindset & Discipline',
-  connectedAt: '2026-11-03T11:37:27.300432+00:00',
-  isOAuthAuthenticated: true,
-  joinedDate: '2026-10-13',
-};
+
 
 function formatPrettyDate(dateStr?: string | null): string {
   if (!dateStr) return '—';
@@ -42,8 +25,7 @@ export default function ProfileDetailsPage() {
   const { profile, setProfile, save, error, user } = useCreatorProfileSettings();
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Initialize with cached channel or default for instant zero-flash render
-  const [ytChannel, setYtChannel] = useState<YouTubeChannel>(() => {
+  const [ytChannel, setYtChannel] = useState<YouTubeChannel | null>(() => {
     try {
       const cached = localStorage.getItem('apexmind_yt_channel_cache');
       if (cached) {
@@ -51,63 +33,69 @@ export default function ProfileDetailsPage() {
         if (parsed && parsed.name) return parsed;
       }
     } catch {}
-    return DEFAULT_MINDSET_FORGE_CHANNEL;
+    return null;
   });
 
   // Fetch YouTube channel data to auto-populate all channel fields & dates
   useEffect(() => {
     let isMounted = true;
-    youtubeApi.getChannelDetails('mindsetforge-v3q')
-      .then((ch) => {
-        if (!isMounted || !ch) return;
-        setYtChannel(ch);
-        try {
-          localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
-        } catch {}
+    youtubeApi.getAuthStatus()
+      .then((status) => {
+        if (!isMounted) return;
+        const ch = status?.connected && status.channel ? status.channel : null;
+        if (ch) {
+          setYtChannel(ch);
+          try {
+            localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
+          } catch {}
 
-        setProfile((prev) => {
-          const cleanBio = (ch.description || '')
-            .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/^\s+|\s+$/g, '')
-            .replace(/\n+/g, ' ');
+          setProfile((prev) => {
+            const cleanBio = (ch.description || '')
+              .replace(/\*\*(.*?)\*\*/g, '$1')
+              .replace(/^\s+|\s+$/g, '')
+              .replace(/\n+/g, ' ');
 
-          return {
-            ...prev,
-            displayName: prev.displayName || ch.name || user?.name || 'Mindset Forge',
-            creatorHandle: prev.creatorHandle || ch.handle || '@mindsetforge-v3q',
-            avatarUrl: prev.avatarUrl || ch.avatarUrl || user?.avatarUrl || DEFAULT_MINDSET_FORGE_CHANNEL.avatarUrl,
-            bannerUrl: prev.bannerUrl || ch.bannerUrl || DEFAULT_MINDSET_FORGE_CHANNEL.bannerUrl,
-            youtubeUrl: prev.youtubeUrl || ch.channelUrl || `https://www.youtube.com/${(ch.handle || '@mindsetforge-v3q').replace(/^@?/, '@')}`,
-            websiteUrl: prev.websiteUrl || ch.channelUrl || 'https://www.youtube.com/@mindsetforge-v3q',
-            bio: prev.bio || cleanBio,
-          };
-        });
-      })
-      .catch(() => {
+            return {
+              ...prev,
+              displayName: prev.displayName || ch.name || user?.name || '',
+              creatorHandle: prev.creatorHandle || ch.handle || '',
+              avatarUrl: prev.avatarUrl || ch.avatarUrl || user?.avatarUrl || '',
+              bannerUrl: prev.bannerUrl || ch.bannerUrl || '',
+              youtubeUrl: prev.youtubeUrl || ch.channelUrl || (ch.handle ? `https://www.youtube.com/${ch.handle.replace(/^@?/, '@')}` : ''),
+              websiteUrl: prev.websiteUrl || ch.channelUrl || '',
+              bio: prev.bio || cleanBio,
+            };
+          });
+          return;
+        }
+
         fetch(apiUrl('/api/youtube/channels'))
           .then((r) => r.json())
           .then((data) => {
             if (isMounted && data.channels && data.channels.length > 0) {
-              const ch = data.channels[0];
-              setYtChannel(ch);
+              const fallbackCh = data.channels[0];
+              setYtChannel(fallbackCh);
               try {
-                localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(ch));
+                localStorage.setItem('apexmind_yt_channel_cache', JSON.stringify(fallbackCh));
               } catch {}
               setProfile((prev) => ({
                 ...prev,
-                displayName: prev.displayName || ch.name || 'Mindset Forge',
-                creatorHandle: prev.creatorHandle || ch.handle || '@mindsetforge-v3q',
-                avatarUrl: prev.avatarUrl || ch.avatarUrl || DEFAULT_MINDSET_FORGE_CHANNEL.avatarUrl,
-                bannerUrl: prev.bannerUrl || ch.bannerUrl || DEFAULT_MINDSET_FORGE_CHANNEL.bannerUrl,
-                youtubeUrl: prev.youtubeUrl || `https://www.youtube.com/${ch.handle || '@mindsetforge-v3q'}`,
+                displayName: prev.displayName || fallbackCh.name || user?.name || '',
+                creatorHandle: prev.creatorHandle || fallbackCh.handle || '',
+                avatarUrl: prev.avatarUrl || fallbackCh.avatarUrl || user?.avatarUrl || '',
+                bannerUrl: prev.bannerUrl || fallbackCh.bannerUrl || '',
+                youtubeUrl: prev.youtubeUrl || fallbackCh.channelUrl || (fallbackCh.handle ? `https://www.youtube.com/${fallbackCh.handle.replace(/^@?/, '@')}` : ''),
+                websiteUrl: prev.websiteUrl || fallbackCh.channelUrl || '',
+                bio: prev.bio || fallbackCh.description || '',
               }));
             }
           })
           .catch(() => {});
-      });
+      })
+      .catch(() => {});
 
     return () => { isMounted = false; };
-  }, []);
+  }, [user]);
 
   const field = (
     label: string,
@@ -119,7 +107,7 @@ export default function ProfileDetailsPage() {
       <span className={labelClass}>{label}</span>
       <input
         type={type}
-        value={profile[key] || DEFAULT_MINDSET_FORGE_CHANNEL[key as keyof YouTubeChannel] || ''}
+        value={profile[key] || ''}
         onChange={(event) => {
           setProfile((current) => ({ ...current, [key]: event.target.value }));
         }}
@@ -135,8 +123,8 @@ export default function ProfileDetailsPage() {
     setNotice(save(profile) ? 'Creator details and YouTube metadata saved on this browser.' : null);
   };
 
-  const channelJoinedDate = formatPrettyDate(ytChannel?.joinedDate || DEFAULT_MINDSET_FORGE_CHANNEL.joinedDate);
-  const studioConnectedDate = formatPrettyDate(ytChannel?.connectedAt || DEFAULT_MINDSET_FORGE_CHANNEL.connectedAt);
+  const channelJoinedDate = formatPrettyDate(ytChannel?.joinedDate);
+  const studioConnectedDate = formatPrettyDate(ytChannel?.connectedAt || user?.createdAt);
   const lastActiveDate = formatPrettyDate(user?.lastLoginAt) || 'Today';
 
   return (
@@ -204,36 +192,36 @@ export default function ProfileDetailsPage() {
       {/* ── Form Inputs (Populated with Live YouTube Channel Data) ── */}
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          {field('Display name', 'displayName', 'text', 'Mindset Forge')}
+          {field('Display name', 'displayName', 'text', 'Enter display name')}
           
           <label className="block space-y-1.5">
             <span className={labelClass}>Channel email</span>
             <input
-              value={user?.email && !user.email.includes('gmail.com') ? user.email : 'mindsetforge-v3q@youtube.com'}
+              value={user?.email || ''}
               readOnly
               className={`${inputClass} cursor-not-allowed text-[#888]`}
             />
           </label>
 
-          {field('Creator handle', 'creatorHandle', 'text', '@mindsetforge-v3q')}
+          {field('Creator handle', 'creatorHandle', 'text', '@yourhandle')}
           {field('Avatar image URL', 'avatarUrl', 'url', 'https://yt3.ggpht.com/...')}
           {field('Cover banner image URL', 'bannerUrl', 'url', 'https://yt3.googleusercontent.com/...')}
-          {field('Website', 'websiteUrl', 'url', 'https://www.youtube.com/@mindsetforge-v3q')}
-          {field('Instagram profile', 'instagramUrl', 'url', 'https://instagram.com/mindsetforge')}
-          {field('TikTok profile', 'tiktokUrl', 'url', 'https://tiktok.com/@mindsetforge')}
-          {field('YouTube profile', 'youtubeUrl', 'url', 'https://www.youtube.com/@mindsetforge-v3q')}
+          {field('Website', 'websiteUrl', 'url', 'https://yourwebsite.com')}
+          {field('Instagram profile', 'instagramUrl', 'url', 'https://instagram.com/yourhandle')}
+          {field('TikTok profile', 'tiktokUrl', 'url', 'https://tiktok.com/@yourhandle')}
+          {field('YouTube profile', 'youtubeUrl', 'url', 'https://youtube.com/@yourchannel')}
         </div>
 
         <label className="block space-y-1.5">
           <span className={labelClass}>Short bio</span>
           <textarea
-            value={profile.bio || DEFAULT_MINDSET_FORGE_CHANNEL.description || ''}
+            value={profile.bio || ''}
             onChange={(event) => setProfile((current) => ({ ...current, bio: event.target.value }))}
             className={`${inputClass} min-h-28 resize-y`}
             maxLength={280}
             placeholder="Channel description from YouTube..."
           />
-          <span className="block text-right text-[11px] text-[#6B7280]">{(profile.bio || DEFAULT_MINDSET_FORGE_CHANNEL.description || '').length}/280</span>
+          <span className="block text-right text-[11px] text-[#6B7280]">{(profile.bio || '').length}/280</span>
         </label>
 
         {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
