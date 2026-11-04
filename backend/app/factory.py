@@ -26,6 +26,7 @@ from backend.features import (
     settings_router,
     videos_router,
     dashboard_router,
+    social_router,
 )
 
 SERVER_START_TIME = time.time()
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(media_router)
     app.include_router(videos_router)
     app.include_router(youtube_router)
+    app.include_router(social_router)
     app.include_router(notifications_router)
     app.include_router(settings_router)
 
@@ -136,10 +138,11 @@ def create_app() -> FastAPI:
             "tts_voiceover": "ready" if gemini_configured else "offline",
         }
 
-        # 4. YouTube Engine
+        # 4. YouTube & Omnichannel Fleet Engine
         youtube_health = {
             "status": "operational",
-            "engine": "Dual-Engine Official (Google OAuth + Live Feed Resolver)",
+            "engine": "Omnichannel Social Fleet & Cross-Platform Syndication",
+            "platforms": ["youtube", "instagram", "facebook", "tiktok"],
             "live_sync": True,
         }
 
@@ -171,7 +174,7 @@ def create_app() -> FastAPI:
                 "youtube": youtube_health,
             },
             "modules": {
-                "active": ["auth", "workspace", "videos", "youtube", "notifications", "settings"],
+                "active": ["auth", "workspace", "videos", "youtube", "social", "notifications", "settings"],
                 "total_routes": len(app.routes),
             },
         }

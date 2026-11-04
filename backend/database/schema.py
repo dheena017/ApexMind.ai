@@ -46,11 +46,14 @@ def init_db():
     except Exception as e:
         logger.debug(f"Notifications schema migration notice: {e}")
 
-    # 4. Dynamic migration for youtube_channels columns (banner_url & OAuth credentials)
+    # 4. Dynamic migration for youtube_channels columns (banner_url, user_id & OAuth credentials)
     try:
         cursor.execute("PRAGMA table_info(youtube_channels)")
         ch_cols = {row[1] for row in cursor.fetchall()}
         if ch_cols:
+            if "user_id" not in ch_cols:
+                cursor.execute("ALTER TABLE youtube_channels ADD COLUMN user_id TEXT")
+                logger.info("Migrated youtube_channels: added 'user_id' column")
             if "banner_url" not in ch_cols:
                 cursor.execute("ALTER TABLE youtube_channels ADD COLUMN banner_url TEXT")
                 logger.info("Migrated youtube_channels: added 'banner_url' column")
@@ -66,8 +69,82 @@ def init_db():
             if "is_oauth_authenticated" not in ch_cols:
                 cursor.execute("ALTER TABLE youtube_channels ADD COLUMN is_oauth_authenticated INTEGER DEFAULT 0")
                 logger.info("Migrated youtube_channels: added 'is_oauth_authenticated' column")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_youtube_channels_user_id ON youtube_channels (user_id)")
     except Exception as e:
         logger.debug(f"YouTube channels schema migration notice: {e}")
+
+    # 4b. Dynamic migration for users table (password_hash, salt, is_active, active_channel_id)
+    try:
+        cursor.execute("PRAGMA table_info(users)")
+        user_cols = {row[1] for row in cursor.fetchall()}
+        if user_cols:
+            if "password_hash" not in user_cols:
+                cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+                logger.info("Migrated users: added 'password_hash' column")
+            if "salt" not in user_cols:
+                cursor.execute("ALTER TABLE users ADD COLUMN salt TEXT")
+                logger.info("Migrated users: added 'salt' column")
+            if "is_active" not in user_cols:
+                cursor.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
+                logger.info("Migrated users: added 'is_active' column")
+            if "active_channel_id" not in user_cols:
+                cursor.execute("ALTER TABLE users ADD COLUMN active_channel_id TEXT")
+                logger.info("Migrated users: added 'active_channel_id' column")
+    except Exception as e:
+        logger.debug(f"Users schema migration notice: {e}")
+
+    # 4c. Verify social_accounts and published_posts tables (Omnichannel Multi-Platform)
+    try:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS social_accounts (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            platform_account_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            handle TEXT NOT NULL,
+            avatar_url TEXT,
+            banner_url TEXT,
+            followers_count INTEGER DEFAULT 0,
+            posts_count INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            is_auto_upload_enabled INTEGER DEFAULT 1,
+            schedule_cron TEXT DEFAULT 'Daily at 08:00 AM EST',
+            niche TEXT DEFAULT 'Motivational Quotes',
+            access_token TEXT,
+            refresh_token TEXT,
+            token_expiry TEXT,
+            token_secret TEXT,
+            connected_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            metadata TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_social_accounts_user_platform ON social_accounts (user_id, platform);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_social_accounts_platform_account ON social_accounts (platform, platform_account_id);")
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS published_posts (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            social_account_id TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            video_id_or_url TEXT,
+            title TEXT NOT NULL,
+            caption TEXT,
+            status TEXT DEFAULT 'published',
+            views INTEGER DEFAULT 0,
+            likes INTEGER DEFAULT 0,
+            comments_count INTEGER DEFAULT 0,
+            error_message TEXT,
+            published_at TEXT NOT NULL,
+            FOREIGN KEY (social_account_id) REFERENCES social_accounts (id) ON DELETE CASCADE
+        );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_published_posts_user ON published_posts (user_id, published_at DESC);")
+    except Exception as e:
+        logger.debug(f"Social accounts table migration notice: {e}")
 
     # 5. Verify website_videos table & seed starter studio-created videos if empty
     try:

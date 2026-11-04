@@ -1,32 +1,121 @@
 """
 backend/features/auth/router.py
-FastAPI router for YouTube Channel Authentication and Creator Identity.
-Exclusively supports YouTube Channel sign-in and profile sessions.
+FastAPI router for User Authentication (Email/Password & Google Sign-In)
+and Multi-Channel Creator Identity.
 """
 
 import logging
 from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Header
 from .schemas import (
+    UserRegisterRequest,
+    UserLoginRequest,
+    GoogleAuthRequest,
     ChannelAuthRequest,
     AuthResponse,
     UserProfileDTO,
     LogoutResponse,
 )
 from .service import (
+    register_email_user,
+    login_email_user,
+    authenticate_google_user,
     authenticate_channel_user,
     get_current_user_profile,
 )
 
 logger = logging.getLogger("ApexMind.features.auth")
-router = APIRouter(prefix="/api/auth", tags=["Authentication & YouTube Identity"])
+router = APIRouter(prefix="/api/auth", tags=["Authentication & Creator Identity"])
+
+
+@router.post(
+    "/register",
+    response_model=AuthResponse,
+    summary="Register with Email & Password",
+    description="Registers a new creator account with email, password, and display name."
+)
+async def post_register(payload: UserRegisterRequest):
+    try:
+        data = register_email_user(
+            email=payload.email,
+            password=payload.password,
+            name=payload.name,
+        )
+        return data
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Registration unexpected error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Registration failed. Please try again."
+        )
+
+
+@router.post(
+    "/login",
+    response_model=AuthResponse,
+    summary="Sign in with Email & Password",
+    description="Authenticates an existing creator using email and password."
+)
+async def post_login(payload: UserLoginRequest):
+    try:
+        data = login_email_user(
+            email=payload.email,
+            password=payload.password,
+        )
+        return data
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Login unexpected error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login failed. Please check credentials."
+        )
+
+
+@router.post(
+    "/google",
+    response_model=AuthResponse,
+    summary="Sign in with Google",
+    description="Authenticates or registers a creator using Google Sign-In / GIS credential."
+)
+async def post_google_auth(payload: GoogleAuthRequest):
+    try:
+        data = authenticate_google_user(
+            credential_token=payload.credentialToken,
+            email=payload.email,
+            name=payload.name,
+            avatar_url=payload.avatarUrl,
+            google_id=payload.googleId,
+        )
+        return data
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Google authentication unexpected error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google sign-in failed. Please try again."
+        )
 
 
 @router.post(
     "/channel",
     response_model=AuthResponse,
-    summary="Sign in with YouTube Channel",
-    description="Authenticate or register a creator profile using a YouTube Channel."
+    summary="Legacy Channel Sign-in",
+    description="Authenticate or register a creator profile using a YouTube Channel handle.",
+    deprecated=True
 )
 async def post_channel_auth(payload: ChannelAuthRequest):
     try:

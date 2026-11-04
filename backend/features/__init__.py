@@ -11,6 +11,7 @@ from .settings import router as settings_router
 from .videos import videos_router
 from .dashboard import dashboard_router
 from .media import media_router
+from .social import social_router
 
 __all__ = [
     "workspace_router",
@@ -21,6 +22,5 @@ __all__ = [
     "settings_router",
     "videos_router",
     "dashboard_router",
+    "social_router",
 ]
-
-

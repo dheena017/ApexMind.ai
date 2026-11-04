@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, ChannelAuthPayload } from '../types';
+import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, ChannelAuthPayload } from '../types';
 import { authApi, resolveChannelDeliveryEmail } from '../api/authApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -7,7 +7,10 @@ interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  /** The only login method — YouTube channel OAuth */
+  loginWithEmail: (payload: LoginPayload) => Promise<UserProfile>;
+  registerWithEmail: (payload: RegisterPayload) => Promise<UserProfile>;
+  loginWithGoogle: (payload: GoogleAuthPayload) => Promise<UserProfile>;
+  /** Legacy channel login method */
   loginWithChannel: (payload: ChannelAuthPayload) => Promise<UserProfile>;
   logout: () => Promise<void>;
 }
@@ -16,21 +19,10 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  loginWithChannel: async (payload) => {
-    try {
-      const authData = await authApi.channelLogin(payload);
-      localStorage.setItem('apexmind_user', JSON.stringify(authData.user));
-      localStorage.setItem('apexmind_token', authData.token);
-      localStorage.setItem('apexmind_auth_timestamp', Date.now().toString());
-      if (payload.handle) {
-        localStorage.setItem('apexmind_yt_active_channel', payload.handle);
-      }
-      return authData.user;
-    } catch (error) {
-      consoleLogger.error('Auth', `YouTube channel login failed: ${error}`);
-      throw error;
-    }
-  },
+  loginWithEmail: async () => { throw new Error('AuthContext not initialized'); },
+  registerWithEmail: async () => { throw new Error('AuthContext not initialized'); },
+  loginWithGoogle: async () => { throw new Error('AuthContext not initialized'); },
+  loginWithChannel: async () => { throw new Error('AuthContext not initialized'); },
   logout: async () => {},
 });
 
@@ -56,7 +48,6 @@ export function isSessionValid(): boolean {
 
     const authTimestamp = localStorage.getItem(AUTH_TIMESTAMP_KEY);
     if (!authTimestamp) {
-      // Seed timestamp now so user gets full 7 days from first run
       localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
       return true;
     }
@@ -93,9 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!stored) return null;
       const parsed = JSON.parse(stored);
       if (parsed) {
-        // Enforce channel delivery address: mindsetforge-v3q@youtube.com (never a Gmail address)
-        parsed.email = resolveChannelDeliveryEmail(parsed.email, parsed.handle);
-        parsed.provider = 'youtube_oauth';
+        if (parsed.provider === 'youtube_oauth' || !parsed.provider) {
+          parsed.email = resolveChannelDeliveryEmail(parsed.email, parsed.handle);
+        }
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(parsed));
       }
       return parsed;
@@ -117,17 +108,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Run immediate check
     enforceSessionLimits();
-
-    // Check periodically every 10 seconds while application is open
     const interval = setInterval(enforceSessionLimits, 10000);
-
-    // Also verify when window regains focus or storage event fires from other tabs
     window.addEventListener('focus', enforceSessionLimits);
     window.addEventListener('storage', enforceSessionLimits);
 
-    // If session is valid, verify remote identity
     if (isSessionValid()) {
       authApi
         .getMe()
@@ -135,14 +120,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser((prev) => {
             if (!prev) return remoteUser as UserProfile;
             const merged = { ...prev, ...remoteUser };
-            merged.email = resolveChannelDeliveryEmail(merged.email, merged.handle);
-            merged.provider = 'youtube_oauth';
+            if (merged.provider === 'youtube_oauth') {
+              merged.email = resolveChannelDeliveryEmail(merged.email, merged.handle);
+            }
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(merged));
             return merged;
           });
         })
         .catch((err) => {
-          // Do not wipe local session on network error or offline - allow creator to continue
           consoleLogger.warn('Auth', `Remote session sync notice: ${err}`);
         });
     }
@@ -154,16 +139,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const saveAuthSession = (authData: { user: UserProfile; token: string }) => {
+    setUser(authData.user);
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authData.user));
+    localStorage.setItem(AUTH_TOKEN_KEY, authData.token);
+    localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
+    if (authData.user.activeChannelId) {
+      localStorage.setItem('apexmind_yt_active_channel', authData.user.activeChannelId);
+    }
+  };
+
+  const loginWithEmail = async (payload: LoginPayload): Promise<UserProfile> => {
+    setIsLoading(true);
+    try {
+      const authData = await authApi.login(payload);
+      saveAuthSession(authData);
+      return authData.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const registerWithEmail = async (payload: RegisterPayload): Promise<UserProfile> => {
+    setIsLoading(true);
+    try {
+      const authData = await authApi.register(payload);
+      saveAuthSession(authData);
+      return authData.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async (payload: GoogleAuthPayload): Promise<UserProfile> => {
+    setIsLoading(true);
+    try {
+      const authData = await authApi.googleLogin(payload);
+      saveAuthSession(authData);
+      return authData.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loginWithChannel = async (payload: ChannelAuthPayload): Promise<UserProfile> => {
     setIsLoading(true);
     try {
       const authData = await authApi.channelLogin(payload);
       authData.user.email = resolveChannelDeliveryEmail(authData.user.email, authData.user.handle || payload.handle);
       authData.user.provider = 'youtube_oauth';
-      setUser(authData.user);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authData.user));
-      localStorage.setItem(AUTH_TOKEN_KEY, authData.token);
-      localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
+      saveAuthSession(authData);
       if (payload.handle) {
         localStorage.setItem('apexmind_yt_active_channel', payload.handle);
       }
@@ -193,6 +218,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user && isSessionValid(),
         isLoading,
+        loginWithEmail,
+        registerWithEmail,
+        loginWithGoogle,
         loginWithChannel,
         logout,
       }}

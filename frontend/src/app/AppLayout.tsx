@@ -20,6 +20,7 @@ import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHe
 import { WorkspaceSidebar, WorkspaceMobileTabs, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
 import { WorkspaceStatusBar } from '@/src/features/workspace/components/WorkspaceStatusBar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
+import { ChannelSwitcher } from '@/src/features/youtube/components/ChannelSwitcher';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -264,6 +265,7 @@ export default function AppLayout({
 
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <ChannelSwitcher className="hidden sm:block" />
               <NotificationDropdown
                 unreadCount={unreadCount}
                 onNavigate={onNavigate}

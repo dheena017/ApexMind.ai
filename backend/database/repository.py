@@ -69,6 +69,7 @@ def save_channel_oauth(
     access_token: Optional[str] = None,
     token_expiry: Optional[str] = None,
     videos_uploaded: int = 0,
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -77,22 +78,54 @@ def save_channel_oauth(
 
     effective_refresh = (refresh_token or "").strip()
     if not effective_refresh:
-        cursor.execute("SELECT refresh_token FROM youtube_channels WHERE refresh_token IS NOT NULL AND refresh_token != '' LIMIT 1")
+        cursor.execute("SELECT refresh_token FROM youtube_channels WHERE id = ? AND refresh_token IS NOT NULL AND refresh_token != ''", (channel_id,))
         existing_row = cursor.fetchone()
         if existing_row and existing_row["refresh_token"]:
             effective_refresh = str(existing_row["refresh_token"]).strip()
 
-    cursor.execute("DELETE FROM youtube_channels")
+    # Multi-channel preservation: only remove the specific channel being re-authenticated
+    cursor.execute("DELETE FROM youtube_channels WHERE id = ?", (channel_id,))
     cursor.execute("""
     INSERT INTO youtube_channels (
-        id, name, handle, subscribers, videos_uploaded, avatar_url,
+        id, user_id, name, handle, subscribers, videos_uploaded, avatar_url,
         is_auto_upload_enabled, schedule_cron, connected_at, niche,
         refresh_token, access_token, token_expiry, is_oauth_authenticated
-    ) VALUES (?, ?, ?, ?, ?, ?, 1, 'Daily at 08:00 AM EST', ?, 'Motivational Quotes', ?, ?, ?, 1)
-    """, (channel_id, name, clean_handle, subscribers, videos_uploaded, avatar_url, timestamp, effective_refresh, access_token, token_expiry))
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'Daily at 08:00 AM EST', ?, 'Motivational Quotes', ?, ?, ?, 1)
+    """, (channel_id, user_id, name, clean_handle, subscribers, videos_uploaded, avatar_url, timestamp, effective_refresh, access_token, token_expiry))
+
+    # Also mirror into universal social_accounts table for omnichannel support
+    if user_id:
+        cursor.execute("""
+        INSERT OR REPLACE INTO social_accounts (
+            id, user_id, platform, platform_account_id, name, handle,
+            avatar_url, followers_count, posts_count, is_active,
+            connected_at, updated_at, access_token, refresh_token, token_expiry
+        ) VALUES (?, ?, 'youtube', ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+        """, (
+            f"sa_yt_{channel_id}",
+            user_id,
+            channel_id,
+            name,
+            clean_handle,
+            avatar_url,
+            subscribers,
+            videos_uploaded,
+            timestamp,
+            timestamp,
+            access_token,
+            effective_refresh,
+            token_expiry,
+        ))
+
+        # Set as active channel if user has none
+        cursor.execute("SELECT active_channel_id FROM users WHERE id = ?", (user_id,))
+        user_row = cursor.fetchone()
+        if user_row and not user_row["active_channel_id"]:
+            cursor.execute("UPDATE users SET active_channel_id = ? WHERE id = ?", (channel_id, user_id))
+
     conn.commit()
     conn.close()
-    logger.info(f"Saved OAuth-authorized YouTube channel: '{name}' ({clean_handle}) (ID: {channel_id})")
+    logger.info(f"Saved OAuth-authorized YouTube channel (multi-channel enabled): '{name}' ({clean_handle}) (ID: {channel_id}, User: {user_id or 'global'})")
     return get_channel_by_id(channel_id) or {}
 
 save_oauth_channel = save_channel_oauth
@@ -905,6 +938,7 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     conn.close()
     if not row:
         return None
+    keys = row.keys()
     return {
         "id": row["id"],
         "email": row["email"],
@@ -912,9 +946,84 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
         "avatarUrl": row["avatar_url"],
         "provider": row["provider"],
         "googleId": row["google_id"],
+        "passwordHash": row["password_hash"] if "password_hash" in keys else None,
+        "salt": row["salt"] if "salt" in keys else None,
+        "isActive": bool(row["is_active"]) if "is_active" in keys and row["is_active"] is not None else True,
+        "activeChannelId": row["active_channel_id"] if "active_channel_id" in keys else None,
         "createdAt": row["created_at"],
         "lastLoginAt": row["last_login_at"],
     }
+
+
+def create_user_with_password(
+    email: str,
+    name: str,
+    password_hash: str,
+    salt: str,
+    avatar_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    timestamp = datetime.now(timezone.utc).isoformat()
+    user_id = f"usr_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    avatar = avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={name}"
+
+    cursor.execute("""
+    INSERT INTO users (id, email, name, avatar_url, provider, password_hash, salt, is_active, created_at, last_login_at)
+    VALUES (?, ?, ?, ?, 'email', ?, ?, 1, ?, ?)
+    """, (user_id, email.lower().strip(), name.strip(), avatar, password_hash, salt, timestamp, timestamp))
+    conn.commit()
+    conn.close()
+    logger.info(f"Registered new email user: '{name}' ({email}) [ID: {user_id}]")
+    return {
+        "id": user_id,
+        "email": email.lower().strip(),
+        "name": name.strip(),
+        "avatarUrl": avatar,
+        "provider": "email",
+        "createdAt": timestamp,
+        "lastLoginAt": timestamp,
+    }
+
+
+def set_user_active_channel(user_id: str, channel_id: str) -> None:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET active_channel_id = ? WHERE id = ?", (channel_id, user_id))
+    conn.commit()
+    conn.close()
+    logger.info(f"Updated active channel for user {user_id} -> {channel_id}")
+
+
+def get_channels_by_user(user_id: str) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM youtube_channels
+    WHERE user_id = ? AND (is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != ''))
+    ORDER BY connected_at DESC
+    """, (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [
+        {
+            "id": r["id"],
+            "userId": r["user_id"] if "user_id" in r.keys() else None,
+            "name": r["name"],
+            "handle": r["handle"],
+            "subscribers": r["subscribers"],
+            "videosUploaded": r["videos_uploaded"],
+            "avatarUrl": r["avatar_url"],
+            "bannerUrl": r["banner_url"] if "banner_url" in r.keys() else None,
+            "isAutoUploadEnabled": bool(r["is_auto_upload_enabled"]),
+            "scheduleCron": r["schedule_cron"],
+            "connectedAt": r["connected_at"],
+            "niche": r["niche"],
+            "isOAuthAuthenticated": bool(r["is_oauth_authenticated"]) if "is_oauth_authenticated" in r.keys() else False,
+            "hasRefreshToken": bool(r["refresh_token"]) if "refresh_token" in r.keys() and r["refresh_token"] else False,
+        }
+        for r in rows
+    ]
 
 
 def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
@@ -1322,3 +1431,282 @@ def update_website_video(video_id: str, updates: Dict[str, Any]) -> Optional[Dic
 
 
 
+
+
+# =============================================================================
+# Omnichannel Social Accounts & Published Posts Repository Methods
+# =============================================================================
+
+def get_social_accounts(
+    user_id: Optional[str] = None,
+    platform: Optional[str] = None,
+    active_only: bool = True
+) -> List[Dict[str, Any]]:
+    """Retrieves connected social fleet accounts for a user or across all users."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM social_accounts WHERE 1=1"
+    params = []
+
+    if user_id:
+        query += " AND user_id = ?"
+        params.append(user_id)
+    if platform:
+        query += " AND platform = ?"
+        params.append(platform)
+    if active_only:
+        query += " AND is_active = 1"
+
+    query += " ORDER BY connected_at DESC"
+    cursor.execute(query, tuple(params))
+    rows = cursor.fetchall()
+    conn.close()
+
+    accounts = []
+    for r in rows:
+        metadata_val = None
+        if "metadata" in r.keys() and r["metadata"]:
+            try:
+                metadata_val = json.loads(r["metadata"])
+            except Exception:
+                metadata_val = r["metadata"]
+
+        accounts.append({
+            "id": r["id"],
+            "userId": r["user_id"],
+            "platform": r["platform"],
+            "platformAccountId": r["platform_account_id"],
+            "name": r["name"],
+            "handle": r["handle"],
+            "avatarUrl": r["avatar_url"],
+            "bannerUrl": r["banner_url"] if "banner_url" in r.keys() else None,
+            "followersCount": r["followers_count"],
+            "postsCount": r["posts_count"],
+            "isActive": bool(r["is_active"]),
+            "isAutoUploadEnabled": bool(r["is_auto_upload_enabled"]),
+            "scheduleCron": r["schedule_cron"],
+            "niche": r["niche"],
+            "connectedAt": r["connected_at"],
+            "updatedAt": r["updated_at"],
+            "hasAccessToken": bool(r["access_token"]),
+            "hasRefreshToken": bool(r["refresh_token"]),
+            "tokenExpiry": r["token_expiry"],
+            "metadata": metadata_val,
+        })
+    return accounts
+
+
+def get_social_account_by_id(account_id: str) -> Optional[Dict[str, Any]]:
+    """Fetches a single social account by internal ID."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM social_accounts WHERE id = ?", (account_id,))
+    r = cursor.fetchone()
+    conn.close()
+    if not r:
+        return None
+
+    metadata_val = None
+    if "metadata" in r.keys() and r["metadata"]:
+        try:
+            metadata_val = json.loads(r["metadata"])
+        except Exception:
+            metadata_val = r["metadata"]
+
+    return {
+        "id": r["id"],
+        "userId": r["user_id"],
+        "platform": r["platform"],
+        "platformAccountId": r["platform_account_id"],
+        "name": r["name"],
+        "handle": r["handle"],
+        "avatarUrl": r["avatar_url"],
+        "bannerUrl": r["banner_url"] if "banner_url" in r.keys() else None,
+        "followersCount": r["followers_count"],
+        "postsCount": r["posts_count"],
+        "isActive": bool(r["is_active"]),
+        "isAutoUploadEnabled": bool(r["is_auto_upload_enabled"]),
+        "scheduleCron": r["schedule_cron"],
+        "niche": r["niche"],
+        "connectedAt": r["connected_at"],
+        "updatedAt": r["updated_at"],
+        "accessToken": r["access_token"],
+        "refreshToken": r["refresh_token"],
+        "tokenExpiry": r["token_expiry"],
+        "tokenSecret": r["token_secret"] if "token_secret" in r.keys() else None,
+        "metadata": metadata_val,
+    }
+
+
+def upsert_social_account(
+    user_id: str,
+    platform: str,
+    platform_account_id: str,
+    name: str,
+    handle: str,
+    avatar_url: Optional[str] = None,
+    banner_url: Optional[str] = None,
+    followers_count: int = 0,
+    posts_count: int = 0,
+    access_token: Optional[str] = None,
+    refresh_token: Optional[str] = None,
+    token_expiry: Optional[str] = None,
+    token_secret: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    niche: str = "Motivation",
+    schedule_cron: str = "Daily at 08:00 AM EST",
+    account_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Inserts or updates a connected platform channel/page in the social fleet."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    timestamp = datetime.now(timezone.utc).isoformat()
+    meta_json = json.dumps(metadata) if metadata else None
+
+    # Check for existing account by platform and platform_account_id or given ID
+    existing = None
+    if account_id:
+        cursor.execute("SELECT id FROM social_accounts WHERE id = ?", (account_id,))
+        existing = cursor.fetchone()
+    if not existing:
+        cursor.execute(
+            "SELECT id FROM social_accounts WHERE user_id = ? AND platform = ? AND platform_account_id = ?",
+            (user_id, platform, platform_account_id)
+        )
+        existing = cursor.fetchone()
+
+    target_id = existing["id"] if existing else (account_id or f"acc_{platform[:2]}_{int(datetime.now(timezone.utc).timestamp() * 1000)}")
+
+    cursor.execute("""
+    INSERT OR REPLACE INTO social_accounts (
+        id, user_id, platform, platform_account_id, name, handle,
+        avatar_url, banner_url, followers_count, posts_count, is_active,
+        is_auto_upload_enabled, schedule_cron, niche, access_token,
+        refresh_token, token_expiry, token_secret, connected_at, updated_at, metadata
+    ) VALUES (
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, 1,
+        1, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?
+    )
+    """, (
+        target_id, user_id, platform, platform_account_id, name, handle,
+        avatar_url, banner_url, followers_count, posts_count,
+        schedule_cron, niche, access_token,
+        refresh_token, token_expiry, token_secret, timestamp, timestamp, meta_json
+    ))
+
+    conn.commit()
+    conn.close()
+    logger.info(f"Upserted {platform.upper()} social account: '{name}' ({handle}) [ID: {target_id}]")
+    return get_social_account_by_id(target_id) or {}
+
+
+def delete_social_account(account_id: str, user_id: Optional[str] = None) -> bool:
+    """Disconnects and removes a social account from the fleet."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    if user_id:
+        cursor.execute("DELETE FROM social_accounts WHERE id = ? AND user_id = ?", (account_id, user_id))
+    else:
+        cursor.execute("DELETE FROM social_accounts WHERE id = ?", (account_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    logger.info(f"Deleted social account {account_id}: {deleted}")
+    return deleted
+
+
+def record_published_post(
+    user_id: str,
+    social_account_id: str,
+    platform: str,
+    title: str,
+    caption: Optional[str] = None,
+    video_id_or_url: Optional[str] = None,
+    status: str = "published",
+    error_message: Optional[str] = None,
+    views: int = 0,
+    likes: int = 0,
+    comments_count: int = 0,
+) -> Dict[str, Any]:
+    """Records an omnichannel publication event in published_posts."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    post_id = f"post_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    cursor.execute("""
+    INSERT INTO published_posts (
+        id, user_id, social_account_id, platform, video_id_or_url,
+        title, caption, status, views, likes, comments_count, error_message, published_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        post_id, user_id, social_account_id, platform, video_id_or_url,
+        title, caption, status, views, likes, comments_count, error_message, timestamp
+    ))
+
+    # Also update posts_count in social_accounts
+    if status == "published":
+        cursor.execute("UPDATE social_accounts SET posts_count = posts_count + 1 WHERE id = ?", (social_account_id,))
+
+    conn.commit()
+    conn.close()
+    logger.info(f"Recorded published post on {platform.upper()} [{post_id}]: '{title}' ({status})")
+    return {
+        "id": post_id,
+        "userId": user_id,
+        "socialAccountId": social_account_id,
+        "platform": platform,
+        "videoIdOrUrl": video_id_or_url,
+        "title": title,
+        "caption": caption,
+        "status": status,
+        "views": views,
+        "likes": likes,
+        "commentsCount": comments_count,
+        "errorMessage": error_message,
+        "publishedAt": timestamp,
+    }
+
+
+def get_published_posts(
+    user_id: Optional[str] = None,
+    platform: Optional[str] = None,
+    limit: int = 50,
+) -> List[Dict[str, Any]]:
+    """Retrieves multi-platform published posts."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM published_posts WHERE 1=1"
+    params = []
+    if user_id:
+        query += " AND user_id = ?"
+        params.append(user_id)
+    if platform:
+        query += " AND platform = ?"
+        params.append(platform)
+    query += " ORDER BY published_at DESC LIMIT ?"
+    params.append(limit)
+
+    cursor.execute(query, tuple(params))
+    rows = cursor.fetchall()
+    conn.close()
+    return [
+        {
+            "id": r["id"],
+            "userId": r["user_id"],
+            "socialAccountId": r["social_account_id"],
+            "platform": r["platform"],
+            "videoIdOrUrl": r["video_id_or_url"],
+            "title": r["title"],
+            "caption": r["caption"],
+            "status": r["status"],
+            "views": r["views"],
+            "likes": r["likes"],
+            "commentsCount": r["comments_count"],
+            "errorMessage": r["error_message"],
+            "publishedAt": r["published_at"],
+        }
+        for r in rows
+    ]

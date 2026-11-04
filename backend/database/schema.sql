@@ -4,7 +4,7 @@
 -- Compatible with SQLite, PostgreSQL, and MySQL
 -- =============================================================================
 
--- 1. Users Table (Google OAuth Creator Accounts & Sessions)
+-- 1. Users Table (Creator Accounts & Sessions)
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
     avatar_url TEXT,
     provider TEXT DEFAULT 'google',
     google_id TEXT,
+    password_hash TEXT,
+    salt TEXT,
+    is_active INTEGER DEFAULT 1,
+    active_channel_id TEXT,
     created_at TEXT NOT NULL,
     last_login_at TEXT NOT NULL
 );
@@ -21,6 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 -- 2. YouTube Channels Table (Connected Channels & Real-Time Sync)
 CREATE TABLE IF NOT EXISTS youtube_channels (
     id TEXT PRIMARY KEY,
+    user_id TEXT,
     name TEXT NOT NULL,
     handle TEXT NOT NULL,
     subscribers INTEGER DEFAULT 0,
@@ -34,11 +39,62 @@ CREATE TABLE IF NOT EXISTS youtube_channels (
     refresh_token TEXT,
     access_token TEXT,
     token_expiry TEXT,
-    is_oauth_authenticated INTEGER DEFAULT 0
+    is_oauth_authenticated INTEGER DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_youtube_channels_connected_at ON youtube_channels (connected_at DESC);
 CREATE INDEX IF NOT EXISTS idx_youtube_channels_handle ON youtube_channels (handle);
+-- Index created dynamically in schema.py after column verification
+
+-- 2b. Universal Social Accounts Table (Omnichannel Multi-Platform Support)
+CREATE TABLE IF NOT EXISTS social_accounts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    platform_account_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    handle TEXT NOT NULL,
+    avatar_url TEXT,
+    banner_url TEXT,
+    followers_count INTEGER DEFAULT 0,
+    posts_count INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1,
+    is_auto_upload_enabled INTEGER DEFAULT 1,
+    schedule_cron TEXT DEFAULT 'Daily at 08:00 AM EST',
+    niche TEXT DEFAULT 'Motivational Quotes',
+    access_token TEXT,
+    refresh_token TEXT,
+    token_expiry TEXT,
+    token_secret TEXT,
+    connected_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    metadata TEXT,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_accounts_user_platform ON social_accounts (user_id, platform);
+CREATE INDEX IF NOT EXISTS idx_social_accounts_platform_account ON social_accounts (platform, platform_account_id);
+
+-- 2c. Omnichannel Published Posts Table
+CREATE TABLE IF NOT EXISTS published_posts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    social_account_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    video_id_or_url TEXT,
+    title TEXT NOT NULL,
+    caption TEXT,
+    status TEXT DEFAULT 'published',
+    views INTEGER DEFAULT 0,
+    likes INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    error_message TEXT,
+    published_at TEXT NOT NULL,
+    FOREIGN KEY (social_account_id) REFERENCES social_accounts (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_published_posts_user ON published_posts (user_id, published_at DESC);
 
 -- 3. Published Videos Table (Generated & Scheduled YouTube Shorts Catalog)
 CREATE TABLE IF NOT EXISTS published_videos (

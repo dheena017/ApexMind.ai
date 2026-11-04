@@ -17,6 +17,9 @@ class Settings:
     APP_URL: str = os.environ.get("APP_URL", "http://localhost:3000")
     ENV: str = os.environ.get("NODE_ENV", "development")
 
+    # Security & JWT Session Signing
+    JWT_SECRET_KEY: str = os.environ.get("JWT_SECRET_KEY", "apexmind-studio-secret-key-2026")
+
     # Google Gemini & AI Model Configuration
     @property
     def GEMINI_API_KEY(self) -> str:
@@ -39,6 +42,16 @@ class Settings:
     )
     GOOGLE_SEARCH_API_KEY: str = os.environ.get("GOOGLE_SEARCH_API_KEY", "")
     GOOGLE_CSE_ID: str = os.environ.get("GOOGLE_CSE_ID", "")
+
+    # Meta Graph API (Instagram Reels & Facebook Pages)
+    META_APP_ID: str = os.environ.get("META_APP_ID", os.environ.get("VITE_META_APP_ID", ""))
+    META_APP_SECRET: str = os.environ.get("META_APP_SECRET", "")
+    META_REDIRECT_URI: str = os.environ.get("META_REDIRECT_URI", "http://localhost:5173/auth/callback/meta")
+
+    # TikTok Content Posting API
+    TIKTOK_CLIENT_KEY: str = os.environ.get("TIKTOK_CLIENT_KEY", os.environ.get("VITE_TIKTOK_CLIENT_KEY", ""))
+    TIKTOK_CLIENT_SECRET: str = os.environ.get("TIKTOK_CLIENT_SECRET", "")
+    TIKTOK_REDIRECT_URI: str = os.environ.get("TIKTOK_REDIRECT_URI", "http://localhost:5173/auth/callback/tiktok")
 
     # Stock Photography & Media Providers
     PEXELS_API_KEY: str = os.environ.get("PEXELS_API_KEY", "")
