@@ -26,8 +26,8 @@ export const DEFAULT_CREATOR_PROFILE: CreatorProfile = {
   instagramUrl: '',
   tiktokUrl: '',
   youtubeUrl: '',
-  niche: 'Stoic Mindset & Discipline',
-  tone: 'Authoritative & Inspiring',
+  niche: '',
+  tone: '',
   audience: '',
   defaultVoice: 'Fenrir',
 };

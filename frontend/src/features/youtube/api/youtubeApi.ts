@@ -279,9 +279,36 @@ export const youtubeApi = {
 
   // ── Video Production & Publishing Schedules ─────────────────────────────────
 
-  async getAutomations(): Promise<AutomationJob[]> {
+  _resolveUserId(explicitId?: string): string | undefined {
+    if (explicitId) return explicitId;
     try {
-      const res = await fetch(apiUrl('/api/schedules'));
+      const stored = localStorage.getItem('apexmind_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u?.id) return u.id;
+      }
+    } catch {}
+    return undefined;
+  },
+
+  _getScheduleHeaders(userId?: string): Record<string, string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    try {
+      const token = localStorage.getItem('apexmind_token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const uid = this._resolveUserId(userId);
+      if (uid) headers['X-User-Id'] = uid;
+    } catch {}
+    return headers;
+  },
+
+  async getAutomations(userId?: string): Promise<AutomationJob[]> {
+    try {
+      const uid = this._resolveUserId(userId);
+      const url = uid
+        ? apiUrl(`/api/schedules?userId=${encodeURIComponent(uid)}`)
+        : apiUrl('/api/schedules');
+      const res = await fetch(url, { headers: this._getScheduleHeaders(uid) });
       if (!res.ok) return [];
       const json = await res.json();
       return json.data || [];
@@ -291,11 +318,13 @@ export const youtubeApi = {
     }
   },
 
-  async createAutomation(payload: Partial<AutomationJob>): Promise<AutomationJob> {
+  async createAutomation(payload: Partial<AutomationJob> & { userId?: string }): Promise<AutomationJob> {
+    const uid = this._resolveUserId(payload.userId);
+    const body = { ...payload, userId: uid };
     const res = await fetch(apiUrl('/api/schedules'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      headers: this._getScheduleHeaders(uid),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Failed to create automation schedule' }));
@@ -305,18 +334,28 @@ export const youtubeApi = {
     return json.data;
   },
 
-  async toggleAutomation(jobId: string): Promise<AutomationJob[]> {
-    const res = await fetch(apiUrl(`/api/schedules/${jobId}/toggle`), {
+  async toggleAutomation(jobId: string, userId?: string): Promise<AutomationJob[]> {
+    const uid = this._resolveUserId(userId);
+    const url = uid
+      ? apiUrl(`/api/schedules/${jobId}/toggle?userId=${encodeURIComponent(uid)}`)
+      : apiUrl(`/api/schedules/${jobId}/toggle`);
+    const res = await fetch(url, {
       method: 'PATCH',
+      headers: this._getScheduleHeaders(uid),
     });
     if (!res.ok) throw new Error('Failed to toggle automation schedule');
     const json = await res.json();
     return json.data;
   },
 
-  async deleteAutomation(jobId: string): Promise<AutomationJob[]> {
-    const res = await fetch(apiUrl(`/api/schedules/${jobId}`), {
+  async deleteAutomation(jobId: string, userId?: string): Promise<AutomationJob[]> {
+    const uid = this._resolveUserId(userId);
+    const url = uid
+      ? apiUrl(`/api/schedules/${jobId}?userId=${encodeURIComponent(uid)}`)
+      : apiUrl(`/api/schedules/${jobId}`);
+    const res = await fetch(url, {
       method: 'DELETE',
+      headers: this._getScheduleHeaders(uid),
     });
     if (!res.ok) throw new Error('Failed to delete automation schedule');
     const json = await res.json();
@@ -344,16 +383,25 @@ export const youtubeApi = {
     return res.json();
   },
 
-  async getAutomationHistory(jobId: string): Promise<import('../types').AutomationHistoryEntry[]> {
-    const res = await fetch(apiUrl(`/api/schedules/${jobId}/history`));
+  async getAutomationHistory(jobId: string, userId?: string): Promise<import('../types').AutomationHistoryEntry[]> {
+    const uid = this._resolveUserId(userId);
+    const url = uid
+      ? apiUrl(`/api/schedules/${jobId}/history?userId=${encodeURIComponent(uid)}`)
+      : apiUrl(`/api/schedules/${jobId}/history`);
+    const res = await fetch(url, { headers: this._getScheduleHeaders(uid) });
     if (!res.ok) return [];
     const json = await res.json();
     return json.data || [];
   },
 
-  async clearAutomationHistory(jobId: string): Promise<boolean> {
-    const res = await fetch(apiUrl(`/api/schedules/${jobId}/history`), {
+  async clearAutomationHistory(jobId: string, userId?: string): Promise<boolean> {
+    const uid = this._resolveUserId(userId);
+    const url = uid
+      ? apiUrl(`/api/schedules/${jobId}/history?userId=${encodeURIComponent(uid)}`)
+      : apiUrl(`/api/schedules/${jobId}/history`);
+    const res = await fetch(url, {
       method: 'DELETE',
+      headers: this._getScheduleHeaders(uid),
     });
     if (!res.ok) return false;
     const json = await res.json();

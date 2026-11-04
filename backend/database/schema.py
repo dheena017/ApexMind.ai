@@ -179,6 +179,7 @@ def init_db():
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS automation_jobs (
             id TEXT PRIMARY KEY,
+            user_id TEXT,
             theme TEXT NOT NULL,
             schedule TEXT NOT NULL,
             voice TEXT NOT NULL,
@@ -194,12 +195,16 @@ def init_db():
             last_video_url TEXT,
             last_run_message TEXT,
             last_is_live INTEGER DEFAULT 0,
+            ai_model TEXT DEFAULT 'gemini-2.5-flash',
+            aspect_ratio TEXT DEFAULT '9:16',
+            length TEXT DEFAULT '30 seconds',
             created_at TEXT
         );
         """)
         cursor.execute("PRAGMA table_info(automation_jobs)")
         auto_cols = {row[1] for row in cursor.fetchall()}
         for col_name, col_def in [
+            ("user_id", "TEXT"),
             ("channel_id", "TEXT"),
             ("privacy_status", "TEXT DEFAULT 'public'"),
             ("publish_time", "TEXT DEFAULT '08:00'"),
@@ -218,29 +223,16 @@ def init_db():
                 cursor.execute(f"ALTER TABLE automation_jobs ADD COLUMN {col_name} {col_def}")
                 logger.info(f"Migrated automation_jobs: added '{col_name}' column")
 
-        # Seed default automation job if none exist
-        cursor.execute("SELECT COUNT(*) FROM automation_jobs")
-        if cursor.fetchone()[0] == 0:
-            cursor.execute("""
-            INSERT INTO automation_jobs (id, theme, schedule, voice, music_track, active, next_run, privacy_status, publish_time, created_at)
-            VALUES (?, ?, ?, ?, ?, 1, ?, 'public', '08:00', datetime('now'))
-            """, (
-                "job_daily_stoic",
-                "Stoic Mindset & Discipline",
-                "Daily at 08:00 AM",
-                "Fenrir",
-                "Epic Cinematic",
-                (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=8, minute=0, second=0).isoformat(),
-            ))
-            logger.info("Seeded starter automation job: 'job_daily_stoic'")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_automation_jobs_user_id ON automation_jobs (user_id);")
     except Exception as e:
         logger.debug(f"automation_jobs schema migration notice: {e}")
 
-    # 7. Verify automation_history table
+            # 7. Verify automation_history table
     try:
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS automation_history (
             id TEXT PRIMARY KEY,
+            user_id TEXT,
             job_id TEXT NOT NULL,
             status TEXT NOT NULL,
             video_title TEXT,
@@ -254,12 +246,15 @@ def init_db():
             FOREIGN KEY (job_id) REFERENCES automation_jobs(id) ON DELETE CASCADE
         );
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_automation_history_job_id ON automation_history (job_id, executed_at DESC);")
-        # Migrate project_data column if it doesn't exist yet
-        try:
+        # Migrate columns if they don't exist yet
+        cursor.execute("PRAGMA table_info(automation_history)")
+        h_cols = {row[1] for row in cursor.fetchall()}
+        if "user_id" not in h_cols:
+            cursor.execute("ALTER TABLE automation_history ADD COLUMN user_id TEXT;")
+        if "project_data" not in h_cols:
             cursor.execute("ALTER TABLE automation_history ADD COLUMN project_data TEXT;")
-        except Exception:
-            pass
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_automation_history_job_id ON automation_history (job_id, executed_at DESC);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_automation_history_user_id ON automation_history (user_id);")
     except Exception as e:
         logger.debug(f"automation_history table initialization notice: {e}")
 

@@ -84,7 +84,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!stored) return null;
       const parsed = JSON.parse(stored);
       if (parsed) {
-        if (parsed.provider === 'youtube_oauth' || !parsed.provider) {
+        // Cleanse any legacy corrupted hardcoded email if user is google/email
+        if (parsed.email === 'mindsetforge-v3q@youtube.com') {
+          if (parsed.provider === 'google' && parsed.name?.toLowerCase().includes('dheena')) {
+            parsed.email = 'dheenadayalan627@gmail.com';
+          }
+        }
+        if (parsed.provider === 'youtube_oauth') {
           parsed.email = resolveChannelDeliveryEmail(parsed.email, parsed.handle);
         }
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(parsed));

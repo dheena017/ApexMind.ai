@@ -275,7 +275,7 @@ export default function AppLayout({
               <button
                 onClick={() => onNavigate('profile')}
                 className="h-7.5 w-7.5 rounded-lg border border-[#2A2A2A] bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/40"
-                title={user ? `${user.name} (${user.email?.includes('gmail.com') || user.email?.includes('mindsetforge') ? 'mindsetforge-v3q@youtube.com' : user.email})` : 'Profile & Badges'}
+                title={user ? `${user.name} (${user.email || user.handle || 'Creator'})` : 'Profile & Badges'}
                 aria-label="Open profile"
               >
                 {user?.avatarUrl ? (
@@ -415,15 +415,17 @@ export default function AppLayout({
               <span className="flex-1 min-w-0">
                 <span className="flex items-center gap-1.5">
                   <span className="text-[11px] font-bold text-white truncate">{user.name || 'Creator'}</span>
-                  <span className={`text-[9px] px-1 py-0.5 rounded font-bold shrink-0 ${
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold shrink-0 capitalize ${
                     user.provider === 'google'
-                      ? 'bg-blue-500/15 text-[#60A5FA]'
-                      : 'bg-red-500/15 text-red-400'
+                      ? 'bg-blue-500/15 text-[#60A5FA] border border-blue-500/30'
+                      : user.provider === 'email'
+                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-red-500/15 text-red-400 border border-red-500/30'
                   }`}>
-                    'YouTube'
+                    {user.provider === 'google' ? 'Google' : user.provider === 'email' ? 'Email' : 'YouTube'}
                   </span>
                 </span>
-                <span className="block text-[10px] text-[#9CA3AF] truncate">{user.email?.includes('gmail.com') || user.email?.includes('mindsetforge') ? 'mindsetforge-v3q@youtube.com' : user.email}</span>
+                <span className="block text-[10px] text-[#9CA3AF] truncate">{user.email || user.handle || 'Creator'}</span>
               </span>
               <User className="w-3.5 h-3.5 text-[#6B7280] shrink-0" aria-hidden="true" />
             </button>

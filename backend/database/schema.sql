@@ -148,15 +148,48 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications (read);
 -- 6. Automation Jobs Table (Autonomous Shorts Publishing Schedules)
 CREATE TABLE IF NOT EXISTS automation_jobs (
     id TEXT PRIMARY KEY,
+    user_id TEXT,
     theme TEXT NOT NULL,
     schedule TEXT NOT NULL,
     voice TEXT NOT NULL,
     music_track TEXT NOT NULL,
     active INTEGER DEFAULT 1,
-    next_run TEXT NOT NULL
+    next_run TEXT NOT NULL,
+    channel_id TEXT,
+    privacy_status TEXT DEFAULT 'public',
+    publish_time TEXT DEFAULT '08:00',
+    last_run TEXT,
+    last_status TEXT DEFAULT 'idle',
+    last_video_title TEXT,
+    last_video_url TEXT,
+    last_run_message TEXT,
+    last_is_live INTEGER DEFAULT 0,
+    ai_model TEXT DEFAULT 'gemini-2.5-flash',
+    aspect_ratio TEXT DEFAULT '9:16',
+    length TEXT DEFAULT '30 seconds',
+    created_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_automation_jobs_active ON automation_jobs (active);
+
+-- 6b. Automation History Table (Chronological Execution Runs)
+CREATE TABLE IF NOT EXISTS automation_history (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    job_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    video_title TEXT,
+    video_url TEXT,
+    youtube_url TEXT,
+    is_live INTEGER DEFAULT 0,
+    duration_seconds REAL DEFAULT 0,
+    message TEXT,
+    executed_at TEXT NOT NULL,
+    project_data TEXT,
+    FOREIGN KEY (job_id) REFERENCES automation_jobs(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_automation_history_job_id ON automation_history (job_id, executed_at DESC);
 
 -- 7. Community Posts Table (Real YouTube Community Feed & Creator Updates)
 CREATE TABLE IF NOT EXISTS community_posts (

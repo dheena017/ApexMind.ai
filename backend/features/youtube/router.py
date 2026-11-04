@@ -13,7 +13,7 @@ import os
 import logging
 import urllib.parse
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, status, Request, Body
+from fastapi import APIRouter, HTTPException, status, Request, Body, Query, Header
 from fastapi.responses import RedirectResponse
 import tempfile
 from pathlib import Path
@@ -723,9 +723,13 @@ router.include_router(yt_router)
     summary="List Automation Schedules (legacy alias)",
     include_in_schema=False,
 )
-async def list_automation_schedules_route():
+async def list_automation_schedules_route(
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     from backend.database.repository import get_automations
-    return {"success": True, "data": get_automations()}
+    resolved_uid = userId or x_user_id
+    return {"success": True, "data": get_automations(user_id=resolved_uid)}
 
 
 @router.post(
@@ -746,8 +750,12 @@ async def list_automation_schedules_route():
     summary="Create Automation Schedule (legacy alias)",
     include_in_schema=False,
 )
-async def create_automation_schedule_route(payload: dict):
-    from backend.database.repository import create_automation_job
+async def create_automation_schedule_route(
+    payload: dict,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
+    from backend.database.repository import create_automation_job, get_latest_user
     theme = payload.get("theme", "Stoic Mindset & Discipline")
     publish_time = payload.get("publishTime", "08:00")
     schedule = payload.get("schedule") or f"Daily at {publish_time}"
@@ -759,6 +767,11 @@ async def create_automation_schedule_route(payload: dict):
     ai_model = payload.get("aiModel") or payload.get("ai_model") or "gemini-2.5-flash"
     aspect_ratio = payload.get("aspectRatio") or payload.get("aspect_ratio") or "9:16"
     length = payload.get("length") or "30 seconds"
+
+    resolved_uid = payload.get("userId") or userId or x_user_id
+    if not resolved_uid:
+        latest = get_latest_user()
+        resolved_uid = latest["id"] if latest else None
 
     job = create_automation_job(
         theme=theme,
@@ -772,6 +785,7 @@ async def create_automation_schedule_route(payload: dict):
         ai_model=ai_model,
         aspect_ratio=aspect_ratio,
         length=length,
+        user_id=resolved_uid,
     )
     return {"success": True, "data": job, "message": "Automation schedule created successfully."}
 
@@ -794,9 +808,14 @@ async def create_automation_schedule_route(payload: dict):
     summary="Toggle Schedule Active State (legacy alias)",
     include_in_schema=False,
 )
-async def toggle_automation_schedule_route(job_id: str):
+async def toggle_automation_schedule_route(
+    job_id: str,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     from backend.database.repository import toggle_automation
-    jobs = toggle_automation(job_id)
+    resolved_uid = userId or x_user_id
+    jobs = toggle_automation(job_id, user_id=resolved_uid)
     return {"success": True, "data": jobs}
 
 
@@ -818,12 +837,17 @@ async def toggle_automation_schedule_route(job_id: str):
     summary="Delete Automation Schedule (legacy alias)",
     include_in_schema=False,
 )
-async def delete_automation_schedule_route(job_id: str):
+async def delete_automation_schedule_route(
+    job_id: str,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     from backend.database.repository import delete_automation_job, get_automations
+    resolved_uid = userId or x_user_id
     deleted = delete_automation_job(job_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Automation job not found.")
-    return {"success": True, "data": get_automations(), "message": "Schedule deleted."}
+    return {"success": True, "data": get_automations(user_id=resolved_uid), "message": "Schedule deleted."}
 
 
 @router.post(
@@ -898,9 +922,15 @@ async def stop_schedule_execution_route(job_id: str):
     summary="Get Schedule Execution History (legacy alias)",
     include_in_schema=False,
 )
-async def get_schedule_history_route(job_id: str, limit: int = 100):
+async def get_schedule_history_route(
+    job_id: str,
+    limit: int = 100,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     from backend.database.repository import get_automation_history
-    history = get_automation_history(job_id, limit=limit)
+    resolved_uid = userId or x_user_id
+    history = get_automation_history(job_id, limit=limit, user_id=resolved_uid)
     return {"success": True, "data": history}
 
 

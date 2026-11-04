@@ -7,19 +7,10 @@ import { apiUrl } from '@/src/shared/utils/api';
  * Only used for legacy channel-direct auth sessions.
  */
 export function resolveChannelDeliveryEmail(email?: string, handle?: string): string {
-  if (email && email.toLowerCase().includes('mindsetforge')) {
-    return 'mindsetforge-v3q@youtube.com';
-  }
-  if (handle && handle.toLowerCase().includes('mindsetforge')) {
-    return 'mindsetforge-v3q@youtube.com';
-  }
-  if (email && email.endsWith('@youtube.com') && !email.includes('gmail.com')) {
-    return email.toLowerCase();
+  if (email && email.trim()) {
+    return email.toLowerCase().trim();
   }
   const clean = (handle || 'creator').replace(/^@/, '').toLowerCase().trim();
-  if (clean.includes('mindsetforge')) {
-    return 'mindsetforge-v3q@youtube.com';
-  }
   return `${clean || 'creator'}@youtube.com`;
 }
 
@@ -161,7 +152,7 @@ export const authApi = {
       avatarUrl: payload.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
       provider: 'youtube_oauth',
       verified: true,
-      handle: cleanHandle.toLowerCase().includes('mindsetforge') ? '@mindsetforge-v3q' : cleanHandle,
+      handle: cleanHandle,
       channelId: payload.channelId || `UC_${cleanHandle.replace(/^@/, '')}`,
       lastLoginAt: new Date().toISOString(),
     };

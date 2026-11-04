@@ -36,6 +36,7 @@ import { AutomationJob, AutomationHistoryEntry } from '@/src/features/youtube/ty
 import { WorkspaceTabType } from '../WorkspaceSidebar';
 import { toast } from 'sonner';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
+import useAuth from '@/src/features/auth/hooks/useAuth';
 
 export interface AutomationsPaneProps {
   onNavigate?: (page: string) => void;
@@ -109,13 +110,13 @@ const INTERVAL_OPTIONS = [
   { value: 'custom', label: 'Custom Interval...', schedule: 'Custom' },
 ];
 
-const TARGET_CHANNEL = {
-  id: 'UCH0jnQrHaBOglbsLCBRoklg',
-  name: 'Mindset Forge',
-  handle: '@mindsetforge-v3q',
-  avatarUrl: 'https://yt3.ggpht.com/8RRzGPIl4gUnVVz8gC0pdRjOD69LEx_-4Cnwy-hj30U_CWtW_CpfQZg51Qj6LfQGS57eI6mv=s800-c-k-c0x00ffffff-no-rj',
-  bannerUrl: 'https://yt3.googleusercontent.com/q7mOI6glVARA73wcjSyKrYkX-83wV9oJfv043VBaW26C83Uhq-_PNlGCeENFENygPM1vgfPs2A',
-  channelUrl: 'https://www.youtube.com/@mindsetforge-v3q',
+const DEFAULT_CHANNEL = {
+  id: '',
+  name: 'YouTube Channel',
+  handle: '@channel',
+  avatarUrl: 'https://api.dicebear.com/7.x/identicon/svg?seed=creator',
+  bannerUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80',
+  channelUrl: 'https://www.youtube.com',
 };
 
 export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
@@ -124,6 +125,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   className = '',
   activeTimeline,
 }) => {
+  const { user } = useAuth();
   const [automations, setAutomations] = useState<AutomationJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
@@ -154,7 +156,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     } catch {
       // ignore
     }
-    return { connected: true, channel: TARGET_CHANNEL };
+    return { connected: false, channel: DEFAULT_CHANNEL };
   });
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
   const [activePipelinePhase, setActivePipelinePhase] = useState<number>(0);
@@ -173,15 +175,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const loadAutomations = async () => {
+  const loadAutomations = async (userIdOverride?: string) => {
     setLoading(true);
     try {
-      const data = await youtubeApi.getAutomations();
+      const effectiveUid = userIdOverride !== undefined ? userIdOverride : user?.id;
+      const data = await youtubeApi.getAutomations(effectiveUid);
       setAutomations(data);
       // Automatically prefetch history for every automation schedule
       if (Array.isArray(data)) {
         data.forEach((job) => {
-          loadHistory(job.id, true);
+          loadHistory(job.id, true, effectiveUid);
         });
       }
     } catch (err: any) {
@@ -191,11 +194,12 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     }
   };
 
-  const loadHistory = async (jobId: string, force = false) => {
+  const loadHistory = async (jobId: string, force = false, userIdOverride?: string) => {
     if (!force && historyByJob[jobId]) return;
     setLoadingHistoryByJob((prev) => ({ ...prev, [jobId]: true }));
     try {
-      const entries = await youtubeApi.getAutomationHistory(jobId);
+      const effectiveUid = userIdOverride !== undefined ? userIdOverride : user?.id;
+      const entries = await youtubeApi.getAutomationHistory(jobId, effectiveUid);
       setHistoryByJob((prev) => ({ ...prev, [jobId]: entries }));
     } catch (err) {
       console.warn(`Failed to load history for ${jobId}:`, err);
@@ -206,7 +210,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
   const handleClearHistory = async (jobId: string) => {
     try {
-      await youtubeApi.clearAutomationHistory(jobId);
+      await youtubeApi.clearAutomationHistory(jobId, user?.id);
       setHistoryByJob((prev) => ({ ...prev, [jobId]: [] }));
       toast.success('Run history cleared');
     } catch (err: any) {
@@ -215,18 +219,18 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   };
 
   const activeChannel = {
-    name: authStatus?.channel?.name || TARGET_CHANNEL.name,
-    handle: authStatus?.channel?.handle || TARGET_CHANNEL.handle,
-    avatarUrl: authStatus?.channel?.avatarUrl || authStatus?.channel?.avatar_url || TARGET_CHANNEL.avatarUrl,
-    bannerUrl: authStatus?.channel?.bannerUrl || authStatus?.channel?.banner_url || TARGET_CHANNEL.bannerUrl,
-    channelUrl: authStatus?.channel?.channelUrl || authStatus?.channel?.channel_url || TARGET_CHANNEL.channelUrl,
+    name: authStatus?.channel?.name || (user?.name ? `${user.name} Channel` : DEFAULT_CHANNEL.name),
+    handle: authStatus?.channel?.handle || user?.handle || DEFAULT_CHANNEL.handle,
+    avatarUrl: authStatus?.channel?.avatarUrl || authStatus?.channel?.avatar_url || user?.avatarUrl || DEFAULT_CHANNEL.avatarUrl,
+    bannerUrl: authStatus?.channel?.bannerUrl || authStatus?.channel?.banner_url || DEFAULT_CHANNEL.bannerUrl,
+    channelUrl: authStatus?.channel?.channelUrl || authStatus?.channel?.channel_url || DEFAULT_CHANNEL.channelUrl,
   };
 
   const loadAuthStatus = async () => {
     try {
       const res = await youtubeApi.getAuthStatus();
       if (res && res.success) {
-        const channel = res.channel || TARGET_CHANNEL;
+        const channel = res.channel || DEFAULT_CHANNEL;
         setAuthStatus({ connected: Boolean(res.connected !== false), channel });
         try {
           localStorage.setItem('apexmind_yt_channel', JSON.stringify(channel));
@@ -235,14 +239,14 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         }
       }
     } catch {
-      setAuthStatus({ connected: true, channel: TARGET_CHANNEL });
+      setAuthStatus({ connected: false, channel: DEFAULT_CHANNEL });
     }
   };
 
   useEffect(() => {
-    loadAutomations();
+    loadAutomations(user?.id);
     loadAuthStatus();
-  }, []);
+  }, [user?.id]);
 
   const handleCopyLink = (url: string, jobId: string) => {
     const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
@@ -255,7 +259,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const handleToggle = async (id: string) => {
     setTogglingJobId(id);
     try {
-      const updated = await youtubeApi.toggleAutomation(id);
+      const updated = await youtubeApi.toggleAutomation(id, user?.id);
       setAutomations(updated);
       const target = updated.find((a) => a.id === id);
       if (target?.active) {
@@ -272,7 +276,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
   const executeDelete = async (id: string) => {
     try {
-      await youtubeApi.deleteAutomation(id);
+      await youtubeApi.deleteAutomation(id, user?.id);
       setAutomations((prev) => prev.filter((a) => a.id !== id));
       setConfirmDeleteJobId(null);
       toast.success('Automation rule and history deleted');
@@ -378,6 +382,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         musicTrack,
         privacyStatus,
         active: true,
+        userId: user?.id,
       });
       toast.success(`New automation rule scheduled: ${finalSchedule}!`);
       setActiveSubTab('pipelines');
@@ -733,25 +738,25 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                               <span>Target Channel:</span>
                             </span>
                             <a
-                              href={TARGET_CHANNEL.channelUrl}
+                              href={activeChannel.channelUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="group flex items-center gap-1.5 min-w-0 max-w-[70%] justify-end hover:opacity-95 transition-opacity"
-                              title={`Target Channel: ${TARGET_CHANNEL.name} (${TARGET_CHANNEL.handle}) on YouTube`}
+                              title={`Target Channel: ${activeChannel.name} (${activeChannel.handle}) on YouTube`}
                             >
                               <div className="relative shrink-0 flex items-center">
                                 <img
-                                  src={TARGET_CHANNEL.avatarUrl}
-                                  alt={TARGET_CHANNEL.name}
+                                  src={activeChannel.avatarUrl}
+                                  alt={activeChannel.name}
                                   className="w-4 h-4 rounded-full object-cover ring-1 ring-red-500/50 shadow-xs"
                                 />
                                 <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full ring-1 ring-[#141416]" />
                               </div>
                               <span className="font-semibold text-zinc-200 group-hover:text-white transition-colors truncate">
-                                {TARGET_CHANNEL.name}
+                                {activeChannel.name}
                               </span>
                               <span className="text-[10px] text-zinc-400 font-mono truncate">
-                                {TARGET_CHANNEL.handle}
+                                {activeChannel.handle}
                               </span>
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/15 text-red-400 border border-red-500/30 shrink-0 flex items-center gap-0.5">
                                 <span>Shorts</span>
@@ -1531,8 +1536,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="relative shrink-0">
                 <img
-                  src={TARGET_CHANNEL.avatarUrl}
-                  alt={TARGET_CHANNEL.name}
+                  src={activeChannel.avatarUrl}
+                  alt={activeChannel.name}
                   className="w-7 h-7 rounded-lg object-cover ring-1 ring-red-500/40"
                 />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full ring-1 ring-[#141416]" />
@@ -1540,9 +1545,9 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               <div className="text-zinc-300 min-w-0">
                 <div className="text-[10px] text-zinc-500 font-mono uppercase">Target Channel</div>
                 <div className="font-semibold text-white truncate flex items-center gap-1.5">
-                  <span>{TARGET_CHANNEL.name}</span>
+                  <span>{activeChannel.name}</span>
                   <span className="text-[10px] text-zinc-400 font-mono font-normal">
-                    {TARGET_CHANNEL.handle}
+                    {activeChannel.handle}
                   </span>
                 </div>
               </div>
@@ -1581,7 +1586,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             {/* Banner Image */}
             <div className="relative w-full h-24 bg-gradient-to-r from-[#0B0F19] via-[#131127] to-[#0A0A0A] overflow-hidden shrink-0">
               <img
-                src={TARGET_CHANNEL.bannerUrl}
+                src={activeChannel.bannerUrl}
                 alt="Target Channel Banner"
                 className="w-full h-full object-cover object-center"
               />
@@ -1597,16 +1602,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             <div className="bg-[#111111] border-t border-[#1E1E1E] px-3 py-2.5 flex items-center gap-3">
               <div className="relative shrink-0 -mt-6">
                 <img
-                  src={TARGET_CHANNEL.avatarUrl}
-                  alt={TARGET_CHANNEL.name}
+                  src={activeChannel.avatarUrl}
+                  alt={activeChannel.name}
                   className="w-10 h-10 rounded-full border-2 border-[#111111] object-cover shadow-lg"
                 />
               </div>
 
               {/* Name + Handle + Stats */}
               <div className="flex-1 min-w-0 pt-1">
-                <p className="text-xs font-bold text-white truncate leading-tight">{TARGET_CHANNEL.name}</p>
-                <p className="text-[10px] text-zinc-500 truncate leading-tight">{TARGET_CHANNEL.handle}</p>
+                <p className="text-xs font-bold text-white truncate leading-tight">{activeChannel.name}</p>
+                <p className="text-[10px] text-zinc-500 truncate leading-tight">{activeChannel.handle}</p>
                 <p className="text-[10px] text-emerald-400 mt-0.5 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                   <span>Target Publishing Destination</span>
@@ -1615,7 +1620,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
               {/* Action button */}
               <a
-                href={TARGET_CHANNEL.channelUrl}
+                href={activeChannel.channelUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 px-2.5 py-1 rounded-lg bg-[#181818] hover:bg-[#26262C] text-[10.5px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#242424] hover:border-white/10 flex items-center gap-1"

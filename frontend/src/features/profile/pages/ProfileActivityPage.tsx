@@ -1,10 +1,10 @@
 import React from 'react';
-import { Activity, CheckCircle2, Sparkles, Star, Youtube } from 'lucide-react';
+import { Activity, CheckCircle2, Sparkles, Star, Film, ShieldCheck } from 'lucide-react';
 import { useCreatorStudioData } from '../hooks/useCreatorStudioData';
 import { RecentStudioActivity } from '../components/RecentStudioActivity';
 
 export default function ProfileActivityPage() {
-  const { channels, stats, scripts, videos } = useCreatorStudioData();
+  const { stats, scripts, videos } = useCreatorStudioData();
 
   const scriptCount = stats?.totalQuotesGenerated ?? scripts.length;
   const shortCount = stats?.totalShortsGenerated ?? videos.length;
@@ -12,8 +12,8 @@ export default function ProfileActivityPage() {
   const achievements = [
     { name: 'First script', description: 'Generate your first script', earned: scriptCount >= 1, value: Math.min(scriptCount, 1), goal: 1, icon: <Sparkles className="h-5 w-5" /> },
     { name: 'Storyteller', description: 'Generate 10 scripts', earned: scriptCount >= 10, value: Math.min(scriptCount, 10), goal: 10, icon: <Star className="h-5 w-5" /> },
-    { name: 'First Short', description: 'Create your first Short', earned: shortCount >= 1, value: Math.min(shortCount, 1), goal: 1, icon: <Youtube className="h-5 w-5" /> },
-    { name: 'Channel connected', description: 'Connect a YouTube channel', earned: channels.length > 0, value: Math.min(channels.length, 1), goal: 1, icon: <CheckCircle2 className="h-5 w-5" /> },
+    { name: 'First video', description: 'Create your first video', earned: shortCount >= 1, value: Math.min(shortCount, 1), goal: 1, icon: <Film className="h-5 w-5" /> },
+    { name: 'Active account', description: 'Session verified & active', earned: true, value: 1, goal: 1, icon: <ShieldCheck className="h-5 w-5" /> },
   ];
 
   return (
@@ -26,7 +26,7 @@ export default function ProfileActivityPage() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">Activity &amp; Milestones</h2>
-            <p className="mt-0.5 text-xs text-[#9CA3AF]">See your recent work and badges earned from real studio activity.</p>
+            <p className="mt-0.5 text-xs text-[#9CA3AF]">See your recent work and badges earned from your account activity.</p>
           </div>
         </div>
       </div>

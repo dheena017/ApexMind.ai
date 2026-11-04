@@ -4,6 +4,7 @@ import {
   Circle,
   ExternalLink,
   Eye,
+  Film,
   Heart,
   LayoutDashboard,
   LogOut,
@@ -11,7 +12,6 @@ import {
   Sparkles,
   Star,
   UserRound,
-  Youtube,
 } from 'lucide-react';
 import { Badge, Button } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
@@ -21,7 +21,7 @@ import { RecentStudioActivity } from '../components/RecentStudioActivity';
 
 export default function ProfilePage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { profile, user } = useCreatorProfileSettings();
-  const { channels, videos, stats, scripts, loading, error } = useCreatorStudioData();
+  const { videos, stats, scripts, loading, error } = useCreatorStudioData();
   const { logout } = useAuth();
 
   const handleSignOut = async () => {
@@ -29,20 +29,20 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
     onNavigate('login');
   };
 
-  const displayName = profile.displayName.trim() || user?.name || 'Creator Profile';
+  const displayName = user?.name?.trim() || profile.displayName.trim() || user?.email?.split('@')[0] || 'User Profile';
 
   const completion = [
     Boolean((profile.displayName.trim() || user?.name?.trim()) && (profile.avatarUrl.trim() || user?.avatarUrl)),
     Boolean(profile.bio.trim()),
-    Boolean(profile.websiteUrl.trim() || profile.instagramUrl.trim() || profile.tiktokUrl.trim() || profile.youtubeUrl.trim()),
+    Boolean(profile.websiteUrl.trim() || profile.instagramUrl.trim() || profile.tiktokUrl.trim()),
     Boolean(profile.niche && profile.tone && profile.defaultVoice),
     Boolean(user?.verified !== false),
   ];
   const completedCount = completion.filter(Boolean).length;
 
   const setupSteps = [
-    { title: 'Personalize your creator identity', description: 'Add a display name and profile photo.', page: 'profile-details' },
-    { title: 'Write a short bio', description: 'Tell people what you create and who it is for.', page: 'profile-details' },
+    { title: 'Personalize your user identity', description: 'Add a display name and profile photo.', page: 'profile-details' },
+    { title: 'Write a short bio', description: 'Tell people about yourself and your content.', page: 'profile-details' },
     { title: 'Add a public link', description: 'Connect your website or a social profile.', page: 'profile-details' },
     { title: 'Set your content preferences', description: 'Choose defaults for your next script or voiceover.', page: 'profile-preferences' },
     { title: 'Account security & sign-in', description: 'Review your sign-in security and verification.', page: 'profile-security' },
@@ -53,15 +53,13 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
     { label: 'Website', value: profile.websiteUrl },
     { label: 'Instagram', value: profile.instagramUrl },
     { label: 'TikTok', value: profile.tiktokUrl },
-    { label: 'YouTube', value: profile.youtubeUrl },
   ].filter((link) => link.value && link.value.trim());
-
 
   const profileBadges = [
     { name: 'First script', description: 'Generate your first script', value: Math.min(stats?.totalQuotesGenerated ?? scripts.length, 1), goal: 1, icon: <Sparkles className="h-4 w-4" /> },
     { name: 'Storyteller', description: 'Generate 10 scripts', value: Math.min(stats?.totalQuotesGenerated ?? scripts.length, 10), goal: 10, icon: <Star className="h-4 w-4" /> },
-    { name: 'First Short', description: 'Create your first Short', value: Math.min(stats?.totalShortsGenerated ?? videos.length, 1), goal: 1, icon: <Youtube className="h-4 w-4" /> },
-    { name: 'Channel connected', description: 'Connect a YouTube channel', value: Math.min(channels.length, 1), goal: 1, icon: <CheckCircle2 className="h-4 w-4" /> },
+    { name: 'First video', description: 'Create your first video', value: Math.min(stats?.totalShortsGenerated ?? videos.length, 1), goal: 1, icon: <Film className="h-4 w-4" /> },
+    { name: 'Account verified', description: 'Verified user profile', value: user?.verified !== false ? 1 : 0, goal: 1, icon: <CheckCircle2 className="h-4 w-4" /> },
   ];
 
   const formatDate = (value?: string) => {
@@ -80,14 +78,14 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
             <LayoutDashboard className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Creator Overview &amp; Analytics</h2>
-            <p className="mt-0.5 text-xs text-[#9CA3AF]">High-level performance metrics, milestone progress, and creator setup tools.</p>
+            <h2 className="text-lg font-bold text-white">User Overview &amp; Analytics</h2>
+            <p className="mt-0.5 text-xs text-[#9CA3AF]">High-level performance metrics, milestone progress, and account setup tools.</p>
           </div>
         </div>
       </div>
 
-      {/* ── 1. The 4 Creator Stat Cards (Matching User Image) ── */}
-      <section aria-label="Creator activity summary" className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
+      {/* ── 1. The 4 Stat Cards ── */}
+      <section aria-label="User activity summary" className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
         {[
           {
             label: 'Scripts generated',
@@ -96,10 +94,10 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
             color: 'bg-[#3B82F6]/10 border border-[#3B82F6]/20',
           },
           {
-            label: 'Shorts created',
+            label: 'Videos created',
             value: stats?.totalShortsGenerated ?? videos.length,
-            icon: <Youtube className="h-4 w-4 text-red-400" />,
-            color: 'bg-red-500/10 border border-red-500/20',
+            icon: <Film className="h-4 w-4 text-purple-400" />,
+            color: 'bg-purple-500/10 border border-purple-500/20',
           },
           {
             label: 'Total views',
@@ -129,13 +127,13 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
         ))}
       </section>
 
-      {/* ── 2. Complete Your Creator Setup (A great place to start) ── */}
+      {/* ── 2. Complete Your Account Setup ── */}
       <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#60A5FA]">A great place to start</p>
-            <h2 className="mt-1 text-base font-bold text-white">Complete your creator setup</h2>
-            <p className="mt-1 text-sm text-[#9CA3AF]">A few quick steps can make your Studio feel more like yours.</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#60A5FA]">Getting Started</p>
+            <h2 className="mt-1 text-base font-bold text-white">Complete your profile setup</h2>
+            <p className="mt-1 text-sm text-[#9CA3AF]">A few quick steps to personalize your account.</p>
           </div>
           <Badge variant={completedCount === completion.length ? 'green' : 'blue'}>
             {completedCount} of {completion.length} complete
@@ -185,12 +183,12 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       </div>
 
-      {/* ── 3. Creator Details & Content Preferences Quick Cards ── */}
+      {/* ── 3. User Details & Preferences Quick Cards ── */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-white">Creator details</h2>
+              <h2 className="text-base font-bold text-white">User details</h2>
               <p className="mt-1 text-xs text-[#9CA3AF]">Your profile information and public links.</p>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={() => onNavigate('profile-details')}>Edit details</Button>
@@ -198,9 +196,9 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
           <dl className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
             {[
               ['Display name', displayName],
-              ['Creator handle', profile.creatorHandle || 'Not added'],
-              ['Avatar image', profile.avatarUrl ? 'Custom image' : user?.avatarUrl ? 'Using account photo' : 'Not added'],
-              ['Channel email', user?.email || 'Not connected'],
+              ['Username', profile.creatorHandle || (user?.email ? `@${user.email.split('@')[0]}` : 'Not added')],
+              ['Avatar image', profile.avatarUrl ? 'Custom image' : user?.avatarUrl ? 'Using account photo' : 'Default avatar'],
+              ['Account email', user?.email || 'Not connected'],
               ['Bio', profile.bio || 'Not added'],
             ].map(([label, value]) => (
               <div key={label} className="min-w-0">
@@ -243,98 +241,69 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
           </div>
           <dl className="grid gap-3 sm:grid-cols-2">
             {[
-              ['Niche', profile.niche],
-              ['Preferred tone', profile.tone],
-              ['Default voice', profile.defaultVoice],
-              ['Target audience', profile.audience],
+              ['Category', profile.niche || 'Not set'],
+              ['Preferred tone', profile.tone || 'Not set'],
+              ['Default voice', profile.defaultVoice || 'Fenrir'],
+              ['Target audience', profile.audience || 'Not set'],
             ].map(([label, value]) => (
               <div key={label} className="min-w-0 rounded-xl border border-[#262626] bg-[#121212] p-3">
                 <dt className="text-xs text-[#6B7280]">{label}</dt>
-                <dd className="mt-1 break-words text-sm font-medium text-[#E5E5E5]">{value || 'Not set'}</dd>
+                <dd className="mt-1 break-words text-sm font-medium text-[#E5E5E5]">{value}</dd>
               </div>
             ))}
           </dl>
         </div>
       </div>
 
-      {/* ── 4. YouTube Studio Hub Link & Account Usage Cards ── */}
+      {/* ── 4. Creation Studio Hub & Account Usage Cards ── */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6 flex flex-col justify-between">
           <div>
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
-                  <Youtube className="h-5 w-5" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-500/20 text-[#60A5FA]">
+                  <Film className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white">YouTube Studio &amp; Channels</h2>
-                  <p className="mt-0.5 text-xs text-[#9CA3AF]">Manage connected channel, video publishing &amp; analytics</p>
+                  <h2 className="text-base font-bold text-white">Creation Studio</h2>
+                  <p className="mt-0.5 text-xs text-[#9CA3AF]">Generate scripts, synthesize voiceovers, and produce video content</p>
                 </div>
               </div>
-              <Button type="button" variant="primary" size="sm" onClick={() => onNavigate('youtube')}>
+              <Button type="button" variant="primary" size="sm" onClick={() => onNavigate('workspace')}>
                 Open Studio →
               </Button>
             </div>
 
-            {loading ? (
-              <p className="text-sm text-[#9CA3AF]">Loading YouTube channel status…</p>
-            ) : channels.length ? (
-              <div className="rounded-xl border border-[#262626] bg-[#121212] p-3.5 space-y-2.5">
-                <div className="flex items-center gap-3">
-                  {channels[0].avatarUrl ? (
-                    <img src={channels[0].avatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover border border-[#2F2F2F]" />
-                  ) : (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
-                      <Youtube className="h-5 w-5" />
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-white">{channels[0].name}</p>
-                      {channels[0].verified && <Badge variant="green">Verified</Badge>}
-                    </div>
-                    <p className="truncate text-xs text-[#9CA3AF] font-mono-studio">
-                      {channels[0].handle} · {channels[0].subscribers.toLocaleString()} subscribers
-                    </p>
-                  </div>
-                  <Badge variant="blue">Active</Badge>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-[#262626] text-xs text-[#9CA3AF]">
-                  <span>Auto-upload: {channels[0].isAutoUploadEnabled ? 'Active' : 'Off'}</span>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('youtube')}
-                    className="text-[#60A5FA] hover:underline cursor-pointer"
-                  >
-                    Open YouTube Studio →
-                  </button>
-                </div>
+            <div className="rounded-xl border border-[#262626] bg-[#121212] p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#9CA3AF]">Scripts in catalog:</span>
+                <span className="font-bold text-white font-mono-studio">{(stats?.totalQuotesGenerated ?? scripts.length).toLocaleString()}</span>
               </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-[#2F2F2F] p-4 text-center">
-                <Youtube className="mx-auto h-6 w-6 text-[#6B7280]" />
-                <p className="mt-2 text-xs text-[#9CA3AF]">No YouTube channel connected yet.</p>
-                <Button
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#9CA3AF]">Videos generated:</span>
+                <span className="font-bold text-white font-mono-studio">{(stats?.totalShortsGenerated ?? videos.length).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-[#262626] text-xs text-[#9CA3AF]">
+                <span>Video creation workflow:</span>
+                <button
                   type="button"
-                  variant="primary"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => onNavigate('youtube')}
+                  onClick={() => onNavigate('workspace')}
+                  className="text-[#60A5FA] hover:underline cursor-pointer"
                 >
-                  Connect in YouTube Studio
-                </Button>
+                  Create new video →
+                </button>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-[#262626] flex items-center justify-between text-xs text-[#9CA3AF]">
-            <span>All uploads, Shorts, and analytics are managed in YouTube Studio</span>
+            <span>Fast, high-fidelity AI-powered video automation</span>
             <button
               type="button"
-              onClick={() => onNavigate('youtube')}
-              className="text-red-400 hover:text-red-300 font-semibold cursor-pointer"
+              onClick={() => onNavigate('workspace')}
+              className="text-[#60A5FA] hover:text-[#93C5FD] font-semibold cursor-pointer"
             >
-              Go to YouTube Studio
+              Go to Workspace
             </button>
           </div>
         </div>
@@ -349,13 +318,12 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {[
-              ['Sign-in provider', user?.provider || 'ApexMind Auth'],
+              ['Sign-in provider', user?.provider ? (user.provider === 'google' ? 'Google Account' : 'Email & Password') : 'ApexMind Auth'],
               ['Email verification', user?.verified !== false ? 'Verified' : 'Not verified'],
               ['Scripts generated', (stats?.totalQuotesGenerated ?? scripts.length).toLocaleString()],
-              ['Shorts created', (stats?.totalShortsGenerated ?? videos.length).toLocaleString()],
+              ['Videos created', (stats?.totalShortsGenerated ?? videos.length).toLocaleString()],
               ['Total views', (stats?.totalViews ?? 0).toLocaleString()],
               ['Total likes', (stats?.totalLikes ?? 0).toLocaleString()],
-              ['Active channels', (stats?.activeChannelsCount ?? channels.length).toLocaleString()],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl border border-[#262626] bg-[#121212] p-3">
                 <p className="text-xs text-[#6B7280]">{label}</p>
@@ -366,7 +334,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
           {user?.lastLoginAt && <p className="mt-3 text-xs text-[#6B7280]">Last sign-in: {formatDate(user.lastLoginAt)}</p>}
           <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[#2F2F2F] bg-[#121212] p-3">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-            <p className="text-xs leading-relaxed text-[#9CA3AF]">Protected creator account with authenticated session security.</p>
+            <p className="text-xs leading-relaxed text-[#9CA3AF]">Protected user account with authenticated session security.</p>
           </div>
           <button
             type="button"
@@ -374,18 +342,18 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
             className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition-all duration-200 hover:border-red-500/50 hover:bg-red-500/20 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
-            Sign Out of ApexMind Studio
+            Sign Out of ApexMind
           </button>
         </div>
       </div>
 
-      {/* ── 5. Creator Badges & Recent Activity ── */}
+      {/* ── 5. User Badges & Recent Activity ── */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-white">Creator badges</h2>
-              <p className="mt-1 text-xs text-[#9CA3AF]">Milestones from your real studio activity.</p>
+              <h2 className="text-base font-bold text-white">Milestone badges</h2>
+              <p className="mt-1 text-xs text-[#9CA3AF]">Milestones from your real activity.</p>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={() => onNavigate('profile-activity')}>View activity</Button>
           </div>
@@ -408,7 +376,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
           showFilters={false}
           showSearch={false}
           title="Recent activity"
-          subtitle="Your latest scripts and Shorts."
+          subtitle="Your latest scripts and videos."
           onNavigate={onNavigate}
         />
 

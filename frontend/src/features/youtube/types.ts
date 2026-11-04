@@ -153,6 +153,7 @@ export interface YouTubeTranscriptSnippet {
 
 export interface AutomationHistoryEntry {
   id: string;
+  userId?: string;
   jobId: string;
   status: 'success' | 'failed' | 'running' | 'stopped';
   videoTitle?: string;
@@ -180,6 +181,7 @@ export interface AutomationHistoryEntry {
 
 export interface AutomationJob {
   id: string;
+  userId?: string;
   theme: string;
   schedule: string;
   voice: string;

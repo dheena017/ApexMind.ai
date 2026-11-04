@@ -524,10 +524,13 @@ def clear_notifications(category: Optional[str] = None) -> int:
     logger.info(f"Cleared notifications from database ({count} deleted)")
     return count
 
-def get_automations() -> List[Dict[str, Any]]:
+def get_automations(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM automation_jobs ORDER BY active DESC, next_run ASC")
+    if user_id:
+        cursor.execute("SELECT * FROM automation_jobs WHERE user_id = ? ORDER BY active DESC, next_run ASC", (user_id,))
+    else:
+        cursor.execute("SELECT * FROM automation_jobs ORDER BY active DESC, next_run ASC")
     rows = cursor.fetchall()
     conn.close()
 
@@ -546,6 +549,7 @@ def get_automations() -> List[Dict[str, Any]]:
             st = "idle"
         result.append({
             "id": r["id"],
+            "userId": r["user_id"] if "user_id" in r.keys() else None,
             "theme": r["theme"],
             "schedule": r["schedule"],
             "voice": r["voice"],
@@ -577,6 +581,7 @@ def get_automation_by_id(job_id: str) -> Optional[Dict[str, Any]]:
         return None
     return {
         "id": r["id"],
+        "userId": r["user_id"] if "user_id" in r.keys() else None,
         "theme": r["theme"],
         "schedule": r["schedule"],
         "voice": r["voice"],
@@ -609,6 +614,7 @@ def create_automation_job(
     ai_model: str = "gemini-2.5-flash",
     aspect_ratio: str = "9:16",
     length: str = "30 seconds",
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -621,13 +627,13 @@ def create_automation_job(
         next_run = (now_utc + timedelta(days=1)).isoformat()
 
     cursor.execute("""
-    INSERT INTO automation_jobs (id, theme, schedule, voice, music_track, active, next_run, channel_id, privacy_status, publish_time, last_status, ai_model, aspect_ratio, length, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', ?, ?, ?, ?)
-    """, (job_id, theme, schedule, voice, music_track, 1 if active else 0, next_run, channel_id, privacy_status, publish_time, ai_model, aspect_ratio, length, now_utc.isoformat()))
+    INSERT INTO automation_jobs (id, user_id, theme, schedule, voice, music_track, active, next_run, channel_id, privacy_status, publish_time, last_status, ai_model, aspect_ratio, length, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', ?, ?, ?, ?)
+    """, (job_id, user_id, theme, schedule, voice, music_track, 1 if active else 0, next_run, channel_id, privacy_status, publish_time, ai_model, aspect_ratio, length, now_utc.isoformat()))
     conn.commit()
     conn.close()
-    logger.info(f"Created automation job '{job_id}' (Theme: '{theme}', Schedule: '{schedule}')")
-    return get_automation_by_id(job_id) or {"id": job_id, "theme": theme}
+    logger.info(f"Created automation job '{job_id}' (User: '{user_id}', Theme: '{theme}', Schedule: '{schedule}')")
+    return get_automation_by_id(job_id) or {"id": job_id, "userId": user_id, "theme": theme}
 
 def delete_automation_job(job_id: str) -> bool:
     conn = get_connection()
@@ -650,17 +656,29 @@ def add_automation_history(
     duration_seconds: float = 0.0,
     message: Optional[str] = None,
     project_data: Optional[Dict[str, Any]] = None,
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
+    effective_user_id = user_id
+    if not effective_user_id:
+        try:
+            cursor.execute("SELECT user_id FROM automation_jobs WHERE id = ?", (job_id,))
+            j_row = cursor.fetchone()
+            if j_row and "user_id" in j_row.keys():
+                effective_user_id = j_row["user_id"]
+        except Exception:
+            pass
+
     run_id = f"run_{int(time.time() * 1000)}"
     now_str = datetime.now(timezone.utc).isoformat()
     project_data_json = json.dumps(project_data) if project_data else None
     cursor.execute("""
-    INSERT INTO automation_history (id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO automation_history (id, user_id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         run_id,
+        effective_user_id,
         job_id,
         status,
         video_title,
@@ -676,6 +694,7 @@ def add_automation_history(
     conn.close()
     return {
         "id": run_id,
+        "userId": effective_user_id,
         "jobId": job_id,
         "status": status,
         "videoTitle": video_title,
@@ -688,90 +707,54 @@ def add_automation_history(
         "projectData": project_data,
     }
 
-def get_automation_history(job_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+def get_automation_history(job_id: str, limit: int = 50, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-    SELECT id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data
-    FROM automation_history
-    WHERE job_id = ?
-    ORDER BY executed_at DESC
-    LIMIT ?
-    """, (job_id, limit))
+    if user_id:
+        cursor.execute("""
+        SELECT id, user_id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data
+        FROM automation_history
+        WHERE job_id = ? AND (user_id = ? OR user_id IS NULL)
+        ORDER BY executed_at DESC
+        LIMIT ?
+        """, (job_id, user_id, limit))
+    else:
+        cursor.execute("""
+        SELECT id, user_id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data
+        FROM automation_history
+        WHERE job_id = ?
+        ORDER BY executed_at DESC
+        LIMIT ?
+        """, (job_id, limit))
     rows = cursor.fetchall()
-    
-    # Auto-backfill history from automation_jobs if history table is empty but job has last_run recorded
-    if not rows:
-        try:
-            cursor.execute("SELECT * FROM automation_jobs WHERE id = ?", (job_id,))
-            job_row = cursor.fetchone()
-            if job_row and ("last_run" in job_row.keys()) and job_row["last_run"]:
-                run_id = f"hist_{job_id}_{int(time.time())}"
-                status = job_row["last_status"] or "success"
-                title = job_row["last_video_title"] or "Autonomous Studio Video"
-                v_url = job_row["last_video_url"]
-                is_live = bool(job_row["last_is_live"]) if "last_is_live" in job_row.keys() and job_row["last_is_live"] is not None else False
-                msg = job_row["last_run_message"] or "Automated execution completed"
-                exec_at = job_row["last_run"]
-                
-                cursor.execute("""
-                INSERT OR IGNORE INTO automation_history (id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    run_id,
-                    job_id,
-                    status,
-                    title,
-                    v_url,
-                    v_url if is_live else None,
-                    1 if is_live else 0,
-                    15.0,
-                    msg,
-                    exec_at,
-                ))
-                conn.commit()
-                conn.close()
-                return [{
-                    "id": run_id,
-                    "jobId": job_id,
-                    "status": status,
-                    "videoTitle": title,
-                    "videoUrl": v_url,
-                    "youtubeUrl": v_url if is_live else None,
-                    "isLive": is_live,
-                    "durationSeconds": 15.0,
-                    "message": msg,
-                    "executedAt": exec_at,
-                }]
-        except Exception as e:
-            logger.debug(f"History auto-seed note: {e}")
-
     conn.close()
+
     result = []
     for r in rows:
         proj_data = None
-        if len(r) > 10 and r[10]:
+        if "project_data" in r.keys() and r["project_data"]:
             try:
-                proj_data = json.loads(r[10])
+                proj_data = json.loads(r["project_data"])
             except Exception:
                 proj_data = None
-        if not proj_data and (r[4] or r[3]):
+        if not proj_data and (r["video_url"] or r["video_title"]):
             proj_data = {
-                "title": r[3] or "Autonomous Studio Video",
-                "videoUrl": r[4],
-                "duration": float(r[7] or 15.0),
+                "title": r["video_title"] or "Autonomous Studio Video",
+                "videoUrl": r["video_url"],
+                "duration": float(r["duration_seconds"] or 15.0),
             }
         result.append({
-            "id": r[0],
-            "jobId": r[1],
-            "status": r[2],
-            "videoTitle": r[3],
-            "videoUrl": r[4],
-            "youtubeUrl": r[5],
-            "isLive": bool(r[6]),
-            "durationSeconds": float(r[7] or 0),
-            "message": r[8],
-            "executedAt": r[9],
+            "id": r["id"],
+            "userId": r["user_id"] if "user_id" in r.keys() else None,
+            "jobId": r["job_id"],
+            "status": r["status"],
+            "videoTitle": r["video_title"],
+            "videoUrl": r["video_url"],
+            "youtubeUrl": r["youtube_url"],
+            "isLive": bool(r["is_live"]),
+            "durationSeconds": float(r["duration_seconds"] or 0),
+            "message": r["message"],
+            "executedAt": r["executed_at"],
             "projectData": proj_data,
         })
     return result
@@ -824,7 +807,7 @@ def update_automation_run_state(
     conn.commit()
     conn.close()
 
-def toggle_automation(job_id: str) -> List[Dict[str, Any]]:
+def toggle_automation(job_id: str, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT active, publish_time, schedule FROM automation_jobs WHERE id = ?", (job_id,))
@@ -843,7 +826,7 @@ def toggle_automation(job_id: str) -> List[Dict[str, Any]]:
         conn.commit()
     conn.close()
     logger.info(f"Toggled automation job status (Job ID: {job_id})")
-    return get_automations()
+    return get_automations(user_id=user_id)
 
 def get_media_library() -> Dict[str, Any]:
     return {
