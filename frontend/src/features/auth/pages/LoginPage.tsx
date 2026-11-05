@@ -423,8 +423,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
             <button
               type="button"
               onClick={handleGoogleAuth}
-              disabled={loading || !agreementChecked}
-              title={!agreementChecked ? 'Please agree to terms first' : undefined}
+              disabled={loading}
               className="w-full rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#202025] hover:border-[#3F3F46] px-4 py-2.5 text-xs font-semibold text-white shadow-xs cursor-pointer flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <GoogleIcon className="w-4 h-4" />
