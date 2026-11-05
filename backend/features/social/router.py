@@ -10,6 +10,8 @@ from fastapi import APIRouter, HTTPException, status, Query
 from .schemas import (
     FleetListResponse,
     OAuthUrlResponse,
+    MetaOAuthCallbackRequest,
+    MetaOAuthCallbackResponse,
     ConnectPlatformRequest,
     DisconnectAccountRequest,
     SyndicatePublishRequest,
@@ -19,6 +21,7 @@ from .schemas import (
 from .service import (
     get_user_fleet,
     generate_platform_oauth_url,
+    complete_meta_social_oauth,
     syndicate_publish,
 )
 from .adapters import ADAPTER_REGISTRY
@@ -82,9 +85,26 @@ async def get_oauth_url(
 
 
 @router.post(
+    "/meta/oauth-callback",
+    response_model=MetaOAuthCallbackResponse,
+    summary="Complete Meta Page or Instagram OAuth",
+    description="Validates Meta OAuth state and connects verified Facebook Pages or linked Instagram professional accounts.",
+)
+async def complete_meta_oauth(payload: MetaOAuthCallbackRequest):
+    try:
+        result = await complete_meta_social_oauth(payload.code, payload.state)
+        return {"success": True, **result}
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except Exception:
+        logger.exception("Error completing Meta social connection")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to connect Meta destination.")
+
+
+@router.post(
     "/connect/{platform}",
-    summary="Connect or Mock Social Account",
-    description="Connects a platform account to the user's fleet using OAuth tokens or handle details.",
+    summary="Connect a Social Account",
+    description="Connects a supported social account to the user's fleet.",
 )
 async def connect_account(
     platform: str,
@@ -92,6 +112,11 @@ async def connect_account(
     userId: Optional[str] = None,
 ):
     clean_p = platform.lower().strip()
+    if clean_p in ("facebook", "instagram"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Facebook Pages and Instagram professional accounts must be connected through Meta OAuth.",
+        )
     effective_user_id = userId
     if not effective_user_id:
         latest = get_latest_user()

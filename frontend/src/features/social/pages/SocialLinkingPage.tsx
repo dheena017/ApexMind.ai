@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Youtube,
   Instagram,
@@ -15,8 +15,6 @@ import {
   Video,
   BarChart2,
   Sparkles,
-  Loader2,
-  X,
   Check,
   Globe,
   Share2,
@@ -56,6 +54,8 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [posts, setPosts] = useState<PublishedPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | SocialPlatform>('all');
   const [activeChannelKey, setActiveChannelKey] = useState<string>('');
 
@@ -63,23 +63,31 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [connectingMetaPlatform, setConnectingMetaPlatform] = useState<SocialPlatform | null>(null);
+  const metaCallbackHandled = useRef(false);
 
-  // Manual connect modal state
-  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
-  const [connectPlatform, setConnectPlatform] = useState<SocialPlatform>('youtube');
-  const [connectHandleInput, setConnectHandleInput] = useState('');
-  const [connectNameInput, setConnectNameInput] = useState('');
-  const [connectingPlatform, setConnectingPlatform] = useState(false);
+  const loadPublishedPosts = async () => {
+    setPostsLoading(true);
+    setPostsError(null);
+    try {
+      setPosts(await socialApi.getPublishedPosts(50));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load publishing history.';
+      setPostsError(message);
+      console.warn('Failed to load publishing history:', err);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [fleet, published] = await Promise.all([
+      const [fleet] = await Promise.all([
         socialApi.getFleetAccounts(),
-        socialApi.getPublishedPosts(50),
+        loadPublishedPosts(),
       ]);
       setAccounts(fleet);
-      setPosts(published);
 
       // Resolve active channel
       const stored = localStorage.getItem('apexmind_yt_active_channel');
@@ -103,6 +111,33 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     const handleFleetUpdate = () => loadData();
     window.addEventListener('social:fleet-updated', handleFleetUpdate);
     return () => window.removeEventListener('social:fleet-updated', handleFleetUpdate);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    const oauthError = params.get('error_description') || params.get('error');
+    if ((!code && !state && !oauthError) || metaCallbackHandled.current) return;
+    metaCallbackHandled.current = true;
+
+    window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
+    if (oauthError) {
+      setActionError(`Meta authorization was not completed: ${oauthError}`);
+      return;
+    }
+    if (!code || !state) {
+      setActionError('Meta authorization returned an incomplete response. Please try again.');
+      return;
+    }
+
+    socialApi.completeMetaOAuth(code, state)
+      .then(({ message }) => {
+        setNotice(message);
+        setActionError(null);
+        window.dispatchEvent(new CustomEvent('social:fleet-updated'));
+      })
+      .catch((err: Error) => setActionError(err.message || 'Could not connect the Meta destination.'));
   }, []);
 
   const handleSetActive = (acc: SocialAccount) => {
@@ -134,43 +169,24 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     });
   };
 
-  const handleOpenConnectModal = (platform: SocialPlatform) => {
-    setConnectPlatform(platform);
-    setConnectHandleInput('');
-    setConnectNameInput('');
+  const handleConnectMeta = async (platform: SocialPlatform) => {
     setActionError(null);
-    setIsConnectModalOpen(true);
+    setNotice(null);
+    setConnectingMetaPlatform(platform);
+    try {
+      const oauthUrl = await socialApi.getOAuthUrl(platform);
+      window.location.assign(oauthUrl);
+    } catch (err: any) {
+      setActionError(err.message || `Could not start ${platform} authorization.`);
+      setConnectingMetaPlatform(null);
+    }
   };
 
-  const handleSubmitConnect = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!connectHandleInput.trim()) {
-      setActionError('Channel or account handle is required.');
-      return;
-    }
-
-    setConnectingPlatform(true);
-    setActionError(null);
-    try {
-      const cleanHandle = connectHandleInput.trim().startsWith('@')
-        ? connectHandleInput.trim()
-        : `@${connectHandleInput.trim()}`;
-      const defaultName = connectNameInput.trim() || cleanHandle.replace(/^@/, '');
-
-      await socialApi.connectAccount(connectPlatform, {
-        handle: cleanHandle,
-        name: defaultName,
-      });
-
-      setIsConnectModalOpen(false);
-      setNotice(`Successfully linked ${connectPlatform.toUpperCase()} account "${defaultName}"!`);
-      loadData();
-      window.dispatchEvent(new CustomEvent('social:fleet-updated'));
-      setTimeout(() => setNotice(null), 4000);
-    } catch (err: any) {
-      setActionError(err.message || 'Failed to connect account.');
-    } finally {
-      setConnectingPlatform(false);
+  const handleConnectPlatform = (platform: SocialPlatform) => {
+    if (platform === 'youtube') {
+      handleConnectGoogle();
+    } else {
+      handleConnectMeta(platform);
     }
   };
 
@@ -279,7 +295,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
       case 'instagram':
         return `https://www.instagram.com/${handleClean}`;
       case 'facebook':
-        return `https://www.facebook.com/${handleClean}`;
+        return `https://www.facebook.com/${acc.platformAccountId}`;
       default:
         return '#';
     }
@@ -314,15 +330,21 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                Social Linking &amp; Fleet Hub
+                Social Accounts
               </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                Linked Fleet Active
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 ${
+                accounts.length > 0
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : 'bg-[#1C1C22] text-[#9CA3AF] border-[#2A2A34]'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  accounts.length > 0 ? 'bg-emerald-400' : 'bg-[#71717A]'
+                }`}></span>
+                {loading ? 'Loading accounts' : `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} connected`}
               </span>
             </div>
             <p className="mt-1 text-xs text-[#9CA3AF] max-w-2xl leading-relaxed">
-              Link, manage, and syndicate across your omnichannel social accounts. Connect YouTube, Instagram Reels, and Facebook Pages to publish productions in one click.
+              Connect YouTube channels, Facebook Pages, and Instagram Business/Creator accounts linked to a Facebook Page. Facebook and Instagram use the same Meta app authorization.
             </p>
           </div>
         </div>
@@ -336,15 +358,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#3B82F6]' : ''}`} />
             <span>Refresh</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleOpenConnectModal('youtube')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white border border-[#3B82F6]/40 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Link Channel</span>
           </button>
         </div>
       </div>
@@ -394,7 +407,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
           </div>
           <p className="mt-2 text-[10px] text-emerald-400 font-medium flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            Auto-cross-post ready
+            Ready to publish
           </p>
         </div>
 
@@ -426,45 +439,63 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
       </div>
 
       {/* ── 3. Link a New Social Account (Studio Color Palette) ── */}
-      <div className="p-5 rounded-2xl bg-[#141418] border border-[#24242A] space-y-3.5 shadow-sm">
-        <div className="flex items-center justify-between">
+      <div className="p-5 rounded-2xl bg-[#141418] border border-[#24242A] shadow-sm">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-white">Link a New Social Account to Your Fleet</h2>
-            <p className="text-[11px] text-[#9CA3AF]">Choose a platform below to connect with OAuth or direct handle registration.</p>
+            <h2 className="text-sm font-bold text-white">Connect a social account</h2>
+            <p className="text-[11px] text-[#9CA3AF]">Select a platform to view its accounts, or use + to connect another account with Google or Meta.</p>
           </div>
-          <span className="text-[10px] text-zinc-500 font-medium">1-Click Integration</span>
+          <span className="text-[10px] text-zinc-500 font-medium">Verified account connection</span>
         </div>
 
-        {/* 4 Sleek Studio Platform Action Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          <button
-            type="button"
-            onClick={handleConnectGoogle}
-            disabled={connectingGoogle}
-            className="flex items-center justify-center gap-2.5 py-3 px-3.5 rounded-xl border border-[#27272A] bg-[#18181C] hover:bg-[#202026] hover:border-[#383842] text-xs font-medium text-[#E5E5E5] hover:text-white transition-all cursor-pointer shadow-xs disabled:opacity-50 active:scale-98 group"
-          >
-            <Youtube className="w-4 h-4 text-[#EF4444] fill-current group-hover:scale-110 transition-transform" />
-            <span>{connectingGoogle ? 'Connecting...' : 'YouTube (OAuth)'}</span>
-          </button>
+        <div className="mt-4 grid grid-cols-3 gap-1.5 sm:gap-2.5">
+          {([
+            { platform: 'youtube', label: 'YouTube', count: ytCount, Icon: Youtube, iconClass: 'text-[#EF4444] fill-current' },
+            { platform: 'instagram', label: 'Instagram', count: igCount, Icon: Instagram, iconClass: 'text-[#EC4899]' },
+            { platform: 'facebook', label: 'Facebook', count: fbCount, Icon: Facebook, iconClass: 'text-[#3B82F6] fill-current' },
+          ] as const).map(({ platform, label, count, Icon, iconClass }) => {
+            const isSelected = activeFilter === platform;
+            const isConnecting = platform === 'youtube'
+              ? connectingGoogle
+              : connectingMetaPlatform === platform;
+            const connectionInProgress = connectingGoogle || connectingMetaPlatform !== null;
 
-          <button
-            type="button"
-            onClick={() => handleOpenConnectModal('instagram')}
-            className="flex items-center justify-center gap-2.5 py-3 px-3.5 rounded-xl border border-[#27272A] bg-[#18181C] hover:bg-[#202026] hover:border-[#383842] text-xs font-medium text-[#E5E5E5] hover:text-white transition-all cursor-pointer shadow-xs active:scale-98 group"
-          >
-            <Instagram className="w-4 h-4 text-[#EC4899] group-hover:scale-110 transition-transform" />
-            <span>Instagram Reels</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleOpenConnectModal('facebook')}
-            className="flex items-center justify-center gap-2.5 py-3 px-3.5 rounded-xl border border-[#27272A] bg-[#18181C] hover:bg-[#202026] hover:border-[#383842] text-xs font-medium text-[#E5E5E5] hover:text-white transition-all cursor-pointer shadow-xs active:scale-98 group"
-          >
-            <Facebook className="w-4 h-4 text-[#3B82F6] fill-current group-hover:scale-110 transition-transform" />
-            <span>Facebook Page</span>
-          </button>
-
+            return (
+              <div
+                key={platform}
+                className={`flex min-w-0 items-center gap-0.5 p-0.5 sm:gap-1 sm:p-1 rounded-xl border transition-colors ${
+                  isSelected
+                    ? 'bg-[#1A1A20] border-[#33333C]'
+                    : 'bg-[#111114] border-[#24242A] hover:border-[#33333C]'
+                }`}
+              >
+                <button
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => setActiveFilter(platform)}
+                  className="flex flex-1 min-w-0 items-center gap-1 px-1 py-2 sm:gap-2 sm:px-2 rounded-lg text-[10px] sm:text-xs font-medium text-[#D4D4D8] hover:text-white transition-colors cursor-pointer"
+                >
+                  <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${iconClass}`} />
+                  <span className="truncate">{label}</span>
+                  <span className="ml-auto px-1 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono bg-[#16161A] text-[#8E8E93] border border-[#282830]">
+                    {count}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleConnectPlatform(platform)}
+                  disabled={connectionInProgress}
+                  aria-label={isConnecting ? `Connecting ${label}` : `Add ${label} account`}
+                  title={isConnecting ? 'Connection in progress' : `Add ${label} account`}
+                  className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 inline-flex items-center justify-center rounded-lg border border-[#303039] bg-[#202027] text-[#A1A1AA] hover:text-white hover:bg-[#292932] hover:border-[#454550] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isConnecting
+                    ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    : <Plus className="w-4 h-4" />}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -493,72 +524,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         </div>
       )}
 
-      {/* ── 4. Platform Filter Tabs (Unified Studio Tabs) ── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[#24242A]">
-        <button
-          type="button"
-          onClick={() => setActiveFilter('all')}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-            activeFilter === 'all'
-              ? 'bg-[#222228] text-white border border-[#333338] shadow-xs'
-              : 'text-[#9CA3AF] hover:text-white hover:bg-[#18181C] border border-transparent'
-          }`}
-        >
-          <span>All Channels</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#16161A] text-[#8E8E93] border border-[#282830]">
-            {accounts.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveFilter('youtube')}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-            activeFilter === 'youtube'
-              ? 'bg-[#222228] text-white border border-[#333338] shadow-xs'
-              : 'text-[#9CA3AF] hover:text-white hover:bg-[#18181C] border border-transparent'
-          }`}
-        >
-          <Youtube className="w-3.5 h-3.5 text-[#EF4444] fill-current" />
-          <span>YouTube</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#16161A] text-[#8E8E93] border border-[#282830]">
-            {ytCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveFilter('instagram')}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-            activeFilter === 'instagram'
-              ? 'bg-[#222228] text-white border border-[#333338] shadow-xs'
-              : 'text-[#9CA3AF] hover:text-white hover:bg-[#18181C] border border-transparent'
-          }`}
-        >
-          <Instagram className="w-3.5 h-3.5 text-[#EC4899]" />
-          <span>Instagram</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#16161A] text-[#8E8E93] border border-[#282830]">
-            {igCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveFilter('facebook')}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-            activeFilter === 'facebook'
-              ? 'bg-[#222228] text-white border border-[#333338] shadow-xs'
-              : 'text-[#9CA3AF] hover:text-white hover:bg-[#18181C] border border-transparent'
-          }`}
-        >
-          <Facebook className="w-3.5 h-3.5 text-[#3B82F6] fill-current" />
-          <span>Facebook</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#16161A] text-[#8E8E93] border border-[#282830]">
-            {fbCount}
-          </span>
-        </button>
-
-      </div>
 
       {/* ── 5. Linked Channel Cards Grid ── */}
       {loading ? (
@@ -573,18 +538,21 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <Link2 className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">No {activeFilter !== 'all' ? activeFilter.toUpperCase() : ''} Channels Linked</h3>
+            <h3 className="text-sm font-bold text-white">No {activeFilter === 'all' ? 'Channels' : `${activeFilter.toUpperCase()} Channels`} Linked</h3>
             <p className="text-xs text-[#9CA3AF] mt-1 max-w-sm">
-              Link a social account above to begin automated syndication and cross-platform publishing.
+              Connect an account to see it here and use it as a publishing destination.
             </p>
           </div>
           <button
             type="button"
-            onClick={() => handleOpenConnectModal(activeFilter === 'all' ? 'youtube' : activeFilter)}
-            className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+            onClick={() => handleConnectPlatform(activeFilter === 'all' ? 'youtube' : activeFilter)}
+            disabled={connectingGoogle || connectingMetaPlatform !== null}
+            className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Link Channel</span>
+            {connectingGoogle || connectingMetaPlatform !== null
+              ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              : <Plus className="w-3.5 h-3.5" />}
+            <span>{connectingGoogle || connectingMetaPlatform !== null ? 'Connecting...' : 'Link Account'}</span>
           </button>
         </div>
       ) : (
@@ -641,7 +609,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A34] shrink-0">
-                      Fleet Channel
+                      Connected Account
                     </span>
                   )}
                 </div>
@@ -711,189 +679,139 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         </div>
       )}
 
-      {/* ── 6. In-Depth Syndication & Publishing History Feed ── */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-[#141418] border border-[#24242A] space-y-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#202026]">
+      {/* ── 6. Publishing History ── */}
+      <section className="p-5 sm:p-6 rounded-2xl bg-[#141418] border border-[#24242A] space-y-4 shadow-sm" aria-labelledby="publishing-history-title">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#202026]">
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <h2 id="publishing-history-title" className="text-base font-bold text-white flex items-center gap-2">
               <Share2 className="w-4 h-4 text-[#3B82F6]" />
-              <span>Omnichannel Syndication &amp; Publishing Audit</span>
+              <span>Publishing history</span>
             </h2>
             <p className="text-xs text-[#9CA3AF] mt-0.5">
-              Live chronological feed of videos published across your connected YouTube, Instagram, and Facebook fleet.
+              Check each channel’s publish status, troubleshoot failures, and open live posts.
             </p>
           </div>
-          <span className="text-xs font-mono text-[#71717A]">
-            {posts.length} recorded posts
-          </span>
+          <div className="flex items-center justify-between sm:justify-end gap-3">
+            <span className="text-xs text-[#71717A]">
+              {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+            </span>
+            <button
+              type="button"
+              onClick={loadPublishedPosts}
+              disabled={postsLoading}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#27272A] bg-[#18181C] hover:bg-[#202026] text-xs font-medium text-[#D4D4D8] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Refresh publishing history"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${postsLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
-        {posts.length === 0 ? (
-          <div className="py-8 text-center text-xs text-[#71717A]">
-            <Video className="w-8 h-8 text-zinc-600 mx-auto mb-2 opacity-60" />
-            <p>No multi-platform syndications logged yet.</p>
-            <p className="text-[11px] text-zinc-600 mt-0.5">
-              Use "Publish Video" in the Studio to cross-post to your linked channels simultaneously.
+        {postsLoading ? (
+          <div className="space-y-2.5" role="status" aria-label="Loading publishing history">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="h-20 rounded-xl bg-[#18181C] border border-[#24242A] animate-pulse" />
+            ))}
+          </div>
+        ) : postsError ? (
+          <div className="p-4 rounded-xl border border-red-500/20 bg-red-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3" role="alert">
+            <div className="flex items-start gap-2.5 text-xs text-red-300">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-400" />
+              <div>
+                <p className="font-semibold">Publishing history couldn’t be loaded</p>
+                <p className="mt-1 text-red-200/70">{postsError}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={loadPublishedPosts}
+              className="shrink-0 px-3 py-1.5 rounded-lg border border-red-400/20 bg-red-500/10 text-xs font-semibold text-red-200 hover:bg-red-500/20 transition-colors cursor-pointer"
+            >
+              Try again
+            </button>
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="py-7 px-4 text-center rounded-xl border border-dashed border-[#2A2A32] bg-[#111114]">
+            <Video className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-[#D4D4D8]">No publishing activity yet</p>
+            <p className="text-xs text-[#71717A] mt-1">
+              Once you publish from Studio, every destination’s result will appear here.
             </p>
+            <button
+              type="button"
+              onClick={() => onNavigate('workspace')}
+              className="mt-4 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-xs font-semibold text-white transition-colors cursor-pointer"
+            >
+              <Video className="w-3.5 h-3.5" />
+              <span>Open Studio</span>
+            </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#202026] text-[#71717A] font-mono uppercase text-[10px]">
-                  <th className="pb-2.5 font-semibold">Video Title</th>
-                  <th className="pb-2.5 font-semibold">Platform</th>
-                  <th className="pb-2.5 font-semibold">Status</th>
-                  <th className="pb-2.5 font-semibold">Published</th>
-                  <th className="pb-2.5 font-semibold text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1B1B20]">
-                {posts.map((post) => (
-                  <tr key={post.id} className="hover:bg-[#18181E] transition-colors">
-                    <td className="py-3 pr-4 font-semibold text-white max-w-xs truncate">
-                      {post.title}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold border uppercase ${getPlatformBadgeClasses(post.platform)}`}>
-                        {getPlatformIcon(post.platform, 'w-3 h-3')}
-                        <span>{post.platform}</span>
+          <div className="space-y-2.5" aria-live="polite">
+            {posts.map((post) => {
+              const status = post.status?.toLowerCase() || 'unknown';
+              const statusStyles = status === 'published'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : status === 'failed'
+                  ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                  : status === 'queued'
+                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                    : 'bg-zinc-500/10 text-zinc-300 border-zinc-500/20';
+              const postUrl = status === 'published' && post.videoIdOrUrl && /^https?:\/\//i.test(post.videoIdOrUrl)
+                ? post.videoIdOrUrl
+                : null;
+              const account = accounts.find((item) => item.id === post.socialAccountId);
+
+              return (
+                <article key={post.id} className="p-3.5 sm:p-4 rounded-xl border border-[#24242A] bg-[#111114] hover:border-[#33333C] transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-[#1B1B20] border border-[#292930] flex items-center justify-center shrink-0">
+                        {getPlatformIcon(post.platform, 'w-4 h-4')}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-white truncate">{post.title || 'Untitled video'}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#8E8E93]">
+                          <span className="capitalize">{post.platform}</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="truncate">{account?.name || 'Disconnected account'}</span>
+                          <span aria-hidden="true">·</span>
+                          <time dateTime={post.publishedAt}>{formatDateTime(post.publishedAt)}</time>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pl-12 sm:pl-0 shrink-0">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-md border text-[10px] font-semibold capitalize ${statusStyles}`}>
+                        {status}
                       </span>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
-                        <Check className="w-3 h-3" /> Published
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4 text-[#8E8E93] font-mono text-[11px]">
-                      {formatDateTime(post.publishedAt)}
-                    </td>
-                    <td className="py-3 text-right">
-                      {post.videoIdOrUrl ? (
+                      {postUrl ? (
                         <a
-                          href={post.videoIdOrUrl}
+                          href={postUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-[#3B82F6] hover:text-[#60A5FA] font-medium hover:underline"
+                          className="inline-flex items-center gap-1 text-xs text-[#60A5FA] hover:text-white font-medium transition-colors"
                         >
-                          <span>View Live</span>
+                          <span>View post</span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       ) : (
-                        <span className="text-zinc-600 text-xs">Live</span>
+                        <span className="text-[11px] text-[#62626B]">No post link</span>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                  {status === 'failed' && post.errorMessage && (
+                    <p className="mt-3 ml-12 text-xs text-red-300/90 break-words">
+                      <span className="font-semibold">Reason: </span>{post.errorMessage}
+                    </p>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* ── 7. Direct Channel Connection Modal ── */}
-      {isConnectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="w-full max-w-md bg-[#141418] border border-[#2E2E38] rounded-2xl shadow-2xl overflow-hidden">
-            <div className="p-5 border-b border-[#24242C] flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#1C1C22] border border-[#2E2E38] flex items-center justify-center">
-                  {getPlatformIcon(connectPlatform, 'w-4 h-4')}
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white capitalize">Link {connectPlatform} Account</h3>
-                  <p className="text-[11px] text-[#9CA3AF]">Add this destination to your omnichannel publishing fleet</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsConnectModalOpen(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitConnect} className="p-5 space-y-4">
-              {connectPlatform === 'youtube' && (
-                <div className="p-3 rounded-xl border border-red-500/20 bg-red-950/20 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs text-red-300">
-                    <Youtube className="w-4 h-4 text-red-400 fill-current" />
-                    <span>Or connect via official Google OAuth:</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsConnectModalOpen(false);
-                      handleConnectGoogle();
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-[11px] font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    Google OAuth
-                  </button>
-                </div>
-              )}
-
-              <div>
-                <label className="text-[11px] font-semibold text-zinc-300 block mb-1">
-                  Account Handle or Username <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={
-                    connectPlatform === 'youtube'
-                      ? '@DailyStoicShorts'
-                      : connectPlatform === 'instagram'
-                      ? '@dailystoic_reels'
-                      : 'Daily Stoic Page'
-                  }
-                  value={connectHandleInput}
-                  onChange={(e) => setConnectHandleInput(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#0D0D10] border border-[#2A2A34] text-white text-xs placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-zinc-300 block mb-1">
-                  Display Name (optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Daily Stoic Mindset"
-                  value={connectNameInput}
-                  onChange={(e) => setConnectNameInput(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#0D0D10] border border-[#2A2A34] text-white text-xs placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              {actionError && (
-                <p className="text-xs text-red-400 bg-red-950/30 p-2.5 rounded-lg border border-red-500/20">
-                  {actionError}
-                </p>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsConnectModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] text-xs font-semibold text-zinc-300 cursor-pointer transition-colors border border-[#2E2E38]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={connectingPlatform}
-                  className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-xs font-bold text-white cursor-pointer shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  {connectingPlatform && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Link Destination</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

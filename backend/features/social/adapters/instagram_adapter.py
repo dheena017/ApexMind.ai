@@ -13,6 +13,7 @@ from .base import SocialPlatformPublisher
 
 logger = logging.getLogger("ApexMind.Social.Instagram")
 META_GRAPH_URL = "https://graph.facebook.com/v19.0"
+INSTAGRAM_LOGIN_GRAPH_URL = "https://graph.instagram.com/v27.0"
 
 
 class InstagramPublisherAdapter(SocialPlatformPublisher):
@@ -32,6 +33,13 @@ class InstagramPublisherAdapter(SocialPlatformPublisher):
     ) -> Dict[str, Any]:
         ig_user_id = account.get("platformAccountId")
         access_token = account.get("accessToken")
+        account_metadata = account.get("metadata") or {}
+        graph_url = (
+            INSTAGRAM_LOGIN_GRAPH_URL
+            if isinstance(account_metadata, dict)
+            and account_metadata.get("authProvider") == "instagram_login"
+            else META_GRAPH_URL
+        )
 
         # 1. Prepare caption with AI disclosure and hashtag formatting
         combined_text = f"{title}\n\n{description}" if description else title
@@ -62,7 +70,7 @@ class InstagramPublisherAdapter(SocialPlatformPublisher):
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:
                 # Step 1: Create Instagram Reel Media Container
-                create_container_url = f"{META_GRAPH_URL}/{ig_user_id}/media"
+                create_container_url = f"{graph_url}/{ig_user_id}/media"
                 container_payload = {
                     "media_type": "REELS",
                     "video_url": video_path_or_url,
@@ -98,7 +106,7 @@ class InstagramPublisherAdapter(SocialPlatformPublisher):
                     }
 
                 # Step 2: Poll container status until ready (up to 30 seconds)
-                status_url = f"{META_GRAPH_URL}/{creation_id}?fields=status_code&access_token={access_token}"
+                status_url = f"{graph_url}/{creation_id}?fields=status_code&access_token={access_token}"
                 ready = False
                 for _ in range(6):
                     await asyncio.sleep(4)
@@ -113,7 +121,7 @@ class InstagramPublisherAdapter(SocialPlatformPublisher):
                             break
 
                 # Step 3: Publish Media Container
-                publish_url = f"{META_GRAPH_URL}/{ig_user_id}/media_publish"
+                publish_url = f"{graph_url}/{ig_user_id}/media_publish"
                 pub_payload = {
                     "creation_id": creation_id,
                     "access_token": access_token,
@@ -152,4 +160,3 @@ class InstagramPublisherAdapter(SocialPlatformPublisher):
                     "status": "failed",
                     "message": f"Instagram publisher failed: {str(e)}",
                 }
-

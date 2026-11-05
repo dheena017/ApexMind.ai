@@ -1586,14 +1586,28 @@ def upsert_social_account(
 
 
 def delete_social_account(account_id: str, user_id: Optional[str] = None) -> bool:
-    """Disconnects and removes a social account from the fleet."""
+    """Disconnects a social account and removes its legacy YouTube mirror."""
     conn = get_connection()
     cursor = conn.cursor()
+
+    cursor.execute("SELECT platform, platform_account_id, user_id FROM social_accounts WHERE id = ?", (account_id,))
+    account = cursor.fetchone()
+    if not account:
+        conn.close()
+        return False
+
     if user_id:
         cursor.execute("DELETE FROM social_accounts WHERE id = ? AND user_id = ?", (account_id, user_id))
     else:
         cursor.execute("DELETE FROM social_accounts WHERE id = ?", (account_id,))
     deleted = cursor.rowcount > 0
+
+    if deleted and account["platform"] == "youtube":
+        cursor.execute(
+            "DELETE FROM youtube_channels WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+            (account["platform_account_id"], account["user_id"]),
+        )
+
     conn.commit()
     conn.close()
     logger.info(f"Deleted social account {account_id}: {deleted}")

@@ -43,6 +43,18 @@ class OAuthUrlResponse(BaseModel):
     message: str
 
 
+class MetaOAuthCallbackRequest(BaseModel):
+    code: str = Field(..., min_length=1)
+    state: str = Field(..., min_length=1)
+
+
+class MetaOAuthCallbackResponse(BaseModel):
+    success: bool
+    platform: str
+    accounts: List[SocialAccountDTO]
+    message: str
+
+
 class ConnectPlatformRequest(BaseModel):
     code: Optional[str] = None
     accessToken: Optional[str] = None

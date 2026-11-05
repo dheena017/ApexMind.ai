@@ -222,7 +222,7 @@ export const youtubeApi = {
   async connectWithCode(code: string, redirectUri = 'postmessage'): Promise<{ success: boolean; channel: YouTubeChannel; message: string }> {
     const res = await fetch(apiUrl('/api/youtube/oauth/code'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._getScheduleHeaders(),
       body: JSON.stringify({ code, redirectUri }),
     });
     if (!res.ok) {
@@ -235,7 +235,7 @@ export const youtubeApi = {
   async connectWithToken(accessToken: string): Promise<{ success: boolean; channel: YouTubeChannel; message: string }> {
     const res = await fetch(apiUrl('/api/youtube/connect'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._getScheduleHeaders(),
       body: JSON.stringify({ accessToken }),
     });
     if (!res.ok) {

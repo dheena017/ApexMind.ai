@@ -20,7 +20,6 @@ import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHe
 import { WorkspaceSidebar, WORKSPACE_SIDEBAR_ITEMS, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
 import { WorkspaceStatusBar } from '@/src/features/workspace/components/WorkspaceStatusBar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
-import { ChannelSwitcher } from '@/src/features/youtube/components/ChannelSwitcher';
 import { SocialFleetDrawer } from '@/src/features/social/components/SocialFleetDrawer';
 import { Radio } from 'lucide-react';
 
@@ -178,7 +177,7 @@ export default function AppLayout({
       iconBg: 'bg-[#172033] border-[#2A3F5F]', iconColor: 'text-[#38BDF8]',
     },
     {
-      id: 'channels', label: 'Social Channels & Linking',
+      id: 'channels', label: 'Social Accounts',
       icon: <Radio className="w-4 h-4 shrink-0 text-red-400" />,
       iconBg: 'bg-[#1F1515] border-[#3D2020]', iconColor: 'text-red-400',
     },
@@ -405,22 +404,6 @@ export default function AppLayout({
 
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <ChannelSwitcher
-                className="hidden sm:block"
-                onOpenFleetDrawer={() => setShowFleetDrawer(true)}
-              />
-
-              {/* Social Fleet Drawer Trigger */}
-              <button
-                type="button"
-                onClick={() => setShowFleetDrawer(true)}
-                className="flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[11px] text-[#A1A1AA] hover:text-white transition-all cursor-pointer group"
-                title="Manage Connected Channels (YouTube, Instagram, Facebook)"
-              >
-                <Radio className="w-3 h-3 text-red-400 group-hover:scale-110 transition-transform" />
-                <span className="text-[10px] font-semibold text-[#D4D4D8] hidden md:inline">Fleet</span>
-              </button>
-
               <NotificationDropdown
                 unreadCount={unreadCount}
                 onNavigate={onNavigate}

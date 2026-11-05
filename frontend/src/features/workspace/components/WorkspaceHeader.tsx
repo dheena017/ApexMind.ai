@@ -21,8 +21,6 @@ import {
   LogOut,
 } from 'lucide-react';
 import { UserProfile } from '@/src/features/auth/types';
-import { ChannelSwitcher } from '@/src/features/youtube/components/ChannelSwitcher';
-import { SocialFleetDrawer } from '@/src/features/social/components/SocialFleetDrawer';
 import { OmnichannelPublishModal } from '@/src/features/social/components/OmnichannelPublishModal';
 import { WorkspaceTabType } from './WorkspaceSidebar';
 
@@ -53,7 +51,6 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   const [videoTitle, setVideoTitle] = useState('');
 
   // Omnichannel Modals State
-  const [showFleetDrawer, setShowFleetDrawer] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -236,14 +233,9 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             </div>
           </div>
 
-          {/* Active YouTube Channel Selector */}
-          <div className="h-4 w-px bg-[#262626] hidden md:block" />
-          <div className="hidden md:block">
-            <ChannelSwitcher onOpenFleetDrawer={() => setShowFleetDrawer(true)} />
-          </div>
         </div>
 
-        {/* ── Right: Fleet Manager + Panel Toggles + Actions + Publish ── */}
+        {/* ── Right: Studio Actions + Panel Toggles + Publish ── */}
         <div className="flex items-center gap-1.5 sm:gap-2 max-[439px]:gap-1 max-[359px]:gap-0 shrink-0">
           {/* Notice Badge */}
           {notice && (
@@ -251,17 +243,6 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               {notice}
             </span>
           )}
-
-          {/* Social Fleet Drawer Trigger */}
-          <button
-            type="button"
-            onClick={() => setShowFleetDrawer(true)}
-            className="flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[11px] text-[#A1A1AA] hover:text-white transition-all cursor-pointer group"
-            title="Manage Social Fleet (YouTube, Instagram, Facebook)"
-          >
-            <Radio className="w-3 h-3 text-red-400 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-semibold text-[#D4D4D8] hidden sm:inline">Fleet</span>
-          </button>
 
           {/* Quick Search / Command Palette trigger */}
           <button
@@ -469,7 +450,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
                   {[
                     { label: 'Profile & Badges', page: 'profile', icon: User },
                     { label: 'Preferences', page: 'profile-preferences', icon: Settings },
-                    { label: 'Social Linking & Fleet', page: 'channels', icon: Radio },
+                    { label: 'Social Accounts', page: 'channels', icon: Radio },
                     { label: 'Studio Settings', page: 'settings', icon: Settings },
                   ].map(({ label, page, icon: Icon }) => (
                     <button
@@ -506,13 +487,6 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           </div>
         </div>
       </header>
-
-      {/* Social Channels Fleet Drawer */}
-      <SocialFleetDrawer
-        isOpen={showFleetDrawer}
-        onClose={() => setShowFleetDrawer(false)}
-        onNavigate={onNavigate}
-      />
 
       {/* Omnichannel Cross-Publish Modal */}
       <OmnichannelPublishModal

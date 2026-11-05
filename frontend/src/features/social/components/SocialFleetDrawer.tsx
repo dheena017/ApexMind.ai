@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { socialApi } from '../api/socialApi';
 import { SocialAccount, SocialPlatform } from '../types';
-import { Modal, Input, Button } from '@/src/shared/ui/common';
+import { Button } from '@/src/shared/ui/common';
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
 
 interface SocialFleetDrawerProps {
@@ -43,12 +43,6 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [activeChannelKey, setActiveChannelKey] = useState<string>('');
-
-  // Manual connect modal state
-  const [connectModalPlatform, setConnectModalPlatform] = useState<SocialPlatform | null>(null);
-  const [connectHandleInput, setConnectHandleInput] = useState('');
-  const [connectNameInput, setConnectNameInput] = useState('');
-  const [connecting, setConnecting] = useState(false);
 
   const loadFleet = async () => {
     setLoading(true);
@@ -127,11 +121,10 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
     }
   };
 
-  // Launch OAuth flow or connect modal
+  // Launch the provider OAuth flow; never create an unverified destination from a typed handle.
   const handleAddPlatformClick = async (platform: SocialPlatform) => {
     setNotice(null);
 
-    // If platform is YouTube, prioritize Google OAuth popup flow
     if (platform === 'youtube') {
       try {
         await connectYouTubeWithGoogle({
@@ -141,76 +134,20 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
             window.dispatchEvent(new CustomEvent('social:fleet-updated'));
           },
           onError: (err) => {
-            // Fallback to manual connect modal if popup was closed or unconfigured
-            setConnectModalPlatform('youtube');
-            setConnectHandleInput('');
-            setConnectNameInput('');
+            setNotice({ text: err || 'YouTube authorization was not completed.', type: 'error' });
           },
         });
-        return;
-      } catch {
-        setConnectModalPlatform('youtube');
-        setConnectHandleInput('');
-        setConnectNameInput('');
-        return;
+      } catch (err) {
+        setNotice({ text: err instanceof Error ? err.message : 'YouTube authorization failed.', type: 'error' });
       }
+      return;
     }
 
     try {
       const oauthUrl = await socialApi.getOAuthUrl(platform);
-      if (oauthUrl && !oauthUrl.includes('localhost') && !oauthUrl.includes('demo')) {
-        const width = 600;
-        const height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        window.open(
-          oauthUrl,
-          `Connect_${platform}`,
-          `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=yes`
-        );
-      } else {
-        setConnectModalPlatform(platform);
-        setConnectHandleInput('');
-        setConnectNameInput('');
-      }
-    } catch {
-      setConnectModalPlatform(platform);
-      setConnectHandleInput('');
-      setConnectNameInput('');
-    }
-  };
-
-  const handleManualConnectSubmit = async () => {
-    if (!connectModalPlatform) return;
-    const cleanHandle = connectHandleInput.trim();
-    if (!cleanHandle) {
-      setNotice({ text: 'Please enter a handle or username.', type: 'error' });
-      return;
-    }
-
-    setConnecting(true);
-    try {
-      const formattedHandle = cleanHandle.startsWith('@') ? cleanHandle : `@${cleanHandle}`;
-      const name = connectNameInput.trim() || cleanHandle.replace('@', '');
-      const newAcc = await socialApi.connectAccount(connectModalPlatform, {
-        handle: formattedHandle,
-        name,
-        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`,
-      });
-
-      setFleet((prev) => [newAcc, ...prev]);
-      setConnectModalPlatform(null);
-      setNotice({ text: `Successfully connected ${newAcc.name}!`, type: 'success' });
-      window.dispatchEvent(new CustomEvent('social:fleet-updated'));
-
-      // If no active channel, set this one
-      if (!activeChannelKey) {
-        handleSetActive(newAcc);
-      }
+      window.location.assign(oauthUrl);
     } catch (err: any) {
-      setNotice({ text: err.message || 'Failed to connect account.', type: 'error' });
-    } finally {
-      setConnecting(false);
+      setNotice({ text: err.message || `Could not start ${platform} authorization.`, type: 'error' });
     }
   };
 
@@ -275,7 +212,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
       case 'instagram':
         return `https://www.instagram.com/${cleanHandle}/`;
       case 'facebook':
-        return `https://www.facebook.com/${cleanHandle}`;
+        return `https://www.facebook.com/${acc.platformAccountId}`;
       default:
         return '#';
     }
@@ -404,7 +341,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
                 <Radio className="w-8 h-8 text-zinc-600 mx-auto" />
                 <h3 className="text-sm font-semibold text-white">No Connected Platforms Yet</h3>
                 <p className="text-xs text-[#A1A1AA] max-w-xs mx-auto">
-                  Connect your YouTube channel, Instagram Reels, or Facebook Page to syndicate AI videos in one click.
+                  Connect a YouTube channel, Facebook Page, or Instagram Business/Creator account linked to a Facebook Page.
                 </p>
                 <Button variant="primary" size="sm" onClick={() => handleAddPlatformClick('youtube')}>
                   Connect First Destination
@@ -641,75 +578,6 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
         </div>
       </div>
 
-      {/* Manual Handle Connect Modal */}
-      <Modal
-        isOpen={!!connectModalPlatform}
-        onClose={() => setConnectModalPlatform(null)}
-        title={`Connect ${connectModalPlatform ? connectModalPlatform.toUpperCase() : ''} Destination`}
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-[#A1A1AA]">
-            Enter your {connectModalPlatform?.toUpperCase()} handle or username to link it to your omnichannel fleet:
-          </p>
-
-          {connectModalPlatform === 'youtube' && (
-            <div className="p-3 rounded-xl border border-red-500/20 bg-red-950/20 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-xs text-red-300">
-                <Youtube className="w-4 h-4 text-red-400 fill-current" />
-                <span>Or connect via official Google OAuth:</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setConnectModalPlatform(null);
-                  handleAddPlatformClick('youtube');
-                }}
-                className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-[11px] font-semibold text-white transition-colors cursor-pointer"
-              >
-                Sign In With Google
-              </button>
-            </div>
-          )}
-
-          <Input
-            label="Account Handle or Username"
-            value={connectHandleInput}
-            onChange={(e) => setConnectHandleInput(e.target.value)}
-            placeholder={
-              connectModalPlatform === 'youtube'
-                ? '@DailyStoicShorts'
-                : connectModalPlatform === 'instagram'
-                ? '@dailystoic_reels'
-                : connectModalPlatform === 'facebook'
-                ? 'Daily Stoic Page'
-                : '@dailystoic_ai'
-            }
-            autoFocus
-            required
-          />
-
-          <Input
-            label="Profile / Display Name (Optional)"
-            value={connectNameInput}
-            onChange={(e) => setConnectNameInput(e.target.value)}
-            placeholder="e.g. Daily Stoic Motivation"
-          />
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" size="sm" onClick={() => setConnectModalPlatform(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={connecting || !connectHandleInput.trim()}
-              onClick={handleManualConnectSubmit}
-            >
-              {connecting ? 'Connecting...' : `Add to Fleet`}
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

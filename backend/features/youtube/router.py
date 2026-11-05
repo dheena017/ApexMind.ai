@@ -613,10 +613,19 @@ async def post_comment_reply_alias(payload: ReplyCommentRequest):
     summary="Exchange OAuth Code for Tokens",
     description="Exchanges Google auth code for access & refresh tokens, enabling persistent live YouTube uploads.",
 )
-async def post_exchange_oauth_code(payload: CodeConnectRequest):
+async def post_exchange_oauth_code(
+    payload: CodeConnectRequest,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     try:
         redirect_uri = payload.redirectUri or "postmessage"
-        res = handle_oauth_callback(payload.code, redirect_uri)
+        resolved_user_id = userId or x_user_id
+        if not resolved_user_id:
+            from backend.database.repository import get_latest_user
+            latest_user = get_latest_user()
+            resolved_user_id = latest_user["id"] if latest_user else None
+        res = handle_oauth_callback(payload.code, redirect_uri, resolved_user_id)
         return {
             "success": True,
             "message": f"Successfully connected YouTube channel '{res.get('channel', {}).get('name', 'YouTube')}' with offline refresh token",
@@ -632,8 +641,17 @@ async def post_exchange_oauth_code(payload: CodeConnectRequest):
     summary="Connect YouTube Channel",
     description="Connect a YouTube channel using Google access token from client-side Google popup.",
 )
-async def post_connect_channel(payload: TokenConnectRequest):
+async def post_connect_channel(
+    payload: TokenConnectRequest,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     try:
+        resolved_user_id = userId or x_user_id
+        if not resolved_user_id:
+            from backend.database.repository import get_latest_user
+            latest_user = get_latest_user()
+            resolved_user_id = latest_user["id"] if latest_user else None
         channel_data = fetch_authenticated_channel_details(payload.accessToken)
         saved = save_oauth_channel(
             channel_id=channel_data["channel_id"],
@@ -644,6 +662,7 @@ async def post_connect_channel(payload: TokenConnectRequest):
             refresh_token="",
             access_token=payload.accessToken,
             videos_uploaded=channel_data.get("videos_uploaded", 0),
+            user_id=resolved_user_id,
         )
         return {
             "success": True,

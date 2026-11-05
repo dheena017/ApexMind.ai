@@ -1071,7 +1071,11 @@ def fetch_authenticated_channel_details(access_token: str) -> Dict[str, Any]:
         }
 
 
-def handle_oauth_callback(code: str, redirect_uri: str) -> Dict[str, Any]:
+def handle_oauth_callback(
+    code: str,
+    redirect_uri: str,
+    user_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Completes the OAuth flow, registers session in DB, and saves tokens."""
     tokens = exchange_code_for_tokens(code, redirect_uri)
     access_token = tokens.get("access_token")
@@ -1090,6 +1094,7 @@ def handle_oauth_callback(code: str, redirect_uri: str) -> Dict[str, Any]:
         access_token=access_token,
         token_expiry=token_expiry,
         videos_uploaded=channel_info.get("videos_uploaded", 0),
+        user_id=user_id,
     )
 
     return {
@@ -1498,4 +1503,3 @@ Dialogue: 0,0:00:04.00,0:00:{duration_seconds:02d}.00,Sub,,0,0,0,,{clean_q[:140]
         return str(out_file.resolve())
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
-
