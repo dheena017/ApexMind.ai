@@ -46,14 +46,11 @@ def create_meta_login_url(provider: str) -> Dict[str, str]:
         authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
         scopes = "public_profile,email"
     elif provider == "instagram":
-        app_id = settings.INSTAGRAM_APP_ID
-        if not app_id or not settings.INSTAGRAM_APP_SECRET:
-            raise ValueError(
-                "Instagram sign-in is not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET "
-                "from Instagram API setup with Instagram Login."
-            )
-        authorization_endpoint = "https://www.instagram.com/oauth/authorize"
-        scopes = "instagram_business_basic"
+        app_id = settings.INSTAGRAM_APP_ID or settings.META_APP_ID
+        if not app_id or not (settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET):
+            raise ValueError("Instagram sign-in is not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET on the backend.")
+        authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
+        scopes = "public_profile,pages_show_list,instagram_basic"
     else:
         raise ValueError(f"Unsupported Meta sign-in provider: {provider}")
 
@@ -73,8 +70,6 @@ def create_meta_login_url(provider: str) -> Dict[str, str]:
         "scope": scopes,
         "state": state,
     }
-    if provider == "instagram":
-        params["enable_fb_login"] = "false"
     return {
         "authorizationUrl": f"{authorization_endpoint}?{urllib.parse.urlencode(params)}",
         "state": state,
@@ -112,33 +107,24 @@ async def authenticate_meta_user(provider: str, code: str, state: str) -> Dict[s
     _validate_meta_state(provider, state)
     redirect_uri = settings.META_AUTH_REDIRECT_URI
 
-    if provider == "facebook":
-        app_id = settings.META_APP_ID
-        app_secret = settings.META_APP_SECRET
+    if provider in ("facebook", "instagram"):
+        app_id = (
+            (settings.INSTAGRAM_APP_ID or settings.META_APP_ID)
+            if provider == "instagram"
+            else settings.META_APP_ID
+        )
+        app_secret = (
+            (settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET)
+            if provider == "instagram"
+            else settings.META_APP_SECRET
+        )
         token_endpoint = f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token"
         profile_endpoint = f"https://graph.facebook.com/{META_GRAPH_VERSION}/me"
         if not app_id or not app_secret:
-            raise ValueError("Facebook sign-in is not configured on the backend.")
+            raise ValueError(f"{provider.capitalize()} sign-in is not configured on the backend.")
         token_request = {
             "client_id": app_id,
             "client_secret": app_secret,
-            "redirect_uri": redirect_uri,
-            "code": code,
-        }
-    elif provider == "instagram":
-        app_id = settings.INSTAGRAM_APP_ID
-        app_secret = settings.INSTAGRAM_APP_SECRET
-        token_endpoint = "https://api.instagram.com/oauth/access_token"
-        profile_endpoint = "https://graph.instagram.com/v27.0/me"
-        if not app_id or not app_secret:
-            raise ValueError(
-                "Instagram sign-in is not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET "
-                "from Instagram API setup with Instagram Login."
-            )
-        token_request = {
-            "client_id": app_id,
-            "client_secret": app_secret,
-            "grant_type": "authorization_code",
             "redirect_uri": redirect_uri,
             "code": code,
         }
@@ -146,13 +132,7 @@ async def authenticate_meta_user(provider: str, code: str, state: str) -> Dict[s
         raise ValueError(f"Unsupported Meta sign-in provider: {provider}")
 
     async with httpx.AsyncClient(timeout=15.0) as client:
-        if provider == "instagram":
-            token_response = await client.post(
-                token_endpoint,
-                files={key: (None, value) for key, value in token_request.items()},
-            )
-        else:
-            token_response = await client.get(token_endpoint, params=token_request)
+        token_response = await client.get(token_endpoint, params=token_request)
         if token_response.status_code != 200:
             logger.warning("%s authorization-code exchange failed with HTTP %s", provider, token_response.status_code)
             raise ValueError(f"{provider.capitalize()} sign-in could not verify your account. Please try again.")
@@ -165,11 +145,7 @@ async def authenticate_meta_user(provider: str, code: str, state: str) -> Dict[s
         if not access_token:
             raise ValueError(f"{provider.capitalize()} did not return an access token.")
 
-        profile_params = (
-            {"fields": "id,name,email,picture.type(large)"}
-            if provider == "facebook"
-            else {"fields": "user_id,username"}
-        )
+        profile_params = {"fields": "id,name,email,picture.type(large)"}
         profile_response = await client.get(
             profile_endpoint,
             params={**profile_params, "access_token": access_token},

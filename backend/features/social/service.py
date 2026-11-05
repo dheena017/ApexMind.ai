@@ -36,7 +36,7 @@ logger = logging.getLogger("ApexMind.Social.Service")
 META_GRAPH_VERSION = "v27.0"
 META_SCOPES = {
     "facebook": "pages_show_list,pages_read_engagement,pages_manage_posts",
-    "instagram": "instagram_business_basic,instagram_business_content_publish",
+    "instagram": "pages_show_list,pages_read_engagement,instagram_basic,instagram_content_publish",
 }
 
 
@@ -145,13 +145,21 @@ def generate_platform_oauth_url(
     elif clean_p in ("meta", "instagram", "facebook"):
         if clean_p == "meta":
             clean_p = "facebook"
-        app_id = settings.INSTAGRAM_APP_ID if clean_p == "instagram" else settings.META_APP_ID
-        app_secret = settings.INSTAGRAM_APP_SECRET if clean_p == "instagram" else settings.META_APP_SECRET
+        app_id = (
+            (settings.INSTAGRAM_APP_ID or settings.META_APP_ID)
+            if clean_p == "instagram"
+            else settings.META_APP_ID
+        )
+        app_secret = (
+            (settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET)
+            if clean_p == "instagram"
+            else settings.META_APP_SECRET
+        )
         if not app_id or not app_secret:
             if clean_p == "instagram":
                 raise ValueError(
                     "Instagram connections are not configured. Set INSTAGRAM_APP_ID and "
-                    "INSTAGRAM_APP_SECRET from Instagram API setup with Instagram Login."
+                    "INSTAGRAM_APP_SECRET, or configure META_APP_ID and META_APP_SECRET."
                 )
             raise ValueError("Facebook connections are not configured. Set META_APP_ID and META_APP_SECRET.")
         state = _create_meta_social_state(clean_p, user_id)
@@ -165,9 +173,6 @@ def generate_platform_oauth_url(
             "state": state,
         }
         authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
-        if clean_p == "instagram":
-            authorization_endpoint = "https://www.instagram.com/oauth/authorize"
-            params["enable_fb_login"] = "false"
         url = f"{authorization_endpoint}?{urllib.parse.urlencode(params)}"
         return {"platform": clean_p, "oauthUrl": url}
 
@@ -184,15 +189,22 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
         latest = get_latest_user()
         user_id = latest["id"] if latest else "usr_global"
 
-    if platform == "instagram":
-        if not settings.INSTAGRAM_APP_ID or not settings.INSTAGRAM_APP_SECRET:
+    app_id = (
+        (settings.INSTAGRAM_APP_ID or settings.META_APP_ID)
+        if platform == "instagram"
+        else settings.META_APP_ID
+    )
+    app_secret = (
+        (settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET)
+        if platform == "instagram"
+        else settings.META_APP_SECRET
+    )
+    if not app_id or not app_secret:
+        if platform == "instagram":
             raise ValueError(
                 "Instagram connections are not configured. Set INSTAGRAM_APP_ID and "
-                "INSTAGRAM_APP_SECRET from Instagram API setup with Instagram Login."
+                "INSTAGRAM_APP_SECRET, or configure META_APP_ID and META_APP_SECRET."
             )
-        return await _complete_instagram_login_oauth(code, user_id)
-
-    if not settings.META_APP_ID or not settings.META_APP_SECRET:
         raise ValueError("Facebook connections are not configured. Set META_APP_ID and META_APP_SECRET.")
 
     token_url = f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token"
@@ -202,8 +214,8 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
             token_response = await client.get(
                 token_url,
                 params={
-                    "client_id": settings.META_APP_ID,
-                    "client_secret": settings.META_APP_SECRET,
+                    "client_id": app_id,
+                    "client_secret": app_secret,
                     "redirect_uri": settings.META_REDIRECT_URI,
                     "code": code,
                 },
@@ -220,8 +232,8 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
                 token_url,
                 params={
                     "grant_type": "fb_exchange_token",
-                    "client_id": settings.META_APP_ID,
-                    "client_secret": settings.META_APP_SECRET,
+                    "client_id": app_id,
+                    "client_secret": app_secret,
                     "fb_exchange_token": user_token,
                 },
             )
