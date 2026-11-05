@@ -8,6 +8,7 @@ DB_PATH = os.path.join(BACKEND_DIR, "data", "apexmind.db")
 
 def get_connection() -> sqlite3.Connection:
     """Returns a thread-safe SQLite connection with Row factory."""
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
