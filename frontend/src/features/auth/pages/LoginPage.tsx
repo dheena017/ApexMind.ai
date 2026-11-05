@@ -157,36 +157,10 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
     const clientId = getGoogleClientId();
 
-    // Check if Google Identity Services (GIS) client library is loaded
-    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id && clientId) {
-      try {
-        (window as any).google.accounts.id.initialize({
-          client_id: clientId,
-          callback: async (response: any) => {
-            try {
-              if (response.credential) {
-                await loginWithGoogle({ credentialToken: response.credential });
-                handleSuccessfulAuth();
-              } else {
-                throw new Error('No credential returned from Google');
-              }
-            } catch (err: any) {
-              setNotice({ text: err.message || 'Google authentication failed.', type: 'error' });
-            } finally {
-              setLoading(false);
-            }
-          },
-        });
-        (window as any).google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // Fallback to token client / OAuth connect if prompt was dismissed
-            fallbackGoogleOAuth(clientId);
-          }
-        });
-        return;
-      } catch (gisErr) {
-        console.warn('GIS initialize notice:', gisErr);
-      }
+    if (!clientId) {
+      setLoading(false);
+      setNotice({ text: 'Google Sign-In is not configured. Add VITE_GOOGLE_CLIENT_ID to the environment.', type: 'error' });
+      return;
     }
 
     fallbackGoogleOAuth(clientId);
@@ -197,8 +171,16 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       try {
         const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
           client_id: clientId,
-          scope: 'openid email profile https://www.googleapis.com/auth/youtube.readonly',
+          scope: 'openid email profile',
           callback: async (tokenResp: any) => {
+            if (tokenResp.error || !tokenResp.access_token) {
+              setLoading(false);
+              setNotice({
+                text: tokenResp.error_description || 'Google sign-in did not return an access token.',
+                type: 'error',
+              });
+              return;
+            }
             if (tokenResp.access_token) {
               try {
                 // Fetch profile info from Google userinfo endpoint
@@ -207,6 +189,9 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 });
                 if (userinfoRes.ok) {
                   const info = await userinfoRes.json();
+                  if (!info.email || info.email_verified !== true) {
+                    throw new Error('Google did not provide a verified email address for this account.');
+                  }
                   await loginWithGoogle({
                     email: info.email,
                     name: info.name,
@@ -215,38 +200,33 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   });
                   handleSuccessfulAuth();
                   return;
+                } else {
+                  throw new Error('Could not retrieve your Google account details. Please try again.');
                 }
               } catch (fetchErr) {
-                console.warn('Userinfo fetch note:', fetchErr);
+                setNotice({
+                  text: fetchErr instanceof Error ? fetchErr.message : 'Google authentication failed.',
+                  type: 'error',
+                });
               }
             }
             setLoading(false);
           },
         });
-        tokenClient.requestAccessToken();
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
         return;
       } catch (oauthErr) {
-        console.warn('Token client note:', oauthErr);
+        setLoading(false);
+        setNotice({
+          text: oauthErr instanceof Error ? oauthErr.message : 'Google sign-in could not be started.',
+          type: 'error',
+        });
+        return;
       }
     }
 
-    // Graceful developer fallback when client ID is not configured in local environment
-    const promptEmail = window.prompt(
-      'Google Client ID not yet set in environment. Enter your Google email to simulate Master Account login:',
-      'creator@gmail.com'
-    );
-    if (promptEmail && promptEmail.includes('@')) {
-      loginWithGoogle({
-        email: promptEmail,
-        name: promptEmail.split('@')[0],
-      })
-        .then(() => handleSuccessfulAuth())
-        .catch((err) => setNotice({ text: err.message || 'Google mock sign-in failed', type: 'error' }))
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-      setNotice({ text: 'Google Sign-In requires a Google Client ID in .env', type: 'info' });
-    }
+    setLoading(false);
+    setNotice({ text: 'Google Sign-In is unavailable. Please refresh and try again.', type: 'error' });
   };
 
   // ── Legacy Channel Direct Sign-In ──
