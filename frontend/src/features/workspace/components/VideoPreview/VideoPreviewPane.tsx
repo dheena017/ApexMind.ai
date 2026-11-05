@@ -449,7 +449,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     bgPadding: 8,
     opacity: 100,
     posX: 50,
-    posY: 76, // 9:16 viral safe zone sweet spot (avoids TikTok / Shorts UI clipping while staying prominent)
+    posY: 76, // 9:16 safe zone avoids short-form platform UI clipping while keeping captions prominent
     customWidth: undefined as number | undefined,
     duration: 2.2,
   });
@@ -2790,4 +2790,3 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 };
 
 export default VideoPreviewPane;
-

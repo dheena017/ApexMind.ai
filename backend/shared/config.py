@@ -48,11 +48,6 @@ class Settings:
     META_APP_SECRET: str = os.environ.get("META_APP_SECRET", "")
     META_REDIRECT_URI: str = os.environ.get("META_REDIRECT_URI", "http://localhost:5173/auth/callback/meta")
 
-    # TikTok Content Posting API
-    TIKTOK_CLIENT_KEY: str = os.environ.get("TIKTOK_CLIENT_KEY", os.environ.get("VITE_TIKTOK_CLIENT_KEY", ""))
-    TIKTOK_CLIENT_SECRET: str = os.environ.get("TIKTOK_CLIENT_SECRET", "")
-    TIKTOK_REDIRECT_URI: str = os.environ.get("TIKTOK_REDIRECT_URI", "http://localhost:5173/auth/callback/tiktok")
-
     # Stock Photography & Media Providers
     PEXELS_API_KEY: str = os.environ.get("PEXELS_API_KEY", "")
     PIXABAY_API_KEY: str = os.environ.get("PIXABAY_API_KEY", "")

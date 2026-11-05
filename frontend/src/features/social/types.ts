@@ -3,7 +3,7 @@
  * Type definitions for Omnichannel Social Fleet & Cross-Platform Syndication.
  */
 
-export type SocialPlatform = 'youtube' | 'instagram' | 'facebook' | 'tiktok' | 'linkedin' | 'x';
+export type SocialPlatform = 'youtube' | 'instagram' | 'facebook' | 'linkedin' | 'x';
 
 export interface SocialAccount {
   id: string;
@@ -70,4 +70,3 @@ export interface PublishedPost {
   errorMessage?: string;
   publishedAt: string;
 }
-

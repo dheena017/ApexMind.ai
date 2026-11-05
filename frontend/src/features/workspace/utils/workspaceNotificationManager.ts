@@ -51,7 +51,7 @@ const DEFAULT_WORKSPACE_NOTIFICATIONS: WorkspaceNotification[] = [
   {
     id: 'wn-init-5',
     title: 'Kinetic Subtitles Preset Applied',
-    message: 'Bold Impact subtitle cue cards generated with safe margin boundaries for YouTube Shorts and TikTok.',
+    message: 'Bold Impact subtitle cue cards generated with safe margin boundaries for short-form video.',
     category: 'script',
     type: 'success',
     timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),

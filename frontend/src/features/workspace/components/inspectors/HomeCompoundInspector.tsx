@@ -14,7 +14,6 @@ import {
   Zap,
   AlertCircle,
   Instagram,
-  Globe,
   Bookmark,
   ChevronRight,
   Clock,
@@ -324,7 +323,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               {[
                 { label: 'YouTube Shorts', icon: Youtube, desc: 'Direct API publish', color: 'text-red-400', action: onPublish, disabled: !canPublish || publishing },
                 { label: 'Instagram Reels', icon: Instagram, desc: 'Export optimized video', color: 'text-pink-400', action: () => window.dispatchEvent(new CustomEvent('workspace:export-video')), disabled: false },
-                { label: 'TikTok', icon: Globe, desc: 'Export 9:16 MP4', color: 'text-[#69C9D0]', action: () => window.dispatchEvent(new CustomEvent('workspace:export-video')), disabled: false },
                 { label: 'Copy Video Metadata', icon: Copy, desc: 'Title + Description + Tags', color: 'text-blue-400', action: handleCopyMetadata, disabled: false },
               ].map((item) => {
                 const Icon = item.icon;

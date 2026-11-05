@@ -55,7 +55,7 @@ const AI_MODEL_OPTIONS = [
 ];
 
 const ASPECT_RATIO_OPTIONS = [
-  { value: '9:16', label: '9:16 (Vertical • Shorts / Reels / TikTok)' },
+  { value: '9:16', label: '9:16 (Vertical • Shorts / Reels)' },
   { value: '16:9', label: '16:9 (Landscape • YouTube Video)' },
   { value: '1:1', label: '1:1 (Square • Instagram / Feed)' },
 ];

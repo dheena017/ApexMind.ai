@@ -18,14 +18,6 @@ import {
 import { socialApi } from '../api/socialApi';
 import { SocialAccount, SocialPlatform, PlatformPublishResult } from '../types';
 
-function TikTokIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.5 6.3 6.3 0 0 0 1.86-4.49V8.69a8.18 8.18 0 0 0 4.91 1.63v-3.63Z" />
-    </svg>
-  );
-}
-
 interface OmnichannelPublishModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -87,8 +79,6 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
         return <Instagram className="w-4 h-4 text-pink-500" />;
       case 'facebook':
         return <Facebook className="w-4 h-4 text-blue-500" />;
-      case 'tiktok':
-        return <TikTokIcon className="w-4 h-4 text-cyan-400" />;
       default:
         return <Radio className="w-4 h-4 text-zinc-400" />;
     }
@@ -139,7 +129,7 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
                 </span>
               </h2>
               <p className="text-xs text-[#A1A1AA]">
-                Syndicate video simultaneously across YouTube Shorts, Instagram Reels, Facebook & TikTok
+                Syndicate video simultaneously across YouTube Shorts, Instagram Reels, and Facebook
               </p>
             </div>
           </div>
@@ -242,7 +232,7 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
 
                 {fleet.length === 0 ? (
                   <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-950/20 text-amber-200 text-xs">
-                    No social channels connected yet. Please connect your YouTube, Instagram, or TikTok accounts in the Social Fleet Manager.
+                    No social channels connected yet. Please connect your YouTube, Instagram, or Facebook accounts in the Social Fleet Manager.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -326,7 +316,7 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
                     3. Platform Layout Preview
                   </label>
                   <div className="flex items-center gap-1 bg-[#18181B] p-0.5 rounded-lg border border-[#27272A]">
-                    {(['youtube', 'instagram', 'facebook', 'tiktok'] as SocialPlatform[]).map((p) => (
+                    {(['youtube', 'instagram', 'facebook'] as SocialPlatform[]).map((p) => (
                       <button
                         key={p}
                         type="button"
@@ -369,8 +359,6 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
                       <span className="font-mono text-zinc-300">
                         {activePreviewTab === 'youtube'
                           ? '#Shorts & 🤖 AI Disclosure'
-                          : activePreviewTab === 'tiktok'
-                          ? 'is_aigc: true & #AIGenerated'
                           : '#AIGenerated'}
                       </span>
                     </div>
@@ -420,4 +408,3 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
     </div>
   );
 };
-

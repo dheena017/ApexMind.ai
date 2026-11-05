@@ -148,7 +148,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
   const [opacity, setOpacity] = useState(100);
 
   // Screen Position
-  const [posY, setPosY] = useState(76); // 9:16 viral safe zone (76%) avoids TikTok / Shorts UI clipping
+  const [posY, setPosY] = useState(76); // 9:16 safe zone avoids short-form platform UI clipping
 
   // Animation & Timing
   const [activeAnimation, setActiveAnimation] = useState('pop');

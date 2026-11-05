@@ -33,7 +33,7 @@ export default function ProfileDetailsPage() {
 
   const field = (
     label: string,
-    key: 'displayName' | 'creatorHandle' | 'avatarUrl' | 'bannerUrl' | 'websiteUrl' | 'instagramUrl' | 'tiktokUrl',
+    key: 'displayName' | 'creatorHandle' | 'avatarUrl' | 'bannerUrl' | 'websiteUrl' | 'instagramUrl',
     type = 'text',
     placeholder?: string
   ) => (
@@ -148,7 +148,6 @@ export default function ProfileDetailsPage() {
           {field('Cover banner image URL', 'bannerUrl', 'url', 'https://...')}
           {field('Personal website', 'websiteUrl', 'url', 'https://yourwebsite.com')}
           {field('Instagram profile', 'instagramUrl', 'url', 'https://instagram.com/yourhandle')}
-          {field('TikTok profile', 'tiktokUrl', 'url', 'https://tiktok.com/@yourhandle')}
         </div>
 
         <label className="block space-y-1.5">

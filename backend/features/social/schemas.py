@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 class SocialAccountDTO(BaseModel):
     id: str
     userId: str
-    platform: str  # 'youtube' | 'instagram' | 'facebook' | 'tiktok'
+    platform: str  # 'youtube' | 'instagram' | 'facebook'
     platformAccountId: str
     name: str
     handle: str
@@ -105,4 +105,3 @@ class PublishedPostsResponse(BaseModel):
     success: bool
     total: int
     posts: List[PublishedPostDTO]
-

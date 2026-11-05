@@ -142,7 +142,7 @@ def create_app() -> FastAPI:
         youtube_health = {
             "status": "operational",
             "engine": "Omnichannel Social Fleet & Cross-Platform Syndication",
-            "platforms": ["youtube", "instagram", "facebook", "tiktok"],
+            "platforms": ["youtube", "instagram", "facebook"],
             "live_sync": True,
         }
 

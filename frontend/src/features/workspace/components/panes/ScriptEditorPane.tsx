@@ -245,7 +245,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
     showTemporaryNotice(`Generated ${newCues.length} subtitle cues from script!`);
   };
 
-  // Export SRT file for YouTube Shorts, Reels, or TikTok upload
+  // Export an SRT file for YouTube Shorts, Reels, or other short-form platforms
   const handleExportSRT = () => {
     const subs = script.subtitles || [];
     if (subs.length === 0) {

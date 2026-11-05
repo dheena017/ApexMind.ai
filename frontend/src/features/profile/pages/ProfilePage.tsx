@@ -34,7 +34,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
   const completion = [
     Boolean((profile.displayName.trim() || user?.name?.trim()) && (profile.avatarUrl.trim() || user?.avatarUrl)),
     Boolean(profile.bio.trim()),
-    Boolean(profile.websiteUrl.trim() || profile.instagramUrl.trim() || profile.tiktokUrl.trim()),
+    Boolean(profile.websiteUrl.trim() || profile.instagramUrl.trim()),
     Boolean(profile.niche && profile.tone && profile.defaultVoice),
     Boolean(user?.verified !== false),
   ];
@@ -52,7 +52,6 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
   const profileLinks = [
     { label: 'Website', value: profile.websiteUrl },
     { label: 'Instagram', value: profile.instagramUrl },
-    { label: 'TikTok', value: profile.tiktokUrl },
   ].filter((link) => link.value && link.value.trim());
 
   const profileBadges = [

@@ -6,7 +6,6 @@ export interface CreatorProfile {
   creatorHandle: string;
   websiteUrl: string;
   instagramUrl: string;
-  tiktokUrl: string;
   youtubeUrl: string;
   niche: string;
   tone: string;
@@ -24,7 +23,6 @@ export const DEFAULT_CREATOR_PROFILE: CreatorProfile = {
   creatorHandle: '',
   websiteUrl: '',
   instagramUrl: '',
-  tiktokUrl: '',
   youtubeUrl: '',
   niche: '',
   tone: '',

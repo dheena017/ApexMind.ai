@@ -271,7 +271,7 @@ def generate_ass_subtitle_file(
     font_size = int(round(width * 0.062))  # ~67px on 1080p
     title_font_size = int(round(width * 0.046))  # ~50px on 1080p
     
-    # Safe vertical zone for TikTok/IG Reels/Shorts overlay controls
+    # Safe vertical zone for short-form video overlay controls
     if height > width:  # vertical 9:16
         vert_margin = int(round(height * 0.22))  # Safe zone above bottom bar
         title_vert_margin = int(round(height * 0.12))  # Below top notch

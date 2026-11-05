@@ -28,7 +28,7 @@ logger = logging.getLogger("ApexMind.Social.Service")
 
 def get_user_fleet(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
-    Retrieves all connected social channels/pages across YouTube, Instagram, Facebook, and TikTok.
+    Retrieves all supported connected social channels and pages.
     Automatically ensures that any existing authorized YouTube channels are represented in the fleet.
     """
     effective_user_id = user_id
@@ -36,7 +36,10 @@ def get_user_fleet(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         latest = get_latest_user()
         effective_user_id = latest["id"] if latest else "usr_global"
 
-    accounts = get_social_accounts(user_id=effective_user_id)
+    accounts = [
+        account for account in get_social_accounts(user_id=effective_user_id)
+        if account.get("platform") in ADAPTER_REGISTRY
+    ]
 
     # If fleet has no accounts, check if there are legacy connected YouTube channels to auto-mirror
     if not any(a["platform"] == "youtube" for a in accounts):
@@ -68,7 +71,7 @@ def generate_platform_oauth_url(
     user_id: Optional[str] = None,
     redirect_uri: Optional[str] = None,
 ) -> Dict[str, str]:
-    """Generates the OAuth consent URL for YouTube, Meta (Instagram/Facebook), or TikTok."""
+    """Generates the OAuth consent URL for YouTube or Meta (Instagram/Facebook)."""
     clean_p = platform.lower().strip()
     state = urllib.parse.quote(f"uid={user_id or 'default'}&p={clean_p}&t={int(datetime.now(timezone.utc).timestamp())}")
 
@@ -87,17 +90,6 @@ def generate_platform_oauth_url(
             f"&scope={urllib.parse.quote(scopes)}&response_type=code&state={state}"
         )
         return {"platform": clean_p, "oauthUrl": url}
-
-    elif clean_p == "tiktok":
-        client_key = os.getenv("TIKTOK_CLIENT_KEY") or "tiktok_client_demo"
-        base_redir = redirect_uri or "http://localhost:5173/auth/callback/tiktok"
-        scopes = "user.info.basic,video.upload,video.publish"
-        url = (
-            f"https://www.tiktok.com/v2/auth/authorize/?"
-            f"client_key={client_key}&scope={urllib.parse.quote(scopes)}"
-            f"&response_type=code&redirect_uri={urllib.parse.quote(base_redir)}&state={state}"
-        )
-        return {"platform": "tiktok", "oauthUrl": url}
 
     else:
         raise ValueError(f"OAuth URL generation not supported for platform: {platform}")
@@ -235,4 +227,3 @@ async def syndicate_publish(
         "failedCount": failed,
         "results": results,
     }
-

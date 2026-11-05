@@ -246,7 +246,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <span className="font-mono text-zinc-400">9:16</span>
-                  <span>Shorts, Reels, TikTok (1080×1920)</span>
+                  <span>Shorts, Reels (1080×1920)</span>
                 </Command.Item>
 
                 <Command.Item

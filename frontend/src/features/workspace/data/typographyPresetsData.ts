@@ -710,7 +710,7 @@ export const MASTER_TYPOGRAPHY_PRESETS: TypographyPresetItem[] = [
     previewText: '🔖 SAVE THIS BEFORE IT GETS DELETED',
     color: '#38BDF8',
     className: 'font-extrabold tracking-wide text-sky-400 uppercase bg-sky-950/50 px-5 py-2 rounded-xl border border-sky-500/40 text-center shadow-lg',
-    styleDescription: 'Algorithmic save booster maximizing Instagram & TikTok reach',
+    styleDescription: 'Algorithmic save booster maximizing Instagram Reels reach',
     fontFamily: 'Montserrat, sans-serif',
     tags: ['cta', 'save', 'bookmark', 'algorithm'],
   },

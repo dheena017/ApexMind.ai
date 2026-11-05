@@ -71,7 +71,7 @@ TTS_FALLBACK_MODELS: list[str] = [
 # Fixed System Instructions & Production Directives
 SCRIPT_SYSTEM_INSTRUCTION: str = (
     "You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer "
-    "for viral YouTube Shorts, Instagram Reels, and TikTok. Produce high-retention motivational "
+    "for viral YouTube Shorts, Instagram Reels, and Facebook Reels. Produce high-retention motivational "
     "short video plans with 3 viral hook variations, 100% pure cinematic nature footage queries, "
     "5-layer broadcast sound design with dynamic sidechain ducking. "
     "Strictly output only valid JSON matching the exact schema."
@@ -813,7 +813,7 @@ STRICT ENFORCEMENT RULES FOR THIS {target_seconds}-SECOND VIDEO:
 6. The sum of all scene durations in "storyboard" MUST EQUAL EXACTLY {target_seconds}.0 seconds!
 """
 
-    prompt = f"""You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer for viral YouTube Shorts, Instagram Reels, and TikTok.
+    prompt = f"""You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer for viral YouTube Shorts, Instagram Reels, and Facebook Reels.
 Produce an inspiring, punchy, retention-optimized motivational video plan with full script, 3 viral hook variations, 5-layer sound design, and a multi-scene video storyboard with word-level karaoke timing.
 {user_prompt_section}
 {duration_enforcement_section}
@@ -1609,7 +1609,7 @@ def generate_gemini_metadata(
     if not any((clean_topic, clean_title, clean_hook, clean_quote)):
         raise ValueError("Provide a video title or script before generating metadata.")
 
-    prompt = f"""You are an elite YouTube Shorts & TikTok Virality Strategist.
+    prompt = f"""You are an elite short-form video virality strategist for YouTube Shorts, Instagram Reels, and Facebook Reels.
 Generate title variations, an engaging description, and categorized hashtags using only the supplied video details. Do not invent people, quotes, events, or factual claims.
 
 CATEGORY/THEME: {clean_cat or 'Not provided'}

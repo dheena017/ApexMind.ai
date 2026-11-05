@@ -29,15 +29,6 @@ import { socialApi } from '@/src/features/social/api/socialApi';
 import { SocialAccount, SocialPlatform, PublishedPost } from '@/src/features/social/types';
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
 
-// ── TikTok Brand Icon ──
-function TikTokIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.5 6.3 6.3 0 0 0 1.86-4.49V8.69a8.18 8.18 0 0 0 4.91 1.63v-3.63Z" />
-    </svg>
-  );
-}
-
 function formatCount(num?: number): string {
   if (!num || num === 0) return '0';
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
@@ -245,15 +236,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <Facebook className="w-2.5 h-2.5 text-white fill-current" />
           </div>
         );
-      case 'tiktok':
-        return (
-          <div
-            className="w-5 h-5 rounded-full bg-black border border-cyan-400/40 flex items-center justify-center shadow-md ring-2 ring-[#111114]"
-            title="TikTok"
-          >
-            <TikTokIcon className="w-2.5 h-2.5 text-cyan-400" />
-          </div>
-        );
       default:
         return (
           <div className="w-5 h-5 rounded-full bg-[#27272A] flex items-center justify-center shadow-md ring-2 ring-[#111114]">
@@ -271,8 +253,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         return <Instagram className={`${className} text-[#EC4899]`} />;
       case 'facebook':
         return <Facebook className={`${className} text-[#3B82F6] fill-current`} />;
-      case 'tiktok':
-        return <TikTokIcon className={`${className} text-[#06B6D4]`} />;
       default:
         return <Radio className={`${className} text-[#9CA3AF]`} />;
     }
@@ -286,8 +266,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         return 'bg-pink-500/10 text-pink-400 border-pink-500/20';
       case 'facebook':
         return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'tiktok':
-        return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
       default:
         return 'bg-zinc-800 text-zinc-300 border-zinc-700';
     }
@@ -302,8 +280,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         return `https://www.instagram.com/${handleClean}`;
       case 'facebook':
         return `https://www.facebook.com/${handleClean}`;
-      case 'tiktok':
-        return `https://www.tiktok.com/@${handleClean}`;
       default:
         return '#';
     }
@@ -322,7 +298,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   const ytCount = accounts.filter((a) => a.platform === 'youtube').length;
   const igCount = accounts.filter((a) => a.platform === 'instagram').length;
   const fbCount = accounts.filter((a) => a.platform === 'facebook').length;
-  const ttCount = accounts.filter((a) => a.platform === 'tiktok').length;
 
   return (
     <div className="w-full space-y-5 animate-fade-in text-[#E5E5E5]">
@@ -347,7 +322,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
               </span>
             </div>
             <p className="mt-1 text-xs text-[#9CA3AF] max-w-2xl leading-relaxed">
-              Link, manage, and syndicate across your omnichannel social accounts. Connect YouTube, Instagram Reels, Facebook Pages, and TikTok to publish productions in one click.
+              Link, manage, and syndicate across your omnichannel social accounts. Connect YouTube, Instagram Reels, and Facebook Pages to publish productions in one click.
             </p>
           </div>
         </div>
@@ -390,7 +365,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             {ytCount > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-medium bg-[#1C1C22] text-[#D4D4D8] border border-[#2A2A34]">{ytCount} YouTube</span>}
             {igCount > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-medium bg-[#1C1C22] text-[#D4D4D8] border border-[#2A2A34]">{igCount} Instagram</span>}
             {fbCount > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-medium bg-[#1C1C22] text-[#D4D4D8] border border-[#2A2A34]">{fbCount} Facebook</span>}
-            {ttCount > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-medium bg-[#1C1C22] text-[#D4D4D8] border border-[#2A2A34]">{ttCount} TikTok</span>}
             {accounts.length === 0 && <span className="text-[10px] text-zinc-500">None linked</span>}
           </div>
         </div>
@@ -462,7 +436,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         </div>
 
         {/* 4 Sleek Studio Platform Action Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           <button
             type="button"
             onClick={handleConnectGoogle}
@@ -491,14 +465,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <span>Facebook Page</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => handleOpenConnectModal('tiktok')}
-            className="flex items-center justify-center gap-2.5 py-3 px-3.5 rounded-xl border border-[#27272A] bg-[#18181C] hover:bg-[#202026] hover:border-[#383842] text-xs font-medium text-[#E5E5E5] hover:text-white transition-all cursor-pointer shadow-xs active:scale-98 group"
-          >
-            <TikTokIcon className="w-4 h-4 text-[#06B6D4] group-hover:scale-110 transition-transform" />
-            <span>TikTok Profile</span>
-          </button>
         </div>
       </div>
 
@@ -592,21 +558,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveFilter('tiktok')}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-            activeFilter === 'tiktok'
-              ? 'bg-[#222228] text-white border border-[#333338] shadow-xs'
-              : 'text-[#9CA3AF] hover:text-white hover:bg-[#18181C] border border-transparent'
-          }`}
-        >
-          <TikTokIcon className="w-3.5 h-3.5 text-[#06B6D4]" />
-          <span>TikTok</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#16161A] text-[#8E8E93] border border-[#282830]">
-            {ttCount}
-          </span>
-        </button>
       </div>
 
       {/* ── 5. Linked Channel Cards Grid ── */}
@@ -769,7 +720,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
               <span>Omnichannel Syndication &amp; Publishing Audit</span>
             </h2>
             <p className="text-xs text-[#9CA3AF] mt-0.5">
-              Live chronological feed of videos published across your connected YouTube, Instagram, Facebook, and TikTok fleet.
+              Live chronological feed of videos published across your connected YouTube, Instagram, and Facebook fleet.
             </p>
           </div>
           <span className="text-xs font-mono text-[#71717A]">
@@ -895,8 +846,6 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
                       ? '@DailyStoicShorts'
                       : connectPlatform === 'instagram'
                       ? '@dailystoic_reels'
-                      : connectPlatform === 'tiktok'
-                      ? '@dailystoic_ai'
                       : 'Daily Stoic Page'
                   }
                   value={connectHandleInput}
@@ -948,4 +897,3 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     </div>
   );
 }
-

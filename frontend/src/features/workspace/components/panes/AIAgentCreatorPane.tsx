@@ -165,7 +165,6 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   const [enabledPlatforms, setEnabledPlatforms] = useState<Record<string, boolean>>({
     youtube: true,
     instagram: true,
-    tiktok: true,
     facebook: true,
   });
 
@@ -667,7 +666,6 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 {[
                   { id: 'youtube', label: 'YouTube Shorts' },
                   { id: 'instagram', label: 'Instagram Reels' },
-                  { id: 'tiktok', label: 'TikTok Clips' },
                   { id: 'facebook', label: 'Facebook Reels' },
                 ].map((item) => {
                   const active = enabledPlatforms[item.id];

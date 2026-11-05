@@ -21,6 +21,7 @@ from .service import (
     generate_platform_oauth_url,
     syndicate_publish,
 )
+from .adapters import ADAPTER_REGISTRY
 from backend.database.repository import (
     upsert_social_account,
     delete_social_account,
@@ -36,7 +37,7 @@ router = APIRouter(prefix="/api/social", tags=["Omnichannel Social Fleet & Syndi
     "/accounts",
     response_model=FleetListResponse,
     summary="List Social Fleet Accounts",
-    description="Returns all connected social channels, pages, and profiles across YouTube, Instagram, Facebook, and TikTok.",
+    description="Returns all supported connected social channels, pages, and profiles.",
 )
 async def list_fleet_accounts(userId: Optional[str] = None):
     try:
@@ -58,10 +59,10 @@ async def list_fleet_accounts(userId: Optional[str] = None):
     "/oauth-url",
     response_model=OAuthUrlResponse,
     summary="Get Social Platform OAuth URL",
-    description="Returns authorization consent URL for connecting YouTube, Instagram, Facebook, or TikTok.",
+    description="Returns authorization consent URL for connecting YouTube, Instagram, or Facebook.",
 )
 async def get_oauth_url(
-    platform: str = Query(..., description="'youtube', 'instagram', 'facebook', 'meta', or 'tiktok'"),
+    platform: str = Query(..., description="'youtube', 'instagram', 'facebook', or 'meta'"),
     redirectUri: Optional[str] = Query(None, description="Client redirect URI"),
     userId: Optional[str] = Query(None, description="Master account User ID"),
 ):
@@ -177,10 +178,12 @@ async def list_published_posts(
     platform: Optional[str] = None,
     limit: int = 50,
 ):
-    posts = get_published_posts(user_id=userId, platform=platform, limit=limit)
+    posts = [
+        post for post in get_published_posts(user_id=userId, platform=platform, limit=limit)
+        if post.get("platform") in ADAPTER_REGISTRY
+    ]
     return {
         "success": True,
         "total": len(posts),
         "posts": posts,
     }
-

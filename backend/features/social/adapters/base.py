@@ -13,7 +13,6 @@ class SocialPlatformPublisher(ABC):
     - YouTube Shorts (YouTube Data API v3)
     - Instagram Reels (Meta Graph API)
     - Facebook Reels (Meta Pages API)
-    - TikTok Clips (TikTok Content Posting API)
     - LinkedIn Video
     - X / Twitter Media
     """
@@ -21,7 +20,7 @@ class SocialPlatformPublisher(ABC):
     @property
     @abstractmethod
     def platform_name(self) -> str:
-        """Normalized platform identifier (e.g. 'youtube', 'instagram', 'facebook', 'tiktok')."""
+        """Normalized platform identifier (e.g. 'youtube', 'instagram', 'facebook')."""
         pass
 
     @abstractmethod
@@ -53,7 +52,6 @@ class SocialPlatformPublisher(ABC):
         Appends mandatory AI generated disclosure adhering to platform compliance:
         - Meta (IG / FB): `#AIGenerated` hashtag
         - YouTube: `🤖 AI Disclosure: Content generated with AI assistance.`
-        - TikTok: Marked via metadata flag + `#AIGenerated`
         """
         clean_caption = caption.strip() if caption else ""
         if platform in ("instagram", "facebook"):
@@ -63,8 +61,4 @@ class SocialPlatformPublisher(ABC):
             disclosure_line = "🤖 AI Disclosure: Generated with AI audio synthesis & visual production."
             if "AI Disclosure" not in clean_caption:
                 clean_caption = f"{clean_caption}\n\n{disclosure_line}".strip()
-        elif platform == "tiktok":
-            if "#AIGenerated" not in clean_caption:
-                clean_caption = f"{clean_caption} #AIGenerated".strip()
         return clean_caption
-

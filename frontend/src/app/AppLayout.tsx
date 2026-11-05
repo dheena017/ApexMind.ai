@@ -415,7 +415,7 @@ export default function AppLayout({
                 type="button"
                 onClick={() => setShowFleetDrawer(true)}
                 className="flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[11px] text-[#A1A1AA] hover:text-white transition-all cursor-pointer group"
-                title="Manage Connected Channels (YouTube, Instagram, Facebook, TikTok)"
+                title="Manage Connected Channels (YouTube, Instagram, Facebook)"
               >
                 <Radio className="w-3 h-3 text-red-400 group-hover:scale-110 transition-transform" />
                 <span className="text-[10px] font-semibold text-[#D4D4D8] hidden md:inline">Fleet</span>
