@@ -335,7 +335,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
       {/* =========================================================================
           WORKSPACE BOTTOM STATUS & NOTIFICATION BAR (ApexMind Studio Theme)
           ========================================================================= */}
-      <footer className="h-6 shrink-0 border-t border-[#242424] bg-[#111111] px-2.5 sm:px-3 flex items-center justify-between gap-2.5 font-mono-studio text-[9.5px] text-slate-400 select-none z-30 relative">
+      <footer className="h-8 sm:h-6 shrink-0 border-t border-[#242424] bg-[#111111] px-3 sm:px-3 flex items-center justify-between gap-2.5 font-mono-studio text-[10px] sm:text-[9.5px] text-slate-400 select-none z-30 relative">
         {/* Left: Studio Metrics & Context */}
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {isWorkspace ? (
@@ -343,7 +343,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
               <button
                 type="button"
                 onClick={() => onWorkspacePaneChange?.(activeWorkspacePane)}
-                className="hidden sm:inline-flex items-center gap-1 truncate text-[#E5E5E5] hover:text-white transition-colors cursor-pointer"
+                className="inline-flex max-w-16 items-center gap-1 truncate text-[#E5E5E5] hover:text-white transition-colors cursor-pointer sm:max-w-none"
                 title="Current active workspace pane"
               >
                 <span>{paneLabels[activeWorkspacePane] || 'Workspace Studio'}</span>
@@ -351,17 +351,40 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
               <span className="text-[#6B7280]" title="Aspect Ratio">
                 {workspaceStatus.aspectRatio}
               </span>
-              <span className="hidden sm:inline tabular-nums text-[#9CA3AF]" title="Playhead / Timeline Duration">
+              <span className="hidden min-[380px]:inline tabular-nums text-[#9CA3AF]" title="Playhead / Timeline Duration">
                 {formatWorkspaceTime(workspaceStatus.currentTime)} / {formatWorkspaceTime(workspaceStatus.duration)}
               </span>
               {workspaceStatus.visual && (
-                <span className="hidden lg:inline max-w-28 truncate text-[#9CA3AF]" title={`Visual Backdrop: ${workspaceStatus.visual}`}>
-                  V1 {workspaceStatus.visual}
+                <span
+                  className="hidden lg:inline-flex items-center gap-1 rounded-md border border-[#2A2A2A] bg-[#12181D] px-1.5 py-0.5 text-[#9AD2FF]"
+                  title={`Visual Backdrop: ${workspaceStatus.visual}`}
+                >
+                  <span className="text-[#60A5FA]">V1</span>
+                  <span className="max-w-24 truncate">{workspaceStatus.visual}</span>
+                </span>
+              )}
+              {workspaceStatus.overlay && (
+                <span className="hidden xl:inline-flex items-center gap-1 rounded-md border border-[#2A2A2A] bg-[#18171E] px-1.5 py-0.5 text-[#D8B4FE]" title={`Overlay: ${workspaceStatus.overlay}`}>
+                  <span className="text-[#C084FC]">OV</span>
+                  <span className="max-w-20 truncate">{workspaceStatus.overlay}</span>
+                </span>
+              )}
+              {workspaceStatus.music && (
+                <span className="hidden xl:inline-flex items-center gap-1 rounded-md border border-[#2A2A2A] bg-[#161A1D] px-1.5 py-0.5 text-[#A7F3D0]" title={`Music Track: ${workspaceStatus.music}`}>
+                  <span className="text-[#34D399]">MU</span>
+                  <span className="max-w-20 truncate">{workspaceStatus.music}</span>
+                </span>
+              )}
+              {workspaceStatus.sfx && (
+                <span className="hidden 2xl:inline-flex items-center gap-1 rounded-md border border-[#2A2A2A] bg-[#19151A] px-1.5 py-0.5 text-[#F9A8D4]" title={`SFX: ${workspaceStatus.sfx}`}>
+                  <span className="text-[#F472B6]">FX</span>
+                  <span className="max-w-20 truncate">{workspaceStatus.sfx}</span>
                 </span>
               )}
               {workspaceStatus.captionCount > 0 && (
-                <span className="hidden lg:inline text-teal-400 font-medium" title={`${workspaceStatus.captionCount} subtitle cue cards`}>
-                  T1 {workspaceStatus.captionCount}
+                <span className="hidden lg:inline-flex items-center gap-1 rounded-md border border-[#183B35] bg-[#0F1F1C] px-1.5 py-0.5 text-teal-300 font-medium" title={`${workspaceStatus.captionCount} subtitle cue cards`}>
+                  <span className="text-[#2DD4BF]">T1</span>
+                  <span>{workspaceStatus.captionCount}</span>
                 </span>
               )}
             </>
@@ -390,24 +413,31 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
 
         {/* Right: Studio Playback State + Workspace Notification Center Bell */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <span className="hidden lg:inline text-[#6B7280]">{workspaceStatus.playbackRate}x</span>
-          <span className="hidden md:inline max-w-24 truncate text-[#E5E5E5]">
-            {workspaceStatus.voice}
+          <span className="hidden lg:inline-flex items-center rounded-md border border-[#2A2A2A] bg-[#111827] px-1.5 py-0.5 text-[#9CA3AF]">
+            {workspaceStatus.playbackRate}x
+          </span>
+          <span className="hidden md:inline-flex max-w-24 items-center truncate rounded-md border border-[#2A2A2A] bg-[#171A1F] px-1.5 py-0.5 text-[#E5E5E5]" title={`Voice: ${workspaceStatus.voice}`}>
+            VO {workspaceStatus.voice || 'Fenrir'}
           </span>
           {workspaceStatus.music && (
-            <span className="hidden xl:inline max-w-28 truncate text-[#9CA3AF]">
-              {workspaceStatus.music}
+            <span className="hidden xl:inline-flex max-w-24 items-center truncate rounded-md border border-[#2A2A2A] bg-[#121B1B] px-1.5 py-0.5 text-[#A7F3D0]" title={`Music: ${workspaceStatus.music}`}>
+              MU {workspaceStatus.music}
+            </span>
+          )}
+          {workspaceStatus.sfx && (
+            <span className="hidden 2xl:inline-flex max-w-24 items-center truncate rounded-md border border-[#2A2A2A] bg-[#1E1619] px-1.5 py-0.5 text-[#F9A8D4]" title={`SFX: ${workspaceStatus.sfx}`}>
+              FX {workspaceStatus.sfx}
             </span>
           )}
 
           {/* Engine Activity Status Indicator */}
           <span
-            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md ${
+            className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 ${
               workspaceStatus.isExporting
-                ? 'text-[#60A5FA] bg-[#2563EB]/15 border border-[#60A5FA]/30'
+                ? 'text-[#60A5FA] bg-[#2563EB]/15 border-[#60A5FA]/30'
                 : workspaceStatus.isPlaying
-                ? 'text-[#10B981] bg-emerald-500/10 border border-emerald-500/20'
-                : 'text-[#9CA3AF]'
+                ? 'text-[#10B981] bg-emerald-500/10 border-emerald-500/20'
+                : 'text-[#9CA3AF] bg-[#171717] border-[#2F2F2F]'
             }`}
           >
             <CheckCircle2 className="w-3 h-3" />
@@ -424,7 +454,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
             ref={triggerRef}
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className={`relative flex items-center gap-1.5 px-2 py-0.5 rounded-md cursor-pointer transition-colors border ${
+            className={`relative flex min-h-8 items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer transition-colors border ${
               isOpen
                 ? 'bg-[#2563EB] text-white border-[#60A5FA]/40'
                 : unreadCount > 0

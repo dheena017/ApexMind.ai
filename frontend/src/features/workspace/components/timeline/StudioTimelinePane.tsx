@@ -66,6 +66,12 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const isTimelineExpanded = timelineHeight !== undefined ? timelineHeight > 220 : isTimelineExpandedLocal;
   const timelineViewportHeight = isTimelineExpanded ? 'max-h-[600px]' : 'max-h-[170px]';
 
+  useEffect(() => {
+    const expandTimeline = () => setIsCollapsed(false);
+    window.addEventListener('workspace:expand-mobile-timeline', expandTimeline);
+    return () => window.removeEventListener('workspace:expand-mobile-timeline', expandTimeline);
+  }, []);
+
   const DEFAULT_TRACK_HEADERS_WIDTH = 224;
   const [trackHeadersWidth, setTrackHeadersWidth] = useState<number>(() => {
     try {
@@ -4695,7 +4701,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   };
   return (
-    <div className="w-full bg-[#121212] overflow-hidden transition-all font-sans-studio select-none relative group/timeline-card">
+    <div className="workspace-timeline-editor w-full bg-[#121212] overflow-hidden transition-all font-sans-studio select-none relative group/timeline-card">
       {/* ── Top Header Bar / Timeline Toolbar ──────────────────────── */}
       <TimelineToolbar
         isCollapsed={isCollapsed}
@@ -4735,7 +4741,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
       {/* ── Collapsible Tracks Body ───────────────────────────────── */}
       {!isCollapsed && (
-        <div className="flex flex-col bg-[#121212]">
+        <div className="workspace-timeline-body flex flex-col bg-[#121212]">
           {/* ── Time Ruler Row (Placed Above Scrollable Tracks Area) ── */}
           <div className="flex border-b border-[#242424] bg-[#141414] select-none shrink-0 z-20">
             {/* Time Ruler & Track Labels Header (synced with horizontal scroll of tracks) */}
@@ -4819,7 +4825,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             onScroll={handleTracksScroll}
             onWheel={handleTimelineWheel}
             style={timelineHeight ? { height: `${timelineHeight}px`, maxHeight: `${timelineHeight}px` } : undefined}
-            className={`min-w-0 w-full overflow-x-auto overflow-y-auto custom-scrollbar relative ${timelineHeight ? '' : timelineViewportHeight}`}
+            className={`workspace-timeline-track-scroll min-w-0 w-full overflow-x-auto overflow-y-auto custom-scrollbar relative ${timelineHeight ? '' : timelineViewportHeight}`}
           >
             <div
               className="flex min-w-full"

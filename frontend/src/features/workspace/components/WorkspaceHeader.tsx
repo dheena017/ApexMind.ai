@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   Play,
@@ -15,21 +15,34 @@ import {
   Sparkles,
   Share2,
   Radio,
+  Menu,
+  X,
+  User,
+  LogOut,
 } from 'lucide-react';
 import { UserProfile } from '@/src/features/auth/types';
 import { ChannelSwitcher } from '@/src/features/youtube/components/ChannelSwitcher';
 import { SocialFleetDrawer } from '@/src/features/social/components/SocialFleetDrawer';
 import { OmnichannelPublishModal } from '@/src/features/social/components/OmnichannelPublishModal';
+import { WorkspaceTabType } from './WorkspaceSidebar';
 
 interface WorkspaceHeaderProps {
   user?: UserProfile | null;
   unreadCount?: number;
   onNavigate: (page: string) => void;
+  activeWorkspacePane: WorkspaceTabType;
+  mobileMenuOpen: boolean;
+  onToggleMobileMenu: () => void;
+  onSignOut: () => void | Promise<void>;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   user,
   onNavigate,
+  activeWorkspacePane,
+  mobileMenuOpen,
+  onToggleMobileMenu,
+  onSignOut,
 }) => {
   const [publishing, setPublishing] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
@@ -42,6 +55,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   // Omnichannel Modals State
   const [showFleetDrawer, setShowFleetDrawer] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   // Panel layout toggles state
   const [showLeftPane, setShowLeftPane] = useState(true);
@@ -118,6 +133,26 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAccountMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [accountMenuOpen]);
+
   const handleTitleChange = (nextTitle: string) => {
     setVideoTitle(nextTitle);
     window.dispatchEvent(
@@ -151,9 +186,19 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 h-11 shrink-0 z-30 w-full overflow-hidden bg-[#111111]/98 backdrop-blur-2xl border-b border-[#242424] px-3 sm:px-4 flex items-center justify-between gap-2.5 font-sans-studio select-none text-[#E5E5E5] shadow-sm">
+      <header className="sticky top-0 h-11 shrink-0 z-30 w-full bg-[#111111]/98 backdrop-blur-2xl border-b border-[#242424] px-3 sm:px-4 max-[359px]:px-2 flex items-center justify-between gap-2.5 max-[439px]:gap-1 max-[359px]:gap-0 font-sans-studio select-none text-[#E5E5E5] shadow-sm">
         {/* ── Left: Studio Title, Brand Logo, Breadcrumb, Title & Channel Switcher ── */}
-        <div className="flex items-center gap-2.5 shrink-0 min-w-0">
+        <div className="flex items-center gap-2.5 max-[439px]:gap-1 max-[359px]:gap-0 shrink-0 min-w-0">
+          <button
+            type="button"
+            onClick={onToggleMobileMenu}
+            className="workspace-mobile-menu-trigger md:hidden h-8 w-8 shrink-0 rounded-lg border border-[#2A2A2A] bg-[#181818] text-[#D4D4D8] hover:bg-[#26262C] hover:text-white flex items-center justify-center transition-colors"
+            aria-label={mobileMenuOpen ? 'Close studio menu' : 'Open studio menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="workspace-mobile-menu"
+          >
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
           {/* Brand Logo & Name */}
           <div className="flex items-center gap-2">
             <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]">
@@ -166,6 +211,11 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               ApexMind
             </span>
           </div>
+          <span className="workspace-mobile-current-tool md:hidden max-w-24 max-[439px]:max-w-16 max-[399px]:hidden truncate text-[10px] font-medium text-[#9CA3AF]">
+            {activeWorkspacePane === 'script' || activeWorkspacePane === 'editor' || activeWorkspacePane === 'prompt'
+              ? 'Script & AI'
+              : activeWorkspacePane.charAt(0).toUpperCase() + activeWorkspacePane.slice(1)}
+          </span>
 
           {/* Project Breadcrumb & Title Input */}
           <div className="hidden md:flex items-center gap-2 min-w-0 ml-1">
@@ -187,14 +237,14 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           </div>
 
           {/* Active YouTube Channel Selector */}
-          <div className="h-4 w-px bg-[#262626] hidden lg:block" />
-          <div className="hidden lg:block">
+          <div className="h-4 w-px bg-[#262626] hidden md:block" />
+          <div className="hidden md:block">
             <ChannelSwitcher onOpenFleetDrawer={() => setShowFleetDrawer(true)} />
           </div>
         </div>
 
         {/* ── Right: Fleet Manager + Panel Toggles + Actions + Publish ── */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 max-[439px]:gap-1 max-[359px]:gap-0 shrink-0">
           {/* Notice Badge */}
           {notice && (
             <span className="text-[10px] text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full border border-[#333333] animate-pulse hidden xl:inline">
@@ -338,7 +388,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
                 ? 'Generate a script first to publish'
                 : 'One-Click Multi-Platform Publish'
             }
-            className={`h-7.5 px-3.5 sm:px-4 text-[10.5px] font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+            className={`h-7.5 px-3.5 sm:px-4 max-[359px]:px-2 text-[10.5px] font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
               publishedSuccess
                 ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
                 : !canPublish || publishing
@@ -375,25 +425,85 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           </button>
 
           {/* Profile button */}
-          <button
-            type="button"
-            onClick={() => onNavigate('profile')}
-            className="flex items-center gap-1 p-0.5 rounded-full text-[#9CA3AF] hover:text-white hover:bg-[#202020] border border-transparent hover:border-[#2A2A2A] transition-all cursor-pointer"
-            title={user ? `${user.name} (${user.email})` : 'Profile'}
-          >
-            {user?.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.name}
-                className="w-6 h-6 rounded-full bg-[#181818] border border-[#2A2A2A] object-cover shadow-xs"
-              />
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] border border-[#60A5FA]/30 flex items-center justify-center text-[9px] font-bold text-white shadow-xs">
-                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AM'}
+          <div className="relative" ref={accountMenuRef}>
+            <button
+              type="button"
+              onClick={() => setAccountMenuOpen((open) => !open)}
+              className={`flex items-center gap-1 p-0.5 rounded-full border transition-all cursor-pointer ${
+                accountMenuOpen
+                  ? 'text-white bg-[#202020] border-[#3B82F6]/50'
+                  : 'text-[#9CA3AF] hover:text-white hover:bg-[#202020] border-transparent hover:border-[#2A2A2A]'
+              }`}
+              title={user ? `${user.name} (${user.email})` : 'Profile'}
+              aria-label="Open account menu"
+              aria-haspopup="menu"
+              aria-expanded={accountMenuOpen}
+              aria-controls="workspace-account-menu"
+            >
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt=""
+                  className="w-6 h-6 rounded-full bg-[#181818] border border-[#2A2A2A] object-cover shadow-xs"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] border border-[#60A5FA]/30 flex items-center justify-center text-[9px] font-bold text-white shadow-xs">
+                  {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AM'}
+                </div>
+              )}
+              <ChevronDown className={`w-3 h-3 text-[#737373] transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {accountMenuOpen && (
+              <div
+                id="workspace-account-menu"
+                role="menu"
+                aria-label="Account menu"
+                className="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border border-[#2A2A2A] bg-[#141416] shadow-2xl p-2 z-50"
+              >
+                <div className="px-2.5 py-2 border-b border-[#242424]">
+                  <p className="text-xs font-semibold text-white truncate">{user?.name || 'Your account'}</p>
+                  {user?.email && <p className="mt-0.5 text-[10px] text-[#9CA3AF] truncate">{user.email}</p>}
+                </div>
+                <div className="py-1">
+                  {[
+                    { label: 'Profile & Badges', page: 'profile', icon: User },
+                    { label: 'Preferences', page: 'profile-preferences', icon: Settings },
+                    { label: 'Social Linking & Fleet', page: 'channels', icon: Radio },
+                    { label: 'Studio Settings', page: 'settings', icon: Settings },
+                  ].map(({ label, page, icon: Icon }) => (
+                    <button
+                      key={page}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        onNavigate(page);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-xs text-[#D4D4D8] hover:text-white hover:bg-[#202020] transition-colors cursor-pointer"
+                    >
+                      <Icon className="w-3.5 h-3.5 text-[#9CA3AF]" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="pt-1 border-t border-[#242424]">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      void onSignOut();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-xs text-red-300 hover:text-red-200 hover:bg-red-500/10 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    Sign out
+                  </button>
+                </div>
               </div>
             )}
-            <ChevronDown className="w-3 h-3 text-[#737373]" />
-          </button>
+          </div>
         </div>
       </header>
 
@@ -401,6 +511,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
       <SocialFleetDrawer
         isOpen={showFleetDrawer}
         onClose={() => setShowFleetDrawer(false)}
+        onNavigate={onNavigate}
       />
 
       {/* Omnichannel Cross-Publish Modal */}

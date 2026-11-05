@@ -1260,7 +1260,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
             {/* Autonomous Daily Architecture Engine Preview */}
             <div className="p-3.5 rounded-xl bg-gradient-to-b from-[#16161B] to-[#121215] border border-[#24242C] text-xs text-zinc-400 flex flex-col gap-3 shadow-sm">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-white font-bold text-xs flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-blue-400" />
                   <span>Autonomous 4-Stage Production Engine</span>
@@ -1271,7 +1271,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               </div>
 
               {/* 4 Steps Visual Flow */}
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-2 gap-2">
                 {[
                   { step: '01', title: 'Gemini 3.8', sub: 'Script & Hook' },
                   { step: '02', title: 'Neural TTS', sub: 'Pro Voiceover' },
@@ -1642,6 +1642,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             )}
           </div>
 
+          {/* Quick Action: Connect Another Channel or Platform */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('social:open-fleet-drawer'))}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-red-500/30 bg-red-950/20 hover:bg-red-900/30 text-xs font-semibold text-red-300 hover:text-white transition-all cursor-pointer shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5 text-red-400" />
+            <span>Connect Another Channel or Platform (Fleet)</span>
+          </button>
+
           {/* Engine & Pipeline Architecture Diagnostic */}
           <div className="p-3.5 rounded-xl bg-[#111111] border border-[#222226] text-xs text-zinc-400 flex flex-col gap-2.5">
             <span className="text-white font-semibold text-[11px] flex items-center gap-1.5">
@@ -1674,4 +1684,3 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 };
 
 export default AutomationsPane;
-

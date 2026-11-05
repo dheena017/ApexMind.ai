@@ -76,6 +76,7 @@ interface WorkspaceDraftSnapshot {
 
 type CanvasAspectRatio = WorkspaceDraftSnapshot['canvasAspectRatio'];
 type CanvasOutputSize = NonNullable<WorkspaceDraftSnapshot['canvasOutputSize']>;
+type MobileWorkspaceView = 'tools' | 'preview' | 'inspector' | 'timeline';
 
 const getDefaultCanvasOutputSize = (aspectRatio: CanvasAspectRatio): CanvasOutputSize => {
   const dimensions: Record<CanvasAspectRatio, { width: number; height: number }> = {
@@ -136,6 +137,7 @@ export default function WorkspacePage({
   const [activeElementOverlay, setActiveElementOverlay] = useState<{ id?: string; name?: string; type: string; value: string; label?: string } | null>(null);
   const [activeCompound, setActiveCompound] = useState<CompoundType>('home');
   const [selectedClip, setSelectedClip] = useState<SelectedClip | null>(null);
+  const [mobileView, setMobileView] = useState<MobileWorkspaceView>('tools');
   const [canvasAspectRatio, setCanvasAspectRatio] = useState<'9:16' | '16:9' | '1:1' | '4:5' | '21:9'>('9:16');
   const [canvasOutputSize, setCanvasOutputSize] = useState<CanvasOutputSize>(() => getDefaultCanvasOutputSize('9:16'));
   const [canvasBackground, setCanvasBackground] = useState<string>('#050505');
@@ -144,6 +146,40 @@ export default function WorkspacePage({
     activePane === 'editor' ? 'editor' : 'prompt'
   );
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileView('tools');
+    window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: 'tools' }));
+  }, [activePane]);
+
+  useEffect(() => {
+    const mobileBreakpoint = window.matchMedia('(max-width: 767px)');
+    const showToolsOnMobile = () => {
+      setMobileView('tools');
+      window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: 'tools' }));
+    };
+    const handleBreakpointChange = (event: MediaQueryListEvent) => {
+      if (event.matches) showToolsOnMobile();
+    };
+
+    if (mobileBreakpoint.matches) showToolsOnMobile();
+    mobileBreakpoint.addEventListener('change', handleBreakpointChange);
+    return () => mobileBreakpoint.removeEventListener('change', handleBreakpointChange);
+  }, []);
+
+  useEffect(() => {
+    const handleMobileView = (event: Event) => {
+      const view = (event as CustomEvent<MobileWorkspaceView>).detail;
+      if (view === 'tools' || view === 'preview' || view === 'inspector' || view === 'timeline') {
+        setMobileView(view);
+        if (view === 'timeline') {
+          window.dispatchEvent(new CustomEvent('workspace:expand-mobile-timeline'));
+        }
+      }
+    };
+    window.addEventListener('workspace:set-mobile-view', handleMobileView);
+    return () => window.removeEventListener('workspace:set-mobile-view', handleMobileView);
+  }, []);
 
   const handleCanvasAspectRatioChange = (ratio: CanvasAspectRatio) => {
     setCanvasAspectRatio(ratio);
@@ -1339,13 +1375,19 @@ export default function WorkspacePage({
     }
   });
 
-  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
 
   useEffect(() => {
-    const handleWindowResize = () => setIsDesktop(window.innerWidth >= 1024);
+    const handleWindowResize = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener('resize', handleWindowResize);
     return () => window.removeEventListener('resize', handleWindowResize);
   }, []);
+
+  useEffect(() => {
+    if (isDesktop) {
+      document.querySelector<HTMLElement>('.workspace-main-column')?.scrollTo({ left: 0 });
+    }
+  }, [isDesktop]);
 
 
 
@@ -1790,7 +1832,10 @@ export default function WorkspacePage({
   }, [onPaneChange]);
 
   return (
-    <div className="w-full h-auto lg:h-full flex flex-col lg:flex-row min-h-0 font-sans-studio select-none gap-0 overflow-hidden">
+    <div
+      className="workspace-editor-root w-full h-auto md:h-full flex flex-col md:flex-row min-h-0 font-sans-studio select-none gap-0 overflow-hidden"
+      data-mobile-view={mobileView}
+    >
       {/* Hidden Audio Element */}
       <audio ref={audioRef} className="hidden" preload="auto" />
       <audio ref={musicAudioRef} className="hidden" preload="auto" crossOrigin="anonymous" loop />
@@ -1798,8 +1843,8 @@ export default function WorkspacePage({
       {/* â”€â”€ Left Studio Column: Full-Height (Top to Bottom) â”€â”€ */}
       {showLeftPane && (
         <div
-          style={isDesktop ? { width: `${leftPaneWidth}px` } : undefined}
-          className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-r border-[#242424]"
+          style={isDesktop ? { width: `${Math.min(leftPaneWidth, window.innerWidth * 0.3)}px` } : undefined}
+          className="workspace-left-pane w-full max-w-full md:w-auto shrink-0 min-h-130 md:h-full md:min-h-0 flex flex-col overflow-hidden border-r border-[#242424]"
         >
             {activePane === 'automations' ? (
               <AutomationsPane
@@ -2129,11 +2174,11 @@ export default function WorkspacePage({
         )}
 
       {/* â”€â”€ Main Work Area (Right of Left Panel): Top Preview & Controls, Bottom Timeline â”€â”€ */}
-      <div className="flex-1 min-w-0 h-auto lg:h-full flex flex-col min-h-0 overflow-hidden">
+      <div className="workspace-main-area flex-1 min-w-0 h-auto md:h-full flex flex-col min-h-0 overflow-hidden">
         {/* Top Area: Video Preview and Inspiration Studio */}
-        <div className="flex flex-col lg:flex-row gap-0 h-auto min-h-0 flex-1 overflow-hidden relative">
+        <div className="workspace-preview-area flex flex-col md:flex-row gap-0 h-auto min-h-0 flex-1 overflow-hidden relative">
           {/* Center Pane: Video Preview Canvas */}
-          <div className="flex-1 min-w-0 w-full max-w-full min-h-130 lg:h-full lg:min-h-0 flex flex-col items-center justify-center overflow-hidden">
+          <div className="workspace-preview-pane flex-1 min-w-0 w-full max-w-full min-h-130 md:h-full md:min-h-0 flex flex-col items-center justify-center overflow-hidden">
             <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
               <VideoPreviewPane
                 canvasAspectRatio={canvasAspectRatio}
@@ -2215,8 +2260,8 @@ export default function WorkspacePage({
           {/* Right Pane: Inspiration Studio Panel */}
           {showRightPane && (
             <div
-              style={isDesktop ? { width: `${rightPaneWidth}px` } : undefined}
-              className="w-full max-w-full lg:w-auto shrink-0 min-h-130 lg:h-full lg:min-h-0 flex flex-col overflow-hidden border-l border-[#242424]"
+              style={isDesktop ? { width: `${Math.min(rightPaneWidth, window.innerWidth * 0.3)}px` } : undefined}
+              className="workspace-inspector-pane w-full max-w-full md:w-auto shrink-0 min-h-130 md:h-full md:min-h-0 flex flex-col overflow-hidden border-l border-[#242424]"
             >
               <StudioControlsPane
                 voices={voices}
@@ -2296,7 +2341,7 @@ export default function WorkspacePage({
 
         {/* â”€â”€ Studio Multi-Track Timeline Panel (Bottom Studio Area, placed next to Left Panel) â”€â”€ */}
         {showTimeline && (
-          <div className="shrink-0 min-h-[44px] border-t border-[#242424]">
+          <div className="workspace-timeline-pane flex shrink-0 min-h-[44px] min-w-0 flex-col border-t border-[#242424]">
             <StudioTimelinePane
               timelineHeight={timelineHeight}
               onTimelineHeightChange={setTimelineHeight}
@@ -2357,6 +2402,8 @@ export default function WorkspacePage({
               onSelectCompound={(compound) => {
                 setShowRightPane(true);
                 setActiveCompound(compound as CompoundType);
+                setMobileView('inspector');
+                window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: 'inspector' }));
               }}
             />
           </div>

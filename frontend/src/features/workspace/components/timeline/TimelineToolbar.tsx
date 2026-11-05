@@ -96,9 +96,9 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   const addTrackAnchorRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex flex-nowrap items-center justify-between px-3 py-1.5 bg-[#121212] border-b border-[#242424] gap-3 overflow-x-auto select-none min-w-0">
+    <div className="workspace-timeline-toolbar flex flex-nowrap items-center justify-between px-3 py-1.5 bg-[#121212] border-b border-[#242424] gap-3 overflow-x-auto select-none min-w-0">
       {/* Left: Title, Track Indicators, Editing Tools & Hero Playback Cluster */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="workspace-timeline-toolbar-main flex items-center gap-2 shrink-0">
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -110,7 +110,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5 text-[#9CA3AF]" />}
         </button>
 
-        <div className="flex items-center gap-1.5">
+        <div className="workspace-timeline-toolbar-heading flex items-center gap-1.5">
           <span className="text-[11px] font-bold tracking-wider uppercase flex items-center gap-1.5 text-white">
             <Sliders className="w-3.5 h-3.5 text-slate-400" />
             Timeline
@@ -123,10 +123,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           </span>
         </div>
 
-        <div className="h-4 w-px bg-[#262626] mx-0.5" />
+        <div className="workspace-timeline-toolbar-divider h-4 w-px bg-[#262626] mx-0.5" />
 
         {/* ── Action Tools: Split, Duplicate, Delete ── */}
-        <div className="flex items-center gap-1">
+        <div className="workspace-timeline-toolbar-actions flex items-center gap-1">
           <button
             type="button"
             onClick={onSplitClip}
@@ -183,10 +183,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           </button>
         </div>
 
-        <div className="h-4 w-px bg-[#262626] mx-0.5" />
+        <div className="workspace-timeline-toolbar-divider h-4 w-px bg-[#262626] mx-0.5" />
 
         {/* ── Playback Controls: Jump to Start, Hero Play/Pause Pill, Jump to End & Timecode ── */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="workspace-timeline-toolbar-playback flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => onSeek(0)}
@@ -242,7 +242,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
       </div>
 
       {/* Right: Add Track, Snapping, Zoom Level Controls & Shortcuts */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="workspace-timeline-toolbar-secondary flex items-center gap-2 shrink-0">
         {/* ── Add Track ── */}
         <div ref={addTrackAnchorRef} className="relative">
           <button
@@ -265,7 +265,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           />
         </div>
 
-        <div className="h-4 w-px bg-[#262626] mx-0.5" />
+        <div className="workspace-timeline-toolbar-divider h-4 w-px bg-[#262626] mx-0.5" />
 
         {/* ── Zoom Controls & Shortcuts ── */}
         <div className="flex items-center h-7 bg-[#161616] border border-[#262626] rounded-lg p-0.5 text-[#9CA3AF]">

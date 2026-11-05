@@ -17,10 +17,12 @@ import { Badge } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHeader';
-import { WorkspaceSidebar, WorkspaceMobileTabs, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
+import { WorkspaceSidebar, WORKSPACE_SIDEBAR_ITEMS, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
 import { WorkspaceStatusBar } from '@/src/features/workspace/components/WorkspaceStatusBar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
 import { ChannelSwitcher } from '@/src/features/youtube/components/ChannelSwitcher';
+import { SocialFleetDrawer } from '@/src/features/social/components/SocialFleetDrawer';
+import { Radio } from 'lucide-react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -42,6 +44,15 @@ export default function AppLayout({
 }: AppLayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const [workspaceMobileView, setWorkspaceMobileView] = useState<'tools' | 'preview' | 'inspector' | 'timeline'>('tools');
+  const [showFleetDrawer, setShowFleetDrawer] = useState(false);
+
+  useEffect(() => {
+    const handleOpenFleet = () => setShowFleetDrawer(true);
+    window.addEventListener('social:open-fleet-drawer', handleOpenFleet);
+    return () => window.removeEventListener('social:open-fleet-drawer', handleOpenFleet);
+  }, []);
   const [dynamicUnread, setDynamicUnread] = useState(0);
   const [workspaceStatus, setWorkspaceStatus] = useState({
     aspectRatio: '9:16',
@@ -97,7 +108,7 @@ export default function AppLayout({
 
   // Prevent background page from moving or scrolling when sidebar is open
   useEffect(() => {
-    if (sidebarOpen) {
+    if (sidebarOpen || workspaceMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -105,18 +116,38 @@ export default function AppLayout({
     return () => {
       document.body.style.overflow = '';
     };
-  }, [sidebarOpen]);
+  }, [sidebarOpen, workspaceMenuOpen]);
 
   // Close sidebar on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && sidebarOpen) {
-        setSidebarOpen(false);
+      if (e.key === 'Escape') {
+        if (sidebarOpen) setSidebarOpen(false);
+        if (workspaceMenuOpen) setWorkspaceMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sidebarOpen]);
+  }, [sidebarOpen, workspaceMenuOpen]);
+
+  useEffect(() => {
+    setWorkspaceMenuOpen(false);
+  }, [activePage]);
+
+  useEffect(() => {
+    const handleMobileViewChange = (event: Event) => {
+      const view = (event as CustomEvent<typeof workspaceMobileView>).detail;
+      if (view === 'tools' || view === 'preview' || view === 'inspector' || view === 'timeline') {
+        setWorkspaceMobileView(view);
+      }
+    };
+    window.addEventListener('workspace:set-mobile-view', handleMobileViewChange);
+    return () => window.removeEventListener('workspace:set-mobile-view', handleMobileViewChange);
+  }, []);
+
+  useEffect(() => {
+    setWorkspaceMobileView('tools');
+  }, [activeWorkspacePane]);
 
   if (
     activePage === 'landing' ||
@@ -147,6 +178,11 @@ export default function AppLayout({
       iconBg: 'bg-[#172033] border-[#2A3F5F]', iconColor: 'text-[#38BDF8]',
     },
     {
+      id: 'channels', label: 'Social Channels & Linking',
+      icon: <Radio className="w-4 h-4 shrink-0 text-red-400" />,
+      iconBg: 'bg-[#1F1515] border-[#3D2020]', iconColor: 'text-red-400',
+    },
+    {
       id: 'youtube', label: 'YouTube Manager',
       icon: <Youtube className="w-4 h-4 shrink-0" />,
       iconBg: 'bg-[#1F1515] border-[#3D2020]', iconColor: 'text-red-400',
@@ -172,7 +208,7 @@ export default function AppLayout({
   const isWorkspace = activePage === 'workspace' || activePage.startsWith('workspace-');
 
   return (
-    <div className="h-screen w-full bg-[#0A0A0A] text-[#E5E5E5] flex flex-col overflow-hidden font-sans-studio antialiased selection:bg-[#3B82F6]/30 selection:text-[#60A5FA] relative">
+    <div className="h-screen h-[100dvh] w-full bg-[#0A0A0A] text-[#E5E5E5] flex flex-col overflow-hidden font-sans-studio antialiased selection:bg-[#3B82F6]/30 selection:text-[#60A5FA] relative">
       {/* =========================================================================
           Workspace Pages (/workspace, /workspace/canvas, /workspace/script, etc.):
           Dedicated Studio Header & Sidebar (Main page header is hidden)
@@ -190,24 +226,128 @@ export default function AppLayout({
           />
 
           {/* Right Main Studio Column: Header at top, Panes in center, Status bar at bottom */}
-          <div className="flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden">
+          <div className="workspace-main-column flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden">
             {/* Studio Header sits to the right of the full-height left bar */}
             <WorkspaceHeader
               user={user}
               unreadCount={unreadCount}
               onNavigate={onNavigate}
+              activeWorkspacePane={activeWorkspacePane}
+              mobileMenuOpen={workspaceMenuOpen}
+              onToggleMobileMenu={() => setWorkspaceMenuOpen((open) => !open)}
+              onSignOut={async () => {
+                await logout();
+                handleNavClick('login');
+              }}
             />
 
-            {/* Mobile Tab Bar: Visible only below 640px, under header */}
-            <WorkspaceMobileTabs
-              activeTab={activeWorkspacePane}
-              onTabChange={(tab) => onWorkspacePaneChange(tab)}
-              onNavigate={onNavigate}
-            />
+            {workspaceMenuOpen && (
+              <>
+                <button
+                  type="button"
+                  className="workspace-mobile-menu-backdrop fixed inset-0 z-40 bg-black/60 md:hidden"
+                  onClick={() => setWorkspaceMenuOpen(false)}
+                  aria-label="Close studio menu"
+                />
+                <nav
+                  id="workspace-mobile-menu"
+                  className="workspace-mobile-menu fixed inset-y-0 left-0 z-50 flex w-[min(88vw,360px)] flex-col overflow-y-auto rounded-r-2xl border-r border-[#2F2F2F] bg-[#141414] p-4 shadow-2xl shadow-black/70 md:hidden"
+                  aria-label="Studio menu"
+                  aria-modal="true"
+                  role="dialog"
+                >
+                  <div className="mb-2 flex items-center justify-between border-b border-[#262626] pb-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-bold text-white">Studio Menu</span>
+                      <span className="text-[10px] font-medium text-[#737373]">Choose a workspace view or tool</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setWorkspaceMenuOpen(false)}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#2A2A2A] bg-[#1B1B1B] text-[#B4B4B8] hover:text-white"
+                      aria-label="Close studio menu"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mb-2 mt-3 flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#737373]">Workspace view</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      ['tools', 'Tools'],
+                      ['preview', 'Preview + Timeline'],
+                      ['inspector', 'Inspector'],
+                    ] as const).map(([view, label]) => (
+                      <button
+                        key={view}
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: view }));
+                          setWorkspaceMenuOpen(false);
+                        }}
+                        aria-current={workspaceMobileView === view ? 'page' : undefined}
+                        className={`min-h-11 rounded-xl border px-3 text-left text-xs font-semibold transition-colors ${
+                          workspaceMobileView === view
+                            ? 'border-[#60A5FA]/40 bg-[#2563EB]/20 text-white'
+                            : 'border-[#2A2A2A] bg-[#1B1B1B] text-[#D4D4D8] hover:border-[#3B82F6]/50 hover:bg-[#202020] hover:text-white'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mb-2 mt-4 flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#737373]">Studio tools</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {WORKSPACE_SIDEBAR_ITEMS.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = item.isScriptGroup
+                        ? activeWorkspacePane === 'script' || activeWorkspacePane === 'prompt' || activeWorkspacePane === 'editor'
+                        : activeWorkspacePane === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            onWorkspacePaneChange(item.id);
+                            window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: 'tools' }));
+                            setWorkspaceMenuOpen(false);
+                          }}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-left text-xs font-semibold transition-colors ${
+                            isActive
+                              ? 'border-[#60A5FA]/40 bg-[#2563EB]/20 text-white'
+                              : 'border-[#2A2A2A] bg-[#1B1B1B] text-[#B4B4B8] hover:bg-[#202020] hover:text-white'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4 shrink-0 text-[#60A5FA]" />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigate('dashboard');
+                      setWorkspaceMenuOpen(false);
+                    }}
+                    className="mt-4 flex min-h-11 w-full items-center gap-2 rounded-xl border border-[#2A2A2A] bg-[#1B1B1B] px-3 text-left text-xs font-semibold text-[#B4B4B8] hover:bg-[#202020] hover:text-white"
+                  >
+                    <LayoutDashboard className="h-4 w-4 text-[#60A5FA]" />
+                    Creator dashboard
+                  </button>
+                </nav>
+              </>
+            )}
 
             {/* Main Studio Body: Docked panes in center */}
-            <main className="flex-1 min-w-0 min-h-0 p-0 overflow-hidden flex flex-col bg-[#0A0A0A]">
-              <div className="w-full h-full flex-1 min-h-0">
+            <main className="workspace-main-content flex-1 min-w-0 min-h-0 p-0 overflow-hidden flex flex-col bg-[#0A0A0A]">
+              <div className="workspace-main-wrapper w-full h-full flex-1 min-h-0">
                 {children}
               </div>
             </main>
@@ -265,7 +405,22 @@ export default function AppLayout({
 
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <ChannelSwitcher className="hidden sm:block" />
+              <ChannelSwitcher
+                className="hidden sm:block"
+                onOpenFleetDrawer={() => setShowFleetDrawer(true)}
+              />
+
+              {/* Social Fleet Drawer Trigger */}
+              <button
+                type="button"
+                onClick={() => setShowFleetDrawer(true)}
+                className="flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[11px] text-[#A1A1AA] hover:text-white transition-all cursor-pointer group"
+                title="Manage Connected Channels (YouTube, Instagram, Facebook, TikTok)"
+              >
+                <Radio className="w-3 h-3 text-red-400 group-hover:scale-110 transition-transform" />
+                <span className="text-[10px] font-semibold text-[#D4D4D8] hidden md:inline">Fleet</span>
+              </button>
+
               <NotificationDropdown
                 unreadCount={unreadCount}
                 onNavigate={onNavigate}
@@ -354,6 +509,7 @@ export default function AppLayout({
             {navItems.map((item) => {
               const isActive =
                 activePage === item.id ||
+                (item.id === 'channels' && (activePage === 'channels' || activePage === 'profile-channels')) ||
                 (item.id === 'profile' && activePage.startsWith('profile-')) ||
                 (item.id === 'youtube' && activePage.startsWith('youtube-')) ||
                 (item.id === 'workspace' && activePage.startsWith('workspace-'));
@@ -445,6 +601,13 @@ export default function AppLayout({
 
         </div>
       </aside>
+
+      {/* Omnichannel Social Fleet Drawer */}
+      <SocialFleetDrawer
+        isOpen={showFleetDrawer}
+        onClose={() => setShowFleetDrawer(false)}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }

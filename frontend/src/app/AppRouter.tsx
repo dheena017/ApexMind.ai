@@ -10,7 +10,7 @@ import VideosPage from '@/src/features/videos/pages/VideosPage';
 import YouTubePage from '@/src/features/youtube/pages/YouTubePage';
 import ProfileDetailsPage from '@/src/features/profile/pages/ProfileDetailsPage';
 import ProfilePreferencesPage from '@/src/features/profile/pages/ProfilePreferencesPage';
-import ProfileChannelsPage from '@/src/features/profile/pages/ProfileChannelsPage';
+import SocialLinkingPage from '@/src/features/social/pages/SocialLinkingPage';
 import ProfileActivityPage from '@/src/features/profile/pages/ProfileActivityPage';
 import ProfileUsagePage from '@/src/features/profile/pages/ProfileUsagePage';
 import RecentStudioActivityPage from '@/src/features/profile/pages/RecentStudioActivityPage';
@@ -119,8 +119,11 @@ export default function AppRouter({
             return <ProfileDetailsPage />;
           case 'profile-preferences':
             return <ProfilePreferencesPage />;
+          case 'channels':
+          case 'linking':
+          case 'social-linking':
           case 'profile-channels':
-            return <ProfileChannelsPage onNavigate={onNavigate} />;
+            return <SocialLinkingPage onNavigate={onNavigate} />;
           case 'profile-activity':
             return <ProfileActivityPage />;
           case 'profile-usage':

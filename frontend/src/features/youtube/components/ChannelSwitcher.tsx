@@ -81,7 +81,10 @@ export const ChannelSwitcher: React.FC<ChannelSwitcherProps> = ({
     return (
       <button
         type="button"
-        onClick={onOpenFleetDrawer}
+        onClick={() => {
+          if (onOpenFleetDrawer) onOpenFleetDrawer();
+          else window.dispatchEvent(new CustomEvent('social:open-fleet-drawer'));
+        }}
         className={`flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-red-950/30 hover:bg-red-900/40 border border-red-500/30 text-xs font-medium text-red-300 hover:text-white transition-all cursor-pointer ${className}`}
         title="Connect YouTube Channel"
       >
@@ -159,21 +162,35 @@ export const ChannelSwitcher: React.FC<ChannelSwitcherProps> = ({
             })}
           </div>
 
-          {onOpenFleetDrawer && (
-            <div className="pt-1.5 border-t border-[#242424]">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
+          <div className="pt-1.5 border-t border-[#242424] space-y-1">
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                if (onOpenFleetDrawer) {
                   onOpenFleetDrawer();
-                }}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1E1E22] hover:bg-[#282830] text-[11px] font-medium text-white transition-colors cursor-pointer"
-              >
-                <Plus className="w-3 h-3 text-red-400" />
-                <span>Manage Social Fleet</span>
-              </button>
-            </div>
-          )}
+                } else {
+                  window.dispatchEvent(new CustomEvent('social:open-fleet-drawer'));
+                }
+              }}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/20 hover:bg-red-900/30 text-[11px] font-medium text-red-300 hover:text-white border border-red-500/25 transition-colors cursor-pointer"
+            >
+              <Plus className="w-3 h-3 text-red-400" />
+              <span>+ Add / Link Another Channel</span>
+            </button>
+
+            <a
+              href="/channels"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsOpen(false);
+                window.location.pathname = '/channels';
+              }}
+              className="w-full flex items-center justify-center gap-1 px-3 py-1 rounded-lg bg-[#18181C] hover:bg-[#202026] text-[10px] font-semibold text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <span>View Full Fleet Hub →</span>
+            </a>
+          </div>
         </div>
       )}
     </div>

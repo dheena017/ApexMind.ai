@@ -34,7 +34,7 @@ export interface WorkspaceSidebarProps {
   mode?: 'all' | 'desktop-only' | 'mobile-only';
 }
 
-const SIDEBAR_ITEMS: Array<{
+export const WORKSPACE_SIDEBAR_ITEMS: Array<{
   id: WorkspaceTabType;
   label: string;
   shortLabel: string;
@@ -82,7 +82,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               <span className="text-[11px] leading-none">Home</span>
             </button>
           )}
-          {SIDEBAR_ITEMS.map((item) => {
+          {WORKSPACE_SIDEBAR_ITEMS.map((item) => {
             const IconComp = item.icon;
             const isActive = item.isScriptGroup
               ? activeTab === 'script' || activeTab === 'prompt' || activeTab === 'editor'
@@ -109,9 +109,9 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         </nav>
       )}
 
-      {/* ── Desktop Vertical Left Sidebar (>= 640px) ── */}
+      {/* ── Desktop Vertical Left Sidebar (>= 768px) ── */}
       {showDesktop && (
-        <aside className="hidden sm:flex relative w-14 shrink-0 h-full bg-[#111111]/95 border-r border-[#242424] flex-col items-center justify-between py-2 z-20 select-none font-sans-studio backdrop-blur-xl">
+        <aside className="hidden md:flex relative w-14 shrink-0 h-full bg-[#111111]/95 border-r border-[#242424] flex-col items-center justify-between py-2 z-20 select-none font-sans-studio backdrop-blur-xl">
           <div className="flex w-full flex-col items-center gap-1.5 px-1.5">
             {/* Creator Dashboard Home Shortcut */}
             {onNavigate && (
@@ -136,7 +136,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               </div>
             )}
 
-            {SIDEBAR_ITEMS.map((item) => {
+            {WORKSPACE_SIDEBAR_ITEMS.map((item) => {
               const IconComp = item.icon;
               const isActive = item.isScriptGroup
                 ? activeTab === 'script' || activeTab === 'prompt' || activeTab === 'editor'

@@ -128,15 +128,15 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   const [showTitleDrawer, setShowTitleDrawer] = useState<boolean>(false);
   const [copiedDescription, setCopiedDescription] = useState<boolean>(false);
 
-  const [titleSuggestions, setTitleSuggestions] = useState<Array<{ title: string; angle: string; viralityScore: number }>>(() => [
-    { title: script?.title || 'The Stoic Discipline Code', angle: 'Primary Hook', viralityScore: 98 },
-    ...(script?.titleIdeas || [
-      { title: 'Stop Waiting for Motivation (Brutal Truth)', angle: 'Brutal Truth', viralityScore: 96 },
-      { title: 'The Quiet Rule Marcus Aurelius Never Broke', angle: 'Curiosity Gap', viralityScore: 94 },
-      { title: 'Why Weak Men Seek Comfort (And Strong Men Don\'t)', angle: 'Direct Challenge', viralityScore: 92 },
-      { title: 'How to Conquer Your Mind in Total Silence', angle: 'Stoic Insight', viralityScore: 90 },
-    ]),
-  ]);
+  const [titleSuggestions, setTitleSuggestions] = useState<Array<{ title: string; angle: string; viralityScore: number }>>(() => {
+    if (script?.titleIdeas && script.titleIdeas.length > 0) {
+      return script.titleIdeas;
+    }
+    if (script?.title) {
+      return [{ title: script.title, angle: 'Current Title', viralityScore: 95 }];
+    }
+    return [];
+  });
 
   const [categorizedTags, setCategorizedTags] = useState<{
     trending: string[];

@@ -15,6 +15,7 @@ export type PageRoute =
   | 'workspace-image'
   | 'workspace-video'
   | 'videos'
+  | 'channels'
   | 'youtube'
   | 'youtube-videos'
   | 'youtube-shorts'
@@ -72,7 +73,8 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'videos', path: '/videos', title: 'Website Video Library - ApexMind', aliases: ['/video-library', '/studio-videos', '/library'] },
 
   // ── 4. YouTube Channel Studio & Dedicated Sub-Paths ──
-  { id: 'youtube', path: '/youtube', title: 'YouTube Studio Hub - ApexMind', aliases: ['/channels', '/studio/youtube', '/youtube/overview'] },
+  { id: 'channels', path: '/channels', title: 'Social Channels & Fleet Hub - ApexMind', aliases: ['/fleet', '/social-channels', '/connected-channels'] },
+  { id: 'youtube', path: '/youtube', title: 'YouTube Studio Hub - ApexMind', aliases: ['/studio/youtube', '/youtube/overview'] },
   { id: 'youtube-videos', path: '/youtube/videos', title: 'Channel Videos - ApexMind Studio', aliases: ['/channel/videos', '/youtube-videos'] },
   { id: 'youtube-shorts', path: '/youtube/shorts', title: 'Channel Shorts - ApexMind Studio', aliases: ['/channel/shorts', '/shorts', '/youtube-shorts'] },
   { id: 'youtube-playlists', path: '/youtube/playlists', title: 'Channel Playlists - ApexMind Studio', aliases: ['/channel/playlists', '/playlists'] },
