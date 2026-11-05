@@ -21,6 +21,7 @@ import { getPostLoginRedirect, clearPostLoginRedirect } from '@/src/app/routes';
 import { connectYouTubeWithGoogle, getGoogleClientId } from '@/src/features/youtube/utils/googleOAuthConnect';
 import { authApi } from '../api/authApi';
 import { MetaLoginProvider } from '../types';
+import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
 
 // ── Google SVG Icon ──
 function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
@@ -216,13 +217,22 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const handleMetaAuth = async (provider: MetaLoginProvider) => {
     if (!requireAgreement()) return;
 
+    const authWindow = openOAuthPopup();
+    if (!authWindow) {
+      setNotice({ text: 'Allow pop-ups to continue with secure social sign-in.', type: 'error' });
+      return;
+    }
+
     setLoading(true);
     setNotice({ text: `Connecting with ${provider === 'facebook' ? 'Facebook' : 'Instagram'}...`, type: 'info' });
     try {
       const { authorizationUrl, state } = await authApi.getMetaAuthorizationUrl(provider);
-      sessionStorage.setItem('apexmind_meta_login', JSON.stringify({ provider, state }));
-      window.location.assign(authorizationUrl);
+      const savedFlow = JSON.stringify({ provider, state });
+      sessionStorage.setItem('apexmind_meta_login', savedFlow);
+      authWindow.sessionStorage.setItem('apexmind_meta_login', savedFlow);
+      navigateOAuthPopup(authWindow, authorizationUrl);
     } catch (err: unknown) {
+      authWindow.close();
       setLoading(false);
       setNotice({
         text: err instanceof Error ? err.message : 'Social sign-in could not be started.',

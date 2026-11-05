@@ -73,7 +73,7 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'videos', path: '/videos', title: 'Website Video Library - ApexMind', aliases: ['/video-library', '/studio-videos', '/library'] },
 
   // ── 4. YouTube Channel Studio & Dedicated Sub-Paths ──
-  { id: 'channels', path: '/social-accounts', title: 'Social Accounts - ApexMind', aliases: ['/channels', '/fleet', '/social-channels', '/connected-channels'] },
+  { id: 'channels', path: '/social-accounts', title: 'Social Accounts - ApexMind', aliases: ['/channels', '/fleet', '/social-channels', '/connected-channels', '/auth/callback/meta'] },
   { id: 'youtube', path: '/youtube', title: 'YouTube Studio Hub - ApexMind', aliases: ['/studio/youtube', '/youtube/overview'] },
   { id: 'youtube-videos', path: '/youtube/videos', title: 'Channel Videos - ApexMind Studio', aliases: ['/channel/videos', '/youtube-videos'] },
   { id: 'youtube-shorts', path: '/youtube/shorts', title: 'Channel Shorts - ApexMind Studio', aliases: ['/channel/shorts', '/shorts', '/youtube-shorts'] },

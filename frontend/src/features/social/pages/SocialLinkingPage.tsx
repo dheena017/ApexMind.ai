@@ -20,6 +20,7 @@ import {
 import { socialApi } from '@/src/features/social/api/socialApi';
 import { SocialAccount, SocialPlatform, PublishedPost } from '@/src/features/social/types';
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
+import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
 
 function formatCount(num?: number): string {
   if (!num || num === 0) return '0';
@@ -170,11 +171,17 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   const handleConnectMeta = async (platform: SocialPlatform) => {
     setActionError(null);
     setNotice(null);
+    const authWindow = openOAuthPopup();
+    if (!authWindow) {
+      setActionError('Allow pop-ups to continue with secure social account connection.');
+      return;
+    }
     setConnectingMetaPlatform(platform);
     try {
       const oauthUrl = await socialApi.getOAuthUrl(platform);
-      window.location.assign(oauthUrl);
+      navigateOAuthPopup(authWindow, oauthUrl);
     } catch (err: any) {
+      authWindow.close();
       setActionError(err.message || `Could not start ${platform} authorization.`);
       setConnectingMetaPlatform(null);
     }
@@ -446,6 +453,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
           <div>
             <h2 className="text-sm font-bold text-white">Connect a social account</h2>
             <p className="text-[11px] text-[#9CA3AF]">Choose a platform to filter accounts, or use + to connect another account. Select the same platform again to show all.</p>
+            <p className="mt-1 text-[10px] text-[#71717A]">The + button opens the platform’s secure authorization page, then returns you here.</p>
           </div>
           <span className="text-[10px] text-zinc-500 font-medium">Secure OAuth connection</span>
         </div>

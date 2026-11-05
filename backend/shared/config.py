@@ -46,6 +46,8 @@ class Settings:
     # Meta Graph API (Instagram Reels & Facebook Pages)
     META_APP_ID: str = os.environ.get("META_APP_ID", os.environ.get("VITE_META_APP_ID", ""))
     META_APP_SECRET: str = os.environ.get("META_APP_SECRET", "")
+    INSTAGRAM_APP_ID: str = os.environ.get("INSTAGRAM_APP_ID", "")
+    INSTAGRAM_APP_SECRET: str = os.environ.get("INSTAGRAM_APP_SECRET", "")
     META_REDIRECT_URI: str = os.environ.get("META_REDIRECT_URI", "http://localhost:5173/social-accounts")
     META_AUTH_REDIRECT_URI: str = os.environ.get("META_AUTH_REDIRECT_URI", "http://localhost:5173/login")
 

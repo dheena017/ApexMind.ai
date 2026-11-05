@@ -145,13 +145,20 @@ def generate_platform_oauth_url(
     elif clean_p in ("meta", "instagram", "facebook"):
         if clean_p == "meta":
             clean_p = "facebook"
-        if not settings.META_APP_ID or not settings.META_APP_SECRET:
-            raise ValueError("Meta connections are not configured. Set META_APP_ID and META_APP_SECRET.")
+        app_id = settings.INSTAGRAM_APP_ID if clean_p == "instagram" else settings.META_APP_ID
+        app_secret = settings.INSTAGRAM_APP_SECRET if clean_p == "instagram" else settings.META_APP_SECRET
+        if not app_id or not app_secret:
+            if clean_p == "instagram":
+                raise ValueError(
+                    "Instagram connections are not configured. Set INSTAGRAM_APP_ID and "
+                    "INSTAGRAM_APP_SECRET from Instagram API setup with Instagram Login."
+                )
+            raise ValueError("Facebook connections are not configured. Set META_APP_ID and META_APP_SECRET.")
         state = _create_meta_social_state(clean_p, user_id)
         if redirect_uri and redirect_uri != settings.META_REDIRECT_URI:
             raise ValueError("Meta OAuth redirect URI must match META_REDIRECT_URI.")
         params = {
-            "client_id": settings.META_APP_ID,
+            "client_id": app_id,
             "redirect_uri": settings.META_REDIRECT_URI,
             "scope": META_SCOPES[clean_p],
             "response_type": "code",
@@ -161,7 +168,6 @@ def generate_platform_oauth_url(
         if clean_p == "instagram":
             authorization_endpoint = "https://www.instagram.com/oauth/authorize"
             params["enable_fb_login"] = "false"
-            params["force_authentication"] = "1"
         url = f"{authorization_endpoint}?{urllib.parse.urlencode(params)}"
         return {"platform": clean_p, "oauthUrl": url}
 
@@ -178,11 +184,16 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
         latest = get_latest_user()
         user_id = latest["id"] if latest else "usr_global"
 
-    if not settings.META_APP_ID or not settings.META_APP_SECRET:
-        raise ValueError("Meta connections are not configured. Set META_APP_ID and META_APP_SECRET.")
-
     if platform == "instagram":
+        if not settings.INSTAGRAM_APP_ID or not settings.INSTAGRAM_APP_SECRET:
+            raise ValueError(
+                "Instagram connections are not configured. Set INSTAGRAM_APP_ID and "
+                "INSTAGRAM_APP_SECRET from Instagram API setup with Instagram Login."
+            )
         return await _complete_instagram_login_oauth(code, user_id)
+
+    if not settings.META_APP_ID or not settings.META_APP_SECRET:
+        raise ValueError("Facebook connections are not configured. Set META_APP_ID and META_APP_SECRET.")
 
     token_url = f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token"
     graph_url = f"https://graph.facebook.com/{META_GRAPH_VERSION}"
@@ -330,8 +341,8 @@ async def _complete_instagram_login_oauth(code: str, user_id: str) -> Dict[str, 
             short_token_response = await client.post(
                 "https://api.instagram.com/oauth/access_token",
                 files={
-                    "client_id": (None, settings.META_APP_ID),
-                    "client_secret": (None, settings.META_APP_SECRET),
+                    "client_id": (None, settings.INSTAGRAM_APP_ID),
+                    "client_secret": (None, settings.INSTAGRAM_APP_SECRET),
                     "grant_type": (None, "authorization_code"),
                     "redirect_uri": (None, settings.META_REDIRECT_URI),
                     "code": (None, code),
@@ -347,7 +358,7 @@ async def _complete_instagram_login_oauth(code: str, user_id: str) -> Dict[str, 
                 "https://graph.instagram.com/access_token",
                 params={
                     "grant_type": "ig_exchange_token",
-                    "client_secret": settings.META_APP_SECRET,
+                    "client_secret": settings.INSTAGRAM_APP_SECRET,
                     "access_token": short_lived_token,
                 },
             )

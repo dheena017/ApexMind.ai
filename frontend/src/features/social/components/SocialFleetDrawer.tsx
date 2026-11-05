@@ -26,6 +26,7 @@ import { socialApi } from '../api/socialApi';
 import { SocialAccount, SocialPlatform } from '../types';
 import { Button } from '@/src/shared/ui/common';
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
+import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
 
 interface SocialFleetDrawerProps {
   isOpen: boolean;
@@ -150,10 +151,17 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
       return;
     }
 
+    const authWindow = openOAuthPopup();
+    if (!authWindow) {
+      setNotice({ text: 'Allow pop-ups to continue with secure social account connection.', type: 'error' });
+      return;
+    }
+
     try {
       const oauthUrl = await socialApi.getOAuthUrl(platform);
-      window.location.assign(oauthUrl);
+      navigateOAuthPopup(authWindow, oauthUrl);
     } catch (err: any) {
+      authWindow.close();
       setNotice({ text: err.message || `Could not start ${platform} authorization.`, type: 'error' });
     }
   };

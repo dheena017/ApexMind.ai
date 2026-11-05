@@ -46,9 +46,12 @@ def create_meta_login_url(provider: str) -> Dict[str, str]:
         authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
         scopes = "public_profile,email"
     elif provider == "instagram":
-        app_id = settings.META_APP_ID
-        if not app_id or not settings.META_APP_SECRET:
-            raise ValueError("Meta sign-in is not configured. Set META_APP_ID and META_APP_SECRET on the backend.")
+        app_id = settings.INSTAGRAM_APP_ID
+        if not app_id or not settings.INSTAGRAM_APP_SECRET:
+            raise ValueError(
+                "Instagram sign-in is not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET "
+                "from Instagram API setup with Instagram Login."
+            )
         authorization_endpoint = "https://www.instagram.com/oauth/authorize"
         scopes = "instagram_business_basic"
     else:
@@ -123,12 +126,15 @@ async def authenticate_meta_user(provider: str, code: str, state: str) -> Dict[s
             "code": code,
         }
     elif provider == "instagram":
-        app_id = settings.META_APP_ID
-        app_secret = settings.META_APP_SECRET
+        app_id = settings.INSTAGRAM_APP_ID
+        app_secret = settings.INSTAGRAM_APP_SECRET
         token_endpoint = "https://api.instagram.com/oauth/access_token"
         profile_endpoint = "https://graph.instagram.com/v27.0/me"
         if not app_id or not app_secret:
-            raise ValueError("Meta sign-in is not configured on the backend.")
+            raise ValueError(
+                "Instagram sign-in is not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET "
+                "from Instagram API setup with Instagram Login."
+            )
         token_request = {
             "client_id": app_id,
             "client_secret": app_secret,
