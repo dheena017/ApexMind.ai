@@ -14,7 +14,12 @@ import hmac
 import secrets
 import json
 import base64
+import time
+import urllib.parse
 from typing import Dict, Any, Optional
+import httpx
+
+from backend.shared.config import settings
 
 from backend.database.repository import (
     upsert_user,
@@ -29,6 +34,178 @@ from backend.database.repository import (
 )
 
 logger = logging.getLogger("ApexMind.Auth")
+META_GRAPH_VERSION = "v27.0"
+
+
+def create_meta_login_url(provider: str) -> Dict[str, str]:
+    """Create a provider-specific Meta authorization URL with a signed, short-lived state."""
+    if provider == "facebook":
+        app_id = settings.META_APP_ID
+        if not app_id or not settings.META_APP_SECRET:
+            raise ValueError("Meta sign-in is not configured. Set META_APP_ID and META_APP_SECRET on the backend.")
+        authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
+        scopes = "public_profile,email"
+    elif provider == "instagram":
+        app_id = settings.META_APP_ID
+        if not app_id or not settings.META_APP_SECRET:
+            raise ValueError("Meta sign-in is not configured. Set META_APP_ID and META_APP_SECRET on the backend.")
+        authorization_endpoint = "https://www.instagram.com/oauth/authorize"
+        scopes = "instagram_business_basic"
+    else:
+        raise ValueError(f"Unsupported Meta sign-in provider: {provider}")
+
+    timestamp = str(int(time.time()))
+    nonce = secrets.token_urlsafe(24)
+    unsigned_state = f"{provider}.{timestamp}.{nonce}"
+    signature = hmac.new(
+        settings.JWT_SECRET_KEY.encode("utf-8"),
+        unsigned_state.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    state = f"{unsigned_state}.{signature}"
+    params = {
+        "client_id": app_id,
+        "redirect_uri": settings.META_AUTH_REDIRECT_URI,
+        "response_type": "code",
+        "scope": scopes,
+        "state": state,
+    }
+    if provider == "instagram":
+        params["enable_fb_login"] = "false"
+    return {
+        "authorizationUrl": f"{authorization_endpoint}?{urllib.parse.urlencode(params)}",
+        "state": state,
+    }
+
+
+def _validate_meta_state(provider: str, state: str) -> None:
+    parts = state.split(".")
+    if len(parts) != 4:
+        raise ValueError("Social sign-in state is invalid or expired. Please try again.")
+
+    state_provider, timestamp, nonce, supplied_signature = parts
+    unsigned_state = f"{state_provider}.{timestamp}.{nonce}"
+    expected_signature = hmac.new(
+        settings.JWT_SECRET_KEY.encode("utf-8"),
+        unsigned_state.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    try:
+        state_age = int(time.time()) - int(timestamp)
+    except ValueError as exc:
+        raise ValueError("Social sign-in state is invalid or expired. Please try again.") from exc
+
+    if (
+        state_provider != provider
+        or state_age < 0
+        or state_age > 600
+        or not hmac.compare_digest(supplied_signature, expected_signature)
+    ):
+        raise ValueError("Social sign-in state is invalid or expired. Please try again.")
+
+
+async def authenticate_meta_user(provider: str, code: str, state: str) -> Dict[str, Any]:
+    """Exchange a single-use provider code server-side and authenticate the returned identity."""
+    _validate_meta_state(provider, state)
+    redirect_uri = settings.META_AUTH_REDIRECT_URI
+
+    if provider == "facebook":
+        app_id = settings.META_APP_ID
+        app_secret = settings.META_APP_SECRET
+        token_endpoint = f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token"
+        profile_endpoint = f"https://graph.facebook.com/{META_GRAPH_VERSION}/me"
+        if not app_id or not app_secret:
+            raise ValueError("Facebook sign-in is not configured on the backend.")
+        token_request = {
+            "client_id": app_id,
+            "client_secret": app_secret,
+            "redirect_uri": redirect_uri,
+            "code": code,
+        }
+    elif provider == "instagram":
+        app_id = settings.META_APP_ID
+        app_secret = settings.META_APP_SECRET
+        token_endpoint = "https://api.instagram.com/oauth/access_token"
+        profile_endpoint = "https://graph.instagram.com/v27.0/me"
+        if not app_id or not app_secret:
+            raise ValueError("Meta sign-in is not configured on the backend.")
+        token_request = {
+            "client_id": app_id,
+            "client_secret": app_secret,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri,
+            "code": code,
+        }
+    else:
+        raise ValueError(f"Unsupported Meta sign-in provider: {provider}")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        if provider == "instagram":
+            token_response = await client.post(
+                token_endpoint,
+                files={key: (None, value) for key, value in token_request.items()},
+            )
+        else:
+            token_response = await client.get(token_endpoint, params=token_request)
+        if token_response.status_code != 200:
+            logger.warning("%s authorization-code exchange failed with HTTP %s", provider, token_response.status_code)
+            raise ValueError(f"{provider.capitalize()} sign-in could not verify your account. Please try again.")
+
+        token_data = token_response.json()
+        token_data_items = token_data.get("data")
+        if isinstance(token_data_items, list) and token_data_items:
+            token_data = token_data_items[0]
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise ValueError(f"{provider.capitalize()} did not return an access token.")
+
+        profile_params = (
+            {"fields": "id,name,email,picture.type(large)"}
+            if provider == "facebook"
+            else {"fields": "user_id,username"}
+        )
+        profile_response = await client.get(
+            profile_endpoint,
+            params={**profile_params, "access_token": access_token},
+        )
+        if profile_response.status_code != 200:
+            logger.warning("%s account profile lookup failed with HTTP %s", provider, profile_response.status_code)
+            raise ValueError(f"{provider.capitalize()} could not verify your account profile. Please try again.")
+        profile = profile_response.json()
+
+    provider_id = str(profile.get("id") or profile.get("user_id") or token_data.get("user_id") or "")
+    if not provider_id:
+        raise ValueError(f"{provider.capitalize()} did not return a valid account ID.")
+
+    display_name = profile.get("name") or profile.get("username") or f"{provider.capitalize()} Creator"
+    picture = profile.get("picture", {})
+    avatar_url = picture.get("data", {}).get("url") if isinstance(picture, dict) else None
+    identity_hash = hashlib.sha256(f"{provider}:{provider_id}".encode("utf-8")).hexdigest()
+    internal_email = f"{provider}-{identity_hash}@oauth.apexmind.invalid"
+    user = upsert_user(
+        email=internal_email,
+        name=display_name,
+        avatar_url=avatar_url,
+        provider=provider,
+    )
+    channels = get_channels_by_user(user["id"])
+    active_channel = user.get("activeChannelId") or (channels[0]["id"] if channels else None)
+    return {
+        "success": True,
+        "user": {
+            "id": user["id"],
+            "email": "",
+            "name": user["name"],
+            "avatarUrl": user["avatarUrl"],
+            "provider": provider,
+            "verified": True,
+            "activeChannelId": active_channel,
+            "channelsCount": len(channels),
+            "lastLoginAt": user["lastLoginAt"],
+        },
+        "token": f"usr_{uuid.uuid4().hex}",
+        "message": f"Signed in with {provider.capitalize()} as {display_name}!",
+    }
 
 
 def hash_password(password: str, salt: Optional[str] = None) -> tuple[str, str]:
@@ -323,7 +500,7 @@ def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional
 
     return {
         "id": user["id"],
-        "email": user["email"],
+        "email": "" if user["email"].endswith("@oauth.apexmind.invalid") else user["email"],
         "name": user["name"],
         "avatarUrl": user["avatarUrl"],
         "provider": user.get("provider", "email"),

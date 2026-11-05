@@ -434,7 +434,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
                   ? 'text-white bg-[#202020] border-[#3B82F6]/50'
                   : 'text-[#9CA3AF] hover:text-white hover:bg-[#202020] border-transparent hover:border-[#2A2A2A]'
               }`}
-              title={user ? `${user.name} (${user.email})` : 'Profile'}
+              title={user ? `${user.name} (${user.email || `${user.provider} sign-in`})` : 'Profile'}
               aria-label="Open account menu"
               aria-haspopup="menu"
               aria-expanded={accountMenuOpen}
@@ -463,7 +463,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               >
                 <div className="px-2.5 py-2 border-b border-[#242424]">
                   <p className="text-xs font-semibold text-white truncate">{user?.name || 'Your account'}</p>
-                  {user?.email && <p className="mt-0.5 text-[10px] text-[#9CA3AF] truncate">{user.email}</p>}
+                  <p className="mt-0.5 text-[10px] text-[#9CA3AF] truncate">{user?.email || (user ? `${user.provider} sign-in` : '')}</p>
                 </div>
                 <div className="py-1">
                   {[

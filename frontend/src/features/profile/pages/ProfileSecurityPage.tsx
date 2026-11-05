@@ -5,7 +5,7 @@ import { useAuth } from '@/src/features/auth/context/AuthContext';
 export default function ProfileSecurityPage() {
   const { user } = useAuth();
   const statuses = [
-    { label: 'Sign-in provider', value: user?.provider || 'Unknown' },
+    { label: 'Sign-in provider', value: user?.provider === 'facebook' ? 'Facebook' : user?.provider === 'instagram' ? 'Instagram' : user?.provider || 'Unknown' },
     { label: 'Email verification', value: user?.verified ? 'Verified' : 'Not verified', icon: user?.verified ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : undefined },
     { label: 'Two-factor authentication', value: 'Unavailable' },
     { label: 'Active-session management', value: 'Unavailable' },

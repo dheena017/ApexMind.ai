@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Check,
   ArrowLeft,
   Youtube,
+  Facebook,
+  Instagram,
   AtSign,
   Mail,
   Lock,
@@ -17,6 +19,8 @@ import { Modal, Input, Button } from '@/src/shared/ui/common';
 import { useAuth, isSessionValid } from '../context/AuthContext';
 import { getPostLoginRedirect, clearPostLoginRedirect } from '@/src/app/routes';
 import { connectYouTubeWithGoogle, getGoogleClientId } from '@/src/features/youtube/utils/googleOAuthConnect';
+import { authApi } from '../api/authApi';
+import { MetaLoginProvider } from '../types';
 
 // ── Google SVG Icon ──
 function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
@@ -43,7 +47,7 @@ function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
 }
 
 export default function LoginPage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { loginWithEmail, registerWithEmail, loginWithGoogle, loginWithChannel, isAuthenticated } = useAuth();
+  const { loginWithEmail, registerWithEmail, loginWithGoogle, loginWithMeta, loginWithChannel, isAuthenticated } = useAuth();
 
   // Auth Modes: 'signin' | 'register'
   const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
@@ -62,6 +66,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const [showChannelModal, setShowChannelModal] = useState(false);
   const [channelHandleInput, setChannelHandleInput] = useState('');
   const [channelNameInput, setChannelNameInput] = useState('');
+  const handlingMetaCallback = useRef(false);
 
   // Auto-redirect if session is active
   useEffect(() => {
@@ -71,6 +76,48 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       window.setTimeout(() => onNavigate(destination), 50);
     }
   }, [isAuthenticated, onNavigate]);
+
+  useEffect(() => {
+    if (handlingMetaCallback.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const callbackState = params.get('state');
+    const providerError = params.get('error_description') || params.get('error');
+    if (!code && !callbackState && !providerError) return;
+
+    handlingMetaCallback.current = true;
+    const savedFlow = sessionStorage.getItem('apexmind_meta_login');
+    sessionStorage.removeItem('apexmind_meta_login');
+    window.history.replaceState(window.history.state, '', window.location.pathname);
+
+    let flow: { provider: MetaLoginProvider; state: string } | null = null;
+    try {
+      flow = savedFlow ? JSON.parse(savedFlow) as { provider: MetaLoginProvider; state: string } : null;
+    } catch {
+      flow = null;
+    }
+
+    if (providerError) {
+      setNotice({ text: `Sign-in was cancelled or denied: ${providerError}`, type: 'error' });
+      return;
+    }
+    if (!flow || !code || !callbackState || flow.state !== callbackState) {
+      setNotice({ text: 'Social sign-in could not be verified. Please try again.', type: 'error' });
+      return;
+    }
+
+    setLoading(true);
+    setNotice({ text: `Signing in with ${flow.provider === 'facebook' ? 'Facebook' : 'Instagram'}...`, type: 'info' });
+    void loginWithMeta(flow.provider, code, callbackState)
+      .then(() => handleSuccessfulAuth())
+      .catch((err: unknown) => {
+        setNotice({
+          text: err instanceof Error ? err.message : 'Social sign-in failed. Please try again.',
+          type: 'error',
+        });
+        setLoading(false);
+      });
+  }, [loginWithMeta]);
 
   const requireAgreement = () => {
     if (!agreementChecked) {
@@ -164,6 +211,24 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     }
 
     fallbackGoogleOAuth(clientId);
+  };
+
+  const handleMetaAuth = async (provider: MetaLoginProvider) => {
+    if (!requireAgreement()) return;
+
+    setLoading(true);
+    setNotice({ text: `Connecting with ${provider === 'facebook' ? 'Facebook' : 'Instagram'}...`, type: 'info' });
+    try {
+      const { authorizationUrl, state } = await authApi.getMetaAuthorizationUrl(provider);
+      sessionStorage.setItem('apexmind_meta_login', JSON.stringify({ provider, state }));
+      window.location.assign(authorizationUrl);
+    } catch (err: unknown) {
+      setLoading(false);
+      setNotice({
+        text: err instanceof Error ? err.message : 'Social sign-in could not be started.',
+        type: 'error',
+      });
+    }
   };
 
   const fallbackGoogleOAuth = (clientId: string) => {
@@ -419,16 +484,41 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </div>
             )}
 
-            {/* ── One-Click Google Sign-In ── */}
-            <button
-              type="button"
-              onClick={handleGoogleAuth}
-              disabled={loading}
-              className="w-full rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#202025] hover:border-[#3F3F46] px-4 py-2.5 text-xs font-semibold text-white shadow-xs cursor-pointer flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <GoogleIcon className="w-4 h-4" />
-              <span>Continue with Google</span>
-            </button>
+            {/* ── Social Sign-In ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className="rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#202025] hover:border-[#3F3F46] px-3 py-2.5 text-xs font-semibold text-white shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <GoogleIcon className="w-4 h-4" />
+                <span>Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleMetaAuth('facebook')}
+                disabled={loading}
+                className="rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#202025] hover:border-[#3F3F46] px-3 py-2.5 text-xs font-semibold text-white shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Facebook className="w-4 h-4 text-[#1877F2]" />
+                <span>Facebook</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleMetaAuth('instagram')}
+                disabled={loading}
+                aria-label="Continue with Instagram using a professional account"
+                title="Instagram professional accounts"
+                className="rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#202025] hover:border-[#3F3F46] px-3 py-2.5 text-xs font-semibold text-white shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Instagram className="w-4 h-4 text-[#E1306C]" />
+                <span>Instagram</span>
+              </button>
+            </div>
+            <p className="text-center text-[10px] text-[#71717A]">
+              Instagram sign-in requires a professional account.
+            </p>
 
             {/* ── Divider ── */}
             <div className="relative flex items-center justify-center">

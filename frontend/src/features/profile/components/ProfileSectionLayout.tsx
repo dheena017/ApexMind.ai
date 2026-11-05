@@ -49,7 +49,7 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
   };
 
   const displayName = user?.name?.trim() || profile.displayName.trim() || user?.email?.split('@')[0] || 'User Profile';
-  const userEmail = user?.email || '';
+  const userEmail = user?.email || (user?.provider === 'instagram' || user?.provider === 'facebook' ? `${user.provider} sign-in` : '');
   const userHandle = profile.creatorHandle?.trim() || (userEmail ? `@${userEmail.split('@')[0]}` : '');
   const bannerUrl = profile.bannerUrl || '';
   const avatarUrl = user?.avatarUrl || profile.avatarUrl || '';
@@ -62,6 +62,10 @@ export default function ProfileSectionLayout({ activePage, onNavigate, children 
   const authProviderLabel = user?.provider
     ? user.provider === 'google'
       ? 'Google Account'
+      : user.provider === 'facebook'
+        ? 'Facebook Account'
+        : user.provider === 'instagram'
+          ? 'Instagram Account'
       : user.provider === 'email'
         ? 'Email & Password'
         : user.provider

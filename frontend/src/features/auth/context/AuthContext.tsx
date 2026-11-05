@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, ChannelAuthPayload } from '../types';
+import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, MetaLoginProvider, ChannelAuthPayload } from '../types';
 import { authApi, resolveChannelDeliveryEmail } from '../api/authApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -10,6 +10,7 @@ interface AuthContextType {
   loginWithEmail: (payload: LoginPayload) => Promise<UserProfile>;
   registerWithEmail: (payload: RegisterPayload) => Promise<UserProfile>;
   loginWithGoogle: (payload: GoogleAuthPayload) => Promise<UserProfile>;
+  loginWithMeta: (provider: MetaLoginProvider, code: string, state: string) => Promise<UserProfile>;
   /** Legacy channel login method */
   loginWithChannel: (payload: ChannelAuthPayload) => Promise<UserProfile>;
   logout: () => Promise<void>;
@@ -22,6 +23,7 @@ export const AuthContext = createContext<AuthContextType>({
   loginWithEmail: async () => { throw new Error('AuthContext not initialized'); },
   registerWithEmail: async () => { throw new Error('AuthContext not initialized'); },
   loginWithGoogle: async () => { throw new Error('AuthContext not initialized'); },
+  loginWithMeta: async () => { throw new Error('AuthContext not initialized'); },
   loginWithChannel: async () => { throw new Error('AuthContext not initialized'); },
   logout: async () => {},
 });
@@ -188,6 +190,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithMeta = async (provider: MetaLoginProvider, code: string, state: string): Promise<UserProfile> => {
+    setIsLoading(true);
+    try {
+      const authData = await authApi.metaLogin(provider, code, state);
+      saveAuthSession(authData);
+      return authData.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loginWithChannel = async (payload: ChannelAuthPayload): Promise<UserProfile> => {
     setIsLoading(true);
     try {
@@ -227,6 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithEmail,
         registerWithEmail,
         loginWithGoogle,
+        loginWithMeta,
         loginWithChannel,
         logout,
       }}

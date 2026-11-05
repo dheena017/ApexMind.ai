@@ -34,6 +34,16 @@ class GoogleAuthRequest(BaseModel):
     googleId: Optional[str] = Field(default=None, description="Google Account ID")
 
 
+class MetaOAuthCallbackRequest(BaseModel):
+    code: str = Field(..., min_length=1, description="One-time authorization code returned by Meta")
+    state: str = Field(..., min_length=1, description="Signed OAuth state returned by the authorization endpoint")
+
+
+class MetaOAuthStartResponse(BaseModel):
+    authorizationUrl: str
+    state: str
+
+
 class UserProfileDTO(BaseModel):
     id: str
     email: str

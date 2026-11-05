@@ -138,6 +138,7 @@ export default function ProfileDetailsPage() {
             <span className={labelClass}>Account email</span>
             <input
               value={user?.email || ''}
+              placeholder={user?.provider === 'instagram' || user?.provider === 'facebook' ? 'Not shared by provider' : '—'}
               readOnly
               className={`${inputClass} cursor-not-allowed text-[#888]`}
             />

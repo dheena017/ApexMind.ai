@@ -197,7 +197,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
               ['Display name', displayName],
               ['Username', profile.creatorHandle || (user?.email ? `@${user.email.split('@')[0]}` : 'Not added')],
               ['Avatar image', profile.avatarUrl ? 'Custom image' : user?.avatarUrl ? 'Using account photo' : 'Default avatar'],
-              ['Account email', user?.email || 'Not connected'],
+              ['Account email', user?.email || (user?.provider === 'instagram' || user?.provider === 'facebook' ? 'Not shared by provider' : 'Not connected')],
               ['Bio', profile.bio || 'Not added'],
             ].map(([label, value]) => (
               <div key={label} className="min-w-0">
@@ -317,7 +317,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {[
-              ['Sign-in provider', user?.provider ? (user.provider === 'google' ? 'Google Account' : 'Email & Password') : 'ApexMind Auth'],
+              ['Sign-in provider', user?.provider ? user.provider === 'google' ? 'Google Account' : user.provider === 'facebook' ? 'Facebook Account' : user.provider === 'instagram' ? 'Instagram Account' : 'Email & Password' : 'ApexMind Auth'],
               ['Email verification', user?.verified !== false ? 'Verified' : 'Not verified'],
               ['Scripts generated', (stats?.totalQuotesGenerated ?? scripts.length).toLocaleString()],
               ['Videos created', (stats?.totalShortsGenerated ?? videos.length).toLocaleString()],

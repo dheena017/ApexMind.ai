@@ -3,7 +3,7 @@ export interface UserProfile {
   email: string;
   name: string;
   avatarUrl: string;
-  provider: 'email' | 'google' | 'youtube_oauth' | 'youtube';
+  provider: 'email' | 'google' | 'facebook' | 'instagram' | 'youtube_oauth' | 'youtube';
   verified: boolean;
   activeChannelId?: string;
   channelsCount?: number;
@@ -29,6 +29,13 @@ export interface GoogleAuthPayload {
   name?: string;
   avatarUrl?: string;
   googleId?: string;
+}
+
+export type MetaLoginProvider = 'facebook' | 'instagram';
+
+export interface MetaAuthorizationResponse {
+  authorizationUrl: string;
+  state: string;
 }
 
 export interface ChannelAuthPayload {

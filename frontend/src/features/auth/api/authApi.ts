@@ -1,4 +1,4 @@
-import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, ChannelAuthPayload, AuthResponseData } from '../types';
+import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, MetaLoginProvider, ChannelAuthPayload, AuthResponseData, MetaAuthorizationResponse } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
 
@@ -107,6 +107,28 @@ export const authApi = {
       }
       throw err;
     }
+  },
+
+  async getMetaAuthorizationUrl(provider: MetaLoginProvider): Promise<MetaAuthorizationResponse> {
+    const res = await fetch(apiUrl(`/api/auth/meta/${provider}/authorize-url`));
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `${provider} sign-in is unavailable` }));
+      throw new Error(err.detail || `${provider} sign-in is unavailable`);
+    }
+    return res.json();
+  },
+
+  async metaLogin(provider: MetaLoginProvider, code: string, state: string): Promise<AuthResponseData> {
+    const res = await fetch(apiUrl(`/api/auth/meta/${provider}/callback`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, state }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `${provider} sign-in failed` }));
+      throw new Error(err.detail || `${provider} sign-in failed`);
+    }
+    return res.json();
   },
 
   // Legacy YouTube channel sign-in adapter

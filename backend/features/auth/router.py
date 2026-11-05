@@ -6,11 +6,14 @@ and Multi-Channel Creator Identity.
 
 import logging
 from typing import Optional
+import httpx
 from fastapi import APIRouter, HTTPException, status, Header
 from .schemas import (
     UserRegisterRequest,
     UserLoginRequest,
     GoogleAuthRequest,
+    MetaOAuthCallbackRequest,
+    MetaOAuthStartResponse,
     ChannelAuthRequest,
     AuthResponse,
     UserProfileDTO,
@@ -20,7 +23,9 @@ from .service import (
     register_email_user,
     login_email_user,
     authenticate_google_user,
+    authenticate_meta_user,
     authenticate_channel_user,
+    create_meta_login_url,
     get_current_user_profile,
 )
 
@@ -107,6 +112,48 @@ async def post_google_auth(payload: GoogleAuthRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Google sign-in failed. Please try again."
+        )
+
+
+@router.get(
+    "/meta/{provider}/authorize-url",
+    response_model=MetaOAuthStartResponse,
+    summary="Start Facebook or Instagram sign-in",
+)
+async def get_meta_authorization_url(provider: str):
+    try:
+        return create_meta_login_url(provider.lower())
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.error("Could not start %s sign-in: %s", provider, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not start social sign-in. Please try again.",
+        )
+
+
+@router.post(
+    "/meta/{provider}/callback",
+    response_model=AuthResponse,
+    summary="Complete Facebook or Instagram sign-in",
+)
+async def post_meta_callback(provider: str, payload: MetaOAuthCallbackRequest):
+    try:
+        return await authenticate_meta_user(provider.lower(), payload.code, payload.state)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except httpx.HTTPError as e:
+        logger.error("%s token/profile request failed: %s", provider, e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"{provider.capitalize()} sign-in is temporarily unavailable.",
+        )
+    except Exception as e:
+        logger.error("%s authentication unexpected error: %s", provider, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{provider.capitalize()} sign-in failed. Please try again.",
         )
 
 

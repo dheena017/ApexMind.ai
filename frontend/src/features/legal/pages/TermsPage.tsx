@@ -81,13 +81,13 @@ export default function TermsPage({ onNavigate }: TermsPageProps) {
     },
     {
       id: 'accounts',
-      title: '3. User Accounts & Google Authentication',
+      title: '3. User Accounts & Authentication',
       icon: ShieldCheck,
-      summary: 'Accounts are authenticated via Google OAuth. You are responsible for account security and actions taken under your account.',
+      summary: 'Accounts can use email and password, Google, Facebook, or Instagram professional-account sign-in.',
       content: (
         <div className="space-y-3.5 text-sm leading-relaxed text-[#D1D5DB]">
           <p>
-            To access the ApexMind Studio and YouTube publishing features, you must authenticate using your Google account. By signing in with Google OAuth, you authorize ApexMind to verify your profile credentials and store necessary access and refresh tokens in encrypted form.
+            To access ApexMind Studio, you may sign in with an email and password, Google, Facebook, or an Instagram professional account. When you choose a social sign-in provider, you authorize ApexMind to verify your identity and receive the profile information that provider makes available for sign-in.
           </p>
           <p>
             You are solely responsible for maintaining the confidentiality of your credentials and for all activities that occur under your account. You agree to notify ApexMind immediately of any unauthorized use or security breach. ApexMind will not be liable for any losses caused by unauthorized access to your account.
