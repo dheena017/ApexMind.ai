@@ -30,7 +30,6 @@ from backend.database.repository import (
     get_channels_by_user,
     get_oauth_channel,
     create_user_with_password,
-    set_user_active_channel,
 )
 
 logger = logging.getLogger("ApexMind.Auth")

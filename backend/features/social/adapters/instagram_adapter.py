@@ -5,7 +5,6 @@ Publisher adapter for Instagram Reels & Business/Creator accounts via Meta Graph
 
 import logging
 import asyncio
-import urllib.parse
 from typing import Dict, Any, List, Optional
 import httpx
 

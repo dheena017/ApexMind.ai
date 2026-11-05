@@ -6,7 +6,7 @@ High-speed worldwide Wikimedia CDN with zero API key requirement.
 
 import math
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List
 import requests
 
 from backend.features.media.schemas import AudioTrackAsset, SfxAsset

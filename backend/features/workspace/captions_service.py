@@ -4,8 +4,7 @@ Closed Captions subtitle generation service. Produces word-level karaoke timesta
 viewport safe-zone line wrapping (max 3-4 words per line for 9:16), SRT, and WebVTT.
 """
 
-import re
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 # ==============================================================================
 # Defaults & Fixed Constants (Placed at Top Below Imports)

@@ -4,7 +4,7 @@ Sound effects provider adapter querying high-impact transitions, whooshes, and s
 Powered by Mixkit open audio CDN with zero authentication requirements.
 """
 
-from typing import List, Dict, Any
+from typing import List
 from backend.features.media.schemas import SfxAsset
 
 

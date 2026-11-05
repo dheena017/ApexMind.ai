@@ -9,14 +9,10 @@ Architecture:
 - High-precision Pydantic validation & error handling
 """
 
-import os
 import logging
 import urllib.parse
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, status, Request, Body, Query, Header
-from fastapi.responses import RedirectResponse
-import tempfile
-from pathlib import Path
+from fastapi import APIRouter, HTTPException, status, Body, Query, Header
 
 from .schemas import (
     ChannelDetailsResponse,
@@ -29,14 +25,10 @@ from .schemas import (
     VideoThumbnailsResponse,
     VideoChaptersResponse,
     VideoTranscriptResponse,
-    LookupChannelRequest,
-    UpdateVideoRequest,
-    DeleteVideoRequest,
     CreatePlaylistRequest,
     ManagePlaylistRequest,
     UpdatePlaylistRequest,
     DeletePlaylistRequest,
-    AddPlaylistItemRequest,
     ReplyCommentRequest,
     TokenConnectRequest,
     CodeConnectRequest,
@@ -52,17 +44,14 @@ from .youtube_live_service import (
     fetch_video_details,
     fetch_video_thumbnails,
     fetch_video_chapters,
-    fetch_video_comments,
     fetch_seo_tags,
     fetch_hashtag_feed,
     search_youtube_videos,
     compute_live_channel_analytics,
     fetch_channel_live_streams,
-    generate_youtube_auth_url,
     handle_oauth_callback,
     fetch_authenticated_channel_details,
     get_authenticated_youtube_client,
-    upload_video_to_live_youtube,
     update_live_video_metadata,
     delete_live_video,
     create_live_playlist,
@@ -71,7 +60,6 @@ from .youtube_live_service import (
     reply_to_live_comment,
 )
 from .service import publish_video_to_shorts
-from .repository import insert_video
 from backend.database.repository import get_oauth_channel, get_channels, save_oauth_channel
 
 logger = logging.getLogger("ApexMind.features.youtube")

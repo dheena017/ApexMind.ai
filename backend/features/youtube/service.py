@@ -11,7 +11,6 @@ from typing import Dict, Any, Optional
 from .repository import insert_video
 from .youtube_live_service import (
     get_authenticated_youtube_client,
-    render_vertical_short,
     upload_video_to_live_youtube,
 )
 

@@ -5,7 +5,7 @@ Unsplash photos provider adapter.
 
 import os
 import logging
-from typing import List, Dict, Any
+from typing import List
 import requests
 
 from backend.features.media.base import BaseMediaProvider, MediaAsset

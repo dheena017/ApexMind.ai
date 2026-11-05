@@ -7,7 +7,7 @@ import struct
 import time
 import wave
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from google import genai
 from google.genai import types

@@ -5,10 +5,9 @@ Pixabay API video provider adapter. Queries Pixabay Video API for royalty-free s
 
 import os
 import logging
-from typing import List, Dict, Any
+from typing import List
 import requests
 
-from backend.shared.config import settings
 from backend.features.media.base import BaseMediaProvider, MediaAsset
 
 # ==============================================================================

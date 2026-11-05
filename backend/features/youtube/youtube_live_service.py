@@ -10,7 +10,6 @@ Features:
 - Live search suggestions (YouTube Suggest API), chapters extraction, and real computed analytics
 """
 
-import os
 import re
 import json
 import time
@@ -32,7 +31,6 @@ from backend.shared.config import settings
 from backend.database.repository import (
     save_channel_oauth,
     get_oauth_channel,
-    add_notification,
     get_channels,
 )
 

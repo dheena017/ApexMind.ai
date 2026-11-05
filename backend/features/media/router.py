@@ -5,7 +5,6 @@ FastAPI router for dynamic internet media sourcing, scene resolution, and asset 
 
 import time
 import logging
-from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, status
 
 from .schemas import (

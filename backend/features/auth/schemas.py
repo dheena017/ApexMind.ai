@@ -4,7 +4,7 @@ Pydantic schemas and DTOs for User Authentication (Email/Password & Google Sign-
 and Multi-Channel Creator Sessions.
 """
 
-from typing import Optional, List
+from typing import Optional
 from pydantic import BaseModel, Field
 
 

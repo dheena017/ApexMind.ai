@@ -4,12 +4,10 @@ Media orchestration service: concurrent multi-provider search, batch scene resol
 URL validation, and duplicate prevention.
 """
 
-import os
-import time
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Any, Optional, Set
 
 from .base import MediaAsset
 from .semantic_filter import evaluate_clip, filter_and_rank_candidates

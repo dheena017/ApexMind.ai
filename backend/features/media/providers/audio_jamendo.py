@@ -6,7 +6,7 @@ Jamendo API audio provider adapter for royalty-free background soundtracks.
 import os
 import math
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List
 import requests
 
 from backend.features.media.schemas import AudioTrackAsset

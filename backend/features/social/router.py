@@ -4,7 +4,7 @@ FastAPI router for Omnichannel Social Fleet Management & Cross-Platform Syndicat
 """
 
 import logging
-from typing import Optional, List
+from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Query
 
 from .schemas import (

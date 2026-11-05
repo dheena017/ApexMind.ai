@@ -18,7 +18,6 @@ from backend.database.repository import (
     get_automation_by_id,
     get_automations,
     update_automation_run_state,
-    get_channels,
 )
 from backend.features.youtube.repository import insert_video
 from backend.features.notifications.service import create_notification

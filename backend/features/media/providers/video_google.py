@@ -8,10 +8,9 @@ import os
 import time
 import urllib.parse
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List
 import requests
 
-from backend.shared.config import settings
 from backend.features.media.base import BaseMediaProvider, MediaAsset
 
 # ==============================================================================

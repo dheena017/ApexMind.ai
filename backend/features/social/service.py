@@ -24,9 +24,7 @@ from backend.database.repository import (
     get_social_accounts,
     get_social_account_by_id,
     upsert_social_account,
-    delete_social_account,
     record_published_post,
-    get_published_posts,
     get_latest_user,
     get_channels,
 )
