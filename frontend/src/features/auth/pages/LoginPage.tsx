@@ -413,7 +413,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </h1>
               <p className="text-xs text-[#A1A1AA] max-w-xs mx-auto leading-relaxed">
                 {authMode === 'signin'
-                  ? 'Access your omnichannel studio and manage your multi-platform social fleet.'
+                  ? 'Access your studio and manage your connected social accounts.'
                   : 'Start creating, rendering, and publishing autonomous AI Shorts across all platforms.'}
               </p>
             </div>

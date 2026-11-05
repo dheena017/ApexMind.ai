@@ -42,10 +42,13 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
   const [loading, setLoading] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [activeChannelKey, setActiveChannelKey] = useState<string>('');
 
   const loadFleet = async () => {
     setLoading(true);
+    setLoadError(false);
+    setNotice(null);
     try {
       const accounts = await socialApi.getFleetAccounts();
       setFleet(accounts);
@@ -61,8 +64,12 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
           localStorage.setItem('apexmind_yt_active_channel', fallback);
         }
       }
-    } catch (err: any) {
-      setNotice({ text: 'Failed to load social fleet accounts.', type: 'error' });
+    } catch (err) {
+      setLoadError(true);
+      setNotice({
+        text: err instanceof Error ? err.message : 'Failed to load connected social accounts.',
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -91,7 +98,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
   };
 
   const handleDisconnect = async (accountId: string, accountName: string) => {
-    if (!window.confirm(`Disconnect "${accountName}" from your social fleet?`)) return;
+    if (!window.confirm(`Disconnect "${accountName}" from Social Accounts?`)) return;
 
     setDisconnectingId(accountId);
     try {
@@ -156,7 +163,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
     if (onNavigate) {
       onNavigate('channels');
     } else if (typeof window !== 'undefined') {
-      window.history.pushState({}, '', '/channels');
+      window.history.pushState({}, '', '/social-accounts');
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
@@ -232,13 +239,17 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white tracking-tight">Omnichannel Social Fleet</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Active
+                <h2 className="text-base font-bold text-white tracking-tight">Social Accounts</h2>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 ${
+                  fleet.length > 0 && !loadError
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : 'bg-[#1C1C22] text-[#9CA3AF] border-[#2A2A34]'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${fleet.length > 0 && !loadError ? 'bg-emerald-400' : 'bg-[#71717A]'}`}></span>
+                  {loading ? 'Loading' : loadError ? 'Unavailable' : fleet.length > 0 ? 'Connected' : 'Not connected'}
                 </span>
               </div>
-              <p className="text-xs text-[#A1A1AA]">Manage connected multi-platform channels & syndication targets</p>
+              <p className="text-xs text-[#A1A1AA]">Manage connected accounts and publishing destinations</p>
             </div>
           </div>
           <button
@@ -252,7 +263,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
         </div>
 
         {/* Notice Alert */}
-        {notice && (
+        {notice && !loadError && (
           <div
             className={`mx-5 mt-4 p-3 rounded-xl border text-xs leading-relaxed flex items-center justify-between ${
               notice.type === 'error'
@@ -284,9 +295,9 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
         <div className="p-5 border-b border-[#242426] space-y-2.5 bg-[#121215]">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-[#71717A]">
-              Add Destination to Fleet
+              Connect an account
             </span>
-            <span className="text-[10px] text-zinc-500">1-Click OAuth & Linking</span>
+            <span className="text-[10px] text-zinc-500">Secure account authorization</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -324,7 +335,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#71717A]">
-                Connected Destinations ({fleet.length})
+                Connected accounts ({fleet.length})
               </span>
               <button
                 type="button"
@@ -336,15 +347,22 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
               </button>
             </div>
 
-            {fleet.length === 0 ? (
+            {loadError ? (
+              <div className="rounded-2xl border border-red-500/20 bg-red-950/20 p-5 text-center space-y-3" role="alert">
+                <AlertCircle className="w-7 h-7 text-red-400 mx-auto" />
+                <h3 className="text-sm font-semibold text-white">Accounts couldn’t be loaded</h3>
+                <p className="text-xs text-red-200/80">{notice?.text || 'Refresh to try loading your connected accounts again.'}</p>
+                <Button variant="primary" size="sm" onClick={loadFleet}>Try again</Button>
+              </div>
+            ) : fleet.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[#2E2E34] p-8 text-center space-y-3 bg-[#141418]/50">
                 <Radio className="w-8 h-8 text-zinc-600 mx-auto" />
-                <h3 className="text-sm font-semibold text-white">No Connected Platforms Yet</h3>
+                <h3 className="text-sm font-semibold text-white">No social accounts yet</h3>
                 <p className="text-xs text-[#A1A1AA] max-w-xs mx-auto">
-                  Connect a YouTube channel, Facebook Page, or Instagram Business/Creator account linked to a Facebook Page.
+                  Connect a YouTube channel, Facebook Page, or Instagram professional account. Instagram Login does not require a Facebook Page.
                 </p>
                 <Button variant="primary" size="sm" onClick={() => handleAddPlatformClick('youtube')}>
-                  Connect First Destination
+                  Connect first account
                 </Button>
               </div>
             ) : (
@@ -524,7 +542,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
             </div>
           </div>
 
-          {/* Fleet Statistics Bar */}
+          {/* Account Statistics */}
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl border border-[#27272A] bg-[#141418] p-3 text-center">
               <div className="text-[10px] text-[#71717A] uppercase font-semibold">Total Audience</div>
@@ -533,21 +551,21 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
               </div>
             </div>
             <div className="rounded-xl border border-[#27272A] bg-[#141418] p-3 text-center">
-              <div className="text-[10px] text-[#71717A] uppercase font-semibold">Active Engine</div>
-              <div className="text-sm font-bold text-emerald-400 mt-1 flex items-center justify-center gap-1">
+              <div className="text-[10px] text-[#71717A] uppercase font-semibold">Publishing</div>
+              <div className={`text-sm font-bold mt-1 flex items-center justify-center gap-1 ${fleet.length > 0 ? 'text-emerald-400' : 'text-[#9CA3AF]'}`}>
                 <Zap className="w-3 h-3" />
-                <span>Ready</span>
+                <span>{fleet.length > 0 ? 'Ready' : 'Connect an account'}</span>
               </div>
             </div>
             <div className="rounded-xl border border-[#27272A] bg-[#141418] p-3 text-center">
-              <div className="text-[10px] text-[#71717A] uppercase font-semibold">Fleet Size</div>
+              <div className="text-[10px] text-[#71717A] uppercase font-semibold">Accounts</div>
               <div className="text-sm font-bold text-indigo-300 mt-1">
-                {fleet.length} / 4
+                {fleet.length}
               </div>
             </div>
           </div>
 
-          {/* Full Fleet Hub Banner Button */}
+          {/* Full Social Accounts page link */}
           <button
             type="button"
             onClick={handleOpenFleetHub}
@@ -555,7 +573,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
           >
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-              <span>Open Full Social Fleet Hub & Analytics</span>
+              <span>Open Social Accounts</span>
             </div>
             <ArrowRight className="w-4 h-4 text-indigo-400 group-hover:translate-x-1 transition-transform" />
           </button>

@@ -73,7 +73,7 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'videos', path: '/videos', title: 'Website Video Library - ApexMind', aliases: ['/video-library', '/studio-videos', '/library'] },
 
   // ── 4. YouTube Channel Studio & Dedicated Sub-Paths ──
-  { id: 'channels', path: '/channels', title: 'Social Channels & Fleet Hub - ApexMind', aliases: ['/fleet', '/social-channels', '/connected-channels'] },
+  { id: 'channels', path: '/social-accounts', title: 'Social Accounts - ApexMind', aliases: ['/channels', '/fleet', '/social-channels', '/connected-channels'] },
   { id: 'youtube', path: '/youtube', title: 'YouTube Studio Hub - ApexMind', aliases: ['/studio/youtube', '/youtube/overview'] },
   { id: 'youtube-videos', path: '/youtube/videos', title: 'Channel Videos - ApexMind Studio', aliases: ['/channel/videos', '/youtube-videos'] },
   { id: 'youtube-shorts', path: '/youtube/shorts', title: 'Channel Shorts - ApexMind Studio', aliases: ['/channel/shorts', '/shorts', '/youtube-shorts'] },
@@ -85,7 +85,7 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'profile', path: '/profile', title: 'Profile & Badges - ApexMind', aliases: ['/account'] },
   { id: 'profile-details', path: '/profile/details', title: 'Creator Details - ApexMind' },
   { id: 'profile-preferences', path: '/profile/preferences', title: 'Creator Preferences - ApexMind' },
-  { id: 'profile-channels', path: '/profile/channels', title: 'Connected Channels - ApexMind' },
+  { id: 'profile-channels', path: '/profile/channels', title: 'Social Accounts - ApexMind' },
   { id: 'profile-activity', path: '/profile/activity', title: 'Creator Activity - ApexMind' },
   { id: 'profile-usage', path: '/profile/usage', title: 'Studio Usage - ApexMind', aliases: ['/usage'] },
   { id: 'profile-studio-activity', path: '/profile/studio-activity', title: 'Studio Activity - ApexMind', aliases: ['/activity'] },

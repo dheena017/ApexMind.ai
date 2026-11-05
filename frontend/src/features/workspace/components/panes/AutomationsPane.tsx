@@ -1700,7 +1700,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-red-500/30 bg-red-950/20 hover:bg-red-900/30 text-xs font-semibold text-red-300 hover:text-white transition-all cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 text-red-400" />
-            <span>Connect Another Channel or Platform (Fleet)</span>
+            <span>Connect another social account</span>
           </button>
 
           {/* Engine & Pipeline Architecture Diagnostic */}

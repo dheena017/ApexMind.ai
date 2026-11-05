@@ -13,16 +13,10 @@ import {
   RefreshCw,
   Users,
   Video,
-  BarChart2,
-  Sparkles,
   Check,
-  Globe,
   Share2,
-  Layers,
-  Zap,
   Link2,
 } from 'lucide-react';
-import { Badge, Button } from '@/src/shared/ui/common';
 import { socialApi } from '@/src/features/social/api/socialApi';
 import { SocialAccount, SocialPlatform, PublishedPost } from '@/src/features/social/types';
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
@@ -54,6 +48,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [posts, setPosts] = useState<PublishedPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsError, setPostsError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | SocialPlatform>('all');
@@ -82,6 +77,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
 
   const loadData = async () => {
     setLoading(true);
+    setAccountsError(null);
     try {
       const [fleet] = await Promise.all([
         socialApi.getFleetAccounts(),
@@ -98,8 +94,10 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         setActiveChannelKey(fallbackKey);
         localStorage.setItem('apexmind_yt_active_channel', fallbackKey);
       }
-    } catch (err: any) {
-      console.warn('Failed to load fleet data:', err);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load connected social accounts.';
+      setAccountsError(message);
+      console.warn('Failed to load connected social accounts:', err);
     } finally {
       setLoading(false);
     }
@@ -123,11 +121,11 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
 
     window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
     if (oauthError) {
-      setActionError(`Meta authorization was not completed: ${oauthError}`);
+      setActionError(`Social account authorization was not completed: ${oauthError}`);
       return;
     }
     if (!code || !state) {
-      setActionError('Meta authorization returned an incomplete response. Please try again.');
+      setActionError('Social account authorization returned an incomplete response. Please try again.');
       return;
     }
 
@@ -137,7 +135,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         setActionError(null);
         window.dispatchEvent(new CustomEvent('social:fleet-updated'));
       })
-      .catch((err: Error) => setActionError(err.message || 'Could not connect the Meta destination.'));
+      .catch((err: Error) => setActionError(err.message || 'Could not connect the social account.'));
   }, []);
 
   const handleSetActive = (acc: SocialAccount) => {
@@ -210,7 +208,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         }
       }
 
-      setNotice(`Disconnected "${accountName}" from fleet.`);
+      setNotice(`Disconnected "${accountName}" from Social Accounts.`);
       window.dispatchEvent(new CustomEvent('social:fleet-updated'));
       setTimeout(() => setNotice(null), 3000);
     } catch (err: any) {
@@ -303,7 +301,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
 
   // Metrics aggregations
   const totalFollowers = accounts.reduce((acc, a) => acc + (a.followersCount || 0), 0);
-  const totalPostsCount = accounts.reduce((acc, a) => acc + (a.postsCount || 0), 0) + posts.length;
+  const recentPublishedCount = posts.filter((post) => post.status?.toLowerCase() === 'published').length;
   const activeAccount = accounts.find((a) => a.handle === activeChannelKey || a.id === activeChannelKey) || accounts[0];
 
   // Filtering
@@ -325,7 +323,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
 
         <div className="flex items-start gap-3.5 relative z-10">
           <div className="w-11 h-11 rounded-xl bg-[#18181E] border border-[#2E2E38] flex items-center justify-center text-[#3B82F6] shadow-sm shrink-0">
-            <Link2 className="w-5 h-5 animate-pulse" />
+            <Link2 className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -340,11 +338,11 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
                 <span className={`w-1.5 h-1.5 rounded-full ${
                   accounts.length > 0 ? 'bg-emerald-400' : 'bg-[#71717A]'
                 }`}></span>
-                {loading ? 'Loading accounts' : `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} connected`}
+                {loading ? 'Loading accounts' : accountsError && accounts.length === 0 ? 'Accounts unavailable' : `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} connected`}
               </span>
             </div>
             <p className="mt-1 text-xs text-[#9CA3AF] max-w-2xl leading-relaxed">
-              Connect YouTube channels, Facebook Pages, and Instagram Business/Creator accounts linked to a Facebook Page. Facebook and Instagram use the same Meta app authorization.
+              Connect YouTube channels, Facebook Pages, and Instagram professional accounts. Instagram connects directly with Instagram Login; a Facebook Page is not required.
             </p>
           </div>
         </div>
@@ -354,7 +352,8 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
           <button
             type="button"
             onClick={loadData}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#27272A] bg-[#16161A] hover:bg-[#1E1E24] text-[#E5E5E5] hover:text-white text-xs font-medium transition-colors cursor-pointer"
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#27272A] bg-[#16161A] hover:bg-[#1E1E24] text-[#E5E5E5] hover:text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#3B82F6]' : ''}`} />
             <span>Refresh</span>
@@ -367,18 +366,18 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         {/* Card 1: Linked Channels */}
         <div className="p-4 rounded-xl bg-[#141418] border border-[#24242A] flex flex-col justify-between hover:border-[#2E2E36] transition-colors shadow-xs">
           <div className="flex items-center justify-between text-[#9CA3AF] text-xs">
-            <span className="font-medium">Linked Channels</span>
+            <span className="font-medium">Connected accounts</span>
             <Link2 className="w-4 h-4 text-zinc-500" />
           </div>
           <div className="mt-2.5">
-            <span className="text-2xl font-bold text-white tracking-tight">{accounts.length}</span>
+            <span className="text-2xl font-bold text-white tracking-tight">{loading || (accountsError && accounts.length === 0) ? '—' : accounts.length}</span>
             <span className="text-xs text-[#71717A] ml-1.5 font-medium">linked</span>
           </div>
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
             {ytCount > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-medium bg-[#1C1C22] text-[#D4D4D8] border border-[#2A2A34]">{ytCount} YouTube</span>}
             {igCount > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-medium bg-[#1C1C22] text-[#D4D4D8] border border-[#2A2A34]">{igCount} Instagram</span>}
             {fbCount > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-medium bg-[#1C1C22] text-[#D4D4D8] border border-[#2A2A34]">{fbCount} Facebook</span>}
-            {accounts.length === 0 && <span className="text-[10px] text-zinc-500">None linked</span>}
+            {accounts.length === 0 && !loading && !accountsError && <span className="text-[10px] text-zinc-500">None linked</span>}
           </div>
         </div>
 
@@ -389,25 +388,28 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <Users className="w-4 h-4 text-zinc-500" />
           </div>
           <div className="mt-2.5">
-            <span className="text-2xl font-bold text-white tracking-tight">{formatCount(totalFollowers)}</span>
+            <span className="text-2xl font-bold text-white tracking-tight">{loading || (accountsError && accounts.length === 0) ? '—' : formatCount(totalFollowers)}</span>
             <span className="text-xs text-[#71717A] ml-1.5 font-medium">followers</span>
           </div>
-          <p className="mt-2 text-[10px] text-[#71717A] truncate">Total cross-network subscribers</p>
+          <p className="mt-2 text-[10px] text-[#71717A] truncate">Across connected platforms</p>
         </div>
 
         {/* Card 3: Syndication Output */}
         <div className="p-4 rounded-xl bg-[#141418] border border-[#24242A] flex flex-col justify-between hover:border-[#2E2E36] transition-colors shadow-xs">
           <div className="flex items-center justify-between text-[#9CA3AF] text-xs">
-            <span className="font-medium">Syndicated Videos</span>
+            <span className="font-medium">Recent publishes</span>
             <Video className="w-4 h-4 text-zinc-500" />
           </div>
           <div className="mt-2.5">
-            <span className="text-2xl font-bold text-white tracking-tight">{totalPostsCount}</span>
-            <span className="text-xs text-[#71717A] ml-1.5 font-medium">published</span>
+            <span className="text-2xl font-bold text-white tracking-tight">{postsLoading ? '—' : recentPublishedCount}</span>
+            <span className="text-xs text-[#71717A] ml-1.5 font-medium">successful</span>
           </div>
-          <p className="mt-2 text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            Ready to publish
+          <p className="mt-2 text-[10px] text-[#71717A] truncate">
+            {posts.length === 0
+              ? 'No publishing activity yet'
+              : posts.length >= 50
+                ? 'From the latest 50 activity records'
+                : 'From recent publishing history'}
           </p>
         </div>
 
@@ -415,7 +417,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         <div className="p-4 rounded-xl bg-[#141418] border border-[#24242A] flex flex-col justify-between hover:border-[#2E2E36] transition-colors shadow-xs">
           <div className="flex items-center justify-between text-[#9CA3AF] text-xs">
             <span className="font-medium">Active Destination</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className={`w-2 h-2 rounded-full ${activeAccount ? 'bg-emerald-400' : 'bg-[#71717A]'}`} />
           </div>
           <div className="mt-2 flex items-center gap-2.5 min-w-0">
             {activeAccount ? (
@@ -443,9 +445,9 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-white">Connect a social account</h2>
-            <p className="text-[11px] text-[#9CA3AF]">Select a platform to view its accounts, or use + to connect another account with Google or Meta.</p>
+            <p className="text-[11px] text-[#9CA3AF]">Choose a platform to filter accounts, or use + to connect another account. Select the same platform again to show all.</p>
           </div>
-          <span className="text-[10px] text-zinc-500 font-medium">Verified account connection</span>
+          <span className="text-[10px] text-zinc-500 font-medium">Secure OAuth connection</span>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-1.5 sm:gap-2.5">
@@ -472,7 +474,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
                 <button
                   type="button"
                   aria-pressed={isSelected}
-                  onClick={() => setActiveFilter(platform)}
+                  onClick={() => setActiveFilter((current) => current === platform ? 'all' : platform)}
                   className="flex flex-1 min-w-0 items-center gap-1 px-1 py-2 sm:gap-2 sm:px-2 rounded-lg text-[10px] sm:text-xs font-medium text-[#D4D4D8] hover:text-white transition-colors cursor-pointer"
                 >
                   <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${iconClass}`} />
@@ -524,6 +526,25 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         </div>
       )}
 
+      {accountsError && (
+        <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/30 text-xs text-red-300 flex items-start justify-between gap-3" role="alert">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 mt-0.5 text-red-400 shrink-0" />
+            <div>
+              <p className="font-semibold">Social accounts couldn’t be loaded</p>
+              <p className="mt-1 text-red-200/70">{accountsError}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={loadData}
+            disabled={loading}
+            className="shrink-0 px-3 py-1.5 rounded-lg border border-red-400/20 bg-red-500/10 text-xs font-semibold text-red-200 hover:bg-red-500/20 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       {/* ── 5. Linked Channel Cards Grid ── */}
       {loading ? (
@@ -532,13 +553,13 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <div key={i} className="h-44 rounded-2xl bg-[#141418] border border-[#24242A]" />
           ))}
         </div>
-      ) : filteredAccounts.length === 0 ? (
+      ) : accountsError && accounts.length === 0 ? null : filteredAccounts.length === 0 ? (
         <div className="p-10 rounded-2xl bg-[#141418] border border-[#24242A] text-center flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-[#1A1A22] border border-[#2E2E38] text-zinc-400 flex items-center justify-center">
             <Link2 className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">No {activeFilter === 'all' ? 'Channels' : `${activeFilter.toUpperCase()} Channels`} Linked</h3>
+            <h3 className="text-sm font-bold text-white">No {activeFilter === 'all' ? 'accounts' : `${activeFilter} accounts`} linked</h3>
             <p className="text-xs text-[#9CA3AF] mt-1 max-w-sm">
               Connect an account to see it here and use it as a publishing destination.
             </p>

@@ -16,11 +16,24 @@ import { consoleLogger } from './shared/utils/logger';
 import { useAuth, isSessionValid } from './features/auth/context/AuthContext';
 import { WorkspaceTabType } from './features/workspace/components/WorkspaceSidebar';
 
+function canonicalizeRouteAlias(route: PageRoute): void {
+  if (typeof window === 'undefined' || route === '404') return;
+  const canonicalPath = routeToPath(route);
+  if (window.location.pathname !== canonicalPath) {
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${canonicalPath}${window.location.search}${window.location.hash}`,
+    );
+  }
+}
+
 export default function App() {
   const { isAuthenticated } = useAuth();
 
   const [activePage, setActivePage] = useState<PageRoute>(() => {
     const parsed = typeof window === 'undefined' ? 'landing' : parseRoute(window.location.pathname);
+    canonicalizeRouteAlias(parsed);
     // If user is already authenticated and visits '/' or '/login', send directly to dashboard
     if ((parsed === 'landing' || parsed === 'login') && typeof window !== 'undefined' && isSessionValid()) {
       if (window.location.pathname !== '/dashboard') {
@@ -115,6 +128,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const parsed = parseRoute(window.location.pathname);
+      canonicalizeRouteAlias(parsed);
       const isPublicPage =
         parsed === 'landing' ||
         parsed === 'login' ||

@@ -55,6 +55,9 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
         if (accounts.length > 0) {
           setActivePreviewTab(accounts[0].platform);
         }
+      }).catch((err: Error) => {
+        setFleet([]);
+        setErrorMsg(err.message || 'Could not load connected social accounts.');
       });
       setTitle(defaultTitle || 'Master the Mind: Stoic Lesson');
       setCaption(defaultCaption || 'The obstacle in the path becomes the path. #Motivation #AI');
@@ -232,7 +235,7 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
 
                 {fleet.length === 0 ? (
                   <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-950/20 text-amber-200 text-xs">
-                    No social channels connected yet. Please connect your YouTube, Instagram, or Facebook accounts in the Social Fleet Manager.
+                    No social accounts connected yet. Connect a YouTube, Instagram, or Facebook account from the Social Accounts page.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -392,7 +395,7 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
                 {publishing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Publishing to Fleet...</span>
+                    <span>Publishing to selected accounts...</span>
                   </>
                 ) : (
                   <>

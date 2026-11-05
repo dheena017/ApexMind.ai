@@ -25,21 +25,22 @@ const getStoredUserId = (): string | undefined => {
 };
 
 export const socialApi = {
-  // Fetch connected social fleet accounts
+  // Fetch connected social accounts
   async getFleetAccounts(): Promise<SocialAccount[]> {
     const start = performance.now();
-    try {
-      const userId = getStoredUserId();
-      const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-      const res = await fetch(apiUrl(`/api/social/accounts${query}`));
-      consoleLogger.api('GET', '/api/social/accounts', res.status, performance.now() - start);
-      if (!res.ok) throw new Error('Failed to fetch social fleet');
-      const data = await res.json();
-      return data.accounts || [];
-    } catch (err) {
-      consoleLogger.warn('Social', `Fleet fetch note: ${err}`);
-      return [];
+    const userId = getStoredUserId();
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const res = await fetch(apiUrl(`/api/social/accounts${query}`));
+    consoleLogger.api('GET', '/api/social/accounts', res.status, performance.now() - start);
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: 'Failed to load connected social accounts.' }));
+      throw new Error(error.detail || 'Failed to load connected social accounts.');
     }
+    const data = await res.json();
+    if (!Array.isArray(data.accounts)) {
+      throw new Error('The connected social accounts response was invalid.');
+    }
+    return data.accounts;
   },
 
   // Get OAuth authorization URL for any platform
@@ -65,8 +66,8 @@ export const socialApi = {
       body: JSON.stringify({ code, state }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Failed to complete Meta authorization' }));
-      throw new Error(err.detail || 'Failed to complete Meta authorization');
+      const err = await res.json().catch(() => ({ detail: 'Failed to complete social account authorization' }));
+      throw new Error(err.detail || 'Failed to complete social account authorization');
     }
     return res.json();
   },
