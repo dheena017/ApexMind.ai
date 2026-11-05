@@ -63,10 +63,10 @@ const THEME_OPTIONS = [
 ];
 
 const AI_MODEL_OPTIONS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 3.8 Flash (Ultra-Fast & High Quality • Recommended)' },
-  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Next-Gen Speed & Storyboarding)' },
-  { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (Rapid & Lightweight)' },
-  { value: 'gemini-flash-latest', label: 'Gemini Flash Latest (Cutting-Edge)' },
+  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Recommended)' },
+  { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (Lightweight)' },
+  { value: 'gemini-flash-latest', label: 'Gemini Flash Latest' },
+  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
 ];
 
 const ASPECT_RATIO_OPTIONS = [
@@ -105,7 +105,7 @@ const INTERVAL_OPTIONS = [
   { value: 'every_3h', label: 'Every 3 Hours (Recommended)', schedule: 'Every 3 Hours' },
   { value: 'every_4h', label: 'Every 4 Hours', schedule: 'Every 4 Hours' },
   { value: 'every_6h', label: 'Every 6 Hours', schedule: 'Every 6 Hours' },
-  { value: 'every_8h', label: 'Every 8 Hours (Recommended)', schedule: 'Every 8 Hours' },
+  { value: 'every_8h', label: 'Every 8 Hours', schedule: 'Every 8 Hours' },
   { value: 'every_12h', label: 'Every 12 Hours', schedule: 'Every 12 Hours' },
   { value: 'custom', label: 'Custom Interval...', schedule: 'Custom' },
 ];
@@ -140,7 +140,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const [customValue, setCustomValue] = useState(3);
   const [customUnit, setCustomUnit] = useState<'hours' | 'minutes'>('hours');
   const [voice, setVoice] = useState('Fenrir');
-  const [aiModel, setAiModel] = useState('gemini-2.5-flash');
+  const [aiModel, setAiModel] = useState('gemini-3.8-flash');
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
   const [length, setLength] = useState('30 seconds');
   const [musicTrack, setMusicTrack] = useState('Epic Cinematic');
@@ -158,6 +158,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     }
     return { connected: false, channel: DEFAULT_CHANNEL };
   });
+  const [authStatusLoading, setAuthStatusLoading] = useState(true);
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
   const [activePipelinePhase, setActivePipelinePhase] = useState<number>(0);
 
@@ -231,15 +232,33 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       const res = await youtubeApi.getAuthStatus();
       if (res && res.success) {
         const channel = res.channel || DEFAULT_CHANNEL;
-        setAuthStatus({ connected: Boolean(res.connected !== false), channel });
+        const connected = Boolean(res.connected !== false);
+        setAuthStatus({ connected, channel });
+        if (connected) {
+          try {
+            localStorage.setItem('apexmind_yt_channel', JSON.stringify(channel));
+          } catch {
+            // ignore
+          }
+        } else {
+          try {
+            localStorage.removeItem('apexmind_yt_channel');
+          } catch {
+            // ignore
+          }
+        }
+      } else {
+        setAuthStatus({ connected: false, channel: DEFAULT_CHANNEL });
         try {
-          localStorage.setItem('apexmind_yt_channel', JSON.stringify(channel));
+          localStorage.removeItem('apexmind_yt_channel');
         } catch {
           // ignore
         }
       }
     } catch {
       setAuthStatus({ connected: false, channel: DEFAULT_CHANNEL });
+    } finally {
+      setAuthStatusLoading(false);
     }
   };
 
@@ -353,6 +372,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (authStatusLoading || !authStatus?.connected) {
+      toast.error('Connect a YouTube channel before creating a publishing schedule.');
+      setActiveSubTab('channel');
+      return;
+    }
     setCreating(true);
 
     let finalSchedule = `Daily at ${publishTime} UTC`;
@@ -1051,6 +1075,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                       {(entry.youtubeUrl || entry.videoUrl) && (
                                         <button
                                           type="button"
+                                          aria-pressed={frequencyType === 'interval'}
                                           onClick={() => {
                                             const pData = entry.projectData || {};
                                             const vUrl = entry.videoUrl || pData.videoUrl;
@@ -1301,20 +1326,20 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in max-w-xl mx-auto w-full"
         >
           {/* Header intro card */}
-          <div className="p-3 rounded-xl bg-[#161616] border border-[#242424] flex flex-col gap-1">
+          <div className="p-3 rounded-xl bg-[#161616] border border-[#242424] flex flex-col gap-1.5">
             <span className="text-xs font-bold text-white flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
-              <span>Configure New Publishing Rule</span>
+              <span>Create a publishing schedule</span>
             </span>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              ApexMind autonomously scripts, voices, renders 9:16 vertical Shorts, and publishes on your automated schedule.
+            <p className="text-[11px] text-[#9CA3AF] leading-relaxed">
+              Choose a video theme and production settings, then set when the automation runs on your connected YouTube channel.
             </p>
           </div>
 
           {/* Theme */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
-              Niche / Theme
+              Video theme
             </label>
             <CustomSelect
               options={THEME_OPTIONS}
@@ -1326,11 +1351,10 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             />
           </div>
 
-          {/* AI Model Selection */}
+          {/* Script model */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider flex items-center justify-between">
-              <span>AI Engine / Model</span>
-              <span className="text-[9px] text-blue-400 font-mono">Dynamic Selection</span>
+            <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
+              Script model
             </label>
             <CustomSelect
               options={AI_MODEL_OPTIONS}
@@ -1359,7 +1383,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
-                Target Length
+                Video duration
               </label>
               <CustomSelect
                 options={LENGTH_OPTIONS}
@@ -1380,7 +1404,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             <div className="grid grid-cols-2 p-1 bg-[#101013] rounded-xl border border-[#242428] gap-1">
               <button
                 type="button"
-                onClick={() => setFrequencyType('interval')}
+                aria-pressed={frequencyType === 'interval'}
+                onClick={() => {
+                  setFrequencyType('interval');
+                  setPrivacyStatus('public');
+                }}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   frequencyType === 'interval'
                     ? 'bg-[#3B82F6] text-white shadow-sm'
@@ -1388,10 +1416,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 }`}
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${frequencyType === 'interval' ? 'text-white' : 'text-slate-400'}`} />
-                <span>Every X Hours / Mins</span>
+                <span>At an interval</span>
               </button>
               <button
                 type="button"
+                aria-pressed={frequencyType === 'daily'}
                 onClick={() => setFrequencyType('daily')}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   frequencyType === 'daily'
@@ -1411,7 +1440,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
-                    Interval (e.g. 3h, 8h)
+                    Run interval
                   </label>
                   <CustomSelect
                     options={INTERVAL_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
@@ -1424,20 +1453,13 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
-                    YouTube Release
-                  </label>
-                  <CustomSelect
-                    options={[
-                      { value: 'public', label: 'Instant Public' },
-                      { value: 'scheduled', label: 'Scheduled (publishAt)' },
-                    ]}
-                    value={privacyStatus}
-                    onChange={(val) => setPrivacyStatus(val as any)}
-                    className="w-full text-xs"
-                    buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
-                    menuClassName="!bg-[#181818] !border-[#242424]"
-                  />
+                  <span className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
+                    Release
+                  </span>
+                  <div className="min-h-10 flex items-center gap-2 rounded-xl bg-[#141416] border border-[#26262E] px-3 text-[11px] text-[#9CA3AF]">
+                    <Globe className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />
+                    <span>Publish immediately after each run</span>
+                  </div>
                 </div>
               </div>
 
@@ -1470,10 +1492,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
-                  Time (UTC)
+                <label htmlFor="automation-daily-run-time" className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
+                  Daily run time (UTC)
                 </label>
                 <input
+                  id="automation-daily-run-time"
                   type="time"
                   value={publishTime}
                   onChange={(e) => setPublishTime(e.target.value)}
@@ -1484,15 +1507,15 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
-                  YouTube Release
+                  Release
                 </label>
                 <CustomSelect
                   options={[
-                    { value: 'public', label: 'Instant Public' },
-                    { value: 'scheduled', label: 'Scheduled (publishAt)' },
+                    { value: 'public', label: 'Publish immediately' },
+                    { value: 'scheduled', label: 'Schedule for next occurrence' },
                   ]}
                   value={privacyStatus}
-                  onChange={(val) => setPrivacyStatus(val as any)}
+                  onChange={(val) => setPrivacyStatus(val as 'public' | 'scheduled')}
                   className="w-full text-xs"
                   buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
                   menuClassName="!bg-[#181818] !border-[#242424]"
@@ -1504,7 +1527,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           {/* AI Voice Persona */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-mono-studio uppercase text-slate-400 font-semibold tracking-wider">
-              Gemini Voice Persona
+              Voice
             </label>
             <CustomSelect
               options={VOICE_OPTIONS.map((v) => ({ value: v.id, label: v.name }))}
@@ -1531,30 +1554,55 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             />
           </div>
 
-          {/* Target Channel Notification */}
+          {/* YouTube publishing destination */}
           <div className="p-3 rounded-xl bg-[#141416] border border-[#26262E] flex items-center justify-between gap-2.5 text-[11px]">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="relative shrink-0">
-                <img
-                  src={activeChannel.avatarUrl}
-                  alt={activeChannel.name}
-                  className="w-7 h-7 rounded-lg object-cover ring-1 ring-red-500/40"
-                />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full ring-1 ring-[#141416]" />
+                {authStatusLoading ? (
+                  <div className="w-7 h-7 rounded-lg bg-[#1E1E1E] border border-[#333333] flex items-center justify-center">
+                    <Loader2 className="w-3.5 h-3.5 text-[#9CA3AF] animate-spin" />
+                  </div>
+                ) : authStatus?.connected ? (
+                  <img
+                    src={activeChannel.avatarUrl}
+                    alt={activeChannel.name}
+                    className="w-7 h-7 rounded-lg object-cover ring-1 ring-[#3B82F6]/40"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-lg bg-[#1E1E1E] border border-[#333333] flex items-center justify-center">
+                    <Youtube className="w-4 h-4 text-[#9CA3AF]" />
+                  </div>
+                )}
+                {authStatus?.connected && !authStatusLoading && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full ring-1 ring-[#141416]" />
+                )}
               </div>
               <div className="text-zinc-300 min-w-0">
-                <div className="text-[10px] text-zinc-500 font-mono uppercase">Target Channel</div>
-                <div className="font-semibold text-white truncate flex items-center gap-1.5">
-                  <span>{activeChannel.name}</span>
-                  <span className="text-[10px] text-zinc-400 font-mono font-normal">
-                    {activeChannel.handle}
-                  </span>
+                <div className="text-[10px] text-zinc-500 font-mono uppercase">
+                  {authStatusLoading ? 'Checking channel' : authStatus?.connected ? 'Connected channel' : 'Publishing destination'}
+                </div>
+                <div className="font-semibold text-white truncate">
+                  {authStatusLoading
+                    ? 'Checking YouTube connection…'
+                    : authStatus?.connected
+                    ? `${activeChannel.name} ${activeChannel.handle}`
+                    : 'No YouTube channel connected'}
                 </div>
               </div>
             </div>
-            <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold shrink-0">
-              Target
-            </span>
+            {authStatus?.connected ? (
+              <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold shrink-0">
+                Connected
+              </span>
+            ) : !authStatusLoading ? (
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('channel')}
+                className="text-[10px] text-[#60A5FA] hover:text-white font-semibold shrink-0"
+              >
+                Connect
+              </button>
+            ) : null}
           </div>
 
           {/* Action Buttons */}
@@ -1568,11 +1616,14 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             </button>
             <button
               type="submit"
-              disabled={creating}
+              disabled={creating || authStatusLoading || !authStatus?.connected}
+              title={!authStatus?.connected ? 'Connect a YouTube channel before creating a publishing schedule' : undefined}
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-md transition-all"
             >
               {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              <span>Activate Automation Cron</span>
+              <span>
+                {creating ? 'Creating schedule…' : authStatusLoading ? 'Checking channel…' : 'Create schedule'}
+              </span>
             </button>
           </div>
         </form>

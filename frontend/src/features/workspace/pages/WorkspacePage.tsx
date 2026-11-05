@@ -1887,6 +1887,9 @@ export default function WorkspacePage({
                   onPaneChange('prompt');
                 }}
                 onStartNewVideo={handleStartNewVideo}
+                currentTime={currentTime}
+                onSeek={handleSeek}
+                timelineDuration={timelineDuration || duration || 30}
               />
             ) : activePane === 'prompt' || (activePane === 'script' && scriptSubPane === 'prompt') ? (
               <AIAgentCreatorPane

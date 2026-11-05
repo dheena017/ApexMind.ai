@@ -108,66 +108,31 @@ export const workspaceApi = {
     };
     allHashtags: string[];
   }> {
-    try {
-      const res = await fetch(apiUrl('/api/workspace/generate-metadata'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.titles && data.titles.length > 0) {
-          return data;
-        }
-      }
-    } catch (err) {
-      console.warn('Metadata generation network notice, using client viral engine:', err);
+    const res = await fetch(apiUrl('/api/workspace/generate-metadata'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.detail || data.message || `AI metadata generation failed (${res.status})`);
+    }
+    if (!Array.isArray(data.titles) || data.titles.length === 0) {
+      throw new Error('The AI returned no title ideas. Please try again.');
+    }
+    if (
+      typeof data.description !== 'string' ||
+      !data.hashtags ||
+      !Array.isArray(data.hashtags.trending) ||
+      !Array.isArray(data.hashtags.niche) ||
+      !Array.isArray(data.hashtags.growth) ||
+      !Array.isArray(data.allHashtags)
+    ) {
+      throw new Error('The AI returned incomplete metadata. Please try again.');
     }
 
-    // High quality instant fallback generator
-    const cleanTopic = (params.topic || params.title || 'Stoic Discipline').trim();
-    const cleanCat = (params.category || 'Mindset').trim();
-    const tagBase = cleanTopic.replace(/[^a-zA-Z0-9]/g, '');
-
-    const trending = ['#Shorts', '#YouTubeShorts', '#AI', '#AIGenerated', '#ViralShorts', '#ShortsFeed'];
-    const niche = [
-      `#${tagBase || 'Stoicism'}`,
-      '#StoicMindset',
-      '#MarcusAurelius',
-      '#MentalToughness',
-      '#DailyDiscipline',
-      '#InnerStrength',
-    ];
-    const growth = ['#Motivation', '#SelfImprovement', '#Discipline', '#Mindset', '#Success', '#AIVideo'];
-    const ai = ['#AI', '#AIGenerated', '#AICreation', '#ApexMindAI', '#AIVideo'];
-    const allHashtags = Array.from(new Set([...trending, ...niche, ...growth, ...ai]));
-
-    const fallbackDesc = [
-      params.hook ? `⚡ ${params.hook}` : '⚡ Stop waiting for motivation to strike.',
-      params.quote ? `📜 ${params.quote}` : '📜 Discipline is an unyielding contract you honor with yourself in total silence.',
-      'Key Takeaways:\n• Action creates momentum, not waiting for mood.\n• The obstacle in front of you becomes your path.\n• Silence and execution beat loud excuses.',
-      params.cta ? `🎯 ${params.cta}` : '🎯 Subscribe for daily mental mastery.',
-      '🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).',
-      allHashtags.slice(0, 8).join(' '),
-    ].join('\n\n');
-
-    return {
-      titles: [
-        { title: `The Stoic Code: ${cleanTopic}`, angle: 'Stoic Principle', viralityScore: 98 },
-        { title: `Stop Waiting for Motivation (${cleanTopic})`, angle: 'Brutal Truth', viralityScore: 95 },
-        { title: 'The Rule Marcus Aurelius Never Broke', angle: 'Curiosity Gap', viralityScore: 94 },
-        { title: 'Can You Master Pure Focus for 24 Hours?', angle: 'Direct Challenge', viralityScore: 91 },
-        { title: `Why 99% Fail at ${cleanTopic}`, angle: 'Action Question', viralityScore: 89 },
-      ],
-      description: fallbackDesc,
-      hashtags: {
-        trending,
-        niche,
-        growth,
-        ai,
-      },
-      allHashtags,
-    };
+    return data;
   },
 
   // Generate voiceover audio via Gemini TTS

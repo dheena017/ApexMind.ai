@@ -343,15 +343,15 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
               <button
                 type="button"
                 onClick={() => onWorkspacePaneChange?.(activeWorkspacePane)}
-                className="inline-flex max-w-16 items-center gap-1 truncate text-[#E5E5E5] hover:text-white transition-colors cursor-pointer sm:max-w-none"
+                className="inline-flex max-w-28 min-w-0 items-center gap-1 truncate text-[#E5E5E5] hover:text-white transition-colors cursor-pointer sm:max-w-none"
                 title="Current active workspace pane"
               >
-                <span>{paneLabels[activeWorkspacePane] || 'Workspace Studio'}</span>
+                <span className="truncate">{paneLabels[activeWorkspacePane] || 'Workspace Studio'}</span>
               </button>
               <span className="text-[#6B7280]" title="Aspect Ratio">
                 {workspaceStatus.aspectRatio}
               </span>
-              <span className="hidden min-[380px]:inline tabular-nums text-[#9CA3AF]" title="Playhead / Timeline Duration">
+              <span className="hidden sm:inline tabular-nums text-[#9CA3AF]" title="Playhead / Timeline Duration">
                 {formatWorkspaceTime(workspaceStatus.currentTime)} / {formatWorkspaceTime(workspaceStatus.duration)}
               </span>
               {workspaceStatus.visual && (
@@ -454,7 +454,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
             ref={triggerRef}
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className={`relative flex min-h-8 items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer transition-colors border ${
+            className={`relative flex min-h-8 sm:min-h-0 items-center gap-1.5 px-2 py-1 sm:py-0.5 rounded-md cursor-pointer transition-colors border ${
               isOpen
                 ? 'bg-[#2563EB] text-white border-[#60A5FA]/40'
                 : unreadCount > 0

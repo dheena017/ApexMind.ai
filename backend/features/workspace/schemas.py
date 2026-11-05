@@ -571,19 +571,19 @@ class CreateCustomBadgeResponse(BaseModel):
 
 
 class GenerateMetadataRequest(BaseModel):
-    category: Optional[str] = "Stoic Mindset & Discipline"
-    topic: Optional[str] = "Daily discipline and focus"
-    title: Optional[str] = ""
-    hook: Optional[str] = ""
-    quote: Optional[str] = ""
-    cta: Optional[str] = ""
+    category: Optional[str] = None
+    topic: Optional[str] = None
+    title: Optional[str] = None
+    hook: Optional[str] = None
+    quote: Optional[str] = None
+    cta: Optional[str] = None
     model: Optional[str] = None
 
 
 class TitleIdeaItem(BaseModel):
     title: str
-    angle: str = "High CTR"
-    viralityScore: int = 95
+    angle: str
+    viralityScore: int
 
 
 class CategorizedHashtags(BaseModel):

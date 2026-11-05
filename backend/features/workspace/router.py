@@ -578,10 +578,15 @@ async def post_convert_to_mp4(
     description="Generate high-CTR titles, optimized description, and categorized hashtags via AI.",
 )
 def post_generate_metadata(payload: GenerateMetadataRequest):
+    if not any((payload.topic, payload.title, payload.hook, payload.quote)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide a video title or script before generating metadata.",
+        )
     try:
         data = generate_metadata(
-            category=payload.category or "Stoic Mindset & Discipline",
-            topic=payload.topic or "Daily discipline and focus",
+            category=payload.category or "",
+            topic=payload.topic or "",
             title=payload.title or "",
             hook=payload.hook or "",
             quote=payload.quote or "",
@@ -592,6 +597,8 @@ def post_generate_metadata(payload: GenerateMetadataRequest):
             "success": True,
             **data,
         }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.error(f"Generate metadata error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

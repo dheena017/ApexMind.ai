@@ -8,7 +8,6 @@ import {
   Flame,
   CheckCircle2,
   TrendingUp,
-  AlertCircle,
   Copy,
   RefreshCw,
   Unlink,
@@ -53,7 +52,7 @@ export interface YouTubePaneProps {
 
 const YOUTUBE_CATEGORY_OPTIONS = [
   { value: 'People & Blogs', label: 'People & Blogs', description: 'Personal, motivational & lifestyle Shorts' },
-  { value: 'Education', label: 'Education', description: 'Stoicism, mental models & learning' },
+  { value: 'Education', label: 'Education', description: 'Mental models, psychology & learning' },
   { value: 'Entertainment', label: 'Entertainment', description: 'Engaging storytelling & viral reels' },
   { value: 'Motivation', label: 'Motivation & Self-Help', description: 'Daily discipline & mindset quotes' },
   { value: 'Science & Technology', label: 'Science & Tech', description: 'Psychology, neuroscience & AI' },
@@ -78,19 +77,20 @@ function normalizeChannel(raw: any, fallbackQuery?: string): YouTubeChannel {
   const rawSubs = raw.subscribers ?? raw.subscriberCount ?? raw.subscriber_count ?? 0;
   const rawVids = raw.videosUploaded ?? raw.videos_uploaded ?? raw.videoCount ?? raw.video_count ?? 0;
   const rawViews = raw.totalLifetimeViews ?? raw.total_lifetime_views ?? raw.views ?? raw.viewCount ?? raw.view_count ?? 0;
+  const handle = raw.handle || fallbackQuery || '';
 
   return {
     id: raw.id || raw.channelId || raw.channel_id || '',
     channelId: raw.channelId || raw.channel_id || raw.id || '',
     name: raw.name || raw.title || 'YouTube Channel',
-    handle: raw.handle || fallbackQuery || '@channel',
+    handle,
     avatarUrl: raw.avatarUrl || raw.avatar_url || '',
     bannerUrl: raw.bannerUrl || raw.banner_url || '',
     subscribers: typeof rawSubs === 'string' ? parseFloat(rawSubs.replace(/,/g, '')) || 0 : Number(rawSubs) || 0,
     videosUploaded: typeof rawVids === 'string' ? parseFloat(rawVids.replace(/,/g, '')) || 0 : Number(rawVids) || 0,
     totalLifetimeViews: typeof rawViews === 'string' ? parseFloat(rawViews.replace(/,/g, '')) || 0 : Number(rawViews) || 0,
     verified: Boolean(raw.verified),
-    channelUrl: raw.channelUrl || `https://www.youtube.com/${raw.handle || fallbackQuery}`,
+    channelUrl: raw.channelUrl || (handle ? `https://www.youtube.com/${handle}` : ''),
   };
 }
 
@@ -116,9 +116,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
   // Hashtags (Managed in SEO & embedded into video description)
   const [tags, setTags] = useState<string[]>(() => {
-    if (script?.hashtags && script.hashtags.length > 0) return script.hashtags;
-    if (script?.tags && script.tags.length > 0) return script.tags;
-    return ['#Shorts', '#ApexMind', '#Motivation', '#Stoicism', '#Discipline', '#Mindset', '#AI', '#AIGenerated'];
+    return script?.hashtags?.length ? script.hashtags : script?.tags || [];
   });
   const [newTagInput, setNewTagInput] = useState('');
 
@@ -128,53 +126,24 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   const [showTitleDrawer, setShowTitleDrawer] = useState<boolean>(false);
   const [copiedDescription, setCopiedDescription] = useState<boolean>(false);
 
-  const [titleSuggestions, setTitleSuggestions] = useState<Array<{ title: string; angle: string; viralityScore: number }>>(() => {
-    if (script?.titleIdeas && script.titleIdeas.length > 0) {
-      return script.titleIdeas;
-    }
-    if (script?.title) {
-      return [{ title: script.title, angle: 'Current Title', viralityScore: 95 }];
-    }
-    return [];
-  });
+  const [titleSuggestions, setTitleSuggestions] = useState<Array<{ title: string; angle: string; viralityScore: number }>>(
+    () => script?.titleIdeas || []
+  );
 
   const [categorizedTags, setCategorizedTags] = useState<{
     trending: string[];
     niche: string[];
     growth: string[];
     ai: string[];
-  }>({
-    trending: ['#Shorts', '#YouTubeShorts', '#AI', '#AIGenerated', '#ViralShorts', '#ShortsFeed'],
-    niche: ['#Stoicism', '#MarcusAurelius', '#StoicMindset', '#DailyDiscipline', '#InnerStrength'],
-    growth: ['#Motivation', '#SelfImprovement', '#Discipline', '#Mindset', '#Success'],
-    ai: ['#AI', '#AIGenerated', '#AICreation', '#ApexMindAI', '#AIVideo'],
-  });
+  }>({ trending: [], niche: [], growth: [], ai: [] });
 
-  const [customDescription, setCustomDescription] = useState<string>(() => {
-    if (script?.description) return script.description;
-    const h = script?.hook || '';
-    const q = script?.quote || '';
-    const c = script?.cta || '';
-    const t = (script?.hashtags && script.hashtags.length > 0 ? script.hashtags : tags).join(' ');
-    return q || h
-      ? `${h ? `⚡ ${h}\n\n` : ''}📜 ${q ? `${q}\n\n` : ''}${c ? `🎯 ${c}\n\n` : ''}🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n${t}`
-      : 'Transform your mindset. Conquer your inner storm.\n\n🤖 AI Disclosure: This video and audio were created with AI tools using ApexMind AI.\n\n#Shorts #Motivation #Discipline #AI #AIGenerated';
-  });
+  const [customDescription, setCustomDescription] = useState<string>(() => script?.description || '');
 
   useEffect(() => {
-    if (script?.description && script.description !== customDescription) {
-      setCustomDescription(script.description);
-    }
-    if (script?.titleIdeas && script.titleIdeas.length > 0) {
-      setTitleSuggestions([
-        { title: script.title || 'The Stoic Discipline Code', angle: 'Primary Hook', viralityScore: 98 },
-        ...script.titleIdeas,
-      ]);
-    }
-    if (script?.hashtags && script.hashtags.length > 0) {
-      setTags(script.hashtags);
-    }
-  }, [script?.description, script?.titleIdeas, script?.hashtags]);
+    setCustomDescription(script?.description || '');
+    setTitleSuggestions(script?.titleIdeas || []);
+    setTags(script?.hashtags?.length ? script.hashtags : script?.tags || []);
+  }, [script?.description, script?.titleIdeas, script?.hashtags, script?.tags]);
 
   // Connected Channel State
   const [channel, setChannel] = useState<YouTubeChannel | null>(null);
@@ -353,12 +322,6 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   const hookText = script?.hook || '';
   const quoteText = script?.quote || '';
   const ctaText = script?.cta || '';
-  const tagsText = tags.join(' ');
-
-  const description = quoteText || hookText
-    ? `${hookText ? `${hookText}\n\n` : ''}${quoteText ? `${quoteText}\n\n` : ''}${ctaText ? `${ctaText}\n\n` : ''}🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n${tagsText}`
-    : 'Transform your mindset. Conquer your inner storm.\n\n🤖 AI Disclosure: This video and audio were created with AI tools using ApexMind AI.\n\n#Shorts #Motivation #Discipline #AI #AIGenerated';
-
   const handleUpdateDescription = (newDesc: string) => {
     setCustomDescription(newDesc);
     onUpdateScript?.({ description: newDesc });
@@ -370,31 +333,18 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
     setShowTitleDrawer(false);
   };
 
-  const handleApplyDescriptionTemplate = (type: 'viral' | 'takeaways' | 'minimal') => {
-    const h = script?.hook || 'Stop waiting for motivation to strike.';
-    const q = script?.quote || 'Discipline is an unyielding contract you honor with yourself in total silence.';
-    const c = script?.cta || 'Subscribe for daily mental mastery.';
-    const t = tags.join(' ');
-
-    let generated = '';
-    if (type === 'viral') {
-      generated = `⚡ ${h}\n\n${q}\n\n🎯 ${c}\n\n🤖 AI Disclosure: Video & audio generated with AI by ApexMind AI Studio.\n\n${t}`;
-    } else if (type === 'takeaways') {
-      generated = `⚡ ${h}\n\n📜 ${q}\n\nKey Takeaways:\n• Action creates momentum, not waiting for mood.\n• The obstacle in front of you becomes your path.\n• Silence and execution beat loud excuses.\n\n🎯 ${c}\n\n🤖 AI Disclosure: Video & audio generated with AI by ApexMind AI Studio.\n\n${t}`;
-    } else {
-      generated = `${q}\n\n🤖 Video created with AI.\n\n${t}`;
-    }
-    handleUpdateDescription(generated);
-    toast.success(`Applied ${type === 'viral' ? 'Viral Shorts' : type === 'takeaways' ? 'Deep Takeaways' : 'Minimal'} template`);
-  };
-
   const handleGenerateMetadata = async (mode: 'all' | 'title' | 'desc' | 'tags' = 'all') => {
+    if (![videoTitle, hookText, quoteText, script?.category || ''].some((value) => value.trim())) {
+      toast.error('Add a title or script before generating YouTube metadata.');
+      return;
+    }
+
     setIsGeneratingMeta(true);
     setGeneratingSection(mode);
     try {
       const result = await workspaceApi.generateMetadata({
         category,
-        topic: videoTitle || script?.category || 'Stoic Mindset & Discipline',
+        topic: script?.category || '',
         title: videoTitle,
         hook: hookText,
         quote: quoteText,
@@ -418,34 +368,22 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
       }
 
       if (mode === 'all' || mode === 'tags') {
-        if (result.hashtags) {
-          setCategorizedTags({
-            trending: result.hashtags.trending || [],
-            niche: result.hashtags.niche || [],
-            growth: result.hashtags.growth || [],
-            ai: (result.hashtags.ai && result.hashtags.ai.length > 0)
-              ? result.hashtags.ai
-              : ['#AI', '#AIGenerated', '#AICreation', '#ApexMindAI', '#AIVideo'],
-          });
-        }
-        if (mode === 'tags' || (mode === 'all' && tags.length < 3)) {
-          const freshTags = result.allHashtags.slice(0, 8);
-          setTags(freshTags);
-          onUpdateScript?.({ hashtags: freshTags, tags: freshTags });
-        }
+        setCategorizedTags({ ...result.hashtags, ai: result.hashtags.ai || [] });
+        setTags(result.allHashtags);
+        onUpdateScript?.({ hashtags: result.allHashtags, tags: result.allHashtags });
       }
 
       toast.success(
         mode === 'all'
-          ? 'AI generated fresh titles, description, and hashtags!'
+          ? 'AI generated titles, description, and hashtags for this video.'
           : mode === 'title'
-          ? 'AI generated 5 viral title hooks!'
+          ? 'AI generated title suggestions.'
           : mode === 'desc'
-          ? 'AI crafted rich SEO description!'
-          : 'AI generated fresh trending hashtags!'
+          ? 'AI generated a video description.'
+          : 'AI generated hashtags for this video.'
       );
-    } catch (err: any) {
-      toast.error('Could not generate metadata: ' + (err.message || 'Error'));
+    } catch (err) {
+      toast.error(`Could not generate metadata: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsGeneratingMeta(false);
       setGeneratingSection(null);
@@ -454,10 +392,15 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
   const handleAddAllFromCategory = (catKey: 'trending' | 'niche' | 'growth' | 'ai') => {
     const list = categorizedTags[catKey] || [];
-    const combined = Array.from(new Set([...tags, ...list]));
+    const newTags = list.filter((tag) => !tags.includes(tag));
+    if (newTags.length === 0) {
+      toast.info(list.length ? 'All suggested hashtags are already added.' : 'Generate AI metadata to get hashtag recommendations.');
+      return;
+    }
+    const combined = [...tags, ...newTags];
     setTags(combined);
     onUpdateScript?.({ hashtags: combined, tags: combined });
-    toast.success(`Added ${list.length} tags from ${catKey}`);
+    toast.success(`Added ${newTags.length} ${newTags.length === 1 ? 'hashtag' : 'hashtags'}`);
   };
 
   const handleClearAllTags = () => {
@@ -473,28 +416,46 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
     setTimeout(() => setCopiedDescription(false), 2000);
   };
 
-  // Dynamic Viral / SEO readiness score
-  const hasTitle = videoTitle.trim().length >= 10;
+  // The estimate is provided by Gemini with its title suggestions.
+  const titleWithinLimit = videoTitle.length > 0 && videoTitle.length <= 100;
   const hasHook = hookText.trim().length > 0;
   const hasCta = ctaText.trim().length > 0;
-  const hasGoodTags = tags.length >= 3 && tags.length <= 8;
+  const hasRecommendedTagCount = tags.length >= 3 && tags.length <= 8;
   const isChannelConnected = !!channel;
 
-  let viralScore = 40;
-  if (hasTitle) viralScore += 15;
-  if (hasHook) viralScore += 15;
-  if (hasCta) viralScore += 10;
-  if (hasGoodTags) viralScore += 10;
-  if (isChannelConnected) viralScore += 10;
-  viralScore = Math.min(100, viralScore);
+  const viralScore = titleSuggestions.length
+    ? Math.round(titleSuggestions.reduce((total, item) => total + item.viralityScore, 0) / titleSuggestions.length)
+    : null;
+  const hashtagCategories = [
+    { key: 'trending', label: 'Trending', tags: categorizedTags.trending },
+    { key: 'niche', label: 'Category & niche', tags: categorizedTags.niche },
+    { key: 'growth', label: 'Growth', tags: categorizedTags.growth },
+    { key: 'ai', label: 'AI-related', tags: categorizedTags.ai },
+  ] as const;
+  const hasHashtagSuggestions = hashtagCategories.some(({ tags: suggestions }) => suggestions.length > 0);
+  const readinessChecks = [
+    { label: 'Video title', detail: `${videoTitle.length}/100 characters`, pass: titleWithinLimit },
+    { label: 'Opening hook', detail: hasHook ? 'Added to script' : 'Not in script yet', pass: hasHook },
+    { label: 'Call to action', detail: hasCta ? 'Added to script' : 'Not in script yet', pass: hasCta },
+    {
+      label: 'Hashtag count',
+      detail: `${tags.length} added · 3–8 suggested`,
+      pass: hasRecommendedTagCount,
+    },
+    {
+      label: 'YouTube channel',
+      detail: loadingChannel ? 'Checking connection…' : isChannelConnected ? channel?.name || 'Connected' : 'Not connected',
+      pass: loadingChannel ? null : isChannelConnected,
+    },
+  ] as const;
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* ── Top Header Bar (Ambient glow, refined micro-actions) ── */}
       <div className="relative h-12 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-red-950/40">
-            <Youtube className="w-4 h-4 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#3B82F6]/20 to-[#2563EB]/10 border border-[#3B82F6]/30 flex items-center justify-center shrink-0 shadow-sm shadow-blue-950/40">
+            <Youtube className="w-4 h-4 text-[#60A5FA]" />
           </div>
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-bold text-white tracking-tight">YouTube Studio</span>
@@ -612,9 +573,9 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 font-mono transition-colors group cursor-pointer truncate"
                     title="Click to copy handle"
                   >
-                    <span className="truncate">{channel.handle || '@channel'}</span>
+                    <span className="truncate">{channel.handle || 'Handle unavailable'}</span>
                     {copiedHandle ? (
-                      <Check className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                      <Check className="w-2.5 h-2.5 text-[#3B82F6] shrink-0" />
                     ) : (
                       <Copy className="w-2.5 h-2.5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
@@ -718,7 +679,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
             }`}
           >
-            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'seo' ? 'text-amber-400' : 'text-slate-400'}`} />
+            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'seo' ? 'text-white' : 'text-slate-400'}`} />
             <span className="truncate">Shorts SEO</span>
             <span
               className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold shrink-0 transition-colors ${
@@ -727,7 +688,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   : 'bg-[#26262B] text-zinc-400'
               }`}
             >
-              {viralScore}%
+              {viralScore !== null ? `${viralScore}%` : 'AI'}
             </span>
           </button>
         </div>
@@ -766,7 +727,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
                 <span className="text-slate-400 uppercase font-bold flex items-center gap-1">
-                  <Youtube className="w-3 h-3 text-red-500" /> Shorts Video Title
+                  <Youtube className="w-3 h-3 text-[#60A5FA]" /> Shorts Video Title
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -779,7 +740,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     <span>AI Titles ({titleSuggestions.length})</span>
                     {showTitleDrawer ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
                   </button>
-                  <span className={`text-[10px] ${videoTitle.length > 80 ? 'text-amber-400' : 'text-slate-500'}`}>
+                  <span className={`text-[10px] ${videoTitle.length > 80 ? 'text-[#60A5FA]' : 'text-slate-500'}`}>
                     {videoTitle.length}/100
                   </span>
                 </div>
@@ -809,16 +770,20 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                       onClick={() => handleGenerateMetadata('title')}
                       className="text-[9px] text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
                     >
-                      <Shuffle className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'title' ? 'animate-spin text-red-400' : ''}`} />
+                      <Shuffle className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'title' ? 'animate-spin text-[#60A5FA]' : ''}`} />
                       <span>{isGeneratingMeta && generatingSection === 'title' ? 'Refining…' : 'Generate More'}</span>
                     </button>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    {titleSuggestions.map((item, idx) => {
+                    {titleSuggestions.length === 0 ? (
+                      <p className="px-2 py-3 text-center text-[10px] text-zinc-500">
+                        Generate AI metadata to get title suggestions.
+                      </p>
+                    ) : titleSuggestions.map((item, idx) => {
                       const isSelected = videoTitle.trim() === item.title.trim();
                       return (
                         <button
-                          key={idx}
+                          key={`${item.title}-${idx}`}
                           type="button"
                           onClick={() => handleSelectTitle(item.title)}
                           className={`text-left p-2 rounded-lg text-xs transition-all flex flex-col gap-1 border cursor-pointer ${
@@ -830,7 +795,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                           <div className="flex items-center justify-between text-[9px] font-mono-studio">
                             <span className="text-[#93C5FD] font-semibold">{item.angle}</span>
                             <span className="px-1.5 py-0.2 rounded bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40">
-                              CTR: {item.viralityScore}%
+                              AI: {item.viralityScore}/100
                             </span>
                           </div>
                           <span className="text-[11px] font-medium leading-snug">{item.title}</span>
@@ -869,49 +834,13 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     title="Copy description"
                   >
                     {copiedDescription ? (
-                      <Check className="w-2.5 h-2.5 text-emerald-400" />
+                      <Check className="w-2.5 h-2.5 text-[#3B82F6]" />
                     ) : (
                       <Copy className="w-2.5 h-2.5" />
                     )}
                     <span>{copiedDescription ? 'Copied' : 'Copy'}</span>
                   </button>
                 </div>
-              </div>
-
-              {/* Quick Preset Formatting Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
-                <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Presets:</span>
-                {[
-                  { id: 'viral' as const, label: '⚡ Viral Shorts' },
-                  { id: 'takeaways' as const, label: '📖 Deep Takeaways' },
-                  { id: 'minimal' as const, label: '🎯 Minimal' },
-                ].map((tpl) => (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    onClick={() => handleApplyDescriptionTemplate(tpl.id)}
-                    className="px-2.5 py-0.5 rounded-full text-[9px] font-medium bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border border-[#242424] hover:border-white/10 transition-colors cursor-pointer shrink-0"
-                  >
-                    {tpl.label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const aiDisclosure = '\n\n🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).';
-                    if (!customDescription.toLowerCase().includes('created with ai') && !customDescription.toLowerCase().includes('ai disclosure')) {
-                      handleUpdateDescription(customDescription.trim() + aiDisclosure);
-                      toast.success('AI creation disclosure added to description');
-                    } else {
-                      toast.info('AI disclosure is already in the description');
-                    }
-                  }}
-                  className="px-2.5 py-0.5 rounded-full text-[9px] font-medium bg-[#2563EB]/15 hover:bg-[#2563EB]/25 text-[#60A5FA] hover:text-white border border-[#3B82F6]/30 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
-                  title="Insert mandatory AI Content Disclosure"
-                >
-                  <span>🤖</span>
-                  <span>+ AI Disclosure</span>
-                </button>
               </div>
 
               <textarea
@@ -934,29 +863,33 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   onClick={() => setActiveSubTab('seo')}
                   className="text-[10px] text-[#60A5FA] hover:text-white font-medium cursor-pointer"
                 >
-                  Manage in SEO →
+                  {tags.length ? 'Edit in SEO →' : 'Add hashtags →'}
                 </button>
               </div>
-              <div className="flex flex-wrap gap-1">
-                {tags.slice(0, 8).map((t) => (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 text-[10px] text-zinc-200 hover:text-white font-medium transition-colors"
-                  >
-                    {t}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(t)}
-                      className="text-zinc-400 hover:text-white cursor-pointer ml-0.5"
+              {tags.length ? (
+                <div className="flex flex-wrap gap-1">
+                  {tags.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 text-[10px] text-zinc-200 hover:text-white font-medium transition-colors"
                     >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  </span>
-                ))}
-                {tags.length > 8 && (
-                  <span className="text-[10px] text-zinc-500 self-center">+{tags.length - 8} more</span>
-                )}
-              </div>
+                      {t}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(t)}
+                        aria-label={`Remove ${t}`}
+                        className="text-zinc-400 hover:text-white cursor-pointer ml-0.5"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] leading-relaxed text-[#9CA3AF]">
+                  No hashtags added yet. Open SEO to add your own or generate relevant suggestions.
+                </p>
+              )}
             </div>
 
             {/* Visibility / Privacy */}
@@ -1030,37 +963,37 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
             ═══════════════════════════════════════════════════════════ */}
         {activeSubTab === 'seo' && (
           <div className="flex flex-col gap-3.5">
-            {/* Viral Algorithm Score Header Card */}
+            {/* Gemini title estimate */}
             <div className="p-3.5 rounded-xl bg-[#141414] border border-[#242424] flex items-center justify-between shadow-xs">
               <div>
                 <div className="text-[10px] uppercase font-mono-studio text-[#60A5FA] font-bold flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 text-[#60A5FA]" /> Viral Algorithm Score
+                  <Flame className="w-3.5 h-3.5 text-[#60A5FA]" /> AI Title Score Estimate
                 </div>
                 <div className="text-xl font-black text-white mt-0.5 font-mono">
-                  {viralScore} <span className="text-xs font-normal text-zinc-400">/ 100</span>
+                  {viralScore ?? '—'} <span className="text-xs font-normal text-[#9CA3AF]">/ 100</span>
                 </div>
               </div>
               <div className="text-[10px] text-right font-semibold flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#181818] border border-[#242424]">
-                <TrendingUp className={`w-3.5 h-3.5 ${viralScore >= 80 ? 'text-emerald-400' : 'text-amber-400'}`} />
-                <span className={viralScore >= 80 ? 'text-emerald-400' : 'text-amber-400'}>
-                  {viralScore >= 80 ? 'High Discovery' : 'Optimization Recommended'}
+                <TrendingUp className={`w-3.5 h-3.5 ${viralScore !== null && viralScore >= 80 ? 'text-[#60A5FA]' : 'text-[#9CA3AF]'}`} />
+                <span className={viralScore !== null && viralScore >= 80 ? 'text-[#60A5FA]' : 'text-[#9CA3AF]'}>
+                  {viralScore === null ? 'Awaiting AI analysis' : viralScore >= 80 ? 'Strong AI estimate' : 'AI estimate'}
                 </span>
               </div>
             </div>
 
-            {/* Viral Hashtags & Suggested Tags Manager */}
-            <div className="p-3.5 rounded-xl bg-[#141414] border border-[#242424] flex flex-col gap-2.5 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1">
+            {/* Hashtags & Suggested Tags Manager */}
+            <div className="p-3.5 rounded-xl bg-[#141414] border border-[#242424] flex flex-col gap-3 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex min-w-0 items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono-studio text-[#9CA3AF] uppercase tracking-wider font-bold flex items-center gap-1.5">
                     <Hash className="w-3.5 h-3.5 text-[#60A5FA]" /> Active Hashtags ({tags.length})
                   </span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-mono font-bold border shrink-0 ${
-                    tags.length >= 3 && tags.length <= 8
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-semibold border shrink-0 ${
+                    hasRecommendedTagCount
+                      ? 'bg-[#3B82F6]/10 text-[#60A5FA] border-[#3B82F6]/25'
+                      : 'bg-[#121212] text-[#9CA3AF] border-[#242424]'
                   }`}>
-                    {tags.length >= 3 && tags.length <= 8 ? 'Optimal (3-8)' : '3-8 Recommended'}
+                      {hasRecommendedTagCount ? 'Suggested range · 3–8' : '3–8 suggested'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
@@ -1068,7 +1001,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     type="button"
                     disabled={isGeneratingMeta}
                     onClick={() => handleGenerateMetadata('tags')}
-                    className="text-[10px] px-2.5 py-1 rounded-md bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border border-[#242424] hover:border-white/10 font-semibold cursor-pointer flex items-center gap-1 transition-colors whitespace-nowrap"
+                    className="text-[10px] px-2.5 py-1.5 rounded-lg bg-[#1E1E1E] hover:bg-[#26262C] text-[#9CA3AF] hover:text-white border border-[#242424] hover:border-[#3B82F6]/50 font-semibold cursor-pointer flex items-center gap-1.5 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-wait"
                   >
                     <Sparkles className={`w-3 h-3 ${isGeneratingMeta && generatingSection === 'tags' ? 'animate-spin text-[#60A5FA]' : 'text-[#60A5FA]'}`} />
                     <span>{isGeneratingMeta && generatingSection === 'tags' ? 'Generating…' : 'AI Generate'}</span>
@@ -1076,7 +1009,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyAllHashtags}
-                    className="px-2 py-1 rounded-md bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 text-[10px] text-zinc-300 hover:text-white cursor-pointer flex items-center gap-1 font-medium transition-colors"
+                    disabled={tags.length === 0}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#1E1E1E] hover:bg-[#26262C] border border-[#242424] hover:border-[#3B82F6]/40 text-[10px] text-[#9CA3AF] hover:text-white cursor-pointer flex items-center gap-1.5 font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Copy className="w-2.5 h-2.5" />
                     <span>Copy</span>
@@ -1085,7 +1019,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     <button
                       type="button"
                       onClick={handleClearAllTags}
-                      className="p-1 rounded-md bg-[#181818] hover:bg-rose-500/10 border border-[#242424] hover:border-rose-500/30 text-zinc-400 hover:text-rose-400 cursor-pointer flex items-center justify-center transition-colors"
+                      className="p-1.5 rounded-lg bg-[#1E1E1E] hover:bg-[#26262C] border border-[#242424] hover:border-[#3B82F6]/40 text-[#9CA3AF] hover:text-[#60A5FA] cursor-pointer flex items-center justify-center transition-colors"
                       title="Clear all hashtags"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -1095,7 +1029,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
 
               {/* Tag Input */}
-              <div className="flex gap-1.5">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={newTagInput}
@@ -1106,33 +1040,38 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                       handleAddHashtag();
                     }
                   }}
-                  placeholder="Add custom hashtag (e.g. #StoicGrit)..."
-                  className="flex-1 bg-[#141416] border border-[#24242A] focus:border-[#2563EB] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors"
+                  aria-label="Add a hashtag"
+                  placeholder="Add a hashtag, e.g. #ContentCreator"
+                  className="min-w-0 flex-1 bg-[#121212] border border-[#242424] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/15 rounded-lg px-3 py-2 text-xs text-[#E5E5E5] placeholder:text-[#6B7280] outline-none transition-colors"
                 />
                 <button
                   type="button"
+                  disabled={!newTagInput.trim()}
                   onClick={() => handleAddHashtag()}
-                  className="px-3 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-xs font-semibold text-white flex items-center gap-1 cursor-pointer border border-[#60A5FA]/40 shadow-xs transition-colors"
+                  className="px-3 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-xs font-semibold text-white flex items-center gap-1 cursor-pointer border border-[#60A5FA]/40 shadow-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-3 h-3" /> Add
                 </button>
               </div>
 
               {/* Active Tag Cloud */}
-              <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-lg bg-[#141414] border border-[#222228]">
+              <div className="flex flex-wrap gap-1.5 min-h-10 p-2.5 rounded-lg bg-[#121212] border border-[#242424]">
                 {tags.length === 0 ? (
-                  <span className="text-[11px] text-zinc-500 italic py-0.5">No hashtags added yet. Click suggestions below or AI Generate.</span>
+                  <span className="w-full py-1 text-center text-[10px] text-[#6B7280]">
+                    Your hashtags will appear here. Add one above or generate video-specific suggestions.
+                  </span>
                 ) : (
                   tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#181818] hover:bg-[#26262C] border border-[#242424] hover:border-white/10 text-[10px] text-zinc-200 hover:text-white font-medium animate-scale-up transition-colors"
+                      className="inline-flex max-w-full items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full bg-[#1E1E1E] border border-[#3B82F6]/30 text-[10px] text-[#60A5FA] font-medium animate-scale-up"
                     >
-                      {tag}
+                      <span className="truncate">{tag}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="text-zinc-400 hover:text-white cursor-pointer ml-0.5"
+                        aria-label={`Remove ${tag}`}
+                        className="shrink-0 rounded-full p-0.5 text-[#9CA3AF] hover:bg-[#3B82F6]/20 hover:text-white cursor-pointer transition-colors"
                       >
                         <X className="w-2.5 h-2.5" />
                       </button>
@@ -1142,205 +1081,150 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
 
               {/* Categorized Smart Tag Recommendations */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-[#25252A]">
-                {/* 1. Trending Shorts Cluster */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-[9px]">
-                    <span className="text-[#60A5FA] font-bold uppercase tracking-wider flex items-center gap-1">
-                      🔥 High-Velocity Shorts Tags
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleAddAllFromCategory('trending')}
-                      className="text-[9px] text-zinc-400 hover:text-white cursor-pointer font-semibold"
-                    >
-                      + Add All ({categorizedTags.trending.length})
-                    </button>
+              <div className="flex flex-col gap-2 pt-2 border-t border-[#242424]">
+                {!hasHashtagSuggestions ? (
+                  <div className="rounded-lg border border-dashed border-[#333333] bg-[#121212] px-3 py-3.5 text-center">
+                    <Sparkles className="mx-auto mb-1.5 h-4 w-4 text-[#60A5FA]" />
+                    <p className="text-[10px] font-medium text-[#E5E5E5]">No recommendations yet</p>
+                    <p className="mt-0.5 text-[10px] text-[#6B7280]">
+                      Generate metadata to get hashtag suggestions based on your video.
+                    </p>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {categorizedTags.trending.map((sug) => (
-                      <button
-                        key={sug}
-                        type="button"
-                        onClick={() => handleAddHashtag(sug)}
-                        disabled={tags.includes(sug)}
-                        className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
-                          tags.includes(sug)
-                            ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                            : 'bg-[#181818] border-[#242424] text-zinc-400 hover:text-white hover:bg-[#26262C] hover:border-white/10 active:scale-95'
-                        }`}
-                      >
-                        + {sug}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {hashtagCategories.map(({ key, label, tags: suggestions }) => {
+                      if (suggestions.length === 0) return null;
+                      const remainingCount = suggestions.filter((tag) => !tags.includes(tag)).length;
 
-                {/* 2. Niche Mindset & Topic Cluster */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-[9px]">
-                    <span className="text-[#60A5FA] font-bold uppercase tracking-wider flex items-center gap-1">
-                      🧠 Category &amp; Niche Authority
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleAddAllFromCategory('niche')}
-                      className="text-[9px] text-zinc-400 hover:text-white cursor-pointer font-semibold"
-                    >
-                      + Add All ({categorizedTags.niche.length})
-                    </button>
+                      return (
+                        <section key={key} className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#60A5FA]">
+                              {label}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={remainingCount === 0}
+                              onClick={() => handleAddAllFromCategory(key)}
+                              className="rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[#60A5FA] transition-colors hover:bg-[#3B82F6]/10 hover:text-white disabled:cursor-default disabled:text-[#6B7280]"
+                            >
+                              {remainingCount > 0 ? `Add remaining (${remainingCount})` : 'All added'}
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {suggestions.map((suggestion) => {
+                              const isAdded = tags.includes(suggestion);
+                              return (
+                                <button
+                                  key={suggestion}
+                                  type="button"
+                                  onClick={() => handleAddHashtag(suggestion)}
+                                  disabled={isAdded}
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[9px] font-medium transition-colors ${
+                                    isAdded
+                                      ? 'border-[#3B82F6]/25 bg-[#3B82F6]/10 text-[#60A5FA] cursor-default'
+                                      : 'border-[#242424] bg-[#1E1E1E] text-[#9CA3AF] hover:border-[#3B82F6]/50 hover:bg-[#26262C] hover:text-white cursor-pointer'
+                                  }`}
+                                >
+                                  {isAdded ? <Check className="h-2.5 w-2.5" /> : <Plus className="h-2.5 w-2.5 text-[#60A5FA]" />}
+                                  {suggestion}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      );
+                    })}
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {categorizedTags.niche.map((sug) => (
-                      <button
-                        key={sug}
-                        type="button"
-                        onClick={() => handleAddHashtag(sug)}
-                        disabled={tags.includes(sug)}
-                        className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
-                          tags.includes(sug)
-                            ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                            : 'bg-[#181818] border-[#242424] text-zinc-400 hover:text-white hover:bg-[#26262C] hover:border-white/10 active:scale-95'
-                        }`}
-                      >
-                        + {sug}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. High-Reach Growth Cluster */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-[9px]">
-                    <span className="text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                      🚀 Algorithm Growth &amp; Reach
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleAddAllFromCategory('growth')}
-                      className="text-[9px] text-zinc-400 hover:text-white cursor-pointer font-semibold"
-                    >
-                      + Add All ({categorizedTags.growth.length})
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {categorizedTags.growth.map((sug) => (
-                      <button
-                        key={sug}
-                        type="button"
-                        onClick={() => handleAddHashtag(sug)}
-                        disabled={tags.includes(sug)}
-                        className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
-                          tags.includes(sug)
-                            ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                            : 'bg-[#181818] border-[#242424] text-zinc-400 hover:text-white hover:bg-[#26262C] hover:border-white/10 active:scale-95'
-                        }`}
-                      >
-                        + {sug}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. AI Content & Disclosure Cluster */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-[9px]">
-                    <span className="text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                      🤖 AI Content &amp; Disclosure
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleAddAllFromCategory('ai')}
-                      className="text-[9px] text-zinc-400 hover:text-white cursor-pointer font-semibold"
-                    >
-                      + Add All ({(categorizedTags.ai || []).length})
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {(categorizedTags.ai || []).map((sug) => (
-                      <button
-                        key={sug}
-                        type="button"
-                        onClick={() => handleAddHashtag(sug)}
-                        disabled={tags.includes(sug)}
-                        className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
-                          tags.includes(sug)
-                            ? 'opacity-30 border-transparent bg-transparent cursor-default'
-                            : 'bg-[#181818] border-[#242424] text-zinc-400 hover:text-white hover:bg-[#26262C] hover:border-white/10 active:scale-95'
-                        }`}
-                      >
-                        + {sug}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Retention & Content Signals */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold">
-                Viewer Retention Signals
-              </span>
-
-              <div className="flex items-center justify-between p-2 rounded-lg bg-[#111111] border border-[#24242A] text-xs">
-                <div>
-                  <div className="text-[11px] font-semibold text-white">First 3 Seconds Hook</div>
-                  <div className="text-[10px] text-zinc-400 truncate max-w-[220px]">
-                    {hookText ? `"${hookText.slice(0, 32)}…"` : 'No hook detected'}
-                  </div>
-                </div>
-                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${hasHook ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                  {hasHook ? 'Active' : 'Missing'}
-                </span>
+            <section className="rounded-xl border border-[#242424] bg-[#141414] p-3.5">
+              <div className="mb-2.5">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#E5E5E5]">
+                  Script highlights
+                </h3>
+                <p className="mt-1 text-[10px] leading-relaxed text-[#6B7280]">
+                  Taken from your current script. These checks do not predict viewer retention.
+                </p>
               </div>
+              <div className="grid gap-2">
+                {[
+                  { label: 'Opening hook', value: hookText },
+                  { label: 'Call to action', value: ctaText },
+                ].map((item) => {
+                  const hasContent = Boolean(item.value.trim());
+                  const preview = item.value.trim();
 
-              <div className="flex items-center justify-between p-2 rounded-lg bg-[#111111] border border-[#24242A] text-xs">
-                <div>
-                  <div className="text-[11px] font-semibold text-white">Call-To-Action (CTA)</div>
-                  <div className="text-[10px] text-zinc-400 truncate max-w-[220px]">
-                    {ctaText ? `"${ctaText.slice(0, 32)}…"` : 'No CTA detected'}
-                  </div>
-                </div>
-                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${hasCta ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                  {hasCta ? 'Active' : 'Missing'}
-                </span>
+                  return (
+                    <div
+                      key={item.label}
+                      className="flex min-w-0 items-start gap-2.5 rounded-lg border border-[#242424] bg-[#121212] p-2.5"
+                    >
+                      <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+                        hasContent ? 'bg-[#3B82F6]/15 text-[#60A5FA]' : 'bg-[#1E1E1E] text-[#6B7280]'
+                      }`}>
+                        {hasContent ? <Check className="h-2.5 w-2.5" /> : <span className="h-1 w-1 rounded-full bg-current" />}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] font-semibold text-[#E5E5E5]">{item.label}</div>
+                        <p
+                          className={`mt-0.5 break-words text-[10px] leading-relaxed ${
+                            hasContent ? 'text-[#9CA3AF]' : 'text-[#6B7280]'
+                          }`}
+                          title={preview || undefined}
+                        >
+                          {preview || 'Not added to the script yet'}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            </section>
 
-            {/* Dynamic SEO Algorithm Checklist */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
-                Algorithm Discovery Checklist
-              </span>
-              {[
-                { label: 'Vertical Aspect Ratio (9:16 Shorts)', pass: true },
-                { label: 'Hook in First 3 Seconds Added', pass: hasHook },
-                { label: 'Title character length (10–80 chars)', pass: hasTitle },
-                { label: 'Call-To-Action Prompt Added', pass: hasCta },
-                { label: '3–8 Viral Hashtags Included', pass: hasGoodTags },
-                { label: 'Connected YouTube Channel', pass: isChannelConnected },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-1.5 rounded-lg bg-[#111111] border border-[#24242A] text-xs"
-                >
-                  <div className="flex items-center gap-2">
-                    {item.pass ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    ) : (
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    )}
-                    <span className={`text-[11px] ${item.pass ? 'text-zinc-200' : 'text-amber-300'}`}>
-                      {item.label}
+            <section className="rounded-xl border border-[#242424] bg-[#141414] p-3.5">
+              <div className="mb-2.5">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#E5E5E5]">
+                  Publishing readiness
+                </h3>
+                <p className="mt-1 text-[10px] leading-relaxed text-[#6B7280]">
+                  Live checks from your title, script, hashtags, and channel connection.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {readinessChecks.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#242424] bg-[#121212] px-2.5 py-2"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+                        item.pass === true
+                          ? 'bg-[#3B82F6]/15 text-[#60A5FA]'
+                          : 'bg-[#1E1E1E] text-[#6B7280]'
+                      }`}>
+                        {item.pass === true
+                          ? <Check className="h-2.5 w-2.5" />
+                          : item.pass === null
+                          ? <span className="h-2 w-2 animate-spin rounded-full border border-current border-t-transparent" />
+                          : <span className="h-1 w-1 rounded-full bg-current" />}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[10px] font-medium text-[#E5E5E5]">{item.label}</p>
+                        <p className="truncate text-[9px] text-[#6B7280]">{item.detail}</p>
+                      </div>
+                    </div>
+                    <span className={`shrink-0 text-[9px] font-semibold ${
+                      item.pass === true ? 'text-[#60A5FA]' : 'text-[#6B7280]'
+                    }`}>
+                      {item.pass === true ? 'Ready' : item.pass === null ? 'Checking' : 'Needs attention'}
                     </span>
                   </div>
-                  <span className={`text-[10px] font-mono font-semibold ${item.pass ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {item.pass ? 'Optimal' : 'Pending'}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
       </div>
@@ -1353,11 +1237,11 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               href={publishedVideoUrl || channel?.channelUrl || `https://www.youtube.com/${channel?.handle}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30"
+              className="w-full h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-xs"
             >
               <CheckCircle2 className="w-4 h-4 text-white" />
               <span>Watch Short on YouTube</span>
-              <ExternalLink className="w-3.5 h-3.5 ml-0.5 text-emerald-200" />
+              <ExternalLink className="w-3.5 h-3.5 ml-0.5 text-white" />
             </a>
 
             <div className="grid grid-cols-2 gap-2">
@@ -1431,10 +1315,10 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
         {/* Live Published YouTube Link Banner */}
         {publishedSuccess && (
-          <div className="p-2.5 rounded-xl bg-[#161616] border border-emerald-500/30 flex flex-col gap-1.5">
+          <div className="p-2.5 rounded-xl bg-[#161616] border border-[#3B82F6]/30 flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-[10px] font-mono-studio">
-              <span className="text-emerald-400 font-bold flex items-center gap-1">
-                <Youtube className="w-3 h-3 text-red-500" /> Published Video Link:
+              <span className="text-[#60A5FA] font-bold flex items-center gap-1">
+                <Youtube className="w-3 h-3 text-[#60A5FA]" /> Published Video Link:
               </span>
               {publishedVideoUrl && (
                 <button
@@ -1485,7 +1369,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   href={publishedVideoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 ml-auto"
+                  className="text-[#60A5FA] hover:text-[#93C5FD] font-bold flex items-center gap-1 ml-auto"
                 >
                   <span>Open Video</span>
                   <ExternalLink className="w-2.5 h-2.5" />

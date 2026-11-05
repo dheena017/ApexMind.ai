@@ -1597,78 +1597,27 @@ def generate_gemini_metadata(
     cta: str = "",
     model: str | None = None,
 ) -> dict[str, Any]:
-    """Generates viral titles, rich YouTube description, and categorized hashtags via Gemini AI with resilient heuristic fallback."""
-    import re
+    """Generate YouTube metadata with Gemini; fail explicitly if AI generation fails."""
     target_model = resolve_script_model(model)
-    clean_cat = (category or "Stoic Mindset & Discipline").strip()
-    clean_topic = (topic or "Daily discipline, focus, and mental toughness").strip()
+    clean_cat = (category or "").strip()
+    clean_topic = (topic or "").strip()
     clean_hook = (hook or "").strip()
     clean_quote = (quote or "").strip()
-    clean_cta = (cta or "Subscribe for daily discipline.").strip()
+    clean_cta = (cta or "").strip()
+    clean_title = (title or "").strip()
 
-    def _build_fallback_metadata() -> dict[str, Any]:
-        core_kw = re.sub(r'[^a-zA-Z0-9s]', ' ', clean_topic).split()
-        top_kws = [w.capitalize() for w in core_kw if len(w) > 3][:3]
-        topic_title = " ".join(top_kws) or "Unshakable Focus"
-
-        cat_tag = re.sub(r'[^a-zA-Z0-9]', '', clean_cat.title())
-        topic_tag = re.sub(r'[^a-zA-Z0-9]', '', top_kws[0]) if top_kws else "Mindset"
-
-        fallback_titles = [
-            {"title": f"The Stoic Code: {topic_title}", "angle": "Stoic Principle", "viralityScore": 98},
-            {"title": f"Stop Waiting for Motivation ({topic_title})", "angle": "Brutal Truth", "viralityScore": 95},
-            {"title": f"The Rule Marcus Aurelius Never Broke", "angle": "Curiosity Gap", "viralityScore": 94},
-            {"title": f"Can You Master Pure Focus for 24 Hours?", "angle": "Direct Challenge", "viralityScore": 91},
-            {"title": f"Why 99% Fail at {topic_title}", "angle": "Action Question", "viralityScore": 89},
-        ]
-
-        trending_tags = ["#Shorts", "#YouTubeShorts", "#ViralShorts", "#ShortsFeed", "#AI", "#AIGenerated"]
-        niche_tags = [
-            f"#{cat_tag}" if cat_tag else "#StoicMindset",
-            f"#{topic_tag}" if topic_tag else "#Discipline",
-            "#MarcusAurelius",
-            "#MentalToughness",
-            "#InnerStrength",
-            "#DailyGrit",
-            "#ApexMindAI",
-        ]
-        growth_tags = ["#Motivation", "#SelfImprovement", "#Discipline", "#Mindset", "#Success", "#AIVideo", "#AICreation"]
-        ai_tags = ["#AI", "#AIGenerated", "#AICreation", "#ApexMindAI", "#AIVideo"]
-        all_unique = list(dict.fromkeys(trending_tags + niche_tags + growth_tags + ai_tags))
-
-        fallback_desc = (
-            f"⚡ {clean_hook or 'Transform your mindset and conquer the quiet battles within.'}\n\n"
-            f"📜 {clean_quote or 'Discipline is the unyielding contract you honor with yourself in total silence.'}\n\n"
-            f"Key Takeaways:\n"
-            f"• Action creates momentum, not waiting for motivation.\n"
-            f"• The obstacle in front of you becomes your path forward.\n"
-            f"• Silence and compounding execution beat loud excuses.\n\n"
-            f"🎯 {clean_cta}\n\n"
-            f"🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n"
-            f"{' '.join(all_unique[:8])}"
-        )
-
-        return {
-            "titles": fallback_titles,
-            "description": fallback_desc,
-            "hashtags": {
-                "trending": trending_tags,
-                "niche": niche_tags,
-                "growth": growth_tags,
-                "ai": ai_tags,
-            },
-            "allHashtags": all_unique,
-        }
+    if not any((clean_topic, clean_title, clean_hook, clean_quote)):
+        raise ValueError("Provide a video title or script before generating metadata.")
 
     prompt = f"""You are an elite YouTube Shorts & TikTok Virality Strategist.
-Generate high-CTR title variations, an engaging description, and categorized hashtags for this motivational Short:
+Generate title variations, an engaging description, and categorized hashtags using only the supplied video details. Do not invent people, quotes, events, or factual claims.
 
-CATEGORY/THEME: {clean_cat}
-TOPIC: {clean_topic}
-CURRENT TITLE: {title or 'Untitled'}
-OPENING HOOK: {clean_hook or 'Stop waiting for motivation to strike.'}
-CORE MONOLOGUE: {clean_quote or 'Discipline is the bridge between goals and accomplishment.'}
-CALL TO ACTION: {clean_cta}
+CATEGORY/THEME: {clean_cat or 'Not provided'}
+TOPIC: {clean_topic or 'Not provided'}
+CURRENT TITLE: {clean_title or 'Not provided'}
+OPENING HOOK: {clean_hook or 'Not provided'}
+CORE MONOLOGUE: {clean_quote or 'Not provided'}
+CALL TO ACTION: {clean_cta or 'Not provided'}
 
 CRITICAL MANDATE:
 1. TITLES: Generate exactly 5 high-CTR titles (under 60 characters) with different psychological angles:
@@ -1677,12 +1626,8 @@ CRITICAL MANDATE:
    - Direct Challenge
    - Stoic Principle
    - Action Question
-2. DESCRIPTION: Write a formatted YouTube Shorts description with hook summary, quote insight, key takeaways bullet points, CTA, mandatory AI disclosure statement ("🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio)."), and relevant hashtags.
-3. HASHTAGS: Provide categorized hashtag lists (must include relevant AI creation tags like #AI, #AIGenerated, #ApexMindAI, #AIVideo):
-   - trending (4-5 general Shorts & AI tags including #Shorts, #AI, #AIGenerated)
-   - niche (5-6 tags specific to {clean_cat} and {clean_topic}, plus #ApexMindAI)
-   - growth (4-5 motivation/mindset tags including #Motivation, #Discipline, #AIVideo)
-   - ai (4-5 AI-specific discovery tags: ["#AI", "#AIGenerated", "#AICreation", "#ApexMindAI", "#AIVideo"])
+2. DESCRIPTION: Write a description grounded in the supplied details. Do not add a CTA or key takeaway that was not provided or supported by them. Include the AI disclosure statement ("🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).").
+3. HASHTAGS: Suggest relevant, categorized hashtags based on the provided video. Do not use generic or unrelated tags to fill a category.
 
 Output strictly a single raw JSON object matching:
 {{
@@ -1705,36 +1650,65 @@ Output strictly a single raw JSON object matching:
             target_model=target_model,
             system_instruction="You are a specialized viral YouTube metadata optimizer. Respond strictly in valid JSON.",
         )
-        if raw_res and isinstance(raw_res, dict) and raw_res.get("titles"):
-            titles = raw_res.get("titles", [])
-            desc = raw_res.get("description", "")
-            # Ensure AI disclosure is present in generated description per YouTube guidelines
-            if "created with ai" not in desc.lower() and "ai disclosure" not in desc.lower():
-                desc = f"{desc.strip()}\n\n🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio)."
+        if not isinstance(raw_res, dict):
+            raise RuntimeError(f"Gemini did not return metadata: {used_model}")
 
-            tags_obj = raw_res.get("hashtags", {})
-            trending = tags_obj.get("trending", [])
-            niche = tags_obj.get("niche", [])
-            growth = tags_obj.get("growth", [])
-            ai_tags = tags_obj.get("ai", ["#AI", "#AIGenerated", "#ApexMindAI", "#AIVideo"])
-            all_tags = list(dict.fromkeys(trending + niche + growth + ai_tags))
-            # Ensure #AI and #AIGenerated are in all_tags
-            for must_tag in ["#AI", "#AIGenerated"]:
-                if must_tag not in all_tags:
-                    all_tags.append(must_tag)
+        raw_titles = raw_res.get("titles")
+        if not isinstance(raw_titles, list):
+            raise ValueError("Gemini returned metadata without a title list.")
+        titles = []
+        for item in raw_titles:
+            if not isinstance(item, dict) or not isinstance(item.get("title"), str):
+                continue
+            score = item.get("viralityScore", 0)
+            try:
+                score = max(0, min(100, int(score)))
+            except (TypeError, ValueError):
+                score = 0
+            titles.append({
+                "title": item["title"].strip(),
+                "angle": item.get("angle", "") if isinstance(item.get("angle"), str) else "",
+                "viralityScore": score,
+            })
+        titles = [item for item in titles if item["title"]]
+        if not titles:
+            raise ValueError("Gemini returned no usable title ideas.")
 
-            return {
-                "titles": titles,
-                "description": desc,
-                "hashtags": {
-                    "trending": trending,
-                    "niche": niche,
-                    "growth": growth,
-                    "ai": ai_tags,
-                },
-                "allHashtags": all_tags,
-            }
-    except Exception as e:
-        logger.warning(f"[Studio/Metadata] Online metadata generation fallback: {e}")
+        description = raw_res.get("description")
+        if not isinstance(description, str) or not description.strip():
+            raise ValueError("Gemini returned no usable description.")
+        if "created with ai" not in description.lower() and "ai disclosure" not in description.lower():
+            description = f"{description.strip()}\n\n🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio)."
 
-    return _build_fallback_metadata()
+        raw_tags = raw_res.get("hashtags")
+        if not isinstance(raw_tags, dict):
+            raise ValueError("Gemini returned no categorized hashtags.")
+
+        def clean_tags(key: str) -> list[str]:
+            values = raw_tags.get(key, [])
+            if not isinstance(values, list):
+                return []
+            return list(dict.fromkeys(
+                value.strip() for value in values
+                if isinstance(value, str) and value.strip()
+            ))
+
+        hashtags = {
+            "trending": clean_tags("trending"),
+            "niche": clean_tags("niche"),
+            "growth": clean_tags("growth"),
+            "ai": clean_tags("ai"),
+        }
+        all_tags = list(dict.fromkeys(
+            tag for group in hashtags.values() for tag in group
+        ))
+
+        return {
+            "titles": titles,
+            "description": description,
+            "hashtags": hashtags,
+            "allHashtags": all_tags,
+        }
+    except Exception:
+        logger.exception("[Studio/Metadata] Gemini metadata generation failed.")
+        raise

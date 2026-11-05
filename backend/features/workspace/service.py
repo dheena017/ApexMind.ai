@@ -111,8 +111,8 @@ def get_media_library() -> Dict[str, Any]:
 
 
 def generate_metadata(
-    category: str = "Stoic Mindset & Discipline",
-    topic: str = "Daily discipline and focus",
+    category: str = "",
+    topic: str = "",
     title: str = "",
     hook: str = "",
     quote: str = "",
