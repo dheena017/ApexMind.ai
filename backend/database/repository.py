@@ -71,6 +71,9 @@ def save_channel_oauth(
     videos_uploaded: int = 0,
     user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
+    if not user_id:
+        raise ValueError("A signed-in user is required to connect a YouTube channel.")
+
     conn = get_connection()
     cursor = conn.cursor()
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -83,8 +86,17 @@ def save_channel_oauth(
         if existing_row and existing_row["refresh_token"]:
             effective_refresh = str(existing_row["refresh_token"]).strip()
 
-    # Multi-channel preservation: only remove the specific channel being re-authenticated
-    cursor.execute("DELETE FROM youtube_channels WHERE id = ?", (channel_id,))
+    cursor.execute("SELECT user_id FROM youtube_channels WHERE id = ?", (channel_id,))
+    existing_channel = cursor.fetchone()
+    if existing_channel and existing_channel["user_id"] not in (None, user_id):
+        conn.close()
+        raise ValueError("This YouTube channel is already connected to another ApexMind account.")
+
+    # Multi-channel preservation: only replace this user's channel or a legacy unowned record.
+    cursor.execute(
+        "DELETE FROM youtube_channels WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+        (channel_id, user_id),
+    )
     cursor.execute("""
     INSERT INTO youtube_channels (
         id, user_id, name, handle, subscribers, videos_uploaded, avatar_url,

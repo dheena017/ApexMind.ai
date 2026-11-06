@@ -63,6 +63,8 @@ async def list_fleet_accounts(
             "total": len(fleet),
             "accounts": fleet,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error listing social fleet accounts: {e}")
         raise HTTPException(
@@ -91,6 +93,8 @@ async def get_oauth_url(
             "oauthUrl": res["oauthUrl"],
             "message": f"Generated OAuth URL for {platform.capitalize()}",
         }
+    except HTTPException:
+        raise
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
@@ -202,6 +206,8 @@ async def post_syndicate_publish(
             privacy=payload.privacy,
         )
         return res
+    except HTTPException:
+        raise
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
