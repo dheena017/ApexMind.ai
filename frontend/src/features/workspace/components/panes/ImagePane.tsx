@@ -9,10 +9,10 @@ import {
   Trash2,
   ExternalLink,
   Sparkles,
-  Bookmark,
   RefreshCw,
   Sliders,
   RotateCcw,
+  ChevronLeft,
   Sun,
   Contrast,
   Droplets,
@@ -179,7 +179,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   onSelectImage,
   activeImageUrl,
 }) => {
-  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'filters' | 'saved' | 'history'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'filters' | 'history'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>('all');
@@ -379,6 +379,15 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
   const handleApply = (img: StockImageItem) => {
     setSelectedId(img.id);
+    window.dispatchEvent(new CustomEvent('workspace:backdrop-filter', {
+      detail: {
+        brightness,
+        contrast,
+        saturate: saturation,
+        blur,
+        vignette: vignette ? 45 : 0,
+      },
+    }));
     onSelectImage(img.url);
     window.dispatchEvent(
       new CustomEvent('workspace:add-timeline-clip', {
@@ -452,9 +461,22 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     setSaturation(100);
     setBlur(0);
     setVignette(true);
+    window.dispatchEvent(new CustomEvent('workspace:backdrop-filter', {
+      detail: { brightness: 100, contrast: 100, saturate: 100, blur: 0, vignette: 45 },
+    }));
   };
 
-  const sourceList = activeTab === 'saved' ? savedImages : activeTab === 'history' ? recentImages : images;
+  const dispatchGradingChange = (detail: {
+    brightness?: number;
+    contrast?: number;
+    saturate?: number;
+    blur?: number;
+    vignette?: number;
+  }) => {
+    window.dispatchEvent(new CustomEvent('workspace:backdrop-filter', { detail }));
+  };
+
+  const sourceList = activeTab === 'history' ? recentImages : images;
 
   // Render provider badge
   const renderSourceBadge = (source?: string) => {
@@ -532,9 +554,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         <ScrollableTabs
           tabs={[
             { id: 'catalog', label: 'Catalog', icon: ImageIcon, color: 'text-blue-400' },
-            { id: 'filters', label: 'Filters', icon: Sliders, color: 'text-blue-400' },
             { id: 'url', label: 'URL', icon: ExternalLink, color: 'text-blue-400' },
-            { id: 'saved', label: 'Saved', icon: Bookmark, color: 'text-blue-400' },
             { id: 'history', label: 'History', icon: History, color: 'text-blue-400', badge: recentImages.length > 0 ? recentImages.length : undefined },
           ]}
           activeTab={activeTab}
@@ -598,28 +618,39 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           </div>
 
           {/* Provider Quick Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {[
-              { id: 'all', label: '✨ All (100M+)' },
-              { id: 'unsplash', label: 'Unsplash' },
-              { id: 'pexels', label: 'Pexels' },
-              { id: 'pixabay', label: 'Pixabay' },
-              { id: 'wikimedia', label: 'Wikimedia' },
-              { id: 'flickr', label: 'Flickr HD' },
-            ].map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleProviderSelect(p.id)}
-                className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
-                  selectedProvider === p.id
-                    ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
-                    : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#26262C] border border-[#242424]'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab('filters')}
+              className="inline-flex h-7 shrink-0 items-center gap-1 rounded-lg border border-[#2F2F2F] bg-[#181818] px-2 text-[10px] font-semibold text-[#D4D4D8] transition-colors hover:bg-[#26262C] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/60"
+              title="Adjust backdrop image"
+            >
+              <Sliders className="h-3 w-3" />
+              Adjust
+            </button>
+            <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {[
+                { id: 'all', label: '✨ All (100M+)' },
+                { id: 'unsplash', label: 'Unsplash' },
+                { id: 'pexels', label: 'Pexels' },
+                { id: 'pixabay', label: 'Pixabay' },
+                { id: 'wikimedia', label: 'Wikimedia' },
+                { id: 'flickr', label: 'Flickr HD' },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleProviderSelect(p.id)}
+                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
+                    selectedProvider === p.id
+                      ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
+                      : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#26262C] border border-[#242424]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -630,10 +661,20 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           <div className="flex flex-col gap-4">
             <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
-                  Backdrop Image Grading
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('catalog')}
+                    className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#2F2F2F] bg-[#111111] px-2 text-[10px] font-medium text-[#D4D4D8] hover:bg-[#242424] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/60"
+                  >
+                    <ChevronLeft className="h-3 w-3" />
+                    Photos
+                  </button>
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
+                    Image Grading
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={resetFilters}
@@ -657,7 +698,11 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   min="30"
                   max="150"
                   value={brightness}
-                  onChange={(e) => setBrightness(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setBrightness(value);
+                    dispatchGradingChange({ brightness: value });
+                  }}
                   className="w-full accent-[#3B82F6]"
                 />
               </div>
@@ -675,7 +720,11 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   min="50"
                   max="180"
                   value={contrast}
-                  onChange={(e) => setContrast(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setContrast(value);
+                    dispatchGradingChange({ contrast: value });
+                  }}
                   className="w-full accent-[#3B82F6]"
                 />
               </div>
@@ -693,7 +742,11 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   min="0"
                   max="200"
                   value={saturation}
-                  onChange={(e) => setSaturation(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setSaturation(value);
+                    dispatchGradingChange({ saturate: value });
+                  }}
                   className="w-full accent-[#3B82F6]"
                 />
               </div>
@@ -709,7 +762,11 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                   min="0"
                   max="16"
                   value={blur}
-                  onChange={(e) => setBlur(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setBlur(value);
+                    dispatchGradingChange({ blur: value });
+                  }}
                   className="w-full accent-[#3B82F6]"
                 />
               </div>
@@ -719,7 +776,11 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                 <span className="text-xs text-zinc-300">Cinematic Vignette Shadow</span>
                 <button
                   type="button"
-                  onClick={() => setVignette((v) => !v)}
+                  onClick={() => {
+                    const nextVignette = !vignette;
+                    setVignette(nextVignette);
+                    dispatchGradingChange({ vignette: nextVignette ? 45 : 0 });
+                  }}
                   className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
                     vignette ? 'bg-[#3B82F6]' : 'bg-zinc-700'
                   }`}
@@ -753,6 +814,13 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       setContrast(p.c);
                       setSaturation(p.s);
                       setBlur(p.bl);
+                      dispatchGradingChange({
+                        brightness: p.b,
+                        contrast: p.c,
+                        saturate: p.s,
+                        blur: p.bl,
+                        vignette: vignette ? 45 : 0,
+                      });
                     }}
                     className="p-2 rounded-lg bg-[#111111] hover:bg-[#1E1E1E] border border-[#242424] text-left text-[11px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
                   >
@@ -841,7 +909,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
             </div>
           </div>
-        ) : activeTab === 'catalog' || activeTab === 'saved' || activeTab === 'history' ? (
+        ) : activeTab === 'catalog' || activeTab === 'history' ? (
           /* Catalog or Saved Images Grid */
           <>
             {/* Dedicated History Tab Header with Clear button */}
@@ -889,23 +957,30 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </div>
             )}
 
-            {/* Empty Saved State */}
-            {activeTab === 'saved' && savedImages.length === 0 ? (
-              <div className="bg-[#181818] border border-[#242424] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2.5">
-                <Bookmark className="w-8 h-8 text-[#52525B]" />
-                <p className="text-xs font-bold text-white">No Saved Images Yet</p>
-                <p className="text-[11px] text-slate-400 max-w-xs">
-                  Import images using the &ldquo;Direct URL&rdquo; tab to build your custom studio backdrops library.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('url')}
-                  className="mt-2 bg-[#3B82F6] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#2563EB] transition-colors cursor-pointer"
-                >
-                  Import an Image
-                </button>
+            {activeTab === 'catalog' && savedImages.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white">Saved Images</span>
+                  <span className="text-[10px] font-mono-studio text-slate-400">{savedImages.length}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {savedImages.map((img) => (
+                    <ImageCard
+                      key={img.id}
+                      img={img}
+                      isSelected={selectedId === img.id || (!selectedId && activeImageUrl === img.url)}
+                      isActive={activeImageUrl === img.url}
+                      activeTab="saved"
+                      onApply={handleApply}
+                      onDeleteSaved={handleDeleteSaved}
+                      renderSourceBadge={renderSourceBadge}
+                    />
+                  ))}
+                </div>
               </div>
-            ) : sourceList.length === 0 && isLoadingLive ? (
+            )}
+
+            {sourceList.length === 0 && isLoadingLive ? (
               <div className="grid grid-cols-2 gap-2.5">
                 {Array.from({ length: 6 }).map((_, idx) => (
                   <div
