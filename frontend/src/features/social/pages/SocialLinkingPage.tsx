@@ -24,6 +24,16 @@ import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopu
 import { getSocialAvatarFallback, handleSocialAvatarError } from '../utils/avatar';
 import useAuth from '@/src/features/auth/hooks/useAuth';
 
+const SOCIAL_FLEET_CHANNEL_NAME = 'apexmind-social-fleet';
+
+function broadcastSocialOAuthResult(type: 'connected' | 'error', message: string): boolean {
+  if (typeof BroadcastChannel === 'undefined') return false;
+  const channel = new BroadcastChannel(SOCIAL_FLEET_CHANNEL_NAME);
+  channel.postMessage({ type, message });
+  channel.close();
+  return true;
+}
+
 function formatCount(num?: number): string {
   if (!num || num === 0) return '0';
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
@@ -166,8 +176,27 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     loadData();
 
     const handleFleetUpdate = () => loadData();
+    const channel = typeof BroadcastChannel === 'undefined'
+      ? null
+      : new BroadcastChannel(SOCIAL_FLEET_CHANNEL_NAME);
+    const handleOAuthResult = (event: MessageEvent<{ type?: string; message?: string }>) => {
+      if (event.data?.type === 'connected') {
+        setNotice(event.data.message || 'Social account connected successfully.');
+        setActionError(null);
+        setConnectingMetaPlatform(null);
+        loadData();
+      } else if (event.data?.type === 'error') {
+        setActionError(event.data.message || 'Could not connect the social account.');
+        setConnectingMetaPlatform(null);
+      }
+    };
     window.addEventListener('social:fleet-updated', handleFleetUpdate);
-    return () => window.removeEventListener('social:fleet-updated', handleFleetUpdate);
+    channel?.addEventListener('message', handleOAuthResult);
+    return () => {
+      window.removeEventListener('social:fleet-updated', handleFleetUpdate);
+      channel?.removeEventListener('message', handleOAuthResult);
+      channel?.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -180,11 +209,15 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
 
     window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
     if (oauthError) {
-      setActionError(`Social account authorization was not completed: ${oauthError}`);
+      const message = `Social account authorization was not completed: ${oauthError}`;
+      setActionError(message);
+      if (broadcastSocialOAuthResult('error', message)) window.close();
       return;
     }
     if (!code || !state) {
-      setActionError('Social account authorization returned an incomplete response. Please try again.');
+      const message = 'Social account authorization returned an incomplete response. Please try again.';
+      setActionError(message);
+      if (broadcastSocialOAuthResult('error', message)) window.close();
       return;
     }
 
@@ -192,9 +225,16 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
       .then(({ message }) => {
         setNotice(message);
         setActionError(null);
+        setConnectingMetaPlatform(null);
         window.dispatchEvent(new CustomEvent('social:fleet-updated'));
+        if (broadcastSocialOAuthResult('connected', message)) window.close();
       })
-      .catch((err: Error) => setActionError(err.message || 'Could not connect the social account.'));
+      .catch((err: Error) => {
+        const message = err.message || 'Could not connect the social account.';
+        setActionError(message);
+        setConnectingMetaPlatform(null);
+        if (broadcastSocialOAuthResult('error', message)) window.close();
+      });
   }, []);
 
   const handleSetActive = async (acc: SocialAccount) => {
@@ -292,7 +332,8 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     }
     setConnectingMetaPlatform(platform);
     try {
-      const oauthUrl = await socialApi.getOAuthUrl(platform);
+      const redirectUri = new URL('/social-accounts', window.location.origin).toString();
+      const oauthUrl = await socialApi.getOAuthUrl(platform, redirectUri);
       navigateOAuthPopup(authWindow, oauthUrl);
     } catch (err: any) {
       authWindow.close();
@@ -315,7 +356,9 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     setActionError(null);
     setNotice(null);
     try {
-      await socialApi.disconnectAccount(accountId);
+      const account = accounts.find((item) => item.id === accountId);
+      if (!account) throw new Error('The selected social account is no longer available.');
+      await socialApi.disconnectAccount(account.platform, accountId);
       const updated = accounts.filter((a) => a.id !== accountId);
       setAccounts(updated);
 
@@ -492,7 +535,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
               </span>
             </div>
             <p className="mt-1 text-xs text-[#9CA3AF] max-w-2xl leading-relaxed">
-              Connect YouTube channels, Facebook Pages, and Instagram professional accounts. Instagram connects directly with Instagram Login; a Facebook Page is not required.
+              Connect YouTube channels, Facebook Pages, and Instagram professional accounts. Instagram uses Instagram Login; a Facebook Page is not required.
             </p>
           </div>
         </div>
@@ -605,7 +648,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
           <div>
             <h2 className="text-sm font-bold text-white">Connect a social account</h2>
             <p className="text-[11px] text-[#9CA3AF]">Choose a platform to filter accounts, or use + to connect another account. Select the same platform again to show all.</p>
-            <p className="mt-1 text-[10px] text-[#71717A]">The + button opens the platform’s secure authorization page, then returns you here.</p>
+            <p className="mt-1 text-[10px] text-[#71717A]">Connect in a secure sign-in window; the account list refreshes when authorization finishes.</p>
           </div>
           <span className="text-[10px] text-zinc-500 font-medium">Secure OAuth connection</span>
         </div>

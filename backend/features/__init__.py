@@ -10,17 +10,18 @@ from .auth import auth_router
 from .settings import router as settings_router
 from .videos import videos_router
 from .dashboard import dashboard_router
-from .media import media_router
-from .social import social_router
+from .media.audio_router import router as audio_search_router
+from .social import social_platform_router, social_router
 
 __all__ = [
     "workspace_router",
-    "media_router",
     "youtube_router",
     "notifications_router",
     "auth_router",
     "settings_router",
     "videos_router",
     "dashboard_router",
+    "audio_search_router",
     "social_router",
+    "social_platform_router",
 ]

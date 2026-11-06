@@ -1,11 +1,4 @@
-"""
-backend/features/auth/service.py
-Authentication service supporting:
-- Email & Password registration and login (PBKDF2-HMAC-SHA256 salted hashing)
-- Google Sign-In (Google Identity Services token authentication)
-- Multi-Channel creator profiles and session management
-- Legacy YouTube channel sign-in backward compatibility
-"""
+"""Authentication services for Google, Facebook, and Instagram creator sign-in."""
 
 import logging
 import hashlib
@@ -84,23 +77,14 @@ def get_session_user_id(token: str) -> Optional[str]:
         return None
 
 
-def create_meta_login_url(provider: str) -> Dict[str, str]:
-    """Create a provider-specific Meta authorization URL with a signed, short-lived state."""
-    if provider == "facebook":
-        app_id = settings.META_APP_ID
-        if not app_id or not settings.META_APP_SECRET:
-            raise ValueError("Meta sign-in is not configured. Set META_APP_ID and META_APP_SECRET on the backend.")
-        authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
-        scopes = "public_profile,email"
-    elif provider == "instagram":
-        app_id = settings.INSTAGRAM_APP_ID or settings.META_APP_ID
-        if not app_id or not (settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET):
-            raise ValueError("Instagram sign-in is not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET on the backend.")
-        authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
-        scopes = "public_profile,pages_show_list,instagram_basic"
-    else:
-        raise ValueError(f"Unsupported Meta sign-in provider: {provider}")
+def create_instagram_login_url() -> Dict[str, str]:
+    """Create the Instagram authorization URL with a signed, short-lived state."""
+    app_id = settings.INSTAGRAM_APP_ID or settings.META_APP_ID
+    app_secret = settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET
+    if not app_id or not app_secret:
+        raise ValueError("Instagram sign-in is not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET on the backend.")
 
+    provider = "instagram"
     timestamp = str(int(time.time()))
     nonce = secrets.token_urlsafe(24)
     unsigned_state = f"{provider}.{timestamp}.{nonce}"
@@ -114,11 +98,11 @@ def create_meta_login_url(provider: str) -> Dict[str, str]:
         "client_id": app_id,
         "redirect_uri": settings.META_AUTH_REDIRECT_URI,
         "response_type": "code",
-        "scope": scopes,
+        "scope": "public_profile,pages_show_list,instagram_basic",
         "state": state,
     }
     return {
-        "authorizationUrl": f"{authorization_endpoint}?{urllib.parse.urlencode(params)}",
+        "authorizationUrl": f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth?{urllib.parse.urlencode(params)}",
         "state": state,
     }
 
@@ -149,63 +133,60 @@ def _validate_meta_state(provider: str, state: str) -> None:
         raise ValueError("Social sign-in state is invalid or expired. Please try again.")
 
 
-async def authenticate_meta_user(provider: str, code: str, state: str) -> Dict[str, Any]:
-    """Exchange a single-use provider code server-side and authenticate the returned identity."""
-    _validate_meta_state(provider, state)
-    redirect_uri = settings.META_AUTH_REDIRECT_URI
-
-    if provider in ("facebook", "instagram"):
-        app_id = (
-            (settings.INSTAGRAM_APP_ID or settings.META_APP_ID)
-            if provider == "instagram"
-            else settings.META_APP_ID
-        )
-        app_secret = (
-            (settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET)
-            if provider == "instagram"
-            else settings.META_APP_SECRET
-        )
-        token_endpoint = f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token"
-        profile_endpoint = f"https://graph.facebook.com/{META_GRAPH_VERSION}/me"
-        if not app_id or not app_secret:
-            raise ValueError(f"{provider.capitalize()} sign-in is not configured on the backend.")
-        token_request = {
-            "client_id": app_id,
-            "client_secret": app_secret,
-            "redirect_uri": redirect_uri,
-            "code": code,
-        }
-    else:
-        raise ValueError(f"Unsupported Meta sign-in provider: {provider}")
+async def authenticate_facebook_user(access_token: str) -> Dict[str, Any]:
+    """Verify a Facebook SDK token against this app before authenticating its identity."""
+    app_id = settings.META_APP_ID
+    app_secret = settings.META_APP_SECRET
+    if not app_id or not app_secret:
+        raise ValueError("Facebook sign-in is not configured. Set META_APP_ID and META_APP_SECRET on the backend.")
 
     async with httpx.AsyncClient(timeout=15.0) as client:
-        token_response = await client.get(token_endpoint, params=token_request)
-        if token_response.status_code != 200:
-            logger.warning("%s authorization-code exchange failed with HTTP %s", provider, token_response.status_code)
-            raise ValueError(f"{provider.capitalize()} sign-in could not verify your account. Please try again.")
+        debug_response = await client.get(
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/debug_token",
+            params={
+                "input_token": access_token,
+                "access_token": f"{app_id}|{app_secret}",
+            },
+        )
+        if debug_response.status_code != 200:
+            logger.warning("Facebook access-token verification failed with HTTP %s", debug_response.status_code)
+            raise ValueError("Facebook could not verify your account. Please sign in again.")
+        debug_payload = debug_response.json()
+        debug_data = debug_payload.get("data") if isinstance(debug_payload, dict) else None
+        if not isinstance(debug_data, dict):
+            raise ValueError("Facebook could not verify your account. Please sign in again.")
+        provider_id = debug_data.get("user_id")
+        if (
+            debug_data.get("is_valid") is not True
+            or str(debug_data.get("app_id") or "") != app_id
+            or not provider_id
+        ):
+            raise ValueError("Facebook sign-in token is invalid or was issued to a different application.")
 
-        token_data = token_response.json()
-        token_data_items = token_data.get("data")
-        if isinstance(token_data_items, list) and token_data_items:
-            token_data = token_data_items[0]
-        access_token = token_data.get("access_token")
-        if not access_token:
-            raise ValueError(f"{provider.capitalize()} did not return an access token.")
-
-        profile_params = {"fields": "id,name,email,picture.type(large)"}
+        profile_params = {
+            "fields": "id,name,email,picture.type(large)",
+            "access_token": access_token,
+        }
         profile_response = await client.get(
-            profile_endpoint,
-            params={**profile_params, "access_token": access_token},
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
+            params=profile_params,
         )
         if profile_response.status_code != 200:
-            logger.warning("%s account profile lookup failed with HTTP %s", provider, profile_response.status_code)
-            raise ValueError(f"{provider.capitalize()} could not verify your account profile. Please try again.")
+            logger.warning("Facebook account profile lookup failed with HTTP %s", profile_response.status_code)
+            raise ValueError("Facebook could not verify your account profile. Please try again.")
         profile = profile_response.json()
+    if not isinstance(profile, dict):
+        raise ValueError("Facebook could not verify your account profile. Please try again.")
+    if str(profile.get("id") or "") != str(provider_id):
+        raise ValueError("Facebook returned a profile that does not match the verified access token.")
 
-    provider_id = str(profile.get("id") or profile.get("user_id") or token_data.get("user_id") or "")
+    return _create_meta_user_session("facebook", profile)
+
+
+def _create_meta_user_session(provider: str, profile: Dict[str, Any]) -> Dict[str, Any]:
+    provider_id = str(profile.get("id") or "")
     if not provider_id:
         raise ValueError(f"{provider.capitalize()} did not return a valid account ID.")
-
     display_name = profile.get("name") or profile.get("username") or f"{provider.capitalize()} Creator"
     picture = profile.get("picture", {})
     avatar_url = picture.get("data", {}).get("url") if isinstance(picture, dict) else None
@@ -235,6 +216,44 @@ async def authenticate_meta_user(provider: str, code: str, state: str) -> Dict[s
         "token": create_session_token(user["id"]),
         "message": f"Signed in with {provider.capitalize()} as {display_name}!",
     }
+
+
+async def authenticate_instagram_user(code: str, state: str) -> Dict[str, Any]:
+    """Exchange Instagram's single-use authorization code and authenticate its identity."""
+    _validate_meta_state("instagram", state)
+    app_id = settings.INSTAGRAM_APP_ID or settings.META_APP_ID
+    app_secret = settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET
+    if not app_id or not app_secret:
+        raise ValueError("Instagram sign-in is not configured on the backend.")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        token_response = await client.get(
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token",
+            params={
+                "client_id": app_id,
+                "client_secret": app_secret,
+                "redirect_uri": settings.META_AUTH_REDIRECT_URI,
+                "code": code,
+            },
+        )
+        if token_response.status_code != 200:
+            logger.warning("Instagram authorization-code exchange failed with HTTP %s", token_response.status_code)
+            raise ValueError("Instagram sign-in could not verify your account. Please try again.")
+
+        access_token = token_response.json().get("access_token")
+        if not access_token:
+            raise ValueError("Instagram did not return an access token.")
+
+        profile_response = await client.get(
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
+            params={"fields": "id,name,email,picture.type(large)", "access_token": access_token},
+        )
+        if profile_response.status_code != 200:
+            logger.warning("Instagram account profile lookup failed with HTTP %s", profile_response.status_code)
+            raise ValueError("Instagram could not verify your account profile. Please try again.")
+        profile = profile_response.json()
+
+    return _create_meta_user_session("instagram", profile)
 
 
 def hash_password(password: str, salt: Optional[str] = None) -> tuple[str, str]:
@@ -349,49 +368,45 @@ def login_email_user(email: str, password: str) -> Dict[str, Any]:
     }
 
 
-def authenticate_google_user(
-    credential_token: Optional[str] = None,
-    email: Optional[str] = None,
-    name: Optional[str] = None,
-    avatar_url: Optional[str] = None,
-    google_id: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Authenticates or registers a creator using Google Sign-In / GIS token."""
-    resolved_email = email
-    resolved_name = name
-    resolved_avatar = avatar_url
-    resolved_gid = google_id
+async def authenticate_google_user(access_token: str) -> Dict[str, Any]:
+    """Verify a Google OAuth token through Google's userinfo endpoint and sign in that identity."""
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        token_info_response = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"access_token": access_token},
+        )
+        if token_info_response.status_code != 200:
+            logger.warning("Google access-token verification failed with HTTP %s", token_info_response.status_code)
+            raise ValueError("Google could not verify your account. Please sign in again.")
+        token_info = token_info_response.json()
+        if not settings.GOOGLE_CLIENT_ID or token_info.get("issued_to") != settings.GOOGLE_CLIENT_ID:
+            raise ValueError("Google sign-in token was issued to a different application.")
 
-    # If an ID token was provided, extract payload safely
-    if credential_token and not resolved_email:
-        try:
-            # Attempt safe JWT unverified payload decode (Header.Payload.Signature)
-            parts = credential_token.split(".")
-            if len(parts) >= 2:
-                payload_b64 = parts[1]
-                # Fix padding
-                padded = payload_b64 + "=" * (-len(payload_b64) % 4)
-                decoded = base64.urlsafe_b64decode(padded.encode("utf-8")).decode("utf-8")
-                token_data = json.loads(decoded)
-                resolved_email = token_data.get("email")
-                resolved_name = token_data.get("name") or token_data.get("given_name")
-                resolved_avatar = token_data.get("picture")
-                resolved_gid = token_data.get("sub")
-        except Exception as e:
-            logger.warning(f"Could not parse Google ID token payload: {e}")
+        response = await client.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        if response.status_code != 200:
+            logger.warning("Google userinfo verification failed with HTTP %s", response.status_code)
+            raise ValueError("Google could not verify your account. Please sign in again.")
+        profile = response.json()
 
-    if not resolved_email:
-        raise ValueError("Unable to retrieve verified email from Google Sign-In.")
+    resolved_email = profile.get("email")
+    resolved_gid = profile.get("sub")
+    if not isinstance(resolved_email, str) or not resolved_email.strip() or profile.get("email_verified") is not True:
+        raise ValueError("Google did not provide a verified email address for this account.")
+    if not isinstance(resolved_gid, str) or not resolved_gid.strip():
+        raise ValueError("Google did not provide a valid account ID.")
 
     clean_email = resolved_email.lower().strip()
-    clean_name = (resolved_name or clean_email.split("@")[0]).strip()
-    avatar = resolved_avatar or f"https://api.dicebear.com/7.x/initials/svg?seed={clean_name}"
+    clean_name = (profile.get("name") or clean_email.split("@")[0]).strip()
+    avatar = profile.get("picture") or f"https://api.dicebear.com/7.x/initials/svg?seed={clean_name}"
 
     user = upsert_user(
         email=clean_email,
         name=clean_name,
         avatar_url=avatar,
-        google_id=resolved_gid or "",
+        google_id=resolved_gid,
         provider="google",
     )
 

@@ -23,28 +23,35 @@ const getAuthHeaders = (): Record<string, string> => {
 };
 
 export const socialApi = {
-  // Fetch connected social accounts
+  // Fetch connected accounts from each platform's status endpoint
   async getFleetAccounts(): Promise<SocialAccount[]> {
-    const start = performance.now();
-    const res = await fetch(apiUrl('/api/social/accounts'), { headers: getAuthHeaders() });
-    consoleLogger.api('GET', '/api/social/accounts', res.status, performance.now() - start);
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ detail: 'Failed to load connected social accounts.' }));
-      throw new Error(error.detail || 'Failed to load connected social accounts.');
-    }
-    const data = await res.json();
-    if (!Array.isArray(data.accounts)) {
-      throw new Error('The connected social accounts response was invalid.');
-    }
-    return data.accounts;
+    const platforms: SocialPlatform[] = ['youtube', 'facebook', 'instagram'];
+    const accountLists = await Promise.all(platforms.map(async (platform) => {
+      const path = `/api/${platform}/status`;
+      const start = performance.now();
+      const res = await fetch(apiUrl(path), { headers: getAuthHeaders() });
+      consoleLogger.api('GET', path, res.status, performance.now() - start);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ detail: `Failed to load ${platform} account status.` }));
+        throw new Error(error.detail || `Failed to load ${platform} account status.`);
+      }
+      const data = await res.json();
+      if (!Array.isArray(data.accounts)) {
+        throw new Error(`The ${platform} account status response was invalid.`);
+      }
+      return data.accounts as SocialAccount[];
+    }));
+    return accountLists.flat();
   },
 
-  // Get OAuth authorization URL for any platform
+  // Start platform OAuth from the platform-specific connect endpoint
   async getOAuthUrl(platform: SocialPlatform, redirectUri?: string): Promise<string> {
-    const query = new URLSearchParams({ platform });
+    const query = new URLSearchParams();
     if (redirectUri) query.append('redirectUri', redirectUri);
 
-    const res = await fetch(apiUrl(`/api/social/oauth-url?${query.toString()}`), { headers: getAuthHeaders() });
+    const queryString = query.toString();
+    const path = `/api/${platform}/connect${queryString ? `?${queryString}` : ''}`;
+    const res = await fetch(apiUrl(path), { headers: getAuthHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Failed to generate OAuth URL' }));
       throw new Error(err.detail || 'Failed to generate OAuth URL');
@@ -66,35 +73,9 @@ export const socialApi = {
     return res.json();
   },
 
-  // Connect a platform account
-  async connectAccount(
-    platform: SocialPlatform,
-    payload: {
-      handle?: string;
-      name?: string;
-      avatarUrl?: string;
-      accessToken?: string;
-      code?: string;
-      redirectUri?: string;
-    }
-  ): Promise<SocialAccount> {
-    const res = await fetch(apiUrl(`/api/social/connect/${platform}`), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Failed to connect account' }));
-      throw new Error(err.detail || 'Failed to connect account');
-    }
-    const data = await res.json();
-    return data.account;
-  },
-
   // Disconnect a social account from the fleet
-  async disconnectAccount(accountId: string): Promise<void> {
-    const res = await fetch(apiUrl('/api/social/disconnect'), {
+  async disconnectAccount(platform: SocialPlatform, accountId: string): Promise<void> {
+    const res = await fetch(apiUrl(`/api/${platform}/disconnect`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ accountId }),

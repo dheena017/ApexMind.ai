@@ -241,3 +241,7 @@ class TokenConnectRequest(BaseModel):
 class CodeConnectRequest(BaseModel):
     code: str
     redirectUri: Optional[str] = "postmessage"
+
+
+class DisconnectYouTubeRequest(BaseModel):
+    accountId: Optional[str] = None

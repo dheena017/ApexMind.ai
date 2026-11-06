@@ -55,21 +55,6 @@ export const videosApi = {
     return data;
   },
 
-  // Update a website video
-  async updateVideo(id: string, updates: Partial<WebsiteVideo>): Promise<WebsiteVideo> {
-    const res = await fetch(apiUrl(`/api/studio-videos/${id}`), {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-
-    if (!res.ok) {
-      throw new Error('Failed to update video');
-    }
-
-    return res.json();
-  },
-
   // Delete a website video
   async deleteVideo(id: string): Promise<boolean> {
     consoleLogger.warn('StudioVideos', `Deleting website video ID: ${id}`);

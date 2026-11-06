@@ -1,4 +1,4 @@
-import { GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
+import { MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
 
@@ -9,85 +9,6 @@ let mediaLibraryPromise: Promise<{
 }> | null = null;
 
 export const workspaceApi = {
-  // Generate motivational quote script via Gemini
-  async generateScript(params: {
-    category: string;
-    topic?: string;
-    userPrompt?: string;
-    tone?: string;
-    length?: string;
-    model?: string;
-    audioMood?: string;
-    backgroundStyle?: string;
-    textStyle?: string;
-    videoStyle?: string;
-    voiceName?: string;
-    aspectRatio?: string;
-    musicTrack?: string;
-    captionStyle?: string;
-    visualTheme?: string;
-    motionStyle?: string;
-    outputFormat?: string;
-    creativeContext?: Record<string, unknown>;
-    availableAssets?: Record<string, unknown>;
-  }): Promise<GeneratedScript> {
-    const topicText = params.userPrompt || params.topic || params.category;
-    consoleLogger.info('Gemini', `Generating AI script with model: "${params.model || 'gemini-2.5-flash'}" for topic: "${topicText}"...`);
-    const start = performance.now();
-
-    const payload: Record<string, string | number | boolean | null | Record<string, unknown>> = {
-      category: params.category,
-      topic: topicText,
-      tone: params.tone || '',
-      length: params.length || '',
-      model: params.model || '',
-    };
-
-    const optionalFields = {
-      audioMood: params.audioMood,
-      backgroundStyle: params.backgroundStyle,
-      textStyle: params.textStyle,
-      videoStyle: params.videoStyle,
-      voiceName: params.voiceName,
-      aspectRatio: params.aspectRatio,
-      musicTrack: params.musicTrack,
-      captionStyle: params.captionStyle,
-      visualTheme: params.visualTheme,
-      motionStyle: params.motionStyle,
-      outputFormat: params.outputFormat,
-    };
-
-    Object.entries(optionalFields).forEach(([key, value]) => {
-      if (value && value.trim()) payload[key] = value.trim();
-    });
-
-    if (params.creativeContext && Object.keys(params.creativeContext).length > 0) {
-      payload.creativeContext = params.creativeContext;
-    }
-
-    if (params.availableAssets && Object.keys(params.availableAssets).length > 0) {
-      payload.availableAssets = params.availableAssets;
-    }
-
-    const res = await fetch(apiUrl('/api/generate-script'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const duration = performance.now() - start;
-    consoleLogger.api('POST', '/api/generate-script', res.status, duration);
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      const errorMsg = data.detail || data.message || `Failed to generate script (${res.status}: ${res.statusText})`;
-      consoleLogger.error('Studio', 'Script generation error:', errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    consoleLogger.success('Studio', `Script generated: "${data.data?.title}"`, data.data);
-    return data.data;
-  },
-
   // Generate high-CTR titles, optimized description, and categorized hashtags via AI
   async generateMetadata(params: {
     category?: string;
@@ -278,7 +199,7 @@ export const workspaceApi = {
     try {
       const res = await fetch(
         apiUrl(
-          `/api/workspace/open-media/videos?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&page=${page}&pageSize=${pageSize}&provider=${encodeURIComponent(provider)}&aspectRatio=${encodeURIComponent(aspectRatio)}`
+          `/api/media/video-search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&page=${page}&pageSize=${pageSize}&provider=${encodeURIComponent(provider)}&aspectRatio=${encodeURIComponent(aspectRatio)}`
         )
       );
       if (res.ok) {
@@ -308,7 +229,7 @@ export const workspaceApi = {
         pageSize: String(pageSize),
         orientation,
       });
-      const res = await fetch(apiUrl(`/api/workspace/open-media/images?${params.toString()}`));
+      const res = await fetch(apiUrl(`/api/media/image-search?${params.toString()}`));
       if (res.ok) {
         return await res.json();
       }
@@ -321,7 +242,7 @@ export const workspaceApi = {
   // Check active status of stock media providers (Pexels, Pixabay, Unsplash, Google CSE)
   async getMediaProvidersStatus(): Promise<{ pexels: boolean; pixabay: boolean; unsplash: boolean; jamendo: boolean; google_cse?: boolean; [key: string]: any }> {
     try {
-      const res = await fetch(apiUrl('/api/workspace/open-media/providers'));
+      const res = await fetch(apiUrl('/api/media/provider-status'));
       if (res.ok) {
         return await res.json();
       }
@@ -331,151 +252,64 @@ export const workspaceApi = {
     return { pexels: false, pixabay: false, unsplash: false, jamendo: false, google_cse: false };
   },
 
-  // Search free royalty-free tracks via Jamendo API
   async searchOpenTracks(query: string = '', genre: string = '', limit: number = 20): Promise<any> {
-    try {
-      const res = await fetch(
-        apiUrl(`/api/workspace/open-media/tracks?q=${encodeURIComponent(query)}&genre=${encodeURIComponent(genre)}&limit=${limit}`)
-      );
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      consoleLogger.warn('OpenMedia', `Jamendo search error: ${e}`);
+    const params = new URLSearchParams({ q: query, genre, limit: String(limit) });
+    const res = await fetch(apiUrl(`/api/media/audio-search?${params.toString()}`));
+    const response = await res.json();
+    if (!res.ok) {
+      throw new Error(response.detail || 'Failed to search soundtrack tracks');
     }
-    return { success: false, items: [] };
+
+    const data = response.data;
+    return {
+      success: response.success,
+      total: data?.total || 0,
+      items: (data?.items || []).map((track: any) => ({
+        id: track.id,
+        title: track.title,
+        artist: track.artist || '',
+        genre: track.genre || 'Cinematic',
+        mood: track.mood || track.genre || 'Music',
+        bpm: track.bpm || 90,
+        audioUrl: track.audioUrl,
+        provider: track.provider,
+        duration: track.duration == null
+          ? '2:00'
+          : `${Math.floor(track.duration / 60)}:${String(Math.floor(track.duration % 60)).padStart(2, '0')}`,
+      })),
+    };
   },
 
-  // Search free sound effects via FreeSound / Open SFX
-  async searchOpenSfx(query: string = 'whoosh', limit: number = 20): Promise<any> {
-    try {
-      const res = await fetch(
-        apiUrl(`/api/workspace/open-media/sfx?q=${encodeURIComponent(query)}&limit=${limit}`)
-      );
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      consoleLogger.warn('OpenMedia', `SFX search error: ${e}`);
+  async searchOpenSfx(query: string = '', limit: number = 20): Promise<any> {
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    const res = await fetch(apiUrl(`/api/media/sfx-search?${params.toString()}`));
+    const response = await res.json();
+    if (!res.ok) {
+      throw new Error(response.detail || 'Failed to search sound effects');
     }
-    return { success: false, items: [] };
-  },
 
-  // Search live open-source quotes & viral hooks via ZenQuotes / DummyJSON / Vault
-  async searchOpenQuotes(
-    query: string = '',
-    category: string = 'all',
-    limit: number = 30,
-    author: string = '',
-    page: number = 1
-  ): Promise<any> {
-    try {
-      const res = await fetch(
-        apiUrl(
-          `/api/workspace/open-media/quotes?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&limit=${limit}&author=${encodeURIComponent(author)}&page=${page}`
-        )
-      );
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      consoleLogger.warn('OpenMedia', `Quotes fetch error: ${e}`);
-    }
-    return { success: false, items: [] };
-  },
-
-  // Batch resolve real media cuts for all storyboard scenes concurrently
-  async resolveScenesMedia(params: {
-    scenes: Array<{
-      sceneNumber: number;
-      visualQuery: string;
-      googleSearchQuery?: string;
-      fallbackQueries?: string[];
-      mediaType?: string;
-    }>;
-    aspectRatio?: string;
-  }): Promise<any> {
-    const start = performance.now();
-    try {
-      const res = await fetch(apiUrl('/api/media/resolve-scenes'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scenes: params.scenes,
-          aspectRatio: params.aspectRatio || '9:16',
-        }),
-      });
-      const duration = performance.now() - start;
-      consoleLogger.api('POST', '/api/media/resolve-scenes', res.status, duration);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      consoleLogger.error('MediaEngine', `Failed to batch resolve scene media: ${e}`);
-    }
-    return { success: false, data: { scenes: [] } };
-  },
-
-  // Regenerate visual footage for a single scene with exclusion list support
-  async resolveSingleScene(params: {
-    sceneNumber: number;
-    query: string;
-    mediaType?: string;
-    aspectRatio?: string;
-    excludeUrls?: string[];
-  }): Promise<any> {
-    const start = performance.now();
-    try {
-      const res = await fetch(apiUrl('/api/media/resolve-scene'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sceneNumber: params.sceneNumber,
-          query: params.query,
-          mediaType: params.mediaType || 'video',
-          aspectRatio: params.aspectRatio || '9:16',
-          excludeUrls: params.excludeUrls || [],
-        }),
-      });
-      const duration = performance.now() - start;
-      consoleLogger.api('POST', '/api/media/resolve-scene', res.status, duration);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      consoleLogger.error('MediaEngine', `Failed to resolve single scene visual: ${e}`);
-    }
-    return { success: false };
-  },
-
-  // Generate Closed Captions (word-level karaoke timings, SRT, WebVTT)
-  async generateCaptions(params: {
-    text: string;
-    durationSeconds?: number;
-    stylePreset?: string;
-    maxWordsPerSegment?: number;
-  }): Promise<any> {
-    const start = performance.now();
-    try {
-      const res = await fetch(apiUrl('/api/generate-captions'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: params.text,
-          durationSeconds: params.durationSeconds || 5.0,
-          stylePreset: params.stylePreset || 'sub-hormozi',
-          maxWordsPerSegment: params.maxWordsPerSegment || 4,
-        }),
-      });
-      const duration = performance.now() - start;
-      consoleLogger.api('POST', '/api/generate-captions', res.status, duration);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      consoleLogger.error('Captions', `Failed to generate closed captions: ${e}`);
-    }
-    return { success: false };
+    const data = response.data;
+    return {
+      success: response.success,
+      total: data?.total || 0,
+      items: (data?.items || []).map((effect: any) => {
+        const category = String(effect.category || '').toLowerCase();
+        return {
+          id: effect.id,
+          name: effect.title,
+          category: category.includes('whoosh')
+            ? 'Transition'
+            : category.includes('impact') || category.includes('sub_drop')
+              ? 'Impact'
+              : category.includes('riser')
+                ? 'Tension'
+                : 'Action',
+          duration: `${effect.duration ?? 1}s`,
+          audioUrl: effect.audioUrl,
+          provider: effect.provider,
+        };
+      }),
+    };
   },
 
 };

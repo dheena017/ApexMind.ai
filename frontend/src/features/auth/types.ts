@@ -12,37 +12,13 @@ export interface UserProfile {
   handle?: string;
 }
 
-export interface RegisterPayload {
-  email: string;
-  password: string;
-  name: string;
-}
-
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
 export interface GoogleAuthPayload {
-  credentialToken?: string;
-  email?: string;
-  name?: string;
-  avatarUrl?: string;
-  googleId?: string;
+  accessToken: string;
 }
 
-export type MetaLoginProvider = 'facebook' | 'instagram';
-
-export interface MetaAuthorizationResponse {
+export interface OAuthAuthorizationResponse {
   authorizationUrl: string;
   state: string;
-}
-
-export interface ChannelAuthPayload {
-  handle: string;
-  name?: string;
-  avatarUrl?: string;
-  channelId?: string;
 }
 
 export interface AuthResponseData {

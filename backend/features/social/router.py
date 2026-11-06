@@ -8,32 +8,24 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Query, Header
 
 from .schemas import (
-    FleetListResponse,
-    OAuthUrlResponse,
     MetaOAuthCallbackRequest,
     MetaOAuthCallbackResponse,
-    ConnectPlatformRequest,
     DisconnectAccountRequest,
     SyndicatePublishRequest,
     SyndicatePublishResponse,
     PublishedPostsResponse,
 )
-from .service import (
-    get_user_fleet,
-    generate_platform_oauth_url,
-    complete_meta_social_oauth,
-    syndicate_publish,
-)
+from .service import get_user_fleet, generate_platform_oauth_url, complete_meta_social_oauth, syndicate_publish
 from .adapters import ADAPTER_REGISTRY
 from backend.database.repository import (
-    upsert_social_account,
     delete_social_account,
     get_published_posts,
 )
 from backend.features.auth.service import get_session_user_id
 
 logger = logging.getLogger("ApexMind.features.social")
-router = APIRouter(prefix="/api/social", tags=["Omnichannel Social Fleet & Syndication"])
+router = APIRouter(prefix="/api/social")
+platform_router = APIRouter(tags=["Social"])
 
 
 def _require_session_user_id(authorization: Optional[str]) -> str:
@@ -47,66 +39,97 @@ def _require_session_user_id(authorization: Optional[str]) -> str:
     return user_id
 
 
-@router.get(
-    "/accounts",
-    response_model=FleetListResponse,
-    summary="List Social Fleet Accounts",
-    description="Returns all supported connected social channels, pages, and profiles.",
-)
-async def list_fleet_accounts(
-    authorization: Optional[str] = Header(None),
-):
+async def _get_platform_status(platform: str, authorization: Optional[str]):
     try:
-        fleet = get_user_fleet(_require_session_user_id(authorization))
+        user_id = _require_session_user_id(authorization)
+        accounts = [
+            account for account in get_user_fleet(user_id)
+            if account.get("platform") == platform
+        ]
         return {
             "success": True,
-            "total": len(fleet),
-            "accounts": fleet,
+            "platform": platform,
+            "connected": bool(accounts),
+            "total": len(accounts),
+            "accounts": accounts,
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error listing social fleet accounts: {e}")
+        logger.exception("Error loading %s account status", platform)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch social accounts: {str(e)}"
+            detail=f"Failed to load {platform} account status: {str(e)}",
         )
 
 
-@router.get(
-    "/oauth-url",
-    response_model=OAuthUrlResponse,
-    summary="Get Social Platform OAuth URL",
-    description="Returns authorization consent URL for connecting YouTube, Instagram, or Facebook.",
-)
-async def get_oauth_url(
-    platform: str = Query(..., description="'youtube', 'instagram', 'facebook', or 'meta'"),
-    redirectUri: Optional[str] = Query(None, description="Client redirect URI"),
-    authorization: Optional[str] = Header(None),
+async def _get_platform_connect_url(
+    platform: str,
+    redirect_uri: Optional[str],
+    authorization: Optional[str],
 ):
     try:
         user_id = _require_session_user_id(authorization)
-        res = generate_platform_oauth_url(platform, user_id, redirectUri)
+        result = generate_platform_oauth_url(platform, user_id, redirect_uri)
         return {
             "success": True,
-            "platform": res["platform"],
-            "oauthUrl": res["oauthUrl"],
+            "platform": result["platform"],
+            "oauthUrl": result["oauthUrl"],
             "message": f"Generated OAuth URL for {platform.capitalize()}",
         }
     except HTTPException:
         raise
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
-    except Exception as e:
-        logger.error(f"Error generating OAuth URL for {platform}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except Exception as exc:
+        logger.exception("Error generating OAuth URL for %s", platform)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+
+@platform_router.get(
+    "/api/facebook/status",
+    summary="Get Facebook Connection Status",
+)
+async def get_facebook_status(authorization: Optional[str] = Header(None)):
+    return await _get_platform_status("facebook", authorization)
+
+
+@platform_router.get(
+    "/api/instagram/status",
+    summary="Get Instagram Connection Status",
+)
+async def get_instagram_status(authorization: Optional[str] = Header(None)):
+    return await _get_platform_status("instagram", authorization)
+
+
+@platform_router.get(
+    "/api/facebook/connect",
+    summary="Start Facebook Connection",
+)
+async def get_facebook_connect_url(
+    redirect_uri: Optional[str] = Query(None, alias="redirectUri"),
+    authorization: Optional[str] = Header(None),
+):
+    return await _get_platform_connect_url("facebook", redirect_uri, authorization)
+
+
+@platform_router.get(
+    "/api/instagram/connect",
+    summary="Start Instagram Connection",
+)
+async def get_instagram_connect_url(
+    redirect_uri: Optional[str] = Query(None, alias="redirectUri"),
+    authorization: Optional[str] = Header(None),
+):
+    return await _get_platform_connect_url("instagram", redirect_uri, authorization)
 
 
 @router.post(
     "/meta/oauth-callback",
     response_model=MetaOAuthCallbackResponse,
-    summary="Complete Meta Page or Instagram OAuth",
-    description="Validates Meta OAuth state and connects verified Facebook Pages or linked Instagram professional accounts.",
+    tags=["Social"],
+    summary="Complete Facebook or Instagram Account OAuth",
+    description="Validates the signed provider state and connects managed Facebook Pages or an Instagram professional account.",
 )
 async def complete_meta_oauth(payload: MetaOAuthCallbackRequest):
     try:
@@ -119,74 +142,66 @@ async def complete_meta_oauth(payload: MetaOAuthCallbackRequest):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to connect Meta destination.")
 
 
-@router.post(
-    "/connect/{platform}",
-    summary="Connect a Social Account",
-    description="Connects a supported social account to the user's fleet.",
-)
-async def connect_account(
+async def _disconnect_platform_account(
     platform: str,
-    payload: ConnectPlatformRequest,
-    authorization: Optional[str] = Header(None),
-):
-    clean_p = platform.lower().strip()
-    if clean_p in ("facebook", "instagram"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Facebook Pages and Instagram professional accounts must be connected through Meta OAuth.",
-        )
-    effective_user_id = _require_session_user_id(authorization)
-
-    handle_clean = payload.handle or f"creator_{clean_p}"
-    name_clean = payload.name or handle_clean.replace("@", "").capitalize()
-    avatar_clean = payload.avatarUrl or f"https://api.dicebear.com/7.x/initials/svg?seed={name_clean}"
-    platform_acc_id = payload.platformAccountId or f"{clean_p[:2]}_{int(hash(handle_clean)) % 10000000}"
-
-    saved = upsert_social_account(
-        user_id=effective_user_id,
-        platform=clean_p,
-        platform_account_id=platform_acc_id,
-        name=name_clean,
-        handle=handle_clean if handle_clean.startswith("@") else f"@{handle_clean}",
-        avatar_url=avatar_clean,
-        access_token=payload.accessToken,
-    )
-
-    return {
-        "success": True,
-        "message": f"Successfully connected {clean_p.capitalize()} account '{name_clean}'!",
-        "account": saved,
-    }
-
-
-@router.post(
-    "/disconnect",
-    summary="Disconnect Social Fleet Account",
-    description="Removes a connected social channel/page from the fleet.",
-)
-async def disconnect_account(
     payload: DisconnectAccountRequest,
     authorization: Optional[str] = Header(None),
 ):
     try:
         user_id = _require_session_user_id(authorization)
+        account = next(
+            (
+                item for item in get_user_fleet(user_id)
+                if item.get("id") == payload.accountId
+                and item.get("platform") == platform
+            ),
+            None,
+        )
+        if not account:
+            raise HTTPException(
+                status_code=404,
+                detail=f"{platform.capitalize()} account with ID '{payload.accountId}' not found.",
+            )
         deleted = delete_social_account(payload.accountId, user_id=user_id)
         if not deleted:
-            raise HTTPException(status_code=404, detail=f"Account with ID '{payload.accountId}' not found.")
+            raise HTTPException(status_code=404, detail=f"{platform.capitalize()} account was not found.")
         return {
             "success": True,
-            "message": f"Successfully disconnected social account {payload.accountId}.",
+            "message": f"Successfully disconnected {platform.capitalize()} account {payload.accountId}.",
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error disconnecting account: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error disconnecting %s account", platform)
+        raise HTTPException(status_code=500, detail=f"Failed to disconnect {platform} account: {str(e)}")
+
+
+@platform_router.post(
+    "/api/facebook/disconnect",
+    summary="Disconnect Facebook Account",
+)
+async def disconnect_facebook_account(
+    payload: DisconnectAccountRequest,
+    authorization: Optional[str] = Header(None),
+):
+    return await _disconnect_platform_account("facebook", payload, authorization)
+
+
+@platform_router.post(
+    "/api/instagram/disconnect",
+    summary="Disconnect Instagram Account",
+)
+async def disconnect_instagram_account(
+    payload: DisconnectAccountRequest,
+    authorization: Optional[str] = Header(None),
+):
+    return await _disconnect_platform_account("instagram", payload, authorization)
 
 
 @router.post(
     "/syndicate-publish",
     response_model=SyndicatePublishResponse,
+    tags=["Social"],
     summary="One-Click Omnichannel Syndication",
     description="Publishes a single generated video to multiple selected social destinations simultaneously in parallel.",
 )
@@ -221,6 +236,7 @@ async def post_syndicate_publish(
 @router.get(
     "/posts",
     response_model=PublishedPostsResponse,
+    tags=["Social"],
     summary="List Published Omnichannel Posts",
     description="Retrieves multi-platform published posts and tracking status.",
 )

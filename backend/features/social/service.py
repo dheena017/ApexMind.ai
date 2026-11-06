@@ -82,6 +82,15 @@ def _validate_meta_social_state(state: str) -> Dict[str, Any]:
         raise ValueError("Meta authorization state is invalid or expired. Please try again.") from exc
 
 
+def _unwrap_instagram_response(payload: Any) -> Dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+    data = payload.get("data")
+    if isinstance(data, list) and data and isinstance(data[0], dict):
+        return data[0]
+    return payload
+
+
 def get_user_fleet(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Retrieves all supported connected social channels and pages.
@@ -143,7 +152,7 @@ def generate_platform_oauth_url(
     user_id: Optional[str] = None,
     redirect_uri: Optional[str] = None,
 ) -> Dict[str, str]:
-    """Generates the OAuth consent URL for YouTube or Meta (Instagram/Facebook)."""
+    """Generates the OAuth consent URL for YouTube, Facebook, or Instagram."""
     clean_p = platform.lower().strip()
 
     if clean_p == "youtube":
@@ -173,15 +182,20 @@ def generate_platform_oauth_url(
             raise ValueError("Facebook connections are not configured. Set META_APP_ID and META_APP_SECRET.")
         state = _create_meta_social_state(clean_p, user_id)
         if redirect_uri and redirect_uri != settings.META_REDIRECT_URI:
-            raise ValueError("Meta OAuth redirect URI must match META_REDIRECT_URI.")
+            raise ValueError("Social OAuth redirect URI must match META_REDIRECT_URI.")
         params = {
             "client_id": app_id,
             "redirect_uri": settings.META_REDIRECT_URI,
-            "scope": META_SCOPES[clean_p],
             "response_type": "code",
             "state": state,
         }
-        authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
+        if clean_p == "instagram":
+            params["scope"] = "instagram_business_basic,instagram_business_content_publish"
+            params["enable_fb_login"] = "false"
+            authorization_endpoint = "https://www.instagram.com/oauth/authorize"
+        else:
+            params["scope"] = META_SCOPES[clean_p]
+            authorization_endpoint = f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth"
         url = f"{authorization_endpoint}?{urllib.parse.urlencode(params)}"
         return {"platform": clean_p, "oauthUrl": url}
 
@@ -197,22 +211,16 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
     if not isinstance(user_id, str) or not user_id:
         raise ValueError("Meta authorization state is missing its signed-in account. Please reconnect.")
 
+    if platform == "instagram":
+        return await _complete_instagram_login_oauth(code, user_id)
+
     app_id = (
-        (settings.INSTAGRAM_APP_ID or settings.META_APP_ID)
-        if platform == "instagram"
-        else settings.META_APP_ID
+        settings.META_APP_ID
     )
     app_secret = (
-        (settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET)
-        if platform == "instagram"
-        else settings.META_APP_SECRET
+        settings.META_APP_SECRET
     )
     if not app_id or not app_secret:
-        if platform == "instagram":
-            raise ValueError(
-                "Instagram connections are not configured. Set INSTAGRAM_APP_ID and "
-                "INSTAGRAM_APP_SECRET, or configure META_APP_ID and META_APP_SECRET."
-            )
         raise ValueError("Facebook connections are not configured. Set META_APP_ID and META_APP_SECRET.")
 
     token_url = f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token"
@@ -356,20 +364,28 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
 
 async def _complete_instagram_login_oauth(code: str, user_id: str) -> Dict[str, Any]:
     """Exchange Instagram Business Login credentials and save the publishing account."""
+    app_id = settings.INSTAGRAM_APP_ID or settings.META_APP_ID
+    app_secret = settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET
+    if not app_id or not app_secret:
+        raise ValueError(
+            "Instagram connections are not configured. Set INSTAGRAM_APP_ID and "
+            "INSTAGRAM_APP_SECRET, or configure META_APP_ID and META_APP_SECRET."
+        )
+
     async with httpx.AsyncClient(timeout=20.0) as client:
         try:
             short_token_response = await client.post(
                 "https://api.instagram.com/oauth/access_token",
                 files={
-                    "client_id": (None, settings.INSTAGRAM_APP_ID),
-                    "client_secret": (None, settings.INSTAGRAM_APP_SECRET),
+                    "client_id": (None, app_id),
+                    "client_secret": (None, app_secret),
                     "grant_type": (None, "authorization_code"),
                     "redirect_uri": (None, settings.META_REDIRECT_URI),
                     "code": (None, code),
                 },
             )
             short_token_response.raise_for_status()
-            short_token_data = short_token_response.json()
+            short_token_data = _unwrap_instagram_response(short_token_response.json())
             short_lived_token = short_token_data.get("access_token")
             if not short_lived_token:
                 raise ValueError("Instagram did not return an access token. Please try again.")
@@ -378,12 +394,12 @@ async def _complete_instagram_login_oauth(code: str, user_id: str) -> Dict[str, 
                 "https://graph.instagram.com/access_token",
                 params={
                     "grant_type": "ig_exchange_token",
-                    "client_secret": settings.INSTAGRAM_APP_SECRET,
+                    "client_secret": app_secret,
                     "access_token": short_lived_token,
                 },
             )
             long_token_response.raise_for_status()
-            long_token_data = long_token_response.json()
+            long_token_data = _unwrap_instagram_response(long_token_response.json())
             access_token = long_token_data.get("access_token")
             if not access_token:
                 raise ValueError("Instagram could not extend the access token. Please reconnect and try again.")
@@ -396,7 +412,7 @@ async def _complete_instagram_login_oauth(code: str, user_id: str) -> Dict[str, 
                 },
             )
             profile_response.raise_for_status()
-            profile = profile_response.json()
+            profile = _unwrap_instagram_response(profile_response.json())
         except httpx.HTTPStatusError as exc:
             response_error = {}
             try:

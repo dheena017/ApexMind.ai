@@ -249,26 +249,6 @@ def resolve_scenes_batch(
     )
 
 
-def resolve_single_scene(
-    scene_number: int,
-    query: str,
-    media_type: str = "video",
-    aspect_ratio: str = "9:16",
-    exclude_urls: Optional[List[str]] = None,
-) -> ResolvedSceneResult:
-    """Regenerates a single scene's visual asset with exclusion list support."""
-    item = SceneResolveItem(
-        sceneNumber=scene_number,
-        visualQuery=query,
-        mediaType=media_type,
-    )
-    return _resolve_single_scene_internal(
-        item=item,
-        aspect_ratio=aspect_ratio,
-        excluded_urls=set(exclude_urls or []),
-    )
-
-
 def search_media(
     query: str,
     media_type: str = "video",
@@ -352,26 +332,26 @@ def search_media(
 
 
 def search_audio(query: str = "", genre: str = "", limit: int = 20) -> AudioSearchData:
-    """Queries royalty-free audio tracks concurrently from Jamendo and Wikimedia Commons Audio."""
-    tracks: List[Any] = []
-    
-    # 1. Try Jamendo API if configured
+    """Search soundtrack providers and deduplicate results by audio URL."""
+    tracks = []
     if jamendo_audio.is_configured():
         tracks.extend(jamendo_audio.search(query=query, genre=genre, limit=limit))
-    
-    # 2. Query open Wikimedia Commons Audio API
+
     if len(tracks) < limit:
-        remaining = limit - len(tracks)
-        wm_tracks = wikimedia_audio.search_music(query=query, genre=genre, limit=remaining)
-        tracks.extend(wm_tracks)
-        
-    # Deduplicate tracks by audioUrl
+        tracks.extend(
+            wikimedia_audio.search_music(
+                query=query,
+                genre=genre,
+                limit=limit - len(tracks),
+            )
+        )
+
     seen_urls = set()
     unique_tracks = []
-    for t in tracks:
-        if t.audioUrl not in seen_urls:
-            seen_urls.add(t.audioUrl)
-            unique_tracks.append(t)
+    for track in tracks:
+        if track.audioUrl not in seen_urls:
+            seen_urls.add(track.audioUrl)
+            unique_tracks.append(track)
 
     return AudioSearchData(
         query=query,

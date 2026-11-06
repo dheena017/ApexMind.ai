@@ -8,12 +8,8 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, status, Query, UploadFile, File, Form
 from .schemas import (
-    GenerateScriptRequest,
-    GenerateScriptResponse,
     GenerateVoiceoverRequest,
     VoiceoverResponse,
-    GenerateCaptionsRequest,
-    GenerateCaptionsResponse,
     MediaLibraryResponse,
     # Studio Pipeline v2 schemas
     StudioScriptRequest,
@@ -26,16 +22,12 @@ from .schemas import (
     StudioBackgroundInfo,
     StudioCaptionsRequest,
     StudioCaptionsResponse,
-    ElementsCatalogResponse,
-    RecommendedElementsRequest,
-    RecommendedElementsResponse,
     CreateCustomBadgeRequest,
     CreateCustomBadgeResponse,
     GenerateMetadataRequest,
     GenerateMetadataResponse,
 )
 from .service import (
-    generate_script,
     synthesize_voiceover,
     get_media_library,
     generate_metadata,
@@ -43,48 +35,6 @@ from .service import (
 
 logger = logging.getLogger("ApexMind.features.workspace")
 router = APIRouter()
-
-@router.post(
-    "/api/generate-script",
-    response_model=GenerateScriptResponse,
-    summary="Generate motivational script",
-    description="Generate viral YouTube Shorts script using Gemini Multimodal AI.",
-    include_in_schema=False,
-)
-def post_generate_script(payload: GenerateScriptRequest):
-    try:
-        return generate_script(
-            category=payload.category or "Stoic Mindset & Discipline",
-            topic=payload.topic or "Overcoming laziness, building daily grit",
-            tone=payload.tone or "",
-            length=payload.length or "",
-            model=payload.model or "gemini-2.5-flash",
-            audio_mood=payload.audioMood,
-            background_style=payload.backgroundStyle,
-            text_style=payload.textStyle,
-            video_style=payload.videoStyle,
-            voice_name=payload.voiceName,
-            aspect_ratio=payload.aspectRatio,
-            music_track=payload.musicTrack,
-            caption_style=payload.captionStyle,
-            visual_theme=payload.visualTheme,
-            motion_style=payload.motionStyle,
-            output_format=payload.outputFormat,
-            creative_context=payload.creativeContext,
-            available_assets=payload.availableAssets,
-        )
-    except ValueError as ve:
-        logger.warning(f"Validation error in script generation: {ve}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(ve)
-        )
-    except Exception as e:
-        logger.error(f"Error in script generation: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
 
 @router.post(
     "/api/generate-voiceover",
@@ -117,50 +67,22 @@ def post_generate_voiceover(payload: GenerateVoiceoverRequest):
             detail=f"Failed to generate voiceover: {e}"
         )
 
-@router.post(
-    "/api/generate-captions",
-    response_model=GenerateCaptionsResponse,
-    summary="Generate Closed Captions (legacy)",
-    description="Generate word-level karaoke timestamps, safe-zone line chunking, SRT, and WebVTT for subtitles.",
-    include_in_schema=False,
-)
-def post_generate_captions(payload: GenerateCaptionsRequest):
-    try:
-        from .captions_service import generate_closed_captions
-        data = generate_closed_captions(
-            text=payload.text,
-            duration_seconds=payload.durationSeconds,
-            style_preset=payload.stylePreset,
-            max_words_per_segment=payload.maxWordsPerSegment,
-        )
-        return GenerateCaptionsResponse(
-            success=True,
-            data=data,
-            metadata={"totalSegments": len(data.get("segments", []))},
-        )
-    except Exception as e:
-        logger.error(f"Error generating captions: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate captions: {e}"
-        )
-
-
 @router.get(
     "/api/media-library",
     response_model=MediaLibraryResponse,
-    tags=["Studio Stock & Open Media"],
-    summary="Get Copyright-Free Media Library",
-    description="Retrieve royalty-free audio tracks, dynamic visual backdrops, and vocal profile presets."
+    tags=["Presets"],
+    summary="Get Built-in Studio Presets",
+    description="Returns the Studio's preset catalog (music presets, visual backdrops, and voice profiles). This is separate from live stock-provider searches."
 )
 async def get_media_library_route():
     return get_media_library()
 
 @router.get(
-    "/api/workspace/open-media/videos",
-    tags=["Studio Stock & Open Media"],
-    summary="Search Stock Videos",
-    description="Query Pexels, Pixabay, or keyless open stock video loops."
+    "/api/media/video-search",
+    tags=["Stock Media"],
+    summary="Video Search",
+    operation_id="video_search",
+    description="Searches stock video providers and returns workspace-specific fields such as videoUrl, posterUrl, and aesthetic badges."
 )
 async def get_open_videos_route(
     q: str = "",
@@ -181,10 +103,11 @@ async def get_open_videos_route(
     )
 
 @router.get(
-    "/api/workspace/open-media/images",
-    tags=["Studio Stock & Open Media"],
-    summary="Search Stock Photos",
-    description="Query Pexels, Pixabay, Unsplash, or Wikimedia Commons photography."
+    "/api/media/image-search",
+    tags=["Stock Media"],
+    summary="Image Search",
+    operation_id="image_search",
+    description="Searches stock image providers and returns workspace-specific fields such as imageUrl and thumbnail."
 )
 async def get_open_images_route(
     q: str = "",
@@ -205,94 +128,26 @@ async def get_open_images_route(
     )
 
 @router.get(
-    "/api/workspace/open-media/providers",
-    tags=["Studio Stock & Open Media"],
-    summary="Get Media Provider API Status",
-    description="Check whether Pexels, Pixabay, and Unsplash API keys are active."
+    "/api/media/provider-status",
+    tags=["Providers"],
+    summary="Check Stock Media Provider Availability",
+    operation_id="check_stock_media_provider_availability",
+    description="Reports whether supported live stock-media providers are available."
 )
 async def get_open_media_providers_route():
     from .open_media_service import get_media_providers_status
     return get_media_providers_status()
 
-@router.get(
-    "/api/workspace/open-media/tracks",
-    tags=["Studio Stock & Open Media"],
-    summary="Search Royalty-Free Soundtracks",
-    description="Query Jamendo & open audio tracks by mood or genre."
-)
-async def get_open_tracks_route(q: str = "", genre: str = "", limit: int = 20):
-    from .open_media_service import search_open_tracks
-    return search_open_tracks(query=q, genre=genre, limit=limit)
-
-@router.get(
-    "/api/workspace/open-media/sfx",
-    tags=["Studio Stock & Open Media"],
-    summary="Search Sound Effects",
-    description="Query open sound effects library."
-)
-async def get_open_sfx_route(q: str = "whoosh", limit: int = 20):
-    from .open_media_service import search_open_sfx
-    return search_open_sfx(query=q, limit=limit)
-
-
-@router.get(
-    "/api/workspace/open-media/quotes",
-    tags=["Studio Stock & Open Media"],
-    summary="Search Viral Hooks & Quotes",
-    description="Query ZenQuotes and DummyJSON open APIs dynamically with zero API keys."
-)
-async def get_open_quotes_route(
-    q: str = "",
-    category: str = "all",
-    author: str = "",
-    page: int = 1,
-    limit: int = 30
-):
-    from .open_media_service import search_open_quotes
-    return search_open_quotes(query=q, category=category, author=author, page=page, limit=limit)
-
-
-
 # ══════════════════════════════════════════════════════════════════════════════
 # STUDIO ELEMENTS & OVERLAYS SERVICE
 # ══════════════════════════════════════════════════════════════════════════════
 
-@router.get(
-    "/api/workspace/elements",
-    response_model=ElementsCatalogResponse,
-    tags=["Studio Visual Elements"],
-    summary="List Visual Elements Catalog",
-    description="Retrieve all available badges, frames, stickers, social tags, progress bars, and emojis."
-)
-def get_elements_route(
-    category: Optional[str] = Query(default=None, description="Filter by category: badges, fx, social, frames, progress, emojis, or all"),
-    q: Optional[str] = Query(default=None, description="Search term across name, label, and tags")
-):
-    from .elements_service import get_elements_catalog
-    return get_elements_catalog(category=category, search=q)
-
-
 @router.post(
-    "/api/workspace/elements/recommend",
-    response_model=RecommendedElementsResponse,
-    tags=["Studio Visual Elements"],
-    summary="Recommend Contextual Overlays",
-    description="Intelligently scores and recommends the top viral badges, scrubbers, and stickers matching theme, topic, and delivery tone."
-)
-def post_recommended_elements_route(payload: RecommendedElementsRequest):
-    from .elements_service import get_recommended_elements
-    return get_recommended_elements(
-        category=payload.category,
-        topic=payload.topic,
-        tone=payload.tone
-    )
-
-
-@router.post(
-    "/api/workspace/elements/custom",
+    "/api/studio/elements/custom-badge",
     response_model=CreateCustomBadgeResponse,
-    tags=["Studio Visual Elements"],
-    summary="Create Custom Creator Badge",
+    tags=["Elements"],
+    summary="Create Custom Studio Badge",
+    operation_id="create_custom_studio_badge",
     description="Generates a customized viral badge with gradient, styling, and text."
 )
 def post_create_custom_badge_route(payload: CreateCustomBadgeRequest):
@@ -314,7 +169,7 @@ def post_create_custom_badge_route(payload: CreateCustomBadgeRequest):
 @router.post(
     "/api/studio/generate-script",
     response_model=StudioScriptResponse,
-    tags=["Studio Production Pipeline"],
+    tags=["Studio"],
     summary="Generate Storyboard Script (Stage 1)",
     description=(
         "Generates a full viral short-form script with multi-scene storyboard, hooks, "
@@ -358,7 +213,7 @@ def post_studio_generate_script(payload: StudioScriptRequest):
 @router.post(
     "/api/studio/synthesize-voice",
     response_model=StudioVoiceResponse,
-    tags=["Studio Production Pipeline"],
+    tags=["Studio"],
     summary="Synthesize Storyboard Voice (Stage 2)",
     description=(
         "Synthesizes a full narration voiceover using Gemini TTS. "
@@ -402,7 +257,7 @@ def post_studio_synthesize_voice(payload: StudioVoiceRequest):
 @router.post(
     "/api/studio/resolve-media",
     response_model=StudioMediaResponse,
-    tags=["Studio Production Pipeline"],
+    tags=["Studio"],
     summary="Resolve Scene Stock Media & SFX (Stage 3)",
     description=(
         "Batch-resolves real stock video/image URLs for all storyboard scenes concurrently "
@@ -449,7 +304,7 @@ def post_studio_resolve_media(payload: StudioMediaRequest):
 @router.post(
     "/api/studio/generate-captions",
     response_model=StudioCaptionsResponse,
-    tags=["Studio Production Pipeline"],
+    tags=["Studio"],
     summary="Generate Word-Timed Captions (Stage 4)",
     description=(
         "Generates scene-aligned, word-level timed captions pinned to each scene's time window. "
@@ -511,7 +366,7 @@ class RenderVideoApiRequest(BaseModel):
 
 @router.post(
     "/api/workspace/render-video",
-    tags=["Studio Production Pipeline"],
+    tags=["Studio"],
     summary="Render Timeline to Full HD MP4",
     description="Assembles multi-layer video clips, images, voiceover, music, sound effects, and karaoke subtitles into a 1080x1920 MP4 using native FFmpeg.",
 )
@@ -552,7 +407,7 @@ def post_render_video(payload: RenderVideoApiRequest):
 
 @router.post(
     "/api/workspace/convert-to-mp4",
-    tags=["Studio Production Pipeline"],
+    tags=["Studio"],
     summary="Transcode WebM Recording to MP4",
     description="Converts canvas-recorded WebM blobs to broadcast-ready H.264 MP4 with AAC audio.",
 )
@@ -574,6 +429,7 @@ async def post_convert_to_mp4(
 @router.post(
     "/api/workspace/generate-metadata",
     response_model=GenerateMetadataResponse,
+    tags=["Content Tools"],
     summary="Generate viral titles, description, and hashtags",
     description="Generate high-CTR titles, optimized description, and categorized hashtags via AI.",
 )

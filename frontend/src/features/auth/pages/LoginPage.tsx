@@ -1,25 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Check,
   ArrowLeft,
-  Youtube,
   Facebook,
   Instagram,
-  Mail,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
   Sparkles,
   ShieldCheck,
   AlertCircle,
 } from 'lucide-react';
-import { Modal, Input, Button } from '@/src/shared/ui/common';
 import { useAuth, isSessionValid } from '../context/AuthContext';
 import { getPostLoginRedirect, clearPostLoginRedirect } from '@/src/app/routes';
 import { getGoogleClientId } from '@/src/features/youtube/utils/googleOAuthConnect';
 import { authApi } from '../api/authApi';
-import { MetaLoginProvider } from '../types';
 import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
 
 //  Google SVG Icon
@@ -47,26 +39,53 @@ function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
 }
 
 export default function LoginPage({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { loginWithEmail, registerWithEmail, loginWithGoogle, loginWithMeta, loginWithChannel, isAuthenticated } = useAuth();
+  const { loginWithGoogle, loginWithFacebook, loginWithInstagram, isAuthenticated } = useAuth();
 
-  // Auth Modes: 'signin' | 'register'
-  const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
   const [loading, setLoading] = useState(false);
+  const [facebookSdkReady, setFacebookSdkReady] = useState(false);
   const [notice, setNotice] = useState<{ text: string; type: 'error' | 'success' | 'info' } | null>(null);
 
-  // Form Fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  // Agreements & Modal
+  // Sign-in agreement
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [showAgreementError, setShowAgreementError] = useState(false);
-  const [showChannelModal, setShowChannelModal] = useState(false);
-  const [channelHandleInput, setChannelHandleInput] = useState('');
-  const [channelNameInput, setChannelNameInput] = useState('');
-  const handlingMetaCallback = useRef(false);
+  const handlingSocialCallback = useRef(false);
+
+  useEffect(() => {
+    const appId = import.meta.env.VITE_META_APP_ID?.trim();
+    if (!appId) return;
+
+    let mounted = true;
+    const initializeFacebookSdk = () => {
+      if (!window.FB) return;
+      window.FB.init({ appId, xfbml: false, version: 'v27.0' });
+      if (mounted) setFacebookSdkReady(true);
+    };
+
+    window.fbAsyncInit = initializeFacebookSdk;
+    if (window.FB) {
+      initializeFacebookSdk();
+    } else {
+      let script = document.getElementById('facebook-jssdk') as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'facebook-jssdk';
+        script.src = 'https://connect.facebook.net/en_US/sdk.js';
+        script.async = true;
+        script.defer = true;
+        script.onerror = () => {
+          if (mounted) {
+            setNotice({ text: 'Facebook Sign-In could not be loaded. Please refresh and try again.', type: 'error' });
+          }
+        };
+        document.head.appendChild(script);
+      }
+    }
+
+    return () => {
+      mounted = false;
+      if (window.fbAsyncInit === initializeFacebookSdk) delete window.fbAsyncInit;
+    };
+  }, []);
 
   // Auto-redirect if session is active
   useEffect(() => {
@@ -78,21 +97,21 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   }, [isAuthenticated, onNavigate]);
 
   useEffect(() => {
-    if (handlingMetaCallback.current) return;
+    if (handlingSocialCallback.current) return;
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const callbackState = params.get('state');
     const providerError = params.get('error_description') || params.get('error');
     if (!code && !callbackState && !providerError) return;
 
-    handlingMetaCallback.current = true;
+    handlingSocialCallback.current = true;
     const savedFlow = sessionStorage.getItem('apexmind_meta_login');
     sessionStorage.removeItem('apexmind_meta_login');
     window.history.replaceState(window.history.state, '', window.location.pathname);
 
-    let flow: { provider: MetaLoginProvider; state: string } | null = null;
+    let flow: { provider: 'instagram'; state: string } | null = null;
     try {
-      flow = savedFlow ? JSON.parse(savedFlow) as { provider: MetaLoginProvider; state: string } : null;
+      flow = savedFlow ? JSON.parse(savedFlow) as { provider: 'instagram'; state: string } : null;
     } catch {
       flow = null;
     }
@@ -101,14 +120,14 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       setNotice({ text: `Sign-in was cancelled or denied: ${providerError}`, type: 'error' });
       return;
     }
-    if (!flow || !code || !callbackState || flow.state !== callbackState) {
+    if (!flow || flow.provider !== 'instagram' || !code || !callbackState || flow.state !== callbackState) {
       setNotice({ text: 'Social sign-in could not be verified. Please try again.', type: 'error' });
       return;
     }
 
     setLoading(true);
-    setNotice({ text: `Signing in with ${flow.provider === 'facebook' ? 'Facebook' : 'Instagram'}...`, type: 'info' });
-    void loginWithMeta(flow.provider, code, callbackState)
+    setNotice({ text: 'Signing in with Instagram...', type: 'info' });
+    void loginWithInstagram(code, callbackState)
       .then(() => handleSuccessfulAuth())
       .catch((err: unknown) => {
         setNotice({
@@ -117,7 +136,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         });
         setLoading(false);
       });
-  }, [loginWithMeta]);
+  }, [loginWithInstagram]);
 
   const requireAgreement = () => {
     if (!agreementChecked) {
@@ -146,55 +165,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     }
   });
 
-  //  Handle Email/Password Sign-In or Register
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!requireAgreement()) return;
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
-
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      setNotice({ text: 'Please enter a valid email address.', type: 'error' });
-      return;
-    }
-    if (cleanPassword.length < 6) {
-      setNotice({ text: 'Password must be at least 6 characters long.', type: 'error' });
-      return;
-    }
-
-    setLoading(true);
-    setNotice(null);
-
-    try {
-      if (authMode === 'register') {
-        const cleanName = name.trim();
-        if (cleanName.length < 2) {
-          setNotice({ text: 'Please enter your full or display name (min 2 characters).', type: 'error' });
-          setLoading(false);
-          return;
-        }
-        await registerWithEmail({
-          email: cleanEmail,
-          password: cleanPassword,
-          name: cleanName,
-        });
-        setNotice({ text: 'Account created! Redirecting to Studio...', type: 'success' });
-      } else {
-        await loginWithEmail({
-          email: cleanEmail,
-          password: cleanPassword,
-        });
-        setNotice({ text: 'Signed in successfully! Redirecting...', type: 'success' });
-      }
-      handleSuccessfulAuth();
-    } catch (err: any) {
-      setNotice({ text: err.message || 'Authentication failed. Please verify credentials.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   //  Handle Google Sign-In
   const handleGoogleAuth = () => {
     if (!requireAgreement()) return;
@@ -213,20 +183,54 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     fallbackGoogleOAuth(clientId);
   };
 
-  const handleMetaAuth = async (provider: MetaLoginProvider) => {
+  const handleFacebookAuth = () => {
+    if (!requireAgreement()) return;
+
+    if (!import.meta.env.VITE_META_APP_ID?.trim()) {
+      setNotice({ text: 'Facebook Sign-In is not configured. Add VITE_META_APP_ID to the environment.', type: 'error' });
+      return;
+    }
+    setLoading(true);
+    setNotice({ text: 'Connecting with Facebook...', type: 'info' });
+    if (!facebookSdkReady || !window.FB) {
+      setLoading(false);
+      setNotice({ text: 'Facebook Sign-In is still loading. Please try again in a moment.', type: 'error' });
+      return;
+    }
+    window.FB.login((response) => {
+      const accessToken = response.authResponse?.accessToken;
+      if (!accessToken) {
+        setLoading(false);
+        setNotice({ text: 'Facebook sign-in was cancelled or did not return an access token.', type: 'error' });
+        return;
+      }
+
+      void loginWithFacebook(accessToken)
+        .then(() => handleSuccessfulAuth())
+        .catch((err: unknown) => {
+          setNotice({
+            text: err instanceof Error ? err.message : 'Facebook sign-in failed. Please try again.',
+            type: 'error',
+          });
+        })
+        .finally(() => setLoading(false));
+    }, { scope: 'public_profile,email' });
+  };
+
+  const handleInstagramAuth = async () => {
     if (!requireAgreement()) return;
 
     const authWindow = openOAuthPopup();
     if (!authWindow) {
-      setNotice({ text: 'Allow pop-ups to continue with secure social sign-in.', type: 'error' });
+      setNotice({ text: 'Allow pop-ups to continue with secure Instagram sign-in.', type: 'error' });
       return;
     }
 
     setLoading(true);
-    setNotice({ text: `Connecting with ${provider === 'facebook' ? 'Facebook' : 'Instagram'}...`, type: 'info' });
+    setNotice({ text: 'Connecting with Instagram...', type: 'info' });
     try {
-      const { authorizationUrl, state } = await authApi.getMetaAuthorizationUrl(provider);
-      const savedFlow = JSON.stringify({ provider, state });
+      const { authorizationUrl, state } = await authApi.startInstagramLogin();
+      const savedFlow = JSON.stringify({ provider: 'instagram', state });
       sessionStorage.setItem('apexmind_meta_login', savedFlow);
       authWindow.sessionStorage.setItem('apexmind_meta_login', savedFlow);
       navigateOAuthPopup(authWindow, authorizationUrl);
@@ -234,7 +238,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       authWindow.close();
       setLoading(false);
       setNotice({
-        text: err instanceof Error ? err.message : 'Social sign-in could not be started.',
+        text: err instanceof Error ? err.message : 'Instagram sign-in could not be started.',
         type: 'error',
       });
     }
@@ -255,34 +259,14 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               });
               return;
             }
-            if (tokenResp.access_token) {
-              try {
-                // Fetch profile info from Google userinfo endpoint
-                const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                  headers: { Authorization: `Bearer ${tokenResp.access_token}` },
-                });
-                if (userinfoRes.ok) {
-                  const info = await userinfoRes.json();
-                  if (!info.email || info.email_verified !== true) {
-                    throw new Error('Google did not provide a verified email address for this account.');
-                  }
-                  await loginWithGoogle({
-                    email: info.email,
-                    name: info.name,
-                    avatarUrl: info.picture,
-                    googleId: info.sub,
-                  });
-                  handleSuccessfulAuth();
-                  return;
-                } else {
-                  throw new Error('Could not retrieve your Google account details. Please try again.');
-                }
-              } catch (fetchErr) {
-                setNotice({
-                  text: fetchErr instanceof Error ? fetchErr.message : 'Google authentication failed.',
-                  type: 'error',
-                });
-              }
+            try {
+              await loginWithGoogle({ accessToken: tokenResp.access_token });
+              handleSuccessfulAuth();
+            } catch (authErr) {
+              setNotice({
+                text: authErr instanceof Error ? authErr.message : 'Google authentication failed.',
+                type: 'error',
+              });
             }
             setLoading(false);
           },
@@ -301,36 +285,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
     setLoading(false);
     setNotice({ text: 'Google Sign-In is unavailable. Please refresh and try again.', type: 'error' });
-  };
-
-  //  Legacy Channel Direct Sign-In
-  const handleDirectChannelLogin = async (handle?: string, channelName?: string) => {
-    if (!requireAgreement()) return;
-    const targetHandle = (handle || channelHandleInput || '').trim();
-    if (!targetHandle) {
-      setNotice({ text: 'Please enter a YouTube Channel handle or title.', type: 'error' });
-      return;
-    }
-
-    const cleanHandle = targetHandle.startsWith('@') ? targetHandle : `@${targetHandle}`;
-    const cleanName = (channelName || channelNameInput || '').trim() || cleanHandle.replace('@', '');
-
-    setLoading(true);
-    setNotice({ text: 'Authenticating channel session...', type: 'info' });
-
-    try {
-      await loginWithChannel({
-        handle: cleanHandle,
-        name: cleanName,
-        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
-      });
-      setShowChannelModal(false);
-      handleSuccessfulAuth();
-    } catch (err: any) {
-      setNotice({ text: err.message || 'Channel sign-in failed.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Fast-Continue for Remembered User
@@ -423,49 +377,15 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 <span>Unified Creator Identity</span>
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-white">
-                {authMode === 'signin' ? 'Sign In to ApexMind' : 'Create Creator Account'}
+                Sign In to ApexMind
               </h1>
               <p className="text-xs text-[#A1A1AA] max-w-xs mx-auto leading-relaxed">
-                {authMode === 'signin'
-                  ? 'Access your studio and manage your connected social accounts.'
-                  : 'Start creating, rendering, and publishing autonomous AI Shorts across all platforms.'}
+                Access your studio and manage your connected social accounts.
               </p>
             </div>
 
-            {/*  Mode Switcher Tabs (Sign In / Register)  */}
-            <div className="flex rounded-xl bg-[#18181B] p-1 border border-[#27272A]">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('signin');
-                  setNotice(null);
-                }}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  authMode === 'signin'
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-[#A1A1AA] hover:text-white hover:bg-[#202025]'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('register');
-                  setNotice(null);
-                }}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  authMode === 'register'
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-[#A1A1AA] hover:text-white hover:bg-[#202025]'
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
-
             {/*  Remembered User Quick-Continue Card  */}
-            {rememberedUser && authMode === 'signin' && (
+            {rememberedUser && (
               <div className="flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-950/20 p-3 shadow-sm hover:border-red-500/50 transition-colors">
                 <div className="flex min-w-0 items-center gap-3">
                   <img
@@ -511,7 +431,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </button>
               <button
                 type="button"
-                onClick={() => void handleMetaAuth('facebook')}
+                onClick={handleFacebookAuth}
                 disabled={loading}
                 className="rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#202025] hover:border-[#3F3F46] px-3 py-2.5 text-xs font-semibold text-white shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -520,7 +440,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </button>
               <button
                 type="button"
-                onClick={() => void handleMetaAuth('instagram')}
+                onClick={() => void handleInstagramAuth()}
                 disabled={loading}
                 aria-label="Continue with Instagram using a professional account"
                 title="Instagram professional accounts"
@@ -534,153 +454,67 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               Instagram sign-in requires a professional account.
             </p>
 
-            {/*  Divider  */}
-            <div className="relative flex items-center justify-center">
-              <div className="w-full border-t border-[#27272A]" />
-              <span className="absolute bg-[#121215] px-2 text-[10px] font-medium uppercase tracking-wider text-[#71717A]">
-                or continue with email
-              </span>
-            </div>
-
-            {/*  Email & Password Form  */}
-            <form onSubmit={handleEmailAuth} className="space-y-3.5">
-              {authMode === 'register' && (
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-[#A1A1AA] flex items-center gap-1">
-                    <User className="w-3 h-3 text-red-400" />
-                    <span>Display / Full Name</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Alex Rivera"
-                    required
-                    className="w-full rounded-xl border border-[#27272A] bg-[#18181B] px-3.5 py-2.5 text-xs text-white placeholder-[#52525B] focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-[#A1A1AA] flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-red-400" />
-                  <span>Email Address</span>
-                </label>
+            <label
+              htmlFor="agree-terms"
+              className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 select-none transition-colors ${
+                showAgreementError
+                  ? 'border-red-500/60 bg-red-500/10'
+                  : agreementChecked
+                  ? 'border-red-500/40 bg-red-950/20'
+                  : 'border-[#27272A] bg-[#18181B]/50 hover:border-[#3F3F46]'
+              }`}
+            >
+              <div className="relative mt-0.5 shrink-0">
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  required
-                  className="w-full rounded-xl border border-[#27272A] bg-[#18181B] px-3.5 py-2.5 text-xs text-white placeholder-[#52525B] focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
+                  id="agree-terms"
+                  type="checkbox"
+                  checked={agreementChecked}
+                  onChange={(event) => {
+                    setAgreementChecked(event.target.checked);
+                    if (event.target.checked) setShowAgreementError(false);
+                  }}
+                  className="peer sr-only"
                 />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-[#A1A1AA] flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-red-400" />
-                  <span>Password {authMode === 'register' && '(min 6 chars)'}</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full rounded-xl border border-[#27272A] bg-[#18181B] pl-3.5 pr-10 py-2.5 text-xs text-white placeholder-[#52525B] focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((p) => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
+                <div
+                  className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
+                    agreementChecked
+                      ? 'border-red-500 bg-red-600'
+                      : showAgreementError
+                      ? 'border-red-500 bg-transparent'
+                      : 'border-[#52525B] bg-transparent'
+                  }`}
+                >
+                  {agreementChecked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                 </div>
               </div>
-
-              {/*  Agreement Checkbox  */}
-              <div
-                onClick={() => {
-                  setAgreementChecked((prev) => !prev);
-                  setShowAgreementError(false);
-                }}
-                className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 select-none transition-colors ${
-                  showAgreementError
-                    ? 'border-red-500/60 bg-red-500/10'
-                    : agreementChecked
-                    ? 'border-red-500/40 bg-red-950/20'
-                    : 'border-[#27272A] bg-[#18181B]/50 hover:border-[#3F3F46]'
-                }`}
-              >
-                <div className="relative mt-0.5 shrink-0">
-                  <input
-                    id="agree-terms"
-                    type="checkbox"
-                    checked={agreementChecked}
-                    onChange={(e) => {
-                      setAgreementChecked(e.target.checked);
-                      if (e.target.checked) setShowAgreementError(false);
-                    }}
-                    className="peer sr-only"
-                  />
-                  <div
-                    className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-                      agreementChecked
-                        ? 'border-red-500 bg-red-600'
-                        : showAgreementError
-                        ? 'border-red-500 bg-transparent'
-                        : 'border-[#52525B] bg-transparent'
-                    }`}
-                  >
-                    {agreementChecked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-                  </div>
-                </div>
-                <span className="text-[11px] leading-4 text-[#8E8E93]">
-                  I agree to the ApexMind{' '}
-                  <a
-                    href="/terms"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      onNavigate('terms');
-                    }}
-                    className="font-medium text-red-400 hover:text-white underline cursor-pointer"
-                  >
-                    Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a
-                    href="/privacy"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      onNavigate('privacy');
-                    }}
-                    className="font-medium text-red-400 hover:text-white underline cursor-pointer"
-                  >
-                    Privacy Policy
-                  </a>
-                  .
-                </span>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading || !agreementChecked}
-                className="w-full rounded-xl bg-red-600 hover:bg-red-500 active:bg-red-700 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-red-950/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 transition-all"
-              >
-                {loading ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : authMode === 'signin' ? (
-                  <span>Sign In to Studio</span>
-                ) : (
-                  <span>Create Free Account</span>
-                )}
-              </button>
-            </form>
+              <span className="text-[11px] leading-4 text-[#8E8E93]">
+                I agree to the ApexMind{' '}
+                <a
+                  href="/terms"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    onNavigate('terms');
+                  }}
+                  className="font-medium text-red-400 hover:text-white underline cursor-pointer"
+                >
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a
+                  href="/privacy"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    onNavigate('privacy');
+                  }}
+                  className="font-medium text-red-400 hover:text-white underline cursor-pointer"
+                >
+                  Privacy Policy
+                </a>
+                .
+              </span>
+            </label>
 
             {/*  Notice Alert Banner  */}
             {notice && (
@@ -699,21 +533,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </div>
             )}
 
-            {/*  Legacy Direct YouTube Channel Sign-In Option  */}
-            <div className="pt-2 border-t border-[#27272A] text-center space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!requireAgreement()) return;
-                  setShowChannelModal(true);
-                }}
-                disabled={loading || !agreementChecked}
-                className="inline-flex items-center gap-1.5 text-[11px] text-[#A1A1AA] hover:text-white cursor-pointer transition-colors"
-              >
-                <Youtube className="w-3.5 h-3.5 text-red-500 fill-current" />
-                <span>Or sign in with YouTube Channel handle directly</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -741,64 +560,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         </div>
       </footer>
 
-      {/*  YouTube Channel Direct Login Modal  */}
-      <Modal
-        isOpen={showChannelModal}
-        onClose={() => {
-          setShowChannelModal(false);
-          setChannelHandleInput('');
-          setChannelNameInput('');
-        }}
-        title="Sign In with YouTube Channel"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-[#9CA3AF]">
-            Enter your YouTube Channel handle or title to authenticate your workspace:
-          </p>
-
-          <div className="space-y-3">
-            <Input
-              label="YouTube Channel Handle"
-              value={channelHandleInput}
-              onChange={(e) => setChannelHandleInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && channelHandleInput.trim()) {
-                  handleDirectChannelLogin(channelHandleInput.trim(), channelNameInput.trim());
-                }
-              }}
-              placeholder="e.g. @DailyStoicShorts or MindsetForge"
-              autoFocus
-              required
-            />
-            <Input
-              label="Channel Display Name (Optional)"
-              value={channelNameInput}
-              onChange={(e) => setChannelNameInput(e.target.value)}
-              placeholder="e.g. Daily Stoic Shorts"
-            />
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" size="sm" onClick={() => setShowChannelModal(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={<Youtube className="w-3.5 h-3.5 fill-current" />}
-                onClick={() => {
-                  if (!channelHandleInput.trim()) {
-                    setNotice({ text: 'Please enter your YouTube Channel handle.', type: 'error' });
-                    return;
-                  }
-                  handleDirectChannelLogin(channelHandleInput.trim(), channelNameInput.trim());
-                }}
-              >
-                Sign In as Channel
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Modal>
     </main>
   );
 }

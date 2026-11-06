@@ -1,4 +1,4 @@
-import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, MetaLoginProvider, ChannelAuthPayload, AuthResponseData, MetaAuthorizationResponse } from '../types';
+import { UserProfile, GoogleAuthPayload, AuthResponseData, OAuthAuthorizationResponse } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
 
@@ -13,8 +13,7 @@ export class AuthSessionError extends Error {
 }
 
 /**
- * Normalizes email to YouTube channel delivery address: [channel-identifier]@youtube.com
- * Only used for legacy channel-direct auth sessions.
+ * Normalizes legacy YouTube channel emails for existing sessions.
  */
 export function resolveChannelDeliveryEmail(email?: string, handle?: string): string {
   if (email && email.trim()) {
@@ -25,55 +24,7 @@ export function resolveChannelDeliveryEmail(email?: string, handle?: string): st
 }
 
 export const authApi = {
-  // Register with Email & Password
-  async register(payload: RegisterPayload): Promise<AuthResponseData> {
-    const start = performance.now();
-    consoleLogger.info('Auth', `Attempting registration for ${payload.email}...`);
-    const endpoint = apiUrl('/api/auth/register');
-
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const duration = performance.now() - start;
-    consoleLogger.api('POST', '/api/auth/register', res.status, duration);
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Registration failed' }));
-      throw new Error(err.detail || 'Registration failed');
-    }
-
-    const data: AuthResponseData = await res.json();
-    consoleLogger.success('Auth', `Registered account for ${data.user.name} (${data.user.email})`, data.user);
-    return data;
-  },
-
-  // Login with Email & Password
-  async login(payload: LoginPayload): Promise<AuthResponseData> {
-    const start = performance.now();
-    consoleLogger.info('Auth', `Attempting login for ${payload.email}...`);
-    const endpoint = apiUrl('/api/auth/login');
-
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const duration = performance.now() - start;
-    consoleLogger.api('POST', '/api/auth/login', res.status, duration);
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Invalid email or password' }));
-      throw new Error(err.detail || 'Invalid email or password');
-    }
-
-    const data: AuthResponseData = await res.json();
-    consoleLogger.success('Auth', `Logged in account for ${data.user.name} (${data.user.email})`, data.user);
-    return data;
-  },
-
-  // Continue with Google (GIS Credential Token or Google OAuth payload)
+  // Continue with Google using a token verified by the backend.
   async googleLogin(payload: GoogleAuthPayload): Promise<AuthResponseData> {
     const start = performance.now();
     consoleLogger.info('Auth', 'Attempting Google sign-in authentication...');
@@ -97,54 +48,43 @@ export const authApi = {
     return data;
   },
 
-  async getMetaAuthorizationUrl(provider: MetaLoginProvider): Promise<MetaAuthorizationResponse> {
-    const res = await fetch(apiUrl(`/api/auth/meta/${provider}/authorize-url`));
+  async facebookLogin(accessToken: string): Promise<AuthResponseData> {
+    const res = await fetch(apiUrl('/api/auth/facebook'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken }),
+    });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: `${provider} sign-in is unavailable` }));
-      throw new Error(err.detail || `${provider} sign-in is unavailable`);
+      const err = await res.json().catch(() => ({ detail: 'Facebook sign-in failed' }));
+      throw new Error(err.detail || 'Facebook sign-in failed');
     }
     return res.json();
   },
 
-  async metaLogin(provider: MetaLoginProvider, code: string, state: string): Promise<AuthResponseData> {
-    const res = await fetch(apiUrl(`/api/auth/meta/${provider}/callback`), {
+  async startInstagramLogin(): Promise<OAuthAuthorizationResponse> {
+    const res = await fetch(apiUrl('/api/auth/instagram'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, state }),
+      body: JSON.stringify({ action: 'start' }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: `${provider} sign-in failed` }));
-      throw new Error(err.detail || `${provider} sign-in failed`);
+      const err = await res.json().catch(() => ({ detail: 'Instagram sign-in is unavailable' }));
+      throw new Error(err.detail || 'Instagram sign-in is unavailable');
     }
     return res.json();
   },
 
-  // Legacy YouTube channel sign-in adapter
-  async channelLogin(payload: ChannelAuthPayload): Promise<{ user: UserProfile; token: string }> {
-    const start = performance.now();
-    consoleLogger.info('Auth', `Attempting YouTube channel authentication for ${payload.handle}...`);
-    const endpoint = apiUrl('/api/auth/channel');
-
-    const res = await fetch(endpoint, {
+  async instagramLogin(code: string, state: string): Promise<AuthResponseData> {
+    const res = await fetch(apiUrl('/api/auth/instagram'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ action: 'callback', code, state }),
     });
-    const duration = performance.now() - start;
-    consoleLogger.api('POST', '/api/auth/channel', res.status, duration);
-
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'YouTube channel sign-in failed' }));
-      throw new Error(err.detail || 'YouTube channel sign-in failed');
+      const err = await res.json().catch(() => ({ detail: 'Instagram sign-in failed' }));
+      throw new Error(err.detail || 'Instagram sign-in failed');
     }
-
-    const data = await res.json();
-    if (data.user) {
-      data.user.email = resolveChannelDeliveryEmail(data.user.email, data.user.handle || payload.handle);
-      data.user.provider = 'youtube_oauth';
-    }
-    consoleLogger.success('Auth', `Successfully logged in via YouTube Channel: ${data.user.name}`, data.user);
-    return data;
+    return res.json();
   },
 
   // Fetch current user profile

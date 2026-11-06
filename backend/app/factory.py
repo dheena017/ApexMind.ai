@@ -19,14 +19,15 @@ from backend.shared.logger import (
 )
 from backend.features import (
     workspace_router,
-    media_router,
     youtube_router,
     notifications_router,
     auth_router,
+    audio_search_router,
     settings_router,
     videos_router,
     dashboard_router,
     social_router,
+    social_platform_router,
 )
 
 SERVER_START_TIME = time.time()
@@ -80,17 +81,18 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(auth_router)
     app.include_router(workspace_router)
-    app.include_router(media_router)
+    app.include_router(audio_search_router)
     app.include_router(videos_router)
     app.include_router(youtube_router)
     app.include_router(social_router)
+    app.include_router(social_platform_router)
     app.include_router(notifications_router)
     app.include_router(settings_router)
 
     @app.get(
         "/api/health",
-        tags=["System Health"],
-        summary="Get System Health & Telemetry",
+        tags=["Health"],
+        summary="Health status",
         description="Comprehensive application health check returning system telemetry, database status, AI engine availability, audio cache metrics, and active module routes."
     )
     def health_check():
@@ -181,7 +183,7 @@ def create_app() -> FastAPI:
 
     @app.get(
         "/api/audio/{filename}",
-        tags=["Static Asset Streaming"],
+        tags=["Media Files"],
         summary="Stream Audio File",
     )
     def get_audio_file(filename: str):
@@ -194,12 +196,12 @@ def create_app() -> FastAPI:
 
     @app.get(
         "/api/videos/{filename}",
-        tags=["Static Asset Streaming"],
+        tags=["Media Files"],
         summary="Stream Rendered Video",
     )
     @app.get(
         "/api/media/{filename}",
-        tags=["Static Asset Streaming"],
+        tags=["Media Files"],
         summary="Stream Rendered Video (alias)",
         include_in_schema=False,
     )

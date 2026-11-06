@@ -13,17 +13,15 @@ from backend.database.repository import (
     get_website_video_by_id,
     add_website_video,
     delete_website_video,
-    update_website_video,
 )
 from .schemas import (
     CreateWebsiteVideoRequest,
-    UpdateWebsiteVideoRequest,
     WebsiteVideoListResponse,
     WebsiteVideoSchema,
 )
 
 logger = logging.getLogger("ApexMind.features.videos")
-router = APIRouter(prefix="/api/studio-videos", tags=["Studio Video Library"])
+router = APIRouter(prefix="/api/studio-videos", tags=["Videos"])
 
 @router.get(
     "",
@@ -85,23 +83,6 @@ async def get_website_video_endpoint(video_id: str):
             detail=f"Video '{video_id}' not found."
         )
     logger.info(f"Retrieved studio video details: '{video.get('title')}' (ID: {video_id})")
-    return video
-
-
-@router.patch(
-    "/{video_id}",
-    response_model=WebsiteVideoSchema,
-    summary="Update Studio Video"
-)
-async def update_website_video_endpoint(video_id: str, payload: UpdateWebsiteVideoRequest):
-    updates = payload.dict(exclude_unset=True)
-    video = update_website_video(video_id, updates)
-    if not video:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Video '{video_id}' not found."
-        )
-    logger.info(f"Updated studio video: '{video.get('title')}' (ID: {video_id})")
     return video
 
 

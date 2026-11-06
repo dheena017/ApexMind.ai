@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, MetaLoginProvider, ChannelAuthPayload } from '../types';
+import { UserProfile, GoogleAuthPayload } from '../types';
 import { authApi, AuthSessionError, resolveChannelDeliveryEmail } from '../api/authApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
@@ -7,12 +7,9 @@ interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  loginWithEmail: (payload: LoginPayload) => Promise<UserProfile>;
-  registerWithEmail: (payload: RegisterPayload) => Promise<UserProfile>;
   loginWithGoogle: (payload: GoogleAuthPayload) => Promise<UserProfile>;
-  loginWithMeta: (provider: MetaLoginProvider, code: string, state: string) => Promise<UserProfile>;
-  /** Legacy channel login method */
-  loginWithChannel: (payload: ChannelAuthPayload) => Promise<UserProfile>;
+  loginWithFacebook: (accessToken: string) => Promise<UserProfile>;
+  loginWithInstagram: (code: string, state: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
 }
 
@@ -20,11 +17,9 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  loginWithEmail: async () => { throw new Error('AuthContext not initialized'); },
-  registerWithEmail: async () => { throw new Error('AuthContext not initialized'); },
   loginWithGoogle: async () => { throw new Error('AuthContext not initialized'); },
-  loginWithMeta: async () => { throw new Error('AuthContext not initialized'); },
-  loginWithChannel: async () => { throw new Error('AuthContext not initialized'); },
+  loginWithFacebook: async () => { throw new Error('AuthContext not initialized'); },
+  loginWithInstagram: async () => { throw new Error('AuthContext not initialized'); },
   logout: async () => {},
 });
 
@@ -163,28 +158,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithEmail = async (payload: LoginPayload): Promise<UserProfile> => {
-    setIsLoading(true);
-    try {
-      const authData = await authApi.login(payload);
-      saveAuthSession(authData);
-      return authData.user;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const registerWithEmail = async (payload: RegisterPayload): Promise<UserProfile> => {
-    setIsLoading(true);
-    try {
-      const authData = await authApi.register(payload);
-      saveAuthSession(authData);
-      return authData.user;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const loginWithGoogle = async (payload: GoogleAuthPayload): Promise<UserProfile> => {
     setIsLoading(true);
     try {
@@ -196,10 +169,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithMeta = async (provider: MetaLoginProvider, code: string, state: string): Promise<UserProfile> => {
+  const loginWithFacebook = async (accessToken: string): Promise<UserProfile> => {
     setIsLoading(true);
     try {
-      const authData = await authApi.metaLogin(provider, code, state);
+      const authData = await authApi.facebookLogin(accessToken);
       saveAuthSession(authData);
       return authData.user;
     } finally {
@@ -207,16 +180,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithChannel = async (payload: ChannelAuthPayload): Promise<UserProfile> => {
+  const loginWithInstagram = async (code: string, state: string): Promise<UserProfile> => {
     setIsLoading(true);
     try {
-      const authData = await authApi.channelLogin(payload);
-      authData.user.email = resolveChannelDeliveryEmail(authData.user.email, authData.user.handle || payload.handle);
-      authData.user.provider = 'youtube_oauth';
+      const authData = await authApi.instagramLogin(code, state);
       saveAuthSession(authData);
-      if (payload.handle) {
-        localStorage.setItem('apexmind_yt_active_channel', payload.handle);
-      }
       return authData.user;
     } finally {
       setIsLoading(false);
@@ -243,11 +211,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user && isSessionValid(),
         isLoading,
-        loginWithEmail,
-        registerWithEmail,
         loginWithGoogle,
-        loginWithMeta,
-        loginWithChannel,
+        loginWithFacebook,
+        loginWithInstagram,
         logout,
       }}
     >

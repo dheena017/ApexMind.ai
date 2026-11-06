@@ -3,7 +3,7 @@ backend/features/media/schemas.py
 Pydantic schemas and standard response envelopes for the media engine API.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from pydantic import BaseModel, Field
 from .base import MediaAsset
 
@@ -14,11 +14,6 @@ class SceneResolveItem(BaseModel):
     googleSearchQuery: Optional[str] = Field(None, description="Syntax-optimized query for Google CSE")
     fallbackQueries: List[str] = Field(default_factory=list, description="Fallback queries if primary yields no results")
     mediaType: str = Field("video", description="'video' | 'image'")
-
-
-class BatchResolveMediaRequest(BaseModel):
-    aspectRatio: str = Field("9:16", description="'9:16' | '16:9' | '1:1'")
-    scenes: List[SceneResolveItem] = Field(..., description="List of scene items to resolve concurrently")
 
 
 class ResolvedSceneResult(BaseModel):
@@ -34,26 +29,6 @@ class BatchResolveData(BaseModel):
     scenes: List[ResolvedSceneResult]
 
 
-class BatchResolveMediaResponse(BaseModel):
-    success: bool = True
-    data: BatchResolveData
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
-
-class SingleSceneResolveRequest(BaseModel):
-    sceneNumber: int
-    query: str
-    mediaType: str = "video"
-    aspectRatio: str = "9:16"
-    excludeUrls: List[str] = Field(default_factory=list, description="URLs to exclude to prevent duplicate visual cuts")
-
-
-class SingleSceneResolveResponse(BaseModel):
-    success: bool = True
-    data: ResolvedSceneResult
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
-
 class MediaSearchData(BaseModel):
     query: str
     mediaType: str
@@ -61,12 +36,6 @@ class MediaSearchData(BaseModel):
     total: int
     page: int
     items: List[MediaAsset]
-
-
-class MediaSearchResponse(BaseModel):
-    success: bool = True
-    data: MediaSearchData
-    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class AudioTrackAsset(BaseModel):
@@ -92,7 +61,7 @@ class AudioSearchData(BaseModel):
 class AudioSearchResponse(BaseModel):
     success: bool = True
     data: AudioSearchData
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, object] = Field(default_factory=dict)
 
 
 class SfxAsset(BaseModel):
@@ -113,7 +82,7 @@ class SfxSearchData(BaseModel):
 class SfxSearchResponse(BaseModel):
     success: bool = True
     data: SfxSearchData
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, object] = Field(default_factory=dict)
 
 
 class ProviderInfo(BaseModel):
@@ -127,9 +96,3 @@ class ProviderInfo(BaseModel):
 class ProvidersStatusData(BaseModel):
     allHealthy: bool
     providers: Dict[str, ProviderInfo]
-
-
-class ProvidersStatusResponse(BaseModel):
-    success: bool = True
-    data: ProvidersStatusData
-    metadata: Dict[str, Any] = Field(default_factory=dict)

@@ -3,6 +3,14 @@
 declare module 'lucide-react';
 
 interface Window {
+  FB?: {
+    init: (options: { appId: string; xfbml: boolean; version: string }) => void;
+    login: (
+      callback: (response: { authResponse?: { accessToken: string } }) => void,
+      options: { scope: string },
+    ) => void;
+  };
+  fbAsyncInit?: () => void;
   google?: {
     accounts: {
       oauth2: any;
@@ -30,4 +38,3 @@ interface Window {
     };
   };
 }
-

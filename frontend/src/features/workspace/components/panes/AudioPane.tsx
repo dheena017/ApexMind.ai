@@ -82,6 +82,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'soundboard' | 'record' | 'mixer' | 'url'>('soundtracks');
   const [soundtracks, setSoundtracks] = useState<SoundtrackItem[]>(CURATED_SOUNDTRACKS);
+  const [liveSoundtracks, setLiveSoundtracks] = useState<SoundtrackItem[]>([]);
+  const [liveSfx, setLiveSfx] = useState<SoundEffectItem[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [selectedSfxCategory, setSelectedSfxCategory] = useState<string>('all');
   const [pendingMusicId, setPendingMusicId] = useState(selectedMusic || '');
@@ -92,6 +94,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const [customAudioTitle, setCustomAudioTitle] = useState('');
   const [customAudioPlaying, setCustomAudioPlaying] = useState(false);
   const [isLoadingBackend, setIsLoadingBackend] = useState(false);
+  const [isSearchingAudio, setIsSearchingAudio] = useState(false);
+  const [isSearchingSfx, setIsSearchingSfx] = useState(false);
+  const [audioSearchError, setAudioSearchError] = useState<string | null>(null);
+  const [sfxSearchError, setSfxSearchError] = useState<string | null>(null);
 
   // Audio Mixer State
   const [musicVolume, setMusicVolume] = useState<number>(65);
@@ -149,6 +155,61 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'soundtracks') return;
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setIsSearchingAudio(true);
+      setAudioSearchError(null);
+      try {
+        const result = await workspaceApi.searchOpenTracks(
+          searchQuery.trim(),
+          selectedGenre === 'all' ? '' : selectedGenre,
+          30
+        );
+        if (!cancelled) setLiveSoundtracks(result.items || []);
+      } catch (error) {
+        if (!cancelled) {
+          setAudioSearchError(error instanceof Error ? error.message : 'Could not load soundtrack search results.');
+        }
+      } finally {
+        if (!cancelled) setIsSearchingAudio(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeTab, searchQuery, selectedGenre]);
+
+  useEffect(() => {
+    if (activeTab !== 'sfx') return;
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setIsSearchingSfx(true);
+      setSfxSearchError(null);
+      try {
+        const query = searchQuery.trim() || (selectedSfxCategory === 'all' ? '' : selectedSfxCategory);
+        const result = await workspaceApi.searchOpenSfx(query, 30);
+        if (!cancelled) setLiveSfx(result.items || []);
+      } catch (error) {
+        if (!cancelled) {
+          setSfxSearchError(error instanceof Error ? error.message : 'Could not load sound-effect search results.');
+        }
+      } finally {
+        if (!cancelled) setIsSearchingSfx(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeTab, searchQuery, selectedSfxCategory]);
 
   // Handle Recording Timer
   useEffect(() => {
@@ -220,7 +281,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const handleSelectSoundtrack = (trackId: string) => {
     if (onSelectMusic) {
       onSelectMusic(trackId);
-      const track = soundtracks.find((t) => t.id === trackId);
+      const track = [...liveSoundtracks, ...soundtracks].find((t) => t.id === trackId);
 
       window.dispatchEvent(
         new CustomEvent('workspace:add-timeline-clip', {
@@ -302,8 +363,25 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       t.mood.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesGenre && matchesQuery;
   });
+  const availableSoundtracks = [
+    ...liveSoundtracks,
+    ...filteredSoundtracks.filter((track) => !liveSoundtracks.some((liveTrack) => liveTrack.id === track.id)),
+  ].filter((track) => {
+    const matchesGenre = selectedGenre === 'all' || track.genre.toLowerCase().includes(selectedGenre.toLowerCase());
+    const query = searchQuery.trim().toLowerCase();
+    const matchesQuery =
+      !query ||
+      track.title.toLowerCase().includes(query) ||
+      track.mood.toLowerCase().includes(query) ||
+      track.genre.toLowerCase().includes(query);
+    return matchesGenre && matchesQuery;
+  });
 
-  const filteredSfx = CURATED_SOUND_EFFECTS.filter((s) => {
+  const allSfx = [
+    ...liveSfx,
+    ...CURATED_SOUND_EFFECTS.filter((sfx) => !liveSfx.some((liveEffect) => liveEffect.id === sfx.id)),
+  ];
+  const filteredSfx = allSfx.filter((s) => {
     const matchesCat = selectedSfxCategory === 'all' || s.category === selectedSfxCategory;
     const matchesQuery =
       searchQuery.trim() === '' ||
@@ -346,7 +424,9 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {isLoadingBackend && (
+          {(isLoadingBackend ||
+            (activeTab === 'soundtracks' && isSearchingAudio) ||
+            (activeTab === 'sfx' && isSearchingSfx)) && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
           <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-[#242424]">
@@ -377,20 +457,6 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
-        {/* Search Bar for SFX only (Soundtracks has its dedicated Jamendo integrated search) */}
-        {activeTab === 'sfx' && (
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search sound effects (boom, whoosh, riser)..."
-              className="w-full bg-[#181818] border border-[#27272F] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-blue-500/60 transition-colors"
-            />
-          </div>
-        )}
-
         {/* ── Tab: Audio Mixer ── */}
         {activeTab === 'mixer' && (
           <div className="flex flex-col gap-3.5">
@@ -527,7 +593,16 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             </div>
 
             <div className="flex flex-col gap-2 pt-1">
-              {filteredSoundtracks.map((track) => {
+              {isSearchingAudio && liveSoundtracks.length === 0 && (
+                <p className="py-3 text-center text-xs text-slate-400">Searching soundtrack catalogs…</p>
+              )}
+              {audioSearchError && (
+                <p role="alert" className="py-2 text-xs text-red-400">{audioSearchError}</p>
+              )}
+              {!isSearchingAudio && !audioSearchError && availableSoundtracks.length === 0 && (
+                <p className="py-3 text-center text-xs text-slate-400">No soundtrack results found.</p>
+              )}
+              {availableSoundtracks.map((track) => {
                 const isSelected = selectedMusic === track.id;
                 const isPending = pendingMusicId === track.id;
                 const isPlaying = playingTrackId === track.id;
@@ -635,6 +710,15 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 />
               </div>
             </div>
+            {isSearchingSfx && liveSfx.length === 0 && (
+              <p className="py-3 text-center text-xs text-slate-400">Searching sound-effect catalogs…</p>
+            )}
+            {sfxSearchError && (
+              <p role="alert" className="py-2 text-xs text-red-400">{sfxSearchError}</p>
+            )}
+            {!isSearchingSfx && !sfxSearchError && filteredSfx.length === 0 && (
+              <p className="py-3 text-center text-xs text-slate-400">No sound-effect results found.</p>
+            )}
             {filteredSfx.map((sfx) => {
               const isPlaying = playingSfxId === sfx.id;
 
