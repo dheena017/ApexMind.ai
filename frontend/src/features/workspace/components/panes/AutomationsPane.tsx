@@ -220,6 +220,9 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     bannerUrl: authStatus?.channel?.bannerUrl || authStatus?.channel?.banner_url || DEFAULT_CHANNEL.bannerUrl,
     channelUrl: authStatus?.channel?.channelUrl || authStatus?.channel?.channel_url || DEFAULT_CHANNEL.channelUrl,
   };
+  const hasSelectedYouTubeChannel = Boolean(
+    authStatus?.connected && activeChannel.id && activeChannel.handle !== DEFAULT_CHANNEL.handle,
+  );
 
   const loadAuthStatus = async () => {
     try {
@@ -230,15 +233,20 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       const channels = channelsResult.status === 'fulfilled' ? channelsResult.value : [];
       setAvailableChannels(channels);
       const status = statusResult.status === 'fulfilled' ? statusResult.value : null;
-      const selectedHandle = localStorage.getItem('apexmind_yt_active_channel')?.trim();
-      const selectedChannel = selectedHandle
-        ? channels.find((item) => item.handle === selectedHandle || item.id === selectedHandle)
+      const savedHandle = localStorage.getItem('apexmind_yt_active_channel')?.trim();
+      const serverSelectedChannel = status?.activeChannelId
+        ? channels.find((item) => item.id === status.activeChannelId)
+        : undefined;
+      const storedChannel = savedHandle
+        ? channels.find((item) => item.handle === savedHandle || item.id === savedHandle)
         : undefined;
       const statusChannel = status?.connected ? status.channel as YouTubeChannel | undefined : undefined;
-      const channel = selectedChannel || statusChannel || channels[0] || DEFAULT_CHANNEL;
+      const channel = serverSelectedChannel || statusChannel || storedChannel || channels[0];
       const connected = Boolean(status?.connected || channels.length > 0);
-      setAuthStatus({ connected, channel });
-      if (connected) {
+      setAuthStatus(channel
+        ? { connected, channel }
+        : { connected: false, channel: DEFAULT_CHANNEL });
+      if (connected && channel) {
         localStorage.setItem('apexmind_yt_channel', JSON.stringify(channel));
         if (channel.handle) localStorage.setItem('apexmind_yt_active_channel', channel.handle);
       } else {
@@ -1340,7 +1348,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {activeSubTab === 'create' && (
         <form
           onSubmit={handleCreate}
-          className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in max-w-xl mx-auto w-full"
+          className="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in w-full max-w-5xl mx-auto"
         >
           {/* Header intro card */}
           <div className="p-3 rounded-xl bg-[#161616] border border-[#242424] flex flex-col gap-1.5">
@@ -1649,31 +1657,39 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {/* ── Subtab 3: Channel & Target ── */}
       {activeSubTab === 'channel' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in">
-          {availableChannels.length > 1 && (
+          {availableChannels.length > 0 && (
             <div className="flex items-center justify-between gap-3 rounded-xl border border-[#24242A] bg-[#141418] px-4 py-3">
               <label htmlFor="automation-channel-target" className="text-xs font-semibold text-zinc-300">
-                Selected YouTube channel
+                Active publishing channel
               </label>
-              <select
-                id="automation-channel-target"
-                value={availableChannels.find((item) =>
-                  item.handle === activeChannel.handle || item.id === activeChannel.id,
-                )?.id || ''}
-                onChange={(event) => {
-                  const selected = availableChannels.find((item) => item.id === event.target.value);
-                  if (selected) void selectYouTubeChannel(selected);
-                }}
-                className="max-w-[65%] rounded-lg border border-[#33333C] bg-[#1A1A1F] px-3 py-2 text-xs text-white"
-              >
-                {availableChannels.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} {item.handle}
-                  </option>
-                ))}
-              </select>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="max-w-40 truncate text-xs text-emerald-300">
+                  {activeChannel.name} {activeChannel.handle}
+                </span>
+                {availableChannels.length > 1 && (
+                  <select
+                    id="automation-channel-target"
+                    value={availableChannels.find((item) =>
+                      item.handle === activeChannel.handle || item.id === activeChannel.id,
+                    )?.id || ''}
+                    onChange={(event) => {
+                      const selected = availableChannels.find((item) => item.id === event.target.value);
+                      if (selected) void selectYouTubeChannel(selected);
+                    }}
+                    className="max-w-36 rounded-lg border border-[#33333C] bg-[#1A1A1F] px-3 py-2 text-xs text-white"
+                  >
+                    {availableChannels.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} {item.handle}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
           )}
           {/* ── YouTube Channel Banner Card ── */}
+          {hasSelectedYouTubeChannel ? (
           <div className="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden shadow-xl">
             {/* Banner Image */}
             <div className="relative w-full h-24 bg-gradient-to-r from-[#0B0F19] via-[#131127] to-[#0A0A0A] overflow-hidden shrink-0">
@@ -1691,7 +1707,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             </div>
 
             {/* Avatar + Info row */}
-            <div className="bg-[#111111] border-t border-[#1E1E1E] px-3 py-2.5 flex items-center gap-3">
+            <div className="bg-[#111111] border-t border-[#1E1E1E] px-3 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="relative shrink-0 -mt-6">
                 <img
                   src={activeChannel.avatarUrl}
@@ -1701,7 +1717,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               </div>
 
               {/* Name + Handle + Stats */}
-              <div className="flex-1 min-w-0 pt-1">
+              <div className="flex-[1_1_120px] min-w-0 pt-1">
                 <p className="text-xs font-bold text-white truncate leading-tight">{activeChannel.name}</p>
                 <p className="text-[10px] text-zinc-500 truncate leading-tight">{activeChannel.handle}</p>
                 <p className="text-[10px] text-emerald-400 mt-0.5 flex items-center gap-1">
@@ -1715,7 +1731,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 href={activeChannel.channelUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 px-2.5 py-1 rounded-lg bg-[#181818] hover:bg-[#26262C] text-[10.5px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#242424] hover:border-white/10 flex items-center gap-1"
+                className="ml-auto shrink-0 px-2.5 py-1 rounded-lg bg-[#181818] hover:bg-[#26262C] text-[10.5px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#242424] hover:border-white/10 flex items-center gap-1"
               >
                 <span>View Channel</span>
                 <ExternalLink className="w-3 h-3 text-zinc-400" />
@@ -1733,16 +1749,21 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               </div>
             )}
           </div>
-
-          {/* Quick Action: Connect Another Channel or Platform */}
-          <button
-            type="button"
-            onClick={() => onNavigate?.('channels')}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-red-500/30 bg-red-950/20 hover:bg-red-900/30 text-xs font-semibold text-red-300 hover:text-white transition-all cursor-pointer shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5 text-red-400" />
-            <span>Connect another social account</span>
-          </button>
+          ) : (
+            <div className="rounded-2xl border border-amber-500/25 bg-amber-950/15 p-4 text-sm">
+              <p className="font-semibold text-amber-200">No active YouTube channel is selected.</p>
+              <p className="mt-1 text-xs text-amber-100/70">
+                Select a connected YouTube channel in Social Accounts, then return here. This prevents publishing to a placeholder channel.
+              </p>
+              <button
+                type="button"
+                onClick={() => onNavigate?.('channels')}
+                className="mt-3 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:bg-amber-400/10"
+              >
+                Open Social Accounts
+              </button>
+            </div>
+          )}
 
           {/* Engine & Pipeline Architecture Diagnostic */}
           <div className="p-3.5 rounded-xl bg-[#111111] border border-[#222226] text-xs text-zinc-400 flex flex-col gap-2.5">

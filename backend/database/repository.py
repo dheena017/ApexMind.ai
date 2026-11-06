@@ -1074,8 +1074,11 @@ def get_channels_by_user(user_id: str) -> List[Dict[str, Any]]:
     cursor.execute("""
     SELECT * FROM youtube_channels
     WHERE user_id = ? AND (is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != ''))
-    ORDER BY connected_at DESC
-    """, (user_id,))
+    ORDER BY CASE
+        WHEN id = (SELECT active_channel_id FROM users WHERE id = ?) THEN 0
+        ELSE 1
+    END, connected_at DESC
+    """, (user_id, user_id))
     rows = cursor.fetchall()
     conn.close()
     return [

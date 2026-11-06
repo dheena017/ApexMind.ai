@@ -81,16 +81,33 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     setLoading(true);
     setAccountsError(null);
     try {
-      const [fleet] = await Promise.all([
+      const [fleet, channelStatus] = await Promise.all([
         socialApi.getFleetAccounts(),
-        loadPublishedPosts(),
+        Promise.all([
+          loadPublishedPosts(),
+          youtubeApi.getAuthStatus().catch((err) => {
+            console.warn('Could not load active YouTube channel:', err);
+            return null;
+          }),
+        ]).then(([, status]) => status),
       ]);
       setAccounts(fleet);
 
       // Resolve active channel
       const stored = localStorage.getItem('apexmind_social_active_account');
       const storedYouTubeChannel = localStorage.getItem('apexmind_yt_active_channel');
-      if (stored && fleet.some((a) => a.handle === stored || a.id === stored)) {
+      const serverActiveYouTubeAccount = channelStatus?.activeChannelId
+        ? fleet.find((account) =>
+            account.platform === 'youtube' &&
+            account.platformAccountId === channelStatus.activeChannelId,
+          )
+        : undefined;
+      if (serverActiveYouTubeAccount) {
+        const key = serverActiveYouTubeAccount.handle || serverActiveYouTubeAccount.id;
+        setActiveChannelKey(key);
+        localStorage.setItem('apexmind_social_active_account', key);
+        localStorage.setItem('apexmind_yt_active_channel', key);
+      } else if (stored && fleet.some((a) => a.handle === stored || a.id === stored)) {
         setActiveChannelKey(stored);
       } else if (fleet.length > 0) {
         const selectedYouTubeAccount = fleet.find(

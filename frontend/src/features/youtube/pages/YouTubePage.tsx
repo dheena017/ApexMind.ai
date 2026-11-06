@@ -223,6 +223,13 @@ export default function YouTubePage({
       try {
         let connectedChannel: YouTubeChannel | undefined;
         let savedChannels: YouTubeChannel[] = [];
+        let authStatus: Awaited<ReturnType<typeof youtubeApi.getAuthStatus>> | undefined;
+        try {
+          authStatus = await youtubeApi.getAuthStatus();
+        } catch (statusError) {
+          console.warn('YouTube connection status unavailable; using saved channels:', statusError);
+        }
+
         try {
           savedChannels = await youtubeApi.getChannels();
           setAvailableChannels(savedChannels);
@@ -230,22 +237,24 @@ export default function YouTubePage({
           console.warn('Saved YouTube channels unavailable:', channelsError);
         }
 
-        const selectedHandle = localStorage.getItem('apexmind_yt_active_channel')?.trim();
-        if (selectedHandle) {
+        if (authStatus?.activeChannelId) {
           connectedChannel = savedChannels.find(
-            (saved) => saved.handle === selectedHandle || saved.id === selectedHandle,
+            (saved) => saved.id === authStatus?.activeChannelId,
           );
         }
 
-        try {
-          const authStatus = await youtubeApi.getAuthStatus();
-          if (!connectedChannel && authStatus.connected && authStatus.channel) {
-            connectedChannel = authStatus.channel;
-          }
-        } catch (statusError) {
-          console.warn('YouTube connection status unavailable; using saved channels:', statusError);
+        if (!connectedChannel && authStatus?.connected && authStatus.channel) {
+          connectedChannel = authStatus.channel;
         }
 
+        if (!connectedChannel) {
+          const selectedHandle = localStorage.getItem('apexmind_yt_active_channel')?.trim();
+          connectedChannel = selectedHandle
+            ? savedChannels.find((saved) =>
+                saved.handle === selectedHandle || saved.id === selectedHandle,
+              )
+            : savedChannels[0];
+        }
         if (!connectedChannel) {
           connectedChannel = savedChannels[0];
         }

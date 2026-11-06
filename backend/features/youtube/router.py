@@ -719,6 +719,7 @@ async def get_oauth_status_route(
         "success": True,
         "isAuthorized": ch is not None,
         "connected": ch is not None,
+        "activeChannelId": ch.get("id") if ch else None,
         "channel": safe_channel,
     }
 
@@ -746,7 +747,12 @@ async def get_saved_channels(
 ):
     resolved_user_id = _require_session_user_id(authorization)
     db_channels = get_channels_by_user(resolved_user_id)
-    return {"success": True, "channels": db_channels, "videos": []}
+    return {
+        "success": True,
+        "activeChannelId": db_channels[0]["id"] if db_channels else None,
+        "channels": db_channels,
+        "videos": [],
+    }
 
 
 @yt_router.post(

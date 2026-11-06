@@ -247,7 +247,12 @@ export const youtubeApi = {
     return res.json();
   },
 
-  async getAuthStatus(): Promise<{ success: boolean; connected: boolean; channel?: any }> {
+  async getAuthStatus(): Promise<{
+    success: boolean;
+    connected: boolean;
+    activeChannelId?: string;
+    channel?: any;
+  }> {
     const res = await fetch(apiUrl('/api/youtube/status'), {
       headers: this._getScheduleHeaders(),
     });
@@ -256,7 +261,12 @@ export const youtubeApi = {
       throw new Error(error.detail || 'Failed to load YouTube connection status');
     }
     const data = await res.json();
-    return { success: true, connected: Boolean(data.connected || data.isAuthorized), channel: data.channel };
+    return {
+      success: true,
+      connected: Boolean(data.connected || data.isAuthorized),
+      activeChannelId: data.activeChannelId,
+      channel: data.channel,
+    };
   },
 
   async getChannels(): Promise<YouTubeChannel[]> {
