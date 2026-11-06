@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 
 export interface SelectOption {
@@ -80,8 +81,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
-  const [horizontalAlign, setHorizontalAlign] = useState<'left' | 'right'>(align || 'left');
   const [maxMenuHeight, setMaxMenuHeight] = useState<number>(280);
+  const [menuPosition, setMenuPosition] = useState<{ top?: number; bottom?: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 230,
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -91,65 +96,42 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   const normalizedOptions = options.map(normalizeOption);
   const selectedOption = normalizedOptions.find((opt) => opt.value === value);
+  const isCompact = variant === 'compact';
 
-  // Dynamic Auto-Positioning (Vertical Flip & Horizontal Alignment)
+  // Keep the portaled menu anchored to the trigger and inside the viewport.
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const vh = window.innerHeight;
     const vw = window.innerWidth;
+    const spaceBelow = vh - rect.bottom;
+    const spaceAbove = rect.top;
 
-    // Detect nearest scrollable ancestor container if any
-    let scrollParent: HTMLElement | null = null;
-    let parent = triggerRef.current.parentElement;
-    while (parent && parent !== document.body) {
-      const style = window.getComputedStyle(parent);
-      if (
-        (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
-        parent.scrollHeight > parent.clientHeight
-      ) {
-        scrollParent = parent;
-        break;
-      }
-      parent = parent.parentElement;
-    }
-
-    let spaceBelow = vh - rect.bottom;
-    let spaceAbove = rect.top;
-    let spaceRight = vw - rect.left;
-    let spaceLeft = rect.right;
-
-    if (scrollParent) {
-      const parentRect = scrollParent.getBoundingClientRect();
-      spaceBelow = Math.min(spaceBelow, parentRect.bottom - rect.bottom);
-      spaceAbove = Math.min(spaceAbove, rect.top - parentRect.top);
-      spaceRight = Math.min(spaceRight, parentRect.right - rect.left);
-      spaceLeft = Math.min(spaceLeft, rect.right - parentRect.left);
-    }
-
-    // Vertical placement: flip upwards if space below is too tight and space above has more room
     const estimatedHeight = 220;
-    let nextPlacement: 'bottom' | 'top' = 'bottom';
-    if (autoPosition && spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
-      nextPlacement = 'top';
-    }
+    const nextPlacement: 'bottom' | 'top' =
+      autoPosition && spaceBelow < estimatedHeight && spaceAbove > spaceBelow ? 'top' : 'bottom';
     setPlacement(nextPlacement);
 
-    // Dynamic max-height clamped to available space
-    const availableSpace = nextPlacement === 'top' ? spaceAbove - 12 : spaceBelow - 12;
-    setMaxMenuHeight(Math.max(130, Math.min(availableSpace, 300)));
+    const availableSpace = nextPlacement === 'top' ? spaceAbove : spaceBelow;
+    setMaxMenuHeight(Math.max(0, Math.min(availableSpace - 12, 300)));
 
-    // Horizontal alignment: if opening left-aligned would cause right overflow, align to right
-    if (align) {
-      setHorizontalAlign(align);
-    } else if (autoPosition) {
-      if (spaceRight < 230 && spaceLeft >= 200) {
-        setHorizontalAlign('right');
-      } else {
-        setHorizontalAlign('left');
-      }
-    }
-  }, [align, autoPosition]);
+    const gutter = Math.min(16, vw / 2);
+    const maxWidth = Math.max(0, Math.min(320, vw - gutter * 2));
+    const preferredMinWidth = isCompact ? 210 : 230;
+    const width = Math.min(Math.max(rect.width, Math.min(preferredMinWidth, maxWidth)), maxWidth);
+    const shouldAlignRight = align === 'right' || (
+      !align && autoPosition && rect.left + width > vw - gutter
+    );
+    const left = shouldAlignRight ? rect.right - width : rect.left;
+    const clampedLeft = Math.max(gutter, Math.min(left, vw - width - gutter));
+
+    setMenuPosition({
+      top: nextPlacement === 'bottom' ? rect.bottom + 6 : undefined,
+      bottom: nextPlacement === 'top' ? vh - rect.top + 6 : undefined,
+      left: clampedLeft,
+      width,
+    });
+  }, [align, autoPosition, isCompact]);
 
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -217,14 +199,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     setIsOpen(false);
   };
 
-  const isCompact = variant === 'compact';
-
   // Variant & size classes
   const triggerBase = isCompact
     ? `inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#181818] border border-[#242424] text-xs font-semibold text-[#E5E5E5] hover:border-white/10 hover:text-white hover:bg-[#26262C] transition-all cursor-pointer shadow-xs select-none ${
         isOpen ? 'border-[#60A5FA]/40 ring-1 ring-[#2563EB]/40 text-white bg-[#181818]' : ''
       }`
-    : `w-full flex items-center justify-between gap-2 rounded-xl bg-[#181818] border border-[#242424] px-3.5 py-2.5 text-xs text-[#E5E5E5] hover:border-white/10 hover:bg-[#26262C] focus:outline-none transition-all cursor-pointer select-none ${
+    : `w-full flex items-center justify-between gap-2 rounded-xl bg-[#181818] border border-[#242424] px-3.5 py-2.5 text-xs text-[#E5E5E5] hover:border-white/10 hover:bg-[#26262C] focus:outline-none focus-visible:border-[#60A5FA]/70 focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 transition-all cursor-pointer select-none ${
         isOpen ? 'border-[#60A5FA]/40 ring-1 ring-[#2563EB]/40 text-white' : ''
       }`;
 
@@ -273,21 +253,20 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       </button>
 
       {/* Dropdown Menu Popover */}
-      {isOpen && (
+      {isOpen && createPortal(
         <div
           ref={menuRef}
           role="listbox"
           tabIndex={-1}
-          style={{ maxHeight: `${maxMenuHeight}px` }}
-          className={`absolute z-50 p-1.5 rounded-xl bg-[#141414] border border-[#242424] shadow-2xl shadow-black/90 custom-scrollbar overflow-y-auto ${
-            placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-          } ${
-            horizontalAlign === 'right' ? 'right-0 left-auto' : 'left-0 right-auto'
-          } ${
-            isCompact
-              ? 'min-w-[210px] w-max max-w-[calc(100vw-32px)]'
-              : 'min-w-full w-max min-w-[230px] max-w-[calc(100vw-32px)] sm:max-w-xs'
-          } ${menuClassName}`}
+          style={{
+            position: 'fixed',
+            top: menuPosition.top,
+            bottom: menuPosition.bottom,
+            left: menuPosition.left,
+            width: menuPosition.width,
+            maxHeight: `${maxMenuHeight}px`,
+          }}
+          className={`z-[100] p-1.5 rounded-xl bg-[#141414] border border-[#242424] shadow-2xl shadow-black/90 custom-scrollbar overflow-y-auto ${menuClassName}`}
         >
           {normalizedOptions.length === 0 ? (
             <div className="px-3 py-2 text-xs text-[#6B7280] text-center">No options available</div>
@@ -350,7 +329,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
               );
             })
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

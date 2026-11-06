@@ -212,7 +212,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
           <span className="text-xs font-bold text-white tracking-tight truncate">
             AI Script Studio
           </span>
-          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <span className="inline-flex shrink-0 items-center rounded-full border border-[#3B82F6]/25 bg-[#3B82F6]/10 px-2 py-0.5 text-[9px] font-semibold leading-none text-[#93C5FD]">
             Director
           </span>
         </div>
@@ -358,10 +358,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                       key={item.value}
                       type="button"
                       onClick={() => onAspectRatioChange?.(item.value)}
-                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 ${
                         isSelected
-                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs font-bold'
-                          : 'bg-[#18181C] border-[#24242A] text-zinc-400 hover:text-white hover:bg-[#202026] hover:border-[#383842]'
+                          ? 'bg-[#2563EB] border-[#60A5FA] ring-1 ring-[#60A5FA]/30 text-white shadow-xs font-bold'
+                          : 'bg-[#18181C] border-[#3A3A40] text-zinc-400 hover:text-white hover:bg-[#202026] hover:border-[#60A5FA]/50'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5 mb-1" />
@@ -479,10 +479,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                         key={opt.value}
                         type="button"
                         onClick={() => onTargetLengthChange(opt.value)}
-                        className={`py-2 px-1 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center ${
+                        className={`py-2 px-1 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 ${
                           isSelected
-                            ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs font-bold'
-                            : 'bg-[#18181C] text-zinc-400 border-[#24242A] hover:text-white hover:bg-[#202026] hover:border-[#383842]'
+                            ? 'bg-[#2563EB] border-[#60A5FA] ring-1 ring-[#60A5FA]/30 text-white shadow-xs font-bold'
+                            : 'bg-[#18181C] text-zinc-400 border-[#3A3A40] hover:text-white hover:bg-[#202026] hover:border-[#60A5FA]/50'
                         }`}
                       >
                         <span className="text-xs font-bold leading-tight">{opt.label}</span>
@@ -508,10 +508,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                         key={tone.id}
                         type="button"
                         onClick={() => handleSelectTone(tone.id)}
-                        className={`p-2.5 rounded-xl border transition-all text-left flex items-start gap-2.5 cursor-pointer ${
+                        className={`p-2.5 rounded-xl border transition-all text-left flex items-start gap-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 ${
                           isSelected
-                            ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-bold'
-                            : 'bg-[#18181C] text-zinc-400 border-[#24242A] hover:text-white hover:bg-[#202026] hover:border-[#383842]'
+                            ? 'bg-[#2563EB] text-white border-[#60A5FA] ring-1 ring-[#60A5FA]/30 shadow-xs font-bold'
+                            : 'bg-[#18181C] text-zinc-400 border-[#3A3A40] hover:text-white hover:bg-[#202026] hover:border-[#60A5FA]/50'
                         }`}
                       >
                         <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? 'text-white' : 'text-zinc-400'}`} />

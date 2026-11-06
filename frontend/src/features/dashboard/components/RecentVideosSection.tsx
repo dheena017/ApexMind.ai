@@ -44,7 +44,7 @@ export const RecentVideosSection: React.FC<RecentVideosSectionProps> = ({
         <button
           type="button"
           onClick={() => onNavigate('videos')}
-          className="text-xs font-semibold text-[#60A5FA] hover:text-[#93C5FD] flex items-center gap-1 transition-colors cursor-pointer"
+          className="min-h-8 inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#242424] bg-[#181818] px-2.5 text-xs font-semibold text-[#60A5FA] transition-colors hover:border-white/10 hover:bg-[#26262C] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50"
         >
           <span>All Videos ({videos.length})</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -151,9 +151,10 @@ export const RecentVideosSection: React.FC<RecentVideosSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate(buildRouteUrl('workspace', { tab: 'editor', videoId: video.id }))}
-                    className="text-[#60A5FA] hover:text-white font-semibold transition-colors cursor-pointer"
+                    className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-[#242424] bg-[#181818] px-2 text-[#60A5FA] font-semibold transition-colors hover:border-white/10 hover:bg-[#26262C] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50"
                   >
                     Edit Studio
+                    <ArrowRight className="h-3 w-3" />
                   </button>
                 </div>
               </div>

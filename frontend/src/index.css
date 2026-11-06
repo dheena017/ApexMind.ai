@@ -22,6 +22,25 @@
     color: var(--color-text-primary);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
+
+  button {
+    border: 1px solid #242424;
+    border-radius: 0.5rem;
+    background-color: #1E1E1E;
+    color: #9CA3AF;
+    transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+  }
+
+  button:hover:not(:disabled) {
+    border-color: rgb(255 255 255 / 10%);
+    background-color: #26262C;
+    color: #FFFFFF;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 }
 
 @media (max-width: 767px) {

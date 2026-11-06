@@ -383,7 +383,7 @@ export default function AppLayout({
               {/* Brand Logo */}
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="text-sm sm:text-base font-extrabold tracking-tight flex items-center gap-2 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer"
+                className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-none border-0 bg-transparent px-0 py-0 text-sm font-extrabold text-white transition-opacity hover:border-transparent hover:bg-transparent hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 sm:text-base"
                 aria-label="ApexMind Studio home"
               >
                 <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white border border-[#60A5FA]/30 shadow-sm">
