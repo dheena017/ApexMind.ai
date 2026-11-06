@@ -630,7 +630,7 @@ async def automation_scheduler_loop():
 
     # Reset any stale orphan 'running' jobs from prior server sessions
     try:
-        startup_jobs = get_automations(include_stale_running=True)
+        startup_jobs = get_automations(include_stale_running=True, include_all=True)
         for j in startup_jobs:
             if j.get("lastStatus") == "running":
                 n_run = datetime.now(timezone.utc).isoformat()
@@ -647,7 +647,7 @@ async def automation_scheduler_loop():
     while True:
         try:
             await asyncio.sleep(60)  # Check every 60 seconds
-            jobs = get_automations()
+            jobs = get_automations(include_all=True)
             now_utc = datetime.now(timezone.utc)
 
             for job in jobs:

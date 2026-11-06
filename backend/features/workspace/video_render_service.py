@@ -12,9 +12,11 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 import urllib.request
 
 logger = logging.getLogger("ApexMind.features.video_render")
@@ -24,9 +26,107 @@ RENDER_DIR = Path("backend/data/rendered_shorts")
 RENDER_DIR.mkdir(parents=True, exist_ok=True)
 
 BROWSER_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "User-Agent": "ApexMindStudio/2.0 (video rendering; contact@apexmind.ai)",
     "Accept": "*/*",
 }
+REMOTE_MEDIA_CACHE_DIR = Path("backend/data/cache/media")
+_HOST_REQUEST_LOCK = threading.Lock()
+_LAST_HOST_REQUEST: Dict[str, float] = {}
+
+
+def _remote_media_extension(
+    url: str,
+    content_type: str = "",
+    expected_type: Optional[str] = None,
+) -> str:
+    """Choose a supported file extension for a downloaded remote media asset."""
+    url_extension = Path(urlparse(url).path).suffix.lower()
+    if url_extension in {".mp4", ".webm", ".mov", ".mkv", ".m4v", ".ogv", ".jpg", ".jpeg", ".png", ".webp"}:
+        return url_extension
+    content_type = content_type.split(";", 1)[0].strip().lower()
+    if content_type in {"video/webm", "application/ogg"}:
+        return ".webm"
+    if content_type in {"video/quicktime"}:
+        return ".mov"
+    if content_type == "video/mp4":
+        return ".mp4"
+    if content_type == "image/png":
+        return ".png"
+    if content_type == "image/webp":
+        return ".webp"
+    if content_type in {"image/jpeg", "image/jpg"}:
+        return ".jpg"
+    if content_type.startswith("video/") or expected_type == "video":
+        return ".mp4"
+    return ".jpg"
+
+
+def _throttle_remote_host(host: str) -> None:
+    """Space requests to the same media host to avoid triggering rate limits."""
+    with _HOST_REQUEST_LOCK:
+        elapsed = time.monotonic() - _LAST_HOST_REQUEST.get(host, 0.0)
+        if elapsed < 1.0:
+            time.sleep(1.0 - elapsed)
+        _LAST_HOST_REQUEST[host] = time.monotonic()
+
+
+def _download_remote_media(url: str, expected_type: Optional[str] = None) -> tuple[Optional[Path], str]:
+    """Download and cache a remote media asset, retrying transient failures."""
+    cache_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
+    cache_candidates = REMOTE_MEDIA_CACHE_DIR.glob(f"{cache_hash}.*")
+    for cached_path in cache_candidates:
+        if cached_path.suffix.lower() not in {".mp4", ".webm", ".mov", ".mkv", ".m4v", ".ogv", ".jpg", ".jpeg", ".png", ".webp"}:
+            continue
+        if cached_path.is_file() and cached_path.stat().st_size > 512:
+            media_type = "video" if cached_path.suffix.lower() in {".mp4", ".webm", ".mov", ".mkv", ".m4v", ".ogv"} else "image"
+            return cached_path, media_type
+
+    REMOTE_MEDIA_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    parsed_url = urlparse(url)
+    host = parsed_url.netloc.lower()
+    request = urllib.request.Request(url, headers=BROWSER_HEADERS)
+    last_error: Optional[Exception] = None
+
+    for attempt in range(3):
+        _throttle_remote_host(host)
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                content_type = str(response.headers.get("Content-Type", "")).lower()
+                if content_type.startswith("text/") or "application/json" in content_type:
+                    raise ValueError(f"Unexpected media response type: {content_type}")
+
+                extension = _remote_media_extension(url, content_type, expected_type)
+                cache_path = REMOTE_MEDIA_CACHE_DIR / f"{cache_hash}{extension}"
+                partial_path = cache_path.with_suffix(cache_path.suffix + ".download")
+                data = response.read()
+                if len(data) <= 512:
+                    raise ValueError(f"Remote media response was too small ({len(data)} bytes)")
+                with open(partial_path, "wb") as media_file:
+                    media_file.write(data)
+                partial_path.replace(cache_path)
+
+                media_type = "video" if extension in {".mp4", ".webm", ".mov", ".mkv", ".m4v", ".ogv"} else "image"
+                return cache_path, media_type
+        except Exception as exc:
+            last_error = exc
+            status = getattr(exc, "code", None)
+            retryable = status == 429 or (status is not None and 500 <= status < 600) or status is None
+            if not retryable or attempt == 2:
+                break
+
+            retry_after = getattr(exc, "headers", {}).get("Retry-After") if getattr(exc, "headers", None) else None
+            try:
+                delay = min(5.0, max(0.0, float(retry_after))) if retry_after else 2 ** attempt
+            except (TypeError, ValueError):
+                delay = 2 ** attempt
+            logger.warning(
+                f"Remote media download throttled or temporarily unavailable "
+                f"(attempt {attempt + 1}/3, host={host}, retry_in={delay:.1f}s): {exc}"
+            )
+            time.sleep(delay)
+
+    logger.warning(f"Could not download remote media from {host}: {last_error}")
+    return None, "none"
 
 XFADE_MAP: Dict[str, str] = {
     # Fades, Blurs & Glitches
@@ -233,23 +333,9 @@ def save_backdrop_payload(url_or_data: str, temp_dir: Path, expected_type: Optio
 
     # Remote HTTP URL
     if url_or_data.startswith("http://") or url_or_data.startswith("https://"):
-        try:
-            req = urllib.request.Request(url_or_data, headers=BROWSER_HEADERS)
-            with urllib.request.urlopen(req, timeout=18) as resp:
-                content_type = str(resp.headers.get("Content-Type", "")).lower()
-                if "video" in content_type:
-                    media_type = "video"
-                elif "image" in content_type:
-                    media_type = "image"
-                
-                ext = "mp4" if media_type == "video" else "jpg"
-                out_file = temp_dir / f"backdrop_{int(time.time()*1000)}.{ext}"
-                with open(out_file, "wb") as f:
-                    f.write(resp.read())
-            return out_file, media_type
-        except Exception as e:
-            logger.warning(f"Could not download remote backdrop: {e}")
-            return None, "none"
+        cached_file, downloaded_type = _download_remote_media(url_or_data, expected_type=expected_type)
+        if cached_file:
+            return cached_file, downloaded_type
 
     return None, "none"
 

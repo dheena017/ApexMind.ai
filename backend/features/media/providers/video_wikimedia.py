@@ -47,6 +47,7 @@ class WikimediaVideoProvider(BaseMediaProvider):
             "gsrlimit": gsr_limit,
             "prop": "imageinfo",
             "iiprop": "url|size|mime|extmetadata",
+            "iiurlwidth": 640,
             "format": "json",
         }
         if page > 1:

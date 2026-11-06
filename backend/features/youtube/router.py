@@ -790,7 +790,7 @@ async def create_automation_schedule_route(
     userId: Optional[str] = Query(None),
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
-    from backend.database.repository import create_automation_job, get_latest_user
+    from backend.database.repository import create_automation_job
     theme = payload.get("theme", "Stoic Mindset & Discipline")
     publish_time = payload.get("publishTime", "08:00")
     schedule = payload.get("schedule") or f"Daily at {publish_time}"
@@ -803,10 +803,9 @@ async def create_automation_schedule_route(
     aspect_ratio = payload.get("aspectRatio") or payload.get("aspect_ratio") or "9:16"
     length = payload.get("length") or "30 seconds"
 
-    resolved_uid = payload.get("userId") or userId or x_user_id
+    resolved_uid = x_user_id or userId or payload.get("userId")
     if not resolved_uid:
-        latest = get_latest_user()
-        resolved_uid = latest["id"] if latest else None
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="A signed-in user is required to create an automation.")
 
     job = create_automation_job(
         theme=theme,
@@ -848,8 +847,13 @@ async def toggle_automation_schedule_route(
     userId: Optional[str] = Query(None),
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
-    from backend.database.repository import toggle_automation
+    from backend.database.repository import get_automation_by_id, toggle_automation
     resolved_uid = userId or x_user_id
+    if not resolved_uid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="A signed-in user is required to update an automation.")
+    job = get_automation_by_id(job_id)
+    if not job or job.get("userId") != resolved_uid:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")
     jobs = toggle_automation(job_id, user_id=resolved_uid)
     return {"success": True, "data": jobs}
 
@@ -879,7 +883,9 @@ async def delete_automation_schedule_route(
 ):
     from backend.database.repository import delete_automation_job, get_automations
     resolved_uid = userId or x_user_id
-    deleted = delete_automation_job(job_id)
+    if not resolved_uid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="A signed-in user is required to delete an automation.")
+    deleted = delete_automation_job(job_id, user_id=resolved_uid)
     if not deleted:
         raise HTTPException(status_code=404, detail="Automation job not found.")
     return {"success": True, "data": get_automations(user_id=resolved_uid), "message": "Schedule deleted."}
@@ -903,8 +909,20 @@ async def delete_automation_schedule_route(
     summary="Execute Schedule Immediately (legacy alias)",
     include_in_schema=False,
 )
-async def execute_schedule_immediately_route(job_id: str, payload: Optional[Dict[str, Any]] = Body(default=None)):
+async def execute_schedule_immediately_route(
+    job_id: str,
+    payload: Optional[Dict[str, Any]] = Body(default=None),
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     from .automation_service import execute_automation_job
+    from backend.database.repository import get_automation_by_id
+    resolved_uid = userId or x_user_id
+    if not resolved_uid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="A signed-in user is required to run an automation.")
+    job = get_automation_by_id(job_id)
+    if not job or job.get("userId") != resolved_uid:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")
     try:
         # Run pipeline in a background thread executor so event loop is non-blocking
         import asyncio
@@ -929,8 +947,19 @@ async def execute_schedule_immediately_route(job_id: str, payload: Optional[Dict
     "/api/youtube/automations/{job_id}/stop",
     include_in_schema=False,
 )
-async def stop_schedule_execution_route(job_id: str):
+async def stop_schedule_execution_route(
+    job_id: str,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     from .automation_service import stop_automation_job
+    from backend.database.repository import get_automation_by_id
+    resolved_uid = userId or x_user_id
+    if not resolved_uid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="A signed-in user is required to stop an automation.")
+    job = get_automation_by_id(job_id)
+    if not job or job.get("userId") != resolved_uid:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")
     try:
         res = stop_automation_job(job_id)
         return {"success": True, "data": res, "message": "Pipeline execution stopped."}
@@ -987,7 +1016,14 @@ async def get_schedule_history_route(
     summary="Clear Schedule Execution History (legacy alias)",
     include_in_schema=False,
 )
-async def clear_schedule_history_route(job_id: str):
+async def clear_schedule_history_route(
+    job_id: str,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     from backend.database.repository import clear_automation_history
-    cleared = clear_automation_history(job_id)
+    resolved_uid = userId or x_user_id
+    if not resolved_uid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="A signed-in user is required to clear automation history.")
+    cleared = clear_automation_history(job_id, user_id=resolved_uid)
     return {"success": True, "cleared": cleared}

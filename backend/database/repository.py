@@ -555,13 +555,17 @@ def get_automations(
     user_id: Optional[str] = None,
     *,
     include_stale_running: bool = False,
+    include_all: bool = False,
 ) -> List[Dict[str, Any]]:
+    if not user_id and not include_all:
+        return []
+
     conn = get_connection()
     cursor = conn.cursor()
-    if user_id:
-        cursor.execute("SELECT * FROM automation_jobs WHERE user_id = ? ORDER BY active DESC, next_run ASC", (user_id,))
+    if include_all:
+        cursor.execute("SELECT * FROM automation_jobs WHERE user_id IS NOT NULL ORDER BY active DESC, next_run ASC")
     else:
-        cursor.execute("SELECT * FROM automation_jobs ORDER BY active DESC, next_run ASC")
+        cursor.execute("SELECT * FROM automation_jobs WHERE user_id = ? ORDER BY active DESC, next_run ASC", (user_id,))
     rows = cursor.fetchall()
     conn.close()
 
@@ -647,6 +651,9 @@ def create_automation_job(
     length: str = "30 seconds",
     user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
+    if not user_id:
+        raise ValueError("A user ID is required to create an automation job.")
+
     conn = get_connection()
     cursor = conn.cursor()
     job_id = f"job_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
@@ -666,11 +673,18 @@ def create_automation_job(
     logger.info(f"Created automation job '{job_id}' (User: '{user_id}', Theme: '{theme}', Schedule: '{schedule}')")
     return get_automation_by_id(job_id) or {"id": job_id, "userId": user_id, "theme": theme}
 
-def delete_automation_job(job_id: str) -> bool:
+def delete_automation_job(job_id: str, user_id: Optional[str] = None) -> bool:
+    if not user_id:
+        return False
+
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM automation_history WHERE job_id = ?", (job_id,))
-    cursor.execute("DELETE FROM automation_jobs WHERE id = ?", (job_id,))
+    cursor.execute(
+        "DELETE FROM automation_history WHERE job_id = ? AND EXISTS "
+        "(SELECT 1 FROM automation_jobs WHERE id = ? AND user_id = ?)",
+        (job_id, job_id, user_id),
+    )
+    cursor.execute("DELETE FROM automation_jobs WHERE id = ? AND user_id = ?", (job_id, user_id))
     deleted = cursor.rowcount > 0
     conn.commit()
     conn.close()
@@ -739,24 +753,19 @@ def add_automation_history(
     }
 
 def get_automation_history(job_id: str, limit: int = 50, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    if not user_id:
+        return []
+
     conn = get_connection()
     cursor = conn.cursor()
-    if user_id:
-        cursor.execute("""
-        SELECT id, user_id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data
-        FROM automation_history
-        WHERE job_id = ? AND (user_id = ? OR user_id IS NULL)
-        ORDER BY executed_at DESC
+    cursor.execute("""
+        SELECT history.id, history.user_id, history.job_id, history.status, history.video_title, history.video_url, history.youtube_url, history.is_live, history.duration_seconds, history.message, history.executed_at, history.project_data
+        FROM automation_history AS history
+        JOIN automation_jobs AS job ON job.id = history.job_id
+        WHERE history.job_id = ? AND job.user_id = ? AND (history.user_id = ? OR history.user_id IS NULL)
+        ORDER BY history.executed_at DESC
         LIMIT ?
-        """, (job_id, user_id, limit))
-    else:
-        cursor.execute("""
-        SELECT id, user_id, job_id, status, video_title, video_url, youtube_url, is_live, duration_seconds, message, executed_at, project_data
-        FROM automation_history
-        WHERE job_id = ?
-        ORDER BY executed_at DESC
-        LIMIT ?
-        """, (job_id, limit))
+        """, (job_id, user_id, user_id, limit))
     rows = cursor.fetchall()
     conn.close()
 
@@ -790,10 +799,17 @@ def get_automation_history(job_id: str, limit: int = 50, user_id: Optional[str] 
         })
     return result
 
-def clear_automation_history(job_id: str) -> bool:
+def clear_automation_history(job_id: str, user_id: Optional[str] = None) -> bool:
+    if not user_id:
+        return False
+
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM automation_history WHERE job_id = ?", (job_id,))
+    cursor.execute(
+        "DELETE FROM automation_history WHERE job_id = ? AND EXISTS "
+        "(SELECT 1 FROM automation_jobs WHERE id = ? AND user_id = ?)",
+        (job_id, job_id, user_id),
+    )
     deleted = cursor.rowcount > 0
     conn.commit()
     conn.close()
@@ -839,9 +855,15 @@ def update_automation_run_state(
     conn.close()
 
 def toggle_automation(job_id: str, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    if not user_id:
+        return []
+
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT active, publish_time, schedule FROM automation_jobs WHERE id = ?", (job_id,))
+    cursor.execute(
+        "SELECT active, publish_time, schedule FROM automation_jobs WHERE id = ? AND user_id = ?",
+        (job_id, user_id),
+    )
     row = cursor.fetchone()
     if row:
         new_active = 0 if row["active"] == 1 else 1
@@ -851,9 +873,15 @@ def toggle_automation(job_id: str, user_id: Optional[str] = None) -> List[Dict[s
                 next_run = calculate_next_run_iso(row["publish_time"], row["schedule"])
             except Exception:
                 next_run = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-            cursor.execute("UPDATE automation_jobs SET active = 1, next_run = ?, last_status = 'idle' WHERE id = ?", (next_run, job_id))
+            cursor.execute(
+                "UPDATE automation_jobs SET active = 1, next_run = ?, last_status = 'idle' WHERE id = ? AND user_id = ?",
+                (next_run, job_id, user_id),
+            )
         else:
-            cursor.execute("UPDATE automation_jobs SET active = 0, last_status = 'idle' WHERE id = ?", (job_id,))
+            cursor.execute(
+                "UPDATE automation_jobs SET active = 0, last_status = 'idle' WHERE id = ? AND user_id = ?",
+                (job_id, user_id),
+            )
         conn.commit()
     conn.close()
     logger.info(f"Toggled automation job status (Job ID: {job_id})")
