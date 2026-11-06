@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Zap,
   Clock,
   Calendar,
   CheckCircle2,
@@ -13,11 +12,8 @@ import {
   Sparkles,
   Volume2,
   Video,
-  ShieldCheck,
   Send,
   Loader2,
-  ArrowRight,
-  Radio,
   ExternalLink,
   Copy,
   Check,
@@ -27,7 +23,7 @@ import {
   Search,
   Square,
 } from 'lucide-react';
-import { Card, Badge } from '@/src/shared/ui/common';
+import { Card } from '@/src/shared/ui/common';
 import { AutomationJob, AutomationHistoryEntry } from '../types';
 import { youtubeApi } from '../api/youtubeApi';
 
@@ -48,21 +44,21 @@ const THEME_OPTIONS = [
 ];
 
 const AI_MODEL_OPTIONS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive & High Quality • Recommended)' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive & High Quality Ã¢â‚¬Â¢ Recommended)' },
   { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Next-Gen Speed & Storyboarding)' },
   { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (Rapid & Lightweight)' },
   { value: 'gemini-flash-latest', label: 'Gemini Flash Latest (Cutting-Edge)' },
 ];
 
 const ASPECT_RATIO_OPTIONS = [
-  { value: '9:16', label: '9:16 (Vertical • Shorts / Reels)' },
-  { value: '16:9', label: '16:9 (Landscape • YouTube Video)' },
-  { value: '1:1', label: '1:1 (Square • Instagram / Feed)' },
+  { value: '9:16', label: '9:16 (Vertical Ã¢â‚¬Â¢ Shorts / Reels)' },
+  { value: '16:9', label: '16:9 (Landscape Ã¢â‚¬Â¢ YouTube Video)' },
+  { value: '1:1', label: '1:1 (Square Ã¢â‚¬Â¢ Instagram / Feed)' },
 ];
 
 const LENGTH_OPTIONS = [
   { value: '15 seconds', label: '15 Seconds (Fast Cut)' },
-  { value: '30 seconds', label: '30 Seconds (Standard • Recommended)' },
+  { value: '30 seconds', label: '30 Seconds (Standard Ã¢â‚¬Â¢ Recommended)' },
   { value: '45 seconds', label: '45 Seconds (Extended)' },
   { value: '60 seconds', label: '60 Seconds (Deep Dive)' },
 ];
@@ -323,18 +319,18 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
   const getThemeMeta = (themeName: string) => {
     const lower = themeName.toLowerCase();
     if (lower.includes('stoic')) {
-      return { icon: '🏛️', gradient: 'bg-amber-500/15 border-amber-500/30 text-amber-300', dot: 'bg-amber-400', badgeText: 'Stoic Philosophy' };
+      return { icon: 'Ã°Å¸ï¿½â€ºÃ¯Â¸ï¿½', gradient: 'bg-amber-500/15 border-amber-500/30 text-amber-300', dot: 'bg-amber-400', badgeText: 'Stoic Philosophy' };
     }
     if (lower.includes('fitness') || lower.includes('iron')) {
-      return { icon: '🔥', gradient: 'bg-orange-500/15 border-orange-500/30 text-orange-300', dot: 'bg-orange-400', badgeText: 'Fitness & Will' };
+      return { icon: 'Ã°Å¸â€�Â¥', gradient: 'bg-orange-500/15 border-orange-500/30 text-orange-300', dot: 'bg-orange-400', badgeText: 'Fitness & Will' };
     }
     if (lower.includes('calm') || lower.includes('resilience')) {
-      return { icon: '🌊', gradient: 'bg-teal-500/15 border-teal-500/30 text-teal-300', dot: 'bg-teal-400', badgeText: 'Inner Calm' };
+      return { icon: 'Ã°Å¸Å’Å ', gradient: 'bg-teal-500/15 border-teal-500/30 text-teal-300', dot: 'bg-teal-400', badgeText: 'Inner Calm' };
     }
     if (lower.includes('focus') || lower.includes('flow')) {
-      return { icon: '🧠', gradient: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300', dot: 'bg-indigo-400', badgeText: 'Deep Focus' };
+      return { icon: 'Ã°Å¸Â§Â ', gradient: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300', dot: 'bg-indigo-400', badgeText: 'Deep Focus' };
     }
-    return { icon: '⚡', gradient: 'bg-[#181818] border-[#242424] text-zinc-300', dot: 'bg-white', badgeText: 'Motivation' };
+    return { icon: 'Ã¢Å¡Â¡', gradient: 'bg-[#181818] border-[#242424] text-zinc-300', dot: 'bg-white', badgeText: 'Motivation' };
   };
 
   const formatScheduleLabel = (val?: string): string => {
@@ -392,7 +388,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in font-sans-studio text-[#E5E5E5]">
-      {/* ── Top Bar: Search, Status Filtering, and Quick Actions ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Top Bar: Search, Status Filtering, and Quick Actions Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] shadow-lg">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-[#6B7280] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -591,7 +587,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                       : 'bg-gradient-to-b from-[#191920] via-[#15151B] to-[#131317] border-[#2A2A38] hover:border-[#38384A]'
                   }`}
                 >
-                  {/* ── 1. HEADER ROW: ICON + TITLE + BADGES + STATUS + STOP/RESUME CONTROL ── */}
+                  {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 1. HEADER ROW: ICON + TITLE + BADGES + STATUS + STOP/RESUME CONTROL Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#252532]">
                     <div className="flex items-start gap-3 min-w-0">
                       <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border text-xl ${themeMeta.gradient} shadow-md`}>
@@ -614,7 +610,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                             <span>{auto.voice || 'Fenrir'}</span>
                           </span>
                           <span className="px-2 py-0.5 rounded-md bg-[#20202A] text-zinc-400 border border-[#2D2D3C]">
-                            {auto.privacyStatus === 'scheduled' ? '📅 Scheduled' : '🌐 Public'}
+                            {auto.privacyStatus === 'scheduled' ? 'Ã°Å¸â€œâ€¦ Scheduled' : 'Ã°Å¸Å’ï¿½ Public'}
                           </span>
                         </div>
                       </div>
@@ -670,7 +666,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   </div>
 
-                  {/* ── 2. NEXT START SCHEDULE & TIMING BANNER ── */}
+                  {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 2. NEXT START SCHEDULE & TIMING BANNER Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
                   <div className="flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#121217] border border-[#23232E] text-xs">
                     <div className="flex items-center gap-2 min-w-0">
                       <Clock className="w-4 h-4 text-blue-400 shrink-0" />
@@ -682,7 +678,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                             ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
                             : 'bg-[#2563EB] text-white border border-[#60A5FA]/40 font-mono shadow-xs'
                         }`}>
-                          ⏳ {nextRunInfo.relative}
+                          Ã¢ï¿½Â³ {nextRunInfo.relative}
                         </span>
                       )}
                       {isPaused && (
@@ -701,7 +697,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   </div>
 
-                  {/* ── 3. PERFORMANCE & TELEMETRY METRICS STRIP ── */}
+                  {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 3. PERFORMANCE & TELEMETRY METRICS STRIP Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
                       <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Total Recorded Runs</div>
@@ -709,7 +705,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                     <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
                       <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Render Specs</div>
-                      <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate">{auto.aspectRatio || '9:16'} • {auto.length ? auto.length.replace(' seconds', 's') : '30s'} • 1080p</div>
+                      <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate">{auto.aspectRatio || '9:16'} Ã¢â‚¬Â¢ {auto.length ? auto.length.replace(' seconds', 's') : '30s'} Ã¢â‚¬Â¢ 1080p</div>
                     </div>
                     <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
                       <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Pipeline Engine</div>
@@ -717,7 +713,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   </div>
 
-                  {/* ── 3B. RECENT ERROR BANNER (When last execution failed) ── */}
+                  {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 3B. RECENT ERROR BANNER (When last execution failed) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
                   {auto.lastStatus === 'failed' && !isRunning && (
                     <div className="p-3 rounded-xl bg-rose-950/35 border border-rose-500/40 text-xs flex flex-col gap-1.5 shadow-sm animate-fade-in">
                       <div className="flex items-center justify-between gap-2">
@@ -737,7 +733,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   )}
 
-                  {/* ── 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) ── */}
+                  {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
                   {isRunning && (
                     <div className="p-3.5 rounded-xl bg-[#111116] border border-[#252532] flex flex-col gap-2.5 animate-fade-in shadow-inner">
                       <div className="flex items-center justify-between text-xs">
@@ -796,7 +792,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   )}
 
-                  {/* ── 5. EXECUTION & VIDEO HISTORY SECTION (PROMINENT & DETAILED) ── */}
+                  {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 5. EXECUTION & VIDEO HISTORY SECTION (PROMINENT & DETAILED) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
                   <div className="rounded-xl bg-[#121217] border border-[#23232E] overflow-hidden">
                     {/* History Header Bar */}
                     <div className="p-3 bg-[#16161D] border-b border-[#23232E] flex items-center justify-between gap-2">
@@ -898,7 +894,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                                       hour: '2-digit',
                                       minute: '2-digit',
                                     })}
-                                    {entry.durationSeconds > 0 && ` • ${Math.round(entry.durationSeconds)}s`}
+                                    {entry.durationSeconds > 0 && ` Ã¢â‚¬Â¢ ${Math.round(entry.durationSeconds)}s`}
                                   </span>
                                 </div>
 
@@ -1016,7 +1012,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   </div>
 
-                  {/* ── 6. SAFE DELETE CONFIRMATION ALERT (when delete clicked) ── */}
+                  {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 6. SAFE DELETE CONFIRMATION ALERT (when delete clicked) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
                   {isConfirmingDelete && (
                     <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/50 text-xs flex flex-col gap-2.5 animate-fade-in shadow-xl ring-1 ring-rose-500/40">
                       <div className="flex items-center gap-2 text-rose-300 font-bold text-sm">
@@ -1054,7 +1050,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                   )}
 
-                  {/* ── 7. BOTTOM ACTION TOOLBAR ── */}
+                  {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 7. BOTTOM ACTION TOOLBAR Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
                   <div className="flex items-center justify-between gap-2.5 pt-1">
                     {isRunning ? (
                       <>

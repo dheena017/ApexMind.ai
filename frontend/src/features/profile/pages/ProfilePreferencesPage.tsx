@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sliders, Save } from 'lucide-react';
-import { Button, Card } from '@/src/shared/ui/common';
+import { Button } from '@/src/shared/ui/common';
 import { useCreatorProfileSettings } from '../hooks/useCreatorProfileSettings';
 
 const inputClass = 'w-full rounded-xl border border-[#2F2F2F] bg-[#121212] px-3.5 py-2.5 text-sm text-[#E5E5E5] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30';

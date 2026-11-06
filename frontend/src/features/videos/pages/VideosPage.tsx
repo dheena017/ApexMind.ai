@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Film,
   RefreshCw,
@@ -31,7 +31,7 @@ const CATEGORIES = [
 const SORT_OPTIONS: { label: string; value: VideoFilterState['sortBy'] }[] = [
   { label: 'Newest First', value: 'newest' },
   { label: 'Oldest First', value: 'oldest' },
-  { label: 'Title A–Z', value: 'title' },
+  { label: 'Title Aâ€“Z', value: 'title' },
   { label: 'Duration', value: 'duration' },
 ];
 
@@ -114,7 +114,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
 
   return (
     <div className="w-full space-y-5 sm:space-y-6">
-      {/* ── Page Header ── */}
+      {/* â”€â”€ Page Header â”€â”€ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2A2A2A]">
         <div className="flex items-center gap-3.5">
           <div className="p-3 rounded-2xl bg-gradient-to-tr from-[#3B82F6] to-[#6366F1] text-white shadow-lg">
@@ -125,7 +125,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
               Website Video Library
             </h1>
             <p className="text-xs text-[#9CA3AF] mt-0.5">
-              All videos created by ApexMind AI Studio — not YouTube uploads
+              All videos created by ApexMind AI Studio â€” not YouTube uploads
             </p>
           </div>
         </div>
@@ -150,10 +150,10 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
         </div>
       </div>
 
-      {/* ── Metrics Bar ── */}
+      {/* â”€â”€ Metrics Bar â”€â”€ */}
       <VideoMetricsBar videos={videos} />
 
-      {/* ── Toolbar: Search + Category Filter + View Mode ── */}
+      {/* â”€â”€ Toolbar: Search + Category Filter + View Mode â”€â”€ */}
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
         {/* Search */}
         <div className="relative flex-1 min-w-0 max-w-sm">
@@ -250,7 +250,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
       </div>
     </div>
 
-      {/* ── Video Grid / List ── */}
+      {/* â”€â”€ Video Grid / List â”€â”€ */}
       {loading ? (
         <div className="flex items-center justify-center py-24 gap-3 text-[#9CA3AF]">
           <RefreshCw className="w-5 h-5 animate-spin text-[#3B82F6]" />
@@ -322,7 +322,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
         </div>
       )}
 
-      {/* ── Result Count ── */}
+      {/* â”€â”€ Result Count â”€â”€ */}
       {!loading && sortedVideos.length > 0 && (
         <p className="text-center text-xs text-[#6B7280] pt-2">
           Showing {sortedVideos.length} website-created video{sortedVideos.length !== 1 ? 's' : ''}
@@ -331,7 +331,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
         </p>
       )}
 
-      {/* ── Video Player Modal ── */}
+      {/* â”€â”€ Video Player Modal â”€â”€ */}
       {selectedVideo && (
         <VideoPlayerModal
           video={selectedVideo}

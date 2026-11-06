@@ -5,7 +5,7 @@ FastAPI router for Omnichannel Social Fleet Management & Cross-Platform Syndicat
 
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Header
 
 from .schemas import (
     FleetListResponse,
@@ -42,9 +42,12 @@ router = APIRouter(prefix="/api/social", tags=["Omnichannel Social Fleet & Syndi
     summary="List Social Fleet Accounts",
     description="Returns all supported connected social channels, pages, and profiles.",
 )
-async def list_fleet_accounts(userId: Optional[str] = None):
+async def list_fleet_accounts(
+    userId: Optional[str] = None,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
     try:
-        fleet = get_user_fleet(userId)
+        fleet = get_user_fleet(userId or x_user_id)
         return {
             "success": True,
             "total": len(fleet),

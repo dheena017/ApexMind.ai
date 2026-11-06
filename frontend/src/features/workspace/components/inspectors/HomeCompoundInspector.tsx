@@ -58,10 +58,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   publishedSuccess,
   script,
   duration = 0,
-  category = '',
   canvasAspectRatio = '9:16',
-  onCanvasAspectRatioChange,
-  onUpdateScript,
   onSelectCompound,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'audit' | 'distribute' | 'codec'>('overview');
@@ -81,8 +78,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   const hook = script?.hook || '';
   const cta = script?.cta || '';
   const hashtags = script?.hashtags || [];
-  const uniqueHashtags = normalizeHashtags(hashtags);
-
   const handleCopyMetadata = () => {
     const text = `${title || 'ApexMind Video'}\n\n${script?.quote || ''}\n\n${hashtags.join(' ')}`;
     navigator.clipboard?.writeText(text);

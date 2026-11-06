@@ -1,6 +1,5 @@
 import {
   YouTubeChannel,
-  YouTubeVideo,
   YouTubeLiveShort,
   YouTubeLiveVideo,
   YouTubeCommunityPost,
@@ -22,7 +21,7 @@ const getStoredHandle = (): string => {
 };
 
 export const youtubeApi = {
-  // ── Standardized Live RESTful Endpoints ────────────────────────────────────
+  // â”€â”€ Standardized Live RESTful Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   // 1. Channel Details
   async getChannelDetails(query?: string): Promise<YouTubeChannel> {
@@ -138,7 +137,7 @@ export const youtubeApi = {
     }));
   },
 
-  // ── Action / Mutation Operations ──────────────────────────────────────────
+  // â”€â”€ Action / Mutation Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   // Direct Live Video Publish to YouTube via canonical /api/youtube/publish
   async publishVideo(payload: any): Promise<any> {
@@ -217,7 +216,7 @@ export const youtubeApi = {
     return res.json();
   },
 
-  // ── YouTube Channel Connection ─────────────────────────────────────────────
+  // â”€â”€ YouTube Channel Connection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async connectWithCode(code: string, redirectUri = 'postmessage'): Promise<{ success: boolean; channel: YouTubeChannel; message: string }> {
     const res = await fetch(apiUrl('/api/youtube/oauth/code'), {
@@ -246,14 +245,34 @@ export const youtubeApi = {
   },
 
   async getAuthStatus(): Promise<{ success: boolean; connected: boolean; channel?: any }> {
-    const res = await fetch(apiUrl('/api/youtube/status'));
+    const userId = this._resolveUserId();
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const res = await fetch(apiUrl(`/api/youtube/status${query}`), {
+      headers: this._getScheduleHeaders(userId),
+    });
     if (!res.ok) return { success: false, connected: false };
     const data = await res.json();
     return { success: true, connected: Boolean(data.connected || data.isAuthorized), channel: data.channel };
   },
 
+  async getChannels(): Promise<YouTubeChannel[]> {
+    const userId = this._resolveUserId();
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const res = await fetch(apiUrl(`/api/youtube/channels${query}`), {
+      headers: this._getScheduleHeaders(userId),
+    });
+    if (!res.ok) throw new Error(`Failed to load YouTube channels: ${res.status}`);
+    const data = await res.json();
+    return data.channels || [];
+  },
+
   async disconnectOAuth(): Promise<boolean> {
-    const res = await fetch(apiUrl('/api/youtube/disconnect'), { method: 'POST' });
+    const userId = this._resolveUserId();
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const res = await fetch(apiUrl(`/api/youtube/disconnect${query}`), {
+      method: 'POST',
+      headers: this._getScheduleHeaders(userId),
+    });
     return res.ok;
   },
 
@@ -277,7 +296,7 @@ export const youtubeApi = {
     };
   },
 
-  // ── Video Production & Publishing Schedules ─────────────────────────────────
+  // â”€â”€ Video Production & Publishing Schedules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   _resolveUserId(explicitId?: string): string | undefined {
     if (explicitId) return explicitId;

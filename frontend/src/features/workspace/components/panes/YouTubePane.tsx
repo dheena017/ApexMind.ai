@@ -17,9 +17,6 @@ import {
   Check,
   Hash,
   Upload,
-  Users,
-  Eye,
-  Film,
   Sparkles,
   ArrowUpRight,
   Wand2,
@@ -106,7 +103,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   onResetPublishState,
   onNavigate,
 }) => {
-  // ── Two Dedicated Subtabs: Publish & Meta | Shorts SEO ──
+  // â”€â”€ Two Dedicated Subtabs: Publish & Meta | Shorts SEO â”€â”€
   const [activeSubTab, setActiveSubTab] = useState<'meta' | 'seo'>('meta');
 
   // Video Publishing Configuration
@@ -169,11 +166,10 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
       // 2. Try saved channels from database
       if (!activeCh) {
-        const channelsRes = await fetch('/api/youtube/channels')
-          .then((r) => r.json())
+        const savedChannels = await youtubeApi.getChannels()
           .catch(() => null);
-        if (channelsRes?.channels && channelsRes.channels.length > 0) {
-          activeCh = channelsRes.channels[0];
+        if (savedChannels && savedChannels.length > 0) {
+          activeCh = savedChannels[0];
         }
       }
 
@@ -224,7 +220,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
       if (live) {
         const updated = normalizeChannel({ ...channel, ...live }, target);
         setChannel(updated);
-        toast.success(`Synced live: ${formatNumber(updated.subscribers)} subs • ${formatNumber(updated.videosUploaded)} videos • ${formatNumber(updated.totalLifetimeViews)} views`);
+        toast.success(`Synced live: ${formatNumber(updated.subscribers)} subs â€¢ ${formatNumber(updated.videosUploaded)} videos â€¢ ${formatNumber(updated.totalLifetimeViews)} views`);
       } else {
         toast.info('Channel statistics are up to date.');
       }
@@ -439,19 +435,19 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
     { label: 'Call to action', detail: hasCta ? 'Added to script' : 'Not in script yet', pass: hasCta },
     {
       label: 'Hashtag count',
-      detail: `${tags.length} added · 3–8 suggested`,
+      detail: `${tags.length} added Â· 3â€“8 suggested`,
       pass: hasRecommendedTagCount,
     },
     {
       label: 'YouTube channel',
-      detail: loadingChannel ? 'Checking connection…' : isChannelConnected ? channel?.name || 'Connected' : 'Not connected',
+      detail: loadingChannel ? 'Checking connectionâ€¦' : isChannelConnected ? channel?.name || 'Connected' : 'Not connected',
       pass: loadingChannel ? null : isChannelConnected,
     },
   ] as const;
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
-      {/* ── Top Header Bar (Ambient glow, refined micro-actions) ── */}
+      {/* â”€â”€ Top Header Bar (Ambient glow, refined micro-actions) â”€â”€ */}
       <div className="relative h-12 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#3B82F6]/20 to-[#2563EB]/10 border border-[#3B82F6]/30 flex items-center justify-center shrink-0 shadow-sm shadow-blue-950/40">
@@ -462,7 +458,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
           </div>
         </div>
 
-        {/* ── Header Actions (View, Sync, Search, Unlink) ── */}
+        {/* â”€â”€ Header Actions (View, Sync, Search, Unlink) â”€â”€ */}
         {channel && (
           <div className="flex items-center gap-1.5 shrink-0">
             <a
@@ -511,7 +507,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         )}
       </div>
 
-      {/* ── Connected YouTube Channel Identity & Metrics Card ── */}
+      {/* â”€â”€ Connected YouTube Channel Identity & Metrics Card â”€â”€ */}
       <div className="p-2.5 bg-[#141414] border-b border-[#242424] shrink-0">
         {loadingChannel ? (
           <div className="flex items-center gap-3 animate-pulse">
@@ -556,7 +552,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     </h3>
                     {channel.verified && (
                       <span className="text-[10px] text-blue-400 shrink-0" title="Verified Creator">
-                        ✓
+                        âœ“
                       </span>
                     )}
                   </div>
@@ -590,12 +586,12 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     <span className="text-zinc-500 text-[10px] font-sans font-medium">Subs:</span>
                     <span className="font-bold text-white">{formatNumber(channel.subscribers)}</span>
                   </div>
-                  <span className="text-white/20">•</span>
+                  <span className="text-white/20">â€¢</span>
                   <div className="flex items-center gap-1">
                     <span className="text-zinc-500 text-[10px] font-sans font-medium">Videos:</span>
                     <span className="font-bold text-white">{formatNumber(channel.videosUploaded)}</span>
                   </div>
-                  <span className="text-white/20">•</span>
+                  <span className="text-white/20">â€¢</span>
                   <div className="flex items-center gap-1">
                     <span className="text-zinc-500 text-[10px] font-sans font-medium">Views:</span>
                     <span className="font-bold text-white">{formatNumber(channel.totalLifetimeViews)}</span>
@@ -649,13 +645,13 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               className="px-2.5 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer shadow-xs border border-[#60A5FA]/40 disabled:opacity-50 shrink-0"
             >
               <YouTubeIcon className="w-3.5 h-3.5" />
-              <span>{connectingOAuth ? 'Connecting…' : 'Connect'}</span>
+              <span>{connectingOAuth ? 'Connectingâ€¦' : 'Connect'}</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* ── Subtabs Segmented Control ── */}
+      {/* â”€â”€ Subtabs Segmented Control â”€â”€ */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <div className="grid grid-cols-2 gap-1 p-1 bg-[#181818] rounded-none border-0">
           <button
@@ -694,11 +690,11 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         </div>
       </div>
 
-      {/* ── Main Tab Content ── */}
+      {/* â”€â”€ Main Tab Content â”€â”€ */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-4">
-        {/* ═══════════════════════════════════════════════════════════
+        {/* â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
             TAB 1: Publish & Meta (Clean, focused on video publishing)
-            ═══════════════════════════════════════════════════════════ */}
+            â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•� */}
         {activeSubTab === 'meta' && (
           <div className="flex flex-col gap-3.5">
             {/* AI Global Quick Generation Banner */}
@@ -719,7 +715,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 className="px-2.5 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-95 text-white font-bold text-[10px] flex items-center gap-1.5 transition-all cursor-pointer shadow-[0_0_12px_rgba(37,99,235,0.3)] border border-[#60A5FA]/40 disabled:opacity-50 shrink-0"
               >
                 <Wand2 className={`w-3 h-3 ${isGeneratingMeta && generatingSection === 'all' ? 'animate-spin' : ''}`} />
-                <span>{isGeneratingMeta && generatingSection === 'all' ? 'Generating…' : 'AI Generate All'}</span>
+                <span>{isGeneratingMeta && generatingSection === 'all' ? 'Generatingâ€¦' : 'AI Generate All'}</span>
               </button>
             </div>
 
@@ -762,7 +758,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 <div className="p-2.5 rounded-xl bg-[#141414] border border-[#242424] flex flex-col gap-2 animate-scale-up">
                   <div className="flex items-center justify-between text-[10px]">
                     <span className="text-[#60A5FA] font-bold uppercase tracking-wider flex items-center gap-1">
-                      ⚡ High-CTR Viral Hook Titles
+                      âš¡ High-CTR Viral Hook Titles
                     </span>
                     <button
                       type="button"
@@ -771,7 +767,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                       className="text-[9px] text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
                     >
                       <Shuffle className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'title' ? 'animate-spin text-[#60A5FA]' : ''}`} />
-                      <span>{isGeneratingMeta && generatingSection === 'title' ? 'Refining…' : 'Generate More'}</span>
+                      <span>{isGeneratingMeta && generatingSection === 'title' ? 'Refiningâ€¦' : 'Generate More'}</span>
                     </button>
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -813,7 +809,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 <div className="flex items-center gap-1.5">
                   <span className="text-slate-400 uppercase font-bold">Video Description</span>
                   <span className="text-[9px] text-zinc-500">
-                    {customDescription.length} chars • {customDescription.trim().split(/\s+/).filter(Boolean).length} words
+                    {customDescription.length} chars â€¢ {customDescription.trim().split(/\s+/).filter(Boolean).length} words
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -825,7 +821,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     title="AI Polish Description"
                   >
                     <Wand2 className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'desc' ? 'animate-spin text-[#60A5FA]' : 'text-[#60A5FA]'}`} />
-                    <span>{isGeneratingMeta && generatingSection === 'desc' ? 'Writing…' : 'AI Polish'}</span>
+                    <span>{isGeneratingMeta && generatingSection === 'desc' ? 'Writingâ€¦' : 'AI Polish'}</span>
                   </button>
                   <button
                     type="button"
@@ -863,7 +859,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   onClick={() => setActiveSubTab('seo')}
                   className="text-[10px] text-[#60A5FA] hover:text-white font-medium cursor-pointer"
                 >
-                  {tags.length ? 'Edit in SEO →' : 'Add hashtags →'}
+                  {tags.length ? 'Edit in SEO â†’' : 'Add hashtags â†’'}
                 </button>
               </div>
               {tags.length ? (
@@ -925,7 +921,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
             </div>
 
-            {/* Category & Audience — Using Website CustomSelect Dropdown Component */}
+            {/* Category & Audience â€” Using Website CustomSelect Dropdown Component */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] uppercase font-mono-studio text-slate-500 tracking-wider">
@@ -958,9 +954,9 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════
+        {/* â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
             TAB 2: Shorts SEO (Viral Optimization, Keywords & Checklist)
-            ═══════════════════════════════════════════════════════════ */}
+            â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•� */}
         {activeSubTab === 'seo' && (
           <div className="flex flex-col gap-3.5">
             {/* Gemini title estimate */}
@@ -970,7 +966,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   <Flame className="w-3.5 h-3.5 text-[#60A5FA]" /> AI Title Score Estimate
                 </div>
                 <div className="text-xl font-black text-white mt-0.5 font-mono">
-                  {viralScore ?? '—'} <span className="text-xs font-normal text-[#9CA3AF]">/ 100</span>
+                  {viralScore ?? 'â€”'} <span className="text-xs font-normal text-[#9CA3AF]">/ 100</span>
                 </div>
               </div>
               <div className="text-[10px] text-right font-semibold flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#181818] border border-[#242424]">
@@ -993,7 +989,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                       ? 'bg-[#3B82F6]/10 text-[#60A5FA] border-[#3B82F6]/25'
                       : 'bg-[#121212] text-[#9CA3AF] border-[#242424]'
                   }`}>
-                      {hasRecommendedTagCount ? 'Suggested range · 3–8' : '3–8 suggested'}
+                      {hasRecommendedTagCount ? 'Suggested range Â· 3â€“8' : '3â€“8 suggested'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
@@ -1004,7 +1000,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                     className="text-[10px] px-2.5 py-1.5 rounded-lg bg-[#1E1E1E] hover:bg-[#26262C] text-[#9CA3AF] hover:text-white border border-[#242424] hover:border-[#3B82F6]/50 font-semibold cursor-pointer flex items-center gap-1.5 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-wait"
                   >
                     <Sparkles className={`w-3 h-3 ${isGeneratingMeta && generatingSection === 'tags' ? 'animate-spin text-[#60A5FA]' : 'text-[#60A5FA]'}`} />
-                    <span>{isGeneratingMeta && generatingSection === 'tags' ? 'Generating…' : 'AI Generate'}</span>
+                    <span>{isGeneratingMeta && generatingSection === 'tags' ? 'Generatingâ€¦' : 'AI Generate'}</span>
                   </button>
                   <button
                     type="button"
@@ -1229,7 +1225,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         )}
       </div>
 
-      {/* ── Sticky Bottom Action Bar (With Live Published YouTube Video Link) ── */}
+      {/* â”€â”€ Sticky Bottom Action Bar (With Live Published YouTube Video Link) â”€â”€ */}
       <div className="p-3 bg-[#111111] border-t border-[#242424] shrink-0 flex flex-col gap-2.5">
         {publishedSuccess && (publishedVideoUrl || channel) ? (
           <div className="flex flex-col gap-2">
@@ -1300,8 +1296,8 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 }`} />
                 <span>
                   {publishingStage === 'rendering'
-                    ? '🎬 [1/2] Rendering 1080p Video...'
-                    : '🚀 [2/2] Publishing to YouTube Shorts...'}
+                    ? 'ðŸŽ¬ [1/2] Rendering 1080p Video...'
+                    : 'ðŸš€ [2/2] Publishing to YouTube Shorts...'}
                 </span>
               </>
             ) : (

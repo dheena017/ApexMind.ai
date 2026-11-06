@@ -51,21 +51,20 @@ SCRIPT_FALLBACK_MODELS: list[str] = [
 ]
 
 # TTS Voiceover Models & Fallbacks
-DEFAULT_TTS_MODEL: str = "gemini-2.5-flash"
+DEFAULT_TTS_MODEL: str = "gemini-3.8-flash-tts"
 
 SUPPORTED_TTS_MODELS: dict[str, str] = {
-    # Active Multimodal Audio Models
-    "gemini-2.5-flash": "gemini-2.5-flash",
-    "gemini-2.0-flash": "gemini-2.5-flash",
-    "gemini-2.0-flash-exp": "gemini-2.5-flash",
-    "gemini-3.8-flash-tts": "gemini-2.5-flash",
-    "gemini-3.8-flash-lite-tts": "gemini-2.5-flash",
-    "gemini-3.1-flash-tts": "gemini-2.5-flash",
-    "gemini-2.5-flash-tts": "gemini-2.5-flash",
+    "gemini-3.8-flash-tts": "gemini-3.8-flash-tts",
+    "gemini-3.8-flash-lite-tts": "gemini-3.8-flash-lite-tts",
+    # Older script-model selections still route to a supported speech model.
+    "gemini-2.5-flash": "gemini-3.8-flash-tts",
+    "gemini-2.0-flash": "gemini-3.8-flash-tts",
+    "gemini-2.0-flash-exp": "gemini-3.8-flash-tts",
+    "gemini-2.5-flash-tts": "gemini-3.8-flash-tts",
 }
 
 TTS_FALLBACK_MODELS: list[str] = [
-    "gemini-2.5-flash",
+    "gemini-3.8-flash-lite-tts",
 ]
 
 # Fixed System Instructions & Production Directives
@@ -248,9 +247,8 @@ def resolve_script_model(model_name: str | None = None) -> str:
 
 def resolve_tts_model(model_name: str | None = None) -> str:
     """Resolve a supported Gemini TTS model without requiring a hardcoded fallback."""
-    if not model_name:
-        return DEFAULT_TTS_MODEL
-    return SUPPORTED_TTS_MODELS.get(model_name.strip().lower(), DEFAULT_TTS_MODEL)
+    selected_model = (model_name or settings.DEFAULT_TTS_MODEL or DEFAULT_TTS_MODEL).strip().lower()
+    return SUPPORTED_TTS_MODELS.get(selected_model, DEFAULT_TTS_MODEL)
 
 
 def normalize_voiceover_text(text: str) -> str:
@@ -1124,7 +1122,6 @@ Output MUST be a single raw JSON object matching this exact schema:
         elapsed = time.perf_counter() - start_t
 
         # ── Multi-Scene Storyboard Validation (Zero Fake Fallbacks) ───────────
-        subtitles = result.get("subtitles") or []
         storyboard = result.get("storyboard") or []
 
         # If storyboard is empty, rebuild with emergency theme generator
@@ -1549,36 +1546,10 @@ def generate_gemini_voiceover(
         except Exception as edge_err:
             logger.warning(f"[Studio/TTS] Edge-TTS voiceover fallback unavailable: {edge_err}")
 
-        # Fallback 2: Resonant Harmonic Tone WAV Generator
-        try:
-            import math
-            sample_rate = 24000
-            estimated_secs = max(5.0, round(len(normalized_text.split()) / 2.3, 1))
-            total_samples = int(sample_rate * estimated_secs)
-            audio_frames = bytearray()
-            for s_idx in range(total_samples):
-                t = s_idx / sample_rate
-                val = 0.22 * math.sin(2 * math.pi * 110 * t) + 0.12 * math.sin(2 * math.pi * 165 * t)
-                fade = min(1.0, t / 0.4) * min(1.0, (estimated_secs - t) / 0.4)
-                sample_int = int(val * fade * 32767)
-                audio_frames.extend(struct.pack('<h', max(-32768, min(32767, sample_int))))
-
-            wav_bytes = convert_l16_pcm_to_wav(bytes(audio_frames), sample_rate=sample_rate)
-            audio_b64 = base64.b64encode(wav_bytes).decode("utf-8")
-            logger.info(f"<-- [API COMING] Resonant Audio Bed fallback ready | Duration: {estimated_secs:.1f}s")
-            return {
-                "success": True,
-                "voiceName": voice_name,
-                "mimeType": "audio/wav",
-                "audioBase64": audio_b64,
-                "audioUrl": f"data:audio/wav;base64,{audio_b64}",
-                "duration": estimated_secs,
-                "durationFormatted": f"{estimated_secs:.1f}s",
-                "toneModulation": DEFAULT_TONE_MODULATION,
-            }
-        except Exception as synth_err:
-            logger.error(f"[Studio/TTS] Audio Bed generation error: {synth_err}")
-            raise RuntimeError(f"Voiceover synthesis failed: {last_tts_err or synth_err}")
+        raise RuntimeError(
+            "Speech synthesis failed: Gemini TTS and the Edge-TTS fallback are unavailable. "
+            f"Gemini error: {last_tts_err or 'no usable speech model response'}"
+        )
 
     except Exception as e:  # noqa: BLE001
         elapsed = time.perf_counter() - start_t

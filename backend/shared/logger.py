@@ -343,7 +343,6 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         }
         m_color = method_colors.get(method, Colors.WHITE)
 
-        client_host = request.client.host if request.client else "unknown"
         is_poll = (
             path in ("/api/health", "/api/settings/gemini", "/api/notifications")
             or (path == "/api/notifications/manage" and request.query_params.get("action") == "unread_count")

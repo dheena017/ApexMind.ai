@@ -1,5 +1,5 @@
-import React from 'react';
-import { Sparkles, ArrowLeft, LayoutDashboard, Wand2, Youtube, Compass, Home } from 'lucide-react';
+import 'react';
+import { Sparkles, Wand2, Youtube, Compass, Home } from 'lucide-react';
 import { Button } from './common';
 
 interface NotFoundPageProps {

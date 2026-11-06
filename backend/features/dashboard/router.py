@@ -6,7 +6,7 @@ Aggregates high-level metrics, recent creations, YouTube connectivity, and syste
 
 import time
 import logging
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Query, Header
 from .schemas import DashboardSummaryResponse
 from .service import get_dashboard_summary
 
@@ -21,9 +21,12 @@ SERVER_START_TIME = time.time()
     summary="Get Creator Dashboard Summary",
     description="Retrieve comprehensive statistics, recent videos, AI scripts, channel pulse, and system health for the dashboard."
 )
-async def get_dashboard_summary_endpoint():
+async def get_dashboard_summary_endpoint(
+    userId: str | None = Query(None),
+    x_user_id: str | None = Header(None, alias="X-User-Id"),
+):
     try:
-        return get_dashboard_summary(SERVER_START_TIME)
+        return get_dashboard_summary(SERVER_START_TIME, user_id=userId or x_user_id)
     except Exception as e:
         logger.error(f"Failed to compile dashboard summary: {e}", exc_info=True)
         raise HTTPException(

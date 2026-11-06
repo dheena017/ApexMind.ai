@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Layers, Zap, Move, MoreVertical } from 'lucide-react';
-import { formatTime, SelectedClip, TimelineOverlayClip } from './timelineTypes';
+import { Layers } from 'lucide-react';
+import { SelectedClip, TimelineOverlayClip } from './timelineTypes';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
 
 export interface OverlayTrackClipProps {
@@ -141,7 +141,7 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
               top: `${topPos}px`,
               height: `${laneHeight}px`,
             }}
-            title={`Overlay Clip: "${clip.name || clip.label}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
+            title={`Overlay Clip: "${clip.name || clip.label}" Ã¢â‚¬Â¢ Layer: ${clipLane + 1} Ã¢â‚¬Â¢ Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
             {/* Left Trim Handle */}
             <div

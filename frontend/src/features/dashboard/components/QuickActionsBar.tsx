@@ -6,8 +6,6 @@ import {
   FolderOpen,
   User,
   Settings,
-  Bell,
-  Sparkles,
   ArrowRight,
 } from 'lucide-react';
 

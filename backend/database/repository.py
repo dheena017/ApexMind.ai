@@ -141,12 +141,18 @@ def update_channel_access_token(channel_id: str, access_token: str, token_expiry
     conn.commit()
     conn.close()
 
-def get_oauth_channel() -> Optional[Dict[str, Any]]:
+def get_oauth_channel(user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
     import sqlite3
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT * FROM youtube_channels WHERE is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != '') ORDER BY connected_at DESC LIMIT 1")
+        query = "SELECT * FROM youtube_channels WHERE (is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != ''))"
+        params: tuple = ()
+        if user_id:
+            query += " AND user_id = ?"
+            params = (user_id,)
+        query += " ORDER BY connected_at DESC LIMIT 1"
+        cursor.execute(query, params)
         r = cursor.fetchone()
         conn.close()
         if not r:
@@ -168,7 +174,13 @@ def get_oauth_channel() -> Optional[Dict[str, Any]]:
         init_db()
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM youtube_channels WHERE is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != '') ORDER BY connected_at DESC LIMIT 1")
+        query = "SELECT * FROM youtube_channels WHERE (is_oauth_authenticated = 1 OR (refresh_token IS NOT NULL AND refresh_token != ''))"
+        params = ()
+        if user_id:
+            query += " AND user_id = ?"
+            params = (user_id,)
+        query += " ORDER BY connected_at DESC LIMIT 1"
+        cursor.execute(query, params)
         r = cursor.fetchone()
         conn.close()
         if not r:
@@ -182,6 +194,21 @@ def get_oauth_channel() -> Optional[Dict[str, Any]]:
         res["name"]   = r["name"]   or "Mindset Forge"
         res["handle"] = handle      or "@mindsetforge-v3q"
         return res
+
+
+def disconnect_youtube_channels(user_id: str) -> int:
+    """Disconnect only YouTube channels owned by the specified user."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM youtube_channels WHERE user_id = ?", (user_id,))
+    deleted = cursor.rowcount
+    cursor.execute(
+        "DELETE FROM social_accounts WHERE user_id = ? AND platform = 'youtube'",
+        (user_id,),
+    )
+    conn.commit()
+    conn.close()
+    return deleted
 
 def add_channel(
     name: str,
@@ -524,7 +551,11 @@ def clear_notifications(category: Optional[str] = None) -> int:
     logger.info(f"Cleared notifications from database ({count} deleted)")
     return count
 
-def get_automations(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_automations(
+    user_id: Optional[str] = None,
+    *,
+    include_stale_running: bool = False,
+) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
     if user_id:
@@ -545,7 +576,7 @@ def get_automations(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     for r in rows:
         st = r["last_status"] if "last_status" in r.keys() else "idle"
         # If DB says running, but the backend process is not actually executing it, treat as idle
-        if st == "running" and r["id"] not in running_set:
+        if st == "running" and r["id"] not in running_set and not include_stale_running:
             st = "idle"
         result.append({
             "id": r["id"],

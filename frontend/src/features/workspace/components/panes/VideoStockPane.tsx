@@ -5,8 +5,6 @@ import {
   Play,
   ChevronDown,
   Search,
-  ChevronLeft,
-  ChevronRight,
   X,
   Check,
   ExternalLink,
@@ -17,9 +15,6 @@ import {
   Sparkles,
   Gauge,
   Sliders,
-  Volume2,
-  VolumeX,
-  Maximize2,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { workspaceApi } from '../../api/workspaceApi';
@@ -124,7 +119,7 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
           : 'border-[#242424] hover:border-[#2E2E2E] hover:shadow-md'
       }`}
     >
-      {/* ── Visual Media: High-performance lazy image by default, video mounted ONLY on intentional hover ── */}
+      {/* â”€â”€ Visual Media: High-performance lazy image by default, video mounted ONLY on intentional hover â”€â”€ */}
       {isHovered ? (
         <video
           ref={videoRef}
@@ -188,7 +183,7 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
               key={badge}
               className="px-1.5 py-0.5 rounded-full bg-amber-950/90 text-[8px] font-bold text-amber-300 border border-amber-500/40 flex items-center gap-0.5"
             >
-              <span>⚡</span> {badge}
+              <span>âš¡</span> {badge}
             </span>
           ))}
         </div>
@@ -499,7 +494,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
-      {/* ── Top Header Bar (Matching Studio Shell) ── */}
+      {/* â”€â”€ Top Header Bar (Matching Studio Shell) â”€â”€ */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Film className="w-4 h-4 shrink-0 text-emerald-400" />
@@ -518,7 +513,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Segmented Control ── */}
+      {/* â”€â”€ Subtabs Segmented Control â”€â”€ */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
           tabs={[
@@ -532,7 +527,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         />
       </div>
 
-      {/* ── Main Content Area ── */}
+      {/* â”€â”€ Main Content Area â”€â”€ */}
       <div ref={contentScrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3.5">
         {activeTab === 'settings' ? (
           /* Motion Speed & Mood Grading Tab */
@@ -709,17 +704,17 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       value={selectedCategory}
                       onChange={(val) => handleCategoryChange(val as any)}
                       options={[
-                        { value: 'all', label: '✨ All Free Loops' },
-                        { value: 'nature', label: '🌲 Nature' },
-                        { value: 'mountains', label: '⛰️ Mountains' },
-                        { value: 'ocean', label: '🌊 Ocean' },
-                        { value: 'city', label: '🏙️ City & Cyber' },
-                        { value: 'gym', label: '💪 Gym & Fitness' },
-                        { value: 'clouds', label: '☁️ Sky & Storm' },
-                        { value: 'fire', label: '🔥 Fire & Action' },
-                        { value: 'sunset', label: '🌅 Golden Hour' },
-                        { value: 'space', label: '🌌 Space' },
-                        { value: 'abstract', label: '🌀 Dark & Stoic' },
+                        { value: 'all', label: 'âœ¨ All Free Loops' },
+                        { value: 'nature', label: 'ðŸŒ² Nature' },
+                        { value: 'mountains', label: 'â›°ï¸� Mountains' },
+                        { value: 'ocean', label: 'ðŸŒŠ Ocean' },
+                        { value: 'city', label: 'ðŸ�™ï¸� City & Cyber' },
+                        { value: 'gym', label: 'ðŸ’ª Gym & Fitness' },
+                        { value: 'clouds', label: 'â˜�ï¸� Sky & Storm' },
+                        { value: 'fire', label: 'ðŸ”¥ Fire & Action' },
+                        { value: 'sunset', label: 'ðŸŒ… Golden Hour' },
+                        { value: 'space', label: 'ðŸŒŒ Space' },
+                        { value: 'abstract', label: 'ðŸŒ€ Dark & Stoic' },
                       ]}
                       variant="compact"
                       align="right"
@@ -733,10 +728,10 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
               {activeTab === 'catalog' && (
                 <ScrollableTabContainer className="pt-0.5">
                   {[
-                    { id: 'all', label: '✨ All' },
-                    { id: 'pixabay', label: '🎥 Pixabay' },
-                    { id: 'pexels', label: '🎬 Pexels' },
-                    { id: 'wikimedia', label: '🌐 Wikimedia' },
+                    { id: 'all', label: 'âœ¨ All' },
+                    { id: 'pixabay', label: 'ðŸŽ¥ Pixabay' },
+                    { id: 'pexels', label: 'ðŸŽ¬ Pexels' },
+                    { id: 'wikimedia', label: 'ðŸŒ� Wikimedia' },
                   ].map((p) => (
                     <button
                       key={p.id}
@@ -831,7 +826,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     </button>
                   )}
                   <span className="text-[10px] font-mono-studio text-zinc-500">
-                    Showing {filteredVideos.length} clips • {totalClipsFound || filteredVideos.length} available
+                    Showing {filteredVideos.length} clips â€¢ {totalClipsFound || filteredVideos.length} available
                   </span>
                   <div className="flex items-center justify-center gap-1.5 text-[9px] text-zinc-500">
                     <span>Free videos provided by</span>
@@ -844,7 +839,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       Pixabay
                       <ExternalLink className="w-2.5 h-2.5" />
                     </a>
-                    <span>•</span>
+                    <span>â€¢</span>
                     <a
                       href="https://www.pexels.com"
                       target="_blank"

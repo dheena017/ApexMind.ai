@@ -60,7 +60,13 @@ from .youtube_live_service import (
     reply_to_live_comment,
 )
 from .service import publish_video_to_shorts
-from backend.database.repository import get_oauth_channel, get_channels, save_oauth_channel
+from backend.database.repository import (
+    get_oauth_channel,
+    get_channels,
+    get_channels_by_user,
+    save_oauth_channel,
+    disconnect_youtube_channels,
+)
 
 logger = logging.getLogger("ApexMind.features.youtube")
 router = APIRouter()
@@ -669,14 +675,30 @@ async def post_connect_channel(
     "/api/youtube/status",
     summary="Get YouTube Connection Status",
 )
-async def get_oauth_status_route():
-    yt = get_authenticated_youtube_client()
-    ch = get_oauth_channel()
+async def get_oauth_status_route(
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
+    resolved_user_id = userId or x_user_id
+    ch = get_oauth_channel(user_id=resolved_user_id) if resolved_user_id else None
+    safe_channel = None
+    if ch:
+        safe_channel = {
+            "id": ch.get("id"),
+            "name": ch.get("name"),
+            "handle": ch.get("handle"),
+            "avatarUrl": ch.get("avatarUrl"),
+            "bannerUrl": ch.get("bannerUrl"),
+            "subscribers": ch.get("subscribers", 0),
+            "videosUploaded": ch.get("videosUploaded", 0),
+            "channelUrl": ch.get("channelUrl"),
+            "connectedAt": ch.get("connected_at"),
+        }
     return {
         "success": True,
-        "isAuthorized": yt is not None,
-        "connected": yt is not None,
-        "channel": ch,
+        "isAuthorized": ch is not None,
+        "connected": ch is not None,
+        "channel": safe_channel,
     }
 
 
@@ -684,14 +706,15 @@ async def get_oauth_status_route():
     "/api/youtube/disconnect",
     summary="Disconnect YouTube channel",
 )
-async def post_disconnect_oauth():
-    from backend.database.connection import get_connection
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("DELETE FROM youtube_channels")
-    conn.commit()
-    conn.close()
-    return {"success": True, "message": "Disconnected YouTube OAuth session and channel credentials."}
+async def post_disconnect_oauth(
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
+    resolved_user_id = userId or x_user_id
+    if not resolved_user_id:
+        raise HTTPException(status_code=401, detail="A signed-in user is required to disconnect YouTube.")
+    disconnect_youtube_channels(resolved_user_id)
+    return {"success": True, "message": "Disconnected your YouTube channel and credentials."}
 
 
 @yt_router.get(
@@ -699,8 +722,13 @@ async def post_disconnect_oauth():
     summary="List Saved YouTube Channels",
     description="Returns all connected channels from the studio database.",
 )
-async def get_saved_channels(handle: Optional[str] = None):
-    db_channels = get_channels()
+async def get_saved_channels(
+    handle: Optional[str] = None,
+    userId: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+):
+    resolved_user_id = userId or x_user_id
+    db_channels = get_channels_by_user(resolved_user_id) if resolved_user_id else []
     return {"success": True, "channels": db_channels or [], "videos": []}
 
 

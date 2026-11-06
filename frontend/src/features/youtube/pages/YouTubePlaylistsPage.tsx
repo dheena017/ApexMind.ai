@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ListVideo, Play, Plus, ExternalLink, Sparkles, Layers } from 'lucide-react';
-import { Card, Badge, Button, Modal, Input } from '@/src/shared/ui/common';
+import { ListVideo, Play, Plus, ExternalLink, Layers } from 'lucide-react';
+import { Button, Modal, Input } from '@/src/shared/ui/common';
 import { YouTubeChannel, YouTubeLiveVideo, YouTubePlaylist } from '../types';
 import { youtubeApi } from '../api/youtubeApi';
 import { YouTubeLoadingState } from '../components/YouTubeLoadingState';
@@ -176,7 +176,7 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
         <div className="flex items-center gap-2.5">
           {loading && (
             <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-500/10 text-[#60A5FA] border border-blue-500/25 font-semibold flex items-center gap-1.5 animate-pulse">
-              Syncing…
+              SyncingÃ¢â‚¬Â¦
             </span>
           )}
           <Button
@@ -193,7 +193,7 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
       {/* Playlists Grid */}
       {isLoading ? (
         <YouTubeLoadingState
-          title="Fetching live YouTube playlists…"
+          title="Fetching live YouTube playlistsÃ¢â‚¬Â¦"
           description="Connecting to YouTube servers for playlists & video series"
         />
       ) : playlists.length === 0 ? (

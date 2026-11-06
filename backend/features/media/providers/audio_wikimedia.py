@@ -67,7 +67,6 @@ class WikimediaAudioProvider:
                 continue
             info = img_info[0]
             audio_url = info.get("url")
-            mime = info.get("mime", "")
             duration = float(info.get("duration", 90.0) or 90.0)
             size = info.get("size", 0)
 
@@ -159,4 +158,3 @@ class WikimediaAudioProvider:
                 break
 
         return results
-

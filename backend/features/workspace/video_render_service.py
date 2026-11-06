@@ -523,6 +523,13 @@ def render_studio_video(
                 c_url = clip.get("url")
                 expected_t = clip.get("type", "video")
                 c_file, c_type = save_backdrop_payload(c_url, temp_dir, expected_type=expected_t) if c_url else (None, "none")
+                if (not c_file or not c_file.exists()) and clip.get("fallbackUrl"):
+                    fallback_url = clip["fallbackUrl"]
+                    c_file, c_type = save_backdrop_payload(fallback_url, temp_dir, expected_type="image")
+                    if c_file and c_file.exists():
+                        logger.warning(
+                            f"Video clip #{idx + 1} could not be downloaded; using its preview image instead."
+                        )
                 if not c_file or not c_file.exists():
                     raise RuntimeError(f"Video clip #{idx + 1} is missing, unreachable, or corrupted: '{c_url or 'no URL provided'}'")
                 clip_inputs.append((c_file, c_type, clip))
@@ -539,11 +546,6 @@ def render_studio_video(
             # Format each clip to exact canvas dimension, target FPS, matching yuv420p, and trimmed duration with cinematic camera motion & animations
             for i, (_, _, clip) in enumerate(clip_inputs):
                 dur_i = max(0.1, float(clip.get("duration", 3.0)))
-                cam_motion = str(
-                    clip.get("cameraMotion")
-                    or clip.get("motion")
-                    or ""
-                ).lower()
                 anim_in = str(clip.get("animationIn") or "").lower()
                 anim_in_dur = max(0.05, min(float(clip.get("animationInDuration") or 0.45), dur_i * 0.45))
                 anim_out = str(clip.get("animationOut") or "").lower()

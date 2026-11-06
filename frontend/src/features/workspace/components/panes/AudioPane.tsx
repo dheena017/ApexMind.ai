@@ -11,18 +11,13 @@ import {
   Pause,
   Check,
   Volume2,
-  VolumeX,
   Sparkles,
-  Radio,
-  RotateCcw,
-  Activity,
   Search,
   X,
   ExternalLink,
   Sliders,
   Download,
   RefreshCw,
-  Gauge,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { workspaceApi } from '../../api/workspaceApi';
@@ -110,7 +105,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Voice recording state
-  const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl } =
+  const { status, startRecording, stopRecording, mediaBlobUrl } =
     useReactMediaRecorder({ audio: true });
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -341,7 +336,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         className="hidden"
       />
 
-      {/* ── Top Header Bar (Matching Studio Shell) ── */}
+      {/* â”€â”€ Top Header Bar (Matching Studio Shell) â”€â”€ */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Music className="w-4 h-4 shrink-0 text-emerald-400" />
@@ -364,7 +359,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Segmented Control ── */}
+      {/* â”€â”€ Subtabs Segmented Control â”€â”€ */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
           tabs={[
@@ -380,7 +375,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         />
       </div>
 
-      {/* ── Main Content Area ── */}
+      {/* â”€â”€ Main Content Area â”€â”€ */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
         {/* Search Bar for SFX only (Soundtracks has its dedicated Jamendo integrated search) */}
         {activeTab === 'sfx' && (
@@ -396,7 +391,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab: Audio Mixer ── */}
+        {/* â”€â”€ Tab: Audio Mixer â”€â”€ */}
         {activeTab === 'mixer' && (
           <div className="flex flex-col gap-3.5">
             <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
@@ -488,7 +483,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 1: Soundtracks ── */}
+        {/* â”€â”€ Tab 1: Soundtracks â”€â”€ */}
         {activeTab === 'soundtracks' && (
           <div className="flex flex-col gap-2.5">
             {/* Search & Category Filter in One Row */}
@@ -599,7 +594,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 2: Sound Effects ── */}
+        {/* â”€â”€ Tab 2: Sound Effects â”€â”€ */}
         {activeTab === 'sfx' && (
           <div className="flex flex-col gap-2.5">
             {/* Search & SFX Category in One Row */}
@@ -629,10 +624,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   onChange={(val) => setSelectedSfxCategory(val)}
                   options={[
                     { value: 'all', label: 'All SFX' },
-                    { value: 'Impact', label: '💥 Impacts' },
-                    { value: 'Transition', label: '⚡ Transitions' },
-                    { value: 'Tension', label: '⏳ Tension' },
-                    { value: 'Action', label: '🎯 Actions' },
+                    { value: 'Impact', label: 'ðŸ’¥ Impacts' },
+                    { value: 'Transition', label: 'âš¡ Transitions' },
+                    { value: 'Tension', label: 'â�³ Tension' },
+                    { value: 'Action', label: 'ðŸŽ¯ Actions' },
                   ]}
                   variant="compact"
                   align="right"
@@ -672,7 +667,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       </p>
                       <div className="flex items-center gap-1.5 text-[9px] text-slate-400">
                         <span className="font-mono-studio text-[#60A5FA]">{sfx.category}</span>
-                        <span>•</span>
+                        <span>â€¢</span>
                         <span>{sfx.duration}</span>
                       </div>
                     </div>
@@ -696,7 +691,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab: Viral Meme Soundboard ── */}
+        {/* â”€â”€ Tab: Viral Meme Soundboard â”€â”€ */}
         {activeTab === 'soundboard' && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
@@ -760,7 +755,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 3: Studio Voice Record ── */}
+        {/* â”€â”€ Tab 3: Studio Voice Record â”€â”€ */}
         {activeTab === 'record' && (
           <div className="flex flex-col gap-4">
             <div className="bg-[#181818] border border-[#242424] rounded-2xl p-5 flex flex-col items-center text-center gap-3 shadow-sm">
@@ -856,7 +851,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 5: Custom Audio URL ── */}
+        {/* â”€â”€ Tab 5: Custom Audio URL â”€â”€ */}
         {activeTab === 'url' && (
           <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
             <div className="flex items-center gap-2">

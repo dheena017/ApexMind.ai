@@ -1,4 +1,4 @@
-import React from 'react';
+import 'react';
 import {
   Sparkles,
   AlertCircle,
@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { DashboardHeaderBanner } from '../components/DashboardHeaderBanner';
-import LeftSidebar from '../components/LeftSidebar';
+import '../components/LeftSidebar';
 import { DashboardStatsGrid } from '../components/DashboardStatsGrid';
 import { QuickActionsBar } from '../components/QuickActionsBar';
 import { QuickPromptSpark } from '../components/QuickPromptSpark';

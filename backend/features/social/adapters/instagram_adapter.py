@@ -106,14 +106,12 @@ class InstagramPublisherAdapter(SocialPlatformPublisher):
 
                 # Step 2: Poll container status until ready (up to 30 seconds)
                 status_url = f"{graph_url}/{creation_id}?fields=status_code&access_token={access_token}"
-                ready = False
                 for _ in range(6):
                     await asyncio.sleep(4)
                     status_resp = await client.get(status_url)
                     if status_resp.status_code == 200:
                         status_val = status_resp.json().get("status_code")
                         if status_val == "FINISHED":
-                            ready = True
                             break
                         elif status_val == "ERROR":
                             logger.error("Meta media processing error for container")

@@ -3,11 +3,8 @@ import {
   Video,
   Play,
   Search,
-  Youtube,
   ExternalLink,
   Sparkles,
-  Eye,
-  ThumbsUp,
 } from 'lucide-react';
 import { Card, Badge, Button } from '@/src/shared/ui/common';
 import { YouTubeChannel, YouTubeVideo, YouTubeLiveVideo } from '../types';
@@ -59,7 +56,7 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in font-sans-studio text-[#E5E5E5]">
-      {/* ── Top Bar: Search, Sorting, and Studio Action ── */}
+      {/* â”€â”€ Top Bar: Search, Sorting, and Studio Action â”€â”€ */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] shadow-lg">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-[#6B7280] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -102,7 +99,7 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
         </div>
       </div>
 
-      {/* ── Channel Videos Grid ── */}
+      {/* â”€â”€ Channel Videos Grid â”€â”€ */}
       <Card className="bg-[#141414] border-[#242424] p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#262626]">
           <div className="flex items-center gap-3">
@@ -130,7 +127,7 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
 
         {loading ? (
           <YouTubeLoadingState
-            title="Fetching live YouTube video catalog…"
+            title="Fetching live YouTube video catalogâ€¦"
             description="Connecting to YouTube servers for live video metrics"
           />
         ) : filteredVideos.length === 0 ? (
@@ -184,7 +181,7 @@ export const YouTubeVideosPage: React.FC<YouTubeVideosPageProps> = ({
                   <div className="pt-2 border-t border-[#262626] flex items-center justify-between text-xs text-[#9CA3AF]">
                     <div className="flex items-center gap-2 font-mono-studio text-[11px]">
                       <span className="text-white font-medium">{video.views}</span>
-                      <span>·</span>
+                      <span>Â·</span>
                       <span>{video.published}</span>
                     </div>
 

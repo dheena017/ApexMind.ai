@@ -7,7 +7,6 @@ import {
   Plus,
   Trash2,
   ExternalLink,
-  ShieldCheck,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
@@ -323,7 +322,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   return (
     <div className="w-full space-y-5 animate-fade-in text-[#E5E5E5]">
       
-      {/* ── 1. Top Channel Linking Header & Primary Actions ── */}
+      {/* â”€â”€ 1. Top Channel Linking Header & Primary Actions â”€â”€ */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-[#121215] border border-[#24242A] shadow-xl relative overflow-hidden">
         {/* Subtle studio brand accent glow */}
         <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-[#3B82F6]/5 via-transparent to-transparent pointer-events-none" />
@@ -368,7 +367,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         </div>
       </div>
 
-      {/* ── 2. Top Summary Metric Cards (4 Pillars) ── */}
+      {/* â”€â”€ 2. Top Summary Metric Cards (4 Pillars) â”€â”€ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Linked Channels */}
         <div className="p-4 rounded-xl bg-[#141418] border border-[#24242A] flex flex-col justify-between hover:border-[#2E2E36] transition-colors shadow-xs">
@@ -377,7 +376,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <Link2 className="w-4 h-4 text-zinc-500" />
           </div>
           <div className="mt-2.5">
-            <span className="text-2xl font-bold text-white tracking-tight">{loading || (accountsError && accounts.length === 0) ? '—' : accounts.length}</span>
+            <span className="text-2xl font-bold text-white tracking-tight">{loading || (accountsError && accounts.length === 0) ? 'â€”' : accounts.length}</span>
             <span className="text-xs text-[#71717A] ml-1.5 font-medium">linked</span>
           </div>
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
@@ -395,7 +394,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <Users className="w-4 h-4 text-zinc-500" />
           </div>
           <div className="mt-2.5">
-            <span className="text-2xl font-bold text-white tracking-tight">{loading || (accountsError && accounts.length === 0) ? '—' : formatCount(totalFollowers)}</span>
+            <span className="text-2xl font-bold text-white tracking-tight">{loading || (accountsError && accounts.length === 0) ? 'â€”' : formatCount(totalFollowers)}</span>
             <span className="text-xs text-[#71717A] ml-1.5 font-medium">followers</span>
           </div>
           <p className="mt-2 text-[10px] text-[#71717A] truncate">Across connected platforms</p>
@@ -408,7 +407,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <Video className="w-4 h-4 text-zinc-500" />
           </div>
           <div className="mt-2.5">
-            <span className="text-2xl font-bold text-white tracking-tight">{postsLoading ? '—' : recentPublishedCount}</span>
+            <span className="text-2xl font-bold text-white tracking-tight">{postsLoading ? 'â€”' : recentPublishedCount}</span>
             <span className="text-xs text-[#71717A] ml-1.5 font-medium">successful</span>
           </div>
           <p className="mt-2 text-[10px] text-[#71717A] truncate">
@@ -447,13 +446,13 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         </div>
       </div>
 
-      {/* ── 3. Link a New Social Account (Studio Color Palette) ── */}
+      {/* â”€â”€ 3. Link a New Social Account (Studio Color Palette) â”€â”€ */}
       <div className="p-5 rounded-2xl bg-[#141418] border border-[#24242A] shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-white">Connect a social account</h2>
             <p className="text-[11px] text-[#9CA3AF]">Choose a platform to filter accounts, or use + to connect another account. Select the same platform again to show all.</p>
-            <p className="mt-1 text-[10px] text-[#71717A]">The + button opens the platform’s secure authorization page, then returns you here.</p>
+            <p className="mt-1 text-[10px] text-[#71717A]">The + button opens the platformâ€™s secure authorization page, then returns you here.</p>
           </div>
           <span className="text-[10px] text-zinc-500 font-medium">Secure OAuth connection</span>
         </div>
@@ -539,7 +538,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 mt-0.5 text-red-400 shrink-0" />
             <div>
-              <p className="font-semibold">Social accounts couldn’t be loaded</p>
+              <p className="font-semibold">Social accounts couldnâ€™t be loaded</p>
               <p className="mt-1 text-red-200/70">{accountsError}</p>
             </div>
           </div>
@@ -554,7 +553,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         </div>
       )}
 
-      {/* ── 5. Linked Channel Cards Grid ── */}
+      {/* â”€â”€ 5. Linked Channel Cards Grid â”€â”€ */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
           {[1, 2].map((i) => (
@@ -708,7 +707,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         </div>
       )}
 
-      {/* ── 6. Publishing History ── */}
+      {/* â”€â”€ 6. Publishing History â”€â”€ */}
       <section className="p-5 sm:p-6 rounded-2xl bg-[#141418] border border-[#24242A] space-y-4 shadow-sm" aria-labelledby="publishing-history-title">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#202026]">
           <div>
@@ -717,7 +716,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
               <span>Publishing history</span>
             </h2>
             <p className="text-xs text-[#9CA3AF] mt-0.5">
-              Check each channel’s publish status, troubleshoot failures, and open live posts.
+              Check each channelâ€™s publish status, troubleshoot failures, and open live posts.
             </p>
           </div>
           <div className="flex items-center justify-between sm:justify-end gap-3">
@@ -748,7 +747,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <div className="flex items-start gap-2.5 text-xs text-red-300">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-400" />
               <div>
-                <p className="font-semibold">Publishing history couldn’t be loaded</p>
+                <p className="font-semibold">Publishing history couldnâ€™t be loaded</p>
                 <p className="mt-1 text-red-200/70">{postsError}</p>
               </div>
             </div>
@@ -765,7 +764,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <Video className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
             <p className="text-sm font-semibold text-[#D4D4D8]">No publishing activity yet</p>
             <p className="text-xs text-[#71717A] mt-1">
-              Once you publish from Studio, every destination’s result will appear here.
+              Once you publish from Studio, every destinationâ€™s result will appear here.
             </p>
             <button
               type="button"
@@ -803,9 +802,9 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
                         <p className="text-sm font-semibold text-white truncate">{post.title || 'Untitled video'}</p>
                         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#8E8E93]">
                           <span className="capitalize">{post.platform}</span>
-                          <span aria-hidden="true">·</span>
+                          <span aria-hidden="true">Â·</span>
                           <span className="truncate">{account?.name || 'Disconnected account'}</span>
-                          <span aria-hidden="true">·</span>
+                          <span aria-hidden="true">Â·</span>
                           <time dateTime={post.publishedAt}>{formatDateTime(post.publishedAt)}</time>
                         </div>
                       </div>

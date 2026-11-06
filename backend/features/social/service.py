@@ -25,8 +25,8 @@ from backend.database.repository import (
     get_social_account_by_id,
     upsert_social_account,
     record_published_post,
+    get_channels_by_user,
     get_latest_user,
-    get_channels,
 )
 from .adapters import get_adapter, ADAPTER_REGISTRY
 
@@ -88,13 +88,11 @@ def get_user_fleet(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     Retrieves all supported connected social channels and pages.
     Automatically ensures that any existing authorized YouTube channels are represented in the fleet.
     """
-    effective_user_id = user_id
-    if not effective_user_id:
-        latest = get_latest_user()
-        effective_user_id = latest["id"] if latest else "usr_global"
+    if not user_id:
+        return []
 
     accounts = [
-        account for account in get_social_accounts(user_id=effective_user_id)
+        account for account in get_social_accounts(user_id=user_id)
         if account.get("platform") in ADAPTER_REGISTRY
     ]
 
@@ -106,11 +104,11 @@ def get_user_fleet(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
             for account in accounts
             if account.get("platform") == "youtube"
         }
-        for ch in get_channels():
+        for ch in get_channels_by_user(user_id):
             if ch["id"] in fleet_channel_ids:
                 continue
             mirrored = upsert_social_account(
-                user_id=effective_user_id,
+                user_id=user_id,
                 platform="youtube",
                 platform_account_id=ch["id"],
                 name=ch["name"],

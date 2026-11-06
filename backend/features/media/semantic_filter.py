@@ -249,18 +249,15 @@ def evaluate_clip(
     fps = float(extra.get("fps") or 0.0)
 
     # A. Slow Motion & High Framerate Check (+40 pts)
-    is_slomo = False
     if fps >= 59.0:
         score += 40.0
         badges.append(f"{int(fps)}fps High-Speed")
-        is_slomo = True
     else:
         for sm in SLOW_MOTION_KEYWORDS:
             if sm in text_corpus:
                 score += 35.0
                 badges.append("Slow-Motion")
                 positive_matches.append(sm)
-                is_slomo = True
                 break
 
     # B. High Contrast & Dramatic Lighting Check (+35 pts)

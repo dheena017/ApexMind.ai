@@ -31,7 +31,7 @@ class Settings:
 
     @property
     def DEFAULT_TTS_MODEL(self) -> str:
-        return os.environ.get("DEFAULT_TTS_MODEL", "gemini-2.0-flash")
+        return os.environ.get("DEFAULT_TTS_MODEL", "gemini-3.8-flash-tts")
 
     # Google Auth & Search
     GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", os.environ.get("VITE_GOOGLE_CLIENT_ID", ""))

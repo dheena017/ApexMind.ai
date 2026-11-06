@@ -14,14 +14,10 @@ import {
   Check,
   Download,
   Trash2,
-  Sparkles,
   Layers,
   Clock,
   Mic,
   Tag,
-  Share2,
-  AlertCircle,
-  Radio,
   Flame,
 } from 'lucide-react';
 import { WebsiteVideo } from '../types';
@@ -416,7 +412,7 @@ ${video.tags || ''}
           <X className="w-4 h-4" />
         </button>
 
-        {/* ── Left: Video Player Frame (9:16 Shorts Presentation) ── */}
+        {/* â”€â”€ Left: Video Player Frame (9:16 Shorts Presentation) â”€â”€ */}
         <div className="w-full lg:w-[410px] xl:w-[440px] shrink-0 bg-[#080808] border-b lg:border-b-0 lg:border-r border-[#262626] flex flex-col items-center justify-center p-3 sm:p-5 relative">
           
           <div
@@ -663,18 +659,18 @@ ${video.tags || ''}
                 ? 'AI Studio Voiceover Synced'
                 : 'Studio Motion Backdrop'}
             </span>
-            <span>•</span>
+            <span>â€¢</span>
             <span>{video.aspectRatio || '9:16'} Shorts</span>
             {hasLiveAudio && (
               <>
-                <span>•</span>
+                <span>â€¢</span>
                 <span className="text-[#60A5FA] font-medium">{video.voice || 'Studio'} Voice</span>
               </>
             )}
           </div>
         </div>
 
-        {/* ── Right: Script & Details Section ── */}
+        {/* â”€â”€ Right: Script & Details Section â”€â”€ */}
         <div className="flex-1 p-5 sm:p-7 overflow-y-auto space-y-6 max-h-[75vh] lg:max-h-none">
           {/* Header */}
           <div>

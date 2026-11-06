@@ -6,7 +6,6 @@ import {
   Heart,
   Youtube,
   ArrowUpRight,
-  TrendingUp,
 } from 'lucide-react';
 import { DashboardMetrics } from '../types';
 

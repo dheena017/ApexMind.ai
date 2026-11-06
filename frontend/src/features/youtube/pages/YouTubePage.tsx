@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Youtube,
   Plus,
@@ -7,7 +7,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { Button } from '@/src/shared/ui/common';
+import '@/src/shared/ui/common';
 import { YouTubeChannelBannerHeader } from '../components/YouTubeChannelBannerHeader';
 import { YouTubeHeader, YouTubeTab } from '../components/YouTubeHeader';
 import { YouTubeHomePage } from './YouTubeHomePage';
@@ -19,7 +19,7 @@ import { YouTubeSchedulesPage } from './YouTubeSchedulesPage';
 import { YouTubeVideoDetailsModal } from '../components/YouTubeVideoDetailsModal';
 import { youtubeApi } from '../api/youtubeApi';
 import { connectYouTubeWithGoogle } from '../utils/googleOAuthConnect';
-import { PageRoute, getQueryParams, buildRouteUrl } from '@/src/app/routes';
+import { PageRoute, getQueryParams } from '@/src/app/routes';
 import {
   YouTubeChannel,
   YouTubeLiveShort,
@@ -239,7 +239,7 @@ export default function YouTubePage({
 
   return (
     <div className="w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] space-y-6 pb-20 font-sans-studio animate-fade-in">
-      {/* ── 1. Top Channel Banner & Studio Navigation Group ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 1. Top Channel Banner & Studio Navigation Group Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <div className="space-y-3">
         <YouTubeChannelBannerHeader
           channel={channel}
@@ -265,7 +265,7 @@ export default function YouTubePage({
       </div>
 
 
-      {/* ── Tab 1: HOME (Overview) ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 1: HOME (Overview) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       {activeTab === 'overview' && (
         <YouTubeHomePage
           channels={channelsList}
@@ -291,7 +291,7 @@ export default function YouTubePage({
         />
       )}
 
-      {/* ── Tab 2: VIDEOS (Real 16:9 Uploads) ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 2: VIDEOS (Real 16:9 Uploads) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       {activeTab === 'videos' && (
         <YouTubeVideosPage
           channels={channelsList}
@@ -302,7 +302,7 @@ export default function YouTubePage({
         />
       )}
 
-      {/* ── Tab 3: SHORTS (Real 9:16 Vertical Feed) ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 3: SHORTS (Real 9:16 Vertical Feed) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       {activeTab === 'shorts' && (
         <YouTubeShortsPage
           channels={channelsList}
@@ -316,7 +316,7 @@ export default function YouTubePage({
         />
       )}
 
-      {/* ── Tab 4: PLAYLISTS ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 4: PLAYLISTS Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       {activeTab === 'playlists' && (
         <YouTubePlaylistsPage
           channels={channelsList}
@@ -327,12 +327,12 @@ export default function YouTubePage({
         />
       )}
 
-      {/* ── Tab 5: COMMUNITY ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 5: COMMUNITY Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       {activeTab === 'posts' && (
         <YouTubePostsPage channels={channelsList} loading={loading} />
       )}
 
-      {/* ── Tab: DAILY SCHEDULES & AUTOMATIONS ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab: DAILY SCHEDULES & AUTOMATIONS Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       {activeTab === 'schedules' && (
         <YouTubeSchedulesPage
           automations={automations}
@@ -343,7 +343,7 @@ export default function YouTubePage({
         />
       )}
 
-      {/* ── In-Studio Embedded Video Player Modal (via React createPortal) ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ In-Studio Embedded Video Player Modal (via React createPortal) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <YouTubeVideoDetailsModal
         isOpen={Boolean(activePlayingVideo)}
         video={activePlayingVideo}

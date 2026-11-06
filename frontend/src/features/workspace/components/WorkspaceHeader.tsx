@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  LayoutDashboard,
-  Play,
   Check,
   Download,
   Bookmark,
@@ -184,7 +182,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   return (
     <>
       <header className="sticky top-0 h-11 shrink-0 z-30 w-full bg-[#111111]/98 backdrop-blur-2xl border-b border-[#242424] px-3 sm:px-4 max-[359px]:px-2 flex items-center justify-between gap-2.5 max-[439px]:gap-1 max-[359px]:gap-0 font-sans-studio select-none text-[#E5E5E5] shadow-sm">
-        {/* ── Left: Studio Title, Brand Logo, Breadcrumb, Title & Channel Switcher ── */}
+        {/* â”€â”€ Left: Studio Title, Brand Logo, Breadcrumb, Title & Channel Switcher â”€â”€ */}
         <div className="flex items-center gap-2.5 max-[439px]:gap-1 max-[359px]:gap-0 shrink-0 min-w-0">
           <button
             type="button"
@@ -235,7 +233,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
 
         </div>
 
-        {/* ── Right: Studio Actions + Panel Toggles + Publish ── */}
+        {/* â”€â”€ Right: Studio Actions + Panel Toggles + Publish â”€â”€ */}
         <div className="flex items-center gap-1.5 sm:gap-2 max-[439px]:gap-1 max-[359px]:gap-0 shrink-0">
           {/* Notice Badge */}
           {notice && (
@@ -249,12 +247,12 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('workspace:open-command-palette'))}
             className="hidden md:flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] hover:border-[#383838] text-[11px] text-[#9CA3AF] hover:text-white transition-all cursor-pointer group"
-            title="Open Command Palette (⌘K or Ctrl+K)"
+            title="Open Command Palette (âŒ˜K or Ctrl+K)"
           >
             <Search className="w-3 h-3 text-[#737373] group-hover:text-[#60A5FA] transition-colors" />
             <span className="text-[10px] font-medium text-[#D4D4D8]">Quick Actions</span>
             <kbd className="text-[9px] font-mono px-1.5 py-0.2 bg-[#0A0A0A] border border-[#262626] rounded text-[#737373]">
-              ⌘K
+              âŒ˜K
             </kbd>
           </button>
 
@@ -321,12 +319,12 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               !hasTimelineContent
                 ? 'Add media to the timeline to export'
                 : exporting
-                ? 'Rendering the final video…'
+                ? 'Rendering the final videoâ€¦'
                 : 'Export the composed video'
             }
           >
             <Download className={`w-3 h-3 ${!hasTimelineContent ? 'text-[#3A3A3A]' : 'text-[#60A5FA]'}`} />
-            <span>{exporting ? (notice?.startsWith('Rendering') ? notice : 'Exporting…') : 'Export MP4'}</span>
+            <span>{exporting ? (notice?.startsWith('Rendering') ? notice : 'Exportingâ€¦') : 'Export MP4'}</span>
           </button>
 
           {/* Save Draft (Pill Button) */}
@@ -362,7 +360,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             disabled={!canPublish || publishing}
             title={
               publishing
-                ? 'Publishing…'
+                ? 'Publishingâ€¦'
                 : publishedSuccess
                 ? 'Published successfully!'
                 : !canPublish

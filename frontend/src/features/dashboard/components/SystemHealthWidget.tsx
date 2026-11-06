@@ -7,7 +7,6 @@ import {
   Clock,
   CheckCircle2,
   Settings,
-  AlertCircle,
 } from 'lucide-react';
 import { SystemStatusSummary } from '../types';
 

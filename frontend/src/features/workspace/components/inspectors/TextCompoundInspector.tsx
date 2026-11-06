@@ -1,14 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
-  AlignLeft, AlignCenter, AlignRight, AlignJustify, Minus, Plus, Type,
-  Sparkles, Bold, Italic, Underline, Strikethrough, LetterSpacing,
-  Eye, Copy, RotateCw, Zap, Star, Wand2, Check, Sliders, RefreshCw,
-  Palette, Move, Lock, Square, Layers,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Minus,
+  Plus,
+  Type,
+  Sparkles,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  Check,
+  Palette,
+  Move,
+  Square,
+  Layers,
 } from 'lucide-react';
 import { GeneratedScript, ScriptSubtitle } from '../../types';
 import { SelectedClip } from '../timeline/timelineTypes';
-import { CustomSelect } from '@/src/shared/ui/CustomSelect';
+import '@/src/shared/ui/CustomSelect';
 
 export interface TextCompoundInspectorProps {
   script?: GeneratedScript;
@@ -20,14 +33,14 @@ export interface TextCompoundInspectorProps {
 }
 
 const CAPTION_ANIMATION_PRESETS = [
-  { id: 'fade', label: 'Soft Fade In', desc: 'Smooth word fade-in', icon: '✨' },
-  { id: 'pop', label: 'Viral Pop & Zoom', desc: 'Punchy scale punch per word', icon: '💥' },
-  { id: 'karaoke', label: 'Karaoke Highlighter', desc: 'Active word highlighted in gold', icon: '🎤' },
-  { id: 'typewriter', label: 'Typewriter Tick', desc: 'Rapid letter-by-letter typing', icon: '⌨️' },
-  { id: 'slide', label: 'Slide Up Reveal', desc: 'Dynamic upward sliding entrance', icon: '⬆️' },
-  { id: 'blur', label: 'Cinematic Blur In', desc: 'Sharpens from atmospheric blur', icon: '🎯' },
-  { id: 'glitch', label: 'Cyber Glitch Shutter', desc: 'Micro glitch flicker effect', icon: '⚡' },
-  { id: 'wave', label: 'Dynamic Wave Bounce', desc: 'Rhythmic organic wave bounce', icon: '🌊' },
+  { id: 'fade', label: 'Soft Fade In', desc: 'Smooth word fade-in', icon: 'Ã¢Å“Â¨' },
+  { id: 'pop', label: 'Viral Pop & Zoom', desc: 'Punchy scale punch per word', icon: 'Ã°Å¸â€™Â¥' },
+  { id: 'karaoke', label: 'Karaoke Highlighter', desc: 'Active word highlighted in gold', icon: 'Ã°Å¸Å½Â¤' },
+  { id: 'typewriter', label: 'Typewriter Tick', desc: 'Rapid letter-by-letter typing', icon: 'Ã¢Å’Â¨Ã¯Â¸ï¿½' },
+  { id: 'slide', label: 'Slide Up Reveal', desc: 'Dynamic upward sliding entrance', icon: 'Ã¢Â¬â€ Ã¯Â¸ï¿½' },
+  { id: 'blur', label: 'Cinematic Blur In', desc: 'Sharpens from atmospheric blur', icon: 'Ã°Å¸Å½Â¯' },
+  { id: 'glitch', label: 'Cyber Glitch Shutter', desc: 'Micro glitch flicker effect', icon: 'Ã¢Å¡Â¡' },
+  { id: 'wave', label: 'Dynamic Wave Bounce', desc: 'Rhythmic organic wave bounce', icon: 'Ã°Å¸Å’Å ' },
 ];
 
 const FONT_PRESETS = [
@@ -570,11 +583,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     }
   };
 
-  const tabs = ['text', 'style', 'animation', 'position', 'background', 'shadow'] as const;
-
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none">
-      {/* ── Subtabs Header Bar ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Subtabs Header Bar Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-[#242424] bg-[#111111]">
         <ScrollableTabs
           tabs={[
@@ -590,10 +601,10 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         />
       </div>
 
-      {/* ── Tab Content Area ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab Content Area Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
 
-        {/* ── TEXT TAB ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ TEXT TAB Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeSubTab === 'text' && (
           <div className="flex flex-col gap-3 pt-0.5">
             {/* Title Clip Active Banner with Start and Duration Steppers */}
@@ -934,7 +945,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* ── STYLE TAB (Fonts & Presets) ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ STYLE TAB (Fonts & Presets) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeSubTab === 'style' && (
           <div
             className="flex flex-col gap-3.5 pt-0.5"
@@ -953,7 +964,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                     className="p-2.5 rounded-xl bg-[#181818] hover:bg-[#26262C] hover:border-white/10 border border-[#242424] hover:border-[#3B82F6]/50 text-left cursor-pointer transition-all group"
                   >
                     <p className="text-xs font-bold text-white mb-0.5" style={{ color: combo.color }}>{combo.label}</p>
-                    <p className="text-[9px] text-slate-500">{combo.font} • {combo.weight}</p>
+                    <p className="text-[9px] text-slate-500">{combo.font} Ã¢â‚¬Â¢ {combo.weight}</p>
                   </button>
                 ))}
               </div>
@@ -1005,7 +1016,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* ── ANIMATION TAB ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ ANIMATION TAB Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeSubTab === 'animation' && (
           <div className="flex flex-col gap-3 pt-0.5">
             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Caption Motion Presets</span>
@@ -1052,7 +1063,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* ── POSITION TAB ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ POSITION TAB Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeSubTab === 'position' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Quick Position Presets */}
@@ -1140,7 +1151,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* ── BACKGROUND TAB ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ BACKGROUND TAB Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeSubTab === 'background' && (
           <div className="flex flex-col gap-3 pt-0.5">
             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Caption Box Background</span>
@@ -1202,7 +1213,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* ── SHADOW & OUTLINE TAB ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ SHADOW & OUTLINE TAB Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeSubTab === 'shadow' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Outline / Stroke */}

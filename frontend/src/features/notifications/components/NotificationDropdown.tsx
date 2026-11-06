@@ -10,7 +10,6 @@ import {
   Wand2,
   Trash2,
   ChevronRight,
-  ExternalLink,
 } from 'lucide-react';
 import { NotificationItem } from '../types';
 import { notificationsApi } from '../api/notificationsApi';

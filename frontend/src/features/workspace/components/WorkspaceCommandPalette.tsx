@@ -13,11 +13,8 @@ import {
   Play,
   Volume2,
   Camera,
-  Download,
-  Copy,
   Sparkles,
   Search,
-  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -246,7 +243,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <span className="font-mono text-zinc-400">9:16</span>
-                  <span>Shorts, Reels (1080×1920)</span>
+                  <span>Shorts, Reels (1080Ã—1920)</span>
                 </Command.Item>
 
                 <Command.Item
@@ -254,7 +251,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <span className="font-mono text-zinc-400">16:9</span>
-                  <span>YouTube Standard (1920×1080)</span>
+                  <span>YouTube Standard (1920Ã—1080)</span>
                 </Command.Item>
 
                 <Command.Item
@@ -262,7 +259,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-zinc-300 hover:text-white hover:bg-[#26262C] transition-colors"
                 >
                   <span className="font-mono text-zinc-400">1:1</span>
-                  <span>Instagram Square Post (1080×1080)</span>
+                  <span>Instagram Square Post (1080Ã—1080)</span>
                 </Command.Item>
               </Command.Group>
             )}
@@ -271,8 +268,8 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
           {/* Footer Navigation Hints */}
           <div className="flex items-center justify-between px-4 py-2 border-t border-[#26262B] bg-[#17171A] text-[10px] text-zinc-400">
             <div className="flex items-center gap-2">
-              <span>Navigate with <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">↑</kbd><kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">↓</kbd></span>
-              <span>Select with <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">↵</kbd></span>
+              <span>Navigate with <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">â†‘</kbd><kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">â†“</kbd></span>
+              <span>Select with <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">â†µ</kbd></span>
             </div>
             <span>Press <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">Ctrl+K</kbd> anytime</span>
           </div>

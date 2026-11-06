@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 
 from backend.database.repository import (
     get_website_videos,
-    get_channels,
+    get_channels_by_user,
     get_notifications,
     get_unread_notification_count,
 )
@@ -64,7 +64,7 @@ DEFAULT_TRENDING_PROMPTS = [
     },
 ]
 
-def get_dashboard_summary(server_start_time: float) -> Dict[str, Any]:
+def get_dashboard_summary(server_start_time: float, user_id: str | None = None) -> Dict[str, Any]:
     """Compile aggregated data and metrics for the Creator Dashboard."""
     logger.debug("Fetching complete dashboard summary metrics")
 
@@ -79,7 +79,7 @@ def get_dashboard_summary(server_start_time: float) -> Dict[str, Any]:
     total_scripts = total_videos
 
     # 3. Channels info
-    channels = get_channels()
+    channels = get_channels_by_user(user_id) if user_id else []
     connected_channels_count = len(channels)
     active_channel = channels[0] if channels else None
 

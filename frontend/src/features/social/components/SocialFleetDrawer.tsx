@@ -5,7 +5,6 @@ import {
   Instagram,
   Facebook,
   Radio,
-  Plus,
   Trash2,
   ExternalLink,
   ShieldCheck,
@@ -17,10 +16,8 @@ import {
   Sparkles,
   Check,
   ArrowRight,
-  Share2,
   Layers,
   Zap,
-  Globe,
 } from 'lucide-react';
 import { socialApi } from '../api/socialApi';
 import { SocialAccount, SocialPlatform } from '../types';
@@ -358,7 +355,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
             {loadError ? (
               <div className="rounded-2xl border border-red-500/20 bg-red-950/20 p-5 text-center space-y-3" role="alert">
                 <AlertCircle className="w-7 h-7 text-red-400 mx-auto" />
-                <h3 className="text-sm font-semibold text-white">Accounts couldn’t be loaded</h3>
+                <h3 className="text-sm font-semibold text-white">Accounts couldnâ€™t be loaded</h3>
                 <p className="text-xs text-red-200/80">{notice?.text || 'Refresh to try loading your connected accounts again.'}</p>
                 <Button variant="primary" size="sm" onClick={loadFleet}>Try again</Button>
               </div>
@@ -439,7 +436,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
                                   : `0 ${acc.platform === 'youtube' ? 'subscribers' : 'followers'}`}
                               </span>
                             </span>
-                            <span>•</span>
+                            <span>â€¢</span>
                             <span className="flex items-center gap-1">
                               <Video className="w-3 h-3 text-zinc-500" />
                               <span>
@@ -528,7 +525,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
                 <Youtube className="w-3.5 h-3.5 text-red-400 fill-current shrink-0 mt-0.5" />
                 <div>
                   <div className="font-semibold text-zinc-200">YouTube Shorts</div>
-                  <div className="text-zinc-500 text-[9px] mt-0.5">9:16 Vertical • Auto SEO Tags</div>
+                  <div className="text-zinc-500 text-[9px] mt-0.5">9:16 Vertical â€¢ Auto SEO Tags</div>
                 </div>
               </div>
 
@@ -536,7 +533,7 @@ export const SocialFleetDrawer: React.FC<SocialFleetDrawerProps> = ({
                 <Instagram className="w-3.5 h-3.5 text-pink-400 shrink-0 mt-0.5" />
                 <div>
                   <div className="font-semibold text-zinc-200">Instagram Reels</div>
-                  <div className="text-zinc-500 text-[9px] mt-0.5">Trending Sound • Clustered Tags</div>
+                  <div className="text-zinc-500 text-[9px] mt-0.5">Trending Sound â€¢ Clustered Tags</div>
                 </div>
               </div>
 

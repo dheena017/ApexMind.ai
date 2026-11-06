@@ -10,7 +10,6 @@ import {
   Sparkles,
   RotateCcw,
   Sliders,
-  Maximize2,
   Search,
   Palette,
   Layers,
@@ -39,11 +38,11 @@ const PLATFORM_PRESETS: Array<{
   height: number;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
-  { id: '9:16', aspectRatio: '9:16', platform: 'Shorts & Reels', label: 'Vertical Video (9:16)', resolution: '1080 × 1920 HD', width: 1080, height: 1920, icon: RectangleVertical },
-  { id: '16:9', aspectRatio: '16:9', platform: 'YouTube Standard', label: 'Widescreen (16:9)', resolution: '1920 × 1080 HD', width: 1920, height: 1080, icon: RectangleHorizontal },
-  { id: '1:1', aspectRatio: '1:1', platform: 'Instagram Feed', label: 'Square Post (1:1)', resolution: '1080 × 1080 SQ', width: 1080, height: 1080, icon: Square },
-  { id: '4:5', aspectRatio: '4:5', platform: 'IG & FB Feed', label: 'Portrait Feed (4:5)', resolution: '1080 × 1350 PT', width: 1080, height: 1350, icon: RectangleVertical },
-  { id: '21:9', aspectRatio: '21:9', platform: 'Cinematic Cinema', label: 'Ultrawide Film (21:9)', resolution: '2560 × 1080 UW', width: 2560, height: 1080, icon: RectangleHorizontal },
+  { id: '9:16', aspectRatio: '9:16', platform: 'Shorts & Reels', label: 'Vertical Video (9:16)', resolution: '1080 Ãƒâ€” 1920 HD', width: 1080, height: 1920, icon: RectangleVertical },
+  { id: '16:9', aspectRatio: '16:9', platform: 'YouTube Standard', label: 'Widescreen (16:9)', resolution: '1920 Ãƒâ€” 1080 HD', width: 1920, height: 1080, icon: RectangleHorizontal },
+  { id: '1:1', aspectRatio: '1:1', platform: 'Instagram Feed', label: 'Square Post (1:1)', resolution: '1080 Ãƒâ€” 1080 SQ', width: 1080, height: 1080, icon: Square },
+  { id: '4:5', aspectRatio: '4:5', platform: 'IG & FB Feed', label: 'Portrait Feed (4:5)', resolution: '1080 Ãƒâ€” 1350 PT', width: 1080, height: 1350, icon: RectangleVertical },
+  { id: '21:9', aspectRatio: '21:9', platform: 'Cinematic Cinema', label: 'Ultrawide Film (21:9)', resolution: '2560 Ãƒâ€” 1080 UW', width: 2560, height: 1080, icon: RectangleHorizontal },
 ];
 
 const STUDIO_SOLIDS = [
@@ -137,7 +136,7 @@ for (
 
       GENERATED_STUDIO_GRADIENTS.push({
         id: `generated-grad-${gradientIndex + 1}`,
-        name: `${start.name} · ${middle.name} · ${end.name}`,
+        name: `${start.name} Ã‚Â· ${middle.name} Ã‚Â· ${end.name}`,
         value: `linear-gradient(${angle}deg, ${start.value} 0%, ${middle.value} 50%, ${end.value} 100%)`,
       });
     }
@@ -146,7 +145,7 @@ for (
 
 const STUDIO_GRADIENTS = [...FEATURED_STUDIO_GRADIENTS, ...GENERATED_STUDIO_GRADIENTS];
 
-import { COLOR_LUTS, ColorLUTItem } from '../../data/mediaCatalogData';
+import { COLOR_LUTS } from '../../data/mediaCatalogData';
 
 export const CanvasPane: React.FC<CanvasPaneProps> = ({
   aspectRatio,
@@ -197,7 +196,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
-      {/* ── Top Header Bar (Matching Studio Shell) ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Top Header Bar (Matching Studio Shell) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
@@ -222,7 +221,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         </button>
       </div>
 
-      {/* ── Subtabs Segmented Control ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Subtabs Segmented Control Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
           tabs={[
@@ -237,9 +236,9 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
         />
       </div>
 
-      {/* ── Main Content Area ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Main Content Area Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
-        {/* ── Tab: Cinematic Color LUTs ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab: Cinematic Color LUTs Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeTab === 'luts' && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
@@ -294,7 +293,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 1: Platform Aspect Ratios ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 1: Platform Aspect Ratios Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeTab === 'ratio' && (
           <div className="flex flex-col gap-2.5">
             <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider">
@@ -352,7 +351,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 2: Studio Solid Colors ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 2: Studio Solid Colors Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeTab === 'solid' && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
@@ -405,7 +404,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 3: Studio Gradients ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 3: Studio Gradients Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeTab === 'gradient' && (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2">
@@ -476,7 +475,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 4: Custom Gradient Builder ── */}
+        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 4: Custom Gradient Builder Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
         {activeTab === 'builder' && (
           <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
             <span className="text-xs font-bold text-white">Gradient Studio Builder</span>
@@ -542,7 +541,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono-studio">
                   <span className="text-slate-500">ANGLE</span>
-                  <span className="text-[#60A5FA] font-bold">{gradAngle}°</span>
+                  <span className="text-[#60A5FA] font-bold">{gradAngle}Ã‚Â°</span>
                 </div>
                 <input
                   type="range"

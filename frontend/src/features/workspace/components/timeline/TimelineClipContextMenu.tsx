@@ -41,7 +41,6 @@ import {
   Split,
   Sliders,
   Waves,
-  Check,
 } from 'lucide-react';
 
 export type ContextMenuTrackType =
@@ -392,7 +391,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  // ── Clipboard & Core Edit Handlers ──
+  // â”€â”€ Clipboard & Core Edit Handlers â”€â”€
   const handleCopy = () => {
     if (onCopy) {
       onCopy();
@@ -511,7 +510,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     }
   };
 
-  // ── Visual Transform Handlers ──
+  // â”€â”€ Visual Transform Handlers â”€â”€
   const handleScaleToFit = () => {
     if (onScaleToFit) {
       onScaleToFit();
@@ -611,7 +610,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  // ── Speed & Retime Handlers ──
+  // â”€â”€ Speed & Retime Handlers â”€â”€
   const handleSetSpeed = (s: number) => {
     if (onSetSpeed) {
       onSetSpeed(s);
@@ -660,7 +659,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  // ── Audio Enhancements Handlers ──
+  // â”€â”€ Audio Enhancements Handlers â”€â”€
   const handleAudioGain = () => {
     if (onAudioGain) {
       onAudioGain();
@@ -750,7 +749,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  // ── Arrange & Layer Handlers ──
+  // â”€â”€ Arrange & Layer Handlers â”€â”€
   const handleMoveUp = () => {
     if (onMoveLaneUp) {
       onMoveLaneUp();
@@ -807,7 +806,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  // ── AI Magic Tools Handlers ──
+  // â”€â”€ AI Magic Tools Handlers â”€â”€
   const handleAiAutoAnimate = () => {
     window.dispatchEvent(
       new CustomEvent('workspace:preview-clip-animation', {
@@ -826,13 +825,13 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         },
       })
     );
-    toast.success('✨ AI Auto-Animate: Motion choreography applied');
+    toast.success('âœ¨ AI Auto-Animate: Motion choreography applied');
     onClose();
   };
 
   const handleAiCutSync = () => {
     window.dispatchEvent(new CustomEvent('workspace:ai-cut-sync'));
-    toast.success('🎬 AI Cut Sync: Aligning scene cuts to voice pauses & music beat');
+    toast.success('ðŸŽ¬ AI Cut Sync: Aligning scene cuts to voice pauses & music beat');
     onClose();
   };
 
@@ -842,7 +841,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         detail: { mood: 'viral', track: trackType === 'image' ? 'image' : 'video' },
       })
     );
-    toast.success('✨ AI Smart Transitions: Matched dynamic cut');
+    toast.success('âœ¨ AI Smart Transitions: Matched dynamic cut');
     onClose();
   };
 
@@ -856,7 +855,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         })
       );
     }
-    toast.success('✨ AI Upscale & Enhance: 4K detail synthesis queued');
+    toast.success('âœ¨ AI Upscale & Enhance: 4K detail synthesis queued');
     onClose();
   };
 
@@ -874,7 +873,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
     onClose();
   };
 
-  // ── View, Metadata & Properties Handlers ──
+  // â”€â”€ View, Metadata & Properties Handlers â”€â”€
   const handleColorLabel = (color: string) => {
     if (onColorLabel) {
       onColorLabel(color);
@@ -1048,7 +1047,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
 
         <div className="my-1 border-t border-white/[0.08]" />
 
-        {/* ── Visual Transform Submenu (Video / Image / Overlay / Title) ── */}
+        {/* â”€â”€ Visual Transform Submenu (Video / Image / Overlay / Title) â”€â”€ */}
         {isVisualTrack && (
           <ContextMenuSubmenuTrigger
             icon={<Maximize2 className="w-3.5 h-3.5 text-cyan-400" />}
@@ -1059,7 +1058,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {/* ── Speed & Retime Submenu ── */}
+        {/* â”€â”€ Speed & Retime Submenu â”€â”€ */}
         {(isVideoTrack || isAudioTrack || isImageTrack) && (
           <ContextMenuSubmenuTrigger
             icon={<Gauge className="w-3.5 h-3.5 text-amber-400" />}
@@ -1071,7 +1070,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {/* ── Audio Tools Submenu ── */}
+        {/* â”€â”€ Audio Tools Submenu â”€â”€ */}
         {hasAudioTrack && (
           <ContextMenuSubmenuTrigger
             icon={<Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
@@ -1082,7 +1081,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {/* ── Layer / Arrange Submenu ── */}
+        {/* â”€â”€ Layer / Arrange Submenu â”€â”€ */}
         {(isVisualTrack || isCaptionTrack) && (
           <ContextMenuSubmenuTrigger
             icon={<Layers className="w-3.5 h-3.5 text-indigo-400" />}
@@ -1093,7 +1092,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {/* ── AI Tools Submenu ── */}
+        {/* â”€â”€ AI Tools Submenu â”€â”€ */}
         {(hasAudioTrack || isVisualTrack) && (
           <ContextMenuSubmenuTrigger
             icon={<Wand2 className="w-3.5 h-3.5 text-fuchsia-400" />}
@@ -1104,7 +1103,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {/* ── Color Label Trigger ── */}
+        {/* â”€â”€ Color Label Trigger â”€â”€ */}
         <ContextMenuSubmenuTrigger
           icon={<Tag className="w-3.5 h-3.5 text-pink-400" />}
           label="Color Label"
@@ -1115,7 +1114,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
 
         <div className="my-1 border-t border-white/[0.08]" />
 
-        {/* ── View & Timings ── */}
+        {/* â”€â”€ View & Timings â”€â”€ */}
         <ContextMenuItem
           icon={<ZoomIn className="w-3.5 h-3.5" />}
           label="Zoom to Fit Clip"
@@ -1130,7 +1129,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           onClick={handleCopyTimings}
         />
 
-        {/* ── Clip Properties Popover Trigger ── */}
+        {/* â”€â”€ Clip Properties Popover Trigger â”€â”€ */}
         <ContextMenuSubmenuTrigger
           icon={<Info className="w-3.5 h-3.5 text-blue-400" />}
           label="Clip Properties"
@@ -1143,7 +1142,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
 
         <div className="my-1 border-t border-white/[0.08]" />
 
-        {/* ── State Toggles (Enable, Mute, Lock, Hide) ── */}
+        {/* â”€â”€ State Toggles (Enable, Mute, Lock, Hide) â”€â”€ */}
         {onToggleDisable && (
           <ContextMenuItem
             icon={isDisabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -1199,7 +1198,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
           />
         )}
 
-        {/* ── Danger Zone Separator ── */}
+        {/* â”€â”€ Danger Zone Separator â”€â”€ */}
         <div className="my-1 border-t border-white/[0.08]" />
 
         {onRippleDelete && (
@@ -1221,7 +1220,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
         />
       </div>
 
-      {/* ── Portaled Flyout Submenus ── */}
+      {/* â”€â”€ Portaled Flyout Submenus â”€â”€ */}
       {activeSubmenu && submenuPos && (
         <SubmenuPortal
           x={submenuPos.x}
@@ -1255,7 +1254,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
                   className="w-7 h-7 rounded-lg border border-neutral-700 hover:border-neutral-400 bg-white/5 hover:bg-white/10 transition-all text-neutral-400 hover:text-white text-xs flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95"
                   onClick={() => handleColorLabel('')}
                 >
-                  ✕
+                  âœ•
                 </button>
               </div>
             </div>
@@ -1436,7 +1435,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
               {isVisualTrack && (
                 <ContextMenuItem
                   icon={<Sparkles className="w-3.5 h-3.5 text-blue-400" />}
-                  label="⚡ AI Audio-Visual Cut Sync"
+                  label="âš¡ AI Audio-Visual Cut Sync"
                   onClick={handleAiCutSync}
                 />
               )}
@@ -1540,7 +1539,7 @@ export const TimelineClipContextMenu: React.FC<TimelineClipContextMenuProps> = (
   return createPortal(menuContent, document.body);
 };
 
-// ── Sub-component: individual menu item ──────────────────────────
+// â”€â”€ Sub-component: individual menu item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface ContextMenuItemProps {
   icon: React.ReactNode;
   label: string;
@@ -1580,7 +1579,7 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({
   </button>
 );
 
-// ── Sub-component: submenu trigger ──────────────────────────────
+// â”€â”€ Sub-component: submenu trigger â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface ContextMenuSubmenuTriggerProps {
   icon: React.ReactNode;
   label: string;
@@ -1629,7 +1628,7 @@ const ContextMenuSubmenuTrigger: React.FC<ContextMenuSubmenuTriggerProps> = ({
   </button>
 );
 
-// ── Sub-component: portaled submenu floating window ──────────────
+// â”€â”€ Sub-component: portaled submenu floating window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface SubmenuPortalProps {
   x: number;
   y: number;

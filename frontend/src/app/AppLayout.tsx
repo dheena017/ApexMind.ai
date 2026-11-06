@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  CheckCircle2,
   Sparkles,
   LayoutDashboard,
   Wand2,
@@ -13,7 +12,7 @@ import {
   LogOut,
   Film,
 } from 'lucide-react';
-import { Badge } from '@/src/shared/ui/common';
+import '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHeader';

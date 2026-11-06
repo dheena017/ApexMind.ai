@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Bell,
   CheckCircle2,
@@ -12,15 +12,10 @@ import {
   ExternalLink,
   Youtube,
   Wand2,
-  Filter,
   Sparkles,
-  PlusCircle,
-  Eye,
   EyeOff,
-  RefreshCw,
-  Radio,
 } from 'lucide-react';
-import { Button, Card, Badge } from '@/src/shared/ui/common';
+import { Button, Card } from '@/src/shared/ui/common';
 import { notificationsApi } from '../api/notificationsApi';
 import { NotificationItem, NotificationCategory } from '../types';
 import { formatTimeAgo } from '../utils';
@@ -344,7 +339,7 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
               onClick={() => setSearchQuery('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white text-xs"
             >
-              ✕
+              Ã¢Å“â€¢
             </button>
           )}
         </div>

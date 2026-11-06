@@ -512,7 +512,7 @@ def validate_application_import(ansi: Ansi) -> None:
     """Pre-test importing create_app to catch runtime or syntax errors gracefully."""
     try:
         importlib.import_module("backend.app.factory")
-    except Exception as exc:
+    except Exception:
         tb = traceback.format_exc()
         print(
             f"\n{ansi.RED}{ansi.BOLD}[ApexMind Startup Error]{ansi.RESET} Failed to load backend application:\n"
@@ -713,11 +713,6 @@ def main() -> int:
     try:
         if uvicorn is None:
             raise ImportError("uvicorn is not installed")
-
-        uvicorn_extra_args: list[str] = []
-        raw_extra = env.get("UVICORN_ARGS", "").strip()
-        if raw_extra:
-            uvicorn_extra_args = shlex.split(raw_extra)
 
         mode_str = f"{ansi.BRIGHT_GREEN}Auto-Reload Active (Watching backend/){ansi.RESET}" if reload_enabled else f"{ansi.YELLOW}Auto-Reload Disabled{ansi.RESET}"
         print(f"\n{ansi.GREEN}{ansi.BOLD}[ApexMind OK]{ansi.RESET} Backend ready at http://{display_host}:{port}/api/docs")

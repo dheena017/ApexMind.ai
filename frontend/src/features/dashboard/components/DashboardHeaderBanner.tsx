@@ -2,11 +2,8 @@ import React from 'react';
 import {
   Sparkles,
   Wand2,
-  FileText,
   RefreshCw,
   Film,
-  Zap,
-  TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
@@ -44,9 +41,9 @@ export const DashboardHeaderBanner: React.FC<DashboardHeaderBannerProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
               AI Motivational Studio
             </span>
-            <span className="text-[#737373] hidden sm:inline">•</span>
+            <span className="text-[#737373] hidden sm:inline">â€¢</span>
             <span className="text-[#8E8E93]">{currentDate}</span>
-            <span className="text-[#737373] hidden sm:inline">•</span>
+            <span className="text-[#737373] hidden sm:inline">â€¢</span>
             <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Gemini 2.5 Active

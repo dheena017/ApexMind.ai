@@ -9,15 +9,10 @@ import {
   ChevronRight,
   Loader2,
   ExternalLink,
-  Sparkles,
-  TrendingUp,
   Target,
-  Flame,
   ListVideo,
-  BarChart2,
   ArrowUpRight,
   CalendarClock,
-  Sliders,
 } from 'lucide-react';
 import {
   YouTubeChannel,
@@ -97,7 +92,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
 
   return (
     <div className="space-y-8 animate-fade-in font-sans-studio text-[#E5E5E5]">
-      {/* ── 1. Live Channel Metric Strip ── */}
+      {/* â”€â”€ 1. Live Channel Metric Strip â”€â”€ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="p-3.5 sm:p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] flex items-center gap-3.5 shadow-sm hover:border-[#3B82F6]/40 transition-colors">
           <div className="p-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
@@ -113,7 +108,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
             {activeChannel ? (
               <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 mt-0.5 truncate">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <span>{activeChannel.handle} · Live</span>
+                <span>{activeChannel.handle} Â· Live</span>
               </p>
             ) : (
               <p className="text-[11px] text-zinc-400 font-medium flex items-center gap-1.5 mt-0.5 truncate">
@@ -163,7 +158,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
               Upload Cadence
             </p>
             <p className="text-lg sm:text-xl font-extrabold text-white mt-0.5 font-mono-studio">
-              {activeChannel ? (activeChannel.isAutoUploadEnabled ? 'Active' : 'Manual') : '—'}
+              {activeChannel ? (activeChannel.isAutoUploadEnabled ? 'Active' : 'Manual') : 'â€”'}
             </p>
             <p className="text-[11px] text-emerald-400 font-medium mt-0.5 truncate">
               {activeChannel?.scheduleCron || (activeChannel ? 'On demand' : 'No schedule')}
@@ -172,7 +167,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         </div>
       </div>
 
-      {/* ── 2. Real Milestone & Channel Health Tracker ── */}
+      {/* â”€â”€ 2. Real Milestone & Channel Health Tracker â”€â”€ */}
       {activeChannel && (
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#141414] via-[#181818] to-[#141414] border border-[#2B2B2B] shadow-sm space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -222,7 +217,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         </div>
       )}
 
-      {/* ── 3. Latest Published Upload Spotlight ── */}
+      {/* â”€â”€ 3. Latest Published Upload Spotlight â”€â”€ */}
       {latestVideo && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
@@ -315,7 +310,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         </div>
       )}
 
-      {/* ── 4. Creator Studio Launchpad (Fast Actions) ── */}
+      {/* â”€â”€ 4. Creator Studio Launchpad (Fast Actions) â”€â”€ */}
       <div className="space-y-3">
         <h3 className="text-base sm:text-lg font-bold text-white tracking-tight px-1 flex items-center gap-2">
           <span>Creator Studio Launchpad</span>
@@ -408,7 +403,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         </div>
       </div>
 
-      {/* ── 5. "Shorts" Shelf (Real Vertical Grid) ── */}
+      {/* â”€â”€ 5. "Shorts" Shelf (Real Vertical Grid) â”€â”€ */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
@@ -439,7 +434,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         {/* Loading State matching YouTube style */}
         {feedLoading ? (
           <YouTubeLoadingState
-            title="Fetching live YouTube Shorts feed…"
+            title="Fetching live YouTube Shorts feedâ€¦"
             description="Connecting to YouTube servers for live video metrics"
           />
         ) : shortsFeed.length === 0 ? (
@@ -499,7 +494,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         )}
       </div>
 
-      {/* ── 6. "Videos" Shelf (Real 16:9 Uploads) ── */}
+      {/* â”€â”€ 6. "Videos" Shelf (Real 16:9 Uploads) â”€â”€ */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
@@ -530,7 +525,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         {/* Loading State matching YouTube style */}
         {feedLoading ? (
           <YouTubeLoadingState
-            title="Fetching live YouTube video catalog…"
+            title="Fetching live YouTube video catalogâ€¦"
             description="Connecting to YouTube servers for live video metrics"
           />
         ) : videosFeed.length === 0 ? (
@@ -591,7 +586,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
                     <span>{vid.views}</span>
                     {vid.published && (
                       <>
-                        <span>·</span>
+                        <span>Â·</span>
                         <span>{vid.published}</span>
                       </>
                     )}
@@ -603,7 +598,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
         )}
       </div>
 
-      {/* ── 7. Real Playlists Shelf (if present) ── */}
+      {/* â”€â”€ 7. Real Playlists Shelf (if present) â”€â”€ */}
       {playlists.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">

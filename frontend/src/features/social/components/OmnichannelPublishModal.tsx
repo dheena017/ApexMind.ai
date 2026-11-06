@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  Sparkles,
   Share2,
   Film,
   Send,
@@ -361,7 +360,7 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
                       <span className="text-blue-400 font-semibold">Compliance Engine:</span> Automatically appending{' '}
                       <span className="font-mono text-zinc-300">
                         {activePreviewTab === 'youtube'
-                          ? '#Shorts & 🤖 AI Disclosure'
+                          ? '#Shorts & ðŸ¤– AI Disclosure'
                           : '#AIGenerated'}
                       </span>
                     </div>

@@ -1,5 +1,5 @@
-import { CheckCircle2, LockKeyhole, ShieldCheck } from 'lucide-react';
-import { Card } from '@/src/shared/ui/common';
+import { CheckCircle2, ShieldCheck } from 'lucide-react';
+import '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 
 export default function ProfileSecurityPage() {

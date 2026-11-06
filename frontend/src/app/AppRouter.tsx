@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { RouteLoadingFallback } from '@/src/shared/ui/feedback';
 
 import LandingPage from '@/src/features/landing/pages/LandingPage';

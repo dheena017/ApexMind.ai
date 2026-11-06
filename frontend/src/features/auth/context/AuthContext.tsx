@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, MetaLoginProvider, ChannelAuthPayload } from '../types';
 import { authApi, resolveChannelDeliveryEmail } from '../api/authApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
@@ -72,6 +72,7 @@ export function clearAuthStorage(): void {
     localStorage.removeItem(AUTH_USER_KEY);
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_TIMESTAMP_KEY);
+    localStorage.removeItem('apexmind_yt_active_channel');
   } catch {}
 }
 
@@ -154,6 +155,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
     if (authData.user.activeChannelId) {
       localStorage.setItem('apexmind_yt_active_channel', authData.user.activeChannelId);
+    } else {
+      localStorage.removeItem('apexmind_yt_active_channel');
     }
   };
 

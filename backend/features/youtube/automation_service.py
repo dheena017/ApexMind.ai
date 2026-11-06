@@ -308,6 +308,10 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                             "title": m.get("title") or f"Scene {sc_res.get('sceneNumber')}",
                             "type": sc_res.get("mediaType", "video"),
                         }
+                        if clip["type"] == "video":
+                            preview_url = m.get("thumbnailUrl") or m.get("previewUrl")
+                            if preview_url and preview_url != m["url"]:
+                                clip["fallbackUrl"] = preview_url
                         if sc_res.get("mediaType") == "image":
                             image_clips.append(clip)
                         else:
@@ -626,19 +630,17 @@ async def automation_scheduler_loop():
 
     # Reset any stale orphan 'running' jobs from prior server sessions
     try:
-        startup_jobs = get_automations()
+        startup_jobs = get_automations(include_stale_running=True)
         for j in startup_jobs:
             if j.get("lastStatus") == "running":
-                p_time = j.get("publishTime", "08:00")
-                sched = j.get("schedule")
-                n_run = calculate_next_run_iso(p_time, sched)
+                n_run = datetime.now(timezone.utc).isoformat()
                 update_automation_run_state(
                     j["id"],
                     last_status="idle",
                     next_run=n_run,
-                    last_run_message="Scheduler initialized. Waiting for scheduled time.",
+                    last_run_message="Backend restarted during execution. Queued to retry.",
                 )
-                logger.info(f"[Automation Scheduler] Reset orphan running job '{j['id']}' to idle.")
+                logger.info(f"[Automation Scheduler] Queued interrupted job '{j['id']}' for retry.")
     except Exception as boot_err:
         logger.warning(f"[Automation Scheduler] Startup cleanup note: {boot_err}")
 
@@ -665,16 +667,8 @@ async def automation_scheduler_loop():
 
                 try:
                     next_run_dt = datetime.fromisoformat(next_run_str.replace("Z", "+00:00"))
-                    time_diff = (now_utc - next_run_dt).total_seconds()
 
-                    # Guard against stale dates (e.g. from app downtime): advance to upcoming cycle instead of triggering randomly
-                    if time_diff > 3600:
-                        new_next = calculate_next_run_iso(job.get("publishTime", "08:00"), job.get("schedule"))
-                        update_automation_run_state(job_id, last_status="idle", next_run=new_next)
-                        logger.info(f"[Automation Scheduler] Advanced stale job '{job_id}' to upcoming scheduled time: {new_next}")
-                        continue
-
-                    # Exact timing check: trigger only when scheduled time arrives
+                    # Run overdue jobs after a backend restart instead of silently skipping them.
                     if now_utc >= next_run_dt:
                         with _JOB_LOCK:
                             if job_id in _RUNNING_JOB_IDS:

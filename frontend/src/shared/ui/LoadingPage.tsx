@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   ArrowRight,
   ShieldCheck,
-  Zap,
   Youtube,
   Radio,
 } from 'lucide-react';

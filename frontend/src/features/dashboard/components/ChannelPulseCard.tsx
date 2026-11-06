@@ -6,7 +6,6 @@ import {
   ExternalLink,
   Plus,
   CheckCircle2,
-  TrendingUp,
 } from 'lucide-react';
 import { YouTubeChannel } from '@/src/features/youtube/types';
 import { Button } from '@/src/shared/ui/common';
@@ -89,7 +88,7 @@ export const ChannelPulseCard: React.FC<ChannelPulseCardProps> = ({
                 <div className="text-lg font-extrabold text-white">
                   {typeof channel.subscribers === 'number'
                     ? channel.subscribers.toLocaleString()
-                    : channel.subscribers || '—'}
+                    : channel.subscribers || 'â€”'}
                 </div>
               </div>
 
@@ -137,7 +136,7 @@ export const ChannelPulseCard: React.FC<ChannelPulseCardProps> = ({
         >
           Channel Shorts
         </button>
-        <span className="text-[#333333]">•</span>
+        <span className="text-[#333333]">â€¢</span>
         <button
           type="button"
           onClick={() => onNavigate('youtube-videos')}
@@ -145,7 +144,7 @@ export const ChannelPulseCard: React.FC<ChannelPulseCardProps> = ({
         >
           Videos
         </button>
-        <span className="text-[#333333]">•</span>
+        <span className="text-[#333333]">â€¢</span>
         <button
           type="button"
           onClick={() => onNavigate('youtube-schedules')}

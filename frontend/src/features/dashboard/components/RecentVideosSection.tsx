@@ -3,9 +3,7 @@ import {
   Film,
   Play,
   ArrowRight,
-  Sparkles,
   Clock,
-  Layers,
   Wand2,
 } from 'lucide-react';
 import { WebsiteVideo } from '@/src/features/videos/types';

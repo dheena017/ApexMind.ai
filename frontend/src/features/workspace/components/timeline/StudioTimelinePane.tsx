@@ -1,6 +1,6 @@
 import { alignAudioVisualCuts } from '../../utils/cutSyncEngine';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Type, Play, Pause, MoreVertical } from 'lucide-react';
+import { Type } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptSubtitle, DEFAULT_VISUAL_BACKDROPS } from '../../types';
 import {
@@ -1610,7 +1610,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   }, [duration]);
 
-  // ── Broadcast timeline state to VideoPreviewPane via CustomEvent ──────
+  // â”€â”€ Broadcast timeline state to VideoPreviewPane via CustomEvent â”€â”€â”€â”€â”€â”€
   // Fired whenever any visibility/mute/trim/enabled state changes so the
   // preview canvas can reflect the current timeline configuration in real time.
   useEffect(() => {
@@ -2014,7 +2014,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             target.start = parseFloat(nextStart.toFixed(2));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
             setDragTooltip(
-              `▶ Captions [${index + 1}] • Start: ${target.start.toFixed(1)}s • Dur: ${clipDuration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+              `â–¶ Captions [${index + 1}] â€¢ Start: ${target.start.toFixed(1)}s â€¢ Dur: ${clipDuration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
             );
           } else if (mode === 'trim-left') {
             const rawStart = origStart + deltaSec;
@@ -2025,7 +2025,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             target.duration = parseFloat(Math.max(0.3, nextDuration).toFixed(2));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
             setDragTooltip(
-              `◀ Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+              `â—€ Trim In: ${target.start.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
             );
           } else if (mode === 'trim-right') {
             const rawEnd = origStart + origDuration + deltaSec;
@@ -2034,7 +2034,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             target.duration = parseFloat((nextEnd - target.start).toFixed(2));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
             setDragTooltip(
-              `▶ Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+              `â–¶ Trim Out: ${nextEnd.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
             );
           }
 
@@ -2054,7 +2054,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               target.start = parseFloat(nextStart.toFixed(2));
               setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
               setDragTooltip(
-                `▶ Video "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+                `â–¶ Video "${target.name}" â€¢ Start: ${nextStart.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
               );
             } else if (mode === 'trim-left') {
               const rawStart = origStart + deltaSec;
@@ -2064,14 +2064,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               target.start = parseFloat(nextStart.toFixed(2));
               target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
               setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-              setDragTooltip(`◀ Video Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+              setDragTooltip(`â—€ Video Trim In: ${target.start.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
             } else if (mode === 'trim-right') {
               const rawEnd = origStart + origDuration + deltaSec;
               const snapRes = calculateSnap(rawEnd, snapPoints, snapToleranceSec);
               const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
               target.duration = parseFloat((nextEnd - target.start).toFixed(2));
               setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-              setDragTooltip(`▶ Video Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+              setDragTooltip(`â–¶ Video Trim Out: ${nextEnd.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
             }
             return target;
           })
@@ -2089,7 +2089,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               target.start = parseFloat(nextStart.toFixed(2));
               setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
               setDragTooltip(
-                `▶ Image "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+                `â–¶ Image "${target.name}" â€¢ Start: ${nextStart.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
               );
             } else if (mode === 'trim-left') {
               const rawStart = origStart + deltaSec;
@@ -2099,14 +2099,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               target.start = parseFloat(nextStart.toFixed(2));
               target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
               setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-              setDragTooltip(`◀ Image Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+              setDragTooltip(`â—€ Image Trim In: ${target.start.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
             } else if (mode === 'trim-right') {
               const rawEnd = origStart + origDuration + deltaSec;
               const snapRes = calculateSnap(rawEnd, snapPoints, snapToleranceSec);
               const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
               target.duration = parseFloat((nextEnd - target.start).toFixed(2));
               setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-              setDragTooltip(`▶ Image Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+              setDragTooltip(`â–¶ Image Trim Out: ${nextEnd.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
             }
             return target;
           })
@@ -2125,7 +2125,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 target.start = parseFloat(nextStart.toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
                 setDragTooltip(
-                  `▶ Overlay "${target.label || target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+                  `â–¶ Overlay "${target.label || target.name}" â€¢ Start: ${nextStart.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
                 );
               } else if (mode === 'trim-left') {
                 const rawStart = origStart + deltaSec;
@@ -2135,14 +2135,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 target.start = parseFloat(nextStart.toFixed(2));
                 target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-                setDragTooltip(`◀ Overlay Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+                setDragTooltip(`â—€ Overlay Trim In: ${target.start.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
               } else if (mode === 'trim-right') {
                 const rawEnd = origStart + origDuration + deltaSec;
                 const snapRes = calculateSnap(rawEnd, snapPoints, snapToleranceSec);
                 const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
                 target.duration = parseFloat((nextEnd - target.start).toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-                setDragTooltip(`▶ Overlay Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+                setDragTooltip(`â–¶ Overlay Trim Out: ${nextEnd.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
               }
               return target;
             })
@@ -2154,7 +2154,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             const nextStart = Math.max(0, Math.min(maxTimelineBound - overlayDuration, snapRes.newStart));
             setOverlayStart(parseFloat(nextStart.toFixed(2)));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-            setDragTooltip(`▶ O1 Overlay • Start: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+            setDragTooltip(`â–¶ O1 Overlay â€¢ Start: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
           }
         }
       } else if (activeDrag.kind === 'voice') {
@@ -2171,7 +2171,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 target.start = parseFloat(nextStart.toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
                 setDragTooltip(
-                  `▶ Voice "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+                  `â–¶ Voice "${target.name}" â€¢ Start: ${nextStart.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
                 );
               } else if (mode === 'trim-left') {
                 const rawStart = origStart + deltaSec;
@@ -2181,14 +2181,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 target.start = parseFloat(nextStart.toFixed(2));
                 target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-                setDragTooltip(`◀ Voice Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+                setDragTooltip(`â—€ Voice Trim In: ${target.start.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
               } else if (mode === 'trim-right') {
                 const rawEnd = origStart + origDuration + deltaSec;
                 const snapRes = calculateSnap(rawEnd, snapPoints, snapToleranceSec);
                 const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
                 target.duration = parseFloat((nextEnd - target.start).toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-                setDragTooltip(`▶ Voice Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+                setDragTooltip(`â–¶ Voice Trim Out: ${nextEnd.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
               }
               return target;
             })
@@ -2200,7 +2200,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             const nextStart = Math.max(0, Math.min(maxTimelineBound - 0.5, snapRes.newStart));
             setVoiceStart(parseFloat(nextStart.toFixed(2)));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-            setDragTooltip(`▶ A1 Voice Delay: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+            setDragTooltip(`â–¶ A1 Voice Delay: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
           }
         }
       } else if (activeDrag.kind === 'music') {
@@ -2217,7 +2217,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 target.start = parseFloat(nextStart.toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
                 setDragTooltip(
-                  `▶ Music "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+                  `â–¶ Music "${target.name}" â€¢ Start: ${nextStart.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
                 );
               } else if (mode === 'trim-left') {
                 const rawStart = origStart + deltaSec;
@@ -2227,14 +2227,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 target.start = parseFloat(nextStart.toFixed(2));
                 target.duration = parseFloat(Math.max(0.5, nextDuration).toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-                setDragTooltip(`◀ Music Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+                setDragTooltip(`â—€ Music Trim In: ${target.start.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
               } else if (mode === 'trim-right') {
                 const rawEnd = origStart + origDuration + deltaSec;
                 const snapRes = calculateSnap(rawEnd, snapPoints, snapToleranceSec);
                 const nextEnd = Math.max(target.start + 0.5, Math.min(maxTimelineBound, snapRes.value));
                 target.duration = parseFloat((nextEnd - target.start).toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-                setDragTooltip(`▶ Music Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+                setDragTooltip(`â–¶ Music Trim Out: ${nextEnd.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
               }
               return target;
             })
@@ -2246,7 +2246,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             const nextStart = Math.max(0, Math.min(maxTimelineBound - 0.5, snapRes.newStart));
             setMusicStart(parseFloat(nextStart.toFixed(2)));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-            setDragTooltip(`▶ A2 Music Beat Alignment: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+            setDragTooltip(`â–¶ A2 Music Beat Alignment: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
           }
         }
       } else if (activeDrag.kind === 'sfx') {
@@ -2263,7 +2263,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 target.start = parseFloat(nextStart.toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
                 setDragTooltip(
-                  `▶ SFX "${target.name}" • Start: ${nextStart.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+                  `â–¶ SFX "${target.name}" â€¢ Start: ${nextStart.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
                 );
               } else if (mode === 'trim-left') {
                 const rawStart = origStart + deltaSec;
@@ -2273,14 +2273,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 target.start = parseFloat(nextStart.toFixed(2));
                 target.duration = parseFloat(Math.max(0.3, nextDuration).toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-                setDragTooltip(`◀ SFX Trim In: ${target.start.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+                setDragTooltip(`â—€ SFX Trim In: ${target.start.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
               } else if (mode === 'trim-right') {
                 const rawEnd = origStart + origDuration + deltaSec;
                 const snapRes = calculateSnap(rawEnd, snapPoints, snapToleranceSec);
                 const nextEnd = Math.max(target.start + 0.3, Math.min(maxTimelineBound, snapRes.value));
                 target.duration = parseFloat((nextEnd - target.start).toFixed(2));
                 setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-                setDragTooltip(`▶ SFX Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+                setDragTooltip(`â–¶ SFX Trim Out: ${nextEnd.toFixed(1)}s â€¢ Dur: ${target.duration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
               }
               return target;
             })
@@ -2292,7 +2292,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             const nextStart = Math.max(0, Math.min(maxTimelineBound - sfxDuration, snapRes.newStart));
             setSfxStart(parseFloat(nextStart.toFixed(2)));
             setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-            setDragTooltip(`▶ SFX Delay: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+            setDragTooltip(`â–¶ SFX Delay: ${nextStart.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
           }
         }
       } else if (activeDrag.kind === 'title') {
@@ -2304,7 +2304,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           setTitleStart(parseFloat(nextStart.toFixed(2)));
           setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
           setDragTooltip(
-            `▶ Title • Start: ${nextStart.toFixed(1)}s • Dur: ${origDuration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`
+            `â–¶ Title â€¢ Start: ${nextStart.toFixed(1)}s â€¢ Dur: ${origDuration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`
           );
         } else if (mode === 'trim-left') {
           const rawStart = origStart + deltaSec;
@@ -2314,7 +2314,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           setTitleStart(parseFloat(nextStart.toFixed(2)));
           setTitleDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
           setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`◀ Title Trim In: ${nextStart.toFixed(1)}s • Dur: ${nextDuration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+          setDragTooltip(`â—€ Title Trim In: ${nextStart.toFixed(1)}s â€¢ Dur: ${nextDuration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
         } else if (mode === 'trim-right') {
           const rawEnd = origStart + origDuration + deltaSec;
           const snapRes = calculateSnap(rawEnd, snapPoints, snapToleranceSec);
@@ -2322,7 +2322,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           const nextDuration = nextEnd - titleStart;
           setTitleDuration(parseFloat(Math.max(0.5, nextDuration).toFixed(2)));
           setSnapGuideTime(snapRes.snapped ? snapRes.snapPoint! : null);
-          setDragTooltip(`▶ Title Trim Out: ${nextEnd.toFixed(1)}s • Dur: ${nextDuration.toFixed(1)}s${snapRes.snapped ? ' 🧲 Snapped' : ''}`);
+          setDragTooltip(`â–¶ Title Trim Out: ${nextEnd.toFixed(1)}s â€¢ Dur: ${nextDuration.toFixed(1)}s${snapRes.snapped ? ' ðŸ§² Snapped' : ''}`);
         }
       }
     };
@@ -2496,7 +2496,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   };
 
-  // ── Sync Audio & CC (Closed Captions) ──────────────────────────────────
+  // â”€â”€ Sync Audio & CC (Closed Captions) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Proportional word-based duration distribution matching voiceover length
   const handleSyncAudioAndCC = useCallback(() => {
     const targetVoiceDuration =
@@ -2682,7 +2682,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
   }, [effectiveVoiceDur, localClips.length, maxCaptionsEnd, handleSyncAudioAndCC]);
 
-  // ── Context menu & clip manipulation handlers for Video & Image tracks ──
+  // â”€â”€ Context menu & clip manipulation handlers for Video & Image tracks â”€â”€
 
   // Video track
   const handleDeleteVideoClip = (clipId?: string) => {
@@ -3295,7 +3295,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         });
       });
 
-      toast.success(`🎬 AI Cut Sync: Video cuts aligned to voice pauses & ${bpm} BPM music beat`);
+      toast.success(`ðŸŽ¬ AI Cut Sync: Video cuts aligned to voice pauses & ${bpm} BPM music beat`);
     };
 
     const handlePlaybackRateChange = (e: Event) => {
@@ -3347,7 +3347,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         updated.splice(idx, 1, firstPart, freezeClip, secondPart);
         return updated;
       });
-      toast.success('❄️ Freeze Frame inserted at playhead (2.0s)');
+      toast.success('â�„ï¸� Freeze Frame inserted at playhead (2.0s)');
     };
 
     const handleDetachAudio = (e: Event) => {
@@ -3372,7 +3372,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         );
         setEnabledTracks((prev) => ({ ...prev, voice: true }));
         setVoiceTrackMuted(false);
-        toast.success('🔊 Audio detached to voice track');
+        toast.success('ðŸ”Š Audio detached to voice track');
       }
     };
 
@@ -3394,7 +3394,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           };
         })
       );
-      toast.success('✨ 4K AI Upscaling & Clarity Grade Applied');
+      toast.success('âœ¨ 4K AI Upscaling & Clarity Grade Applied');
     };
 
     window.addEventListener('workspace:split-clip', handleSplitClipEvent);
@@ -3527,7 +3527,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   // Dynamic voice profile resolution from loaded voices
   const activeVoiceObj = voices.find((v) => v.id === selectedVoice || v.name === selectedVoice);
   const voiceLabel = activeVoiceObj
-    ? `Voice: ${activeVoiceObj.name} (${activeVoiceObj.gender} • ${activeVoiceObj.style || 'Neural TTS'})`
+    ? `Voice: ${activeVoiceObj.name} (${activeVoiceObj.gender} â€¢ ${activeVoiceObj.style || 'Neural TTS'})`
     : `Voice: ${selectedVoice || 'Neural Voice'} (AI TTS Waves)`;
 
   // Dynamic soundtrack resolution from loaded music tracks
@@ -3538,7 +3538,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
       ? 'Soundtrack: Selected Mix (Looping Bed)'
       : 'Ambient Motivation (Soundtrack)';
   const musicSubLabel = activeMusicObj?.duration
-    ? `${activeMusicObj.duration} • -14 dB Studio Mix`
+    ? `${activeMusicObj.duration} â€¢ -14 dB Studio Mix`
     : '-14 dB Studio Mix';
 
   // Total enabled tracks configured in timeline
@@ -3600,10 +3600,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   );
 
 
-  // ── Dynamic Track Lane Renderers ─────────────────────────────────────
+  // â”€â”€ Dynamic Track Lane Renderers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const renderVideoTrackLane = () => (
     <React.Fragment key="track-lane-video">
-                {/* ── Track 1: Video Backdrop Clip Block (Moveable & Trimmable) ───── */}
+                {/* â”€â”€ Track 1: Video Backdrop Clip Block (Moveable & Trimmable) â”€â”€â”€â”€â”€ */}
                 {enabledTracks.video && (
                   hasVideo ? (
                     <VideoTrackClip
@@ -3749,7 +3749,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const renderImageTrackLane = () => (
     <React.Fragment key="track-lane-image">
-                {/* ── Track 2: Image Backdrop Clip Block ────────────────────── */}
+                {/* â”€â”€ Track 2: Image Backdrop Clip Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 {enabledTracks.image && (
                   hasImage ? (
                     <ImageTrackClip
@@ -3894,7 +3894,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const renderOverlayTrackLane = () => (
     <React.Fragment key="track-lane-overlay">
-                {/* ── Track 3: Overlays / Elements Clip Block ───────────────── */}
+                {/* â”€â”€ Track 3: Overlays / Elements Clip Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 {enabledTracks.overlay && (
                   hasOverlay ? (
                     <OverlayTrackClip
@@ -4039,7 +4039,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const renderCaptionsTrackLane = () => (
     <React.Fragment key="track-lane-captions">
-                {/* ── Track 4: Subtitle & Kinetic Caption Clips (Moveable, Trimmable, Stacking Lanes) ────── */}
+                {/* â”€â”€ Track 4: Subtitle & Kinetic Caption Clips (Moveable, Trimmable, Stacking Lanes) â”€â”€â”€â”€â”€â”€ */}
                 {enabledTracks.captions && (
                   captionLanes.length > 0 ? (
                     <CaptionTrackClips
@@ -4121,7 +4121,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const renderTitleTrackLane = () => (
     <React.Fragment key="track-lane-title">
-                {/* ── Track 5: Title / Hook Overlay Clip Block ──────────────── */}
+                {/* â”€â”€ Track 5: Title / Hook Overlay Clip Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 {enabledTracks.title && (
                   hasTitle ? (
                     <div
@@ -4238,7 +4238,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const renderVoiceTrackLane = () => (
     <React.Fragment key="track-lane-voice">
-                {/* ── Track 6: Voiceover Audio (With Full-Width Dynamic Audio Waves) ───── */}
+                {/* â”€â”€ Track 6: Voiceover Audio (With Full-Width Dynamic Audio Waves) â”€â”€â”€â”€â”€ */}
                 {enabledTracks.voice && (
                   hasVoice ? (
                     <AudioTrackClip
@@ -4384,7 +4384,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const renderMusicTrackLane = () => (
     <React.Fragment key="track-lane-music">
-                {/* ── Track 7: Background Music Soundtrack (With Full-Width Dynamic Music Waves) ───── */}
+                {/* â”€â”€ Track 7: Background Music Soundtrack (With Full-Width Dynamic Music Waves) â”€â”€â”€â”€â”€ */}
                 {enabledTracks.music && (
                   hasMusic ? (
                     <AudioTrackClip
@@ -4531,7 +4531,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const renderSfxTrackLane = () => (
     <React.Fragment key="track-lane-sfx">
-                {/* ── Track 8: Sound FX Track ──────────────────────────────── */}
+                {/* â”€â”€ Track 8: Sound FX Track â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 {enabledTracks.sfx && (
                   hasSfx ? (
                     <AudioTrackClip
@@ -4702,7 +4702,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   };
   return (
     <div className="workspace-timeline-editor w-full bg-[#121212] overflow-hidden transition-all font-sans-studio select-none relative group/timeline-card">
-      {/* ── Top Header Bar / Timeline Toolbar ──────────────────────── */}
+      {/* â”€â”€ Top Header Bar / Timeline Toolbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <TimelineToolbar
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
@@ -4739,10 +4739,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         onDurationChange={onTimelineDurationChange}
       />
 
-      {/* ── Collapsible Tracks Body ───────────────────────────────── */}
+      {/* â”€â”€ Collapsible Tracks Body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {!isCollapsed && (
         <div className="workspace-timeline-body flex flex-col bg-[#121212]">
-          {/* ── Time Ruler Row (Placed Above Scrollable Tracks Area) ── */}
+          {/* â”€â”€ Time Ruler Row (Placed Above Scrollable Tracks Area) â”€â”€ */}
           <div className="flex border-b border-[#242424] bg-[#141414] select-none shrink-0 z-20">
             {/* Time Ruler & Track Labels Header (synced with horizontal scroll of tracks) */}
             <div
@@ -4819,7 +4819,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             )}
           </div>
 
-          {/* ── Scrollable Tracks Area (Begins strictly BELOW the Time Ruler) ── */}
+          {/* â”€â”€ Scrollable Tracks Area (Begins strictly BELOW the Time Ruler) â”€â”€ */}
           <div
             ref={tracksScrollRef}
             onScroll={handleTracksScroll}
@@ -4833,7 +4833,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 width: `calc(${100 * timelineScale}% - ${trackHeadersWidth * timelineScale}px + ${trackHeadersWidth}px)`,
               }}
             >
-              {/* ── Track Header Column with Overlaid Zero-Flow Splitter ── */}
+              {/* â”€â”€ Track Header Column with Overlaid Zero-Flow Splitter â”€â”€ */}
               <div
                 style={{ width: `${trackHeadersWidth}px` }}
                 className="relative shrink-0 flex flex-col bg-[#141416]"
@@ -4892,7 +4892,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   sfxMaxLane={sfxMaxLane}
                 />
 
-                {/* ── Resizable Splitter (Overlaid on right border - ZERO layout flow width) ── */}
+                {/* â”€â”€ Resizable Splitter (Overlaid on right border - ZERO layout flow width) â”€â”€ */}
                 <div
                   role="separator"
                   aria-orientation="vertical"
@@ -4918,7 +4918,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                 </div>
               </div>
 
-              {/* ── Timeline Tracks Area (Scrollable & Zoomable) ───── */}
+              {/* â”€â”€ Timeline Tracks Area (Scrollable & Zoomable) â”€â”€â”€â”€â”€ */}
               <div
                 ref={tracksContainerRef}
                 onPointerDown={handleTracksPointerDown}
@@ -4927,10 +4927,10 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
               >
 
 
-                {/* ── Dynamic Order Track Lanes ─────────────────────────────── */}
+                {/* â”€â”€ Dynamic Order Track Lanes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 {trackOrder.map((trackId) => renderTrackLane(trackId))}
 
-                {/* ── Playhead indicator line across all tracks ────── */}
+                {/* â”€â”€ Playhead indicator line across all tracks â”€â”€â”€â”€â”€â”€ */}
                 <div
                   className="absolute top-0 bottom-0 pointer-events-none z-30 select-none w-0 flex justify-center"
                   style={{ left: `${progressPercent}%` }}

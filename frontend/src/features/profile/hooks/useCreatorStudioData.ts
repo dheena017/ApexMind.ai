@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { apiUrl } from '@/src/shared/utils/api';
 import { videosApi } from '@/src/features/videos/api/videosApi';
-import { workspaceApi } from '@/src/features/workspace/api/workspaceApi';
+import '@/src/features/workspace/api/workspaceApi';
 import type { YouTubeChannel } from '@/src/features/youtube/types';
 import type { WebsiteVideo } from '@/src/features/videos/types';
+import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
 
 export interface RecentGeneratedScript {
   id: string;
@@ -32,11 +32,11 @@ export function useCreatorStudioData() {
 
   const fetchStudioData = async () => {
     const [channelsRes, videosRes] = await Promise.allSettled([
-      fetch(apiUrl('/api/youtube/channels')).then((r) => r.json()),
+      youtubeApi.getChannels(),
       videosApi.getVideos(),
     ]);
 
-    const loadedChannels: YouTubeChannel[] = channelsRes.status === 'fulfilled' ? channelsRes.value.channels || [] : [];
+    const loadedChannels: YouTubeChannel[] = channelsRes.status === 'fulfilled' ? channelsRes.value : [];
     const loadedVideos: WebsiteVideo[] = videosRes.status === 'fulfilled' ? videosRes.value || [] : [];
     const loadedScripts: RecentGeneratedScript[] = [];
 

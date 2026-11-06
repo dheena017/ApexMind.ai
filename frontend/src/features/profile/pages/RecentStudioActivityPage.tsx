@@ -1,11 +1,10 @@
-import React from 'react';
+import 'react';
 import {
   BarChart3,
   Sparkles,
   Youtube,
   Eye,
   Heart,
-  TrendingUp,
   RefreshCw,
   Plus,
 } from 'lucide-react';
@@ -58,7 +57,7 @@ export default function RecentStudioActivityPage({ onNavigate }: RecentStudioAct
 
   return (
     <div className="w-full space-y-6 font-sans-studio text-[#E5E5E5]">
-      {/* ── Page Header Board ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Page Header Board Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#262626]">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3B82F6]/10 border border-[#3B82F6]/25 text-[#60A5FA]">
@@ -101,7 +100,7 @@ export default function RecentStudioActivityPage({ onNavigate }: RecentStudioAct
 
       {error && <p role="alert" className="text-xs text-amber-300">{error}</p>}
 
-      {/* ── Production Metric KPI Cards ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Production Metric KPI Cards Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <section aria-label="Studio production statistics" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {kpis.map((kpi) => (
           <div
@@ -116,7 +115,7 @@ export default function RecentStudioActivityPage({ onNavigate }: RecentStudioAct
             </div>
             <div className="mt-3">
               <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-mono-studio">
-                {loading ? '—' : kpi.value}
+                {loading ? 'Ã¢â‚¬â€�' : kpi.value}
               </p>
               <p className="mt-1 text-[11px] text-[#6B7280]">{kpi.subtext}</p>
             </div>
@@ -124,7 +123,7 @@ export default function RecentStudioActivityPage({ onNavigate }: RecentStudioAct
         ))}
       </section>
 
-      {/* ── Standalone Recent Studio Activity Component ── */}
+      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Standalone Recent Studio Activity Component Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
       <RecentStudioActivity
         scripts={scripts}
         videos={videos}

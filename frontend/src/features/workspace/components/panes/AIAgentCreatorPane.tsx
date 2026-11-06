@@ -25,11 +25,8 @@ import {
   Music,
   Type,
   Share2,
-  Eye,
-  Layers,
   Compass,
   CheckCircle2,
-  Copy,
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -66,28 +63,28 @@ export interface AIAgentCreatorPaneProps {
 }
 
 export const ASPECT_RATIO_OPTIONS = [
-  { value: '9:16' as const, label: '9:16', desc: 'Shorts / Reels', res: '1080×1920', icon: Smartphone },
-  { value: '16:9' as const, label: '16:9', desc: 'YouTube Landscape', res: '1920×1080', icon: Monitor },
-  { value: '1:1' as const, label: '1:1', desc: 'Square Post', res: '1080×1080', icon: Square },
-  { value: '4:5' as const, label: '4:5', desc: 'IG Portrait', res: '1080×1350', icon: Smartphone },
-  { value: '21:9' as const, label: '21:9', desc: 'Cinematic Ultrawide', res: '2560×1080', icon: Monitor },
+  { value: '9:16' as const, label: '9:16', desc: 'Shorts / Reels', res: '1080Ã—1920', icon: Smartphone },
+  { value: '16:9' as const, label: '16:9', desc: 'YouTube Landscape', res: '1920Ã—1080', icon: Monitor },
+  { value: '1:1' as const, label: '1:1', desc: 'Square Post', res: '1080Ã—1080', icon: Square },
+  { value: '4:5' as const, label: '4:5', desc: 'IG Portrait', res: '1080Ã—1350', icon: Smartphone },
+  { value: '21:9' as const, label: '21:9', desc: 'Cinematic Ultrawide', res: '2560Ã—1080', icon: Monitor },
 ];
 
 const AI_MODELS = [
-  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Recommended • Next-Gen Speed)' },
+  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Recommended â€¢ Next-Gen Speed)' },
   { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite (Rapid & Lightweight)' },
   { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview (Deep Reasoning & Hooks)' },
   { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive)' },
 ];
 
 const CATEGORY_OPTIONS = [
-  { value: 'Nature & Stoic Solitude', label: '🌲 Nature & Stoic Solitude' },
-  { value: 'Stoic Mindset & Discipline', label: '⛰️ Stoic Mindset & Mountain Peak' },
-  { value: 'Deep Forest Flow & Silence', label: '🌿 Deep Forest Flow & Silence' },
-  { value: 'Calm Waters & Inner Resilience', label: '🌊 Ocean Storm & Inner Resilience' },
-  { value: 'Unstoppable Motivation', label: '⚡ Unstoppable Wild Motivation' },
-  { value: 'Dark Psychology & Power', label: '🌑 Dark Psychology & Quiet Moves' },
-  { value: 'High Finance & Wealth', label: '💎 High Finance & Generational Empire' },
+  { value: 'Nature & Stoic Solitude', label: 'ðŸŒ² Nature & Stoic Solitude' },
+  { value: 'Stoic Mindset & Discipline', label: 'â›°ï¸� Stoic Mindset & Mountain Peak' },
+  { value: 'Deep Forest Flow & Silence', label: 'ðŸŒ¿ Deep Forest Flow & Silence' },
+  { value: 'Calm Waters & Inner Resilience', label: 'ðŸŒŠ Ocean Storm & Inner Resilience' },
+  { value: 'Unstoppable Motivation', label: 'âš¡ Unstoppable Wild Motivation' },
+  { value: 'Dark Psychology & Power', label: 'ðŸŒ‘ Dark Psychology & Quiet Moves' },
+  { value: 'High Finance & Wealth', label: 'ðŸ’Ž High Finance & Generational Empire' },
 ];
 
 const DURATION_PRESETS = [
@@ -115,10 +112,10 @@ const VISUAL_AESTHETICS = [
 
 // Subtitle & Caption Presets
 const SUBTITLE_PRESETS = [
-  { id: 'hormozi', label: 'Hormozi Pop', desc: 'Bold uppercase • Yellow keyword highlight' },
-  { id: 'clean', label: 'Clean Minimal', desc: 'Subtle white typography • Translucent pill' },
-  { id: 'viral_punch', label: 'Viral Punch', desc: 'Dynamic scale bounce • Red power words' },
-  { id: 'neon_glow', label: 'Neon Cyber', desc: 'Soft purple glow • Rounded modern font' },
+  { id: 'hormozi', label: 'Hormozi Pop', desc: 'Bold uppercase â€¢ Yellow keyword highlight' },
+  { id: 'clean', label: 'Clean Minimal', desc: 'Subtle white typography â€¢ Translucent pill' },
+  { id: 'viral_punch', label: 'Viral Punch', desc: 'Dynamic scale bounce â€¢ Red power words' },
+  { id: 'neon_glow', label: 'Neon Cyber', desc: 'Soft purple glow â€¢ Rounded modern font' },
 ];
 
 // Background Music Moods
@@ -204,7 +201,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#121215] text-[#E5E5E5] font-sans-studio select-none overflow-hidden rounded-none border-0">
       
-      {/* ── Top Bar: Active Mode Indicator & Switcher ── */}
+      {/* â”€â”€ Top Bar: Active Mode Indicator & Switcher â”€â”€ */}
       <div className="relative h-11 px-3.5 bg-[#141418] border-b border-[#24242A] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Wand2 className="w-4 h-4 shrink-0 text-[#3B82F6]" />
@@ -246,7 +243,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         </div>
       </div>
 
-      {/* ── 3-Tab Segmented Control (UI/UX Upgrade) ── */}
+      {/* â”€â”€ 3-Tab Segmented Control (UI/UX Upgrade) â”€â”€ */}
       <div className="p-2.5 bg-[#121215] border-b border-[#24242A] shrink-0">
         <div className="grid grid-cols-3 gap-1 p-1 bg-[#18181C] rounded-xl border border-[#24242A]">
           <button
@@ -299,7 +296,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Error Banner ── */}
+      {/* â”€â”€ Error Banner â”€â”€ */}
       {agentError && (
         <div className="mx-3.5 mt-2.5 p-3 rounded-xl bg-red-950/70 border border-red-500/40 text-red-200 text-xs flex items-start gap-2.5 shadow-md shrink-0">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -320,12 +317,12 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         </div>
       )}
 
-      {/* ── Main Scrollable Content Area ── */}
+      {/* â”€â”€ Main Scrollable Content Area â”€â”€ */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 space-y-4">
 
-        {/* ══════════════════════════════════════════════════════════════════
+        {/* â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
             TAB 1: PROMPT & CONCEPT
-        ══════════════════════════════════════════════════════════════════ */}
+        â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•� */}
         {activeTab === 'prompt' && (
           <div className="space-y-4">
             
@@ -338,14 +335,14 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 </label>
                 <span className="text-[#3B82F6] font-semibold">
                   {aspectRatio === '9:16'
-                    ? '9:16 • 1080×1920 (Vertical)'
+                    ? '9:16 â€¢ 1080Ã—1920 (Vertical)'
                     : aspectRatio === '16:9'
-                    ? '16:9 • 1920×1080 (Landscape)'
+                    ? '16:9 â€¢ 1920Ã—1080 (Landscape)'
                     : aspectRatio === '1:1'
-                    ? '1:1 • 1080×1080 (Square)'
+                    ? '1:1 â€¢ 1080Ã—1080 (Square)'
                     : aspectRatio === '4:5'
-                    ? '4:5 • 1080×1350 (Portrait)'
-                    : '21:9 • 2560×1080 (Cinematic)'}
+                    ? '4:5 â€¢ 1080Ã—1350 (Portrait)'
+                    : '21:9 â€¢ 2560Ã—1080 (Cinematic)'}
                 </span>
               </div>
               <div className="grid grid-cols-5 gap-1.5">
@@ -420,7 +417,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               </div>
             </div>
 
-            {/* ── Pacing & Model Configuration Card ── */}
+            {/* â”€â”€ Pacing & Model Configuration Card â”€â”€ */}
             <div className="bg-[#141418] border border-[#24242A] rounded-2xl p-3.5 space-y-3.5 shadow-sm">
               <div className="flex items-center justify-between pb-2 border-b border-[#24242A]">
                 <div className="flex items-center gap-2">
@@ -525,9 +522,9 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════
+        {/* â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
             TAB 2: STYLE & AUDIO (NEW CREATIVE PRODUCTION HUB)
-        ══════════════════════════════════════════════════════════════════ */}
+        â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•� */}
         {activeTab === 'style' && (
           <div className="space-y-4">
             
@@ -694,9 +691,9 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════
+        {/* â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
             TAB 3: VOICE PERSONA
-        ══════════════════════════════════════════════════════════════════ */}
+        â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•� */}
         {activeTab === 'voice' && (
           <div className="space-y-2.5">
             <div className="text-[11px] text-[#9CA3AF] px-0.5">
@@ -768,7 +765,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         )}
       </div>
 
-      {/* ── Bottom Action Footer ── */}
+      {/* â”€â”€ Bottom Action Footer â”€â”€ */}
       <div className="px-3.5 py-2.5 border-t border-[#24242A] bg-[#141418] shrink-0 flex flex-col gap-1.5">
         <Button
           size="sm"

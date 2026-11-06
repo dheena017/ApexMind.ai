@@ -4,9 +4,13 @@ services:
     name: apexmind-backend
     env: python
     region: oregon
-    plan: free
+    plan: starter
     buildCommand: pip install -r backend/requirements.txt
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: apexmind-backend-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
@@ -26,6 +30,8 @@ services:
         sync: false
       - key: APP_URL
         sync: false
+      - key: APEXMIND_DB_PATH
+        value: /var/data/apexmind.db
 
   # React Vite Frontend Static Site
   - type: web

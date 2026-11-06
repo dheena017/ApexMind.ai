@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  UserRound,
 } from 'lucide-react';
 import { Badge, Button } from '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
@@ -83,7 +82,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       </div>
 
-      {/* ── 1. The 4 Stat Cards ── */}
+      {/* â”€â”€ 1. The 4 Stat Cards â”€â”€ */}
       <section aria-label="User activity summary" className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
         {[
           {
@@ -120,13 +119,13 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
               <span className={`rounded-xl p-2.5 ${metric.color}`} aria-hidden="true">{metric.icon}</span>
             </div>
             <p className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-mono-studio">
-              {loading ? '—' : metric.value.toLocaleString()}
+              {loading ? 'â€”' : metric.value.toLocaleString()}
             </p>
           </div>
         ))}
       </section>
 
-      {/* ── 2. Complete Your Account Setup ── */}
+      {/* â”€â”€ 2. Complete Your Account Setup â”€â”€ */}
       <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -182,7 +181,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       </div>
 
-      {/* ── 3. User Details & Preferences Quick Cards ── */}
+      {/* â”€â”€ 3. User Details & Preferences Quick Cards â”€â”€ */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -254,7 +253,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       </div>
 
-      {/* ── 4. Creation Studio Hub & Account Usage Cards ── */}
+      {/* â”€â”€ 4. Creation Studio Hub & Account Usage Cards â”€â”€ */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6 flex flex-col justify-between">
           <div>
@@ -269,7 +268,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
                 </div>
               </div>
               <Button type="button" variant="primary" size="sm" onClick={() => onNavigate('workspace')}>
-                Open Studio →
+                Open Studio â†’
               </Button>
             </div>
 
@@ -289,7 +288,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
                   onClick={() => onNavigate('workspace')}
                   className="text-[#60A5FA] hover:underline cursor-pointer"
                 >
-                  Create new video →
+                  Create new video â†’
                 </button>
               </div>
             </div>
@@ -326,7 +325,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl border border-[#262626] bg-[#121212] p-3">
                 <p className="text-xs text-[#6B7280]">{label}</p>
-                <p className="mt-1 text-sm font-semibold capitalize text-[#E5E5E5] font-mono-studio">{loading && label !== 'Sign-in provider' && label !== 'Email verification' ? '—' : value}</p>
+                <p className="mt-1 text-sm font-semibold capitalize text-[#E5E5E5] font-mono-studio">{loading && label !== 'Sign-in provider' && label !== 'Email verification' ? 'â€”' : value}</p>
               </div>
             ))}
           </div>
@@ -346,7 +345,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
         </div>
       </div>
 
-      {/* ── 5. User Badges & Recent Activity ── */}
+      {/* â”€â”€ 5. User Badges & Recent Activity â”€â”€ */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-[#2F2F2F] bg-[#141414] p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -362,7 +361,7 @@ export default function ProfilePage({ onNavigate }: { onNavigate: (page: string)
                 <span className="mt-0.5">{badge.icon}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[#E5E5E5] font-medium">{badge.name}</span>
-                  <span className="mt-0.5 block text-xs">{badge.value === badge.goal ? 'Earned' : `${badge.description} · ${badge.value}/${badge.goal}`}</span>
+                  <span className="mt-0.5 block text-xs">{badge.value === badge.goal ? 'Earned' : `${badge.description} Â· ${badge.value}/${badge.goal}`}</span>
                 </span>
                 {badge.value === badge.goal && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-label="Earned" />}
               </li>

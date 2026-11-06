@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import {
-  Sparkles,
   Wand2,
   ArrowRight,
   Flame,
-  Check,
-  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import { TrendingPromptIdea } from '../types';
