@@ -12,60 +12,19 @@ from typing import Any
 from google import genai
 from google.genai import types
 
+from .ai_models import (
+    DEFAULT_SCRIPT_MODEL,
+    get_cached_models,
+    get_script_fallback_models,
+    get_tts_fallback_models,
+    resolve_script_model as resolve_available_script_model,
+    resolve_tts_model as resolve_available_tts_model,
+)
 from .config import settings
 
 # ==============================================================================
-# Defaults, Fixed Values & Model Registries (Placed at Top Below Imports)
+# Generation Defaults & Fixed Values
 # ==============================================================================
-
-# Script Generation Models & Fallbacks
-DEFAULT_SCRIPT_MODEL: str = settings.DEFAULT_SCRIPT_MODEL
-
-SUPPORTED_SCRIPT_MODELS: dict[str, str] = {
-    # Active Gemini 3.x models (Recommended)
-    "gemini-3.8-flash": "gemini-3.8-flash",
-    "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
-    "gemini-flash-latest": "gemini-flash-latest",
-    # Active Gemini 2.5 / 2.0 models mapped to active 3.8
-    "gemini-2.5-flash": "gemini-3.8-flash",
-    "gemini-2.0-flash": "gemini-3.8-flash",
-    # Aliases safely routed to active equivalents
-    "gemini-3.5-flash-lite": "gemini-3.8-flash",
-    "gemini-3.1-pro-preview": "gemini-3.8-flash",
-    "gemini-4-argon": "gemini-3.8-flash",
-    "gemini-2.5-flash-lite": "gemini-3.8-flash",
-    "gemini-2.5-pro": "gemini-3.8-flash",
-    "gemini-2.0-flash-lite": "gemini-3.1-flash-lite",
-    "gemini-1.5-flash": "gemini-1.5-flash",
-    "gemini-1.5-pro": "gemini-1.5-pro",
-    "gemini-pro-latest": "gemini-3.8-flash",
-    "claude-3-7-sonnet": "gemini-3.8-flash",
-    "gpt-4o": "gemini-3.8-flash",
-}
-
-SCRIPT_FALLBACK_MODELS: list[str] = [
-    "gemini-3.8-flash",
-    "gemini-3.1-flash-lite",
-    "gemini-flash-latest",
-    "gemini-1.5-flash",
-]
-
-# TTS Voiceover Models & Fallbacks
-DEFAULT_TTS_MODEL: str = "gemini-3.8-flash-tts"
-
-SUPPORTED_TTS_MODELS: dict[str, str] = {
-    "gemini-3.8-flash-tts": "gemini-3.8-flash-tts",
-    "gemini-3.8-flash-lite-tts": "gemini-3.8-flash-lite-tts",
-    # Older script-model selections still route to a supported speech model.
-    "gemini-2.5-flash": "gemini-3.8-flash-tts",
-    "gemini-2.0-flash": "gemini-3.8-flash-tts",
-    "gemini-2.0-flash-exp": "gemini-3.8-flash-tts",
-    "gemini-2.5-flash-tts": "gemini-3.8-flash-tts",
-}
-
-TTS_FALLBACK_MODELS: list[str] = [
-    "gemini-3.8-flash-lite-tts",
-]
 
 # Fixed System Instructions & Production Directives
 SCRIPT_SYSTEM_INSTRUCTION: str = (
@@ -157,24 +116,18 @@ class GeminiRateTracker:
             current_rpm = len(self._requests)
             current_rpd = len(self._daily_requests)
             current_tpm = sum(c for _, c in self._tokens_minute)
-            limit_rpm = 5
-            limit_rpd = 20
-            limit_tpm = 250_000
+            limit_rpm = None
+            limit_rpd = None
+            limit_tpm = None
 
             seconds_to_reset = 0
             if self._requests:
                 oldest_in_window = min(self._requests)
                 seconds_to_reset = max(0, int(60 - (now - oldest_in_window)))
 
-            percent_used = int((current_rpm / limit_rpm) * 100) if limit_rpm > 0 else 0
-            if percent_used >= 100:
-                status_level = "exceeded"
-            elif percent_used >= 80:
-                status_level = "critical"
-            elif percent_used >= 60:
-                status_level = "warning"
-            else:
-                status_level = "healthy"
+            percent_used = None
+            status_level = "unknown"
+            script_models, tts_models = get_cached_models()
 
             return {
                 "activeModel": self._last_model_used or DEFAULT_SCRIPT_MODEL,
@@ -187,50 +140,18 @@ class GeminiRateTracker:
                 "usagePercentRpm": percent_used,
                 "statusLevel": status_level,
                 "secondsToWindowReset": seconds_to_reset,
-                "effectiveRps": round(limit_rpm / 60.0, 3),
+                "effectiveRps": None,
                 "totalRequests": self._total_requests_all_time,
-                "tier": "Free Tier (5 RPM Cap)",
+                "tier": "Quota limits are managed by Google AI Studio",
                 "models": [
                     {
-                        "name": "Gemini 3.8 Flash",
-                        "category": "Text & Scripts",
-                        "rpmLimit": 5,
-                        "rpdLimit": 20,
-                        "tpmLimit": "250K",
-                        "rps": "0.083 req/s",
-                        "status": "Active",
-                        "description": "Default primary engine for script creation and reasoning",
-                    },
-                    {
-                        "name": "Gemini 3.8 Flash TTS",
-                        "category": "Voiceover Audio",
-                        "rpmLimit": 3,
-                        "rpdLimit": 10,
-                        "tpmLimit": "10K",
-                        "rps": "0.050 req/s",
-                        "status": "Active",
-                        "description": "Expressive multi-speaker speech synthesis engine",
-                    },
-                    {
-                        "name": "Gemini 3.5 Flash Lite",
-                        "category": "High-Throughput",
-                        "rpmLimit": 15,
-                        "rpdLimit": 500,
-                        "tpmLimit": "250K",
-                        "rps": "0.250 req/s",
-                        "status": "Standby",
-                        "description": "Ultra-fast lightweight fallback for fast generations",
-                    },
-                    {
-                        "name": "Antigravity Agent",
-                        "category": "Autonomous Agents",
-                        "rpmLimit": 60,
-                        "rpdLimit": 100,
-                        "tpmLimit": "100K",
-                        "rps": "1.000 req/s",
-                        "status": "Standby",
-                        "description": "Sandboxed autonomous agent execution environment",
-                    },
+                        "name": model["name"],
+                        "id": model["id"],
+                        "category": category,
+                        "status": "Available",
+                    }
+                    for category, models in (("Script generation", script_models), ("Voice generation", tts_models))
+                    for model in models
                 ],
             }
 
@@ -239,16 +160,13 @@ rate_tracker = GeminiRateTracker()
 
 
 def resolve_script_model(model_name: str | None = None) -> str:
-    """Select and validate script generation model using registry lookup."""
-    if not model_name:
-        return DEFAULT_SCRIPT_MODEL
-    return SUPPORTED_SCRIPT_MODELS.get(model_name.strip().lower(), DEFAULT_SCRIPT_MODEL)
+    """Select and validate a script model against the dynamically discovered list."""
+    return resolve_available_script_model(model_name)
 
 
 def resolve_tts_model(model_name: str | None = None) -> str:
     """Resolve a supported Gemini TTS model without requiring a hardcoded fallback."""
-    selected_model = (model_name or settings.DEFAULT_TTS_MODEL or DEFAULT_TTS_MODEL).strip().lower()
-    return SUPPORTED_TTS_MODELS.get(selected_model, DEFAULT_TTS_MODEL)
+    return resolve_available_tts_model(model_name)
 
 
 def normalize_voiceover_text(text: str) -> str:
@@ -290,7 +208,7 @@ def extract_voiceover_audio(response: Any) -> tuple[bytes, str]:
     if response is None:
         raise RuntimeError("Gemini TTS returned no response payload.")
 
-    # 1. Interactions API format (e.g., gemini-3.8-flash-tts via client.interactions.create)
+    # 1. Interactions API format for supported TTS models.
     output_audio = getattr(response, "output_audio", None)
     if output_audio is not None:
         raw_audio = getattr(output_audio, "data", None)
@@ -405,7 +323,7 @@ def _generate_script_with_fallback(
 
     # Deduplicated list of models starting with caller target_model
     models_to_try: list[str] = [target_model]
-    for alt in SCRIPT_FALLBACK_MODELS:
+    for alt in get_script_fallback_models(target_model):
         if alt not in models_to_try:
             models_to_try.append(alt)
 
@@ -1088,7 +1006,14 @@ Output MUST be a single raw JSON object matching this exact schema:
 }}
 """
 
-    target_model = resolve_script_model(model)
+    try:
+        target_model = resolve_script_model(model)
+    except Exception as model_discovery_err:
+        logger.warning(
+            "[Studio/Script] Gemini model discovery failed; using the requested model if available: %s",
+            model_discovery_err,
+        )
+        target_model = model or DEFAULT_SCRIPT_MODEL
     logger.info(f"--> [API SENT]   Gemini AI Generate Content | Model: '{target_model}' | Theme: '{category}' | Topic: '{topic}'")
     start_t = time.perf_counter()
 
@@ -1396,12 +1321,12 @@ def generate_gemini_voiceover(
                 f"Script: {normalized_text}"
             )
             unique_tts_models = [tts_model]
-            for m in TTS_FALLBACK_MODELS:
+            for m in get_tts_fallback_models(tts_model):
                 if m not in unique_tts_models:
                     unique_tts_models.append(m)
 
             for attempt_tts in unique_tts_models:
-                # 1. Try modern Interactions API (native for gemini-3.8-flash-tts / gemini-3.8-flash-lite-tts)
+                # 1. Try the Interactions API first for supported TTS models.
                 if hasattr(client, "interactions") and "tts" in attempt_tts.lower():
                     try:
                         tts_res = client.interactions.create(
@@ -1430,7 +1355,7 @@ def generate_gemini_voiceover(
                         last_tts_err = e
                         logger.warning(f"[Studio/TTS] Interactions API model '{attempt_tts}' failed ({e}), trying next option...")
 
-                # 2. Try models.generate_content (for multimodal audio models like gemini-2.0-flash)
+                # 2. Try models.generate_content as a fallback for TTS models without Interactions API support.
                 try:
                     tts_res = client.models.generate_content(
                         model=attempt_tts,

@@ -30,6 +30,8 @@ import { WorkspaceTabType } from '../WorkspaceSidebar';
 import { toast } from 'sonner';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import useAuth from '@/src/features/auth/hooks/useAuth';
+import { DEFAULT_SCRIPT_MODEL, DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
+import { useAvailableScriptModels } from '@/src/shared/hooks/useAvailableScriptModels';
 
 export interface AutomationsPaneProps {
   onNavigate?: (page: string) => void;
@@ -53,13 +55,6 @@ const THEME_OPTIONS = [
   'Deep Focus & Flow',
   'Calm & Resilience',
   'Unstoppable Motivation',
-];
-
-const AI_MODEL_OPTIONS = [
-  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Recommended)' },
-  { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (Lightweight)' },
-  { value: 'gemini-flash-latest', label: 'Gemini Flash Latest' },
-  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
 ];
 
 const ASPECT_RATIO_OPTIONS = [
@@ -121,6 +116,8 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   activeTimeline,
 }) => {
   const { user } = useAuth();
+  const { models: scriptModels, defaultModel, loading: modelsLoading, error: modelsError } =
+    useAvailableScriptModels();
   const [automations, setAutomations] = useState<AutomationJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
@@ -135,11 +132,18 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const [customValue, setCustomValue] = useState(3);
   const [customUnit, setCustomUnit] = useState<'hours' | 'minutes'>('hours');
   const [voice, setVoice] = useState('Fenrir');
-  const [aiModel, setAiModel] = useState('gemini-3.8-flash');
+  const [aiModel, setAiModel] = useState(DEFAULT_SCRIPT_MODEL);
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
   const [length, setLength] = useState('30 seconds');
   const [musicTrack, setMusicTrack] = useState('Epic Cinematic');
   const [privacyStatus, setPrivacyStatus] = useState<'public' | 'scheduled'>('public');
+
+  useEffect(() => {
+    if (!scriptModels.length) return;
+    setAiModel((current: string) =>
+      scriptModels.some((model) => model.value === current) ? current : defaultModel,
+    );
+  }, [scriptModels, defaultModel]);
 
   // Channel authorization state & runtime execution feedback
   const [authStatus, setAuthStatus] = useState<{ connected: boolean; channel?: YouTubeChannel } | null>(() => {
@@ -705,7 +709,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 <div>
                   <p className="text-xs font-bold text-white">No Active Automation Schedules</p>
                   <p className="text-[11px] text-zinc-400 mt-1">
-                    Set up an autonomous schedule to generate scripts with Gemini 3.8 Flash, synthesize voice, render 9:16 vertical MP4, and upload to YouTube.
+                    Set up an autonomous schedule to generate scripts with {DEFAULT_SCRIPT_MODEL_LABEL}, synthesize voice, render 9:16 vertical MP4, and upload to YouTube.
                   </p>
                 </div>
                 <button
@@ -1345,7 +1349,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               {/* 4 Steps Visual Flow */}
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { step: '01', title: 'Gemini 3.8', sub: 'Script & Hook' },
+                  { step: '01', title: DEFAULT_SCRIPT_MODEL_LABEL, sub: 'Script & Hook' },
                   { step: '02', title: 'Neural TTS', sub: 'Pro Voiceover' },
                   { step: '03', title: 'GPU Render', sub: '1080x1920 MP4' },
                   { step: '04', title: 'Live Shorts', sub: 'Auto Publish' },
@@ -1404,13 +1408,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               Script model
             </label>
             <CustomSelect
-              options={AI_MODEL_OPTIONS}
+              options={scriptModels}
               value={aiModel}
               onChange={(val) => setAiModel(val)}
+              disabled={modelsLoading || scriptModels.length === 0}
               className="w-full text-xs"
               buttonClassName="!bg-[#141416] !border-[#26262E] hover:!border-[#3B82F6]/50 !py-2.5 !rounded-xl text-xs"
               menuClassName="!bg-[#181818] !border-[#242424]"
             />
+            {modelsLoading && <p className="mt-1 text-[10px] text-zinc-500">Loading models from Google…</p>}
+            {modelsError && <p role="alert" className="mt-1 text-[10px] text-red-400">{modelsError}</p>}
           </div>
 
           {/* Aspect Ratio & Video Length */}
@@ -1811,7 +1818,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               </div>
               <div className="p-2 rounded-lg bg-[#101013] border border-[#222226]">
                 <span className="text-zinc-500 block">AI Script Model</span>
-                <span className="text-blue-400 font-mono font-semibold">Gemini 3.8 Flash</span>
+                <span className="text-blue-400 font-mono font-semibold">{DEFAULT_SCRIPT_MODEL_LABEL}</span>
               </div>
             </div>
           </div>

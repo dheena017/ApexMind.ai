@@ -22,6 +22,10 @@ import {
 import { Button } from '@/src/shared/ui/common';
 import LandingFooter from '../components/LandingFooter';
 import { isSessionValid } from '@/src/features/auth/context/AuthContext';
+import {
+  DEFAULT_SCRIPT_MODEL_LABEL,
+  DEFAULT_TTS_MODEL_LABEL,
+} from '@/src/shared/aiModels';
 
 // ── Static Card Container (Animations Removed) ──
 function Tilt3DCard({
@@ -333,7 +337,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
                     </div>
                     <span className="inline-flex items-center gap-1.5 text-xs text-[#60A5FA] font-medium bg-[#2563EB]/15 px-2.5 py-0.5 rounded-full border border-[#3B82F6]/30 shadow-xs">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
-                      Gemini 3.8 Flash
+                      {DEFAULT_SCRIPT_MODEL_LABEL}
                     </span>
                   </div>
 
@@ -521,7 +525,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
                 icon: <Volume2 className="w-6 h-6" />,
                 iconColor: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
                 title: 'Natural Gemini Voiceovers',
-                desc: 'Powered by gemini-3.8-flash-lite-tts for lifelike 24kHz audio synthesis in voices like Fenrir, Kore, and Zephyr.',
+                desc: `Powered by ${DEFAULT_TTS_MODEL_LABEL} for lifelike 24kHz audio synthesis in voices like Fenrir, Kore, and Zephyr.`,
               },
               {
                 icon: <Shield className="w-6 h-6" />,
@@ -630,7 +634,7 @@ export default function LandingPage({ onNavigate }: { onNavigate: (page: string)
                   <div className="space-y-1 w-full">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-semibold text-white">AI Script & Retention Hooks</h4>
-                      <span className="text-[11px] font-mono text-[#60A5FA]">Gemini 3.8 Flash</span>
+                      <span className="text-[11px] font-mono text-[#60A5FA]">{DEFAULT_SCRIPT_MODEL_LABEL}</span>
                     </div>
                     <p className="text-xs text-zinc-400 leading-relaxed">
                       Generates viral-structured motivational hooks, body reasoning, and impactful takeaways customized for YouTube Shorts.

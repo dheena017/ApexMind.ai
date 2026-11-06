@@ -12,14 +12,13 @@ from typing import Any, Dict, List, Optional
 
 from .audio_aligner import align_storyboard_to_audio
 from .service import synthesize_voiceover
-from backend.shared.config import settings
+from backend.shared.ai_models import DEFAULT_TTS_MODEL
 
 # ==============================================================================
 # Defaults & Fixed Constants (Placed at Top Below Imports)
 # ==============================================================================
 
 STAGE_ID: str = "voice"
-DEFAULT_TTS_MODEL: str = settings.DEFAULT_TTS_MODEL
 DEFAULT_MIME_TYPE: str = "audio/wav"
 DEFAULT_BPM: float = 140.0
 DEFAULT_FALLBACK_DURATION: float = 30.0
@@ -167,4 +166,3 @@ def run_studio_voice(
         "message": result.get("message", "Voiceover synthesized and aligned successfully"),
         "generatedAt": datetime.now(timezone.utc).isoformat(),
     }
-

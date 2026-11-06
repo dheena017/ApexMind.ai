@@ -51,7 +51,7 @@ The application is initialized in `frontend/src/main.tsx`. `App.tsx` owns the cu
 
 ## Backend notes
 
-The FastAPI application is implemented in `backend/main.py` and served with Uvicorn. The Vite development server proxies `/api` requests to `http://127.0.0.1:8000` by default. Set `BACKEND_URL` if the API is running at a different address, or set `PYTHON` to select the Python executable.
+The FastAPI application is implemented in `backend/main.py` and served with Uvicorn. The Vite development server proxies `/api` requests to `http://127.0.0.1:8000` by default. Set `BACKEND_URL` if the API is running at a different address, or set `PYTHON` to select the Python executable. See `.env.example` for the canonical environment variable names; use `VITE_API_URL` for the frontend's production API URL, `GOOGLE_CLIENT_ID` for Google sign-in, and `FACEBOOK_APP_ID` / `INSTAGRAM_APP_ID` for the respective social integrations. Vite injects public client IDs into the browser build; keep all client secrets backend-only.
 
 ## Security and demo behavior
 

@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.database.schema import init_db
 from backend.openapi.docs import custom_openapi
 from backend.shared.config import settings
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 from backend.shared.logger import (
     setup_colored_logging,
     RequestLoggingMiddleware,
@@ -135,7 +136,7 @@ def create_app() -> FastAPI:
         gemini_configured = bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip())
         gemini_health = {
             "status": "configured" if gemini_configured else "unconfigured",
-            "default_model": "gemini-2.5-flash",
+            "default_model": DEFAULT_SCRIPT_MODEL or "auto-selected from available Gemini models",
             "script_generation": "ready" if gemini_configured else "offline",
             "tts_voiceover": "ready" if gemini_configured else "offline",
         }

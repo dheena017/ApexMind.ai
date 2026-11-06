@@ -193,7 +193,7 @@ def init_db():
             last_video_url TEXT,
             last_run_message TEXT,
             last_is_live INTEGER DEFAULT 0,
-            ai_model TEXT DEFAULT 'gemini-2.5-flash',
+            ai_model TEXT DEFAULT NULL,
             aspect_ratio TEXT DEFAULT '9:16',
             length TEXT DEFAULT '30 seconds',
             created_at TEXT
@@ -212,7 +212,7 @@ def init_db():
             ("last_video_url", "TEXT"),
             ("last_run_message", "TEXT"),
             ("last_is_live", "INTEGER DEFAULT 0"),
-            ("ai_model", "TEXT DEFAULT 'gemini-2.5-flash'"),
+            ("ai_model", "TEXT DEFAULT NULL"),
             ("aspect_ratio", "TEXT DEFAULT '9:16'"),
             ("length", "TEXT DEFAULT '30 seconds'"),
             ("created_at", "TEXT"),

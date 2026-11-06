@@ -29,6 +29,7 @@ import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DEFAULT_CREATOR_PROFILE, getCreatorProfile } from '@/src/features/profile/api/profileApi';
 import { addWorkspaceNotification } from '../utils/workspaceNotificationManager';
 import { getQueryParams } from '@/src/app/routes';
+import { DEFAULT_SCRIPT_MODEL } from '@/src/shared/aiModels';
 
 interface WorkspacePageProps {
   onNavigate: (page: string) => void;
@@ -110,7 +111,7 @@ export default function WorkspacePage({
   // Navigation between separate AI Creator and Script Editor pages
 
   // AI Model & Script Generation
-  const [selectedModel, setSelectedModel] = useState('gemini-3.8-flash');
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_SCRIPT_MODEL);
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
   const [targetLength, setTargetLength] = useState('30 seconds');
@@ -776,7 +777,7 @@ export default function WorkspacePage({
         userPrompt: agentPrompt || undefined,
         tone: preferredTone || undefined,
         length: targetLength || '30 seconds',
-        model: selectedModel || 'gemini-2.5-flash',
+        model: selectedModel || DEFAULT_SCRIPT_MODEL,
         aspectRatio: canvasAspectRatio,
         voiceName: selectedVoice || 'Fenrir',
         musicTrackId: selectedMusic || undefined,

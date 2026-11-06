@@ -7,7 +7,7 @@ const DEFAULT_WORKSPACE_NOTIFICATIONS: WorkspaceNotification[] = [
   {
     id: 'wn-init-1',
     title: 'AI Script Engine Ready',
-    message: 'Gemini 2.5 Flash neural model loaded with viral hook retention optimization (94.2% predicted score).',
+    message: 'Gemini neural model loaded with viral hook retention optimization (94.2% predicted score).',
     category: 'script',
     type: 'ai',
     timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(),

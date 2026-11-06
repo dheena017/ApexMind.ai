@@ -12,6 +12,16 @@ class FacebookAuthRequest(BaseModel):
     accessToken: str = Field(..., min_length=1, max_length=4096, description="Facebook OAuth access token")
 
 
+class FacebookAuthStartRequest(BaseModel):
+    action: Literal["start"]
+
+
+class FacebookAuthCallbackRequest(BaseModel):
+    action: Literal["callback"]
+    code: str = Field(..., min_length=1, description="One-time authorization code returned by Facebook")
+    state: str = Field(..., min_length=1, description="Signed OAuth state returned by Facebook")
+
+
 class InstagramAuthStartRequest(BaseModel):
     action: Literal["start"]
 

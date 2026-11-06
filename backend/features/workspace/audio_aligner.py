@@ -16,6 +16,7 @@ import struct
 import wave
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel
+from backend.shared.ai_models import resolve_script_model
 
 logger = logging.getLogger("ApexMind.Studio.AudioAligner")
 
@@ -263,7 +264,7 @@ def extract_actual_speech_word_timestamps(
         )
 
         response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=resolve_script_model(),
             contents=[audio_part, prompt],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",

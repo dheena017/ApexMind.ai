@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS automation_jobs (
     last_video_url TEXT,
     last_run_message TEXT,
     last_is_live INTEGER DEFAULT 0,
-    ai_model TEXT DEFAULT 'gemini-2.5-flash',
+    ai_model TEXT DEFAULT NULL,
     aspect_ratio TEXT DEFAULT '9:16',
     length TEXT DEFAULT '30 seconds',
     created_at TEXT
@@ -231,4 +231,3 @@ CREATE TABLE IF NOT EXISTS website_videos (
 
 CREATE INDEX IF NOT EXISTS idx_website_videos_created_at ON website_videos (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_website_videos_category ON website_videos (category);
-

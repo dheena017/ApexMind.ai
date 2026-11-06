@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 from .connection import get_connection
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 
 logger = logging.getLogger("ApexMind.Database")
 
@@ -645,7 +646,7 @@ def get_automations(
             "lastVideoUrl": r["last_video_url"] if "last_video_url" in r.keys() else None,
             "lastRunMessage": r["last_run_message"] if "last_run_message" in r.keys() else None,
             "lastIsLive": bool(r["last_is_live"]) if "last_is_live" in r.keys() and r["last_is_live"] is not None else False,
-            "aiModel": r["ai_model"] if "ai_model" in r.keys() and r["ai_model"] else "gemini-2.5-flash",
+            "aiModel": r["ai_model"] if "ai_model" in r.keys() else DEFAULT_SCRIPT_MODEL,
             "aspectRatio": r["aspect_ratio"] if "aspect_ratio" in r.keys() and r["aspect_ratio"] else "9:16",
             "length": r["length"] if "length" in r.keys() and r["length"] else "30 seconds",
         })
@@ -677,7 +678,7 @@ def get_automation_by_id(job_id: str) -> Optional[Dict[str, Any]]:
         "lastVideoUrl": r["last_video_url"] if "last_video_url" in r.keys() else None,
         "lastRunMessage": r["last_run_message"] if "last_run_message" in r.keys() else None,
         "lastIsLive": bool(r["last_is_live"]) if "last_is_live" in r.keys() and r["last_is_live"] is not None else False,
-        "aiModel": r["ai_model"] if "ai_model" in r.keys() and r["ai_model"] else "gemini-2.5-flash",
+        "aiModel": r["ai_model"] if "ai_model" in r.keys() else DEFAULT_SCRIPT_MODEL,
         "aspectRatio": r["aspect_ratio"] if "aspect_ratio" in r.keys() and r["aspect_ratio"] else "9:16",
         "length": r["length"] if "length" in r.keys() and r["length"] else "30 seconds",
     }
@@ -691,7 +692,7 @@ def create_automation_job(
     privacy_status: str = "public",
     publish_time: str = "08:00",
     active: bool = True,
-    ai_model: str = "gemini-2.5-flash",
+    ai_model: str = DEFAULT_SCRIPT_MODEL,
     aspect_ratio: str = "9:16",
     length: str = "30 seconds",
     user_id: Optional[str] = None,

@@ -2,10 +2,9 @@ import { youtubeApi } from '../api/youtubeApi';
 import type { YouTubeChannel } from '../types';
 
 export const getGoogleClientId = (): string => {
-  return (
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_CLIENT_ID) ||
-    ''
-  )
+  const clientId =
+    typeof import.meta !== 'undefined' ? import.meta.env?.VITE_GOOGLE_CLIENT_ID : '';
+  return (clientId || '')
     .replace(/^["']|["']$/g, '')
     .trim();
 };
@@ -119,5 +118,5 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
   }
 
   onLoading?.(false);
-  onError?.('Google Identity Services client is not initialized or VITE_GOOGLE_CLIENT_ID is missing.');
+  onError?.('Google Identity Services client is not initialized or GOOGLE_CLIENT_ID is missing.');
 };

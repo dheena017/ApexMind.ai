@@ -5,6 +5,7 @@ Pydantic schemas and DTOs for the Workspace feature (Scripting, Voiceover, Memor
 
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 
 # ── 1. Request Models ─────────────────────────────────────────────────────────
 
@@ -283,7 +284,7 @@ class StudioScriptRequest(BaseModel):
     userPrompt: Optional[str] = Field(default=None, description="Free-text creative direction from the user")
     tone: Optional[str] = Field(default=None, description="Vocal delivery tone (raw, aggressive, calm, etc.)")
     length: Optional[str] = Field(default="30 seconds", description="Target video duration")
-    model: Optional[str] = Field(default="gemini-2.5-flash", description="Gemini model to use")
+    model: Optional[str] = Field(default=DEFAULT_SCRIPT_MODEL, description="Gemini model to use")
     aspectRatio: Optional[str] = Field(default="9:16", description="Video aspect ratio")
     voiceName: Optional[str] = Field(default=None, description="Selected voice profile ID")
     musicTrackId: Optional[str] = Field(default=None, description="Selected music track ID from media library")

@@ -3,15 +3,14 @@ from typing import Dict, Any, Optional
 from .repository import (
     fetch_media_library,
 )
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 from backend.shared.gemini import generate_gemini_script, generate_gemini_voiceover
-from backend.shared.config import settings
 from backend.database.repository import add_notification
 
 # ==============================================================================
 # Defaults & Fixed Constants (Placed at Top Below Imports)
 # ==============================================================================
 
-DEFAULT_SCRIPT_MODEL: str = settings.DEFAULT_SCRIPT_MODEL
 DEFAULT_ASPECT_RATIO: str = "9:16"
 
 logger = logging.getLogger("ApexMind.Workspace")

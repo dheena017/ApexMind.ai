@@ -164,28 +164,30 @@ def generate_platform_oauth_url(
         if clean_p == "meta":
             clean_p = "facebook"
         app_id = (
-            (settings.INSTAGRAM_APP_ID or settings.META_APP_ID)
+            settings.INSTAGRAM_APP_ID
             if clean_p == "instagram"
-            else settings.META_APP_ID
+            else settings.FACEBOOK_APP_ID
         )
         app_secret = (
-            (settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET)
+            settings.INSTAGRAM_APP_SECRET
             if clean_p == "instagram"
-            else settings.META_APP_SECRET
+            else settings.FACEBOOK_APP_SECRET
         )
         if not app_id or not app_secret:
             if clean_p == "instagram":
                 raise ValueError(
-                    "Instagram connections are not configured. Set INSTAGRAM_APP_ID and "
-                    "INSTAGRAM_APP_SECRET, or configure META_APP_ID and META_APP_SECRET."
+                    "Instagram connections are not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET."
                 )
-            raise ValueError("Facebook connections are not configured. Set META_APP_ID and META_APP_SECRET.")
+            raise ValueError("Facebook connections are not configured. Set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET.")
+        expected_redirect_uri = (
+            settings.INSTAGRAM_REDIRECT_URI if clean_p == "instagram" else settings.FACEBOOK_REDIRECT_URI
+        )
+        if redirect_uri and redirect_uri != expected_redirect_uri:
+            raise ValueError(f"{clean_p.capitalize()} OAuth redirect URI does not match its configured callback URI.")
         state = _create_meta_social_state(clean_p, user_id)
-        if redirect_uri and redirect_uri != settings.META_REDIRECT_URI:
-            raise ValueError("Social OAuth redirect URI must match META_REDIRECT_URI.")
         params = {
             "client_id": app_id,
-            "redirect_uri": settings.META_REDIRECT_URI,
+            "redirect_uri": expected_redirect_uri,
             "response_type": "code",
             "state": state,
         }
@@ -215,13 +217,13 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
         return await _complete_instagram_login_oauth(code, user_id)
 
     app_id = (
-        settings.META_APP_ID
+        settings.FACEBOOK_APP_ID
     )
     app_secret = (
-        settings.META_APP_SECRET
+        settings.FACEBOOK_APP_SECRET
     )
     if not app_id or not app_secret:
-        raise ValueError("Facebook connections are not configured. Set META_APP_ID and META_APP_SECRET.")
+        raise ValueError("Facebook connections are not configured. Set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET.")
 
     token_url = f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token"
     graph_url = f"https://graph.facebook.com/{META_GRAPH_VERSION}"
@@ -232,7 +234,7 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
                 params={
                     "client_id": app_id,
                     "client_secret": app_secret,
-                    "redirect_uri": settings.META_REDIRECT_URI,
+                    "redirect_uri": settings.FACEBOOK_REDIRECT_URI,
                     "code": code,
                 },
             )
@@ -364,13 +366,10 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
 
 async def _complete_instagram_login_oauth(code: str, user_id: str) -> Dict[str, Any]:
     """Exchange Instagram Business Login credentials and save the publishing account."""
-    app_id = settings.INSTAGRAM_APP_ID or settings.META_APP_ID
-    app_secret = settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET
+    app_id = settings.INSTAGRAM_APP_ID
+    app_secret = settings.INSTAGRAM_APP_SECRET
     if not app_id or not app_secret:
-        raise ValueError(
-            "Instagram connections are not configured. Set INSTAGRAM_APP_ID and "
-            "INSTAGRAM_APP_SECRET, or configure META_APP_ID and META_APP_SECRET."
-        )
+        raise ValueError("Instagram connections are not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET.")
 
     async with httpx.AsyncClient(timeout=20.0) as client:
         try:
@@ -380,7 +379,7 @@ async def _complete_instagram_login_oauth(code: str, user_id: str) -> Dict[str, 
                     "client_id": (None, app_id),
                     "client_secret": (None, app_secret),
                     "grant_type": (None, "authorization_code"),
-                    "redirect_uri": (None, settings.META_REDIRECT_URI),
+                    "redirect_uri": (None, settings.INSTAGRAM_REDIRECT_URI),
                     "code": (None, code),
                 },
             )
@@ -436,7 +435,7 @@ async def _complete_instagram_login_oauth(code: str, user_id: str) -> Dict[str, 
             )
             raise ValueError(
                 f"Instagram could not connect this account: {message} "
-                "Check Instagram Business Login is enabled and META_REDIRECT_URI is registered "
+                "Check Instagram Business Login is enabled and INSTAGRAM_REDIRECT_URI is registered "
                 "in the Instagram API setup."
             ) from exc
         except httpx.HTTPError as exc:

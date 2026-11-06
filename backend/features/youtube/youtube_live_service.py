@@ -1016,7 +1016,7 @@ def fetch_channel_live_streams(query: str) -> Dict[str, Any]:
 
 def get_google_oauth_config() -> Dict[str, str]:
     client_id = settings.GOOGLE_CLIENT_ID
-    client_secret = settings.GOOGLE_SECRET
+    client_secret = settings.GOOGLE_CLIENT_SECRET
     return {
         "client_id": client_id,
         "client_secret": client_secret,

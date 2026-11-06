@@ -79,8 +79,8 @@ def get_session_user_id(token: str) -> Optional[str]:
 
 def create_instagram_login_url() -> Dict[str, str]:
     """Create the Instagram authorization URL with a signed, short-lived state."""
-    app_id = settings.INSTAGRAM_APP_ID or settings.META_APP_ID
-    app_secret = settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET
+    app_id = settings.INSTAGRAM_APP_ID
+    app_secret = settings.INSTAGRAM_APP_SECRET
     if not app_id or not app_secret:
         raise ValueError("Instagram sign-in is not configured. Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET on the backend.")
 
@@ -96,13 +96,48 @@ def create_instagram_login_url() -> Dict[str, str]:
     state = f"{unsigned_state}.{signature}"
     params = {
         "client_id": app_id,
-        "redirect_uri": settings.META_AUTH_REDIRECT_URI,
+        "redirect_uri": settings.INSTAGRAM_AUTH_REDIRECT_URI,
         "response_type": "code",
-        "scope": "public_profile,pages_show_list,instagram_basic",
+        "scope": "instagram_business_basic",
+        "enable_fb_login": "false",
         "state": state,
     }
     return {
-        "authorizationUrl": f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth?{urllib.parse.urlencode(params)}",
+        "authorizationUrl": f"https://www.instagram.com/oauth/authorize?{urllib.parse.urlencode(params)}",
+        "state": state,
+    }
+
+
+def create_facebook_login_url() -> Dict[str, str]:
+    """Create Facebook's HTTPS authorization-code URL with a signed, short-lived state."""
+    app_id = settings.FACEBOOK_APP_ID
+    if not app_id or not settings.FACEBOOK_APP_SECRET:
+        raise ValueError(
+            "Facebook sign-in is not configured. Set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET on the backend."
+        )
+
+    provider = "facebook"
+    timestamp = str(int(time.time()))
+    nonce = secrets.token_urlsafe(24)
+    unsigned_state = f"{provider}.{timestamp}.{nonce}"
+    signature = hmac.new(
+        settings.JWT_SECRET_KEY.encode("utf-8"),
+        unsigned_state.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    state = f"{unsigned_state}.{signature}"
+    params = {
+        "client_id": app_id,
+        "redirect_uri": settings.FACEBOOK_AUTH_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "public_profile,email",
+        "state": state,
+    }
+    return {
+        "authorizationUrl": (
+            f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth?"
+            f"{urllib.parse.urlencode(params)}"
+        ),
         "state": state,
     }
 
@@ -135,10 +170,10 @@ def _validate_meta_state(provider: str, state: str) -> None:
 
 async def authenticate_facebook_user(access_token: str) -> Dict[str, Any]:
     """Verify a Facebook SDK token against this app before authenticating its identity."""
-    app_id = settings.META_APP_ID
-    app_secret = settings.META_APP_SECRET
+    app_id = settings.FACEBOOK_APP_ID
+    app_secret = settings.FACEBOOK_APP_SECRET
     if not app_id or not app_secret:
-        raise ValueError("Facebook sign-in is not configured. Set META_APP_ID and META_APP_SECRET on the backend.")
+        raise ValueError("Facebook sign-in is not configured. Set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET on the backend.")
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         debug_response = await client.get(
@@ -183,13 +218,85 @@ async def authenticate_facebook_user(access_token: str) -> Dict[str, Any]:
     return _create_meta_user_session("facebook", profile)
 
 
+async def authenticate_facebook_code(code: str, state: str) -> Dict[str, Any]:
+    """Exchange Facebook's one-time authorization code and authenticate its identity."""
+    _validate_meta_state("facebook", state)
+    app_id = settings.FACEBOOK_APP_ID
+    app_secret = settings.FACEBOOK_APP_SECRET
+    if not app_id or not app_secret:
+        raise ValueError(
+            "Facebook sign-in is not configured. Set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET on the backend."
+        )
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        token_response = await client.get(
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token",
+            params={
+                "client_id": app_id,
+                "client_secret": app_secret,
+                "redirect_uri": settings.FACEBOOK_AUTH_REDIRECT_URI,
+                "code": code,
+            },
+        )
+        if token_response.status_code != 200:
+            logger.warning(
+                "Facebook authorization-code exchange failed with HTTP %s",
+                token_response.status_code,
+            )
+            raise ValueError("Facebook sign-in could not verify your account. Please try again.")
+        access_token = token_response.json().get("access_token")
+        if not isinstance(access_token, str) or not access_token:
+            raise ValueError("Facebook did not return an access token.")
+
+        debug_response = await client.get(
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/debug_token",
+            params={
+                "input_token": access_token,
+                "access_token": f"{app_id}|{app_secret}",
+            },
+        )
+        if debug_response.status_code != 200:
+            logger.warning("Facebook access-token verification failed with HTTP %s", debug_response.status_code)
+            raise ValueError("Facebook could not verify your account. Please sign in again.")
+        debug_payload = debug_response.json()
+        debug_data = debug_payload.get("data") if isinstance(debug_payload, dict) else None
+        provider_id = debug_data.get("user_id") if isinstance(debug_data, dict) else None
+        if (
+            not isinstance(debug_data, dict)
+            or debug_data.get("is_valid") is not True
+            or str(debug_data.get("app_id") or "") != app_id
+            or not provider_id
+        ):
+            raise ValueError("Facebook sign-in token is invalid or was issued to a different application.")
+
+        profile_response = await client.get(
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
+            params={
+                "fields": "id,name,email,picture.type(large)",
+                "access_token": access_token,
+            },
+        )
+        if profile_response.status_code != 200:
+            logger.warning("Facebook account profile lookup failed with HTTP %s", profile_response.status_code)
+            raise ValueError("Facebook could not verify your account profile. Please try again.")
+        profile = profile_response.json()
+
+    if not isinstance(profile, dict) or str(profile.get("id") or "") != str(provider_id):
+        raise ValueError("Facebook returned a profile that does not match the verified access token.")
+    return _create_meta_user_session("facebook", profile)
+
+
 def _create_meta_user_session(provider: str, profile: Dict[str, Any]) -> Dict[str, Any]:
-    provider_id = str(profile.get("id") or "")
+    provider_id = str(profile.get("id") or profile.get("user_id") or "")
     if not provider_id:
         raise ValueError(f"{provider.capitalize()} did not return a valid account ID.")
     display_name = profile.get("name") or profile.get("username") or f"{provider.capitalize()} Creator"
     picture = profile.get("picture", {})
-    avatar_url = picture.get("data", {}).get("url") if isinstance(picture, dict) else None
+    avatar_url = (
+        picture.get("data", {}).get("url")
+        if isinstance(picture, dict)
+        else profile.get("profile_picture_url")
+    )
     identity_hash = hashlib.sha256(f"{provider}:{provider_id}".encode("utf-8")).hexdigest()
     internal_email = f"{provider}-{identity_hash}@oauth.apexmind.invalid"
     user = upsert_user(
@@ -219,20 +326,21 @@ def _create_meta_user_session(provider: str, profile: Dict[str, Any]) -> Dict[st
 
 
 async def authenticate_instagram_user(code: str, state: str) -> Dict[str, Any]:
-    """Exchange Instagram's single-use authorization code and authenticate its identity."""
+    """Exchange Instagram Login's single-use authorization code and authenticate its identity."""
     _validate_meta_state("instagram", state)
-    app_id = settings.INSTAGRAM_APP_ID or settings.META_APP_ID
-    app_secret = settings.INSTAGRAM_APP_SECRET or settings.META_APP_SECRET
+    app_id = settings.INSTAGRAM_APP_ID
+    app_secret = settings.INSTAGRAM_APP_SECRET
     if not app_id or not app_secret:
         raise ValueError("Instagram sign-in is not configured on the backend.")
 
     async with httpx.AsyncClient(timeout=15.0) as client:
-        token_response = await client.get(
-            f"https://graph.facebook.com/{META_GRAPH_VERSION}/oauth/access_token",
-            params={
+        token_response = await client.post(
+            "https://api.instagram.com/oauth/access_token",
+            data={
                 "client_id": app_id,
                 "client_secret": app_secret,
-                "redirect_uri": settings.META_AUTH_REDIRECT_URI,
+                "grant_type": "authorization_code",
+                "redirect_uri": settings.INSTAGRAM_AUTH_REDIRECT_URI,
                 "code": code,
             },
         )
@@ -245,8 +353,11 @@ async def authenticate_instagram_user(code: str, state: str) -> Dict[str, Any]:
             raise ValueError("Instagram did not return an access token.")
 
         profile_response = await client.get(
-            f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
-            params={"fields": "id,name,email,picture.type(large)", "access_token": access_token},
+            f"https://graph.instagram.com/{META_GRAPH_VERSION}/me",
+            params={
+                "fields": "user_id,username,name,profile_picture_url",
+                "access_token": access_token,
+            },
         )
         if profile_response.status_code != 200:
             logger.warning("Instagram account profile lookup failed with HTTP %s", profile_response.status_code)
@@ -379,10 +490,36 @@ async def authenticate_google_user(access_token: str) -> Dict[str, Any]:
             logger.warning("Google access-token verification failed with HTTP %s", token_info_response.status_code)
             raise ValueError("Google could not verify your account. Please sign in again.")
         token_info = token_info_response.json()
-        if not settings.GOOGLE_CLIENT_ID or token_info.get("issued_to") != settings.GOOGLE_CLIENT_ID:
+        configured_client_id = settings.GOOGLE_CLIENT_ID.strip()
+        token_client_id = next(
+            (
+                str(token_info.get(claim) or "").strip()
+                for claim in ("issued_to", "audience", "aud", "azp", "client_id")
+                if str(token_info.get(claim) or "").strip()
+            ),
+            "",
+        )
+        if not configured_client_id:
             raise ValueError(
-                "Google sign-in token was issued to a different application. Ensure GOOGLE_CLIENT_ID "
-                "and VITE_GOOGLE_CLIENT_ID use the same Google Web OAuth client, then restart the frontend and backend."
+                "Google sign-in is not configured. Set GOOGLE_CLIENT_ID to the Google Web OAuth client "
+                "used by this app, then restart the frontend and backend."
+            )
+        if token_client_id != configured_client_id:
+            logger.error(
+                "Google OAuth client mismatch: token client ID is '%s', backend configured for '%s'.",
+                token_client_id or "(missing)",
+                configured_client_id,
+            )
+            token_client_detail = (
+                f"'{token_client_id}'"
+                if token_client_id
+                else "missing from Google's token metadata"
+            )
+            raise ValueError(
+                f"Google OAuth client mismatch: the token client ID is {token_client_detail}, but the "
+                f"backend is configured for '{configured_client_id}'. Make sure the frontend and backend "
+                "use the same Google Web OAuth client ID, add this site's exact origin in Google Cloud "
+                "Console, and restart both servers."
             )
 
         response = await client.get(

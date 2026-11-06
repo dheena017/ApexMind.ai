@@ -103,10 +103,19 @@ export default defineConfig(({mode}) => {
     plugins: [react(), tailwindcss(), apexLoggerPlugin()],
     define: {
       'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(
-        env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || ''
+        env.GOOGLE_CLIENT_ID || ''
+      ),
+      'import.meta.env.VITE_FACEBOOK_APP_ID': JSON.stringify(
+        env.FACEBOOK_APP_ID || ''
+      ),
+      'import.meta.env.VITE_DEFAULT_SCRIPT_MODEL': JSON.stringify(
+        env.DEFAULT_SCRIPT_MODEL || ''
+      ),
+      'import.meta.env.VITE_DEFAULT_TTS_MODEL': JSON.stringify(
+        env.DEFAULT_TTS_MODEL || ''
       ),
       'import.meta.env.VITE_API_URL': JSON.stringify(
-        env.VITE_API_URL || env.BACKEND_URL || ''
+        env.VITE_API_URL || ''
       ),
     },
     resolve: {
@@ -130,4 +139,3 @@ export default defineConfig(({mode}) => {
     },
   };
 });
-

@@ -13,6 +13,7 @@ from typing import List, Set, Tuple, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 from backend.features.media.base import MediaAsset
+from backend.shared.ai_models import resolve_script_model
 
 logger = logging.getLogger("ApexMind.media.semantic_filter")
 
@@ -410,7 +411,7 @@ def evaluate_clip_with_gemini(
             f"Output JSON with keys: score (int 1-100), cinematicFit (bool), reasoning (str), bestMoodTag (str)."
         )
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=resolve_script_model(),
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",

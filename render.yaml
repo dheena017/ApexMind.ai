@@ -16,6 +16,10 @@ services:
         value: 3.11.9
       - key: HOST
         value: 0.0.0.0
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: PIXABAY_API_KEY
@@ -24,9 +28,31 @@ services:
         sync: false
       - key: UNSPLASH_ACCESS_KEY
         sync: false
+      - key: JAMENDO_CLIENT_ID
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
-      - key: GOOGLE_SECRET
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_SEARCH_API_KEY
+        sync: false
+      - key: GOOGLE_CSE_ID
+        sync: false
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: FACEBOOK_REDIRECT_URI
+        sync: false
+      - key: FACEBOOK_AUTH_REDIRECT_URI
+        sync: false
+      - key: INSTAGRAM_REDIRECT_URI
+        sync: false
+      - key: INSTAGRAM_AUTH_REDIRECT_URI
+        sync: false
+      - key: INSTAGRAM_APP_ID
+        sync: false
+      - key: INSTAGRAM_APP_SECRET
         sync: false
       - key: APP_URL
         sync: false
@@ -48,5 +74,7 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://apexmind-backend-zxw7.onrender.com
-      - key: VITE_GOOGLE_CLIENT_ID
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: FACEBOOK_APP_ID
         sync: false

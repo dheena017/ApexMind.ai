@@ -8,7 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   loginWithGoogle: (payload: GoogleAuthPayload) => Promise<UserProfile>;
-  loginWithFacebook: (accessToken: string) => Promise<UserProfile>;
+  loginWithFacebook: (code: string, state: string) => Promise<UserProfile>;
   loginWithInstagram: (code: string, state: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
 }
@@ -169,10 +169,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithFacebook = async (accessToken: string): Promise<UserProfile> => {
+  const loginWithFacebook = async (code: string, state: string): Promise<UserProfile> => {
     setIsLoading(true);
     try {
-      const authData = await authApi.facebookLogin(accessToken);
+      const authData = await authApi.facebookLogin(code, state);
       saveAuthSession(authData);
       return authData.user;
     } finally {

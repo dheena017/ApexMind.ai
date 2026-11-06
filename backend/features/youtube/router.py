@@ -13,6 +13,7 @@ import logging
 import urllib.parse
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, status, Body, Header
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 
 from .schemas import (
     ChannelDetailsResponse,
@@ -491,7 +492,7 @@ async def create_automation_schedule_route(
     privacy = payload.get("privacyStatus", "public")
     channel_id = payload.get("channelId")
     active = payload.get("active", True)
-    ai_model = payload.get("aiModel") or payload.get("ai_model") or "gemini-2.5-flash"
+    ai_model = payload.get("aiModel") or payload.get("ai_model") or DEFAULT_SCRIPT_MODEL
     aspect_ratio = payload.get("aspectRatio") or payload.get("aspect_ratio") or "9:16"
     length = payload.get("length") or "30 seconds"
 

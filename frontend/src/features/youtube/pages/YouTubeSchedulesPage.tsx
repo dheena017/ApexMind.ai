@@ -26,6 +26,8 @@ import {
 import { Card } from '@/src/shared/ui/common';
 import { AutomationJob, AutomationHistoryEntry } from '../types';
 import { youtubeApi } from '../api/youtubeApi';
+import { DEFAULT_SCRIPT_MODEL, DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
+import { useAvailableScriptModels } from '@/src/shared/hooks/useAvailableScriptModels';
 
 export interface YouTubeSchedulesPageProps {
   automations: AutomationJob[];
@@ -41,13 +43,6 @@ const THEME_OPTIONS = [
   'Deep Focus & Flow',
   'Calm & Resilience',
   'Unstoppable Motivation',
-];
-
-const AI_MODEL_OPTIONS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive & High Quality • Recommended)' },
-  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Next-Gen Speed & Storyboarding)' },
-  { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (Rapid & Lightweight)' },
-  { value: 'gemini-flash-latest', label: 'Gemini Flash Latest (Cutting-Edge)' },
 ];
 
 const ASPECT_RATIO_OPTIONS = [
@@ -179,7 +174,16 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
   const [customValue, setCustomValue] = useState(3);
   const [customUnit, setCustomUnit] = useState<'hours' | 'minutes'>('hours');
   const [voice, setVoice] = useState('Fenrir');
-  const [aiModel, setAiModel] = useState('gemini-2.5-flash');
+  const [aiModel, setAiModel] = useState(DEFAULT_SCRIPT_MODEL);
+  const { models: scriptModels, defaultModel, loading: modelsLoading, error: modelsError } =
+    useAvailableScriptModels();
+
+  React.useEffect(() => {
+    if (!scriptModels.length) return;
+    setAiModel((current: string) =>
+      scriptModels.some((model) => model.value === current) ? current : defaultModel,
+    );
+  }, [scriptModels, defaultModel]);
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
   const [length, setLength] = useState('30 seconds');
   const [musicTrack, setMusicTrack] = useState('Epic Cinematic');
@@ -709,7 +713,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                     </div>
                     <div className="p-2.5 rounded-xl bg-[#14141A] border border-[#242430]">
                       <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Pipeline Engine</div>
-                      <div className="text-xs font-bold text-zinc-300 mt-0.5 truncate">{auto.aiModel || 'Gemini 2.5 Flash'}</div>
+                      <div className="text-xs font-bold text-zinc-300 mt-0.5 truncate">{auto.aiModel || DEFAULT_SCRIPT_MODEL_LABEL}</div>
                     </div>
                   </div>
 
@@ -748,7 +752,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
 
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
                         {[
-                          { name: '1. Script', desc: auto.aiModel || 'Gemini 2.5 Flash' },
+                          { name: '1. Script', desc: auto.aiModel || DEFAULT_SCRIPT_MODEL_LABEL },
                           { name: '2. Voice', desc: auto.voice || 'Fenrir TTS' },
                           { name: '3. B-Roll', desc: '4K Pexels/Pixabay' },
                           { name: '4. Captions', desc: 'Acoustic Sync' },
@@ -1164,7 +1168,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-white">Gemini 3.8 Creative Script Engine</h4>
+            <h4 className="text-sm font-bold text-white">{DEFAULT_SCRIPT_MODEL_LABEL} Creative Script Engine</h4>
             <p className="text-xs text-[#8E8E93] mt-1 leading-relaxed">
               Every video generates viral hooks, authentic storytelling, and high-retention vertical pacing.
             </p>
@@ -1240,14 +1244,17 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                 <select
                   value={aiModel}
                   onChange={(e) => setAiModel(e.target.value)}
+                  disabled={modelsLoading || scriptModels.length === 0}
                   className="w-full bg-[#181818] border border-[#2e2e2e] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer font-medium"
                 >
-                  {AI_MODEL_OPTIONS.map((m) => (
+                  {modelsLoading && <option value="">Loading available models…</option>}
+                  {scriptModels.map((m) => (
                     <option key={m.value} value={m.value}>
                       {m.label}
                     </option>
                   ))}
                 </select>
+                {modelsError && <p role="alert" className="mt-1 text-[10px] text-red-400">{modelsError}</p>}
               </div>
 
               {/* Aspect Ratio & Video Length */}

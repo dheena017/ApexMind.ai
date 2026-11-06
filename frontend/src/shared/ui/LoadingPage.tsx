@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
 import { parseRoute, type PageRoute } from '@/src/app/routes';
+import { DEFAULT_SCRIPT_MODEL_LABEL, DEFAULT_TTS_MODEL_LABEL } from '@/src/shared/aiModels';
 
 interface LoadingPageProps {
   onNavigate: (page: string) => void;
@@ -44,8 +45,8 @@ export default function LoadingPage({ onNavigate }: LoadingPageProps) {
       subtitle: 'Synthesizing voiceover, generating transcript, and composing 9:16 layout',
       icon: <Youtube className="w-8 h-8 text-red-500" />,
       steps: [
-        'Prompting Gemini 3.8 Flash for high-impact hook & quote...',
-        'Synthesizing 24kHz studio audio with Gemini TTS...',
+        `Prompting ${DEFAULT_SCRIPT_MODEL_LABEL} for high-impact hook & quote...`,
+        `Synthesizing 24kHz studio audio with ${DEFAULT_TTS_MODEL_LABEL}...`,
         'Composing 9:16 dynamic motion canvas & backdrops...',
         'Aligning word-by-word animated caption overlays...',
         'Short render complete. Ready for YouTube publishing...',
@@ -56,8 +57,8 @@ export default function LoadingPage({ onNavigate }: LoadingPageProps) {
       subtitle: 'Starting autonomous video pipelines, AI models, and YouTube sync',
       icon: <Sparkles className="w-8 h-8 text-[#60A5FA]" />,
       steps: [
-        'Connecting to Gemini 3.8 Flash AI Engine...',
-        'Loading 24kHz Gemini neural voice synthesizer...',
+        `Connecting to ${DEFAULT_SCRIPT_MODEL_LABEL} AI Engine...`,
+        `Loading 24kHz ${DEFAULT_TTS_MODEL_LABEL} neural voice synthesizer...`,
         'Calibrating copyright-free ambient music score library...',
         'Syncing YouTube channel metrics & Shorts manager...',
         'ApexMind AI Studio initialized and ready.',

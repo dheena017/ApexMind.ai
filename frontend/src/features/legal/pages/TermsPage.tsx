@@ -68,7 +68,7 @@ export default function TermsPage({ onNavigate }: TermsPageProps) {
             ApexMind is an autonomous AI-powered creative studio designed to assist video creators and publishers in producing short-form video content (&quot;Shorts&quot;). Key capabilities of the platform include:
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-xs text-[#9CA3AF]">
-            <li><strong className="text-white">AI Script Synthesis:</strong> Generative topic ideation, motivational hook generation, and editable script drafts powered by large language models (including Google Gemini 3.8 Flash).</li>
+            <li><strong className="text-white">AI Script Synthesis:</strong> Generative topic ideation, motivational hook generation, and editable script drafts powered by Google Gemini models.</li>
             <li><strong className="text-white">Voice & Audio Production:</strong> Text-to-speech audio rendering, microphone recording, and interactive waveform timeline scrubbing.</li>
             <li><strong className="text-white">Multi-Track Video Canvas:</strong> Aspect ratio formatting (9:16, 16:9, 1:1), transformable compound layers, visual badges, and stock background curation.</li>
             <li><strong className="text-white">Direct YouTube Publishing:</strong> Review-first scheduling, metadata synchronization, and direct upload pipelines using official YouTube API Services.</li>

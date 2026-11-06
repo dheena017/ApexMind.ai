@@ -42,7 +42,6 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const { loginWithGoogle, loginWithFacebook, loginWithInstagram, isAuthenticated } = useAuth();
 
   const [loading, setLoading] = useState(false);
-  const [facebookSdkReady, setFacebookSdkReady] = useState(false);
   const [notice, setNotice] = useState<{ text: string; type: 'error' | 'success' | 'info' } | null>(null);
 
   // Sign-in agreement
@@ -51,40 +50,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   const handlingSocialCallback = useRef(false);
 
   useEffect(() => {
-    const appId = import.meta.env.VITE_META_APP_ID?.trim();
-    if (!appId) return;
-
-    let mounted = true;
-    const initializeFacebookSdk = () => {
-      if (!window.FB) return;
-      window.FB.init({ appId, xfbml: false, version: 'v27.0' });
-      if (mounted) setFacebookSdkReady(true);
-    };
-
-    window.fbAsyncInit = initializeFacebookSdk;
-    if (window.FB) {
-      initializeFacebookSdk();
-    } else {
-      let script = document.getElementById('facebook-jssdk') as HTMLScriptElement | null;
-      if (!script) {
-        script = document.createElement('script');
-        script.id = 'facebook-jssdk';
-        script.src = 'https://connect.facebook.net/en_US/sdk.js';
-        script.async = true;
-        script.defer = true;
-        script.onerror = () => {
-          if (mounted) {
-            setNotice({ text: 'Facebook Sign-In could not be loaded. Please refresh and try again.', type: 'error' });
-          }
-        };
-        document.head.appendChild(script);
-      }
+    if (window.location.protocol !== 'http:' || window.location.hostname !== '127.0.0.1') {
+      return;
     }
 
-    return () => {
-      mounted = false;
-      if (window.fbAsyncInit === initializeFacebookSdk) delete window.fbAsyncInit;
-    };
+    const localUrl = new URL(window.location.href);
+    localUrl.hostname = 'localhost';
+    window.location.replace(localUrl.toString());
   }, []);
 
   // Auto-redirect if session is active
@@ -109,9 +81,11 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     sessionStorage.removeItem('apexmind_meta_login');
     window.history.replaceState(window.history.state, '', window.location.pathname);
 
-    let flow: { provider: 'instagram'; state: string } | null = null;
+    let flow: { provider: 'facebook' | 'instagram'; state: string } | null = null;
     try {
-      flow = savedFlow ? JSON.parse(savedFlow) as { provider: 'instagram'; state: string } : null;
+      flow = savedFlow
+        ? JSON.parse(savedFlow) as { provider: 'facebook' | 'instagram'; state: string }
+        : null;
     } catch {
       flow = null;
     }
@@ -120,14 +94,17 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       setNotice({ text: `Sign-in was cancelled or denied: ${providerError}`, type: 'error' });
       return;
     }
-    if (!flow || flow.provider !== 'instagram' || !code || !callbackState || flow.state !== callbackState) {
+    if (!flow || !code || !callbackState || flow.state !== callbackState) {
       setNotice({ text: 'Social sign-in could not be verified. Please try again.', type: 'error' });
       return;
     }
 
     setLoading(true);
-    setNotice({ text: 'Signing in with Instagram...', type: 'info' });
-    void loginWithInstagram(code, callbackState)
+    setNotice({ text: `Signing in with ${flow.provider === 'facebook' ? 'Facebook' : 'Instagram'}...`, type: 'info' });
+    const finishLogin = flow.provider === 'facebook'
+      ? loginWithFacebook(code, callbackState)
+      : loginWithInstagram(code, callbackState);
+    void finishLogin
       .then(() => handleSuccessfulAuth())
       .catch((err: unknown) => {
         setNotice({
@@ -136,7 +113,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         });
         setLoading(false);
       });
-  }, [loginWithInstagram]);
+  }, [loginWithFacebook, loginWithInstagram]);
 
   const requireAgreement = () => {
     if (!agreementChecked) {
@@ -176,45 +153,33 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
     if (!clientId) {
       setLoading(false);
-      setNotice({ text: 'Google Sign-In is not configured. Add VITE_GOOGLE_CLIENT_ID to the environment.', type: 'error' });
+      setNotice({ text: 'Google Sign-In is not configured. Add GOOGLE_CLIENT_ID to the environment and restart the app.', type: 'error' });
       return;
     }
 
     fallbackGoogleOAuth(clientId);
   };
 
-  const handleFacebookAuth = () => {
+  const handleFacebookAuth = async () => {
     if (!requireAgreement()) return;
 
-    if (!import.meta.env.VITE_META_APP_ID?.trim()) {
-      setNotice({ text: 'Facebook Sign-In is not configured. Add VITE_META_APP_ID to the environment.', type: 'error' });
+    if (!import.meta.env.VITE_FACEBOOK_APP_ID?.trim()) {
+      setNotice({ text: 'Facebook Sign-In is not configured. Add FACEBOOK_APP_ID to the environment and restart the app.', type: 'error' });
       return;
     }
     setLoading(true);
     setNotice({ text: 'Connecting with Facebook...', type: 'info' });
-    if (!facebookSdkReady || !window.FB) {
+    try {
+      const { authorizationUrl, state } = await authApi.startFacebookLogin();
+      sessionStorage.setItem('apexmind_meta_login', JSON.stringify({ provider: 'facebook', state }));
+      window.location.assign(authorizationUrl);
+    } catch (err: unknown) {
       setLoading(false);
-      setNotice({ text: 'Facebook Sign-In is still loading. Please try again in a moment.', type: 'error' });
-      return;
+      setNotice({
+        text: err instanceof Error ? err.message : 'Facebook sign-in could not be started.',
+        type: 'error',
+      });
     }
-    window.FB.login((response) => {
-      const accessToken = response.authResponse?.accessToken;
-      if (!accessToken) {
-        setLoading(false);
-        setNotice({ text: 'Facebook sign-in was cancelled or did not return an access token.', type: 'error' });
-        return;
-      }
-
-      void loginWithFacebook(accessToken)
-        .then(() => handleSuccessfulAuth())
-        .catch((err: unknown) => {
-          setNotice({
-            text: err instanceof Error ? err.message : 'Facebook sign-in failed. Please try again.',
-            type: 'error',
-          });
-        })
-        .finally(() => setLoading(false));
-    }, { scope: 'public_profile,email' });
   };
 
   const handleInstagramAuth = async () => {

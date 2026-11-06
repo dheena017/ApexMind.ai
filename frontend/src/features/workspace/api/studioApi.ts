@@ -11,6 +11,7 @@
 
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
+import { DEFAULT_SCRIPT_MODEL, DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
 import type {
   ScriptStageResult,
   VoiceStageResult,
@@ -80,7 +81,7 @@ export const studioApi = {
   async generateScript(params: GenerateScriptParams): Promise<ScriptStageResult> {
     consoleLogger.info(
       'Studio',
-      `[Stage 1] Generating script | category="${params.category}" model=${params.model || 'gemini-3.8-flash'}`
+      `[Stage 1] Generating script | category="${params.category}" model=${params.model || DEFAULT_SCRIPT_MODEL_LABEL}`
     );
     const envelope = await post<StudioScriptEnvelope>('/api/studio/generate-script', {
       category: params.category,
@@ -88,7 +89,7 @@ export const studioApi = {
       userPrompt: params.userPrompt || undefined,
       tone: params.tone || undefined,
       length: params.length || '30 seconds',
-      model: params.model || 'gemini-3.8-flash',
+      model: params.model || DEFAULT_SCRIPT_MODEL,
       aspectRatio: params.aspectRatio || '9:16',
       voiceName: params.voiceName || undefined,
       musicTrackId: params.musicTrackId || undefined,
@@ -251,4 +252,3 @@ export const studioApi = {
     return data.data;
   },
 };
-

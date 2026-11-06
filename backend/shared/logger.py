@@ -13,6 +13,7 @@ from datetime import datetime
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 
 # ── ANSI Terminal Styling Codes ──────────────────────────────────────────────
 class Colors:
@@ -426,7 +427,7 @@ def print_startup_banner(host: str, port: int):
     lines = [
         ("Framework", "FastAPI 2.0 (Python 3.11)", C.BRIGHT_GREEN),
         ("Database", "SQLite (backend/data/apexmind.db)", C.BRIGHT_YELLOW),
-        ("AI Engine", "Google Gemini 2.5 Flash + TTS Audio", C.BRIGHT_MAGENTA),
+        ("AI Engine", f"Google {DEFAULT_SCRIPT_MODEL or 'dynamic model discovery'} + TTS Audio", C.BRIGHT_MAGENTA),
         ("Server URL", f"http://{display_host}:{port}", C.BRIGHT_WHITE),
         ("OpenAPI Docs", f"http://{display_host}:{port}/api/docs", C.BRIGHT_CYAN),
         ("Health Check", f"http://{display_host}:{port}/api/health", C.BRIGHT_GREEN),

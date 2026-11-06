@@ -11,14 +11,13 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from .service import generate_script
-from backend.shared.config import settings
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 
 # ==============================================================================
 # Defaults & Fixed Constants (Placed at Top Below Imports)
 # ==============================================================================
 
 STAGE_ID: str = "script"
-DEFAULT_SCRIPT_MODEL: str = settings.DEFAULT_SCRIPT_MODEL
 DEFAULT_ASPECT_RATIO: str = "9:16"
 
 logger = logging.getLogger("ApexMind.Studio.Script")
@@ -97,4 +96,3 @@ def run_studio_script(
         "memoryCount": result.get("memoryCount", 0),
         "generatedAt": datetime.now(timezone.utc).isoformat(),
     }
-

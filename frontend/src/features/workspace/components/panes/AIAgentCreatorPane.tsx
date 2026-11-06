@@ -32,6 +32,8 @@ import { Button } from '@/src/shared/ui/common';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { VoiceProfile } from '../../types';
 import { workspaceApi } from '../../api/workspaceApi';
+import { DEFAULT_SCRIPT_MODEL, DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
+import { useAvailableScriptModels } from '@/src/shared/hooks/useAvailableScriptModels';
 
 export interface AIAgentCreatorPaneProps {
   agentPrompt: string;
@@ -68,13 +70,6 @@ export const ASPECT_RATIO_OPTIONS = [
   { value: '1:1' as const, label: '1:1', desc: 'Square Post', res: '1080×1080', icon: Square },
   { value: '4:5' as const, label: '4:5', desc: 'IG Portrait', res: '1080×1350', icon: Smartphone },
   { value: '21:9' as const, label: '21:9', desc: 'Cinematic Ultrawide', res: '2560×1080', icon: Monitor },
-];
-
-const AI_MODELS = [
-  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Recommended • Next-Gen Speed)' },
-  { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite (Rapid & Lightweight)' },
-  { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview (Deep Reasoning & Hooks)' },
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Adaptive)' },
 ];
 
 const CATEGORY_OPTIONS = [
@@ -191,7 +186,16 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
     };
   }, [voices]);
 
-  const currentModel = propModel || 'gemini-3.8-flash';
+  const currentModel = propModel || DEFAULT_SCRIPT_MODEL;
+  const { models: scriptModels, defaultModel, loading: modelsLoading, error: modelsError } =
+    useAvailableScriptModels();
+
+  useEffect(() => {
+    if (!scriptModels.length) return;
+    if (!scriptModels.some((model) => model.value === currentModel)) {
+      onModelChange?.(defaultModel);
+    }
+  }, [scriptModels, defaultModel, currentModel, onModelChange]);
   const activeCategoryShort = category ? category.split('&')[0].trim() : 'AI Video';
 
   const togglePlatform = (p: string) => {
@@ -436,11 +440,17 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                   <span>Reasoning Engine</span>
                 </label>
                 <CustomSelect
-                  options={AI_MODELS}
-                  value={currentModel}
+                  options={scriptModels}
+                  value={scriptModels.some((model) => model.value === currentModel) ? currentModel : defaultModel}
                   onChange={(val) => onModelChange?.(val)}
+                  disabled={modelsLoading || scriptModels.length === 0}
                   className="w-full text-xs"
                 />
+                {!modelsLoading && !modelsError && scriptModels.length > 0 && !currentModel && (
+                  <p className="mt-1 text-[10px] text-[#737373]">Default: {defaultModel || DEFAULT_SCRIPT_MODEL_LABEL}</p>
+                )}
+                {modelsLoading && <p className="mt-1 text-[10px] text-[#737373]">Loading models from Google…</p>}
+                {modelsError && <p role="alert" className="mt-1 text-[10px] text-red-400">{modelsError}</p>}
               </div>
 
               {/* Target Duration */}

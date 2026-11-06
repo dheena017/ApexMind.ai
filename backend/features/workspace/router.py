@@ -7,6 +7,11 @@ import logging
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, status, Query, UploadFile, File, Form
+from backend.shared.ai_models import (
+    DEFAULT_SCRIPT_MODEL,
+    get_available_models,
+    get_default_script_model,
+)
 from .schemas import (
     GenerateVoiceoverRequest,
     VoiceoverResponse,
@@ -35,6 +40,28 @@ from .service import (
 
 logger = logging.getLogger("ApexMind.features.workspace")
 router = APIRouter()
+
+
+@router.get(
+    "/api/ai/models",
+    tags=["AI"],
+    summary="List available Gemini models",
+    description="Lists text-generation models currently available to the configured Gemini API key.",
+)
+def get_available_ai_models_route():
+    try:
+        script_models, _ = get_available_models()
+        return {
+            "models": script_models,
+            "defaultModel": get_default_script_model(),
+        }
+    except Exception as exc:
+        logger.error(f"Could not load available Gemini models: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Could not load available Gemini models: {exc}",
+        ) from exc
+
 
 @router.post(
     "/api/generate-voiceover",
@@ -185,7 +212,7 @@ def post_studio_generate_script(payload: StudioScriptRequest):
             topic=payload.topic or payload.category,
             tone=payload.tone or "",
             length=payload.length or "30 seconds",
-            model=payload.model or "gemini-2.5-flash",
+            model=payload.model or DEFAULT_SCRIPT_MODEL,
             aspect_ratio=payload.aspectRatio or "9:16",
             voice_name=payload.voiceName,
             music_track_id=payload.musicTrackId,

@@ -9,6 +9,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { SystemStatusSummary } from '../types';
+import { DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
 
 interface SystemHealthWidgetProps {
   systemStatus: SystemStatusSummary;
@@ -73,7 +74,7 @@ export const SystemHealthWidget: React.FC<SystemHealthWidgetProps> = ({
               <span>{isGeminiReady ? 'Ready' : 'Unconfigured'}</span>
             </div>
             <div className="text-[10px] text-[#7A7A7A] mt-0.5">
-              {isGeminiReady ? 'gemini-3.8-flash engine' : 'API key needed'}
+              {isGeminiReady ? `${DEFAULT_SCRIPT_MODEL_LABEL} engine` : 'API key needed'}
             </div>
           </div>
 

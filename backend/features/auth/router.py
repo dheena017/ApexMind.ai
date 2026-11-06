@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException, status, Header
 from .schemas import (
     GoogleAuthRequest,
     FacebookAuthRequest,
+    FacebookAuthStartRequest,
+    FacebookAuthCallbackRequest,
     InstagramAuthStartRequest,
     InstagramAuthCallbackRequest,
     OAuthAuthorizationResponse,
@@ -17,7 +19,9 @@ from .schemas import (
 from .service import (
     authenticate_google_user,
     authenticate_facebook_user,
+    authenticate_facebook_code,
     authenticate_instagram_user,
+    create_facebook_login_url,
     create_instagram_login_url,
     get_current_user_profile,
     get_session_user_id,
@@ -58,12 +62,21 @@ async def post_google_auth(payload: GoogleAuthRequest):
 
 @router.post(
     "/facebook",
-    response_model=AuthResponse,
+    response_model=Union[OAuthAuthorizationResponse, AuthResponse],
     summary="Sign in with Facebook",
-    description="Verifies a Facebook OAuth access token and creates a creator session."
+    description=(
+        "Use action=start to get Facebook's authorization URL, then action=callback with the returned "
+        "code and state to exchange the code and create a creator session."
+    )
 )
-async def post_facebook_auth(payload: FacebookAuthRequest):
+async def post_facebook_auth(
+    payload: Union[FacebookAuthStartRequest, FacebookAuthCallbackRequest, FacebookAuthRequest],
+):
     try:
+        if isinstance(payload, FacebookAuthStartRequest):
+            return create_facebook_login_url()
+        if isinstance(payload, FacebookAuthCallbackRequest):
+            return await authenticate_facebook_code(payload.code, payload.state)
         return await authenticate_facebook_user(payload.accessToken)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

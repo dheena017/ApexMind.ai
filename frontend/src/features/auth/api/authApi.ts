@@ -48,11 +48,24 @@ export const authApi = {
     return data;
   },
 
-  async facebookLogin(accessToken: string): Promise<AuthResponseData> {
+  async startFacebookLogin(): Promise<OAuthAuthorizationResponse> {
     const res = await fetch(apiUrl('/api/auth/facebook'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accessToken }),
+      body: JSON.stringify({ action: 'start' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Facebook sign-in is unavailable' }));
+      throw new Error(err.detail || 'Facebook sign-in is unavailable');
+    }
+    return res.json();
+  },
+
+  async facebookLogin(code: string, state: string): Promise<AuthResponseData> {
+    const res = await fetch(apiUrl('/api/auth/facebook'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'callback', code, state }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Facebook sign-in failed' }));
