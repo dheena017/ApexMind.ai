@@ -1102,9 +1102,11 @@ def handle_oauth_callback(
     }
 
 
-def get_authenticated_youtube_client() -> Optional[Any]:
+def get_authenticated_youtube_client(user_id: Optional[str] = None) -> Optional[Any]:
     """Builds an authorized YouTube Data API v3 client using saved OAuth credentials."""
-    ch = get_oauth_channel()
+    if not user_id:
+        return None
+    ch = get_oauth_channel(user_id=user_id)
     if not ch or (not ch.get("refresh_token") and not ch.get("access_token")):
         return None
 
@@ -1161,10 +1163,11 @@ def upload_video_to_live_youtube(
     tags: Optional[List[str]] = None,
     privacy_status: str = "public",
     mimetype: Optional[str] = None,
+    user_id: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, Any]:
     """Streams video directly to YouTube via YouTube Data API v3 (videos.insert). Zero DB writes."""
-    youtube = get_authenticated_youtube_client()
+    youtube = get_authenticated_youtube_client(user_id)
     if not youtube:
         raise RuntimeError("No Google OAuth authorized YouTube channel found. Please authorize your channel first.")
 
@@ -1281,9 +1284,10 @@ def update_live_video_metadata(
     description: Optional[str] = None,
     tags: Optional[List[str]] = None,
     privacy_status: Optional[str] = None,
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Updates video title, description, or privacy directly on YouTube."""
-    youtube = get_authenticated_youtube_client()
+    youtube = get_authenticated_youtube_client(user_id)
     if not youtube:
         raise RuntimeError("Google OAuth authorization required to update video metadata.")
 
@@ -1316,9 +1320,9 @@ def update_live_video_metadata(
     }
 
 
-def delete_live_video(video_id: str) -> Dict[str, Any]:
+def delete_live_video(video_id: str, user_id: Optional[str] = None) -> Dict[str, Any]:
     """Permanently deletes video directly from the user's YouTube channel."""
-    youtube = get_authenticated_youtube_client()
+    youtube = get_authenticated_youtube_client(user_id)
     if not youtube:
         raise RuntimeError("Google OAuth authorization required to delete video.")
 
@@ -1330,9 +1334,14 @@ def delete_live_video(video_id: str) -> Dict[str, Any]:
     }
 
 
-def create_live_playlist(title: str, description: str = "", privacy_status: str = "public") -> Dict[str, Any]:
+def create_live_playlist(
+    title: str,
+    description: str = "",
+    privacy_status: str = "public",
+    user_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Creates a genuine public or unlisted playlist directly on YouTube."""
-    youtube = get_authenticated_youtube_client()
+    youtube = get_authenticated_youtube_client(user_id)
     if not youtube:
         raise RuntimeError("Google OAuth authorization required to create playlist.")
 
@@ -1354,9 +1363,15 @@ def create_live_playlist(title: str, description: str = "", privacy_status: str 
     }
 
 
-def update_live_playlist(playlist_id: str, title: Optional[str] = None, description: Optional[str] = None, privacy_status: Optional[str] = None) -> Dict[str, Any]:
+def update_live_playlist(
+    playlist_id: str,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    privacy_status: Optional[str] = None,
+    user_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Updates playlist settings live on YouTube."""
-    youtube = get_authenticated_youtube_client()
+    youtube = get_authenticated_youtube_client(user_id)
     if not youtube:
         raise RuntimeError("Google OAuth authorization required to update playlist.")
 
@@ -1372,9 +1387,9 @@ def update_live_playlist(playlist_id: str, title: Optional[str] = None, descript
     return {"success": True, "playlist": res}
 
 
-def delete_live_playlist(playlist_id: str) -> Dict[str, Any]:
+def delete_live_playlist(playlist_id: str, user_id: Optional[str] = None) -> Dict[str, Any]:
     """Deletes playlist directly on YouTube."""
-    youtube = get_authenticated_youtube_client()
+    youtube = get_authenticated_youtube_client(user_id)
     if not youtube:
         raise RuntimeError("Google OAuth authorization required to delete playlist.")
 
@@ -1382,9 +1397,14 @@ def delete_live_playlist(playlist_id: str) -> Dict[str, Any]:
     return {"success": True, "playlistId": playlist_id, "message": "Playlist deleted live from YouTube."}
 
 
-def reply_to_live_comment(video_id: str, text: str, parent_id: Optional[str] = None) -> Dict[str, Any]:
+def reply_to_live_comment(
+    video_id: str,
+    text: str,
+    parent_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Posts a top-level comment or replies to a comment directly on YouTube."""
-    youtube = get_authenticated_youtube_client()
+    youtube = get_authenticated_youtube_client(user_id)
     if not youtube:
         raise RuntimeError("Google OAuth authorization required to post comments.")
 

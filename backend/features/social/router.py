@@ -29,11 +29,22 @@ from backend.database.repository import (
     upsert_social_account,
     delete_social_account,
     get_published_posts,
-    get_latest_user,
 )
+from backend.features.auth.service import get_session_user_id
 
 logger = logging.getLogger("ApexMind.features.social")
 router = APIRouter(prefix="/api/social", tags=["Omnichannel Social Fleet & Syndication"])
+
+
+def _require_session_user_id(authorization: Optional[str]) -> str:
+    scheme, _, token = (authorization or "").partition(" ")
+    user_id = get_session_user_id(token) if scheme.lower() == "bearer" and token else None
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="A valid authenticated session is required.",
+        )
+    return user_id
 
 
 @router.get(
@@ -43,11 +54,10 @@ router = APIRouter(prefix="/api/social", tags=["Omnichannel Social Fleet & Syndi
     description="Returns all supported connected social channels, pages, and profiles.",
 )
 async def list_fleet_accounts(
-    userId: Optional[str] = None,
-    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    authorization: Optional[str] = Header(None),
 ):
     try:
-        fleet = get_user_fleet(userId or x_user_id)
+        fleet = get_user_fleet(_require_session_user_id(authorization))
         return {
             "success": True,
             "total": len(fleet),
@@ -70,10 +80,11 @@ async def list_fleet_accounts(
 async def get_oauth_url(
     platform: str = Query(..., description="'youtube', 'instagram', 'facebook', or 'meta'"),
     redirectUri: Optional[str] = Query(None, description="Client redirect URI"),
-    userId: Optional[str] = Query(None, description="Master account User ID"),
+    authorization: Optional[str] = Header(None),
 ):
     try:
-        res = generate_platform_oauth_url(platform, userId, redirectUri)
+        user_id = _require_session_user_id(authorization)
+        res = generate_platform_oauth_url(platform, user_id, redirectUri)
         return {
             "success": True,
             "platform": res["platform"],
@@ -112,7 +123,7 @@ async def complete_meta_oauth(payload: MetaOAuthCallbackRequest):
 async def connect_account(
     platform: str,
     payload: ConnectPlatformRequest,
-    userId: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
 ):
     clean_p = platform.lower().strip()
     if clean_p in ("facebook", "instagram"):
@@ -120,10 +131,7 @@ async def connect_account(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Facebook Pages and Instagram professional accounts must be connected through Meta OAuth.",
         )
-    effective_user_id = userId
-    if not effective_user_id:
-        latest = get_latest_user()
-        effective_user_id = latest["id"] if latest else "usr_global"
+    effective_user_id = _require_session_user_id(authorization)
 
     handle_clean = payload.handle or f"creator_{clean_p}"
     name_clean = payload.name or handle_clean.replace("@", "").capitalize()
@@ -152,9 +160,13 @@ async def connect_account(
     summary="Disconnect Social Fleet Account",
     description="Removes a connected social channel/page from the fleet.",
 )
-async def disconnect_account(payload: DisconnectAccountRequest):
+async def disconnect_account(
+    payload: DisconnectAccountRequest,
+    authorization: Optional[str] = Header(None),
+):
     try:
-        deleted = delete_social_account(payload.accountId)
+        user_id = _require_session_user_id(authorization)
+        deleted = delete_social_account(payload.accountId, user_id=user_id)
         if not deleted:
             raise HTTPException(status_code=404, detail=f"Account with ID '{payload.accountId}' not found.")
         return {
@@ -174,9 +186,14 @@ async def disconnect_account(payload: DisconnectAccountRequest):
     summary="One-Click Omnichannel Syndication",
     description="Publishes a single generated video to multiple selected social destinations simultaneously in parallel.",
 )
-async def post_syndicate_publish(payload: SyndicatePublishRequest):
+async def post_syndicate_publish(
+    payload: SyndicatePublishRequest,
+    authorization: Optional[str] = Header(None),
+):
     try:
+        user_id = _require_session_user_id(authorization)
         res = await syndicate_publish(
+            user_id=user_id,
             target_account_ids=payload.targetAccountIds,
             video_url=payload.videoUrl,
             title=payload.title,
@@ -202,12 +219,13 @@ async def post_syndicate_publish(payload: SyndicatePublishRequest):
     description="Retrieves multi-platform published posts and tracking status.",
 )
 async def list_published_posts(
-    userId: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
     platform: Optional[str] = None,
     limit: int = 50,
 ):
+    user_id = _require_session_user_id(authorization)
     posts = [
-        post for post in get_published_posts(user_id=userId, platform=platform, limit=limit)
+        post for post in get_published_posts(user_id=user_id, platform=platform, limit=limit)
         if post.get("platform") in ADAPTER_REGISTRY
     ]
     return {

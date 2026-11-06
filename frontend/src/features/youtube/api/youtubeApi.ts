@@ -170,7 +170,7 @@ export const youtubeApi = {
   async updateVideoMetadata(payload: { videoId: string; title?: string; description?: string; tags?: string[]; privacyStatus?: string }): Promise<any> {
     const res = await fetch(apiUrl('/api/youtube/videos'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._getScheduleHeaders(),
       body: JSON.stringify({ ...payload, action: 'update' }),
     });
     return res.json();
@@ -180,7 +180,7 @@ export const youtubeApi = {
   async deleteVideoFromYouTube(videoId: string): Promise<any> {
     const res = await fetch(apiUrl('/api/youtube/videos'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._getScheduleHeaders(),
       body: JSON.stringify({ videoId, action: 'delete' }),
     });
     return res.json();
@@ -190,7 +190,7 @@ export const youtubeApi = {
   async createPlaylist(payload: { title: string; description?: string; privacyStatus?: string }): Promise<any> {
     const res = await fetch(apiUrl('/api/youtube/playlists'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._getScheduleHeaders(),
       body: JSON.stringify({ ...payload, action: 'create' }),
     });
     return res.json();
@@ -200,7 +200,7 @@ export const youtubeApi = {
   async deletePlaylist(playlistId: string): Promise<any> {
     const res = await fetch(apiUrl('/api/youtube/playlists'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._getScheduleHeaders(),
       body: JSON.stringify({ playlistId, action: 'delete' }),
     });
     return res.json();
@@ -210,7 +210,7 @@ export const youtubeApi = {
   async replyToComment(payload: { videoId: string; text: string; parentId?: string }): Promise<any> {
     const res = await fetch(apiUrl('/api/youtube/video/comments'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._getScheduleHeaders(),
       body: JSON.stringify(payload),
     });
     return res.json();

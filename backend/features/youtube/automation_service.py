@@ -431,7 +431,8 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
             last_run_message="Stage 6/6: Uploading and publishing Short to YouTube...",
         )
         logger.info(f"[Automation/Stage-6] Publishing video to YouTube")
-        yt_client = get_authenticated_youtube_client()
+        user_id = job.get("userId")
+        yt_client = get_authenticated_youtube_client(user_id)
         upload_res = None
         youtube_url = None
         is_scheduled = privacy == "scheduled"
@@ -461,6 +462,7 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
                     tags=["#Shorts", "#Motivation", "#Discipline", f"#{theme_tag}"],
                     privacy_status="private" if is_scheduled else "public",
                     publish_at=publish_at_iso,
+                    user_id=user_id,
                 )
                 youtube_url = upload_res.get("videoUrl")
                 logger.info(f"[Automation/Stage-6] YouTube upload success: {youtube_url} | Status: {upload_res.get('status')}")

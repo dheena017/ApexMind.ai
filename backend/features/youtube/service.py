@@ -23,6 +23,7 @@ def publish_video_to_shorts(
     voice: str = "Fenrir",
     category: str = "Motivation",
     channel_id: Optional[str] = None,
+    user_id: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, Any]:
     """
@@ -52,7 +53,7 @@ def publish_video_to_shorts(
     clean_title = re.sub(r'(\x1b\[[0-9;]*[a-zA-Z]|[0-9]{1,2}m)', '', str(title)).strip() or "Untitled Short"
 
     # Check if Google OAuth authorized YouTube channel is active
-    yt_client = get_authenticated_youtube_client()
+    yt_client = get_authenticated_youtube_client(user_id)
     if yt_client:
         try:
             logger.info(f"Rendering broadcast-quality vertical 9:16 video for live YouTube upload: '{clean_title}'")
@@ -157,6 +158,7 @@ def publish_video_to_shorts(
                 description=desc_text,
                 tags=tags_val,
                 privacy_status=privacy_val,
+                user_id=user_id,
             )
             real_video_id = upload_result.get("videoId") or upload_result.get("id")
             real_video_url = upload_result.get("videoUrl")

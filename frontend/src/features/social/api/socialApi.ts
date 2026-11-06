@@ -13,14 +13,12 @@ import {
   SocialPlatform,
 } from '../types';
 
-const getStoredUserId = (): string | undefined => {
+const getAuthHeaders = (): Record<string, string> => {
   try {
-    const stored = localStorage.getItem('apexmind_user');
-    if (!stored) return undefined;
-    const user = JSON.parse(stored) as { id?: unknown };
-    return typeof user.id === 'string' ? user.id : undefined;
+    const token = localStorage.getItem('apexmind_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
   } catch {
-    return undefined;
+    return {};
   }
 };
 
@@ -28,9 +26,7 @@ export const socialApi = {
   // Fetch connected social accounts
   async getFleetAccounts(): Promise<SocialAccount[]> {
     const start = performance.now();
-    const userId = getStoredUserId();
-    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-    const res = await fetch(apiUrl(`/api/social/accounts${query}`));
+    const res = await fetch(apiUrl('/api/social/accounts'), { headers: getAuthHeaders() });
     consoleLogger.api('GET', '/api/social/accounts', res.status, performance.now() - start);
     if (!res.ok) {
       const error = await res.json().catch(() => ({ detail: 'Failed to load connected social accounts.' }));
@@ -46,11 +42,9 @@ export const socialApi = {
   // Get OAuth authorization URL for any platform
   async getOAuthUrl(platform: SocialPlatform, redirectUri?: string): Promise<string> {
     const query = new URLSearchParams({ platform });
-    const userId = getStoredUserId();
-    if (userId) query.append('userId', userId);
     if (redirectUri) query.append('redirectUri', redirectUri);
 
-    const res = await fetch(apiUrl(`/api/social/oauth-url?${query.toString()}`));
+    const res = await fetch(apiUrl(`/api/social/oauth-url?${query.toString()}`), { headers: getAuthHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Failed to generate OAuth URL' }));
       throw new Error(err.detail || 'Failed to generate OAuth URL');
@@ -62,7 +56,7 @@ export const socialApi = {
   async completeMetaOAuth(code: string, state: string): Promise<{ platform: SocialPlatform; accounts: SocialAccount[]; message: string }> {
     const res = await fetch(apiUrl('/api/social/meta/oauth-callback'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ code, state }),
     });
     if (!res.ok) {
@@ -86,7 +80,7 @@ export const socialApi = {
   ): Promise<SocialAccount> {
     const res = await fetch(apiUrl(`/api/social/connect/${platform}`), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
 
@@ -102,7 +96,7 @@ export const socialApi = {
   async disconnectAccount(accountId: string): Promise<void> {
     const res = await fetch(apiUrl('/api/social/disconnect'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ accountId }),
     });
 
@@ -119,7 +113,7 @@ export const socialApi = {
 
     const res = await fetch(apiUrl('/api/social/syndicate-publish'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
 
@@ -138,7 +132,7 @@ export const socialApi = {
 
   // List published posts history
   async getPublishedPosts(limit: number = 50): Promise<PublishedPost[]> {
-    const res = await fetch(apiUrl(`/api/social/posts?limit=${limit}`));
+    const res = await fetch(apiUrl(`/api/social/posts?limit=${limit}`), { headers: getAuthHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Failed to load publishing history' }));
       throw new Error(err.detail || 'Failed to load publishing history');

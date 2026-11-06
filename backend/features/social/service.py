@@ -26,7 +26,6 @@ from backend.database.repository import (
     upsert_social_account,
     record_published_post,
     get_channels_by_user,
-    get_latest_user,
 )
 from .adapters import get_adapter, ADAPTER_REGISTRY
 
@@ -181,9 +180,8 @@ async def complete_meta_social_oauth(code: str, state: str) -> Dict[str, Any]:
     state_data = _validate_meta_social_state(state)
     platform = state_data["platform"]
     user_id = state_data.get("user_id")
-    if not user_id:
-        latest = get_latest_user()
-        user_id = latest["id"] if latest else "usr_global"
+    if not isinstance(user_id, str) or not user_id:
+        raise ValueError("Meta authorization state is missing its signed-in account. Please reconnect.")
 
     app_id = (
         (settings.INSTAGRAM_APP_ID or settings.META_APP_ID)
@@ -530,6 +528,7 @@ async def publish_to_single_destination(
 
 
 async def syndicate_publish(
+    user_id: str,
     target_account_ids: List[str],
     video_url: str,
     title: str,
@@ -547,13 +546,13 @@ async def syndicate_publish(
     accounts_to_publish: List[Dict[str, Any]] = []
     for acc_id in target_account_ids:
         acc = get_social_account_by_id(acc_id)
-        if acc:
+        if acc and acc.get("userId") == user_id:
             accounts_to_publish.append(acc)
         else:
-            logger.warning(f"Could not find social account with ID: {acc_id}")
+            logger.warning("Social account is unavailable to the authenticated user: %s", acc_id)
 
-    if not accounts_to_publish:
-        raise ValueError("None of the specified social accounts were found in your fleet.")
+    if len(accounts_to_publish) != len(set(target_account_ids)):
+        raise ValueError("One or more selected social accounts were not found in your fleet.")
 
     logger.info(f"Starting Omnichannel Syndication for '{title}' across {len(accounts_to_publish)} destinations...")
 

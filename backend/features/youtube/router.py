@@ -67,10 +67,22 @@ from backend.database.repository import (
     save_oauth_channel,
     disconnect_youtube_channels,
 )
+from backend.features.auth.service import get_session_user_id
 
 logger = logging.getLogger("ApexMind.features.youtube")
 router = APIRouter()
 yt_router = APIRouter(tags=["YouTube Studio Live"])
+
+
+def _require_session_user_id(authorization: Optional[str]) -> str:
+    scheme, _, token = (authorization or "").partition(" ")
+    user_id = get_session_user_id(token) if scheme.lower() == "bearer" and token else None
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="A valid authenticated session is required.",
+        )
+    return user_id
 
 
 def _resolve_target(
@@ -82,15 +94,9 @@ def _resolve_target(
     target = (query or channel or channel_id or handle or "").strip()
     if target:
         return target
-    # Fallback to connected channel in database if present
-    db_channels = get_channels()
-    if db_channels and db_channels[0].get("handle"):
-        return db_channels[0]["handle"]
-    if db_channels and db_channels[0].get("id"):
-        return db_channels[0]["id"]
     raise HTTPException(
         status_code=400,
-        detail="Channel parameter is required. Please specify a channel query or connect a channel.",
+        detail="Channel parameter is required. Please specify a channel query.",
     )
 
 
@@ -402,13 +408,18 @@ async def get_search_videos_route(query: str, type: str = "video", limit: int = 
     summary="Publish Short to YouTube",
     description="The canonical endpoint to render, assemble metadata, and publish an AI motivational Short directly to YouTube.",
 )
-async def post_publish_video(payload: PublishVideoRequest):
+async def post_publish_video(
+    payload: PublishVideoRequest,
+    authorization: Optional[str] = Header(None),
+):
     try:
+        user_id = _require_session_user_id(authorization)
         title_text = payload.title or "Untitled Short"
         quote_text = payload.quote or ""
         return publish_video_to_shorts(
             title=title_text,
             quote=quote_text,
+            user_id=user_id,
             description=payload.description,
             tags=payload.tags,
             privacyStatus=payload.privacyStatus,
@@ -452,8 +463,12 @@ async def post_publish_video(payload: PublishVideoRequest):
     summary="Manage video metadata or delete video on YouTube",
     description="Endpoint for updating video metadata or deleting a video on YouTube. For publishing, use POST /api/youtube/publish.",
 )
-async def post_youtube_videos(payload: PublishVideoRequest):
+async def post_youtube_videos(
+    payload: PublishVideoRequest,
+    authorization: Optional[str] = Header(None),
+):
     try:
+        user_id = _require_session_user_id(authorization)
         act = str(payload.action or "publish").lower().strip()
         target_video_id = payload.videoId
 
@@ -465,7 +480,7 @@ async def post_youtube_videos(payload: PublishVideoRequest):
                     detail="videoId is required to delete video."
                 )
             try:
-                res = delete_live_video(target_video_id)
+                res = delete_live_video(target_video_id, user_id=user_id)
                 return {
                     "success": True,
                     "videoId": target_video_id,
@@ -492,6 +507,7 @@ async def post_youtube_videos(payload: PublishVideoRequest):
                     description=payload.description or payload.quote,
                     tags=tags_val,
                     privacy_status=payload.privacyStatus,
+                    user_id=user_id,
                 )
                 return {
                     "success": True,
@@ -504,7 +520,7 @@ async def post_youtube_videos(payload: PublishVideoRequest):
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ue))
 
         # ── Fallback delegate to canonical publish endpoint ────────────────────
-        return await post_publish_video(payload)
+        return await post_publish_video(payload, authorization)
     except HTTPException:
         raise
     except Exception as e:
@@ -518,13 +534,17 @@ async def post_youtube_videos(payload: PublishVideoRequest):
     summary="Manage YouTube Playlists",
     description="Unified RESTful endpoint to create, update, or delete a YouTube playlist.",
 )
-async def post_manage_playlist(payload: ManagePlaylistRequest):
+async def post_manage_playlist(
+    payload: ManagePlaylistRequest,
+    authorization: Optional[str] = Header(None),
+):
+    user_id = _require_session_user_id(authorization)
     act = (payload.action or "create").lower().strip()
     try:
         if act == "delete":
             if not payload.playlistId:
                 raise HTTPException(status_code=400, detail="playlistId is required to delete playlist.")
-            return delete_live_playlist(payload.playlistId)
+            return delete_live_playlist(payload.playlistId, user_id=user_id)
         elif act == "update":
             if not payload.playlistId:
                 raise HTTPException(status_code=400, detail="playlistId is required to update playlist.")
@@ -533,6 +553,7 @@ async def post_manage_playlist(payload: ManagePlaylistRequest):
                 title=payload.title,
                 description=payload.description,
                 privacy_status=payload.privacyStatus,
+                user_id=user_id,
             )
         else:
             if not payload.title:
@@ -541,6 +562,7 @@ async def post_manage_playlist(payload: ManagePlaylistRequest):
                 title=payload.title,
                 description=payload.description or "",
                 privacy_status=payload.privacyStatus or "public",
+                user_id=user_id,
             )
     except HTTPException:
         raise
@@ -551,23 +573,26 @@ async def post_manage_playlist(payload: ManagePlaylistRequest):
 
 # Backward-compatibility routes for existing callers & tests (unlisted in Swagger UI)
 @yt_router.post("/api/youtube/playlist/create", status_code=status.HTTP_201_CREATED, include_in_schema=False)
-async def post_create_playlist(payload: CreatePlaylistRequest):
+async def post_create_playlist(payload: CreatePlaylistRequest, authorization: Optional[str] = Header(None)):
     return await post_manage_playlist(
-        ManagePlaylistRequest(action="create", title=payload.title, description=payload.description, privacyStatus=payload.privacyStatus)
+        ManagePlaylistRequest(action="create", title=payload.title, description=payload.description, privacyStatus=payload.privacyStatus),
+        authorization,
     )
 
 
 @yt_router.patch("/api/youtube/playlist/update", include_in_schema=False)
-async def patch_playlist(payload: UpdatePlaylistRequest):
+async def patch_playlist(payload: UpdatePlaylistRequest, authorization: Optional[str] = Header(None)):
     return await post_manage_playlist(
-        ManagePlaylistRequest(action="update", playlistId=payload.playlistId, title=payload.title, description=payload.description, privacyStatus=payload.privacyStatus)
+        ManagePlaylistRequest(action="update", playlistId=payload.playlistId, title=payload.title, description=payload.description, privacyStatus=payload.privacyStatus),
+        authorization,
     )
 
 
 @yt_router.delete("/api/youtube/playlist/delete", include_in_schema=False)
-async def delete_playlist_route(payload: DeletePlaylistRequest):
+async def delete_playlist_route(payload: DeletePlaylistRequest, authorization: Optional[str] = Header(None)):
     return await post_manage_playlist(
-        ManagePlaylistRequest(action="delete", playlistId=payload.playlistId)
+        ManagePlaylistRequest(action="delete", playlistId=payload.playlistId),
+        authorization,
     )
 
 
@@ -577,12 +602,14 @@ async def delete_playlist_route(payload: DeletePlaylistRequest):
     summary="Post Comment or Reply",
     description="Post a top-level comment or reply to an existing comment on a YouTube video.",
 )
-async def post_comment_reply(payload: ReplyCommentRequest):
+async def post_comment_reply(payload: ReplyCommentRequest, authorization: Optional[str] = Header(None)):
     try:
+        user_id = _require_session_user_id(authorization)
         return reply_to_live_comment(
             video_id=payload.videoId,
             text=payload.text,
             parent_id=payload.parentId,
+            user_id=user_id,
         )
     except Exception as e:
         logger.error(f"Error posting comment reply: {e}")
@@ -594,8 +621,8 @@ async def post_comment_reply(payload: ReplyCommentRequest):
     status_code=status.HTTP_201_CREATED,
     include_in_schema=False,
 )
-async def post_comment_reply_alias(payload: ReplyCommentRequest):
-    return await post_comment_reply(payload)
+async def post_comment_reply_alias(payload: ReplyCommentRequest, authorization: Optional[str] = Header(None)):
+    return await post_comment_reply(payload, authorization)
 
 
 # ==============================================================================
@@ -609,16 +636,11 @@ async def post_comment_reply_alias(payload: ReplyCommentRequest):
 )
 async def post_exchange_oauth_code(
     payload: CodeConnectRequest,
-    userId: Optional[str] = Query(None),
-    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    authorization: Optional[str] = Header(None),
 ):
     try:
         redirect_uri = payload.redirectUri or "postmessage"
-        resolved_user_id = userId or x_user_id
-        if not resolved_user_id:
-            from backend.database.repository import get_latest_user
-            latest_user = get_latest_user()
-            resolved_user_id = latest_user["id"] if latest_user else None
+        resolved_user_id = _require_session_user_id(authorization)
         res = handle_oauth_callback(payload.code, redirect_uri, resolved_user_id)
         return {
             "success": True,
@@ -637,15 +659,10 @@ async def post_exchange_oauth_code(
 )
 async def post_connect_channel(
     payload: TokenConnectRequest,
-    userId: Optional[str] = Query(None),
-    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    authorization: Optional[str] = Header(None),
 ):
     try:
-        resolved_user_id = userId or x_user_id
-        if not resolved_user_id:
-            from backend.database.repository import get_latest_user
-            latest_user = get_latest_user()
-            resolved_user_id = latest_user["id"] if latest_user else None
+        resolved_user_id = _require_session_user_id(authorization)
         channel_data = fetch_authenticated_channel_details(payload.accessToken)
         saved = save_oauth_channel(
             channel_id=channel_data["channel_id"],
@@ -676,11 +693,10 @@ async def post_connect_channel(
     summary="Get YouTube Connection Status",
 )
 async def get_oauth_status_route(
-    userId: Optional[str] = Query(None),
-    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    authorization: Optional[str] = Header(None),
 ):
-    resolved_user_id = userId or x_user_id
-    ch = get_oauth_channel(user_id=resolved_user_id) if resolved_user_id else None
+    resolved_user_id = _require_session_user_id(authorization)
+    ch = get_oauth_channel(user_id=resolved_user_id)
     safe_channel = None
     if ch:
         safe_channel = {
@@ -707,12 +723,9 @@ async def get_oauth_status_route(
     summary="Disconnect YouTube channel",
 )
 async def post_disconnect_oauth(
-    userId: Optional[str] = Query(None),
-    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    authorization: Optional[str] = Header(None),
 ):
-    resolved_user_id = userId or x_user_id
-    if not resolved_user_id:
-        raise HTTPException(status_code=401, detail="A signed-in user is required to disconnect YouTube.")
+    resolved_user_id = _require_session_user_id(authorization)
     disconnect_youtube_channels(resolved_user_id)
     return {"success": True, "message": "Disconnected your YouTube channel and credentials."}
 
@@ -724,12 +737,11 @@ async def post_disconnect_oauth(
 )
 async def get_saved_channels(
     handle: Optional[str] = None,
-    userId: Optional[str] = Query(None),
-    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    authorization: Optional[str] = Header(None),
 ):
-    resolved_user_id = userId or x_user_id
-    db_channels = get_channels_by_user(resolved_user_id) if resolved_user_id else []
-    return {"success": True, "channels": db_channels or [], "videos": []}
+    resolved_user_id = _require_session_user_id(authorization)
+    db_channels = get_channels_by_user(resolved_user_id)
+    return {"success": True, "channels": db_channels, "videos": []}
 
 
 # ==============================================================================
