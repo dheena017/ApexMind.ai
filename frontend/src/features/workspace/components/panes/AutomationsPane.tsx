@@ -153,7 +153,6 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   });
   const [authStatusLoading, setAuthStatusLoading] = useState(true);
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
-  const [activePipelinePhase, setActivePipelinePhase] = useState<number>(0);
 
   // Live countdown, Run History, Pause/Resume & Safe Delete state
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
@@ -260,6 +259,32 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     loadAuthStatus();
   }, [user?.id]);
 
+  const previousStatusesRef = React.useRef<Record<string, AutomationJob['lastStatus']>>({});
+
+  useEffect(() => {
+    automations.forEach((job) => {
+      const previousStatus = previousStatusesRef.current[job.id];
+      if (previousStatus === 'running' && job.lastStatus !== 'running') {
+        if (job.lastStatus === 'success') {
+          toast.success(`Pipeline complete: "${job.lastVideoTitle || job.theme}".`);
+        } else if (job.lastStatus === 'failed') {
+          toast.error(job.lastRunMessage || `Pipeline failed for "${job.theme}".`);
+        }
+        loadHistory(job.id, true, user?.id);
+      }
+      previousStatusesRef.current[job.id] = job.lastStatus;
+    });
+  }, [automations, user?.id]);
+
+  useEffect(() => {
+    if (!automations.some((job) => job.lastStatus === 'running')) return;
+    const timer = setInterval(async () => {
+      const data = await youtubeApi.getAutomations(user?.id);
+      setAutomations(data);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [automations, user?.id]);
+
   const handleCopyLink = (url: string, jobId: string) => {
     const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
     navigator.clipboard.writeText(fullUrl);
@@ -297,20 +322,14 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     }
   };
 
-  const runningTimersRef = React.useRef<any[]>([]);
-
   const getJobStageIndex = (job: AutomationJob): number => {
-    if (runningJobId === job.id) return activePipelinePhase;
     if (!job.lastRunMessage) return 0;
     const m = job.lastRunMessage.match(/Stage (\d)\/6/i);
     return m ? Math.max(0, parseInt(m[1], 10) - 1) : 0;
   };
 
   const handleStopPipeline = async (id: string) => {
-    runningTimersRef.current.forEach(clearTimeout);
-    runningTimersRef.current = [];
     setRunningJobId(null);
-    setActivePipelinePhase(0);
     try {
       await youtubeApi.stopAutomation(id);
       toast.info('Pipeline execution stopped');
@@ -322,17 +341,6 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
   const handleRunNow = async (id: string, jobTheme: string) => {
     setRunningJobId(id);
-    setActivePipelinePhase(0);
-
-    // Dynamic phase progression based on realistic pipeline stage durations (zero network polling)
-    const timers = [
-      setTimeout(() => setActivePipelinePhase(1), 16000), // Stage 2: Voice (Script takes ~16s)
-      setTimeout(() => setActivePipelinePhase(2), 23000), // Stage 3: B-Roll
-      setTimeout(() => setActivePipelinePhase(3), 32000), // Stage 4: Captions
-      setTimeout(() => setActivePipelinePhase(4), 42000), // Stage 5: Render
-      setTimeout(() => setActivePipelinePhase(5), 58000), // Stage 6: Publish
-    ];
-    runningTimersRef.current = timers;
 
     try {
       toast.info(`Executing autonomous 6-stage pipeline for "${jobTheme}"...`);
@@ -340,26 +348,17 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         ? activeTimeline
         : undefined;
       const res = await youtubeApi.runAutomationNow(id, payload);
-      // On success, mark all 6 stages as completed
-      setActivePipelinePhase(6);
-      const isLive = Boolean(res.data?.isLive || res.data?.youtubeStatus === 'uploaded');
-      const title = res.data?.title || jobTheme;
-      
-      if (isLive) {
-        toast.success(`Pipeline complete! "${title}" published live to YouTube Shorts.`);
-      } else {
-        toast.success(`Pipeline complete! "${title}" rendered and cataloged in Studio Library.`);
-      }
+      toast.info(
+        res.accepted
+          ? `Pipeline started for "${jobTheme}". Progress will update as each stage completes.`
+          : `Pipeline is already running for "${jobTheme}".`,
+      );
       await loadAutomations();
-      await loadHistory(id, true);
     } catch (err: any) {
       toast.error(err.message || 'Pipeline execution failed');
       await loadAutomations();
-      await loadHistory(id, true);
     } finally {
-      timers.forEach(clearTimeout);
       setRunningJobId(null);
-      setActivePipelinePhase(0);
     }
   };
 
@@ -516,7 +515,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
           <button
             type="button"
-            onClick={loadAutomations}
+            onClick={() => void loadAutomations()}
             disabled={loading}
             className="w-7 h-7 rounded-md bg-white/[0.06] hover:bg-[#222222] text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-[#2E2E2E]"
             title="Refresh Schedules"
@@ -1175,19 +1174,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                             >
                               <Loader2 className="w-3.5 h-3.5 animate-spin text-[#60A5FA] shrink-0" />
                               <span className="truncate">
-                                {runningJobId === job.id
-                                  ? (activePipelinePhase === 0
-                                      ? 'Stage 1/6: Writing Script with Gemini...'
-                                      : activePipelinePhase === 1
-                                      ? 'Stage 2/6: Synthesizing Neural Voice...'
-                                      : activePipelinePhase === 2
-                                      ? 'Stage 3/6: Resolving 4K Stock B-Roll...'
-                                      : activePipelinePhase === 3
-                                      ? 'Stage 4/6: Aligning Word Captions...'
-                                      : activePipelinePhase === 4
-                                      ? 'Stage 5/6: Rendering 1080p MP4 Video...'
-                                      : 'Stage 6/6: Uploading to YouTube Shorts...')
-                                  : (job.lastRunMessage || 'Stage 1/6: Writing Script with Gemini...')}
+                                {job.lastRunMessage || 'Stage 1/6: Writing Script with Gemini...'}
                               </span>
                             </div>
 
@@ -1685,7 +1672,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           {/* Quick Action: Connect Another Channel or Platform */}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('social:open-fleet-drawer'))}
+            onClick={() => onNavigate?.('channels')}
             className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-red-500/30 bg-red-950/20 hover:bg-red-900/30 text-xs font-semibold text-red-300 hover:text-white transition-all cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 text-red-400" />

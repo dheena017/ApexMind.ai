@@ -101,7 +101,6 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
-  const [activePipelinePhase, setActivePipelinePhase] = useState<number>(0);
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
   const [runSuccessNotice, setRunSuccessNotice] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -148,6 +147,29 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
       });
     }
   }, [automations]);
+
+  const previousStatusesRef = React.useRef<Record<string, AutomationJob['lastStatus']>>({});
+
+  React.useEffect(() => {
+    automations.forEach((job) => {
+      const previousStatus = previousStatusesRef.current[job.id];
+      if (previousStatus === 'running' && job.lastStatus !== 'running') {
+        if (job.lastStatus === 'success') {
+          setRunSuccessNotice(`Pipeline completed: ${job.lastVideoTitle || job.theme}.`);
+        } else if (job.lastStatus === 'failed') {
+          setErrorMessage(job.lastRunMessage || `Pipeline failed for "${job.theme}".`);
+        }
+        loadHistory(job.id, true);
+      }
+      previousStatusesRef.current[job.id] = job.lastStatus;
+    });
+  }, [automations]);
+
+  React.useEffect(() => {
+    if (!automations.some((job) => job.lastStatus === 'running')) return;
+    const timer = setInterval(() => onRefresh?.(), 4000);
+    return () => clearInterval(timer);
+  }, [automations, onRefresh]);
 
   // Form state
   const [theme, setTheme] = useState('Stoic Mindset & Discipline');
@@ -227,19 +249,13 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
   };
 
   const getAutoStageIndex = (job: AutomationJob): number => {
-    if (runningJobId === job.id) return activePipelinePhase;
     if (!job.lastRunMessage) return 0;
     const m = job.lastRunMessage.match(/Stage (\d)\/6/i);
     return m ? Math.max(0, parseInt(m[1], 10) - 1) : 0;
   };
 
-  const runningTimersRef = React.useRef<any[]>([]);
-
   const handleStopPipeline = async (id: string) => {
-    runningTimersRef.current.forEach(clearTimeout);
-    runningTimersRef.current = [];
     setRunningJobId(null);
-    setActivePipelinePhase(0);
     try {
       await youtubeApi.stopAutomation(id);
       setRunSuccessNotice('Pipeline execution stopped');
@@ -251,38 +267,22 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
 
   const handleRunPipelineNow = async (id: string, jobTheme: string) => {
     setRunningJobId(id);
-    setActivePipelinePhase(0);
     setRunSuccessNotice(null);
     setErrorMessage(null);
 
-    // Dynamic phase progression based on realistic pipeline stage durations (zero network polling)
-    const timers = [
-      setTimeout(() => setActivePipelinePhase(1), 16000), // Stage 2: Voice (Script takes ~16s)
-      setTimeout(() => setActivePipelinePhase(2), 23000), // Stage 3: B-Roll
-      setTimeout(() => setActivePipelinePhase(3), 32000), // Stage 4: Captions
-      setTimeout(() => setActivePipelinePhase(4), 42000), // Stage 5: Render
-      setTimeout(() => setActivePipelinePhase(5), 58000), // Stage 6: Publish
-    ];
-    runningTimersRef.current = timers;
-
     try {
       const res = await youtubeApi.runAutomationNow(id);
-      setActivePipelinePhase(6);
-      const videoTitle = res.data?.title || jobTheme;
-      const isLive = Boolean(res.data?.isLive || res.data?.youtubeStatus === 'uploaded');
-      if (isLive) {
-        setRunSuccessNotice(`Pipeline executed! '${videoTitle}' published live to YouTube Shorts.`);
-      } else {
-        setRunSuccessNotice(`Pipeline executed! '${videoTitle}' rendered and cataloged in Studio Library.`);
-      }
+      setRunSuccessNotice(
+        res.accepted
+          ? `Pipeline started for "${jobTheme}". Progress will update as each stage completes.`
+          : `Pipeline is already running for "${jobTheme}".`,
+      );
       onRefresh?.();
     } catch (err: any) {
       setErrorMessage(err.message || 'Pipeline execution failed');
       onRefresh?.();
     } finally {
-      timers.forEach(clearTimeout);
       setRunningJobId(null);
-      setActivePipelinePhase(0);
     }
   };
 
@@ -1061,19 +1061,7 @@ export const YouTubeSchedulesPage: React.FC<YouTubeSchedulesPageProps> = ({
                         >
                           <Loader2 className="w-4 h-4 animate-spin text-emerald-400 shrink-0" />
                           <span className="truncate">
-                            {runningJobId === auto.id
-                              ? (activePipelinePhase === 0
-                                  ? 'Stage 1/6: Generating Script with Gemini...'
-                                  : activePipelinePhase === 1
-                                  ? 'Stage 2/6: Synthesizing Neural Voiceover...'
-                                  : activePipelinePhase === 2
-                                  ? 'Stage 3/6: Resolving 4K Stock B-Roll...'
-                                  : activePipelinePhase === 3
-                                  ? 'Stage 4/6: Aligning Word Syllable Captions...'
-                                  : activePipelinePhase === 4
-                                  ? 'Stage 5/6: Rendering 1080x1920 MP4 Video...'
-                                  : 'Stage 6/6: Publishing to YouTube Shorts...')
-                              : (auto.lastRunMessage || 'Stage 1/6: Generating Script with Gemini...')}
+                            {auto.lastRunMessage || 'Stage 1/6: Generating Script with Gemini...'}
                           </span>
                         </div>
 

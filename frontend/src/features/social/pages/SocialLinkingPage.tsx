@@ -20,6 +20,7 @@ import { socialApi } from '@/src/features/social/api/socialApi';
 import { SocialAccount, SocialPlatform, PublishedPost } from '@/src/features/social/types';
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
 import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
+import { getSocialAvatarFallback, handleSocialAvatarError } from '../utils/avatar';
 
 function formatCount(num?: number): string {
   if (!num || num === 0) return '0';
@@ -429,9 +430,10 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             {activeAccount ? (
               <>
                 <img
-                  src={activeAccount.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(activeAccount.name)}`}
+                  src={activeAccount.avatarUrl || getSocialAvatarFallback(activeAccount.name)}
                   alt=""
                   className="w-7 h-7 rounded-full object-cover shrink-0 border border-[#2E2E38]"
+                  onError={(event) => handleSocialAvatarError(event, activeAccount.name)}
                 />
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-white truncate leading-tight">{activeAccount.name}</p>
@@ -603,12 +605,10 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="relative shrink-0">
                       <img
-                        src={
-                          acc.avatarUrl ||
-                          `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(acc.name)}`
-                        }
+                        src={acc.avatarUrl || getSocialAvatarFallback(acc.name)}
                         alt={acc.name}
                         className="w-12 h-12 rounded-full object-cover border border-[#2E2E38] shadow-sm"
+                        onError={(event) => handleSocialAvatarError(event, acc.name)}
                       />
                       <div className="absolute -bottom-1 -right-1">
                         {renderPlatformBadge(acc.platform)}

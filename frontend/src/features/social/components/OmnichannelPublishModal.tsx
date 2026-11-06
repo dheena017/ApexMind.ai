@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { socialApi } from '../api/socialApi';
 import { SocialAccount, SocialPlatform, PlatformPublishResult } from '../types';
+import { getSocialAvatarFallback, handleSocialAvatarError } from '../utils/avatar';
 
 interface OmnichannelPublishModalProps {
   isOpen: boolean;
@@ -253,12 +254,10 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="relative">
                               <img
-                                src={
-                                  acc.avatarUrl ||
-                                  `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(acc.name)}`
-                                }
+                                src={acc.avatarUrl || getSocialAvatarFallback(acc.name)}
                                 alt=""
                                 className="w-8 h-8 rounded-full object-cover border border-zinc-700"
+                                onError={(event) => handleSocialAvatarError(event, acc.name)}
                               />
                               <div className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-[#121215]">
                                 {getPlatformIcon(acc.platform)}

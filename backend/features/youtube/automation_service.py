@@ -6,6 +6,7 @@ and publishes or schedules directly to YouTube at configured times.
 """
 
 import asyncio
+from concurrent.futures import Future, ThreadPoolExecutor
 import logging
 import re
 import threading
@@ -36,6 +37,69 @@ logger = logging.getLogger("ApexMind.YouTube.Automation")
 _RUNNING_JOB_IDS: set[str] = set()
 _STOP_REQUESTED_JOB_IDS: set[str] = set()
 _JOB_LOCK = threading.Lock()
+_MANUAL_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="manual-automation")
+_MANUAL_FUTURES: set[Future] = set()
+
+
+def _log_manual_job_result(future: Future) -> None:
+    with _JOB_LOCK:
+        _MANUAL_FUTURES.discard(future)
+    try:
+        future.result()
+    except Exception as exc:
+        logger.exception("Manual automation background task failed: %s", exc)
+
+
+def _execute_registered_automation_job(
+    job_id: str,
+    override_data: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    try:
+        return execute_automation_job(job_id, override_data, True)
+    finally:
+        with _JOB_LOCK:
+            _RUNNING_JOB_IDS.discard(job_id)
+
+
+def start_automation_job(
+    job_id: str,
+    override_data: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Queue a manual pipeline run and return without waiting for its stages."""
+    job = get_automation_by_id(job_id)
+    if not job:
+        raise ValueError(f"Automation job '{job_id}' not found.")
+
+    with _JOB_LOCK:
+        if job_id in _RUNNING_JOB_IDS:
+            return False
+        _RUNNING_JOB_IDS.add(job_id)
+
+    try:
+        next_run = calculate_next_run_iso(
+            job.get("publishTime", "08:00"),
+            job.get("schedule"),
+        )
+        update_automation_run_state(
+            job_id,
+            last_status="running",
+            next_run=next_run,
+            last_run_message="Stage 1/6: Generating viral script & multi-scene storyboard with Gemini AI...",
+        )
+        future = _MANUAL_EXECUTOR.submit(
+            _execute_registered_automation_job,
+            job_id,
+            override_data,
+        )
+        with _JOB_LOCK:
+            _MANUAL_FUTURES.add(future)
+        future.add_done_callback(_log_manual_job_result)
+    except Exception:
+        with _JOB_LOCK:
+            _RUNNING_JOB_IDS.discard(job_id)
+        raise
+
+    return True
 
 
 def stop_automation_job(job_id: str) -> Dict[str, Any]:
@@ -120,7 +184,11 @@ import time
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def execute_automation_job(
+    job_id: str,
+    override_data: Optional[Dict[str, Any]] = None,
+    already_registered: bool = False,
+) -> Dict[str, Any]:
     """
     Executes the autonomous 6-stage production pipeline:
     Stage 1: Script Writing (POST /api/studio/generate-script via Gemini AI + Quote Memory)
@@ -147,9 +215,11 @@ def execute_automation_job(job_id: str, override_data: Optional[Dict[str, Any]] 
 
     with _JOB_LOCK:
         if job_id in _RUNNING_JOB_IDS:
-            logger.warning(f"[Automation/6-Stage] Job '{job_id}' is already executing! Skipping duplicate trigger.")
-            return job
-        _RUNNING_JOB_IDS.add(job_id)
+            if not already_registered:
+                logger.warning(f"[Automation/6-Stage] Job '{job_id}' is already executing! Skipping duplicate trigger.")
+                return job
+        else:
+            _RUNNING_JOB_IDS.add(job_id)
 
     # Immediately calculate and persist advanced nextRun so scheduler does not consider it due
     next_run = calculate_next_run_iso(publish_time, job.get("schedule"))

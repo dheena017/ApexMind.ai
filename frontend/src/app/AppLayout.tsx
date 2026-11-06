@@ -19,7 +19,6 @@ import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHe
 import { WorkspaceSidebar, WORKSPACE_SIDEBAR_ITEMS, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
 import { WorkspaceStatusBar } from '@/src/features/workspace/components/WorkspaceStatusBar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
-import { SocialFleetDrawer } from '@/src/features/social/components/SocialFleetDrawer';
 import { Radio } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -44,13 +43,6 @@ export default function AppLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [workspaceMobileView, setWorkspaceMobileView] = useState<'tools' | 'preview' | 'inspector' | 'timeline'>('tools');
-  const [showFleetDrawer, setShowFleetDrawer] = useState(false);
-
-  useEffect(() => {
-    const handleOpenFleet = () => setShowFleetDrawer(true);
-    window.addEventListener('social:open-fleet-drawer', handleOpenFleet);
-    return () => window.removeEventListener('social:open-fleet-drawer', handleOpenFleet);
-  }, []);
   const [dynamicUnread, setDynamicUnread] = useState(0);
   const [workspaceStatus, setWorkspaceStatus] = useState({
     aspectRatio: '9:16',
@@ -584,12 +576,6 @@ export default function AppLayout({
         </div>
       </aside>
 
-      {/* Omnichannel Social Fleet Drawer */}
-      <SocialFleetDrawer
-        isOpen={showFleetDrawer}
-        onClose={() => setShowFleetDrawer(false)}
-        onNavigate={onNavigate}
-      />
     </div>
   );
 }

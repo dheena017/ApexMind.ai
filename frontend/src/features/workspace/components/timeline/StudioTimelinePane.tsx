@@ -104,14 +104,19 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         setTrackHeadersWidth(newWidth);
       };
 
-      const handlePointerUp = () => {
+      const handlePointerUp = (ev: PointerEvent) => {
+        const finalWidth = Math.max(
+          180,
+          Math.min(400, Math.round(trackResizeStartWidthRef.current + ev.clientX - trackResizeStartXRef.current)),
+        );
+        setTrackHeadersWidth(finalWidth);
         setIsResizingTrackHeaders(false);
         document.body.style.userSelect = '';
         document.body.style.cursor = '';
         window.removeEventListener('pointermove', handlePointerMove);
         window.removeEventListener('pointerup', handlePointerUp);
         try {
-          localStorage.setItem('apexmind:timeline-track-width', String(newWidth));
+          localStorage.setItem('apexmind:timeline-track-width', String(finalWidth));
         } catch {}
       };
 

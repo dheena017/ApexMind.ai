@@ -900,18 +900,21 @@ async def delete_automation_schedule_route(
 @router.post(
     "/api/schedules/{job_id}/run-now",
     tags=["Schedules & Automations"],
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Execute Schedule Immediately",
-    description="Triggers the automated script generation, voice synthesis, and video render pipeline immediately.",
+    description="Queues the automated script generation, voice synthesis, and video render pipeline, then returns while it runs in the background.",
 )
 @router.post(
     "/api/automations/{job_id}/run-now",
     tags=["Schedules & Automations"],
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Execute Schedule Immediately (alias)",
     include_in_schema=False,
 )
 @router.post(
     "/api/youtube/automations/{job_id}/run-now",
     tags=["Schedules & Automations"],
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Execute Schedule Immediately (legacy alias)",
     include_in_schema=False,
 )
@@ -920,21 +923,26 @@ async def execute_schedule_immediately_route(
     payload: Optional[Dict[str, Any]] = Body(default=None),
     authorization: Optional[str] = Header(None),
 ):
-    from .automation_service import execute_automation_job
+    from .automation_service import start_automation_job
     from backend.database.repository import get_automation_by_id
     resolved_uid = _require_session_user_id(authorization)
     job = get_automation_by_id(job_id)
     if not job or job.get("userId") != resolved_uid:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")
     try:
-        # Run pipeline in a background thread executor so event loop is non-blocking
-        import asyncio
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, execute_automation_job, job_id, payload)
-        return {"success": True, "data": result, "message": "Automation pipeline completed successfully."}
+        started = start_automation_job(job_id, payload)
+        message = "Automation pipeline started." if started else "Automation pipeline is already running."
+        return {
+            "success": True,
+            "accepted": started,
+            "jobId": job_id,
+            "message": message,
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except Exception as e:
-        logger.error(f"Manual automation execution failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Could not start manual automation job: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Could not start automation pipeline.")
 
 
 @router.post(

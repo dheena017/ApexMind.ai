@@ -381,7 +381,10 @@ export const youtubeApi = {
     return json.data;
   },
 
-  async runAutomationNow(jobId: string, payload?: any): Promise<any> {
+  async runAutomationNow(
+    jobId: string,
+    payload?: any,
+  ): Promise<{ success: boolean; accepted: boolean; jobId: string; message: string }> {
     const uid = this._resolveUserId();
     const query = uid ? `?userId=${encodeURIComponent(uid)}` : '';
     const res = await fetch(apiUrl(`/api/schedules/${encodeURIComponent(jobId)}/run-now${query}`), {
