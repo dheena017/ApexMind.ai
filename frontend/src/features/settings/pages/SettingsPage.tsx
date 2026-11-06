@@ -27,7 +27,7 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8">
-      <div className="pb-6 border-b border-[#2F2F2F]">
+      <div className="rounded-2xl border border-[#2F2F2F] bg-[#121212] p-4 sm:p-5">
         <h1 className="text-2xl font-extrabold tracking-tight text-white">Gemini API Credits</h1>
         <p className="text-xs text-[#9CA3AF] mt-0.5">
           Check API key configuration and review usage in Google AI Studio.

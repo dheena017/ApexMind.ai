@@ -12,7 +12,6 @@ import {
   ExternalLink,
   Youtube,
   Wand2,
-  Sparkles,
   EyeOff,
 } from 'lucide-react';
 import { Button, Card } from '@/src/shared/ui/common';
@@ -26,10 +25,9 @@ interface NotificationsPageProps {
 
 export default function NotificationsPage({ onNavigate }: NotificationsPageProps) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<NotificationCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSimulateMenu, setShowSimulateMenu] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const loadNotifications = async () => {
@@ -90,26 +88,6 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
     await notificationsApi.deleteNotification(id);
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     triggerToast('Notification removed');
-  };
-
-  const handleSimulateAlert = async (type: string, category: string, title: string, message: string, actionUrl?: string) => {
-    setShowSimulateMenu(false);
-    try {
-      const created = await notificationsApi.createNotification({
-        title,
-        message,
-        type,
-        category,
-        action_url: actionUrl,
-        priority: type === 'warning' ? 'high' : 'normal',
-      });
-      if (created) {
-        setNotifications((prev) => [created, ...prev]);
-        triggerToast(`Added test notification: "${title}"`);
-      }
-    } catch (err) {
-      console.error('Failed to create simulation notification:', err);
-    }
   };
 
   // Counts per tab
@@ -189,7 +167,7 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2F2F2F]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-[#2F2F2F] bg-[#121212] p-4 sm:p-5">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-2xl bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#60A5FA]">
             <Bell className="w-6 h-6" />
@@ -209,87 +187,31 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Simulate Alert Dropdown */}
-          <div className="relative">
+        {notifications.length > 0 && (
+          <div className="flex items-center gap-2.5 flex-wrap">
             <Button
               variant="outline"
               size="sm"
-              icon={<Sparkles className="w-3.5 h-3.5 text-amber-400" />}
-              onClick={() => setShowSimulateMenu(!showSimulateMenu)}
+              icon={<CheckCheck className="w-4 h-4 text-emerald-400" />}
+              onClick={handleMarkAllRead}
             >
-              Test Alert
+              Mark All Read
             </Button>
-            {showSimulateMenu && (
-              <div className="absolute right-0 mt-2 w-64 rounded-xl bg-[#1E1E1E] border border-[#2F2F2F] shadow-2xl p-1.5 z-50 space-y-1">
-                <div className="px-2.5 py-1 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
-                  Generate Simulation Alert
-                </div>
-                <button
-                  onClick={() =>
-                    handleSimulateAlert('success', 'youtube', 'Short Published', "'The Discipline Law' was published to YouTube Shorts.", '/youtube')
-                  }
-                  className="w-full text-left px-2.5 py-1.5 text-xs rounded-lg hover:bg-[#2A2A2A] text-white flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Youtube className="w-3.5 h-3.5 text-red-400" />
-                  <span>YouTube Upload Done</span>
-                </button>
-                <button
-                  onClick={() =>
-                    handleSimulateAlert('success', 'studio', 'Voice Synthesized', "Gemini ultra voice 'Fenrir' rendered in 3.4s.", '/workspace')
-                  }
-                  className="w-full text-left px-2.5 py-1.5 text-xs rounded-lg hover:bg-[#2A2A2A] text-white flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Wand2 className="w-3.5 h-3.5 text-[#60A5FA]" />
-                  <span>AI Studio Render Done</span>
-                </button>
-                <button
-                  onClick={() =>
-                    handleSimulateAlert('achievement', 'achievements', '10,000 Views Milestone', 'Your Stoic Mindset reel crossed 10K views!', '/youtube')
-                  }
-                  className="w-full text-left px-2.5 py-1.5 text-xs rounded-lg hover:bg-[#2A2A2A] text-white flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Award className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Milestone Unlocked</span>
-                </button>
-                <button
-                  onClick={() =>
-                    handleSimulateAlert('warning', 'system', 'YouTube API Quota', '85% of daily YouTube upload quota consumed today.')
-                  }
-                  className="w-full text-left px-2.5 py-1.5 text-xs rounded-lg hover:bg-[#2A2A2A] text-white flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                  <span>System Quota Alert</span>
-                </button>
-              </div>
-            )}
+
+            <Button
+              variant="danger"
+              size="sm"
+              icon={<Trash2 className="w-4 h-4" />}
+              onClick={handleClearAll}
+            >
+              Clear All
+            </Button>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<CheckCheck className="w-4 h-4 text-emerald-400" />}
-            onClick={handleMarkAllRead}
-            disabled={notifications.length === 0}
-          >
-            Mark All Read
-          </Button>
-
-          <Button
-            variant="danger"
-            size="sm"
-            icon={<Trash2 className="w-4 h-4" />}
-            onClick={handleClearAll}
-            disabled={notifications.length === 0}
-          >
-            Clear All
-          </Button>
-        </div>
+        )}
       </div>
 
-      {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {notifications.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Category Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           {[
@@ -343,7 +265,8 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
             </button>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Notifications List */}
       {loading ? (
@@ -358,34 +281,29 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
           </div>
           <div className="space-y-1">
             <h3 className="text-base font-bold text-white">
-              {searchQuery
+              {notifications.length === 0
+                ? 'All Caught Up!'
+                : searchQuery
                 ? 'No matching notifications'
                 : activeTab === 'unread'
                 ? 'No unread notifications'
                 : 'All Caught Up!'}
             </h3>
             <p className="text-xs text-[#9CA3AF] max-w-sm mx-auto">
-              {searchQuery
+              {notifications.length === 0
+                ? 'You are all caught up. New activity and system alerts will appear here.'
+                : searchQuery
                 ? `No results found for "${searchQuery}". Try clearing search filter.`
                 : activeTab !== 'all'
                 ? `There are no notifications in the ${activeTab} category right now.`
                 : 'You have no system or automation alerts pending. All operations running smooth.'}
             </p>
           </div>
-          {searchQuery ? (
+          {notifications.length > 0 && searchQuery ? (
             <Button variant="secondary" size="sm" onClick={() => setSearchQuery('')}>
               Clear Search
             </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              icon={<Sparkles className="w-4 h-4 text-amber-400" />}
-              onClick={() => handleSimulateAlert('success', 'youtube', 'Sample Automation Alert', 'Sample automated YouTube upload notification completed.')}
-            >
-              Trigger Sample Alert
-            </Button>
-          )}
+          ) : null}
         </Card>
       ) : (
         <div className="space-y-3">

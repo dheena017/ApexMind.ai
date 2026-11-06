@@ -4,7 +4,6 @@ import {
   ThumbsUp,
   MessageCircle,
   Send,
-  Sparkles,
   Youtube,
   CheckCircle2,
   Loader2,
@@ -76,16 +75,6 @@ export const YouTubePostsPage: React.FC<YouTubePostsPageProps> = ({
     }
   };
 
-  const generateAIQuote = () => {
-    const quotes = [
-      '“He who has a why to live can bear almost any how.” What is your driving reason this week?',
-      '“Do not explain your philosophy. Embody it.” Every action is a vote for who you are becoming.',
-      '“First say to yourself what you would be; and then do what you have to do.” — Epictetus',
-      'The obstacle in your path is not in the way. It IS the way. Embrace the friction today.',
-    ];
-    setPostText(quotes[Math.floor(Math.random() * quotes.length)]);
-  };
-
   const formatPostDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
@@ -127,15 +116,6 @@ export const YouTubePostsPage: React.FC<YouTubePostsPageProps> = ({
                 Syncing…
               </span>
             )}
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={<Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />}
-              onClick={generateAIQuote}
-              className="text-xs hover:border-[#3B82F6]/50"
-            >
-              Generate AI Quote
-            </Button>
           </div>
         </div>
 

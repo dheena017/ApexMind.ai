@@ -10,7 +10,6 @@ import {
   Loader2,
   ExternalLink,
   ListVideo,
-  ArrowUpRight,
   CalendarClock,
 } from 'lucide-react';
 import {
@@ -251,99 +250,6 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
           </div>
         </div>
       )}
-
-      {/* ── 4. Creator Studio Launchpad (Fast Actions) ── */}
-      <div className="space-y-3">
-        <h3 className="text-base sm:text-lg font-bold text-white tracking-tight px-1 flex items-center gap-2">
-          <span>Creator Studio Launchpad</span>
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <button
-            type="button"
-            onClick={() => onNavigate('generator')}
-            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-red-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
-          >
-            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 w-fit group-hover:scale-105 transition-transform">
-              <Film className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">
-                  Create AI Short
-                </h4>
-                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
-              </div>
-              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
-                Generate high-retention script, AI voiceover, and export direct to YouTube.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange('shorts')}
-            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-red-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
-          >
-            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 w-fit group-hover:scale-105 transition-transform">
-              <Film className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">
-                  YouTube Shorts
-                </h4>
-                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
-              </div>
-              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
-                Stream vertical 9:16 Shorts feed and play full in-studio video previews.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange('schedules')}
-            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-emerald-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
-          >
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 w-fit group-hover:scale-105 transition-transform">
-              <CalendarClock className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
-                  Daily Automations
-                </h4>
-                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
-              </div>
-              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
-                Manage automated daily synthesis and scheduled channel uploads.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange('playlists')}
-            className="p-4 rounded-2xl bg-[#141414] hover:bg-[#1A1A1A] border border-[#2F2F2F] hover:border-blue-500/50 transition-all text-left group shadow-sm cursor-pointer space-y-2.5"
-          >
-            <div className="p-2.5 rounded-xl bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/20 w-fit group-hover:scale-105 transition-transform">
-              <ListVideo className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white group-hover:text-[#60A5FA] transition-colors">
-                  Playlists &amp; Series
-                </h4>
-                <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors" />
-              </div>
-              <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
-                Browse and organize curated playlists across your channel videos.
-              </p>
-            </div>
-          </button>
-        </div>
-      </div>
 
       {/* ── 5. "Shorts" Shelf (Real Vertical Grid) ── */}
       <div className="space-y-3">
