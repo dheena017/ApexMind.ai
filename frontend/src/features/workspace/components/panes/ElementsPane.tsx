@@ -125,9 +125,6 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
           </div>
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-xs font-bold text-white truncate">Elements &amp; Overlays</span>
-            <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40 shadow-xs shrink-0">
-              FX Studio
-            </span>
           </div>
         </div>
       </div>

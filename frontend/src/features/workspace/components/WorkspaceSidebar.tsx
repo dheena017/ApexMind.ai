@@ -113,29 +113,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {showDesktop && (
         <aside className="hidden md:flex relative w-14 shrink-0 h-full bg-[#111111]/95 border-r border-[#242424] flex-col items-center justify-between py-2 z-20 select-none font-sans-studio backdrop-blur-xl">
           <div className="flex w-full flex-col items-center gap-1.5 px-1.5">
-            {/* Creator Dashboard Home Shortcut */}
-            {onNavigate && (
-              <div className="flex flex-col items-center w-full pb-1.5 border-b border-[#242424]">
-                <button
-                  type="button"
-                  onClick={() => onNavigate('dashboard')}
-                  aria-label="Creator Dashboard"
-                  title="Creator Dashboard"
-                  className="group relative flex flex-col h-11 w-11 items-center justify-center rounded-2xl border border-transparent text-[#9CA3AF] hover:bg-[#26262C] hover:text-white hover:border-white/10 transition-all cursor-pointer select-none"
-                >
-                  <LayoutDashboard className="h-4 w-4 shrink-0 text-[#60A5FA] transition-transform group-hover:scale-105" />
-                  <span className="text-[8.5px] font-semibold mt-1 tracking-tight truncate max-w-[44px] leading-none text-[#9CA3AF] group-hover:text-white">
-                    Home
-                  </span>
-
-                  {/* Flyout Tooltip (Pill Style) */}
-                  <span className="pointer-events-none absolute left-14 top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[#333333] bg-[#1A1A1A] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
-                    Creator Dashboard
-                  </span>
-                </button>
-              </div>
-            )}
-
             {WORKSPACE_SIDEBAR_ITEMS.map((item) => {
               const IconComp = item.icon;
               const isActive = item.isScriptGroup
@@ -176,7 +153,25 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             })}
           </div>
 
-          <div className="w-full h-2" aria-hidden="true" />
+          {onNavigate && (
+            <div className="flex w-full justify-center border-t border-[#242424] px-1.5 pt-2">
+              <button
+                type="button"
+                onClick={() => onNavigate('dashboard')}
+                aria-label="Creator Dashboard"
+                title="Creator Dashboard"
+                className="group relative flex h-11 w-11 flex-col items-center justify-center rounded-2xl border border-transparent text-[#9CA3AF] transition-all hover:border-white/10 hover:bg-[#26262C] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
+              >
+                <LayoutDashboard className="h-4 w-4 shrink-0 text-[#60A5FA] transition-transform group-hover:scale-105" />
+                <span className="mt-1 max-w-[44px] truncate text-[8.5px] font-semibold leading-none text-[#9CA3AF] group-hover:text-white">
+                  Home
+                </span>
+                <span className="pointer-events-none absolute bottom-1/2 left-14 z-50 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[#333333] bg-[#1A1A1A] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
+                  Creator Dashboard
+                </span>
+              </button>
+            </div>
+          )}
         </aside>
       )}
     </>

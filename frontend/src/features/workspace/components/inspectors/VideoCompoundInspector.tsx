@@ -30,9 +30,8 @@ import {
   Monitor,
   Square,
 } from 'lucide-react';
-import { VisualBackdrop, DEFAULT_VISUAL_BACKDROPS } from '../../types';
+import { VisualBackdrop } from '../../types';
 import { SelectedClip } from '../timeline/timelineTypes';
-import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { TransitionsInspector } from './TransitionsInspector';
 
 export type VideoInspectorTab =
@@ -139,7 +138,6 @@ const AI_ANIMATION_PAIRS: Record<string, { in: string; inDur: number; out: strin
 
 export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   activeBackdrop,
-  backdrops,
   onSelectBackdrop,
   duration = 15,
   onUpdateDuration,
@@ -156,20 +154,6 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   initialSubTab = 'transform',
   selectedClip,
 }) => {
-  const backdropOptions = useMemo(() => {
-    const list = (backdrops && Array.isArray(backdrops) && backdrops.length > 0)
-      ? backdrops
-      : DEFAULT_VISUAL_BACKDROPS;
-    const finalItems = (list && list.length > 0) ? list : DEFAULT_VISUAL_BACKDROPS;
-    return finalItems
-      .filter((b) => b && (b.id || b.name))
-      .map((b) => ({
-        value: b.id || b.name,
-        label: `${b.name || b.id}${b.category ? ` (${b.category})` : ''}`,
-        description: b.category,
-        badge: b.aspectRatio || '9:16',
-      }));
-  }, [backdrops]);
   const [activeSubTab, setActiveSubTab] = useState<VideoInspectorTab>(initialSubTab);
 
   useEffect(() => {
@@ -773,57 +757,6 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   ))}
                 </div>
               </div>
-            </div>
-
-            {/* Active Backdrop Card & Preset Selector */}
-            <div className="flex flex-col gap-2">
-              {(customVideoUrl || customImageUrl || activeBackdrop?.id) && (
-                <div className="w-full aspect-video rounded-xl overflow-hidden border border-[#242424] bg-[#111114] relative">
-                  {customVideoUrl ? (
-                    <video src={customVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-                  ) : customImageUrl ? (
-                    <img src={customImageUrl} alt="Custom backdrop" className="w-full h-full object-cover" />
-                  ) : activeBackdrop?.imageUrl ? (
-                    <img src={activeBackdrop.imageUrl} alt={activeBackdrop.name} className="w-full h-full object-cover opacity-80" />
-                  ) : (
-                    <div className="w-full h-full" style={{ background: activeBackdrop?.previewColor || '#1a1a2e' }} />
-                  )}
-                  <div className="absolute top-1.5 left-1.5 bg-black/70 text-[9px] text-white px-2 py-0.5 rounded font-mono-studio backdrop-blur-sm">
-                    {customVideoUrl ? 'Custom Video' : customImageUrl ? 'Custom Image' : activeBackdrop?.name || 'Backdrop'}
-                  </div>
-                  {(customImageUrl || customVideoUrl) && (
-                    <button
-                      type="button"
-                      onClick={() => { onSetCustomImage?.(undefined); onSetCustomVideo?.(undefined); }}
-                      className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-black/90 text-white text-[10px] px-2 py-0.5 rounded border border-white/20 cursor-pointer"
-                    >
-                      Clear Custom
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <CustomSelect
-                label="Select Visual Backdrop"
-                labelClassName="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1 block"
-                value={customVideoUrl || customImageUrl ? '' : (activeBackdrop?.id || '')}
-                onChange={(backdropId) => {
-                  onSetCustomImage?.(undefined);
-                  onSetCustomVideo?.(undefined);
-                  onSelectBackdrop(backdropId);
-                }}
-                options={backdropOptions}
-                icon={<Film className="w-3.5 h-3.5 text-[#60A5FA]" />}
-                placeholder={
-                  customVideoUrl
-                    ? 'Custom Video active — switch to preset...'
-                    : customImageUrl
-                    ? 'Custom Image active — switch to preset...'
-                    : 'Choose backdrop preset...'
-                }
-                buttonClassName="bg-[#181818] border-[#242424] hover:border-[#3B82F6]/50"
-                menuClassName="bg-[#181818] border-[#242424]"
-              />
             </div>
 
             {/* Reset Button */}

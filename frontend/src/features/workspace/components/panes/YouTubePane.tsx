@@ -389,7 +389,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
     { label: 'Call to action', detail: hasCta ? 'Added to script' : 'Not in script yet', pass: hasCta },
     {
       label: 'Hashtag count',
-      detail: `${tags.length} added · 3–8 suggested`,
+      detail: `${tags.length} added`,
       pass: hasRecommendedTagCount,
     },
     {
@@ -539,11 +539,6 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                   </div>
                 </div>
 
-                {/* Subtle live indicator dot */}
-                <span className="relative flex h-2 w-2 shrink-0" title="Channel Connected">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
               </div>
             </div>
 
@@ -726,29 +721,32 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
             {/* Video Description (Fully Editable + AI Polish + Formatting Templates) */}
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-2 text-[10px] font-mono-studio">
+                <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-slate-400 uppercase font-bold">Video Description</span>
-                  <span className="text-[9px] text-zinc-500">
+                  <span className="whitespace-nowrap text-[9px] text-zinc-500">
                     {customDescription.length} chars • {customDescription.trim().split(/\s+/).filter(Boolean).length} words
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
                     disabled={isGeneratingMeta}
                     onClick={() => handleGenerateMetadata('desc')}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border border-[#242424] hover:border-white/10 transition-colors cursor-pointer text-[10px]"
+                    className="h-7 inline-flex shrink-0 items-center gap-1 px-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white border border-[#60A5FA]/40 shadow-xs transition-colors cursor-pointer text-[10px] font-semibold whitespace-nowrap disabled:opacity-50 disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50"
                     title="AI Polish Description"
+                    aria-label="AI polish description"
+                    aria-busy={isGeneratingMeta && generatingSection === 'desc'}
                   >
-                    <Wand2 className={`w-2.5 h-2.5 ${isGeneratingMeta && generatingSection === 'desc' ? 'animate-spin text-[#60A5FA]' : 'text-[#60A5FA]'}`} />
+                    <Wand2 className={`w-3.5 h-3.5 ${isGeneratingMeta && generatingSection === 'desc' ? 'animate-spin' : ''}`} />
                     <span>{isGeneratingMeta && generatingSection === 'desc' ? 'Writing…' : 'AI Polish'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleCopyDescription}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border border-[#242424] hover:border-white/10 transition-colors cursor-pointer text-[10px]"
+                    className="h-7 inline-flex shrink-0 items-center gap-1 px-2 rounded-lg bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border border-[#242424] hover:border-white/10 transition-colors cursor-pointer text-[10px] font-medium whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50"
                     title="Copy description"
+                    aria-label={copiedDescription ? 'Description copied' : 'Copy description'}
                   >
                     {copiedDescription ? (
                       <Check className="w-2.5 h-2.5 text-[#3B82F6]" />
@@ -904,13 +902,6 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
                 <div className="flex min-w-0 items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-mono-studio text-[#9CA3AF] uppercase tracking-wider font-bold flex items-center gap-1.5">
                     <Hash className="w-3.5 h-3.5 text-[#60A5FA]" /> Active Hashtags ({tags.length})
-                  </span>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-semibold border shrink-0 ${
-                    hasRecommendedTagCount
-                      ? 'bg-[#3B82F6]/10 text-[#60A5FA] border-[#3B82F6]/25'
-                      : 'bg-[#121212] text-[#9CA3AF] border-[#242424]'
-                  }`}>
-                      {hasRecommendedTagCount ? 'Suggested range · 3–8' : '3–8 suggested'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">

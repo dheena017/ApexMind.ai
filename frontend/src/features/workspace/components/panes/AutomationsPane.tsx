@@ -485,8 +485,6 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     }
   };
 
-  const activeCount = automations.filter((a) => a.active).length;
-
   const formatScheduleLabel = (val?: string): string => {
     if (!val) return 'Active Schedule';
     const clean = val.trim();
@@ -569,9 +567,6 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           </div>
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-xs font-bold text-white truncate">Daily Automations</span>
-            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#2563EB] text-white font-bold border border-[#60A5FA]/40 shadow-xs shrink-0">
-              {activeCount} Active
-            </span>
           </div>
         </div>
 
@@ -1695,37 +1690,16 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
           {/* ── YouTube Channel Banner Card ── */}
           {hasSelectedYouTubeChannel ? (
           <div className="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden shadow-xl">
-            {/* Banner Image */}
-            <div className={`relative w-full ${liveChannelBanner ? 'h-24' : 'h-12'} bg-[#101014] overflow-hidden shrink-0 flex items-center justify-center`}>
-              {liveChannelBanner && (
-                <>
-                  <img
-                    src={liveChannelBanner}
-                    alt={`${activeChannel.name} YouTube channel banner`}
-                    className="w-full h-full object-cover object-center"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
-                </>
-              )}
-              {!liveChannelBanner && (
-                <span className="text-[10px] text-zinc-500">
-                  {liveChannelBannerLoading
-                    ? 'Loading YouTube channel banner…'
-                    : liveChannelBannerError
-                      ? 'YouTube banner could not be loaded'
-                      : 'No banner is set on this YouTube channel'}
-                </span>
-              )}
-              <div className="absolute top-2 right-2">
-                <span className={`px-2 py-0.5 text-[9.5px] font-bold rounded-full border ${
-                  authStatus?.connected
-                    ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
-                    : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
-                }`}>
-                  {authStatus?.connected ? 'Active Target' : 'Saved Selection'}
-                </span>
+            {liveChannelBanner && (
+              <div className="relative w-full h-24 bg-[#101014] overflow-hidden shrink-0">
+                <img
+                  src={liveChannelBanner}
+                  alt={`${activeChannel.name} YouTube channel banner`}
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
               </div>
-            </div>
+            )}
 
             {/* Avatar + Info row */}
             <div className="bg-[#111111] border-t border-[#1E1E1E] px-3 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">

@@ -14,7 +14,6 @@ import {
   Plus,
   Trash2,
   Copy,
-  Keyboard,
   Sparkles,
 } from 'lucide-react';
 import { formatTime, SelectedClip, EnabledTracks, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM } from './timelineTypes';
@@ -304,46 +303,6 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           </button>
         </div>
 
-        <button
-          type="button"
-          popoverTarget="timeline-shortcuts"
-          className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-[#262626] bg-[#161616] text-[#9CA3AF] hover:text-white hover:bg-[#26262C] transition-colors cursor-pointer"
-          title="Keyboard shortcuts"
-          aria-label="Show keyboard shortcuts"
-        >
-          <Keyboard className="w-3.5 h-3.5" />
-        </button>
-
-        <div
-          id="timeline-shortcuts"
-          popover="auto"
-          role="dialog"
-          aria-labelledby="timeline-shortcuts-title"
-          className="fixed bottom-4 right-4 m-0 w-60 rounded-xl border border-[#2E2E2E] bg-[#1A1A1A] p-3.5 text-[#E5E5E5] shadow-2xl backdrop-blur-xl"
-        >
-          <h3 id="timeline-shortcuts-title" className="mb-2.5 text-[11px] font-bold text-white flex items-center gap-1.5">
-            <Keyboard className="w-3.5 h-3.5 text-slate-400" />
-            Keyboard Shortcuts
-          </h3>
-          <div className="space-y-1.5 text-[10px]">
-            {[
-              ['Play / pause', 'Space'],
-              ['Seek', '\u2190 / \u2192'],
-              ['Split', 'S / Ctrl+B'],
-              ['Duplicate', 'Ctrl+D'],
-              ['Toggle snap', 'N'],
-              ['Delete clip', 'Del / Backspace'],
-              ['Deselect / close menus', 'Esc'],
-            ].map(([action, shortcut]) => (
-              <div key={action} className="flex items-center justify-between gap-3 py-0.5">
-                <span className="text-slate-400">{action}</span>
-                <kbd className="whitespace-nowrap rounded-md border border-[#333340] bg-[#0A0A0E] px-1.5 py-0.5 font-mono-studio text-[9px] text-[#E5E5E5]">
-                  {shortcut}
-                </kbd>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

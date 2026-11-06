@@ -7,7 +7,6 @@ import {
   Plus,
   FileText,
   ArrowLeftRight,
-  Clock,
   Sparkles,
   Type,
   Hash,
@@ -18,8 +17,6 @@ import {
   Search,
   X,
   CheckCircle2,
-  Zap,
-  Target,
 } from 'lucide-react';
 import { GeneratedScript, ScriptSubtitle, HookOption } from '../../types';
 
@@ -434,10 +431,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               <div className="flex items-center justify-between text-[10px]">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-white tracking-tight">Hook (First 3 Seconds)</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#18181C] text-zinc-300 font-mono border border-[#27272A] flex items-center gap-1">
-                    <Zap className="w-2.5 h-2.5 text-[#3B82F6]" />
-                    <span>1.05x Pace</span>
-                  </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -558,10 +551,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               <div className="flex items-center justify-between text-[10px]">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-white tracking-tight">Body &amp; Core Insight</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#18181C] text-zinc-300 font-mono border border-[#27272A] flex items-center gap-1">
-                    <Clock className="w-2.5 h-2.5 text-zinc-400" />
-                    <span>0.95x Cadence</span>
-                  </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -623,10 +612,6 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               <div className="flex items-center justify-between text-[10px]">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-white tracking-tight">Call to Action (CTA)</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#18181C] text-zinc-300 font-mono border border-[#27272A] flex items-center gap-1">
-                    <Target className="w-2.5 h-2.5 text-[#3B82F6]" />
-                    <span>1.00x Pace</span>
-                  </span>
                 </div>
 
                 <button
