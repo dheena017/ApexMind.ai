@@ -986,6 +986,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         value?: string;
         label?: string;
         elementType?: 'sticker' | 'badge' | 'progress' | 'shape';
+        replaceExisting?: boolean;
       }>).detail;
       if (!detail) return;
 
@@ -1059,7 +1060,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
           start: clipStart,
           duration: clipDuration,
         };
-        setVoiceClips((prev) => [...prev, newClip]);
+        setVoiceClips((prev) => detail.replaceExisting ? [newClip] : [...prev, newClip]);
         setEnabledTracks((prev) => ({ ...prev, voice: true }));
         setVoiceTrackMuted(false);
         setSelectedClip({ track: 'voice', clipId });
@@ -1114,7 +1115,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     };
 
     const handleSetStoryboard = (e: Event) => {
-      const detail = (e as CustomEvent<{ storyboard?: any[]; musicTrack?: string; captions?: any[]; duration?: number; soundDesign?: any; hooks?: any[]; videoUrl?: string; audioUrl?: string; title?: string; voice?: string }>).detail;
+      const detail = (e as CustomEvent<{ storyboard?: any[]; musicTrack?: string; captions?: any[]; duration?: number; audioDuration?: number; soundDesign?: any; hooks?: any[]; videoUrl?: string; audioUrl?: string; title?: string; voice?: string }>).detail;
       if (!detail) return;
 
       let scenesToProcess = Array.isArray(detail.storyboard) ? [...detail.storyboard] : [];
@@ -1253,7 +1254,11 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
       // Voiceover Track Population (A1 Voice Track)
       const targetAudioUrl = detail.audioUrl || audioUrl || '';
-      const voiceDur = detail.duration && detail.duration > 0 ? detail.duration : (duration > 0 ? duration : 15.0);
+      const voiceDur = detail.audioDuration && detail.audioDuration > 0
+        ? detail.audioDuration
+        : detail.duration && detail.duration > 0
+          ? detail.duration
+          : (duration > 0 ? duration : 15.0);
       const newVoiceClip: TimelineAudioClip = {
         id: `voice-auto-${Date.now()}`,
         type: 'voice',

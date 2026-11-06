@@ -448,18 +448,11 @@ export function useStudioPipeline() {
               // Stage 2 — inject captions from Stage 4 directly as LocalClips
               captions: captionsResult?.timelineClips ?? [],
               duration: effectiveDuration,
+              audioUrl,
+              audioDuration: durationSeconds,
             },
           })
         );
-
-        // If we got a real audio URL from Stage 2, fire it as a timeline-clip event too
-        if (audioUrl) {
-          window.dispatchEvent(
-            new CustomEvent('workspace:add-timeline-clip', {
-              detail: { type: 'voice', url: audioUrl, duration: durationSeconds, start: 0 },
-            })
-          );
-        }
 
         addWorkspaceNotification({
           title: 'Studio Pipeline Complete',
@@ -496,7 +489,13 @@ export function useStudioPipeline() {
         if (voiceResult.audioUrl) {
           window.dispatchEvent(
             new CustomEvent('workspace:add-timeline-clip', {
-              detail: { type: 'voice', url: voiceResult.audioUrl, duration: voiceResult.durationSeconds, start: 0 },
+              detail: {
+                type: 'voice',
+                url: voiceResult.audioUrl,
+                duration: voiceResult.durationSeconds,
+                start: 0,
+                replaceExisting: true,
+              },
             })
           );
         }
@@ -568,4 +567,3 @@ export function useStudioPipeline() {
     reset,
   };
 }
-

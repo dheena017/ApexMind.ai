@@ -1811,20 +1811,6 @@ export default function WorkspacePage({
         })
       );
 
-      // 7. Add voice clip to timeline
-      if (audioUrlToLoad || voiceToLoad) {
-        window.dispatchEvent(
-          new CustomEvent('workspace:add-timeline-clip', {
-            detail: {
-              type: 'voice',
-              url: audioUrlToLoad || '',
-              name: 'Voiceover Track',
-              duration: durationToLoad,
-              start: 0,
-            },
-          })
-        );
-      }
     };
 
     window.addEventListener('workspace:load-timeline' as any, handleLoadTimeline);
