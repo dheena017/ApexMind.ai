@@ -25,7 +25,7 @@ import {
   Square,
 } from 'lucide-react';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
-import { AutomationJob, AutomationHistoryEntry } from '@/src/features/youtube/types';
+import { AutomationJob, AutomationHistoryEntry, YouTubeChannel } from '@/src/features/youtube/types';
 import { WorkspaceTabType } from '../WorkspaceSidebar';
 import { toast } from 'sonner';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -152,6 +152,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     return { connected: false, channel: DEFAULT_CHANNEL };
   });
   const [authStatusLoading, setAuthStatusLoading] = useState(true);
+  const [availableChannels, setAvailableChannels] = useState<YouTubeChannel[]>([]);
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
 
   // Live countdown, Run History, Pause/Resume & Safe Delete state
@@ -212,6 +213,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   };
 
   const activeChannel = {
+    id: authStatus?.channel?.id || authStatus?.channel?.channelId || '',
     name: authStatus?.channel?.name || (user?.name ? `${user.name} Channel` : DEFAULT_CHANNEL.name),
     handle: authStatus?.channel?.handle || user?.handle || DEFAULT_CHANNEL.handle,
     avatarUrl: authStatus?.channel?.avatarUrl || authStatus?.channel?.avatar_url || user?.avatarUrl || DEFAULT_CHANNEL.avatarUrl,
@@ -221,33 +223,29 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
 
   const loadAuthStatus = async () => {
     try {
-      const res = await youtubeApi.getAuthStatus();
-      if (res && res.success) {
-        const channel = res.channel || DEFAULT_CHANNEL;
-        const connected = Boolean(res.connected !== false);
-        setAuthStatus({ connected, channel });
-        if (connected) {
-          try {
-            localStorage.setItem('apexmind_yt_channel', JSON.stringify(channel));
-          } catch {
-            // ignore
-          }
-        } else {
-          try {
-            localStorage.removeItem('apexmind_yt_channel');
-          } catch {
-            // ignore
-          }
-        }
+      const [statusResult, channelsResult] = await Promise.allSettled([
+        youtubeApi.getAuthStatus(),
+        youtubeApi.getChannels(),
+      ]);
+      const channels = channelsResult.status === 'fulfilled' ? channelsResult.value : [];
+      setAvailableChannels(channels);
+      const status = statusResult.status === 'fulfilled' ? statusResult.value : null;
+      const selectedHandle = localStorage.getItem('apexmind_yt_active_channel')?.trim();
+      const selectedChannel = selectedHandle
+        ? channels.find((item) => item.handle === selectedHandle || item.id === selectedHandle)
+        : undefined;
+      const statusChannel = status?.connected ? status.channel as YouTubeChannel | undefined : undefined;
+      const channel = selectedChannel || statusChannel || channels[0] || DEFAULT_CHANNEL;
+      const connected = Boolean(status?.connected || channels.length > 0);
+      setAuthStatus({ connected, channel });
+      if (connected) {
+        localStorage.setItem('apexmind_yt_channel', JSON.stringify(channel));
+        if (channel.handle) localStorage.setItem('apexmind_yt_active_channel', channel.handle);
       } else {
-        setAuthStatus({ connected: false, channel: DEFAULT_CHANNEL });
-        try {
-          localStorage.removeItem('apexmind_yt_channel');
-        } catch {
-          // ignore
-        }
+        localStorage.removeItem('apexmind_yt_channel');
       }
-    } catch {
+    } catch (error) {
+      console.warn('Could not load the connected YouTube channel:', error);
       setAuthStatus({ connected: false, channel: DEFAULT_CHANNEL });
     } finally {
       setAuthStatusLoading(false);
@@ -258,6 +256,48 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     loadAutomations(user?.id);
     loadAuthStatus();
   }, [user?.id]);
+
+  useEffect(() => {
+    const handleChannelSwitched = (event: Event) => {
+      const { handle, platform } = (event as CustomEvent<{
+        handle?: string;
+        platform?: string;
+      }>).detail || {};
+      if (platform && platform !== 'youtube') return;
+      if (!handle) {
+        setAuthStatus({ connected: false, channel: DEFAULT_CHANNEL });
+        return;
+      }
+      const selected = availableChannels.find(
+        (item) => item.handle === handle || item.id === handle,
+      );
+      if (selected) {
+        setAuthStatus({ connected: true, channel: selected });
+        localStorage.setItem('apexmind_yt_channel', JSON.stringify(selected));
+      } else {
+        void loadAuthStatus();
+      }
+    };
+    window.addEventListener('youtube:channel-switched', handleChannelSwitched);
+    return () => window.removeEventListener('youtube:channel-switched', handleChannelSwitched);
+  }, [availableChannels]);
+
+  const selectYouTubeChannel = async (selected: YouTubeChannel) => {
+    const handle = selected.handle || selected.id;
+    try {
+      await youtubeApi.setActiveChannel(selected.id);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not select YouTube channel.');
+      return;
+    }
+    localStorage.setItem('apexmind_yt_active_channel', handle);
+    localStorage.setItem('apexmind_social_active_account', handle);
+    localStorage.setItem('apexmind_yt_channel', JSON.stringify(selected));
+    setAuthStatus({ connected: true, channel: selected });
+    window.dispatchEvent(new CustomEvent('youtube:channel-switched', {
+      detail: { channel: selected, handle, platform: 'youtube' },
+    }));
+  };
 
   const previousStatusesRef = React.useRef<Record<string, AutomationJob['lastStatus']>>({});
 
@@ -398,6 +438,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         musicTrack,
         privacyStatus,
         active: true,
+        channelId: activeChannel.id || undefined,
         userId: user?.id,
       });
       toast.success(`New automation rule scheduled: ${finalSchedule}!`);
@@ -1608,6 +1649,30 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {/* ── Subtab 3: Channel & Target ── */}
       {activeSubTab === 'channel' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in">
+          {availableChannels.length > 1 && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#24242A] bg-[#141418] px-4 py-3">
+              <label htmlFor="automation-channel-target" className="text-xs font-semibold text-zinc-300">
+                Selected YouTube channel
+              </label>
+              <select
+                id="automation-channel-target"
+                value={availableChannels.find((item) =>
+                  item.handle === activeChannel.handle || item.id === activeChannel.id,
+                )?.id || ''}
+                onChange={(event) => {
+                  const selected = availableChannels.find((item) => item.id === event.target.value);
+                  if (selected) void selectYouTubeChannel(selected);
+                }}
+                className="max-w-[65%] rounded-lg border border-[#33333C] bg-[#1A1A1F] px-3 py-2 text-xs text-white"
+              >
+                {availableChannels.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} {item.handle}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {/* ── YouTube Channel Banner Card ── */}
           <div className="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden shadow-xl">
             {/* Banner Image */}

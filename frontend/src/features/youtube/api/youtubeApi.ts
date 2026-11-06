@@ -268,6 +268,20 @@ export const youtubeApi = {
     return data.channels || [];
   },
 
+  async setActiveChannel(channelId: string): Promise<void> {
+    const res = await fetch(
+      apiUrl(`/api/youtube/channels/${encodeURIComponent(channelId)}/active`),
+      {
+        method: 'POST',
+        headers: this._getScheduleHeaders(),
+      },
+    );
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: 'Could not select YouTube channel' }));
+      throw new Error(error.detail || 'Could not select YouTube channel');
+    }
+  },
+
   async disconnectOAuth(): Promise<boolean> {
     const res = await fetch(apiUrl('/api/youtube/disconnect'), {
       method: 'POST',

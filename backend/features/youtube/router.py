@@ -66,6 +66,7 @@ from backend.database.repository import (
     get_channels_by_user,
     save_oauth_channel,
     disconnect_youtube_channels,
+    set_user_active_channel,
 )
 from backend.features.auth.service import get_session_user_id
 
@@ -746,6 +747,22 @@ async def get_saved_channels(
     resolved_user_id = _require_session_user_id(authorization)
     db_channels = get_channels_by_user(resolved_user_id)
     return {"success": True, "channels": db_channels, "videos": []}
+
+
+@yt_router.post(
+    "/api/youtube/channels/{channel_id}/active",
+    summary="Set Active YouTube Channel",
+    description="Selects one of the authenticated user's connected YouTube channels for publishing.",
+)
+async def set_active_youtube_channel_route(
+    channel_id: str,
+    authorization: Optional[str] = Header(None),
+):
+    resolved_user_id = _require_session_user_id(authorization)
+    if not any(channel.get("id") == channel_id for channel in get_channels_by_user(resolved_user_id)):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="YouTube channel not found.")
+    set_user_active_channel(resolved_user_id, channel_id)
+    return {"success": True, "activeChannelId": channel_id}
 
 
 # ==============================================================================

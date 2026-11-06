@@ -502,7 +502,7 @@ def execute_automation_job(
         )
         logger.info(f"[Automation/Stage-6] Publishing video to YouTube")
         user_id = job.get("userId")
-        yt_client = get_authenticated_youtube_client(user_id)
+        yt_client = get_authenticated_youtube_client(user_id, channel_id)
         upload_res = None
         youtube_url = None
         is_scheduled = privacy == "scheduled"
@@ -533,6 +533,7 @@ def execute_automation_job(
                     privacy_status="private" if is_scheduled else "public",
                     publish_at=publish_at_iso,
                     user_id=user_id,
+                    channel_id=channel_id,
                 )
                 youtube_url = upload_res.get("videoUrl")
                 logger.info(f"[Automation/Stage-6] YouTube upload success: {youtube_url} | Status: {upload_res.get('status')}")

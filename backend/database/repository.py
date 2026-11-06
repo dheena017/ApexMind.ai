@@ -153,7 +153,10 @@ def update_channel_access_token(channel_id: str, access_token: str, token_expiry
     conn.commit()
     conn.close()
 
-def get_oauth_channel(user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def get_oauth_channel(
+    user_id: Optional[str] = None,
+    channel_id: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
     import sqlite3
     conn = get_connection()
     cursor = conn.cursor()
@@ -163,7 +166,15 @@ def get_oauth_channel(user_id: Optional[str] = None) -> Optional[Dict[str, Any]]
         if user_id:
             query += " AND user_id = ?"
             params = (user_id,)
-        query += " ORDER BY connected_at DESC LIMIT 1"
+        if channel_id:
+            query += " AND id = ?"
+            params = (*params, channel_id)
+        if user_id and not channel_id:
+            query += " ORDER BY CASE WHEN id = (SELECT active_channel_id FROM users WHERE id = ?) THEN 0 ELSE 1 END, connected_at DESC"
+            params = (*params, user_id)
+        else:
+            query += " ORDER BY connected_at DESC"
+        query += " LIMIT 1"
         cursor.execute(query, params)
         r = cursor.fetchone()
         conn.close()
@@ -191,7 +202,15 @@ def get_oauth_channel(user_id: Optional[str] = None) -> Optional[Dict[str, Any]]
         if user_id:
             query += " AND user_id = ?"
             params = (user_id,)
-        query += " ORDER BY connected_at DESC LIMIT 1"
+        if channel_id:
+            query += " AND id = ?"
+            params = (*params, channel_id)
+        if user_id and not channel_id:
+            query += " ORDER BY CASE WHEN id = (SELECT active_channel_id FROM users WHERE id = ?) THEN 0 ELSE 1 END, connected_at DESC"
+            params = (*params, user_id)
+        else:
+            query += " ORDER BY connected_at DESC"
+        query += " LIMIT 1"
         cursor.execute(query, params)
         r = cursor.fetchone()
         conn.close()

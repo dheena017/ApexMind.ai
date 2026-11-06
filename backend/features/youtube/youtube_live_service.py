@@ -1102,11 +1102,14 @@ def handle_oauth_callback(
     }
 
 
-def get_authenticated_youtube_client(user_id: Optional[str] = None) -> Optional[Any]:
+def get_authenticated_youtube_client(
+    user_id: Optional[str] = None,
+    channel_id: Optional[str] = None,
+) -> Optional[Any]:
     """Builds an authorized YouTube Data API v3 client using saved OAuth credentials."""
     if not user_id:
         return None
-    ch = get_oauth_channel(user_id=user_id)
+    ch = get_oauth_channel(user_id=user_id, channel_id=channel_id)
     if not ch or (not ch.get("refresh_token") and not ch.get("access_token")):
         return None
 
@@ -1164,10 +1167,11 @@ def upload_video_to_live_youtube(
     privacy_status: str = "public",
     mimetype: Optional[str] = None,
     user_id: Optional[str] = None,
+    channel_id: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, Any]:
     """Streams video directly to YouTube via YouTube Data API v3 (videos.insert). Zero DB writes."""
-    youtube = get_authenticated_youtube_client(user_id)
+    youtube = get_authenticated_youtube_client(user_id, channel_id)
     if not youtube:
         raise RuntimeError("No Google OAuth authorized YouTube channel found. Please authorize your channel first.")
 

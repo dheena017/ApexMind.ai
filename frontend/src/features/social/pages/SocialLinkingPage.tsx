@@ -17,6 +17,7 @@ import {
   Link2,
 } from 'lucide-react';
 import { socialApi } from '@/src/features/social/api/socialApi';
+import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
 import { SocialAccount, SocialPlatform, PublishedPost } from '@/src/features/social/types';
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
 import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
@@ -87,13 +88,20 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
       setAccounts(fleet);
 
       // Resolve active channel
-      const stored = localStorage.getItem('apexmind_yt_active_channel');
+      const stored = localStorage.getItem('apexmind_social_active_account');
+      const storedYouTubeChannel = localStorage.getItem('apexmind_yt_active_channel');
       if (stored && fleet.some((a) => a.handle === stored || a.id === stored)) {
         setActiveChannelKey(stored);
       } else if (fleet.length > 0) {
-        const fallbackKey = fleet[0].handle || fleet[0].id;
+        const selectedYouTubeAccount = fleet.find(
+          (account) =>
+            account.platform === 'youtube' &&
+            (account.handle === storedYouTubeChannel || account.id === storedYouTubeChannel),
+        );
+        const fallbackAccount = selectedYouTubeAccount || fleet[0];
+        const fallbackKey = fallbackAccount.handle || fallbackAccount.id;
         setActiveChannelKey(fallbackKey);
-        localStorage.setItem('apexmind_yt_active_channel', fallbackKey);
+        localStorage.setItem('apexmind_social_active_account', fallbackKey);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load connected social accounts.';
@@ -139,15 +147,23 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
       .catch((err: Error) => setActionError(err.message || 'Could not connect the social account.'));
   }, []);
 
-  const handleSetActive = (acc: SocialAccount) => {
+  const handleSetActive = async (acc: SocialAccount) => {
     const key = acc.handle || acc.id;
+    if (acc.platform === 'youtube') {
+      try {
+        await youtubeApi.setActiveChannel(acc.platformAccountId);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Could not select YouTube channel.');
+        return;
+      }
+      localStorage.setItem('apexmind_yt_active_channel', key);
+      localStorage.setItem('apexmind_social_active_account', key);
+      window.dispatchEvent(new CustomEvent('youtube:channel-switched', {
+        detail: { channel: acc, handle: key, platform: 'youtube' },
+      }));
+    }
     setActiveChannelKey(key);
-    localStorage.setItem('apexmind_yt_active_channel', key);
-    window.dispatchEvent(
-      new CustomEvent('youtube:channel-switched', {
-        detail: { channel: acc, handle: key },
-      })
-    );
+    localStorage.setItem('apexmind_social_active_account', key);
     setNotice(`Active publishing destination set to "${acc.name}" (${acc.handle})`);
     setTimeout(() => setNotice(null), 3500);
   };
@@ -206,12 +222,26 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
       setAccounts(updated);
 
       if (activeChannelKey === accountId || activeChannelKey === accounts.find((a) => a.id === accountId)?.handle) {
-        const next = updated[0]?.handle || updated[0]?.id || '';
+        const nextAccount = updated.find((account) => account.platform === 'youtube') || updated[0];
+        const next = nextAccount?.handle || nextAccount?.id || '';
         setActiveChannelKey(next);
         if (next) {
-          localStorage.setItem('apexmind_yt_active_channel', next);
+          localStorage.setItem('apexmind_social_active_account', next);
         } else {
-          localStorage.removeItem('apexmind_yt_active_channel');
+          localStorage.removeItem('apexmind_social_active_account');
+        }
+        if (accounts.find((account) => account.id === accountId)?.platform === 'youtube') {
+          if (nextAccount?.platform === 'youtube') {
+            localStorage.setItem('apexmind_yt_active_channel', next);
+            window.dispatchEvent(new CustomEvent('youtube:channel-switched', {
+              detail: { channel: nextAccount, handle: next, platform: 'youtube' },
+            }));
+          } else {
+            localStorage.removeItem('apexmind_yt_active_channel');
+            window.dispatchEvent(new CustomEvent('youtube:channel-switched', {
+              detail: { handle: '', platform: 'youtube' },
+            }));
+          }
         }
       }
 
