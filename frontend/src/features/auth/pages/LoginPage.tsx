@@ -334,25 +334,30 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
   };
 
   // Fast-Continue for Remembered User
-  const handleContinueRemembered = () => {
+  const handleContinueRemembered = async () => {
     if (!rememberedUser) return;
     setLoading(true);
     setNotice({ text: 'Continuing session...', type: 'info' });
     try {
-      let token = localStorage.getItem('apexmind_token');
-      if (!token) {
-        token = `tok_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-        localStorage.setItem('apexmind_token', token);
+      const currentUser = await authApi.getMe();
+      if (currentUser.id !== rememberedUser.id) {
+        throw new Error('The saved session belongs to a different account. Please sign in again.');
       }
-      localStorage.setItem('apexmind_user', JSON.stringify(rememberedUser));
+      localStorage.setItem('apexmind_user', JSON.stringify(currentUser));
       localStorage.setItem('apexmind_auth_timestamp', Date.now().toString());
 
-      if (rememberedUser.handle) {
-        localStorage.setItem('apexmind_yt_active_channel', rememberedUser.handle);
+      if (currentUser.activeChannelId) {
+        localStorage.setItem('apexmind_yt_active_channel', currentUser.activeChannelId);
       }
       handleSuccessfulAuth();
-    } catch {
-      onNavigate('dashboard');
+    } catch (err) {
+      localStorage.removeItem('apexmind_user');
+      localStorage.removeItem('apexmind_token');
+      localStorage.removeItem('apexmind_auth_timestamp');
+      setNotice({
+        text: err instanceof Error ? err.message : 'The saved session is no longer valid. Please sign in again.',
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }

@@ -647,6 +647,8 @@ async def post_exchange_oauth_code(
             "message": f"Successfully connected YouTube channel '{res.get('channel', {}).get('name', 'YouTube')}' with offline refresh token",
             "channel": res.get("channel"),
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error exchanging Google OAuth code: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to authenticate YouTube channel: {str(e)}")
@@ -680,6 +682,8 @@ async def post_connect_channel(
             "message": f"Successfully connected YouTube channel '{channel_data['title']}'",
             "channel": saved,
         }
+    except HTTPException:
+        raise
     except ValueError as ve:
         logger.warning(f"No YouTube channel on Google account: {ve}")
         raise HTTPException(status_code=400, detail=str(ve))

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { UserProfile, RegisterPayload, LoginPayload, GoogleAuthPayload, MetaLoginProvider, ChannelAuthPayload } from '../types';
-import { authApi, resolveChannelDeliveryEmail } from '../api/authApi';
+import { authApi, AuthSessionError, resolveChannelDeliveryEmail } from '../api/authApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
 
 interface AuthContextType {
@@ -42,11 +42,8 @@ export function isSessionValid(): boolean {
     const stored = localStorage.getItem(AUTH_USER_KEY);
     if (!stored) return false;
 
-    let token = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (!token) {
-      token = `tok_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-      localStorage.setItem(AUTH_TOKEN_KEY, token);
-    }
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) return false;
 
     const authTimestamp = localStorage.getItem(AUTH_TIMESTAMP_KEY);
     if (!authTimestamp) {
@@ -137,6 +134,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         })
         .catch((err) => {
+          if (err instanceof AuthSessionError && err.status === 401) {
+            clearAuthStorage();
+            setUser(null);
+            consoleLogger.warn('Auth', 'Saved session is no longer valid. Please sign in again.');
+            return;
+          }
           consoleLogger.warn('Auth', `Remote session sync notice: ${err}`);
         });
     }
