@@ -678,8 +678,16 @@ def main() -> int:
             )
             return 1
 
-    # 4. App import validation
-    validate_application_import(ansi)
+    if args.reload is not None:
+        reload_enabled = args.reload
+    else:
+        backend_reload = env.get("BACKEND_RELOAD", "true").strip().lower()
+        reload_enabled = backend_reload != "false" and env.get("NODE_ENV", "development").strip().lower() != "production"
+
+    # A reload worker imports the app itself; pre-importing here needlessly loads
+    # every feature twice before the backend can accept requests.
+    if args.check_only or not reload_enabled:
+        validate_application_import(ansi)
 
     # 5. Check API key notice
     check_api_key_configuration(env, ansi)
@@ -692,12 +700,6 @@ def main() -> int:
         return 0
 
     # 6. Mode and log level configuration
-    if args.reload is not None:
-        reload_enabled = args.reload
-    else:
-        backend_reload = env.get("BACKEND_RELOAD", "true").strip().lower()
-        reload_enabled = backend_reload != "false" and env.get("NODE_ENV", "development").strip().lower() != "production"
-
     log_level = args.log_level or (env.get("LOG_LEVEL") or env.get("LL") or "info").strip().lower()
     if log_level not in ["debug", "info", "warning", "error", "critical", "trace"]:
         log_level = "info"

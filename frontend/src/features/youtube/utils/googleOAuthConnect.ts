@@ -34,6 +34,8 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
           client_id: clientId,
           scope:
             'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload openid email profile',
+          access_type: 'offline',
+          prompt: 'consent',
           ux_mode: 'popup',
           callback: async (codeResponse: any) => {
             if (codeResponse.error) {

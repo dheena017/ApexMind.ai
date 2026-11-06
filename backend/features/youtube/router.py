@@ -35,6 +35,7 @@ from .youtube_live_service import (
     handle_oauth_callback,
     fetch_authenticated_channel_details,
     get_authenticated_youtube_client,
+    YouTubeOAuthReauthorizationRequired,
 )
 from .service import publish_video_to_shorts
 from backend.database.repository import (
@@ -254,6 +255,11 @@ async def post_publish_video(
         )
     except HTTPException:
         raise
+    except YouTubeOAuthReauthorizationRequired as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        ) from e
     except ValueError as ve:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

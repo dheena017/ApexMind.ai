@@ -4,7 +4,6 @@ from .repository import (
     fetch_media_library,
 )
 from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
-from backend.shared.gemini import generate_gemini_script, generate_gemini_voiceover
 from backend.database.repository import add_notification
 
 # ==============================================================================
@@ -37,6 +36,8 @@ def generate_script(
     available_assets: dict | None = None,
     user_prompt: str | None = None,
 ) -> Dict[str, Any]:
+    from backend.shared.gemini import generate_gemini_script
+
     aspect_ratio = aspect_ratio or DEFAULT_ASPECT_RATIO
     logger.debug(f"Crafting AI script & storyboard | Theme: '{category}' | Topic: '{topic}' | Voice: '{voice_name or 'Default'}' | Model: {model}")
     merged_assets = dict(available_assets or {})
@@ -84,6 +85,8 @@ def generate_script(
     }
 
 def synthesize_voiceover(text: str, voice_name: str | None, model: str | None = None, storyboard: list | None = None) -> Dict[str, Any]:
+    from backend.shared.gemini import generate_gemini_voiceover
+
     if not voice_name or not str(voice_name).strip():
         raise ValueError("Voice name is required. Please select a workspace voice before generating audio.")
     logger.debug(f"Synthesizing voiceover audio for voice '{voice_name}' | Length: {len(text)} characters | Model: {model or 'gemini'}")

@@ -4,8 +4,6 @@ import time
 import logging
 from typing import Any
 
-from google import genai
-
 from .config import settings
 
 
@@ -34,6 +32,8 @@ def _model_value(model: Any, field: str, default: Any = None) -> Any:
 
 
 def get_available_models(force_refresh: bool = False) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    from google import genai
+
     global _MODEL_CACHE
     now = time.monotonic()
     with _MODEL_CACHE_LOCK:

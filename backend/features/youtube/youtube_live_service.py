@@ -21,10 +21,6 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 import requests
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-from google.auth.transport.requests import Request
 
 from backend.shared.config import settings
 
@@ -137,95 +133,39 @@ def resolve_channel_metadata(query: str, user_id: Optional[str] = None) -> Dict[
     4. Safe synthesized channel profile fallback (prevents 400 crashes)
     """
     clean = normalize_channel_identifier(query)
-    authorized_channel_id = None
+    authorized_channel = None
     if user_id:
         target_channel_id = clean.split("channel/", 1)[-1] if clean.startswith("channel/") else clean
         for saved_channel in get_channels_by_user(user_id):
             saved_handle = normalize_channel_identifier(saved_channel.get("handle") or "")
             if saved_channel.get("id") == target_channel_id or saved_handle == clean:
-                authorized_channel_id = saved_channel["id"]
+                authorized_channel = saved_channel
                 break
 
-    # 1. Fast-path: Official YouTube Data API if client authorized
-    try:
-        if user_id:
-            yt = (
-                get_authenticated_youtube_client(user_id=user_id, channel_id=authorized_channel_id)
-                if authorized_channel_id
-                else None
-            )
-        else:
-            yt = get_authenticated_youtube_client()
-        if yt:
-            clean_handle = clean.replace("@", "")
-            items = []
-            if authorized_channel_id:
-                try:
-                    resp_api = yt.channels().list(
-                        part="snippet,statistics,brandingSettings",
-                        id=authorized_channel_id,
-                    ).execute()
-                    items = resp_api.get("items", [])
-                except Exception:
-                    pass
-            elif clean.startswith("@"):
-                try:
-                    resp_api = yt.channels().list(part="snippet,statistics,brandingSettings", forHandle=clean_handle).execute()
-                    items = resp_api.get("items", [])
-                except Exception:
-                    pass
-            if not items and (clean.startswith("UC") or "channel/UC" in clean):
-                cid = clean.split("channel/")[-1]
-                try:
-                    resp_api = yt.channels().list(part="snippet,statistics,brandingSettings", id=cid).execute()
-                    items = resp_api.get("items", [])
-                except Exception:
-                    pass
-            if not items:
-                try:
-                    resp_api = yt.channels().list(part="snippet,statistics,brandingSettings", mine=True).execute()
-                    mine_items = resp_api.get("items", [])
-                    if mine_items:
-                        items = mine_items
-                except Exception:
-                    pass
+    if authorized_channel is not None:
+        saved = authorized_channel
+        handle = saved.get("handle") or clean
+        name = saved.get("name") or clean.lstrip("@").title()
+        return {
+            "channelId": saved["id"],
+            "name": name,
+            "handle": handle,
+            "avatarUrl": saved.get("avatarUrl") or "",
+            "bannerUrl": saved.get("bannerUrl") or "",
+            "subscribers": saved.get("subscribers", 0),
+            "videosUploaded": saved.get("videosUploaded", 0),
+            "description": "",
+            "verified": False,
+            "channelUrl": f"https://www.youtube.com/{handle}",
+            "joinedDate": "Unavailable",
+            "country": "Global",
+            "totalLifetimeViews": 0,
+            "links": [],
+            "source": "database-cache",
+        }
 
-            if items:
-                ch = items[0]
-                snippet = ch.get("snippet", {})
-                stats = ch.get("statistics", {})
-                branding = ch.get("brandingSettings", {})
-                banner_url = branding.get("image", {}).get("bannerExternalUrl", "")
-                thumbs = snippet.get("thumbnails", {})
-                avatar_url = thumbs.get("high", {}).get("url") or thumbs.get("default", {}).get("url") or ""
-                sub_count = int(stats.get("subscriberCount", 0))
-                vid_count = int(stats.get("videoCount", 0))
-                view_count = int(stats.get("viewCount", 0))
-                ch_id = ch.get("id", "")
-                custom_url = snippet.get("customUrl", "")
-                real_h = custom_url if custom_url.startswith("@") else f"@{custom_url}" if custom_url else clean
-
-                return {
-                    "channelId": ch_id or f"yt_{clean.replace('@', '')}",
-                    "name": snippet.get("title") or clean.replace("@", "").title(),
-                    "handle": real_h,
-                    "avatarUrl": avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(snippet.get('title', clean))}&backgroundColor=0284c7,4f46e5,7c3aed",
-                    "bannerUrl": banner_url,
-                    "subscribers": sub_count,
-                    "videosUploaded": vid_count,
-                    "description": snippet.get("description", "")[:600],
-                    "verified": False,
-                    "channelUrl": f"https://www.youtube.com/{real_h}",
-                    "joinedDate": snippet.get("publishedAt", "").split("T")[0] or "Unavailable",
-                    "country": snippet.get("country", "Global"),
-                    "totalLifetimeViews": view_count,
-                    "links": [],
-                    "source": "youtube-official-live",
-                }
-    except Exception as api_err:
-        logger.debug(f"Official API channel resolution skipped: {api_err}")
-
-    # 2. Resilient live YouTube HTML scraping
+    # Channel profile reads use public data only; OAuth refresh is reserved for
+    # operations such as publishing that require an authorized YouTube client.
     target_url = f"https://www.youtube.com/{clean}" if not clean.startswith("http") else clean
     resp_text = None
     headers = {"User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9", "Connection": "close"}
@@ -1105,6 +1045,11 @@ def handle_oauth_callback(
     tokens = exchange_code_for_tokens(code, redirect_uri)
     access_token = tokens.get("access_token")
     refresh_token = tokens.get("refresh_token")
+    if not refresh_token:
+        raise ValueError(
+            "Google did not issue a new YouTube refresh token. Please reconnect and approve "
+            "the requested permissions again; the existing saved authorization was not replaced."
+        )
     expires_in = tokens.get("expires_in", 3600)
     token_expiry = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + expires_in))
 
@@ -1135,6 +1080,10 @@ def get_authenticated_youtube_client(
     channel_id: Optional[str] = None,
 ) -> Optional[Any]:
     """Builds an authorized YouTube Data API v3 client using saved OAuth credentials."""
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build
+
     if not user_id:
         return None
     ch = get_oauth_channel(user_id=user_id, channel_id=channel_id)
@@ -1174,13 +1123,31 @@ def get_authenticated_youtube_client(
                     update_channel_access_token(ch["id"], creds.token, new_expiry)
                     logger.info(f"Proactively refreshed and saved OAuth token for channel '{ch.get('name')}'")
             except Exception as e:
-                logger.error(f"Failed to refresh YouTube OAuth credentials: {e}")
+                error_text = str(e).lower()
+                if "unauthorized_client" in error_text or "invalid_grant" in error_text:
+                    logger.error(
+                        "YouTube OAuth refresh was rejected (%s); the saved channel must be reconnected.",
+                        "unauthorized_client" if "unauthorized_client" in error_text else "invalid_grant",
+                    )
+                    raise YouTubeOAuthReauthorizationRequired() from e
+                logger.error("Failed to refresh YouTube OAuth credentials: %s", e)
                 return None
         else:
             logger.warning("YouTube access token has expired and no refresh token is available.")
             return None
 
     return build("youtube", "v3", credentials=creds, cache_discovery=False)
+
+
+class YouTubeOAuthReauthorizationRequired(RuntimeError):
+    """Raised when Google rejects a saved refresh token and the channel must reconnect."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Google rejected the saved YouTube authorization. Verify that GOOGLE_CLIENT_ID "
+            "and GOOGLE_CLIENT_SECRET belong to the same OAuth client. If the OAuth client "
+            "was changed, reconnect the YouTube channel to issue a new refresh token."
+        )
 
 
 # ==============================================================================
@@ -1199,6 +1166,8 @@ def upload_video_to_live_youtube(
     **kwargs,
 ) -> Dict[str, Any]:
     """Streams video directly to YouTube via YouTube Data API v3 (videos.insert). Zero DB writes."""
+    from googleapiclient.http import MediaFileUpload
+
     youtube = get_authenticated_youtube_client(user_id, channel_id)
     if not youtube:
         raise RuntimeError("No Google OAuth authorized YouTube channel found. Please authorize your channel first.")

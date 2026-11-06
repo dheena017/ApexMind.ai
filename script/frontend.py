@@ -22,6 +22,7 @@ if hasattr(signal, "SIGBREAK"):
     signal.signal(signal.SIGBREAK, _handle_import_interrupt)
 
 import argparse  # noqa: E402
+from collections import deque  # noqa: E402
 import ctypes  # noqa: E402
 from ctypes import wintypes  # noqa: E402
 import http.client  # noqa: E402
@@ -838,7 +839,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--force", "-f", action="store_true", help="Alias for --kill-port")
     parser.add_argument("--auto-port", "-a", action="store_true", help="Automatically pick the next available port if chosen port is occupied")
     parser.add_argument("--open", "-o", action="store_true", help="Automatically open browser once frontend is ready")
-    parser.add_argument("--timeout", "-t", type=int, default=30, help="Maximum seconds to wait for frontend readiness (default: 30)")
+    parser.add_argument("--timeout", "-t", type=int, default=90, help="Maximum seconds to wait for frontend readiness (default: 90)")
     parser.add_argument("--check-only", "-c", action="store_true", help="Perform pre-flight health checks and exit")
     parser.add_argument("--install", "-i", action="store_true", help="Auto-install frontend dependencies with npm install if missing")
     parser.add_argument("--env-file", type=Path, default=DOTENV_PATH, help="Path to custom .env file")
@@ -920,7 +921,7 @@ def main() -> int:
 
     display_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
 
-    print(f"\n{ansi.GREEN}{ansi.BOLD}[ApexMind OK]{ansi.RESET} Frontend ready at {ansi.BRIGHT_CYAN}http://{display_host}:{port}{ansi.RESET}")
+    print(f"\n{ansi.CYAN}[ApexMind]{ansi.RESET} Launching frontend at {ansi.BRIGHT_CYAN}http://{display_host}:{port}{ansi.RESET}")
     print(f"{ansi.CYAN}[ApexMind]{ansi.RESET} Starting Vite dev server on {ansi.BRIGHT_WHITE}http://{display_host}:{port}{ansi.RESET}")
 
     print_frontend_banner(display_host, port, node_version, args.with_backend, ansi)
@@ -1006,6 +1007,7 @@ def main() -> int:
         return 1
 
     ready_logged = threading.Event()
+    vite_startup_output: deque[str] = deque(maxlen=20)
 
     def stream_vite_logs():
         if frontend_process is None or frontend_process.stdout is None:
@@ -1014,6 +1016,7 @@ def main() -> int:
             line = raw_line.strip()
             if not line:
                 continue
+            vite_startup_output.append(line)
 
             # Strip ANSI escape codes
             clean = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", line).strip()
@@ -1074,6 +1077,12 @@ def main() -> int:
             print(format_log("App", "Features active: Workspace • YouTube • Notifications • Dashboard", ansi=ansi))
     except (TimeoutError, RuntimeError) as exc:
         print(f"\n{ansi.RED}{ansi.BOLD}[ApexMind Error]{ansi.RESET} {exc}", file=sys.stderr)
+        if vite_startup_output:
+            print(f"{ansi.YELLOW}Last Vite output:{ansi.RESET}", file=sys.stderr)
+            for line in vite_startup_output:
+                print(f"  {line}", file=sys.stderr)
+        else:
+            print(f"{ansi.YELLOW}Vite did not write any startup output before the timeout.{ansi.RESET}", file=sys.stderr)
         stop_all(1)
 
     # Auto-open browser if requested
