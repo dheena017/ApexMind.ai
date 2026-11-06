@@ -462,6 +462,9 @@ async def publish_to_single_destination(
     platform = account["platform"]
     acc_id = account["id"]
     acc_name = account.get("name", "Account")
+    account_user_id = account.get("userId")
+    if not isinstance(account_user_id, str) or not account_user_id:
+        raise ValueError("The social account is missing its owning user.")
 
     try:
         adapter = get_adapter(platform)
@@ -482,7 +485,7 @@ async def publish_to_single_destination(
 
         # Record publication in database
         record_published_post(
-            user_id=account.get("userId", "usr_global"),
+            user_id=account_user_id,
             social_account_id=acc_id,
             platform=platform,
             video_id_or_url=url or post_id,
@@ -506,7 +509,7 @@ async def publish_to_single_destination(
     except Exception as e:
         logger.error(f"Syndication failure for {platform} account {acc_id}: {e}")
         record_published_post(
-            user_id=account.get("userId", "usr_global"),
+            user_id=account_user_id,
             social_account_id=acc_id,
             platform=platform,
             video_id_or_url=None,

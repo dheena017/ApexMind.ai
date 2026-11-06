@@ -143,7 +143,7 @@ export const youtubeApi = {
   async publishVideo(payload: any): Promise<any> {
     const res = await fetch(apiUrl('/api/youtube/publish'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._getScheduleHeaders(),
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
@@ -155,8 +155,11 @@ export const youtubeApi = {
 
   // Direct Live Video Upload to YouTube via canonical /api/youtube/publish
   async uploadVideoToYouTube(formData: FormData): Promise<any> {
+    const headers = this._getScheduleHeaders();
+    delete headers['Content-Type'];
     const res = await fetch(apiUrl('/api/youtube/publish'), {
       method: 'POST',
+      headers,
       body: formData,
     });
     if (!res.ok) {
