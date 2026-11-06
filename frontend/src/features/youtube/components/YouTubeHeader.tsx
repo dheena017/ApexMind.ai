@@ -20,7 +20,6 @@ export interface YouTubeHeaderProps {
   loading: boolean;
   onSyncLive: () => void;
   channelsCount: number;
-  onConnectChannel?: () => void;
   activeTab: YouTubeTab;
   onTabChange: (tab: YouTubeTab) => void;
   videosCount?: number | string;

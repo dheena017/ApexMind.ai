@@ -22,6 +22,7 @@ import { SocialAccount, SocialPlatform, PublishedPost } from '@/src/features/soc
 import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
 import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
 import { getSocialAvatarFallback, handleSocialAvatarError } from '../utils/avatar';
+import useAuth from '@/src/features/auth/hooks/useAuth';
 
 function formatCount(num?: number): string {
   if (!num || num === 0) return '0';
@@ -47,6 +48,7 @@ function formatDateTime(val?: string): string {
 }
 
 export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const { user } = useAuth();
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [posts, setPosts] = useState<PublishedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,10 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   const [postsError, setPostsError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | SocialPlatform>('all');
   const [activeChannelKey, setActiveChannelKey] = useState<string>('');
+  const [activeYouTubeChannelId, setActiveYouTubeChannelId] = useState<string>('');
+  const [verifiedActiveUserId, setVerifiedActiveUserId] = useState<string | null>(null);
+  const activeChannelVerified = Boolean(user?.id && verifiedActiveUserId === user.id);
+  const [ownedYouTubeChannelIds, setOwnedYouTubeChannelIds] = useState<string[]>([]);
 
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -81,7 +87,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     setLoading(true);
     setAccountsError(null);
     try {
-      const [fleet, channelStatus] = await Promise.all([
+      const [fleet, youtubeData] = await Promise.all([
         socialApi.getFleetAccounts(),
         Promise.all([
           loadPublishedPosts(),
@@ -89,36 +95,63 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             console.warn('Could not load active YouTube channel:', err);
             return null;
           }),
-        ]).then(([, status]) => status),
+          youtubeApi.getChannels().catch((err) => {
+            console.warn('Could not load YouTube channels connected to this account:', err);
+            return [];
+          }),
+        ]).then(([, status, channels]) => ({ status, channels })),
       ]);
-      setAccounts(fleet);
+      const uniqueFleet = fleet.filter((account, index, allAccounts) =>
+        !account.platformAccountId ||
+        allAccounts.findIndex((candidate) =>
+          candidate.platform === account.platform &&
+          candidate.platformAccountId === account.platformAccountId,
+        ) === index,
+      );
+      setAccounts(uniqueFleet);
+      setOwnedYouTubeChannelIds(youtubeData.channels.map((channel) => channel.id));
+      const channelStatus = youtubeData.status;
 
       // Resolve active channel
       const stored = localStorage.getItem('apexmind_social_active_account');
       const storedYouTubeChannel = localStorage.getItem('apexmind_yt_active_channel');
       const serverActiveYouTubeAccount = channelStatus?.activeChannelId
-        ? fleet.find((account) =>
+        ? uniqueFleet.find((account) =>
             account.platform === 'youtube' &&
-            account.platformAccountId === channelStatus.activeChannelId,
+            account.platformAccountId === channelStatus.activeChannelId &&
+            youtubeData.channels.some((channel) => channel.id === account.platformAccountId),
           )
         : undefined;
+      setVerifiedActiveUserId(serverActiveYouTubeAccount ? user?.id || null : null);
       if (serverActiveYouTubeAccount) {
         const key = serverActiveYouTubeAccount.handle || serverActiveYouTubeAccount.id;
+        setActiveYouTubeChannelId(serverActiveYouTubeAccount.platformAccountId);
         setActiveChannelKey(key);
         localStorage.setItem('apexmind_social_active_account', key);
         localStorage.setItem('apexmind_yt_active_channel', key);
-      } else if (stored && fleet.some((a) => a.handle === stored || a.id === stored)) {
+      } else if (stored && uniqueFleet.some((a) => a.handle === stored || a.id === stored)) {
+        const storedAccount = uniqueFleet.find((a) => a.handle === stored || a.id === stored);
+        setActiveYouTubeChannelId(
+          storedAccount?.platform === 'youtube' ? storedAccount.platformAccountId : '',
+        );
         setActiveChannelKey(stored);
-      } else if (fleet.length > 0) {
-        const selectedYouTubeAccount = fleet.find(
+      } else if (uniqueFleet.length > 0) {
+        const selectedYouTubeAccount = uniqueFleet.find(
           (account) =>
             account.platform === 'youtube' &&
-            (account.handle === storedYouTubeChannel || account.id === storedYouTubeChannel),
+            (account.handle === storedYouTubeChannel ||
+              account.id === storedYouTubeChannel ||
+              account.platformAccountId === storedYouTubeChannel),
         );
-        const fallbackAccount = selectedYouTubeAccount || fleet[0];
+        const fallbackAccount = selectedYouTubeAccount || uniqueFleet[0];
         const fallbackKey = fallbackAccount.handle || fallbackAccount.id;
+        setActiveYouTubeChannelId(
+          fallbackAccount.platform === 'youtube' ? fallbackAccount.platformAccountId : '',
+        );
         setActiveChannelKey(fallbackKey);
         localStorage.setItem('apexmind_social_active_account', fallbackKey);
+      } else {
+        setActiveYouTubeChannelId('');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load connected social accounts.';
@@ -167,17 +200,39 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   const handleSetActive = async (acc: SocialAccount) => {
     const key = acc.handle || acc.id;
     if (acc.platform === 'youtube') {
+      if (!ownedYouTubeChannelIds.includes(acc.platformAccountId)) {
+        setActionError(
+          'This channel is not connected to your signed-in account. Reconnect it with YouTube OAuth before selecting it.',
+        );
+        return;
+      }
       try {
         await youtubeApi.setActiveChannel(acc.platformAccountId);
       } catch (err) {
         setActionError(err instanceof Error ? err.message : 'Could not select YouTube channel.');
         return;
       }
+      setActiveYouTubeChannelId(acc.platformAccountId);
       localStorage.setItem('apexmind_yt_active_channel', key);
       localStorage.setItem('apexmind_social_active_account', key);
+      setVerifiedActiveUserId(user?.id || null);
+      localStorage.setItem('apexmind_yt_channel', JSON.stringify({
+        id: acc.platformAccountId,
+        channelId: acc.platformAccountId,
+        name: acc.name,
+        handle: acc.handle,
+        subscribers: acc.followersCount,
+        videosUploaded: acc.postsCount,
+        avatarUrl: acc.avatarUrl || '',
+        bannerUrl: acc.bannerUrl,
+        channelUrl: getPlatformUrl(acc),
+        userId: user?.id,
+      }));
       window.dispatchEvent(new CustomEvent('youtube:channel-switched', {
         detail: { channel: acc, handle: key, platform: 'youtube' },
       }));
+    } else {
+      setActiveYouTubeChannelId('');
     }
     setActiveChannelKey(key);
     localStorage.setItem('apexmind_social_active_account', key);
@@ -185,14 +240,40 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
     setTimeout(() => setNotice(null), 3500);
   };
 
-  const handleConnectGoogle = () => {
+  const handleConnectGoogle = (targetAccount?: SocialAccount) => {
     setActionError(null);
     setNotice(null);
     connectYouTubeWithGoogle({
       onLoading: setConnectingGoogle,
-      onSuccess: (connectedChannel) => {
-        setNotice(`Successfully connected YouTube channel "${connectedChannel.name}"!`);
-        loadData();
+      onSuccess: async (connectedChannel) => {
+        if (targetAccount && targetAccount.platformAccountId === connectedChannel.id) {
+          try {
+            await youtubeApi.setActiveChannel(connectedChannel.id);
+            const key = targetAccount.handle || targetAccount.id;
+            setActiveYouTubeChannelId(targetAccount.platformAccountId);
+            localStorage.setItem('apexmind_yt_active_channel', key);
+            localStorage.setItem('apexmind_social_active_account', key);
+            localStorage.setItem('apexmind_yt_channel', JSON.stringify({
+              ...connectedChannel,
+              userId: user?.id,
+            }));
+            setActiveChannelKey(key);
+            setVerifiedActiveUserId(user?.id || null);
+            window.dispatchEvent(new CustomEvent('youtube:channel-switched', {
+              detail: { channel: connectedChannel, handle: key, platform: 'youtube' },
+            }));
+            setNotice(`Reconnected and selected "${connectedChannel.name}" as the active YouTube channel.`);
+          } catch (error) {
+            setActionError(error instanceof Error ? error.message : 'Could not select the reconnected YouTube channel.');
+          }
+        } else if (targetAccount) {
+          setNotice(
+            `Connected "${connectedChannel.name}". It does not match "${targetAccount.name}", so the requested channel was not selected.`,
+          );
+        } else {
+          setNotice(`Successfully connected YouTube channel "${connectedChannel.name}"!`);
+        }
+        await loadData();
         window.dispatchEvent(new CustomEvent('social:fleet-updated'));
       },
       onError: (err) => {
@@ -238,9 +319,18 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
       const updated = accounts.filter((a) => a.id !== accountId);
       setAccounts(updated);
 
-      if (activeChannelKey === accountId || activeChannelKey === accounts.find((a) => a.id === accountId)?.handle) {
+      const disconnectedAccount = accounts.find((a) => a.id === accountId);
+      if (
+        activeChannelKey === accountId ||
+        activeChannelKey === disconnectedAccount?.handle ||
+        (disconnectedAccount?.platform === 'youtube' &&
+          activeYouTubeChannelId === disconnectedAccount.platformAccountId)
+      ) {
         const nextAccount = updated.find((account) => account.platform === 'youtube') || updated[0];
         const next = nextAccount?.handle || nextAccount?.id || '';
+        setActiveYouTubeChannelId(
+          nextAccount?.platform === 'youtube' ? nextAccount.platformAccountId : '',
+        );
         setActiveChannelKey(next);
         if (next) {
           localStorage.setItem('apexmind_social_active_account', next);
@@ -356,7 +446,13 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   // Metrics aggregations
   const totalFollowers = accounts.reduce((acc, a) => acc + (a.followersCount || 0), 0);
   const recentPublishedCount = posts.filter((post) => post.status?.toLowerCase() === 'published').length;
-  const activeAccount = accounts.find((a) => a.handle === activeChannelKey || a.id === activeChannelKey) || accounts[0];
+  const activeAccount =
+    accounts.find((a) =>
+      a.platform === 'youtube'
+        ? a.platformAccountId === activeYouTubeChannelId
+        : a.handle === activeChannelKey || a.id === activeChannelKey,
+    ) || accounts[0];
+  const activeAccountVerified = activeAccount?.platform !== 'youtube' || activeChannelVerified;
 
   // Filtering
   const filteredAccounts = activeFilter === 'all'
@@ -470,8 +566,12 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
         {/* Card 4: Active Target Destination */}
         <div className="p-4 rounded-xl bg-[#141418] border border-[#24242A] flex flex-col justify-between hover:border-[#2E2E36] transition-colors shadow-xs">
           <div className="flex items-center justify-between text-[#9CA3AF] text-xs">
-            <span className="font-medium">Active Destination</span>
-            <span className={`w-2 h-2 rounded-full ${activeAccount ? 'bg-emerald-400' : 'bg-[#71717A]'}`} />
+            <span className="font-medium">
+              {activeAccount?.platform === 'youtube' && !activeChannelVerified ? 'Saved Destination' : 'Active Destination'}
+            </span>
+            <span className={`w-2 h-2 rounded-full ${
+              activeAccount && activeAccountVerified ? 'bg-emerald-400' : activeAccount ? 'bg-amber-400' : 'bg-[#71717A]'
+            }`} />
           </div>
           <div className="mt-2 flex items-center gap-2.5 min-w-0">
             {activeAccount ? (
@@ -491,7 +591,11 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
               <span className="text-xs text-zinc-500">No destination selected</span>
             )}
           </div>
-          <p className="mt-2 text-[10px] text-[#9CA3AF] truncate">Target for Studio 1-click publishing</p>
+          <p className="mt-2 text-[10px] text-[#9CA3AF] truncate">
+            {activeAccount?.platform === 'youtube' && !activeChannelVerified
+              ? 'Saved in this browser; sign in to verify the YouTube target'
+              : 'Target for Studio 1-click publishing'}
+          </p>
         </div>
       </div>
 
@@ -635,15 +739,21 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredAccounts.map((acc) => {
-            const isTarget = acc.handle === activeChannelKey || acc.id === activeChannelKey;
+            const isTarget = acc.platform === 'youtube'
+              ? acc.platformAccountId === activeYouTubeChannelId
+              : acc.handle === activeChannelKey || acc.id === activeChannelKey;
+            const isOwnedYouTubeChannel = acc.platform === 'youtube' && ownedYouTubeChannelIds.includes(acc.platformAccountId);
+            const isVerifiedTarget = isTarget && (acc.platform !== 'youtube' || activeChannelVerified);
             const channelUrl = getPlatformUrl(acc);
 
             return (
               <div
                 key={acc.id}
                 className={`p-4 sm:p-5 rounded-2xl bg-[#141418] border transition-all flex flex-col justify-between gap-4 shadow-xs ${
-                  isTarget
+                  isVerifiedTarget
                     ? 'border-emerald-500/40 bg-[#141816] shadow-emerald-950/20'
+                    : isTarget
+                      ? 'border-amber-500/40 bg-[#191611]'
                     : 'border-[#24242A] hover:border-[#33333C]'
                 }`}
               >
@@ -678,9 +788,13 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
 
                   {/* Active Indicator Badge */}
                   {isTarget ? (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Active Target
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 flex items-center gap-1 ${
+                      isVerifiedTarget
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isVerifiedTarget ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                      {isVerifiedTarget ? 'Active Target' : 'Saved Selection'}
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A34] shrink-0">
@@ -710,18 +824,25 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
                 {/* Bottom Action Strip */}
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#1E1E24]">
                   <div className="flex items-center gap-2">
-                    {!isTarget ? (
+                    {!isTarget || (acc.platform === 'youtube' && !activeChannelVerified) ? (
                       <button
                         type="button"
-                        onClick={() => handleSetActive(acc)}
+                        onClick={() => {
+                          if (acc.platform === 'youtube' && !isOwnedYouTubeChannel) {
+                            handleConnectGoogle(acc);
+                          } else {
+                            void handleSetActive(acc);
+                          }
+                        }}
+                        disabled={connectingGoogle}
                         className="px-2.5 py-1.5 rounded-lg bg-[#1E1E24] hover:bg-[#26262E] text-zinc-300 hover:text-white border border-[#2E2E38] hover:border-[#3E3E48] text-[11px] font-medium cursor-pointer transition-colors"
                       >
-                        Set as Active Target
+                        {acc.platform === 'youtube' && !isOwnedYouTubeChannel ? 'Reconnect YouTube' : 'Set as Active Target'}
                       </button>
                     ) : (
                       <div className="px-2.5 py-1 rounded-lg bg-emerald-950/20 border border-emerald-500/20 text-emerald-300 text-[10px] font-semibold flex items-center gap-1">
                         <Check className="w-3 h-3 text-emerald-400" />
-                        <span>Current Target</span>
+                        <span>{isVerifiedTarget ? 'Current Target' : 'Saved Selection'}</span>
                       </div>
                     )}
 

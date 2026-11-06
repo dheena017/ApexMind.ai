@@ -94,6 +94,19 @@ def get_user_fleet(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         account for account in get_social_accounts(user_id=user_id)
         if account.get("platform") in ADAPTER_REGISTRY
     ]
+    unique_accounts: List[Dict[str, Any]] = []
+    seen_destinations = set()
+    for account in accounts:
+        platform_account_id = account.get("platformAccountId")
+        if not platform_account_id:
+            unique_accounts.append(account)
+            continue
+        destination_key = (account.get("platform"), platform_account_id)
+        if destination_key in seen_destinations:
+            continue
+        seen_destinations.add(destination_key)
+        unique_accounts.append(account)
+    accounts = unique_accounts
 
     try:
         # Keep each connected YouTube channel in the fleet, even when other
@@ -118,6 +131,7 @@ def get_user_fleet(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
                 niche=ch.get("niche", "Motivational Quotes"),
             )
             accounts.append(mirrored)
+            fleet_channel_ids.add(ch["id"])
     except Exception as e:
         logger.warning(f"Note during auto-mirroring YouTube channels to social fleet: {e}")
 

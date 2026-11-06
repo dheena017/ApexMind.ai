@@ -47,7 +47,7 @@ export interface YouTubeHomePageProps {
   onOpenCorrectModal?: (ch: YouTubeChannel) => void;
   onDisconnectChannel?: (id: string, name: string) => void;
   onDeleteChannel?: (id: string, name: string) => void;
-  onOpenConnectModal?: () => void;
+  onManageChannels?: () => void;
   onNavigate: (page: string) => void;
   onTabChange: (tab: YouTubeTab) => void;
 }
@@ -58,7 +58,7 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
   liveShorts = [],
   playlists = [],
   feedLoading = false,
-  onOpenConnectModal,
+  onManageChannels,
   onNavigate,
   onTabChange,
 }) => {
@@ -535,12 +535,12 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
             <p className="text-xs text-[#9CA3AF]">
               {activeChannel
                 ? 'Published long-form videos and brain teaser quizzes will appear here.'
-                : 'Connect your YouTube channel using Google Sign-In to view your live videos.'}
+                : 'Connect and select a YouTube channel from Social Accounts to view your live videos.'}
             </p>
             {!activeChannel && (
               <div className="pt-1">
-                <Button size="sm" variant="primary" icon={<YouTubeIcon />} onClick={onOpenConnectModal}>
-                  Connect YouTube Channel
+                <Button size="sm" variant="primary" icon={<YouTubeIcon />} onClick={onManageChannels}>
+                  Manage Social Accounts
                 </Button>
               </div>
             )}

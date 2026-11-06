@@ -70,6 +70,7 @@ def save_channel_oauth(
     token_expiry: Optional[str] = None,
     videos_uploaded: int = 0,
     user_id: Optional[str] = None,
+    banner_url: Optional[str] = None,
 ) -> Dict[str, Any]:
     if not user_id:
         raise ValueError("A signed-in user is required to connect a YouTube channel.")
@@ -99,11 +100,24 @@ def save_channel_oauth(
     )
     cursor.execute("""
     INSERT INTO youtube_channels (
-        id, user_id, name, handle, subscribers, videos_uploaded, avatar_url,
+        id, user_id, name, handle, subscribers, videos_uploaded, avatar_url, banner_url,
         is_auto_upload_enabled, schedule_cron, connected_at, niche,
         refresh_token, access_token, token_expiry, is_oauth_authenticated
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'Daily at 08:00 AM EST', ?, 'Motivational Quotes', ?, ?, ?, 1)
-    """, (channel_id, user_id, name, clean_handle, subscribers, videos_uploaded, avatar_url, timestamp, effective_refresh, access_token, token_expiry))
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'Daily at 08:00 AM EST', ?, 'Motivational Quotes', ?, ?, ?, 1)
+    """, (
+        channel_id,
+        user_id,
+        name,
+        clean_handle,
+        subscribers,
+        videos_uploaded,
+        avatar_url,
+        banner_url,
+        timestamp,
+        effective_refresh,
+        access_token,
+        token_expiry,
+    ))
 
     # Also mirror into universal social_accounts table for omnichannel support
     if user_id:

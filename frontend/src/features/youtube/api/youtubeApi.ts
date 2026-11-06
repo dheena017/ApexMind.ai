@@ -27,7 +27,9 @@ export const youtubeApi = {
   async getChannelDetails(query?: string): Promise<YouTubeChannel> {
     const target = (query || getStoredHandle()).trim();
     if (!target) throw new Error('No channel specified or connected');
-    const res = await fetch(apiUrl(`/api/youtube/channel/details?query=${encodeURIComponent(target)}`));
+    const res = await fetch(apiUrl(`/api/youtube/channel/details?query=${encodeURIComponent(target)}`), {
+      headers: this._getScheduleHeaders(),
+    });
     if (!res.ok) throw new Error(`Channel details failed: ${res.status}`);
     const data = await res.json();
     return data.channel;

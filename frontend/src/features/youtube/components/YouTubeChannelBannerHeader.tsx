@@ -2,22 +2,18 @@ import React, { useState } from 'react';
 import {
   ExternalLink,
   Sliders,
-  Video,
   CheckCircle2,
   RefreshCw,
 } from 'lucide-react';
 import { Button, Modal } from '@/src/shared/ui/common';
 import { YouTubeChannel } from '../types';
 import '../api/youtubeApi';
-import { connectYouTubeWithGoogle } from '../utils/googleOAuthConnect';
-import { YouTubeIcon } from './YouTubeIcon';
 
 export interface YouTubeChannelBannerHeaderProps {
   channel?: YouTubeChannel | null;
   onCustomiseChannel: () => void;
-  onManageVideos: () => void;
   onSyncLive?: () => void;
-  onConnectChannel?: () => void;
+  onManageChannels?: () => void;
   syncing?: boolean;
   className?: string;
 }
@@ -25,14 +21,12 @@ export interface YouTubeChannelBannerHeaderProps {
 export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProps> = ({
   channel,
   onCustomiseChannel,
-  onManageVideos,
   onSyncLive,
-  onConnectChannel,
+  onManageChannels,
   syncing = false,
   className = '',
 }) => {
   const [showAboutModal, setShowAboutModal] = useState(false);
-  const [authorizing, setAuthorizing] = useState(false);
 
   const isConnected = Boolean(channel && channel.name && channel.handle && channel.handle !== '@channel');
 
@@ -44,22 +38,6 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
 
   const [bannerImgSrc, setBannerImgSrc] = useState<string>(channel?.bannerUrl || '');
   const [avatarImgSrc, setAvatarImgSrc] = useState<string>(channel?.avatarUrl || defaultAvatar);
-
-  const handleAuthorizeOAuth = () => {
-    if (onConnectChannel) {
-      onConnectChannel();
-      return;
-    }
-    connectYouTubeWithGoogle({
-      onLoading: setAuthorizing,
-      onSuccess: () => {
-        onSyncLive?.();
-      },
-      onError: (e) => {
-        alert(e);
-      },
-    });
-  };
 
   React.useEffect(() => {
     setBannerImgSrc(channel?.bannerUrl || '');
@@ -93,9 +71,6 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
               <h2 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">{channelName}</h2>
               <p className="text-xs sm:text-sm text-gray-400">{handle} · Live Studio Hub</p>
             </div>
-            <div className="hidden md:flex items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <Video className="w-6 h-6 text-blue-400" />
-            </div>
           </div>
         ) : (
           /* Unconnected State Banner */
@@ -110,19 +85,15 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
                 Stream live subscriber counts, high-res video feeds, and direct Shorts publishing with zero mock data.
               </p>
             </div>
-
-            <div className="hidden md:flex items-center gap-3">
-              {onConnectChannel && (
-                <button
-                  type="button"
-                  onClick={onConnectChannel}
-                  className="px-5 py-2.5 rounded-full bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-900 text-xs sm:text-sm font-bold transition-all shadow-lg flex items-center gap-2.5 cursor-pointer hover:scale-105 active:scale-95 border border-white/20"
-                >
-                  <YouTubeIcon />
-                  <span>Connect YouTube Channel</span>
-                </button>
-              )}
-            </div>
+            {onManageChannels && (
+              <button
+                type="button"
+                onClick={onManageChannels}
+                className="shrink-0 rounded-full border border-white/20 bg-white px-4 py-2.5 text-xs font-bold text-gray-900 shadow-lg transition-colors hover:bg-gray-100 sm:text-sm"
+              >
+                Open Social Accounts
+              </button>
+            )}
           </div>
         )}
 
@@ -132,6 +103,14 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
         {/* Banner Quick Actions (Floating on top right) */}
         {isConnected && (
           <div className="absolute top-3 right-3 flex items-center gap-2 opacity-90 transition-opacity">
+            <button
+              type="button"
+              onClick={onCustomiseChannel}
+              className="px-2.5 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 hover:border-white/30 text-white/90 hover:text-white text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-lg"
+            >
+              <Sliders className="w-3.5 h-3.5 text-[#9CA3AF]" />
+              <span className="hidden sm:inline">Customise</span>
+            </button>
             {onSyncLive && (
               <button
                 onClick={onSyncLive}
@@ -247,45 +226,12 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
                   No Channel Connected
                 </span>
                 <span>·</span>
-                <span>Click Connect YouTube Channel to get started</span>
+                <span>Connect and select a channel from Social Accounts</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Right: Actions */}
-        {isConnected && (
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-stretch sm:self-auto pt-2 md:pt-0">
-            {onConnectChannel && (
-              <button
-                type="button"
-                onClick={onConnectChannel}
-                className="px-4 py-2.5 rounded-full bg-[#1F1F1F] hover:bg-[#2A2A2A] active:bg-[#333] text-white text-xs sm:text-sm font-semibold transition-all border border-[#3A3A3A] shadow-sm flex items-center justify-center gap-2 cursor-pointer hover:border-white/30"
-              >
-                <YouTubeIcon />
-                <span>Switch Channel</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={onCustomiseChannel}
-              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-full bg-[#272727] hover:bg-[#383838] active:bg-[#454545] text-white text-xs sm:text-sm font-semibold transition-all border border-[#3A3A3A] cursor-pointer shadow-sm flex items-center justify-center gap-2"
-            >
-              <Sliders className="w-3.5 h-3.5 text-[#9CA3AF]" />
-              <span>Customise channel</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onManageVideos}
-              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-full bg-[#272727] hover:bg-[#383838] active:bg-[#454545] text-white text-xs sm:text-sm font-semibold transition-all border border-[#3A3A3A] cursor-pointer shadow-sm flex items-center justify-center gap-2"
-            >
-              <Video className="w-3.5 h-3.5 text-[#9CA3AF]" />
-              <span>Manage videos</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/*  About Channel Modal (Triggered by ...more)  */}

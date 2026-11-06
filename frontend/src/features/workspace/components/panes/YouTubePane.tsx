@@ -10,8 +10,6 @@ import {
   TrendingUp,
   Copy,
   RefreshCw,
-  Unlink,
-  Search,
   Plus,
   X,
   Check,
@@ -29,7 +27,6 @@ import { GeneratedScript } from '../../types';
 import type { YouTubeChannel } from '@/src/features/youtube/types';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
 import { workspaceApi } from '../../api/workspaceApi';
-import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAuthConnect';
 import { YouTubeIcon } from '@/src/features/youtube/components/YouTubeIcon';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { toast } from 'sonner';
@@ -146,36 +143,28 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
   const [channel, setChannel] = useState<YouTubeChannel | null>(null);
   const [loadingChannel, setLoadingChannel] = useState<boolean>(true);
   const [isSyncingStats, setIsSyncingStats] = useState<boolean>(false);
-  const [connectingOAuth, setConnectingOAuth] = useState<boolean>(false);
-  const [customHandleInput, setCustomHandleInput] = useState<string>('');
-  const [isSearchingHandle, setIsSearchingHandle] = useState<boolean>(false);
-  const [showHandleSearch, setShowHandleSearch] = useState<boolean>(false);
   const [copiedHandle, setCopiedHandle] = useState<boolean>(false);
 
   // Load user's connected YouTube channel
   const loadChannelData = async (silent = false) => {
     if (!silent) setLoadingChannel(true);
     try {
-      let activeCh: any = null;
-
-      // 1. Try OAuth status first
-      const authStatus = await youtubeApi.getAuthStatus().catch(() => null);
-      if (authStatus?.connected && authStatus.channel) {
-        activeCh = authStatus.channel;
+      const [statusResult, channelsResult] = await Promise.allSettled([
+        youtubeApi.getAuthStatus(),
+        youtubeApi.getChannels(),
+      ]);
+      const authStatus = statusResult.status === 'fulfilled' ? statusResult.value : null;
+      const savedChannels = channelsResult.status === 'fulfilled' ? channelsResult.value : [];
+      if (statusResult.status === 'rejected' || channelsResult.status === 'rejected') {
+        console.warn('Could not verify the active YouTube channel.', {
+          statusError: statusResult.status === 'rejected' ? statusResult.reason : undefined,
+          channelsError: channelsResult.status === 'rejected' ? channelsResult.reason : undefined,
+        });
       }
-
-      // 2. Try saved channels from database
-      if (!activeCh) {
-        const savedChannels = await youtubeApi.getChannels()
-          .catch(() => null);
-        if (savedChannels && savedChannels.length > 0) {
-          activeCh = savedChannels[0];
-        }
-      }
-
-      // 3. Fallback: check localStorage handle
-      const storedHandle = localStorage.getItem('apexmind_yt_active_channel') || '';
-      const targetQuery = activeCh?.handle || storedHandle;
+      let activeCh = authStatus?.activeChannelId
+        ? savedChannels.find((saved) => saved.id === authStatus.activeChannelId) || authStatus.channel
+        : authStatus?.connected ? authStatus.channel : null;
+      const targetQuery = activeCh?.handle || activeCh?.id || '';
 
       if (targetQuery) {
         localStorage.setItem('apexmind_yt_active_channel', targetQuery);
@@ -196,6 +185,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         setChannel(normalizeChannel(activeCh, targetQuery));
       } else {
         setChannel(null);
+        localStorage.removeItem('apexmind_yt_active_channel');
       }
     } catch (err) {
       console.warn('Could not load channel data:', err);
@@ -206,6 +196,22 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
   useEffect(() => {
     loadChannelData();
+  }, []);
+
+  useEffect(() => {
+    const handleChannelChanged = (event: Event) => {
+      const { platform } = (event as CustomEvent<{ platform?: string }>).detail || {};
+      if (!platform || platform === 'youtube') void loadChannelData();
+    };
+    const handleStorageChanged = (event: StorageEvent) => {
+      if (event.key === 'apexmind_yt_active_channel') void loadChannelData();
+    };
+    window.addEventListener('youtube:channel-switched', handleChannelChanged);
+    window.addEventListener('storage', handleStorageChanged);
+    return () => {
+      window.removeEventListener('youtube:channel-switched', handleChannelChanged);
+      window.removeEventListener('storage', handleStorageChanged);
+    };
   }, []);
 
   const handleRefreshLiveStats = async () => {
@@ -228,63 +234,6 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
       toast.error(e?.message || 'Could not refresh statistics from YouTube.');
     } finally {
       setIsSyncingStats(false);
-    }
-  };
-
-  const handleConnectGoogle = () => {
-    setConnectingOAuth(true);
-    connectYouTubeWithGoogle({
-      onLoading: setConnectingOAuth,
-      onSuccess: async (connectedChannel) => {
-        setConnectingOAuth(false);
-        localStorage.setItem('apexmind_yt_active_channel', connectedChannel.handle);
-        try {
-          const live = await youtubeApi.getChannelDetails(connectedChannel.handle);
-          setChannel(normalizeChannel({ ...connectedChannel, ...live }, connectedChannel.handle));
-        } catch {
-          setChannel(normalizeChannel(connectedChannel, connectedChannel.handle));
-        }
-        toast.success(`Connected YouTube channel "${connectedChannel.name}"!`);
-      },
-      onError: (err) => {
-        setConnectingOAuth(false);
-        toast.error(`YouTube connection failed: ${err}`);
-      },
-    });
-  };
-
-  const handleDisconnectChannel = async () => {
-    if (!channel) return;
-    if (!window.confirm(`Disconnect channel "${channel.name}" from ApexMind?`)) return;
-    try {
-      await youtubeApi.disconnectOAuth();
-      setChannel(null);
-      localStorage.removeItem('apexmind_yt_active_channel');
-      toast.info('YouTube channel disconnected.');
-    } catch {
-      toast.error('Could not disconnect channel.');
-    }
-  };
-
-  const handleSearchCustomHandle = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const query = customHandleInput.trim();
-    if (!query) return;
-    setIsSearchingHandle(true);
-    try {
-      const details = await youtubeApi.getChannelDetails(query);
-      if (details) {
-        const normalized = normalizeChannel(details, query);
-        setChannel(normalized);
-        localStorage.setItem('apexmind_yt_active_channel', normalized.handle || query);
-        setShowHandleSearch(false);
-        setCustomHandleInput('');
-        toast.success(`Synced YouTube channel "${normalized.name}" (${normalized.handle})`);
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'YouTube channel not found. Please verify the handle.');
-    } finally {
-      setIsSearchingHandle(false);
     }
   };
 
@@ -458,7 +407,7 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
           </div>
         </div>
 
-        {/* ── Header Actions (View, Sync, Search, Unlink) ── */}
+        {/* ── Header Actions ── */}
         {channel && (
           <div className="flex items-center gap-1.5 shrink-0">
             <a
@@ -484,24 +433,11 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 
             <button
               type="button"
-              onClick={() => setShowHandleSearch(!showHandleSearch)}
-              className={`h-7 w-7 rounded-lg transition-all border flex items-center justify-center cursor-pointer shadow-xs ${
-                showHandleSearch
-                  ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white'
-                  : 'bg-[#181818] hover:bg-[#26262C] text-zinc-400 hover:text-white border-[#242424] hover:border-white/10'
-              }`}
-              title="Switch or Search Channel"
+              onClick={() => onNavigate?.('channels')}
+              className="h-7 px-2.5 rounded-lg bg-[#181818] hover:bg-[#26262C] text-[10px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#242424] hover:border-white/10"
+              title="Connect or select a channel in Social Accounts"
             >
-              <Search className="w-3 h-3" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDisconnectChannel}
-              className="h-7 w-7 rounded-lg bg-[#181818] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all border border-[#242424] hover:border-red-500/30 flex items-center justify-center cursor-pointer shadow-xs"
-              title="Disconnect Channel"
-            >
-              <Unlink className="w-3 h-3" />
+              Manage channels
             </button>
           </div>
         )}
@@ -606,25 +542,6 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
             </div>
 
-            {/* Expandable Switch Handle Form */}
-            {showHandleSearch && (
-              <form onSubmit={handleSearchCustomHandle} className="flex gap-1.5 pt-1">
-                <input
-                  type="text"
-                  value={customHandleInput}
-                  onChange={(e) => setCustomHandleInput(e.target.value)}
-                  placeholder="Enter YouTube handle (@channel)..."
-                  className="flex-1 bg-[#111111] border border-white/[0.1] rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-[#2563EB] transition-colors"
-                />
-                <button
-                  type="submit"
-                  disabled={isSearchingHandle || !customHandleInput.trim()}
-                  className="px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-50 border border-[#60A5FA]/40 shadow-xs"
-                >
-                  {isSearchingHandle ? 'Syncing...' : 'Sync'}
-                </button>
-              </form>
-            )}
           </div>
         ) : (
           /* Not Connected Channel Banner */
@@ -635,17 +552,16 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-bold text-white">No Channel Connected</div>
-                <div className="text-[10px] text-zinc-400 truncate">Connect Google to upload Shorts directly</div>
+                <div className="text-[10px] text-zinc-400 truncate">Connect and select a channel in Social Accounts</div>
               </div>
             </div>
             <button
               type="button"
-              onClick={handleConnectGoogle}
-              disabled={connectingOAuth}
-              className="px-2.5 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer shadow-xs border border-[#60A5FA]/40 disabled:opacity-50 shrink-0"
+              onClick={() => onNavigate?.('channels')}
+              className="px-2.5 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer shadow-xs border border-[#60A5FA]/40 shrink-0"
             >
               <YouTubeIcon className="w-3.5 h-3.5" />
-              <span>{connectingOAuth ? 'Connecting…' : 'Connect'}</span>
+              <span>Manage</span>
             </button>
           </div>
         )}

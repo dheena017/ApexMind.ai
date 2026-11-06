@@ -108,8 +108,10 @@ const DEFAULT_CHANNEL = {
   name: 'YouTube Channel',
   handle: '@channel',
   avatarUrl: 'https://api.dicebear.com/7.x/identicon/svg?seed=creator',
-  bannerUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80',
+  bannerUrl: '',
   channelUrl: 'https://www.youtube.com',
+  subscribers: 0,
+  videosUploaded: 0,
 };
 
 export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
@@ -140,19 +142,13 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const [privacyStatus, setPrivacyStatus] = useState<'public' | 'scheduled'>('public');
 
   // Channel authorization state & runtime execution feedback
-  const [authStatus, setAuthStatus] = useState<{ connected: boolean; channel?: any } | null>(() => {
-    try {
-      const cached = localStorage.getItem('apexmind_yt_channel');
-      if (cached) {
-        return { connected: true, channel: JSON.parse(cached) };
-      }
-    } catch {
-      // ignore
-    }
+  const [authStatus, setAuthStatus] = useState<{ connected: boolean; channel?: YouTubeChannel } | null>(() => {
     return { connected: false, channel: DEFAULT_CHANNEL };
   });
   const [authStatusLoading, setAuthStatusLoading] = useState(true);
-  const [availableChannels, setAvailableChannels] = useState<YouTubeChannel[]>([]);
+  const [liveChannelBanner, setLiveChannelBanner] = useState('');
+  const [liveChannelBannerLoading, setLiveChannelBannerLoading] = useState(false);
+  const [liveChannelBannerError, setLiveChannelBannerError] = useState(false);
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
 
   // Live countdown, Run History, Pause/Resume & Safe Delete state
@@ -216,41 +212,77 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
     id: authStatus?.channel?.id || authStatus?.channel?.channelId || '',
     name: authStatus?.channel?.name || (user?.name ? `${user.name} Channel` : DEFAULT_CHANNEL.name),
     handle: authStatus?.channel?.handle || user?.handle || DEFAULT_CHANNEL.handle,
-    avatarUrl: authStatus?.channel?.avatarUrl || authStatus?.channel?.avatar_url || user?.avatarUrl || DEFAULT_CHANNEL.avatarUrl,
-    bannerUrl: authStatus?.channel?.bannerUrl || authStatus?.channel?.banner_url || DEFAULT_CHANNEL.bannerUrl,
-    channelUrl: authStatus?.channel?.channelUrl || authStatus?.channel?.channel_url || DEFAULT_CHANNEL.channelUrl,
+    avatarUrl: authStatus?.channel?.avatarUrl || user?.avatarUrl || DEFAULT_CHANNEL.avatarUrl,
+    bannerUrl: authStatus?.channel?.bannerUrl || DEFAULT_CHANNEL.bannerUrl,
+    channelUrl: authStatus?.channel?.channelUrl || DEFAULT_CHANNEL.channelUrl,
   };
   const hasSelectedYouTubeChannel = Boolean(
-    authStatus?.connected && activeChannel.id && activeChannel.handle !== DEFAULT_CHANNEL.handle,
+    activeChannel.id,
   );
 
+  useEffect(() => {
+    if (!activeChannel.id) {
+      setLiveChannelBanner('');
+      setLiveChannelBannerLoading(false);
+      setLiveChannelBannerError(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLiveChannelBanner('');
+    setLiveChannelBannerLoading(true);
+    setLiveChannelBannerError(false);
+    youtubeApi.getChannelDetails(activeChannel.handle || activeChannel.id)
+      .then((details) => {
+        if (!cancelled) setLiveChannelBanner(details.bannerUrl || '');
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.warn('Could not load the YouTube channel banner:', error);
+          setLiveChannelBannerError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLiveChannelBannerLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChannel.id, activeChannel.handle]);
+
   const loadAuthStatus = async () => {
+    setAuthStatusLoading(true);
+    setAuthStatus({ connected: false, channel: DEFAULT_CHANNEL });
     try {
       const [statusResult, channelsResult] = await Promise.allSettled([
         youtubeApi.getAuthStatus(),
         youtubeApi.getChannels(),
       ]);
       const channels = channelsResult.status === 'fulfilled' ? channelsResult.value : [];
-      setAvailableChannels(channels);
       const status = statusResult.status === 'fulfilled' ? statusResult.value : null;
-      const savedHandle = localStorage.getItem('apexmind_yt_active_channel')?.trim();
       const serverSelectedChannel = status?.activeChannelId
         ? channels.find((item) => item.id === status.activeChannelId)
         : undefined;
-      const storedChannel = savedHandle
-        ? channels.find((item) => item.handle === savedHandle || item.id === savedHandle)
-        : undefined;
       const statusChannel = status?.connected ? status.channel as YouTubeChannel | undefined : undefined;
-      const channel = serverSelectedChannel || statusChannel || storedChannel || channels[0];
-      const connected = Boolean(status?.connected || channels.length > 0);
+      const requestFailed = statusResult.status === 'rejected' || channelsResult.status === 'rejected';
+      const channel = serverSelectedChannel || statusChannel;
+      const connected = Boolean(status?.connected && channel);
+      if (statusResult.status === 'rejected' || channelsResult.status === 'rejected') {
+        console.warn('Could not fully verify the selected YouTube channel.', {
+          statusError: statusResult.status === 'rejected' ? statusResult.reason : undefined,
+          channelsError: channelsResult.status === 'rejected' ? channelsResult.reason : undefined,
+        });
+      }
       setAuthStatus(channel
         ? { connected, channel }
         : { connected: false, channel: DEFAULT_CHANNEL });
       if (connected && channel) {
-        localStorage.setItem('apexmind_yt_channel', JSON.stringify(channel));
+        localStorage.setItem('apexmind_yt_channel', JSON.stringify({ ...channel, userId: user?.id }));
         if (channel.handle) localStorage.setItem('apexmind_yt_active_channel', channel.handle);
-      } else {
+      } else if (!requestFailed) {
         localStorage.removeItem('apexmind_yt_channel');
+        localStorage.removeItem('apexmind_yt_active_channel');
       }
     } catch (error) {
       console.warn('Could not load the connected YouTube channel:', error);
@@ -263,49 +295,39 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   useEffect(() => {
     loadAutomations(user?.id);
     loadAuthStatus();
+
+    const refreshChannel = () => {
+      if (document.visibilityState === 'visible') {
+        void loadAuthStatus();
+      }
+    };
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'apexmind_yt_active_channel' || event.key === 'apexmind_social_active_account') {
+        refreshChannel();
+      }
+    };
+
+    window.addEventListener('focus', refreshChannel);
+    window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', refreshChannel);
+    return () => {
+      window.removeEventListener('focus', refreshChannel);
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', refreshChannel);
+    };
   }, [user?.id]);
 
   useEffect(() => {
     const handleChannelSwitched = (event: Event) => {
-      const { handle, platform } = (event as CustomEvent<{
-        handle?: string;
+      const { platform } = (event as CustomEvent<{
         platform?: string;
       }>).detail || {};
       if (platform && platform !== 'youtube') return;
-      if (!handle) {
-        setAuthStatus({ connected: false, channel: DEFAULT_CHANNEL });
-        return;
-      }
-      const selected = availableChannels.find(
-        (item) => item.handle === handle || item.id === handle,
-      );
-      if (selected) {
-        setAuthStatus({ connected: true, channel: selected });
-        localStorage.setItem('apexmind_yt_channel', JSON.stringify(selected));
-      } else {
-        void loadAuthStatus();
-      }
+      void loadAuthStatus();
     };
     window.addEventListener('youtube:channel-switched', handleChannelSwitched);
     return () => window.removeEventListener('youtube:channel-switched', handleChannelSwitched);
-  }, [availableChannels]);
-
-  const selectYouTubeChannel = async (selected: YouTubeChannel) => {
-    const handle = selected.handle || selected.id;
-    try {
-      await youtubeApi.setActiveChannel(selected.id);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not select YouTube channel.');
-      return;
-    }
-    localStorage.setItem('apexmind_yt_active_channel', handle);
-    localStorage.setItem('apexmind_social_active_account', handle);
-    localStorage.setItem('apexmind_yt_channel', JSON.stringify(selected));
-    setAuthStatus({ connected: true, channel: selected });
-    window.dispatchEvent(new CustomEvent('youtube:channel-switched', {
-      detail: { channel: selected, handle, platform: 'youtube' },
-    }));
-  };
+  }, [user?.id]);
 
   const previousStatusesRef = React.useRef<Record<string, AutomationJob['lastStatus']>>({});
 
@@ -1604,14 +1626,20 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               </div>
               <div className="text-zinc-300 min-w-0">
                 <div className="text-[10px] text-zinc-500 font-mono uppercase">
-                  {authStatusLoading ? 'Checking channel' : authStatus?.connected ? 'Connected channel' : 'Publishing destination'}
-                </div>
-                <div className="font-semibold text-white truncate">
-                  {authStatusLoading
-                    ? 'Checking YouTube connection…'
-                    : authStatus?.connected
-                    ? `${activeChannel.name} ${activeChannel.handle}`
-                    : 'No YouTube channel connected'}
+                    {authStatusLoading
+                      ? 'Checking channel'
+                      : authStatus?.connected
+                        ? 'Connected channel'
+                        : activeChannel.id
+                          ? 'Saved channel'
+                          : 'Publishing destination'}
+                  </div>
+                  <div className="font-semibold text-white truncate">
+                    {authStatusLoading
+                      ? 'Checking YouTube connection…'
+                      : activeChannel.id
+                      ? `${activeChannel.name} ${activeChannel.handle}`
+                      : 'No YouTube channel connected'}
                 </div>
               </div>
             </div>
@@ -1622,10 +1650,10 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             ) : !authStatusLoading ? (
               <button
                 type="button"
-                onClick={() => setActiveSubTab('channel')}
+                onClick={() => onNavigate?.('channels')}
                 className="text-[10px] text-[#60A5FA] hover:text-white font-semibold shrink-0"
               >
-                Connect
+                Manage in Social Accounts
               </button>
             ) : null}
           </div>
@@ -1657,51 +1685,37 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
       {/* ── Subtab 3: Channel & Target ── */}
       {activeSubTab === 'channel' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in">
-          {availableChannels.length > 0 && (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#24242A] bg-[#141418] px-4 py-3">
-              <label htmlFor="automation-channel-target" className="text-xs font-semibold text-zinc-300">
-                Active publishing channel
-              </label>
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="max-w-40 truncate text-xs text-emerald-300">
-                  {activeChannel.name} {activeChannel.handle}
-                </span>
-                {availableChannels.length > 1 && (
-                  <select
-                    id="automation-channel-target"
-                    value={availableChannels.find((item) =>
-                      item.handle === activeChannel.handle || item.id === activeChannel.id,
-                    )?.id || ''}
-                    onChange={(event) => {
-                      const selected = availableChannels.find((item) => item.id === event.target.value);
-                      if (selected) void selectYouTubeChannel(selected);
-                    }}
-                    className="max-w-36 rounded-lg border border-[#33333C] bg-[#1A1A1F] px-3 py-2 text-xs text-white"
-                  >
-                    {availableChannels.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} {item.handle}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-          )}
           {/* ── YouTube Channel Banner Card ── */}
           {hasSelectedYouTubeChannel ? (
           <div className="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden shadow-xl">
             {/* Banner Image */}
-            <div className="relative w-full h-24 bg-gradient-to-r from-[#0B0F19] via-[#131127] to-[#0A0A0A] overflow-hidden shrink-0">
-              <img
-                src={activeChannel.bannerUrl}
-                alt="Target Channel Banner"
-                className="w-full h-full object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
+            <div className={`relative w-full ${liveChannelBanner ? 'h-24' : 'h-12'} bg-[#101014] overflow-hidden shrink-0 flex items-center justify-center`}>
+              {liveChannelBanner && (
+                <>
+                  <img
+                    src={liveChannelBanner}
+                    alt={`${activeChannel.name} YouTube channel banner`}
+                    className="w-full h-full object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
+                </>
+              )}
+              {!liveChannelBanner && (
+                <span className="text-[10px] text-zinc-500">
+                  {liveChannelBannerLoading
+                    ? 'Loading YouTube channel banner…'
+                    : liveChannelBannerError
+                      ? 'YouTube banner could not be loaded'
+                      : 'No banner is set on this YouTube channel'}
+                </span>
+              )}
               <div className="absolute top-2 right-2">
-                <span className="px-2 py-0.5 text-[9.5px] font-bold rounded-full border bg-emerald-500/20 border-emerald-500/30 text-emerald-400">
-                  Target Channel
+                <span className={`px-2 py-0.5 text-[9.5px] font-bold rounded-full border ${
+                  authStatus?.connected
+                    ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+                    : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                }`}>
+                  {authStatus?.connected ? 'Active Target' : 'Saved Selection'}
                 </span>
               </div>
             </div>
@@ -1720,9 +1734,15 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
               <div className="flex-[1_1_120px] min-w-0 pt-1">
                 <p className="text-xs font-bold text-white truncate leading-tight">{activeChannel.name}</p>
                 <p className="text-[10px] text-zinc-500 truncate leading-tight">{activeChannel.handle}</p>
-                <p className="text-[10px] text-emerald-400 mt-0.5 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                  <span>Target Publishing Destination</span>
+                <p className={`text-[10px] mt-0.5 flex items-center gap-1 ${authStatus?.connected ? 'text-emerald-400' : 'text-amber-300'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${authStatus?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                  <span>
+                    {authStatusLoading
+                      ? 'Verifying saved selection…'
+                      : authStatus?.connected
+                        ? 'Target Publishing Destination'
+                        : 'Sign in again to verify and publish'}
+                  </span>
                 </p>
               </div>
 
@@ -1746,6 +1766,11 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Ready for Shorts Publishing
                 </span>
+              </div>
+            )}
+            {!authStatusLoading && !authStatus?.connected && (
+              <div className="border-t border-amber-500/20 bg-amber-950/20 px-3 py-2 text-[10px] text-amber-200">
+                The saved channel is displayed, but YouTube authorization could not be verified. Sign in again before scheduling or publishing.
               </div>
             )}
           </div>

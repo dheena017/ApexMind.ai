@@ -111,10 +111,22 @@ def _resolve_target(
     summary="Get Channel Details",
     description="Resolves canonical channel ID, verified badge, high-res avatar, banner, subscribers, joined date, views, and country in a single call.",
 )
-async def get_live_channel_details(handle: Optional[str] = None, channel_id: Optional[str] = None, query: Optional[str] = None, channel: Optional[str] = None):
+async def get_live_channel_details(
+    handle: Optional[str] = None,
+    channel_id: Optional[str] = None,
+    query: Optional[str] = None,
+    channel: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
+):
     target = _resolve_target(query, channel, channel_id, handle)
     try:
-        data = resolve_channel_metadata(target)
+        scheme, _, token = (authorization or "").partition(" ")
+        resolved_user_id = (
+            get_session_user_id(token)
+            if scheme.lower() == "bearer" and token
+            else None
+        )
+        data = resolve_channel_metadata(target, user_id=resolved_user_id)
         logger.debug(f"Resolved channel metadata for '{target}' ➔ '{data.get('name')}' [Subs: {data.get('subscribers')}, Views: {data.get('totalLifetimeViews')}] (ID: {data.get('channelId', data.get('id'))})")
         return {"success": True, "source": data.get("source", "youtube-official-live"), "channel": data}
     except Exception as e:
@@ -672,6 +684,7 @@ async def post_connect_channel(
             name=channel_data["title"],
             handle=channel_data["handle"],
             avatar_url=channel_data["avatar_url"],
+            banner_url=channel_data.get("banner_url"),
             subscribers=channel_data["subscribers"],
             refresh_token="",
             access_token=payload.accessToken,
@@ -766,7 +779,13 @@ async def set_active_youtube_channel_route(
 ):
     resolved_user_id = _require_session_user_id(authorization)
     if not any(channel.get("id") == channel_id for channel in get_channels_by_user(resolved_user_id)):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="YouTube channel not found.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "This YouTube channel is not connected to your signed-in account. "
+                "Reconnect it with YouTube OAuth before selecting it."
+            ),
+        )
     set_user_active_channel(resolved_user_id, channel_id)
     return {"success": True, "activeChannelId": channel_id}
 

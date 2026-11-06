@@ -19,7 +19,6 @@ import { YouTubeSchedulesPage } from './YouTubeSchedulesPage';
 import { YouTubeVideoDetailsModal } from '../components/YouTubeVideoDetailsModal';
 import { toast } from 'sonner';
 import { youtubeApi } from '../api/youtubeApi';
-import { connectYouTubeWithGoogle } from '../utils/googleOAuthConnect';
 import { PageRoute, getQueryParams } from '@/src/app/routes';
 import {
   YouTubeChannel,
@@ -108,38 +107,7 @@ export default function YouTubePage({
     }
   }, [activeTab]);
 
-  // Connect Channel with Google OAuth (GIS popup flow)
-  const handleConnectWithGoogle = () => {
-    connectYouTubeWithGoogle({
-      onLoading: setLoading,
-      onSuccess: (connectedChannel) => {
-        setChannel(connectedChannel);
-        setCurrentChannelQuery(connectedChannel.handle);
-        loadChannelLive(connectedChannel.handle);
-      },
-      onError: (err) => {
-        alert(`YouTube authorization notice: ${err}`);
-      },
-    });
-  };
-
-  const handleDisconnectChannel = async () => {
-    if (!window.confirm('Disconnect this YouTube channel from ApexMind Studio?')) return;
-    try {
-      setLoading(true);
-      await youtubeApi.disconnectOAuth();
-      setChannel(null);
-      setCurrentChannelQuery('');
-      setLiveVideos([]);
-      setLiveShorts([]);
-      setLiveForYou([]);
-      localStorage.removeItem('apexmind_yt_active_channel');
-    } catch (e: any) {
-      console.warn('Disconnect note:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleManageChannels = () => onNavigate('channels');
 
   // Load channel data live from YouTube (Zero local DB reads)
   const loadChannelLive = async (targetQuery: string) => {
@@ -247,18 +215,6 @@ export default function YouTubePage({
           connectedChannel = authStatus.channel;
         }
 
-        if (!connectedChannel) {
-          const selectedHandle = localStorage.getItem('apexmind_yt_active_channel')?.trim();
-          connectedChannel = selectedHandle
-            ? savedChannels.find((saved) =>
-                saved.handle === selectedHandle || saved.id === selectedHandle,
-              )
-            : savedChannels[0];
-        }
-        if (!connectedChannel) {
-          connectedChannel = savedChannels[0];
-        }
-
         if (connectedChannel) {
           const ch = connectedChannel;
           setChannel(ch);
@@ -294,59 +250,17 @@ export default function YouTubePage({
     return () => window.removeEventListener('youtube:channel-switched', handleChannelSwitched);
   }, []);
 
-  const selectYouTubeChannel = async (selected: YouTubeChannel) => {
-    const handle = selected.handle || selected.id;
-    try {
-      await youtubeApi.setActiveChannel(selected.id);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not select YouTube channel.');
-      return;
-    }
-    localStorage.setItem('apexmind_yt_active_channel', handle);
-    localStorage.setItem('apexmind_social_active_account', handle);
-    window.dispatchEvent(new CustomEvent('youtube:channel-switched', {
-      detail: {
-        channel: selected,
-        handle,
-        platform: 'youtube',
-      },
-    }));
-  };
-
   const channelsList = channel ? [channel] : [];
 
   return (
     <div className="w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] space-y-6 pb-20 font-sans-studio animate-fade-in">
       {/*  1. Top Channel Banner & Studio Navigation Group  */}
       <div className="space-y-3">
-        {availableChannels.length > 1 && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-[#24242A] bg-[#141418] px-4 py-3">
-            <label htmlFor="youtube-channel-target" className="text-xs font-semibold text-zinc-300">
-              Selected YouTube channel
-            </label>
-            <select
-              id="youtube-channel-target"
-              value={availableChannels.find((item) => item.handle === channel?.handle || item.id === channel?.id)?.id || ''}
-              onChange={(event) => {
-                const selected = availableChannels.find((item) => item.id === event.target.value);
-                if (selected) void selectYouTubeChannel(selected);
-              }}
-              className="max-w-[65%] rounded-lg border border-[#33333C] bg-[#1A1A1F] px-3 py-2 text-xs text-white"
-            >
-              {availableChannels.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} {item.handle}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
         <YouTubeChannelBannerHeader
           channel={channel}
           onCustomiseChannel={() => window.open('https://studio.youtube.com', '_blank')}
-          onManageVideos={() => handleTabChange('videos')}
           onSyncLive={() => loadChannelLive(currentChannelQuery)}
-          onConnectChannel={handleConnectWithGoogle}
+          onManageChannels={handleManageChannels}
           syncing={loading}
         />
 
@@ -383,9 +297,9 @@ export default function YouTubePage({
           onSyncChannel={() => loadChannelLive(currentChannelQuery)}
           onToggleAutoUpload={() => {}}
           onLoadLiveShorts={() => {}}
-          onOpenCorrectModal={handleConnectWithGoogle}
+          onOpenCorrectModal={() => handleManageChannels()}
           onDisconnectChannel={() => {}}
-          onOpenConnectModal={handleConnectWithGoogle}
+          onManageChannels={handleManageChannels}
           onNavigate={onNavigate}
           onTabChange={handleTabChange}
         />

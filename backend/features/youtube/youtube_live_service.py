@@ -32,6 +32,7 @@ from backend.database.repository import (
     save_channel_oauth,
     get_oauth_channel,
     get_channels,
+    get_channels_by_user,
 )
 
 logger = logging.getLogger("ApexMind.YouTubeLive")
@@ -124,7 +125,7 @@ def format_human_date(rfc_date: str) -> str:
 # Domain 1: Channel Intelligence & Identity Resolution
 # ==============================================================================
 
-def resolve_channel_metadata(query: str) -> Dict[str, Any]:
+def resolve_channel_metadata(query: str, user_id: Optional[str] = None) -> Dict[str, Any]:
     """
     High-precision canonical channel resolution directly from YouTube.
     Resolves canonical Channel ID, official title, high-res avatar, banner,
@@ -136,14 +137,38 @@ def resolve_channel_metadata(query: str) -> Dict[str, Any]:
     4. Safe synthesized channel profile fallback (prevents 400 crashes)
     """
     clean = normalize_channel_identifier(query)
+    authorized_channel_id = None
+    if user_id:
+        target_channel_id = clean.split("channel/", 1)[-1] if clean.startswith("channel/") else clean
+        for saved_channel in get_channels_by_user(user_id):
+            saved_handle = normalize_channel_identifier(saved_channel.get("handle") or "")
+            if saved_channel.get("id") == target_channel_id or saved_handle == clean:
+                authorized_channel_id = saved_channel["id"]
+                break
 
     # 1. Fast-path: Official YouTube Data API if client authorized
     try:
-        yt = get_authenticated_youtube_client()
+        if user_id:
+            yt = (
+                get_authenticated_youtube_client(user_id=user_id, channel_id=authorized_channel_id)
+                if authorized_channel_id
+                else None
+            )
+        else:
+            yt = get_authenticated_youtube_client()
         if yt:
             clean_handle = clean.replace("@", "")
             items = []
-            if clean.startswith("@"):
+            if authorized_channel_id:
+                try:
+                    resp_api = yt.channels().list(
+                        part="snippet,statistics,brandingSettings",
+                        id=authorized_channel_id,
+                    ).execute()
+                    items = resp_api.get("items", [])
+                except Exception:
+                    pass
+            elif clean.startswith("@"):
                 try:
                     resp_api = yt.channels().list(part="snippet,statistics,brandingSettings", forHandle=clean_handle).execute()
                     items = resp_api.get("items", [])
@@ -1039,8 +1064,8 @@ def exchange_code_for_tokens(code: str, redirect_uri: str) -> Dict[str, Any]:
 
 
 def fetch_authenticated_channel_details(access_token: str) -> Dict[str, Any]:
-    """Retrieves live channel details (name, handle, subscribers, avatar) from YouTube Data API."""
-    url = "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true"
+    """Retrieves live channel details and its official banner from YouTube Data API."""
+    url = "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&mine=true"
     req = urllib.request.Request(url)
     req.add_header("Authorization", f"Bearer {access_token}")
 
@@ -1052,6 +1077,7 @@ def fetch_authenticated_channel_details(access_token: str) -> Dict[str, Any]:
         item = items[0]
         snippet = item.get("snippet", {})
         stats = item.get("statistics", {})
+        branding = item.get("brandingSettings", {})
 
         custom_url = snippet.get("customUrl", "")
         handle = custom_url if custom_url.startswith("@") else f"@{custom_url}" if custom_url else f"@{snippet.get('title', 'channel').lower().replace(' ', '')}"
@@ -1063,6 +1089,7 @@ def fetch_authenticated_channel_details(access_token: str) -> Dict[str, Any]:
             "title": snippet.get("title", "Authorized Channel"),
             "handle": handle,
             "avatar_url": avatar,
+            "banner_url": branding.get("image", {}).get("bannerExternalUrl", ""),
             "subscribers": int(stats.get("subscriberCount", 0)),
             "videos_uploaded": int(stats.get("videoCount", 0)),
             "total_lifetime_views": int(stats.get("viewCount", 0)),
@@ -1087,6 +1114,7 @@ def handle_oauth_callback(
         name=channel_info["title"],
         handle=channel_info["handle"],
         avatar_url=channel_info["avatar_url"],
+        banner_url=channel_info.get("banner_url"),
         subscribers=channel_info["subscribers"],
         refresh_token=refresh_token or "",
         access_token=access_token,
