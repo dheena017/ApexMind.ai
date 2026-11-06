@@ -356,34 +356,34 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
               </span>
               {workspaceStatus.visual && (
                 <span
-                  className="hidden lg:inline-flex items-center gap-1 rounded-md border border-[#2A2A2A] bg-[#12181D] px-1.5 py-0.5 text-[#9AD2FF]"
+                  className="hidden lg:inline-flex items-center gap-1 rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#D4D4D4]"
                   title={`Visual Backdrop: ${workspaceStatus.visual}`}
                 >
-                  <span className="text-[#60A5FA]">V1</span>
+                  <span className="text-[#E5E5E5]">V1</span>
                   <span className="max-w-24 truncate">{workspaceStatus.visual}</span>
                 </span>
               )}
               {workspaceStatus.overlay && (
-                <span className="hidden xl:inline-flex items-center gap-1 rounded-md border border-[#2A2A2A] bg-[#18171E] px-1.5 py-0.5 text-[#D8B4FE]" title={`Overlay: ${workspaceStatus.overlay}`}>
-                  <span className="text-[#C084FC]">OV</span>
+                <span className="hidden xl:inline-flex items-center gap-1 rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#D4D4D4]" title={`Overlay: ${workspaceStatus.overlay}`}>
+                  <span className="text-[#E5E5E5]">OV</span>
                   <span className="max-w-20 truncate">{workspaceStatus.overlay}</span>
                 </span>
               )}
               {workspaceStatus.music && (
-                <span className="hidden xl:inline-flex items-center gap-1 rounded-md border border-[#2A2A2A] bg-[#161A1D] px-1.5 py-0.5 text-[#A7F3D0]" title={`Music Track: ${workspaceStatus.music}`}>
-                  <span className="text-[#34D399]">MU</span>
+                <span className="hidden xl:inline-flex items-center gap-1 rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#D4D4D4]" title={`Music Track: ${workspaceStatus.music}`}>
+                  <span className="text-[#E5E5E5]">MU</span>
                   <span className="max-w-20 truncate">{workspaceStatus.music}</span>
                 </span>
               )}
               {workspaceStatus.sfx && (
-                <span className="hidden 2xl:inline-flex items-center gap-1 rounded-md border border-[#2A2A2A] bg-[#19151A] px-1.5 py-0.5 text-[#F9A8D4]" title={`SFX: ${workspaceStatus.sfx}`}>
-                  <span className="text-[#F472B6]">FX</span>
+                <span className="hidden 2xl:inline-flex items-center gap-1 rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#D4D4D4]" title={`SFX: ${workspaceStatus.sfx}`}>
+                  <span className="text-[#E5E5E5]">FX</span>
                   <span className="max-w-20 truncate">{workspaceStatus.sfx}</span>
                 </span>
               )}
               {workspaceStatus.captionCount > 0 && (
-                <span className="hidden lg:inline-flex items-center gap-1 rounded-md border border-[#183B35] bg-[#0F1F1C] px-1.5 py-0.5 text-teal-300 font-medium" title={`${workspaceStatus.captionCount} subtitle cue cards`}>
-                  <span className="text-[#2DD4BF]">T1</span>
+                <span className="hidden lg:inline-flex items-center gap-1 rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#D4D4D4] font-medium" title={`${workspaceStatus.captionCount} subtitle cue cards`}>
+                  <span className="text-[#E5E5E5]">T1</span>
                   <span>{workspaceStatus.captionCount}</span>
                 </span>
               )}
@@ -413,19 +413,19 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
 
         {/* Right: Studio Playback State + Workspace Notification Center Bell */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <span className="hidden lg:inline-flex items-center rounded-md border border-[#2A2A2A] bg-[#111827] px-1.5 py-0.5 text-[#9CA3AF]">
+          <span className="hidden lg:inline-flex items-center rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#9CA3AF]">
             {workspaceStatus.playbackRate}x
           </span>
-          <span className="hidden md:inline-flex max-w-24 items-center truncate rounded-md border border-[#2A2A2A] bg-[#171A1F] px-1.5 py-0.5 text-[#E5E5E5]" title={`Voice: ${workspaceStatus.voice}`}>
+          <span className="hidden md:inline-flex max-w-24 items-center truncate rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#E5E5E5]" title={`Voice: ${workspaceStatus.voice}`}>
             VO {workspaceStatus.voice || 'Fenrir'}
           </span>
           {workspaceStatus.music && (
-            <span className="hidden xl:inline-flex max-w-24 items-center truncate rounded-md border border-[#2A2A2A] bg-[#121B1B] px-1.5 py-0.5 text-[#A7F3D0]" title={`Music: ${workspaceStatus.music}`}>
+            <span className="hidden xl:inline-flex max-w-24 items-center truncate rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#D4D4D4]" title={`Music: ${workspaceStatus.music}`}>
               MU {workspaceStatus.music}
             </span>
           )}
           {workspaceStatus.sfx && (
-            <span className="hidden 2xl:inline-flex max-w-24 items-center truncate rounded-md border border-[#2A2A2A] bg-[#1E1619] px-1.5 py-0.5 text-[#F9A8D4]" title={`SFX: ${workspaceStatus.sfx}`}>
+            <span className="hidden 2xl:inline-flex max-w-24 items-center truncate rounded-md border border-[#2F2F2F] bg-[#1E1E1E] px-1.5 py-0.5 text-[#D4D4D4]" title={`SFX: ${workspaceStatus.sfx}`}>
               FX {workspaceStatus.sfx}
             </span>
           )}
@@ -434,9 +434,9 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
           <span
             className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 ${
               workspaceStatus.isExporting
-                ? 'text-[#60A5FA] bg-[#2563EB]/15 border-[#60A5FA]/30'
+                ? 'text-[#E5E5E5] bg-[#1E1E1E] border-[#555555]'
                 : workspaceStatus.isPlaying
-                ? 'text-[#10B981] bg-emerald-500/10 border-emerald-500/20'
+                ? 'text-[#D4D4D4] bg-[#1E1E1E] border-[#3A3A3A]'
                 : 'text-[#9CA3AF] bg-[#171717] border-[#2F2F2F]'
             }`}
           >
@@ -456,7 +456,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
             onClick={() => setIsOpen((prev) => !prev)}
             className={`relative flex min-h-8 sm:min-h-0 items-center gap-1.5 px-2 py-1 sm:py-0.5 rounded-md cursor-pointer transition-colors border ${
               isOpen
-                ? 'bg-[#2563EB] text-white border-[#60A5FA]/40'
+                ? 'bg-[#2A2A2A] text-white border-[#555555]'
                 : unreadCount > 0
                 ? 'bg-[#1E1E1E] text-[#E5E5E5] border-[#3A3A3A] hover:bg-[#2A2A2A]'
                 : 'text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border-transparent hover:border-[#2F2F2F]'
@@ -465,16 +465,16 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
             aria-label="Workspace Notifications"
             aria-expanded={isOpen}
           >
-            <Bell className={`w-3 h-3 ${unreadCount > 0 ? 'text-[#3B82F6]' : 'text-[#9CA3AF]'}`} />
+            <Bell className={`w-3 h-3 ${unreadCount > 0 ? 'text-[#E5E5E5]' : 'text-[#9CA3AF]'}`} />
             <span className="hidden sm:inline font-semibold">Workspace</span>
 
             {/* Unread Pill Count */}
             {unreadCount > 0 ? (
-              <span className="flex items-center justify-center px-1.5 py-0.2 min-w-3.5 h-3.5 text-[8.5px] font-bold rounded-full bg-[#3B82F6] text-white">
+              <span className="flex items-center justify-center px-1.5 py-0.2 min-w-3.5 h-3.5 text-[8.5px] font-bold rounded-full bg-[#D4D4D4] text-[#141414]">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             ) : (
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" title="Studio Idle & Synced" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#9CA3AF]" title="Studio Idle & Synced" />
             )}
           </button>
         </div>

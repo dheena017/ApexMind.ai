@@ -9,6 +9,7 @@ import {
   Pipette,
   Sparkles,
   RotateCcw,
+  ArrowLeftRight,
   Sliders,
   Search,
   Palette,
@@ -108,6 +109,15 @@ const GRADIENT_COLOR_PALETTE = [
   { name: 'Plum', value: '#581C87' },
 ];
 
+const CUSTOM_GRADIENT_PRESETS = [
+  { id: 'ocean', name: 'Ocean', first: '#0F766E', second: '#67E8F9' },
+  { id: 'sunset', name: 'Sunset', first: '#BE123C', second: '#FB923C' },
+  { id: 'citrus', name: 'Citrus', first: '#854D0E', second: '#FDE047' },
+  { id: 'orchid', name: 'Orchid', first: '#6D28D9', second: '#F0ABFC' },
+  { id: 'forest', name: 'Forest', first: '#14532D', second: '#86EFAC' },
+  { id: 'mono', name: 'Monochrome', first: '#27272A', second: '#F4F4F5' },
+];
+
 const GENERATED_GRADIENT_COUNT = 10_000;
 const GENERATED_STUDIO_GRADIENTS: Array<{ id: string; value: string; name: string }> = [];
 
@@ -166,6 +176,9 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
   const [gradColor2, setGradColor2] = useState('#1e1b4b');
   const [gradAngle, setGradAngle] = useState(135);
   const [gradType, setGradType] = useState<'linear' | 'radial'>('linear');
+  const selectedGradientPreset = CUSTOM_GRADIENT_PRESETS.find(
+    (preset) => preset.first.toLowerCase() === gradColor1.toLowerCase() && preset.second.toLowerCase() === gradColor2.toLowerCase(),
+  )?.id;
 
   const handleSelectBg = (val: string) => {
     onBackgroundChange(val);
@@ -480,7 +493,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
           <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
             <span className="text-xs font-bold text-white">Gradient Studio Builder</span>
             <p className="text-[11px] text-slate-400">
-              Blend custom colors and customize gradient angles for unique reel backgrounds.
+              Start with a palette, then adjust either color to make it your own.
             </p>
 
             <div className="grid grid-cols-2 gap-2">
@@ -516,6 +529,7 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     type="color"
                     value={gradColor1}
                     onChange={(e) => setGradColor1(e.target.value)}
+                    aria-label="First gradient color"
                     className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
                   />
                   <span className="text-xs font-mono text-zinc-300">{gradColor1}</span>
@@ -529,10 +543,55 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
                     type="color"
                     value={gradColor2}
                     onChange={(e) => setGradColor2(e.target.value)}
+                    aria-label="Second gradient color"
                     className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
                   />
                   <span className="text-xs font-mono text-zinc-300">{gradColor2}</span>
                 </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setGradColor1(gradColor2);
+                setGradColor2(gradColor1);
+              }}
+              className="inline-flex h-8 items-center justify-center gap-1.5 self-start rounded-lg border border-[#2F2F2F] bg-[#111111] px-2.5 text-[10px] font-medium text-[#D4D4D8] transition-colors hover:bg-[#242424] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/60"
+              title="Swap the two gradient colors"
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              Swap colors
+            </button>
+
+            <div className="space-y-1.5">
+              <div className="text-[10px] font-semibold uppercase text-slate-500">Color palettes</div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {CUSTOM_GRADIENT_PRESETS.map((preset) => {
+                  const isSelected = selectedGradientPreset === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setGradColor1(preset.first);
+                        setGradColor2(preset.second);
+                      }}
+                      aria-label={`Use ${preset.name} color palette`}
+                      aria-pressed={isSelected}
+                      className={`flex h-11 min-w-0 flex-col justify-end rounded-lg border px-2 py-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/60 ${
+                        isSelected
+                          ? 'border-[#D4D4D4] ring-1 ring-[#D4D4D4]/50'
+                          : 'border-[#303030] hover:border-[#666666]'
+                      }`}
+                      style={{ background: `linear-gradient(110deg, ${preset.first}, ${preset.second})` }}
+                    >
+                      <span className="truncate text-[9px] font-semibold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                        {preset.name}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -555,15 +614,21 @@ export const CanvasPane: React.FC<CanvasPaneProps> = ({
             )}
 
             {/* Live Gradient Preview */}
-            <div
-              className="w-full h-16 rounded-none border-0 shadow-inner mt-1"
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-semibold uppercase text-slate-500">
+                <span>Preview</span>
+                <span>{gradType === 'linear' ? `${gradAngle}°` : 'Radial'}</span>
+              </div>
+              <div
+                className="h-20 w-full rounded-lg border border-[#303030] shadow-inner"
               style={{
                 background:
                   gradType === 'linear'
                     ? `linear-gradient(${gradAngle}deg, ${gradColor1} 0%, ${gradColor2} 100%)`
                     : `radial-gradient(circle at center, ${gradColor2} 0%, ${gradColor1} 100%)`,
               }}
-            />
+              />
+            </div>
 
             <button
               type="button"

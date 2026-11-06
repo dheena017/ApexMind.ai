@@ -3,6 +3,7 @@ import {
   Volume2,
   Bold,
   Italic,
+  Minus,
   Trash2,
   Plus,
   FileText,
@@ -400,11 +401,13 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 <span className="text-xs font-bold text-white font-mono">{totalWords}</span>
               </div>
               <div className="flex flex-col border-x border-[#24242A]">
-                <span className="text-[9px] font-mono-studio uppercase text-[#9CA3AF]">Speech Est.</span>
-                <span className="text-xs font-bold text-white font-mono">~{estimatedSpeechSeconds}s</span>
+                <span className="text-[9px] font-mono-studio uppercase text-[#9CA3AF]">Voice Time</span>
+                <span className="text-xs font-bold text-white font-mono">
+                  {totalWords ? `~${estimatedSpeechSeconds}s` : '--'}
+                </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-mono-studio uppercase text-[#9CA3AF]">Timeline</span>
+                <span className="text-[9px] font-mono-studio uppercase text-[#9CA3AF]">Video Length</span>
                 <span className="text-xs font-bold text-[#60A5FA] font-mono">{Math.round(timelineDuration || 30)}s</span>
               </div>
             </div>
@@ -420,8 +423,9 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               <input
                 type="text"
                 value={script.title || ''}
+                maxLength={70}
                 onChange={(e) => updateField('title', e.target.value)}
-                placeholder="Title of this video..."
+                placeholder="Add a title for this video"
                 className="w-full bg-[#16161A] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/20 transition-all placeholder:text-zinc-600"
               />
             </div>
@@ -639,37 +643,37 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             </div>
 
             {/* Hashtags Strip */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#141418] border border-[#24242A] text-xs gap-2">
-              <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <Hash className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
-                <div className="flex items-center gap-1 flex-wrap">
-                  {((script.hashtags && script.hashtags.length > 0)
-                    ? script.hashtags.slice(0, 5)
-                    : ['#Shorts', '#Viral', '#Trending', '#Reels', '#Video']
-                  ).map((tag, tIdx) => (
-                    <span
-                      key={tIdx}
-                      className="px-2 py-0.5 rounded-md bg-[#18181C] border border-[#27272A] text-[11px] text-zinc-300 font-mono"
-                    >
-                      {tag.startsWith('#') ? tag : `#${tag}`}
-                    </span>
-                  ))}
+            <div className="p-3 rounded-xl bg-[#141418] border border-[#24242A] space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                  <Hash className="w-3.5 h-3.5 text-[#3B82F6]" />
+                  <span>Hashtags</span>
+                  <span className="text-[10px] font-normal text-zinc-500">
+                    {(script.hashtags || []).length || 5}
+                  </span>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={handleCopyHashtags}
-                  className="px-2 py-1 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 hover:text-white border border-[#27272A] text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                  className="px-2.5 py-1.5 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 hover:text-white border border-[#27272A] text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1.5"
                   title="Copy hashtags"
                 >
                   <Copy className="w-3 h-3" />
-                  <span className="hidden sm:inline">Copy</span>
+                  <span>Copy</span>
                 </button>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[#1E1E24] text-zinc-400 border border-[#2A2A32]">
-                  {(script.hashtags || []).length || 5} Tags
-                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {((script.hashtags && script.hashtags.length > 0)
+                  ? script.hashtags.slice(0, 5)
+                  : ['#Shorts', '#Viral', '#Trending', '#Reels', '#Video']
+                ).map((tag, tIdx) => (
+                  <span
+                    key={tIdx}
+                    className="px-2 py-1 rounded-md bg-[#18181C] border border-[#27272A] text-[10px] text-zinc-300 font-mono"
+                  >
+                    {tag.startsWith('#') ? tag : `#${tag}`}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -819,43 +823,25 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               <div className="space-y-2.5">
                 {filteredSubtitles.map((sub, idx) => {
                   const origIdx = (script.subtitles || []).indexOf(sub);
-                  const isCurrentPlayback =
-                    currentTime >= sub.start && currentTime < sub.start + sub.duration;
                   const wordCount = sub.text.trim().split(/\s+/).filter(Boolean).length;
                   const endTime = Number((sub.start + sub.duration).toFixed(1));
 
                   return (
                     <div
                       key={idx}
-                      className={`group p-3 rounded-xl transition-all border ${
-                        isCurrentPlayback
-                          ? 'bg-[#1E2538] border-[#3B82F6] shadow-sm'
-                          : 'bg-[#141418] border-[#24242A] hover:border-[#383842]'
-                      }`}
+                      className="group p-3 rounded-xl transition-colors border bg-[#141418] border-[#24242A] hover:border-[#383842]"
                     >
                       {/* Top Bar of Cue Card */}
                       <div className="flex items-center justify-between gap-2 mb-2">
                         {/* Cue Index & Formatted Timecode */}
                         <div className="flex items-center gap-2">
-                          <span
-                            className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                              isCurrentPlayback
-                                ? 'bg-[#2563EB] text-white'
-                                : 'bg-[#18181C] text-[#60A5FA] border border-[#27272A]'
-                            }`}
-                          >
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#18181C] text-[#60A5FA] border border-[#27272A]">
                             #{origIdx + 1}
                           </span>
 
                           <span className="text-[11px] font-mono text-zinc-300">
                             {formatTimecode(sub.start)} → {formatTimecode(endTime)}
                           </span>
-
-                          {isCurrentPlayback && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#2563EB]/20 text-[#60A5FA] border border-[#3B82F6]/30 font-semibold animate-pulse">
-                              Active
-                            </span>
-                          )}
                         </div>
 
                         {/* Cue Actions */}
@@ -865,10 +851,11 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                             <button
                               type="button"
                               onClick={() => onSeek(sub.start)}
-                              className="p-1 rounded-md bg-[#18181C] hover:bg-[#222228] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#27272A]"
+                              aria-label={`Seek to subtitle cue ${origIdx + 1}`}
+                              className="w-8 h-8 rounded-lg bg-[#18181C] hover:bg-[#222228] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#27272A] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
                               title="Seek playhead to this cue"
                             >
-                              <Play className="w-3 h-3 text-[#3B82F6]" />
+                              <Play className="w-3.5 h-3.5 text-[#3B82F6]" />
                             </button>
                           )}
 
@@ -876,30 +863,33 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                           <button
                             type="button"
                             onClick={() => handleSplitSubtitle(origIdx)}
-                            className="p-1 rounded-md bg-[#18181C] hover:bg-[#222228] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#27272A]"
+                            aria-label={`Split subtitle cue ${origIdx + 1}`}
+                            className="w-8 h-8 rounded-lg bg-[#18181C] hover:bg-[#222228] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#27272A] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
                             title="Split cue in half"
                           >
-                            <Scissors className="w-3 h-3 text-zinc-400" />
+                            <Scissors className="w-3.5 h-3.5 text-zinc-400" />
                           </button>
 
                           {/* Add Cue After */}
                           <button
                             type="button"
                             onClick={() => handleAddSubtitle(origIdx)}
-                            className="p-1 rounded-md bg-[#18181C] hover:bg-[#222228] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#27272A]"
+                            aria-label={`Insert cue after subtitle ${origIdx + 1}`}
+                            className="w-8 h-8 rounded-lg bg-[#18181C] hover:bg-[#222228] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#27272A] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
                             title="Insert cue after this"
                           >
-                            <Plus className="w-3 h-3 text-[#3B82F6]" />
+                            <Plus className="w-3.5 h-3.5 text-[#3B82F6]" />
                           </button>
 
                           {/* Delete Cue */}
                           <button
                             type="button"
                             onClick={() => handleDeleteSubtitle(origIdx)}
-                            className="p-1 rounded-md bg-[#18181C] hover:bg-red-950/40 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer border border-[#27272A] hover:border-red-900/50"
+                            aria-label={`Delete subtitle cue ${origIdx + 1}`}
+                            className="w-8 h-8 rounded-lg bg-[#18181C] hover:bg-red-950/40 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer border border-[#27272A] hover:border-red-900/50 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
                             title="Delete this cue"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -909,13 +899,14 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                         type="text"
                         value={sub.text}
                         onChange={(e) => handleUpdateSubtitle(origIdx, { text: e.target.value })}
+                        aria-label={`Text for subtitle cue ${origIdx + 1}`}
                         className="w-full bg-[#18181C] border border-[#27272A] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/20 transition-all font-medium"
                         placeholder="Subtitle cue line..."
                       />
 
                       {/* Bottom Micro-Adjusters & Word Count */}
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#24242A]/60 text-[10px] font-mono">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-[#24242A]/60 text-[10px] font-mono">
+                        <div className="flex items-center gap-2">
                           {/* Start Time Stepper */}
                           <div className="flex items-center gap-1">
                             <span className="text-[#9CA3AF]">Start:</span>
@@ -926,10 +917,11 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                                   start: Math.max(0, Number((sub.start - 0.1).toFixed(1))),
                                 })
                               }
-                              className="px-1.5 py-0.5 rounded bg-[#18181C] hover:bg-[#202026] text-zinc-300 cursor-pointer border border-[#27272A]"
+                              aria-label={`Move subtitle cue ${origIdx + 1} start earlier by 0.1 seconds`}
+                              className="w-7 h-7 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 cursor-pointer border border-[#27272A] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
                               title="-0.1s"
                             >
-                              -
+                              <Minus className="w-3 h-3" />
                             </button>
                             <span className="text-white font-bold w-9 text-center">{sub.start.toFixed(1)}s</span>
                             <button
@@ -939,10 +931,11 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                                   start: Number((sub.start + 0.1).toFixed(1)),
                                 })
                               }
-                              className="px-1.5 py-0.5 rounded bg-[#18181C] hover:bg-[#202026] text-zinc-300 cursor-pointer border border-[#27272A]"
+                              aria-label={`Move subtitle cue ${origIdx + 1} start later by 0.1 seconds`}
+                              className="w-7 h-7 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 cursor-pointer border border-[#27272A] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
                               title="+0.1s"
                             >
-                              +
+                              <Plus className="w-3 h-3" />
                             </button>
                           </div>
 
@@ -956,10 +949,11 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                                   duration: Math.max(0.5, Number((sub.duration - 0.1).toFixed(1))),
                                 })
                               }
-                              className="px-1.5 py-0.5 rounded bg-[#18181C] hover:bg-[#202026] text-zinc-300 cursor-pointer border border-[#27272A]"
+                              aria-label={`Shorten subtitle cue ${origIdx + 1} by 0.1 seconds`}
+                              className="w-7 h-7 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 cursor-pointer border border-[#27272A] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
                               title="-0.1s"
                             >
-                              -
+                              <Minus className="w-3 h-3" />
                             </button>
                             <span className="text-white font-bold w-9 text-center">{sub.duration.toFixed(1)}s</span>
                             <button
@@ -969,10 +963,11 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                                   duration: Number((sub.duration + 0.1).toFixed(1)),
                                 })
                               }
-                              className="px-1.5 py-0.5 rounded bg-[#18181C] hover:bg-[#202026] text-zinc-300 cursor-pointer border border-[#27272A]"
+                              aria-label={`Lengthen subtitle cue ${origIdx + 1} by 0.1 seconds`}
+                              className="w-7 h-7 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 cursor-pointer border border-[#27272A] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
                               title="+0.1s"
                             >
-                              +
+                              <Plus className="w-3 h-3" />
                             </button>
                           </div>
                         </div>

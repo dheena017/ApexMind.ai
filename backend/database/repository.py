@@ -968,6 +968,10 @@ def get_media_library() -> Dict[str, Any]:
             {"id": "Puck", "name": "Puck", "gender": "Male", "style": "Energetic, High-Octane Motivational", "speed": "1.0x"},
             {"id": "Zephyr", "name": "Zephyr", "gender": "Female", "style": "Smooth, Calming Wisdom and Meditation", "speed": "1.0x"},
             {"id": "Charon", "name": "Charon", "gender": "Male", "style": "Grit and Relentless Focus", "speed": "1.0x"},
+            {"id": "Aoede", "name": "Aoede", "gender": "Female", "style": "Warm, Expressive Storytelling", "speed": "1.0x"},
+            {"id": "Leda", "name": "Leda", "gender": "Female", "style": "Bright, Youthful, Upbeat", "speed": "1.0x"},
+            {"id": "Orus", "name": "Orus", "gender": "Male", "style": "Firm, Confident, Composed", "speed": "1.0x"},
+            {"id": "Enceladus", "name": "Enceladus", "gender": "Male", "style": "Deep, Resonant, Dramatic", "speed": "1.0x"},
         ],
         "soundEffects": [],
     }

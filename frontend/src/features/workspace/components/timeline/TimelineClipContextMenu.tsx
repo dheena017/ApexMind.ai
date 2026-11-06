@@ -1561,7 +1561,7 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({
     type="button"
     disabled={disabled}
     onClick={onClick}
-    className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[11px] transition-colors rounded-sm cursor-pointer select-none group
+    className={`w-full min-h-8 flex items-center gap-2.5 px-2.5 py-1.5 text-left text-[11px] transition-colors rounded-md cursor-pointer select-none group outline-none focus-visible:bg-[#2563EB]/20 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#60A5FA]/60
       ${disabled ? 'opacity-40 cursor-not-allowed text-neutral-500' : ''}
       ${danger && !disabled ? 'text-red-400 hover:bg-red-500/15 hover:text-red-300' : ''}
       ${!danger && !disabled ? 'text-neutral-200 hover:bg-white/10 hover:text-white' : ''}
@@ -1572,7 +1572,7 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({
     </span>
     <span className="flex-1 truncate font-medium">{label}</span>
     {shortcut && (
-      <span className="text-[10px] text-neutral-500 group-hover:text-neutral-400 font-mono tabular-nums shrink-0 ml-auto pl-2">
+      <span className="text-[10px] text-neutral-400 group-hover:text-neutral-300 font-mono tabular-nums shrink-0 ml-auto pl-2">
         {shortcut}
       </span>
     )}
@@ -1606,7 +1606,7 @@ const ContextMenuSubmenuTrigger: React.FC<ContextMenuSubmenuTriggerProps> = ({
     onClick={onClick}
     onMouseEnter={(e) => onMouseEnter(e.currentTarget)}
     onMouseLeave={onMouseLeave}
-    className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[11px] transition-colors rounded-sm cursor-pointer select-none group ${
+    className={`w-full min-h-8 flex items-center gap-2.5 px-2.5 py-1.5 text-left text-[11px] transition-colors rounded-md cursor-pointer select-none group outline-none focus-visible:bg-[#2563EB]/20 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#60A5FA]/60 ${
       isActive ? 'bg-white/15 text-white' : 'text-neutral-200 hover:bg-white/10 hover:text-white'
     }`}
   >
@@ -1618,7 +1618,7 @@ const ContextMenuSubmenuTrigger: React.FC<ContextMenuSubmenuTriggerProps> = ({
       </span>
     )}
     {shortcut && (
-      <span className="text-[10px] text-neutral-500 group-hover:text-neutral-400 font-mono tabular-nums shrink-0 pl-1">
+      <span className="text-[10px] text-neutral-400 group-hover:text-neutral-300 font-mono tabular-nums shrink-0 pl-1">
         {shortcut}
       </span>
     )}

@@ -461,44 +461,44 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     switch (source) {
       case 'pexels':
         return (
-          <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-[8px] font-mono font-bold text-emerald-400">
+          <span className="media-source-badge">
             Pexels
           </span>
         );
       case 'pixabay':
         return (
-          <span className="px-1.5 py-0.5 rounded bg-sky-950/80 border border-sky-500/40 text-[8px] font-mono font-bold text-sky-400">
+          <span className="media-source-badge">
             Pixabay
           </span>
         );
       case 'unsplash':
         return (
-          <span className="px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-[8px] font-mono font-bold text-amber-400">
+          <span className="media-source-badge">
             Unsplash
           </span>
         );
       case 'wikimedia':
       case 'wikimedia_commons':
         return (
-          <span className="px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-500/40 text-[8px] font-mono font-bold text-indigo-400">
+          <span className="media-source-badge">
             Wikimedia
           </span>
         );
       case 'flickr':
         return (
-          <span className="px-1.5 py-0.5 rounded bg-pink-950/80 border border-pink-500/40 text-[8px] font-mono font-bold text-pink-400">
+          <span className="media-source-badge">
             Flickr HD
           </span>
         );
       case 'open_commons_library':
         return (
-          <span className="px-1.5 py-0.5 rounded bg-teal-950/80 border border-teal-500/40 text-[8px] font-mono font-bold text-teal-400">
+          <span className="media-source-badge">
             Open Stock
           </span>
         );
       default:
         return (
-          <span className="px-1.5 py-0.5 rounded bg-zinc-900/80 border border-zinc-700/60 text-[8px] font-mono font-bold text-zinc-300">
+          <span className="media-source-badge">
             Studio HD
           </span>
         );

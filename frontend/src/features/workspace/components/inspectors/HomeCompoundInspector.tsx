@@ -14,7 +14,6 @@ import {
   Zap,
   AlertCircle,
   Instagram,
-  Bookmark,
   ChevronRight,
   Clock,
   Download, Share2,
@@ -63,7 +62,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'audit' | 'distribute' | 'codec'>('overview');
   const [copiedMetadata, setCopiedMetadata] = useState(false);
-  const [savedDraft, setSavedDraft] = useState(false);
 
   // Dynamic user-customizable Codec & Export settings
   const [selectedResolution, setSelectedResolution] = useState<'1080x1920' | '1920x1080' | '1080x1080' | '1080x1350' | '3840x2160'>('1080x1920');
@@ -83,12 +81,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
     navigator.clipboard?.writeText(text);
     setCopiedMetadata(true);
     setTimeout(() => setCopiedMetadata(false), 2000);
-  };
-
-  const handleSaveDraft = () => {
-    window.dispatchEvent(new CustomEvent('workspace:save-draft'));
-    setSavedDraft(true);
-    setTimeout(() => setSavedDraft(false), 2000);
   };
 
   const compoundShortcuts = [
@@ -159,26 +151,6 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                   </button>
                 );
               })}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleCopyMetadata}
-                className="flex-1 py-2 rounded-xl bg-[#181818] hover:bg-[#26262C] hover:border-white/10 border border-[#242424] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Copy className="w-3 h-3 text-[#3B82F6]" />
-                {copiedMetadata ? 'Copied!' : 'Copy Meta'}
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveDraft}
-                className="flex-1 py-2 rounded-xl bg-[#181818] hover:bg-[#26262C] hover:border-white/10 border border-[#242424] text-xs font-medium text-[#D4D4D8] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Bookmark className="w-3 h-3 text-amber-400" />
-                {savedDraft ? 'Saved!' : 'Save Draft'}
-              </button>
             </div>
 
             {/* Publish Button */}

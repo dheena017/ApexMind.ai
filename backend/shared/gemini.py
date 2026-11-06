@@ -656,6 +656,10 @@ def generate_gemini_script(
         {"id": "Puck", "name": "Puck", "gender": "Male", "style": "Energetic, High-Octane Motivational"},
         {"id": "Zephyr", "name": "Zephyr", "gender": "Female", "style": "Smooth, Calming Wisdom and Meditation"},
         {"id": "Charon", "name": "Charon", "gender": "Male", "style": "Grit and Relentless Focus"},
+        {"id": "Aoede", "name": "Aoede", "gender": "Female", "style": "Warm, Expressive Storytelling"},
+        {"id": "Leda", "name": "Leda", "gender": "Female", "style": "Bright, Youthful, Upbeat"},
+        {"id": "Orus", "name": "Orus", "gender": "Male", "style": "Firm, Confident, Composed"},
+        {"id": "Enceladus", "name": "Enceladus", "gender": "Male", "style": "Deep, Resonant, Dramatic"},
     ]
     voice_summary = "\n".join([
         f"- ID: {v.get('id')} | Name: '{v.get('name')}' | Gender: {v.get('gender')} | Style: {v.get('style')}"
@@ -1414,6 +1418,10 @@ def generate_gemini_voiceover(
                 "puck": "en-US-EricNeural",
                 "kore": "en-US-AvaNeural",
                 "zephyr": "en-US-EmmaNeural",
+                "aoede": "en-US-JennyNeural",
+                "leda": "en-US-AriaNeural",
+                "orus": "en-US-GuyNeural",
+                "enceladus": "en-US-DavisNeural",
             }
             v_code = voice_map.get(voice_name.lower(), "en-US-ChristopherNeural")
 

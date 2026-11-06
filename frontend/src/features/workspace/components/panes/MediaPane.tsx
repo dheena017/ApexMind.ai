@@ -38,6 +38,15 @@ export interface MediaPaneProps {
 
 const LOCAL_STORAGE_MEDIA_KEY = 'apexmind_workspace_user_media_v2';
 
+const isValidWebUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value.trim());
+    return (url.protocol === 'http:' || url.protocol === 'https:') && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
 interface MediaAssetCardProps {
   item: UploadedMediaItem;
   isSelected: boolean;
@@ -127,7 +136,7 @@ const MediaAssetCard = React.memo<MediaAssetCardProps>(({
 
       {/* Top Action Icons */}
       <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
-        <span className="px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-mono-studio text-white/90 border border-[#2A2A2A] uppercase">
+        <span className="media-source-badge">
           {item.type}
         </span>
 
@@ -195,6 +204,8 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   const [importName, setImportName] = useState('');
   const [importType, setImportType] = useState<'image' | 'video'>('image');
   const [importUse, setImportUse] = useState<'backdrop' | 'asset'>('backdrop');
+  const [importError, setImportError] = useState('');
+  const importUrlIsValid = isValidWebUrl(importUrl);
 
   // Load from localStorage on mount (default is empty, never auto-populate starter items)
   useEffect(() => {
@@ -303,7 +314,10 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
   };
 
   const handleAddFromUrl = () => {
-    if (!importUrl.trim()) return;
+    if (!importUrlIsValid) {
+      setImportError('Enter a complete HTTP or HTTPS media URL.');
+      return;
+    }
     const url = importUrl.trim();
     const name = importName.trim() || `Imported ${importType.toUpperCase()}`;
 
@@ -320,14 +334,24 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
     persistItems(updated);
 
     if (importUse === 'backdrop') {
-      if (importType === 'image') onApplyBackdrop(url, false, importName || 'Imported Image');
-      if (importType === 'video') onApplyBackdrop(url, true, importName || 'Imported Video');
+      onApplyBackdrop(url, importType === 'video', name);
     }
 
+    toast.success(importUse === 'backdrop' ? 'Media added to the timeline and library' : 'Media added to the library');
     setImportUrl('');
     setImportName('');
+    setImportType('image');
     setImportUse('backdrop');
+    setImportError('');
     setActiveTab('library');
+  };
+
+  const handleClearImport = () => {
+    setImportUrl('');
+    setImportName('');
+    setImportType('image');
+    setImportUse('backdrop');
+    setImportError('');
   };
 
   const handleCaptureSnapshot = async () => {
@@ -510,23 +534,30 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
         {activeTab === 'import-url' ? (
           /* Import from Web URL Form */
-          <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleAddFromUrl();
+            }}
+            className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3"
+          >
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#60A5FA]" />
               <span className="text-xs font-bold text-white">Import Web Media</span>
             </div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Add any direct web image or video URL into your project uploads.
+              Add a public, direct image or video link to your project library.
             </p>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-slate-500">Asset Name</label>
+              <label htmlFor="web-media-name" className="text-[10px] uppercase font-mono-studio text-slate-500">Asset Name <span className="normal-case">(optional)</span></label>
               <input
+                id="web-media-name"
                 type="text"
                 value={importName}
                 onChange={(e) => setImportName(e.target.value)}
-                placeholder="e.g. Neon Horizon Background"
-                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                placeholder="e.g. Neon horizon"
+                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] focus-visible:ring-2 focus-visible:ring-[#3B82F6]/30"
               />
             </div>
 
@@ -538,6 +569,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
                     key={t}
                     type="button"
                     onClick={() => setImportType(t)}
+                    aria-pressed={importType === t}
                     className={`py-1.5 px-2 rounded-lg text-xs font-semibold capitalize border transition-all ${
                       importType === t
                         ? 'bg-[#3B82F6] text-white border-[#3B82F6]'
@@ -551,16 +583,17 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-slate-500">Use As</label>
+              <label className="text-[10px] uppercase font-mono-studio text-slate-500">After Import</label>
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { id: 'backdrop', label: 'Backdrop' },
-                  { id: 'asset', label: 'Library Asset' },
+                  { id: 'backdrop', label: 'Apply to timeline' },
+                  { id: 'asset', label: 'Save to library' },
                 ] as const).map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() => setImportUse(option.id)}
+                    aria-pressed={importUse === option.id}
                     className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
                       importUse === option.id
                         ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
@@ -574,35 +607,51 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-slate-500">Direct Web URL</label>
+              <label htmlFor="web-media-url" className="text-[10px] uppercase font-mono-studio text-slate-500">Direct Media URL</label>
               <input
+                id="web-media-url"
                 type="url"
+                required
+                autoComplete="url"
                 value={importUrl}
-                onChange={(e) => setImportUrl(e.target.value)}
-                placeholder="https://..."
-                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
+                onChange={(e) => {
+                  setImportUrl(e.target.value);
+                  setImportError('');
+                }}
+                placeholder="https://example.com/image.jpg"
+                aria-invalid={Boolean(importUrl.trim()) && !importUrlIsValid}
+                aria-describedby={importError || (Boolean(importUrl.trim()) && !importUrlIsValid) ? 'web-media-url-error' : 'web-media-url-help'}
+                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] focus-visible:ring-2 focus-visible:ring-[#3B82F6]/30"
               />
+              {importError || (Boolean(importUrl.trim()) && !importUrlIsValid) ? (
+                <p id="web-media-url-error" role="alert" className="text-[10px] text-[#D4D4D4]">
+                  {importError || 'Enter a complete HTTP or HTTPS URL.'}
+                </p>
+              ) : (
+                <p id="web-media-url-help" className="text-[10px] text-slate-500">
+                  The link must point directly to a public image or video file.
+                </p>
+              )}
             </div>
 
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setImportUrl('')}
-                className="flex-1 bg-[#111111] hover:bg-[#1B1B21] text-[#D4D4D8] border border-[#242424] rounded-xl py-2 text-xs font-bold transition-all"
+                onClick={handleClearImport}
+                className="flex-1 bg-[#111111] hover:bg-[#1B1B21] text-[#D4D4D8] border border-[#242424] rounded-xl py-2 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50"
               >
                 Clear
               </button>
               <button
-                type="button"
-                onClick={handleAddFromUrl}
-                disabled={!importUrl.trim()}
-                className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
+                type="submit"
+                disabled={!importUrlIsValid}
+                className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/60"
               >
                 <Plus className="w-3.5 h-3.5" />
-                {importUse === 'backdrop' ? 'Apply' : 'Add'}
+                {importUse === 'backdrop' ? 'Add & apply' : 'Add to library'}
               </button>
             </div>
-          </div>
+          </form>
         ) : mediaItems.length === 0 ? (
           /* Empty State - Prominent Hero Dropzone */
           <div

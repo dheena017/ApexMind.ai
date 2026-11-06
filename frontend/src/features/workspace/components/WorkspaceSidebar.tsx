@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FileText,
   FolderOpen,
@@ -61,6 +62,19 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 }) => {
   const showMobile = mode === 'all' || mode === 'mobile-only';
   const showDesktop = mode === 'all' || mode === 'desktop-only';
+  const [sidebarTooltip, setSidebarTooltip] = useState<{ label: string; top: number; left: number } | null>(null);
+
+  const showTooltip = (
+    event: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>,
+    label: string,
+  ) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setSidebarTooltip({ label, top: rect.top + rect.height / 2, left: rect.right + 8 });
+  };
+
+  const hideTooltip = (event: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>) => {
+    if (document.activeElement !== event.currentTarget) setSidebarTooltip(null);
+  };
 
   return (
     <>
@@ -124,9 +138,12 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => onTabChange(item.id)}
+                  onMouseEnter={(event) => showTooltip(event, item.label)}
+                  onMouseLeave={hideTooltip}
+                  onFocus={(event) => showTooltip(event, item.label)}
+                  onBlur={hideTooltip}
                   aria-label={item.label}
                   aria-current={isActive ? 'page' : undefined}
-                  title={item.label}
                   className={`group relative flex flex-col h-11 w-11 items-center justify-center rounded-2xl border transition-all cursor-pointer select-none ${
                     isActive
                       ? 'bg-gradient-to-b from-[#2563EB] to-[#1D4ED8] border-[#60A5FA]/40 text-white shadow-[0_0_14px_rgba(37,99,235,0.35)]'
@@ -144,10 +161,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                     {item.shortLabel}
                   </span>
 
-                  {/* Flyout Tooltip (Pill Style) */}
-                  <span className="pointer-events-none absolute left-14 top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[#333333] bg-[#1A1A1A] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
-                    {item.label}
-                  </span>
                 </button>
               );
             })}
@@ -158,21 +171,31 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('dashboard')}
+                onMouseEnter={(event) => showTooltip(event, 'Creator Dashboard')}
+                onMouseLeave={hideTooltip}
+                onFocus={(event) => showTooltip(event, 'Creator Dashboard')}
+                onBlur={hideTooltip}
                 aria-label="Creator Dashboard"
-                title="Creator Dashboard"
                 className="group relative flex h-11 w-11 flex-col items-center justify-center rounded-2xl border border-transparent text-[#9CA3AF] transition-all hover:border-white/10 hover:bg-[#26262C] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60"
               >
                 <LayoutDashboard className="h-4 w-4 shrink-0 text-[#60A5FA] transition-transform group-hover:scale-105" />
                 <span className="mt-1 max-w-[44px] truncate text-[8.5px] font-semibold leading-none text-[#9CA3AF] group-hover:text-white">
                   Home
                 </span>
-                <span className="pointer-events-none absolute bottom-1/2 left-14 z-50 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[#333333] bg-[#1A1A1A] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 shadow-2xl transition-opacity group-hover:opacity-100">
-                  Creator Dashboard
-                </span>
               </button>
             </div>
           )}
         </aside>
+      )}
+      {showDesktop && sidebarTooltip && createPortal(
+        <span
+          role="tooltip"
+          className="pointer-events-none fixed z-[10000] -translate-y-1/2 whitespace-nowrap rounded-lg border border-[#333333] bg-[#1A1A1A] px-2.5 py-1 text-[11px] font-semibold text-white shadow-2xl"
+          style={{ top: sidebarTooltip.top, left: sidebarTooltip.left }}
+        >
+          {sidebarTooltip.label}
+        </span>,
+        document.body,
       )}
     </>
   );

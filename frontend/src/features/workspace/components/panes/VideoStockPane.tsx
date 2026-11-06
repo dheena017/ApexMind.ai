@@ -153,11 +153,11 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
       {/* Top Badges (Crisp solid translucent instead of GPU-heavy backdrop-blur) */}
       <div className="relative z-10 p-2 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-1">
-          <span className="px-2 py-0.5 rounded-full bg-black/80 text-[9px] font-semibold text-zinc-200 border border-[#2A2A2A] uppercase tracking-wider">
+          <span className="media-source-badge">
             {vid.category}
           </span>
           {vid.source && (
-            <span className="px-1.5 py-0.5 rounded-full bg-[#2563EB]/15 text-[8.5px] font-bold text-[#60A5FA] border border-[#60A5FA]/30 uppercase">
+            <span className="media-source-badge">
               {vid.source}
             </span>
           )}

@@ -222,22 +222,22 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     };
 
   const compoundMetadata = {
-    home: { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-sky-400', badgeBg: 'bg-sky-500/15', badgeBorder: 'border-sky-500/30' },
-    project: { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-sky-400', badgeBg: 'bg-sky-500/15', badgeBorder: 'border-sky-500/30' },
+    home: { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
+    project: { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
     video: {
       label: customImageUrl ? 'Image Inspector' : 'Backdrop Canvas',
       tag: customImageUrl ? 'V2' : 'V1',
       icon: customImageUrl ? ImageIcon : Film,
-      color: 'text-amber-400',
-      badgeBg: 'bg-amber-500/15',
-      badgeBorder: 'border-amber-500/30',
+      color: 'text-[#60A5FA]',
+      badgeBg: 'bg-[#1E3A5F]',
+      badgeBorder: 'border-[#3B82F6]/40',
     },
-    text: { label: 'Captions & Titles', tag: 'T1', icon: Type, color: 'text-blue-400', badgeBg: 'bg-blue-500/15', badgeBorder: 'border-blue-500/30' },
-    voice: { label: `Voice: ${selectedVoice || 'Fenrir'}`, tag: 'A1', icon: Mic, color: 'text-emerald-400', badgeBg: 'bg-emerald-500/15', badgeBorder: 'border-emerald-500/30' },
-    music: { label: 'Soundtrack Mix', tag: 'A2', icon: Music, color: 'text-blue-400', badgeBg: 'bg-blue-500/15', badgeBorder: 'border-blue-500/30' },
-    overlay: { label: 'Overlay Badges', tag: 'FX', icon: Layers, color: 'text-indigo-400', badgeBg: 'bg-indigo-500/15', badgeBorder: 'border-indigo-500/30' },
-    transitions: { label: 'Transitions Studio', tag: 'FX', icon: Sparkles, color: 'text-amber-400', badgeBg: 'bg-amber-500/15', badgeBorder: 'border-amber-500/30' },
-  }[activeCompound] || { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-sky-400', badgeBg: 'bg-sky-500/15', badgeBorder: 'border-sky-500/30' };
+    text: { label: 'Captions & Titles', tag: 'T1', icon: Type, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
+    voice: { label: `Voice: ${selectedVoice || 'Fenrir'}`, tag: 'A1', icon: Mic, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
+    music: { label: 'Soundtrack Mix', tag: 'A2', icon: Music, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
+    overlay: { label: 'Overlay Badges', tag: 'FX', icon: Layers, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
+    transitions: { label: 'Transitions Studio', tag: 'FX', icon: Sparkles, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
+  }[activeCompound] || { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' };
 
   const isAllClipsMode = Boolean(
     !localSelectedClip ||
@@ -278,12 +278,12 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
             onClick={() => handleSwitchCompound('home')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer border ${
               activeCompound === 'home' || activeCompound === 'project'
-                ? 'bg-blue-600/30 text-sky-200 border-sky-400/40 shadow-xs font-semibold'
+                ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
                 : 'bg-[#181818] hover:bg-[#26262C] text-zinc-300 hover:text-white border-[#242424] hover:border-white/10'
             }`}
             title="Go to Project Home Studio"
           >
-            <Home className="w-3.5 h-3.5 text-sky-400" />
+            <Home className="w-3.5 h-3.5 text-white" />
             <span>Home</span>
           </button>
 

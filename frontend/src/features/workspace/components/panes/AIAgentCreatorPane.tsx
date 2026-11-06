@@ -485,41 +485,24 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               <div className="flex items-center justify-between text-[10px] font-mono-studio text-[#9CA3AF]">
                 <span className="font-semibold uppercase flex items-center gap-1.5">
                   <Film className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Visual B-Roll Aesthetic</span>
+                  <span>Visual Style</span>
                 </span>
-                <span className="text-zinc-500">Auto Match-Cuts</span>
+                <span className="text-zinc-500">Auto-match</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {VISUAL_AESTHETICS.map((item) => {
-                  const Icon = item.icon;
-                  const isSelected = selectedAesthetic === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedAesthetic(item.id)}
-                      className={`p-2.5 rounded-xl border transition-all text-left flex flex-col justify-between gap-1 cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
-                          : 'bg-[#18181C] text-zinc-400 border-[#24242A] hover:text-white hover:bg-[#202026] hover:border-[#383842]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-[#3B82F6]'}`} />
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <div>
-                        <div className={`text-[11px] font-bold ${isSelected ? 'text-white' : 'text-[#D4D4D8]'}`}>
-                          {item.label}
-                        </div>
-                        <div className={`text-[9px] mt-0.5 line-clamp-1 ${isSelected ? 'text-blue-100' : 'text-zinc-500'}`}>
-                          {item.desc}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+              <CustomSelect
+                options={VISUAL_AESTHETICS.map((item) => ({
+                  value: item.id,
+                  label: item.label,
+                  description: item.desc,
+                  icon: <item.icon className="w-3.5 h-3.5" />,
+                }))}
+                value={selectedAesthetic}
+                onChange={(value) => setSelectedAesthetic(value)}
+                variant="compact"
+                className="w-full"
+                buttonClassName="w-full h-[44px] bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                menuClassName="max-w-[320px]"
+              />
             </div>
 
             {/* Kinetic Subtitles / Captions Preset */}
@@ -527,91 +510,62 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               <div className="flex items-center justify-between text-[10px] font-mono-studio text-[#9CA3AF]">
                 <span className="font-semibold uppercase flex items-center gap-1.5">
                   <Type className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Kinetic Subtitles Preset</span>
+                  <span>Subtitle Style</span>
                 </span>
-                <span className="text-[#60A5FA] font-semibold">High Retention</span>
+                <span className="text-[#60A5FA] font-semibold">High retention</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {SUBTITLE_PRESETS.map((sub) => {
-                  const isSelected = selectedSubtitle === sub.id;
-                  return (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => setSelectedSubtitle(sub.id)}
-                      className={`p-2.5 rounded-xl border transition-all text-left cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
-                          : 'bg-[#18181C] text-zinc-400 border-[#24242A] hover:text-white hover:bg-[#202026] hover:border-[#383842]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[11px] font-bold ${isSelected ? 'text-white' : 'text-[#D4D4D8]'}`}>
-                          {sub.label}
-                        </span>
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <p className={`text-[9px] mt-0.5 line-clamp-1 ${isSelected ? 'text-blue-100' : 'text-zinc-500'}`}>
-                        {sub.desc}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+              <CustomSelect
+                options={SUBTITLE_PRESETS.map((sub) => ({
+                  value: sub.id,
+                  label: sub.label,
+                  description: sub.desc,
+                }))}
+                value={selectedSubtitle}
+                onChange={(value) => setSelectedSubtitle(value)}
+                variant="compact"
+                className="w-full"
+                buttonClassName="w-full h-[44px] bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                menuClassName="max-w-[320px]"
+              />
             </div>
 
             {/* Music Mood & Soundscape */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[10px] font-mono-studio text-[#9CA3AF]">
                 <span className="font-semibold uppercase flex items-center gap-1.5">
-                  <Music className="w-3 h-3 text-[#EC4899]" />
-                  <span>Background Soundscape Mood</span>
+                  <Music className="w-3 h-3 text-[#3B82F6]" />
+                  <span>Music</span>
                 </span>
-                <span className="text-zinc-500">Auto Ducking</span>
+                <span className="text-zinc-500">Auto mix</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {MUSIC_MOODS.map((mood) => {
-                  const Icon = mood.icon;
-                  const isSelected = selectedMusicMood === mood.id;
-                  return (
-                    <button
-                      key={mood.id}
-                      type="button"
-                      onClick={() => setSelectedMusicMood(mood.id)}
-                      className={`p-2.5 rounded-xl border transition-all text-left flex items-start gap-2 cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
-                          : 'bg-[#18181C] text-zinc-400 border-[#24242A] hover:text-white hover:bg-[#202026] hover:border-[#383842]'
-                      }`}
-                    >
-                      <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? 'text-white' : 'text-[#EC4899]'}`} />
-                      <div className="min-w-0">
-                        <div className={`text-[11px] font-bold ${isSelected ? 'text-white' : 'text-[#D4D4D8]'}`}>
-                          {mood.label}
-                        </div>
-                        <div className={`text-[9px] mt-0.5 truncate ${isSelected ? 'text-blue-100' : 'text-zinc-500'}`}>
-                          {mood.desc}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+              <CustomSelect
+                options={MUSIC_MOODS.map((mood) => ({
+                  value: mood.id,
+                  label: mood.label,
+                  description: mood.desc,
+                  icon: <mood.icon className="w-3.5 h-3.5" />,
+                }))}
+                value={selectedMusicMood}
+                onChange={(value) => setSelectedMusicMood(value)}
+                variant="compact"
+                className="w-full"
+                buttonClassName="w-full h-[44px] bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                menuClassName="max-w-[320px]"
+              />
             </div>
 
             {/* Target Syndication Platforms */}
-            <div className="p-3.5 rounded-2xl bg-[#141418] border border-[#24242A] space-y-2">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio text-[#9CA3AF]">
+            <div className="space-y-2.5 border-t border-[#24242A] pt-3">
+              <div className="text-[10px] font-mono-studio text-[#9CA3AF]">
                 <span className="font-semibold uppercase flex items-center gap-1.5">
                   <Share2 className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Syndication Target Optimization</span>
+                  <span>Publishing</span>
                 </span>
-                <span className="text-zinc-500">Pre-Formatted</span>
               </div>
               <p className="text-[11px] text-[#8E8E93] leading-relaxed">
-                Rendered video, hashtags, and metadata will be automatically optimized for selected destinations:
+                Choose channels to prepare for publishing.
               </p>
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="space-y-1.5">
                 {[
                   { id: 'youtube', label: 'YouTube Shorts' },
                   { id: 'instagram', label: 'Instagram Reels' },
@@ -623,17 +577,18 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                       key={item.id}
                       type="button"
                       onClick={() => togglePlatform(item.id)}
-                      className={`p-2 rounded-xl border text-[11px] font-medium flex items-center justify-between transition-all cursor-pointer ${
+                      aria-pressed={active}
+                      className={`w-full min-h-10 px-3 rounded-lg border text-[11px] font-medium flex items-center justify-between transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 ${
                         active
                           ? 'bg-[#1A2234] border-[#3B82F6]/50 text-white'
-                          : 'bg-[#18181C] border-[#24242A] text-zinc-500 hover:text-zinc-300'
+                          : 'bg-[#18181C] border-[#24242A] text-[#A1A1AA] hover:text-white hover:bg-[#1A2234]/60 hover:border-[#3B82F6]/40'
                       }`}
                     >
                       <span>{item.label}</span>
                       {active ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#3B82F6]" />
+                        <CheckCircle2 className="w-4 h-4 text-[#60A5FA]" />
                       ) : (
-                        <div className="w-3.5 h-3.5 rounded-full border border-zinc-600" />
+                        <span className="w-4 h-4 rounded-full border border-[#52525B]" />
                       )}
                     </button>
                   );
@@ -649,7 +604,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         {activeTab === 'voice' && (
           <div className="space-y-2.5">
             <div className="text-[11px] text-[#9CA3AF] px-0.5">
-              Select an AI voice narrator to voice your generated short-form video:
+              Choose a narrator and preview the voice before generating.
             </div>
             <div className="space-y-2">
               {liveVoices.map((v) => {
@@ -659,56 +614,53 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 return (
                   <div
                     key={v.id}
-                    onClick={() => onVoiceChange?.(v.id || v.name)}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    className={`flex items-center gap-2 p-2 rounded-xl border transition-colors ${
                       isSelected
-                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
+                        ? 'bg-[#1A2234] border-[#3B82F6]/50'
                         : 'bg-[#18181C] border-[#24242A] hover:border-[#383842] hover:bg-[#202026]'
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => onVoiceChange?.(v.id || v.name)}
+                      aria-pressed={isSelected}
+                      className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/70"
+                    >
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                          isSelected ? 'bg-white/20 text-white' : 'bg-[#141418] text-zinc-400 border border-[#24242A]'
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                          isSelected ? 'bg-[#2563EB]/25 text-[#93C5FD]' : 'bg-[#141418] text-zinc-400 border border-[#24242A]'
                         }`}
                       >
                         <Mic className="w-4 h-4" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-bold text-white truncate">{v.name}</span>
-                          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-black/25 text-zinc-300">
+                          <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-[#24242A] text-zinc-300">
                             {v.gender}
                           </span>
                         </div>
-                        <p className={`text-[10px] truncate mt-0.5 ${isSelected ? 'text-blue-100 font-medium' : 'text-zinc-400'}`}>{v.style}</p>
+                        <p className={`text-[10px] truncate mt-0.5 ${isSelected ? 'text-[#C4D8FF]' : 'text-zinc-400'}`}>{v.style}</p>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {onTestVoice && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onTestVoice(v.id);
-                          }}
-                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                            isTesting
-                              ? 'bg-[#3B82F6]/30 text-white border-[#3B82F6]/60'
-                              : 'bg-[#18181C] hover:bg-[#26262E] text-zinc-300 hover:text-white border-[#27272A]'
-                          }`}
-                          title="Audition voice"
-                        >
-                          <Volume2 className={`w-3.5 h-3.5 ${isTesting ? 'animate-pulse text-[#60A5FA]' : ''}`} />
-                        </button>
-                      )}
                       {isSelected && (
-                        <div className="p-1 rounded-full bg-white text-[#2563EB]">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </div>
+                        <Check className="w-4 h-4 shrink-0 text-[#60A5FA]" />
                       )}
-                    </div>
+                    </button>
+                    {onTestVoice && (
+                      <button
+                        type="button"
+                        onClick={() => onTestVoice(v.id)}
+                        aria-label={`${isTesting ? 'Stop preview of' : 'Preview'} ${v.name} voice`}
+                        title={`${isTesting ? 'Stop preview' : 'Preview'} ${v.name}`}
+                        className={`w-9 h-9 shrink-0 rounded-lg border flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/70 ${
+                          isTesting
+                            ? 'bg-[#2563EB] text-white border-[#60A5FA]/50'
+                            : 'bg-[#18181C] hover:bg-[#202026] text-zinc-300 hover:text-white border-[#27272A]'
+                        }`}
+                      >
+                        <Volume2 className={`w-4 h-4 ${isTesting ? 'animate-pulse' : ''}`} />
+                      </button>
+                    )}
                   </div>
                 );
               })}
