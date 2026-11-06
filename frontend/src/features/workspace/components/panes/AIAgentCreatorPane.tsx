@@ -212,9 +212,6 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
           <span className="text-xs font-bold text-white tracking-tight truncate">
             AI Script Studio
           </span>
-          <span className="inline-flex shrink-0 items-center rounded-full border border-[#3B82F6]/25 bg-[#3B82F6]/10 px-2 py-0.5 text-[9px] font-semibold leading-none text-[#93C5FD]">
-            Director
-          </span>
         </div>
 
         {/* Right Actions */}
@@ -329,77 +326,18 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         */}
         {activeTab === 'prompt' && (
           <div className="space-y-4">
-            
-            {/* Aspect Ratio Selector */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <label className="uppercase text-[#9CA3AF] flex items-center gap-1.5 font-semibold">
-                  <Smartphone className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Video Aspect Ratio</span>
-                </label>
-                <span className="text-[#3B82F6] font-semibold">
-                  {aspectRatio === '9:16'
-                    ? '9:16 • 1080×1920 (Vertical)'
-                    : aspectRatio === '16:9'
-                    ? '16:9 • 1920×1080 (Landscape)'
-                    : aspectRatio === '1:1'
-                    ? '1:1 • 1080×1080 (Square)'
-                    : aspectRatio === '4:5'
-                    ? '4:5 • 1080×1350 (Portrait)'
-                    : '21:9 • 2560×1080 (Cinematic)'}
-                </span>
-              </div>
-              <div className="grid grid-cols-5 gap-1.5">
-                {ASPECT_RATIO_OPTIONS.map((item) => {
-                  const Icon = item.icon;
-                  const isSelected = aspectRatio === item.value;
-                  return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => onAspectRatioChange?.(item.value)}
-                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 ${
-                        isSelected
-                          ? 'bg-[#2563EB] border-[#60A5FA] ring-1 ring-[#60A5FA]/30 text-white shadow-xs font-bold'
-                          : 'bg-[#18181C] border-[#3A3A40] text-zinc-400 hover:text-white hover:bg-[#202026] hover:border-[#60A5FA]/50'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 mb-1" />
-                      <span className="text-[10px] font-bold leading-none">{item.label}</span>
-                      <span className={`text-[8.5px] mt-0.5 truncate w-full text-center ${isSelected ? 'text-blue-100 font-medium' : 'text-zinc-500'}`}>
-                        {item.desc.split('/')[0].trim()}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Category / Niche Selection */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] tracking-wider font-semibold">
-                Niche &amp; Philosophy Category
-              </label>
-              <CustomSelect
-                options={CATEGORY_OPTIONS}
-                value={category}
-                onChange={onCategoryChange}
-                className="w-full text-xs"
-              />
-            </div>
-
             {/* Prompt Textarea */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <span className="text-[#9CA3AF] font-semibold tracking-wider">AI AGENT PROMPT</span>
-                <span className="text-zinc-500 text-[10px]">Describe your video topic or concept</span>
+                <span className="text-[#9CA3AF] font-semibold tracking-wider">TOPIC</span>
+                <span className="text-zinc-500 text-[10px]">What should this video be about?</span>
               </div>
 
               <div className="relative">
                 <textarea
                   value={agentPrompt}
                   onChange={(e) => onPromptChange(e.target.value)}
-                  placeholder="Enter the core topic, message, or concept for this video..."
+                  placeholder="Enter the core idea, message, or story for this video..."
                   rows={4}
                   className="w-full bg-[#16161A] border border-[#27272A] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#2563EB] transition-all resize-none leading-relaxed shadow-inner"
                 />
@@ -416,9 +354,43 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono-studio px-0.5">
-                <span>Enter core topic, hook angle, or key lesson</span>
+                <span>Include the main idea, hook, or lesson</span>
                 <span>{agentPrompt.length} chars</span>
               </div>
+            </div>
+
+            {/* Aspect Ratio Selector */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
+                <Smartphone className="w-3 h-3 text-[#3B82F6]" />
+                <span>Format</span>
+              </label>
+              <CustomSelect
+                options={ASPECT_RATIO_OPTIONS.map((item) => ({
+                  value: item.value,
+                  label: item.label,
+                  description: item.res,
+                  badge: item.desc.split('/')[0].trim(),
+                  icon: <item.icon className="w-3.5 h-3.5" />,
+                }))}
+                value={aspectRatio}
+                onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
+                className="w-full"
+                buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+              />
+            </div>
+
+            {/* Category / Niche Selection */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] tracking-wider font-semibold">
+                Niche
+              </label>
+              <CustomSelect
+                options={CATEGORY_OPTIONS}
+                value={category}
+                onChange={onCategoryChange}
+                className="w-full text-xs"
+              />
             </div>
 
             {/* ── Pacing & Model Configuration Card ── */}
@@ -426,7 +398,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-[#24242A]">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-3.5 h-3.5 text-[#3B82F6]" />
-                  <span className="text-xs font-bold text-white tracking-wide">Pacing &amp; Model Engine</span>
+                  <span className="text-xs font-bold text-white tracking-wide">Creative Controls</span>
                 </div>
                 <span className="text-[9px] font-mono-studio text-[#60A5FA] font-semibold bg-[#18181C] px-2 py-0.5 rounded-full border border-[#27272A]">
                   Ready
@@ -437,7 +409,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold">
                   <Cpu className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Reasoning Engine</span>
+                  <span>Model</span>
                 </label>
                 <CustomSelect
                   options={scriptModels}
@@ -455,78 +427,48 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
 
               {/* Target Duration */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                  <label className="uppercase text-[#9CA3AF] flex items-center gap-1.5 font-semibold">
-                    <Gauge className="w-3 h-3 text-[#3B82F6]" />
-                    <span>Target Video Duration</span>
-                  </label>
-                  <span className="text-[#3B82F6] font-semibold">
-                    {targetLength ? targetLength.replace('seconds', 's').replace('second', 's').trim() : '30s'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {DURATION_PRESETS.map((opt) => {
-                    const isSelected =
+                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
+                  <Gauge className="w-3 h-3 text-[#3B82F6]" />
+                  <span>Length</span>
+                </label>
+                <CustomSelect
+                  options={DURATION_PRESETS.map((opt) => ({
+                    value: opt.value,
+                    label: opt.label,
+                    description: opt.badge,
+                    badge: opt.badge,
+                  }))}
+                  value={
+                    DURATION_PRESETS.find((opt) =>
                       targetLength === opt.value ||
                       targetLength === opt.label ||
-                      targetLength.startsWith(opt.label.replace('s', '')) ||
-                      (opt.label === '30s' && (!targetLength || targetLength.includes('30'))) ||
-                      (opt.label === '15s' && targetLength.includes('15')) ||
-                      (opt.label === '45s' && targetLength.includes('45')) ||
-                      (opt.label === '60s' && targetLength.includes('60'));
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => onTargetLengthChange(opt.value)}
-                        className={`py-2 px-1 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 ${
-                          isSelected
-                            ? 'bg-[#2563EB] border-[#60A5FA] ring-1 ring-[#60A5FA]/30 text-white shadow-xs font-bold'
-                            : 'bg-[#18181C] text-zinc-400 border-[#3A3A40] hover:text-white hover:bg-[#202026] hover:border-[#60A5FA]/50'
-                        }`}
-                      >
-                        <span className="text-xs font-bold leading-tight">{opt.label}</span>
-                        <span className={`text-[8.5px] font-normal mt-0.5 ${isSelected ? 'text-blue-100 font-medium' : 'text-zinc-500'}`}>{opt.badge}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                      targetLength.toLowerCase().includes(opt.label.toLowerCase().replace('s', ''))
+                    )?.value ?? '30 seconds'
+                  }
+                  onChange={(val) => onTargetLengthChange(val)}
+                  className="w-full"
+                  buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                />
               </div>
 
               {/* Delivery Tone */}
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold">
+                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
                   <Volume2 className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Narration Delivery Tone</span>
+                  <span>Tone</span>
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {DELIVERY_TONES.map((tone) => {
-                    const Icon = tone.icon;
-                    const isSelected = speechTone === tone.id;
-                    return (
-                      <button
-                        key={tone.id}
-                        type="button"
-                        onClick={() => handleSelectTone(tone.id)}
-                        className={`p-2.5 rounded-xl border transition-all text-left flex items-start gap-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 ${
-                          isSelected
-                            ? 'bg-[#2563EB] text-white border-[#60A5FA] ring-1 ring-[#60A5FA]/30 shadow-xs font-bold'
-                            : 'bg-[#18181C] text-zinc-400 border-[#3A3A40] hover:text-white hover:bg-[#202026] hover:border-[#60A5FA]/50'
-                        }`}
-                      >
-                        <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? 'text-white' : 'text-zinc-400'}`} />
-                        <div className="min-w-0">
-                          <div className={`text-[11px] font-semibold leading-tight ${isSelected ? 'text-white' : 'text-[#D4D4D8]'}`}>
-                            {tone.label}
-                          </div>
-                          <div className={`text-[9.5px] mt-0.5 truncate ${isSelected ? 'text-blue-100 font-medium' : 'text-zinc-500'}`}>
-                            {tone.desc}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                <CustomSelect
+                  options={DELIVERY_TONES.map((tone) => ({
+                    value: tone.id,
+                    label: tone.label,
+                    description: tone.desc,
+                    icon: <tone.icon className="w-3.5 h-3.5" />,
+                  }))}
+                  value={speechTone}
+                  onChange={(val) => handleSelectTone(val)}
+                  className="w-full"
+                  buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                />
               </div>
             </div>
           </div>

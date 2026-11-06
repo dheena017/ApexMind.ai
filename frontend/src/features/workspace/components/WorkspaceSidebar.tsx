@@ -41,8 +41,6 @@ export const WORKSPACE_SIDEBAR_ITEMS: Array<{
   icon: React.ComponentType<{ className?: string }>;
   isScriptGroup?: boolean;
 }> = [
-  { id: 'youtube', label: 'YouTube Studio', shortLabel: 'YouTube', icon: Youtube },
-  { id: 'automations', label: 'Daily Automations', shortLabel: 'Auto', icon: CalendarClock },
   { id: 'script', label: 'Script & AI', shortLabel: 'Script', icon: FileText, isScriptGroup: true },
   { id: 'canvas', label: 'Canvas & Frame', shortLabel: 'Canvas', icon: LayoutTemplate },
   { id: 'media', label: 'Media Library', shortLabel: 'Media', icon: FolderOpen },
@@ -51,6 +49,8 @@ export const WORKSPACE_SIDEBAR_ITEMS: Array<{
   { id: 'audio', label: 'Audio & SFX', shortLabel: 'Audio', icon: Music },
   { id: 'text', label: 'Text & Captions', shortLabel: 'Text', icon: Type },
   { id: 'elements', label: 'Visual Elements', shortLabel: 'Elements', icon: Shapes },
+  { id: 'youtube', label: 'YouTube Studio', shortLabel: 'YouTube', icon: Youtube },
+  { id: 'automations', label: 'Daily Automations', shortLabel: 'Auto', icon: CalendarClock },
 ];
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
