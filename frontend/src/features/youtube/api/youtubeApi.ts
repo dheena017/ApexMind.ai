@@ -248,21 +248,20 @@ export const youtubeApi = {
   },
 
   async getAuthStatus(): Promise<{ success: boolean; connected: boolean; channel?: any }> {
-    const userId = this._resolveUserId();
-    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-    const res = await fetch(apiUrl(`/api/youtube/status${query}`), {
-      headers: this._getScheduleHeaders(userId),
+    const res = await fetch(apiUrl('/api/youtube/status'), {
+      headers: this._getScheduleHeaders(),
     });
-    if (!res.ok) return { success: false, connected: false };
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: 'Failed to load YouTube connection status' }));
+      throw new Error(error.detail || 'Failed to load YouTube connection status');
+    }
     const data = await res.json();
     return { success: true, connected: Boolean(data.connected || data.isAuthorized), channel: data.channel };
   },
 
   async getChannels(): Promise<YouTubeChannel[]> {
-    const userId = this._resolveUserId();
-    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-    const res = await fetch(apiUrl(`/api/youtube/channels${query}`), {
-      headers: this._getScheduleHeaders(userId),
+    const res = await fetch(apiUrl('/api/youtube/channels'), {
+      headers: this._getScheduleHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to load YouTube channels: ${res.status}`);
     const data = await res.json();
@@ -270,11 +269,9 @@ export const youtubeApi = {
   },
 
   async disconnectOAuth(): Promise<boolean> {
-    const userId = this._resolveUserId();
-    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-    const res = await fetch(apiUrl(`/api/youtube/disconnect${query}`), {
+    const res = await fetch(apiUrl('/api/youtube/disconnect'), {
       method: 'POST',
-      headers: this._getScheduleHeaders(userId),
+      headers: this._getScheduleHeaders(),
     });
     return res.ok;
   },

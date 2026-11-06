@@ -209,14 +209,27 @@ export default function YouTubePage({
     // Check backend for authenticated Google OAuth YouTube channel
     const initChannel = async () => {
       try {
-        const authStatus = await youtubeApi.getAuthStatus();
-        if (authStatus.connected && authStatus.channel) {
-          const ch = authStatus.channel;
+        let connectedChannel: YouTubeChannel | undefined;
+        try {
+          const authStatus = await youtubeApi.getAuthStatus();
+          if (authStatus.connected && authStatus.channel) {
+            connectedChannel = authStatus.channel;
+          }
+        } catch (statusError) {
+          console.warn('YouTube connection status unavailable; checking saved channels:', statusError);
+        }
+
+        if (!connectedChannel) {
+          const savedChannels = await youtubeApi.getChannels();
+          connectedChannel = savedChannels[0];
+        }
+
+        if (connectedChannel) {
+          const ch = connectedChannel;
           setChannel(ch);
           setCurrentChannelQuery(ch.handle);
           localStorage.setItem('apexmind_yt_active_channel', ch.handle);
           loadChannelLive(ch.handle);
-          return;
         } else {
           setChannel(null);
           setLiveVideos([]);
@@ -226,8 +239,7 @@ export default function YouTubePage({
           setCurrentChannelQuery('');
         }
       } catch (e) {
-        console.warn('OAuth status check note:', e);
-        setChannel(null);
+        console.warn('Could not restore the signed-in user YouTube channel:', e);
       }
     };
 
@@ -352,5 +364,4 @@ export default function YouTubePage({
     </div>
   );
 }
-
 
