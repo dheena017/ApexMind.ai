@@ -1,6 +1,6 @@
 # Authentication feature
 
-Contains the sign-in experience and API integration for email/password, Google, Facebook, and Instagram professional accounts. Facebook and Instagram sign-in use a backend authorization-code exchange; app secrets are kept on the backend. For local development, open the app at `http://localhost:5173` rather than `127.0.0.1`; Meta's local OAuth exception applies to `localhost`. Deployed environments must use HTTPS.
+Contains the sign-in experience and API integration for email/password, Google, Facebook, and Instagram professional accounts. Facebook and Instagram sign-in use a backend authorization-code exchange; app secrets are kept on the backend. Sessions use signed, user-specific bearer tokens, and `/api/auth/me` requires a valid token instead of selecting the most recently active account. For local development, open the app at `http://localhost:5173` rather than `127.0.0.1`; Meta's local OAuth exception applies to `localhost`. Deployed environments must use HTTPS.
 
 Configure `META_APP_ID` and `META_APP_SECRET` for Facebook Login. Instagram Login requires its own `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` from **Instagram > API setup with Instagram Login > Business login settings**; do not use the Facebook App ID for Instagram. For local testing, set `META_AUTH_REDIRECT_URI` to `http://localhost:5173/login` and register that exact callback URI in each provider's login settings.
 

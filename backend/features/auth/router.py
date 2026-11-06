@@ -27,6 +27,7 @@ from .service import (
     authenticate_channel_user,
     create_meta_login_url,
     get_current_user_profile,
+    get_session_user_id,
 )
 
 logger = logging.getLogger("ApexMind.features.auth")
@@ -190,11 +191,18 @@ async def post_channel_auth(payload: ChannelAuthRequest):
 )
 async def get_me(authorization: Optional[str] = Header(None)):
     try:
-        user = get_current_user_profile()
+        scheme, _, token = (authorization or "").partition(" ")
+        user_id = get_session_user_id(token) if scheme.lower() == "bearer" and token else None
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="A valid authenticated session is required."
+            )
+        user = get_current_user_profile(user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="No authenticated creator session found."
+                detail="The authenticated creator account could not be found."
             )
         user_name = user.get("name", "Creator") if isinstance(user, dict) else getattr(user, "name", "Creator")
         user_email = user.get("email", "") if isinstance(user, dict) else getattr(user, "email", "")

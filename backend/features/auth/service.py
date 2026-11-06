@@ -7,7 +7,6 @@ Authentication service supporting:
 - Legacy YouTube channel sign-in backward compatibility
 """
 
-import uuid
 import logging
 import hashlib
 import hmac
@@ -25,7 +24,6 @@ from backend.database.repository import (
     upsert_user,
     get_user_by_email,
     get_user_by_id,
-    get_latest_user,
     get_channels,
     get_channels_by_user,
     get_oauth_channel,
@@ -34,6 +32,56 @@ from backend.database.repository import (
 
 logger = logging.getLogger("ApexMind.Auth")
 META_GRAPH_VERSION = "v27.0"
+SESSION_TOKEN_LIFETIME_SECONDS = 7 * 24 * 60 * 60
+
+
+def create_session_token(user_id: str) -> str:
+    """Create a signed, user-specific session token."""
+    expires_at = int(time.time()) + SESSION_TOKEN_LIFETIME_SECONDS
+    payload = json.dumps(
+        {"sub": user_id, "exp": expires_at},
+        separators=(",", ":"),
+    ).encode("utf-8")
+    encoded_payload = base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
+    unsigned_token = f"v1.{encoded_payload}"
+    signature = hmac.new(
+        settings.JWT_SECRET_KEY.encode("utf-8"),
+        unsigned_token.encode("ascii"),
+        hashlib.sha256,
+    ).digest()
+    encoded_signature = base64.urlsafe_b64encode(signature).decode("ascii").rstrip("=")
+    return f"{unsigned_token}.{encoded_signature}"
+
+
+def get_session_user_id(token: str) -> Optional[str]:
+    """Return the user ID for a valid, unexpired session token."""
+    try:
+        version, encoded_payload, supplied_signature = token.split(".")
+        if version != "v1":
+            return None
+
+        unsigned_token = f"{version}.{encoded_payload}"
+        expected_signature = base64.urlsafe_b64encode(
+            hmac.new(
+                settings.JWT_SECRET_KEY.encode("utf-8"),
+                unsigned_token.encode("ascii"),
+                hashlib.sha256,
+            ).digest()
+        ).decode("ascii").rstrip("=")
+        if not hmac.compare_digest(supplied_signature, expected_signature):
+            return None
+
+        padded_payload = encoded_payload + "=" * (-len(encoded_payload) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded_payload).decode("utf-8"))
+        user_id = payload.get("sub")
+        expires_at = payload.get("exp")
+        if not isinstance(user_id, str) or not user_id:
+            return None
+        if not isinstance(expires_at, int) or expires_at <= int(time.time()):
+            return None
+        return user_id
+    except (ValueError, UnicodeDecodeError, AttributeError):
+        return None
 
 
 def create_meta_login_url(provider: str) -> Dict[str, str]:
@@ -184,7 +232,7 @@ async def authenticate_meta_user(provider: str, code: str, state: str) -> Dict[s
             "channelsCount": len(channels),
             "lastLoginAt": user["lastLoginAt"],
         },
-        "token": f"usr_{uuid.uuid4().hex}",
+        "token": create_session_token(user["id"]),
         "message": f"Signed in with {provider.capitalize()} as {display_name}!",
     }
 
@@ -236,7 +284,7 @@ def register_email_user(email: str, password: str, name: str) -> Dict[str, Any]:
         avatar_url=avatar,
     )
 
-    token = f"usr_{uuid.uuid4().hex}"
+    token = create_session_token(user["id"])
     logger.info(f"User registered successfully: '{clean_name}' ({clean_email})")
 
     return {
@@ -280,7 +328,7 @@ def login_email_user(email: str, password: str) -> Dict[str, Any]:
     channels = get_channels_by_user(user["id"])
     active_channel = user.get("activeChannelId") or (channels[0]["id"] if channels else None)
 
-    token = f"usr_{uuid.uuid4().hex}"
+    token = create_session_token(user["id"])
     logger.info(f"User logged in successfully: '{user['name']}' ({clean_email})")
 
     return {
@@ -350,7 +398,7 @@ def authenticate_google_user(
     channels = get_channels_by_user(user["id"])
     active_channel = user.get("activeChannelId") or (channels[0]["id"] if channels else None)
 
-    token = f"usr_{uuid.uuid4().hex}"
+    token = create_session_token(user["id"])
     logger.info(f"Google Sign-In successful for user: '{clean_name}' ({clean_email})")
 
     return {
@@ -421,7 +469,7 @@ def authenticate_channel_user(
         provider="youtube_oauth",
     )
 
-    token = f"yt_{uuid.uuid4().hex}"
+    token = create_session_token(user["id"])
     logger.info(f"YouTube Channel login successful for user: {user['name']} (@{clean_handle})")
 
     return {
@@ -442,39 +490,11 @@ def authenticate_channel_user(
     }
 
 
-def get_current_user_profile(user_id_or_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Retrieves profile of the active creator account."""
-    user = None
-    if user_id_or_email:
-        user = get_user_by_id(user_id_or_email) or get_user_by_email(user_id_or_email)
-
+def get_current_user_profile(user_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieve the profile belonging to the authenticated session user."""
+    user = get_user_by_id(user_id)
     if not user:
-        user = get_latest_user()
-
-    if not user:
-        try:
-            oauth_ch = get_oauth_channel()
-            if oauth_ch:
-                channel_title = oauth_ch.get("name") or "ApexMind Creator"
-                clean_handle = (oauth_ch.get("handle") or "creator").replace("@", "").strip()
-                email = f"{clean_handle}@youtube.com"
-                avatar = oauth_ch.get("avatar_url") or f"https://api.dicebear.com/7.x/initials/svg?seed={channel_title}"
-                user = upsert_user(
-                    email=email,
-                    name=channel_title,
-                    avatar_url=avatar,
-                    provider="youtube_oauth",
-                )
-        except Exception as e:
-            logger.warning(f"Note checking OAuth channel for creator profile: {e}")
-
-    if not user:
-        user = upsert_user(
-            email="creator@apexmind.ai",
-            name="ApexMind Creator",
-            avatar_url="https://api.dicebear.com/7.x/initials/svg?seed=ApexMind",
-            provider="email",
-        )
+        return None
 
     channels = get_channels_by_user(user["id"]) if user.get("id") else []
     active_channel = user.get("activeChannelId") or (channels[0]["id"] if channels else None)
