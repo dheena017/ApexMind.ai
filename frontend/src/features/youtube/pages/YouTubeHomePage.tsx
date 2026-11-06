@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Loader2,
   ExternalLink,
-  Target,
   ListVideo,
   ArrowUpRight,
   CalendarClock,
@@ -71,18 +70,11 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
   const metrics = useMemo(() => {
     const subs = activeChannel?.subscribers ?? 0;
 
-    // Calculate milestone goal (e.g. 100, 500, 1000, 5000, 10000, 50000, 100000...)
-    const milestones = [100, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 500000, 1000000];
-    const nextMilestone = milestones.find((m) => m > subs) || (subs + 1000);
-    const progressPercent = Math.min(100, Math.max(5, Math.round((subs / nextMilestone) * 100)));
-
     // Total content items count from live feeds
     const totalVideos = activeChannel?.videosUploaded ?? (videosFeed.length + shortsFeed.length);
 
     return {
       subs,
-      nextMilestone,
-      progressPercent,
       totalVideos,
       totalShorts: shortsFeed.length,
       totalLongForm: videosFeed.length,
@@ -166,56 +158,6 @@ export const YouTubeHomePage: React.FC<YouTubeHomePageProps> = ({
           </div>
         </div>
       </div>
-
-      {/* ── 2. Real Milestone & Channel Health Tracker ── */}
-      {activeChannel && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#141414] via-[#181818] to-[#141414] border border-[#2B2B2B] shadow-sm space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <Target className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <span>Subscriber Milestone Goal</span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                    Next: {metrics.nextMilestone.toLocaleString()} Subs
-                  </span>
-                </h4>
-                <p className="text-xs text-[#9CA3AF]">
-                  Currently at {metrics.subs.toLocaleString()} subscribers ({metrics.progressPercent}% of goal)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onTabChange('videos')}
-                className="px-3 py-1.5 rounded-xl bg-[#202020] hover:bg-[#2A2A2A] text-white text-xs font-semibold transition-all border border-[#333333] flex items-center gap-1.5 cursor-pointer"
-              >
-                <Video className="w-3.5 h-3.5 text-[#60A5FA]" />
-                <span>View Videos</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Progress Track */}
-          <div className="space-y-1.5">
-            <div className="w-full h-2 rounded-full bg-[#202020] overflow-hidden p-0.5 border border-white/5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 transition-all duration-500"
-                style={{ width: `${metrics.progressPercent}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-[#9CA3AF] font-mono-studio">
-              <span>{metrics.subs.toLocaleString()} subs</span>
-              <span>{Math.max(0, metrics.nextMilestone - metrics.subs).toLocaleString()} subs needed to level up</span>
-              <span>{metrics.nextMilestone.toLocaleString()} subs</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── 3. Latest Published Upload Spotlight ── */}
       {latestVideo && (

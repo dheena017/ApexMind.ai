@@ -241,8 +241,8 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
           onClose={() => setShowAboutModal(false)}
           title="About Channel"
         >
-          <div className="space-y-5 text-sm text-[#E5E5E5]">
-            <div className="flex items-center gap-3 pb-3 border-b border-[#2F2F2F]">
+          <div className="space-y-4 text-sm text-[#E5E5E5]">
+            <div className="flex items-center gap-3 border-b border-[#2F2F2F] pb-3">
               <img
                 src={avatarImgSrc}
                 alt={channelName}
@@ -256,7 +256,7 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
 
             <div className="space-y-1.5">
               <h4 className="text-xs uppercase tracking-wider font-bold text-[#9CA3AF]">Description</h4>
-              <p className="text-xs sm:text-sm text-[#D1D5DB] leading-relaxed bg-[#121212] p-3.5 rounded-xl border border-[#262626]">
+              <p className="line-clamp-4 break-words rounded-xl border border-[#262626] bg-[#121212] p-3 text-xs leading-relaxed text-[#D1D5DB] sm:text-sm">
                 {channel?.description ||
                   `Official YouTube channel ${channelName} (${handle}). Connected directly to ApexMind Studio.`}
               </p>
@@ -265,36 +265,37 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
             <div className="space-y-1.5">
               <h4 className="text-xs uppercase tracking-wider font-bold text-[#9CA3AF]">Channel Details</h4>
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-[#121212] border border-[#262626]">
+                <div className="rounded-xl border border-[#262626] bg-[#121212] p-2.5">
                   <p className="text-[11px] text-[#9CA3AF]">Subscribers</p>
                   <p className="text-sm font-bold text-white font-mono-studio mt-0.5">{subscribers}</p>
                 </div>
-                <div className="p-3 rounded-xl bg-[#121212] border border-[#262626]">
+                <div className="rounded-xl border border-[#262626] bg-[#121212] p-2.5">
                   <p className="text-[11px] text-[#9CA3AF]">Videos Uploaded</p>
                   <p className="text-sm font-bold text-white font-mono-studio mt-0.5">{videoCount}</p>
                 </div>
-                <div className="p-3 rounded-xl bg-[#121212] border border-[#262626]">
+                <div className="rounded-xl border border-[#262626] bg-[#121212] p-2.5">
                   <p className="text-[11px] text-[#9CA3AF]">Niche / Focus</p>
-                  <p className="text-sm font-bold text-[#60A5FA] mt-0.5 capitalize">{niche}</p>
+                  <p className="mt-0.5 line-clamp-1 break-all text-sm font-bold capitalize text-[#60A5FA]">{niche}</p>
                 </div>
-                <div className="p-3 rounded-xl bg-[#121212] border border-[#262626]">
+                <div className="rounded-xl border border-[#262626] bg-[#121212] p-2.5">
                   <p className="text-[11px] text-[#9CA3AF]">Auto-Upload Status</p>
-                  <p className="text-sm font-bold text-emerald-400 mt-0.5">
+                  <p className="mt-0.5 line-clamp-1 text-sm font-bold text-emerald-400">
                     {channel?.isAutoUploadEnabled ? 'Active (Daily)' : 'Paused'}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="pt-2 flex justify-between items-center border-t border-[#2F2F2F]">
+            <div className="flex items-center justify-between gap-3 border-t border-[#2F2F2F] pt-3">
               <a
                 href={channelUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-[#60A5FA] hover:underline flex items-center gap-1.5"
+                title={channelUrl}
+                className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden text-xs text-[#60A5FA] hover:underline"
               >
-                <span>{channelUrl}</span>
-                <ExternalLink className="w-3 h-3" />
+                <span className="truncate">{channelUrl}</span>
+                <ExternalLink className="h-3 w-3 shrink-0" />
               </a>
               <Button variant="secondary" size="sm" onClick={() => setShowAboutModal(false)}>
                 Close

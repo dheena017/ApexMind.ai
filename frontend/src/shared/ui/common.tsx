@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 // Button Component
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -116,23 +117,47 @@ export const Modal: React.FC<{
   title: string;
   children: React.ReactNode;
 }> = ({ isOpen, onClose, title, children }) => {
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return undefined;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-[#141414] border border-[#242424] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up">
-        <div className="flex items-center justify-between p-5 border-b border-[#242424]">
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#242424] bg-[#141414] shadow-2xl animate-scale-up sm:max-h-[calc(100dvh-2rem)]"
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-[#242424] p-4 sm:p-5">
           <h3 className="text-lg font-bold text-[#E5E5E5]">{title}</h3>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-[#E5E5E5] hover:bg-[#26262C] hover:text-white transition-colors"
           >
             ✕
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="min-h-0 overflow-y-auto p-4 sm:p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
@@ -164,4 +189,3 @@ export const Tabs: React.FC<{
 // Re-export CustomSelect for unified UI kit consumption
 export { CustomSelect } from './CustomSelect';
 export type { CustomSelectProps, SelectOption, RawOption } from './CustomSelect';
-
