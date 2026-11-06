@@ -19,7 +19,7 @@ export default function LeftSidebar({
 }) {
   return (
     <aside className="flex flex-col h-screen w-64 bg-[#1E1E1E] text-[#E5E5E5] border-r border-[#2F2F2F]">
-      {/* Top area Ã¢â‚¬â€œ you can add navigation items here */}
+      {/* Top area – you can add navigation items here */}
       <div className="flex-1 p-4 overflow-y-auto">
         {/* Placeholder for future navigation links */}
         <Button
@@ -33,7 +33,7 @@ export default function LeftSidebar({
         {/* Add more nav items as needed */}
       </div>
 
-      {/* Bottom bar Ã¢â‚¬â€œ the original header banner moved here */}
+      {/* Bottom bar – the original header banner moved here */}
       <div className="border-t border-[#2F2F2F] p-2">
         <DashboardHeaderBanner
           onNavigate={onNavigate}

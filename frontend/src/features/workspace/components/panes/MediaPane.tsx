@@ -388,7 +388,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
-      {/* â”€â”€ Top Header Bar (Matching Studio Shell) â”€â”€ */}
+      {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <FolderOpen className="w-4 h-4 shrink-0 text-blue-400" />
@@ -413,7 +413,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Subtabs Segmented Control â”€â”€ */}
+      {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <div className="grid grid-cols-2 gap-1 p-1 bg-[#181818] rounded-none border-0">
           <button
@@ -452,7 +452,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Media Type Filter & Sort â”€â”€ */}
+      {/* ── Media Type Filter & Sort ── */}
       {activeTab === 'library' && mediaItems.length > 0 && (
         <div className="flex items-center justify-between px-4 py-2 border-b border-[#242424]/60 bg-[#141416] shrink-0">
           <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
@@ -506,7 +506,7 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
         </div>
       )}
 
-      {/* â”€â”€ Main Content Area â”€â”€ */}
+      {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
         {activeTab === 'import-url' ? (
           /* Import from Web URL Form */
@@ -625,10 +625,10 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
             </div>
             <div className="flex items-center gap-1.5 mt-1 flex-wrap justify-center">
               <span className="px-2 py-0.5 rounded-md bg-[#1E1E1E] border border-[#242424] text-[10px] font-mono-studio text-[#94A3B8]">
-                MP4 â€¢ MOV â€¢ WEBM
+                MP4 • MOV • WEBM
               </span>
               <span className="px-2 py-0.5 rounded-md bg-[#1E1E1E] border border-[#242424] text-[10px] font-mono-studio text-[#94A3B8]">
-                PNG â€¢ JPG â€¢ WEBP
+                PNG • JPG • WEBP
               </span>
             </div>
             <button

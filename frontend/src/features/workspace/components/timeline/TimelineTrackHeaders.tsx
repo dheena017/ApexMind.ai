@@ -289,7 +289,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     },
   });
 
-  // â”€â”€ Render Move Controls (Enhanced UI/UX Drag Handle) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Render Move Controls (Enhanced UI/UX Drag Handle) ─────────────────
   const renderMoveControls = (trackId: TrackId) => {
     const isDraggingThis = draggedTrackId === trackId;
 
@@ -318,7 +318,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       </div>
     );
   };
-  // â”€â”€ Render standard Visibility Button (Eye) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Render standard Visibility Button (Eye) ──────────────────────────
   const renderEyeButton = (isVisible: boolean, onToggle: () => void, label: string) => (
     <button
       type="button"
@@ -338,7 +338,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     </button>
   );
 
-  // â”€â”€ Render standard Lock Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Render standard Lock Button ──────────────────────────────────────
   const renderLockButton = (isLocked: boolean, onToggle: () => void, label: string) => (
     <button
       type="button"
@@ -358,7 +358,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     </button>
   );
 
-  // â”€â”€ Render standard Mute Button (Audio) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Render standard Mute Button (Audio) ──────────────────────────────
   const renderMuteButton = (isMuted: boolean, onToggle: () => void, label: string) => (
     <button
       type="button"
@@ -378,7 +378,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
     </button>
   );
 
-  // â”€â”€ Track Header Renderers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Track Header Renderers ───────────────────────────────────────────
   const renderVideoHeader = () => (
     <div
       key="track-header-video"
@@ -392,7 +392,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F59E0B]'
           : 'hover:bg-white/[0.05] border-l-2 border-l-[#F59E0B]/50'
       }`}
-      title="V1 Video Track â€¢ Click to inspect & adjust (Drag or click arrows to move up/down)"
+      title="V1 Video Track • Click to inspect & adjust (Drag or click arrows to move up/down)"
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('video')}
@@ -434,7 +434,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F43F5E]'
           : 'hover:bg-white/[0.05] border-l-2 border-l-[#F43F5E]/50'
       }`}
-      title="V2 Image Track â€¢ Click to inspect & adjust (Drag or click arrows to move up/down)"
+      title="V2 Image Track • Click to inspect & adjust (Drag or click arrows to move up/down)"
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('image')}
@@ -475,7 +475,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#8B5CF6]'
           : 'hover:bg-white/[0.05] border-l-2 border-l-[#8B5CF6]/50'
       }`}
-      title="O1 Overlays Track â€¢ Stickers, motion graphics, and watermarks (Drag or click arrows to move up/down)"
+      title="O1 Overlays Track • Stickers, motion graphics, and watermarks (Drag or click arrows to move up/down)"
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('overlay')}
@@ -516,7 +516,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#06B6D4]'
           : 'hover:bg-white/[0.05] border-l-2 border-l-[#06B6D4]/50'
       }`}
-      title="T1 Captions Track â€¢ Synced typography and dynamic subtitles (Drag or click arrows to move up/down)"
+      title="T1 Captions Track • Synced typography and dynamic subtitles (Drag or click arrows to move up/down)"
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('captions')}
@@ -560,7 +560,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#38BDF8]'
           : 'hover:bg-white/[0.05] border-l-2 border-l-[#38BDF8]/50'
       }`}
-      title="T2 Titles Track â€¢ Main video headlines & hook titles (Drag or click arrows to move up/down)"
+      title="T2 Titles Track • Main video headlines & hook titles (Drag or click arrows to move up/down)"
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('title')}
@@ -596,7 +596,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#10B981]'
           : 'hover:bg-white/[0.05] border-l-2 border-l-[#10B981]/50'
       }`}
-      title="A1 Voiceover Track â€¢ 24kHz studio voice narration (Drag or click arrows to move up/down)"
+      title="A1 Voiceover Track • 24kHz studio voice narration (Drag or click arrows to move up/down)"
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('voice')}
@@ -637,7 +637,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#D946EF]'
           : 'hover:bg-white/[0.05] border-l-2 border-l-[#D946EF]/50'
       }`}
-      title="A2 Music Track â€¢ Background soundtrack & beat ducking (Drag or click arrows to move up/down)"
+      title="A2 Music Track • Background soundtrack & beat ducking (Drag or click arrows to move up/down)"
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('music')}
@@ -678,7 +678,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
           ? 'bg-[#181818] shadow-[inset_3px_0_0_#F97316]'
           : 'hover:bg-white/[0.05] border-l-2 border-l-[#F97316]/50'
       }`}
-      title="A3 Sound FX Track â€¢ Transition whooshes, impacts, and risers (Drag or click arrows to move up/down)"
+      title="A3 Sound FX Track • Transition whooshes, impacts, and risers (Drag or click arrows to move up/down)"
     >
       <div className="flex items-center gap-1 min-w-0 pr-1">
         {renderMoveControls('sfx')}
@@ -714,7 +714,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
       style={{ width: width ? `${width}px` : undefined }}
       className={`${width ? '' : 'w-48'} w-full h-full min-h-full shrink-0 border-r border-[#262626] bg-[#141416] flex flex-col z-20 select-none`}
     >
-      {/* â”€â”€ Ruler Corner Header - Sticky at top â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Ruler Corner Header - Sticky at top ────────────────────── */}
       {showCornerHeader && (
         <div className="h-6 border-b border-[#262626] bg-[#111113] flex items-center justify-between px-2.5 text-[9px] font-mono-studio text-slate-400 uppercase tracking-wider shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-1.5 font-bold text-white tracking-widest">
@@ -726,7 +726,7 @@ export const TimelineTrackHeaders: React.FC<TimelineTrackHeadersProps> = ({
         </div>
       )}
 
-      {/* â”€â”€ Dynamic Order Track Headers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Dynamic Order Track Headers ────────────────────────────── */}
       {activeOrder.map((trackId) => {
         if (!enabledTracks[trackId]) return null;
         switch (trackId) {

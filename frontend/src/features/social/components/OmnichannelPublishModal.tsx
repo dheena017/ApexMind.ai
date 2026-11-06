@@ -360,7 +360,7 @@ export const OmnichannelPublishModal: React.FC<OmnichannelPublishModalProps> = (
                       <span className="text-blue-400 font-semibold">Compliance Engine:</span> Automatically appending{' '}
                       <span className="font-mono text-zinc-300">
                         {activePreviewTab === 'youtube'
-                          ? '#Shorts & ðŸ¤– AI Disclosure'
+                          ? '#Shorts & 🤖 AI Disclosure'
                           : '#AIGenerated'}
                       </span>
                     </div>

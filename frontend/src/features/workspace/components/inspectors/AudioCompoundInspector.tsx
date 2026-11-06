@@ -252,7 +252,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none">
-      {/* â”€â”€ Subtabs Header Bar â”€â”€ */}
+      {/* ── Subtabs Header Bar ── */}
       <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-[#242424] bg-[#111111]">
         <ScrollableTabs
           tabs={[
@@ -267,10 +267,10 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
         />
       </div>
 
-      {/* â”€â”€ Tab Content Area â”€â”€ */}
+      {/* ── Tab Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
 
-        {/* â”€â”€ AUDIO MIX & CHANNEL TAB â”€â”€ */}
+        {/* ── AUDIO MIX & CHANNEL TAB ── */}
         {activeSubTab === 'audio' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Real-time Spectrum Bar Visualizer */}
@@ -361,8 +361,8 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   onChange={(voiceId) => onSelectVoice(voiceId)}
                   options={voices.map((v) => ({
                     value: v.id,
-                    label: `${v.name} (${v.gender} â€¢ ${v.style})`,
-                    description: `${v.gender} â€¢ ${v.style}`,
+                    label: `${v.name} (${v.gender} • ${v.style})`,
+                    description: `${v.gender} • ${v.style}`,
                     badge: '24kHz',
                   }))}
                   icon={<Mic className="w-3.5 h-3.5 text-emerald-400" />}
@@ -384,7 +384,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
               <div className="flex flex-col gap-2" />
             )}
 
-            {/* â”€â”€ AI VOICE TONE & EMOTION MODULATION â”€â”€ */}
+            {/* ── AI VOICE TONE & EMOTION MODULATION ── */}
             <div className="p-3.5 rounded-xl bg-[#141416] border border-[#242424] flex flex-col gap-3 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
 
@@ -431,7 +431,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-mono uppercase text-amber-400 font-bold flex items-center gap-1">
-                      âš¡ Hook
+                      ⚡ Hook
                     </span>
                     <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">
                       1.05x
@@ -441,7 +441,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     Fast, urgent delivery
                   </span>
                   {currentBeat === 'hook' && (
-                    <span className="text-[8px] text-amber-400 font-mono animate-pulse font-semibold">â—� Active Beat</span>
+                    <span className="text-[8px] text-amber-400 font-mono animate-pulse font-semibold">♪ Active Beat</span>
                   )}
                 </div>
 
@@ -455,7 +455,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-mono uppercase text-blue-400 font-bold flex items-center gap-1">
-                      ðŸ“œ Quote
+                      📜 Quote
                     </span>
                     <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">
                       0.90x
@@ -465,7 +465,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     Slower, heavier cadence
                   </span>
                   {currentBeat === 'quote' && (
-                    <span className="text-[8px] text-blue-400 font-mono animate-pulse font-semibold">â—� Active Beat</span>
+                    <span className="text-[8px] text-blue-400 font-mono animate-pulse font-semibold">♪ Active Beat</span>
                   )}
                 </div>
 
@@ -479,7 +479,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-mono uppercase text-emerald-400 font-bold flex items-center gap-1">
-                      ðŸŽ¯ CTA
+                      🎯 CTA
                     </span>
                     <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold">
                       1.00x
@@ -489,7 +489,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                     Firm, decisive pace
                   </span>
                   {currentBeat === 'cta' && (
-                    <span className="text-[8px] text-emerald-400 font-mono animate-pulse font-semibold">â—� Active Beat</span>
+                    <span className="text-[8px] text-emerald-400 font-mono animate-pulse font-semibold">♪ Active Beat</span>
                   )}
                 </div>
               </div>
@@ -531,7 +531,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* â”€â”€ EQUALIZER (EQ) TAB â”€â”€ */}
+        {/* ── EQUALIZER (EQ) TAB ── */}
         {activeSubTab === 'eq' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* EQ Presets */}
@@ -599,7 +599,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* â”€â”€ EFFECTS & SPATIAL TAB â”€â”€ */}
+        {/* ── EFFECTS & SPATIAL TAB ── */}
         {activeSubTab === 'effects' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             {/* Reverb System */}
@@ -758,7 +758,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* â”€â”€ SFX BOARD TAB â”€â”€ */}
+        {/* ── SFX BOARD TAB ── */}
         {activeSubTab === 'sfx' && (
           <div className="flex flex-col gap-3 pt-0.5">
             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Quick SFX Triggers</span>
@@ -804,7 +804,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* â”€â”€ TIME & TRIM TAB â”€â”€ */}
+        {/* ── TIME & TRIM TAB ── */}
         {activeSubTab === 'time' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
             <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">

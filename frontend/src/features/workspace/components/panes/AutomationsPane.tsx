@@ -63,14 +63,14 @@ const AI_MODEL_OPTIONS = [
 ];
 
 const ASPECT_RATIO_OPTIONS = [
-  { value: '9:16', label: '9:16 (Vertical â€¢ Shorts / Reels)' },
-  { value: '16:9', label: '16:9 (Landscape â€¢ YouTube Video)' },
-  { value: '1:1', label: '1:1 (Square â€¢ Instagram / Feed)' },
+  { value: '9:16', label: '9:16 (Vertical • Shorts / Reels)' },
+  { value: '16:9', label: '16:9 (Landscape • YouTube Video)' },
+  { value: '1:1', label: '1:1 (Square • Instagram / Feed)' },
 ];
 
 const LENGTH_OPTIONS = [
   { value: '15 seconds', label: '15 Seconds (Fast Cut)' },
-  { value: '30 seconds', label: '30 Seconds (Standard â€¢ Recommended)' },
+  { value: '30 seconds', label: '30 Seconds (Standard • Recommended)' },
   { value: '45 seconds', label: '45 Seconds (Extended)' },
   { value: '60 seconds', label: '60 Seconds (Deep Dive)' },
 ];
@@ -471,23 +471,23 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
   const getThemeMeta = (themeName: string) => {
     const lower = themeName.toLowerCase();
     if (lower.includes('stoic')) {
-      return { icon: 'ðŸ�›ï¸�', gradient: 'bg-amber-500/15 border-amber-500/30 text-amber-300', dot: 'bg-amber-400', badgeText: 'Stoic Philosophy' };
+      return { icon: '🗿', gradient: 'bg-amber-500/15 border-amber-500/30 text-amber-300', dot: 'bg-amber-400', badgeText: 'Stoic Philosophy' };
     }
     if (lower.includes('fitness') || lower.includes('iron')) {
-      return { icon: 'ðŸ”¥', gradient: 'bg-orange-500/15 border-orange-500/30 text-orange-300', dot: 'bg-orange-400', badgeText: 'Fitness & Will' };
+      return { icon: '🔥', gradient: 'bg-orange-500/15 border-orange-500/30 text-orange-300', dot: 'bg-orange-400', badgeText: 'Fitness & Will' };
     }
     if (lower.includes('calm') || lower.includes('resilience')) {
-      return { icon: 'ðŸŒŠ', gradient: 'bg-teal-500/15 border-teal-500/30 text-teal-300', dot: 'bg-teal-400', badgeText: 'Inner Calm' };
+      return { icon: '🌊', gradient: 'bg-teal-500/15 border-teal-500/30 text-teal-300', dot: 'bg-teal-400', badgeText: 'Inner Calm' };
     }
     if (lower.includes('focus') || lower.includes('flow')) {
-      return { icon: 'ðŸ§ ', gradient: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300', dot: 'bg-indigo-400', badgeText: 'Deep Focus' };
+      return { icon: '🧠', gradient: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300', dot: 'bg-indigo-400', badgeText: 'Deep Focus' };
     }
-    return { icon: 'âš¡', gradient: 'bg-[#181818] border-[#242424] text-zinc-300', dot: 'bg-white', badgeText: 'Motivation' };
+    return { icon: '⚡', gradient: 'bg-[#181818] border-[#242424] text-zinc-300', dot: 'bg-white', badgeText: 'Motivation' };
   };
 
   return (
     <div className={`flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0 ${className}`}>
-      {/* â”€â”€ Top Header Bar â”€â”€ */}
+      {/* ── Top Header Bar ── */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-[#181818] border border-[#242424] flex items-center justify-center shrink-0 text-white">
@@ -541,7 +541,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Subtabs Segmented Control (High-Precision Studio Navigation) â”€â”€ */}
+      {/* ── Subtabs Segmented Control (High-Precision Studio Navigation) ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <div className="grid grid-cols-3 gap-1 p-1 bg-[#181818] rounded-none border-0">
           {/* Tab 1: Pipelines */}
@@ -605,7 +605,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Subtab 1: Pipelines â”€â”€ */}
+      {/* ── Subtab 1: Pipelines ── */}
       {activeSubTab === 'pipelines' && (
         <div className="flex-1 flex flex-col min-h-0">
 
@@ -686,7 +686,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                           : 'bg-[#161616] border border-[#242424] hover:border-[#383838]'
                       }`}
                     >
-                      {/* â”€â”€ 1. UNIFIED PIPELINE CONTROL & STATUS CARD â”€â”€ */}
+                      {/* ── 1. UNIFIED PIPELINE CONTROL & STATUS CARD ── */}
                       <div className="flex flex-col gap-3">
                         {/* Header: Icon + Title + Status Badge */}
                         <div className="flex items-center justify-between gap-2.5">
@@ -800,14 +800,14 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                             <div className="p-2 rounded-lg bg-[#101014] border border-[#22222A] flex flex-col justify-center">
                               <span className="text-[9.5px] text-zinc-500 font-mono uppercase tracking-wider">Resolution & Engine</span>
                               <span className="text-xs font-bold text-white font-mono mt-0.5 truncate">
-                                1080p â€¢ <span className="text-[#60A5FA]">{job.aiModel?.includes('flash') ? 'Flash' : 'Gemini'}</span>
+                                1080p • <span className="text-[#60A5FA]">{job.aiModel?.includes('flash') ? 'Flash' : 'Gemini'}</span>
                               </span>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* â”€â”€ 3B. RECENT ERROR BANNER (When last execution failed) â”€â”€ */}
+                      {/* ── 3B. RECENT ERROR BANNER (When last execution failed) ── */}
                       {job.lastStatus === 'failed' && !isRunning && (
                         <div className="p-2.5 rounded-xl bg-rose-950/30 border border-rose-500/40 text-xs flex flex-col gap-1 shadow-sm animate-fade-in">
                           <div className="flex items-center justify-between gap-1.5">
@@ -827,7 +827,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                       )}
 
-                      {/* â”€â”€ 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) â”€â”€ */}
+                      {/* ── 4. DYNAMIC LIVE 6-STAGE PIPELINE STEPPER (when executing) ── */}
                       {isRunning && (
                         <div className="p-3 rounded-xl bg-[#111116] border border-[#252532] flex flex-col gap-2.5 animate-fade-in shadow-inner">
                           <div className="flex items-center justify-between text-xs">
@@ -894,7 +894,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                       )}
 
-                      {/* â”€â”€ 5. EXECUTION & VIDEO HISTORY SECTION (DROPDOWN / COLLAPSIBLE ACCORDION) â”€â”€ */}
+                      {/* ── 5. EXECUTION & VIDEO HISTORY SECTION (DROPDOWN / COLLAPSIBLE ACCORDION) ── */}
                       <div className="rounded-xl bg-[#141414] border border-[#242424] overflow-hidden">
                         {/* History Header Bar (Accordion Trigger) */}
                         <div
@@ -1013,7 +1013,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                                           hour: '2-digit',
                                           minute: '2-digit',
                                         })}
-                                        {entry.durationSeconds > 0 && ` â€¢ ${Math.round(entry.durationSeconds)}s`}
+                                        {entry.durationSeconds > 0 && ` • ${Math.round(entry.durationSeconds)}s`}
                                       </span>
                                     </div>
 
@@ -1134,7 +1134,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         )}
                       </div>
 
-                      {/* â”€â”€ 6. SAFE DELETE CONFIRMATION ALERT (when delete clicked) â”€â”€ */}
+                      {/* ── 6. SAFE DELETE CONFIRMATION ALERT (when delete clicked) ── */}
                       {isConfirmingDelete && (
                         <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/50 text-xs flex flex-col gap-2 animate-fade-in shadow-xl ring-1 ring-rose-500/40">
                           <div className="flex items-center gap-1.5 text-rose-300 font-bold text-xs">
@@ -1164,7 +1164,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                         </div>
                       )}
 
-                      {/* â”€â”€ 7. BOTTOM ACTION TOOLBAR â”€â”€ */}
+                      {/* ── 7. BOTTOM ACTION TOOLBAR ── */}
                       <div className="flex items-center gap-2 pt-0.5">
                         {isRunning ? (
                           <>
@@ -1308,7 +1308,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         </div>
       )}
 
-      {/* â”€â”€ Subtab 2: New Schedule Form â”€â”€ */}
+      {/* ── Subtab 2: New Schedule Form ── */}
       {activeSubTab === 'create' && (
         <form
           onSubmit={handleCreate}
@@ -1572,7 +1572,7 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
                 </div>
                 <div className="font-semibold text-white truncate">
                   {authStatusLoading
-                    ? 'Checking YouTube connectionâ€¦'
+                    ? 'Checking YouTube connection…'
                     : authStatus?.connected
                     ? `${activeChannel.name} ${activeChannel.handle}`
                     : 'No YouTube channel connected'}
@@ -1611,17 +1611,17 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
             >
               {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
               <span>
-                {creating ? 'Creating scheduleâ€¦' : authStatusLoading ? 'Checking channelâ€¦' : 'Create schedule'}
+                {creating ? 'Creating schedule…' : authStatusLoading ? 'Checking channel…' : 'Create schedule'}
               </span>
             </button>
           </div>
         </form>
       )}
 
-      {/* â”€â”€ Subtab 3: Channel & Target â”€â”€ */}
+      {/* ── Subtab 3: Channel & Target ── */}
       {activeSubTab === 'channel' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3.5 animate-fade-in">
-          {/* â”€â”€ YouTube Channel Banner Card â”€â”€ */}
+          {/* ── YouTube Channel Banner Card ── */}
           <div className="rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden shadow-xl">
             {/* Banner Image */}
             <div className="relative w-full h-24 bg-gradient-to-r from-[#0B0F19] via-[#131127] to-[#0A0A0A] overflow-hidden shrink-0">

@@ -117,7 +117,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Top Header Bar (Matching Studio Shell) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Top Header Bar (Matching Studio Shell)  */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-[#181818] border border-[#242424] flex items-center justify-center shrink-0 text-white">
@@ -132,7 +132,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         </div>
       </div>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Subtabs Segmented Control Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Subtabs Segmented Control  */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
           tabs={[
@@ -148,9 +148,9 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         />
       </div>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Main Content Area Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Main Content Area  */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
-        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab: Visual FX Sliders Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+        {/*  Tab: Visual FX Sliders  */}
         {activeTab === 'fx' && (
           <div className="flex flex-col gap-3.5">
             <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
@@ -241,7 +241,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
           </div>
         )}
 
-        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab: Social Tags Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+        {/*  Tab: Social Tags  */}
         {activeTab === 'social' && (
           <div className="flex flex-col gap-2">
             {SOCIAL_TAGS.map((tag) => {
@@ -270,7 +270,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
           </div>
         )}
 
-        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 1: Badges Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+        {/*  Tab 1: Badges  */}
         {activeTab === 'badges' && (
           <div className="grid grid-cols-2 gap-2">
             {BADGES.map((b) => {
@@ -296,7 +296,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
           </div>
         )}
 
-        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 2: Shapes & Frames Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+        {/*  Tab 2: Shapes & Frames  */}
         {activeTab === 'shapes' && (
           <div className="flex flex-col gap-2">
             {SHAPES.map((s) => {
@@ -322,7 +322,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
           </div>
         )}
 
-        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 3: Progress Scrubbers Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+        {/*  Tab 3: Progress Scrubbers  */}
         {activeTab === 'progress' && (
           <div className="flex flex-col gap-2">
             {PROGRESS_BARS.map((p) => (
@@ -347,7 +347,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
           </div>
         )}
 
-        {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 4: Custom Badge Creator Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+        {/*  Tab 4: Custom Badge Creator  */}
         {activeTab === 'custom' && (
           <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
             <span className="text-xs font-bold text-white">Create Custom Badge</span>
@@ -361,7 +361,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
                 type="text"
                 value={customBadgeText}
                 onChange={(e) => setCustomBadgeText(e.target.value)}
-                placeholder="e.g. CHAPTER 1 Ã¢â‚¬Â¢ AWAKENING"
+                placeholder="e.g. CHAPTER 1 • AWAKENING"
                 className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
               />
             </div>

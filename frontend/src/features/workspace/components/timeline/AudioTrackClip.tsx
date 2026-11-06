@@ -201,7 +201,7 @@ export const AudioTrackClip: React.FC<AudioTrackClipProps> = ({
               top: `${topPos}px`,
               height: `${laneHeight}px`,
             }}
-            title={`${type.toUpperCase()} Clip: "${clip.name}" Ã¢â‚¬Â¢ Layer: ${clipLane + 1} Ã¢â‚¬Â¢ Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
+            title={`${type.toUpperCase()} Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
             {/* Full-Width Procedural Audio Waveform Display (Subtle background) */}
             <div className="opacity-15 pointer-events-none absolute inset-0">

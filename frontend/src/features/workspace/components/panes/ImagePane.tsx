@@ -57,17 +57,17 @@ export const PROVIDER_OPTIONS = [
 export type ProviderType = (typeof PROVIDER_OPTIONS)[number]['value'];
 
 export const CURATED_MOOD_PILLS = [
-  { id: 'all', query: '', category: 'all', label: 'âœ¨ All' },
-  { id: 'rain', query: 'rain', category: 'all', label: 'ðŸŒ§ï¸� Rain' },
-  { id: 'stoic', query: 'stoic', category: 'stoic', label: 'ðŸ�›ï¸� Stoic' },
-  { id: 'gym', query: 'gym', category: 'gym', label: 'ðŸ’ª Gym' },
-  { id: 'cyber', query: 'cyberpunk', category: 'cyber', label: 'ðŸŒƒ Cyber' },
-  { id: 'nature', query: 'nature', category: 'nature', label: 'â›°ï¸� Nature' },
-  { id: 'dark', query: 'dark', category: 'minimal', label: 'ðŸ–¤ Dark' },
-  { id: 'space', query: 'space', category: 'all', label: 'ðŸŒŒ Space' },
-  { id: 'ocean', query: 'ocean', category: 'all', label: 'ðŸŒŠ Ocean' },
-  { id: 'fire', query: 'fire', category: 'all', label: 'ðŸ”¥ Fire' },
-  { id: 'luxury', query: 'luxury', category: 'architecture', label: 'âœ¨ Luxury' },
+  { id: 'all', query: '', category: 'all', label: '✨ All' },
+  { id: 'rain', query: 'rain', category: 'all', label: '🌧️ Rain' },
+  { id: 'stoic', query: 'stoic', category: 'stoic', label: '🗿 Stoic' },
+  { id: 'gym', query: 'gym', category: 'gym', label: '💪 Gym' },
+  { id: 'cyber', query: 'cyberpunk', category: 'cyber', label: '🌃 Cyber' },
+  { id: 'nature', query: 'nature', category: 'nature', label: '⛰️ Nature' },
+  { id: 'dark', query: 'dark', category: 'minimal', label: '🖤 Dark' },
+  { id: 'space', query: 'space', category: 'all', label: '🌌 Space' },
+  { id: 'ocean', query: 'ocean', category: 'all', label: '🌊 Ocean' },
+  { id: 'fire', query: 'fire', category: 'all', label: '🔥 Fire' },
+  { id: 'luxury', query: 'luxury', category: 'architecture', label: '✨ Luxury' },
 ] as const;
 
 const LOCAL_STORAGE_KEY = 'apexmind_custom_images';
@@ -507,7 +507,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
-      {/* â”€â”€ Top Header Bar (Matching Studio Shell) â”€â”€ */}
+      {/* ── Top Header Bar (Matching Studio Shell) ── */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <ImageIcon className="w-4 h-4 shrink-0 text-blue-400" />
@@ -527,7 +527,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Subtabs Segmented Control â”€â”€ */}
+      {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
           tabs={[
@@ -542,7 +542,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         />
       </div>
 
-      {/* â”€â”€ Search & Filter Bar (When in Catalog) â”€â”€ */}
+      {/* ── Search & Filter Bar (When in Catalog) ── */}
       {activeTab === 'catalog' && (
         <div className="flex flex-col gap-2 border-b border-[#242424] bg-[#141416] p-3 shrink-0">
           <div className="flex items-center gap-2">
@@ -600,7 +600,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           {/* Provider Quick Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
-              { id: 'all', label: 'âœ¨ All (100M+)' },
+              { id: 'all', label: '✨ All (100M+)' },
               { id: 'unsplash', label: 'Unsplash' },
               { id: 'pexels', label: 'Pexels' },
               { id: 'pixabay', label: 'Pixabay' },
@@ -624,7 +624,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         </div>
       )}
 
-      {/* â”€â”€ Main Content Area â”€â”€ */}
+      {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
         {activeTab === 'filters' ? (
           <div className="flex flex-col gap-4">
@@ -975,7 +975,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       </button>
                     )}
                     <span className="text-[10px] font-mono text-zinc-500">
-                      Showing {sourceList.length} photos â€¢ {totalFound} total indexed
+                      Showing {sourceList.length} photos • {totalFound} total indexed
                     </span>
                     {(selectedProvider === 'pexels' || selectedProvider === 'all') && (
                       <div className="flex items-center justify-center gap-1 text-[9px] text-zinc-500">

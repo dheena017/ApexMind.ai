@@ -60,20 +60,20 @@ export const CATEGORY_SELECT_OPTIONS = [
 ] as const;
 
 export const CURATED_STYLE_PILLS = [
-  { id: 'all', category: 'all', query: '', label: 'ðŸ”¥ All' },
-  { id: 'hormozi', category: 'subtitles', query: 'hormozi', label: 'âš¡ Hormozi' },
-  { id: 'mrbeast', category: 'subtitles', query: 'mrbeast', label: 'ðŸŽ¯ MrBeast' },
-  { id: 'abdaal', category: 'subtitles', query: 'abdaal', label: 'âœ�ï¸� Ali Abdaal' },
-  { id: 'karaoke', category: 'subtitles', query: 'karaoke', label: 'ðŸŽ¤ Karaoke' },
-  { id: 'luxury', category: 'subtitles', query: 'luxury', label: 'âœ¨ Luxury' },
-  { id: 'cyber', category: 'subtitles', query: 'cyber', label: 'ðŸŒƒ Cyber' },
-  { id: 'stoic', category: 'quotes', query: 'stoic', label: 'ðŸ�›ï¸� Stoic' },
-  { id: 'gym', category: 'subtitles', query: 'goggins', label: 'ðŸ’ª Raw Grit' },
-  { id: 'cinema', category: 'subtitles', query: 'cinema', label: 'ðŸŽ¬ Cinema' },
-  { id: 'y2k', category: 'subtitles', query: 'y2k', label: 'ðŸ�­ Y2K Retro' },
-  { id: 'minimal', category: 'subtitles', query: 'minimal', label: 'ðŸ–¤ Minimal' },
-  { id: 'hacker', category: 'subtitles', query: 'terminal', label: 'ðŸ’» Terminal' },
-  { id: 'cta', category: 'cta', query: 'cta', label: 'ðŸš€ CTAs' },
+  { id: 'all', category: 'all', query: '', label: '🔥 All' },
+  { id: 'hormozi', category: 'subtitles', query: 'hormozi', label: '⚡ Hormozi' },
+  { id: 'mrbeast', category: 'subtitles', query: 'mrbeast', label: '🎯 MrBeast' },
+  { id: 'abdaal', category: 'subtitles', query: 'abdaal', label: '🎓 Ali Abdaal' },
+  { id: 'karaoke', category: 'subtitles', query: 'karaoke', label: '🎤 Karaoke' },
+  { id: 'luxury', category: 'subtitles', query: 'luxury', label: '✨ Luxury' },
+  { id: 'cyber', category: 'subtitles', query: 'cyber', label: '🌃 Cyber' },
+  { id: 'stoic', category: 'quotes', query: 'stoic', label: '🗿 Stoic' },
+  { id: 'gym', category: 'subtitles', query: 'goggins', label: '💪 Raw Grit' },
+  { id: 'cinema', category: 'subtitles', query: 'cinema', label: '🎬 Cinema' },
+  { id: 'y2k', category: 'subtitles', query: 'y2k', label: '🕹️ Y2K Retro' },
+  { id: 'minimal', category: 'subtitles', query: 'minimal', label: '🖤 Minimal' },
+  { id: 'hacker', category: 'subtitles', query: 'terminal', label: '💻 Terminal' },
+  { id: 'cta', category: 'cta', query: 'cta', label: '🚀 CTAs' },
 ] as const;
 
 const FONT_OPTIONS = [
@@ -93,13 +93,13 @@ const FONT_OPTIONS = [
 
 const SIZE_OPTIONS = [
   { value: '', label: 'Preset Default Size' },
-  { value: '18', label: '18px â€” Subtle Caption' },
-  { value: '22', label: '22px â€” Standard Reel' },
-  { value: '26', label: '26px â€” Medium Emphasis' },
-  { value: '32', label: '32px â€” Bold Subtitle' },
-  { value: '40', label: '40px â€” Large Hook' },
-  { value: '48', label: '48px â€” Viral Title' },
-  { value: '56', label: '56px â€” Maximum Impact Headline' },
+  { value: '18', label: '18px — Subtle Caption' },
+  { value: '22', label: '22px — Standard Reel' },
+  { value: '26', label: '26px — Medium Emphasis' },
+  { value: '32', label: '32px — Bold Subtitle' },
+  { value: '40', label: '40px — Large Hook' },
+  { value: '48', label: '48px — Viral Title' },
+  { value: '56', label: '56px — Maximum Impact Headline' },
 ];
 
 const WEIGHT_OPTIONS = [
@@ -109,7 +109,7 @@ const WEIGHT_OPTIONS = [
   { value: '600', label: 'Semibold (600)' },
   { value: '700', label: 'Bold (700)' },
   { value: '800', label: 'Extra Bold (800)' },
-  { value: '900', label: 'Black (900 â€” Maximum Punch)' },
+  { value: '900', label: 'Black (900 — Maximum Punch)' },
 ];
 
 const CASE_OPTIONS = [
@@ -250,7 +250,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
   const handleRandomizeAndApply = useCallback(() => {
     const freshStyle = randomizeOneStyle(infiniteMood);
     handleApplyPreset(freshStyle);
-    triggerFeedback(`âš¡ 1-Click Applied: ${freshStyle.name}`);
+    triggerFeedback(`⚡ 1-Click Applied: ${freshStyle.name}`);
   }, [infiniteMood]);
 
   const handleQuickInsert = (text: string, type: 'heading' | 'subheading' | 'body') => {
@@ -372,7 +372,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
-      {/* â”€â”€ Header Title Bar â”€â”€ */}
+      {/* ── Header Title Bar ── */}
       <div className="relative h-12 px-3.5 bg-[#141416] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.06] border border-[#33333A] text-white">
@@ -386,7 +386,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Subtabs Segmented Control â”€â”€ */}
+      {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
           tabs={[
@@ -401,7 +401,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
         />
       </div>
 
-      {/* â”€â”€ Unified Search & Dropdown Bar (Presets & Hooks) â”€â”€ */}
+      {/* ── Unified Search & Dropdown Bar (Presets & Hooks) ── */}
       {(activeTab === 'presets' || activeTab === 'hooks') && (
         <div className="border-b border-[#242424] bg-[#141416] p-3 shrink-0">
           <div className="flex items-center gap-2">
@@ -455,9 +455,9 @@ export const TextPane: React.FC<TextPaneProps> = ({
         </div>
       )}
 
-      {/* â”€â”€ Main Content Area â”€â”€ */}
+      {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
-        {/* â”€â”€ UNIFIED TAB: PRESET PACKS & 10M+ STYLES â”€â”€ */}
+        {/* ── UNIFIED TAB: PRESET PACKS & 10M+ STYLES ── */}
         {activeTab === 'presets' && (
           <div className="flex flex-col gap-3">
 
@@ -564,7 +564,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                     </span>
                   </button>
                   <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
-                    Showing {filteredPresets.length} styles â€¢ 10,000,000+ available
+                    Showing {filteredPresets.length} styles • 10,000,000+ available
                   </span>
                 </div>
               </div>
@@ -572,7 +572,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           </div>
         )}
 
-        {/* â”€â”€ TAB 2: QUICK INSERT â”€â”€ */}
+        {/* ── TAB 2: QUICK INSERT ── */}
         {activeTab === 'quick' && (
           <div className="flex flex-col gap-3">
             <div className="bg-[#181818] border border-[#242424] rounded-xl p-4 flex flex-col gap-3">
@@ -656,7 +656,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           </div>
         )}
 
-        {/* â”€â”€ TAB 3: HOOK VAULT â”€â”€ */}
+        {/* ── TAB 3: HOOK VAULT ── */}
         {activeTab === 'hooks' && (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between px-1">
@@ -714,7 +714,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           </div>
         )}
 
-        {/* â”€â”€ TAB 4: STYLE STUDIO & OVERRIDES (Using CustomSelect) â”€â”€ */}
+        {/* ── TAB 4: STYLE STUDIO & OVERRIDES (Using CustomSelect) ── */}
         {activeTab === 'overrides' && (
           <div className="flex flex-col gap-3">
             <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3.5">
@@ -875,8 +875,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
                   LIVE TYPOGRAPHY PREVIEW
                 </span>
                 <span className="text-[9px] text-zinc-500 mt-1 font-mono-studio">
-                  {fontOverride ? fontOverride.split(',')[0] : activePreset.name} â€¢{' '}
-                  {sizeOverride ? `${sizeOverride}px` : 'Auto Size'} â€¢{' '}
+                  {fontOverride ? fontOverride.split(',')[0] : activePreset.name} •{' '}
+                  {sizeOverride ? `${sizeOverride}px` : 'Auto Size'} •{' '}
                   {colorOverride || activePreset.color}
                 </span>
               </div>
@@ -893,7 +893,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           </div>
         )}
 
-        {/* â”€â”€ TAB 5: SAVED VAULT â”€â”€ */}
+        {/* ── TAB 5: SAVED VAULT ── */}
         {activeTab === 'custom' && (
           <div className="flex flex-col gap-3">
             <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-2.5">

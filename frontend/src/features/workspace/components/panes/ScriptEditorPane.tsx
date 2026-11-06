@@ -121,7 +121,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
     window.speechSynthesis.speak(utterance);
   };
 
-  // â”€â”€ Subtitle Cue Operations â”€â”€
+  // ── Subtitle Cue Operations ──
   const handleUpdateSubtitle = (index: number, updated: Partial<ScriptSubtitle>) => {
     const subs = [...(script.subtitles || [])];
     subs[index] = { ...subs[index], ...updated };
@@ -301,7 +301,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#121215] text-[#E5E5E5] font-sans-studio select-none overflow-hidden rounded-none border-0">
       
-      {/* â”€â”€ Top Header Bar â”€â”€ */}
+      {/* ── Top Header Bar ── */}
       <div className="relative h-11 px-3.5 bg-[#141418] border-b border-[#24242A] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <FileText className="w-4 h-4 shrink-0 text-[#3B82F6]" />
@@ -340,7 +340,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Subtabs Segmented Control â”€â”€ */}
+      {/* ── Subtabs Segmented Control ── */}
       <div className="p-2.5 bg-[#121215] border-b border-[#24242A] shrink-0">
         <div className="flex items-center gap-1 p-1 bg-[#18181C] rounded-xl border border-[#24242A]">
           <button
@@ -387,12 +387,12 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
         </div>
       )}
 
-      {/* â”€â”€ Main Content Area â”€â”€ */}
+      {/* ── Main Content Area ── */}
       <div className="workspace-script-editor-content flex-1 overflow-y-auto custom-scrollbar p-3.5 space-y-4">
         
-        {/* â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+        {/*
             TAB 1: SCRIPT CONTENT
-        â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•� */}
+        */}
         {activeTab === 'content' && (
           <div className="space-y-4">
 
@@ -648,7 +648,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                 type="text"
                 value={script.cta || ''}
                 onChange={(e) => updateField('cta', e.target.value)}
-                placeholder="e.g. Subscribe for daily principles â€¢ Share with someone who needs this"
+                placeholder="e.g. Subscribe for daily principles • Share with someone who needs this"
                 className="w-full bg-[#16161A] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/20 transition-all"
               />
             </div>
@@ -749,13 +749,13 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
           </div>
         )}
 
-        {/* â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+        {/*
             TAB 2: SUBTITLES (COMPLETELY OVERHAULED UI & UX)
-        â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•� */}
+        */}
         {activeTab === 'subtitles' && (
           <div className="space-y-3.5">
             
-            {/* â”€â”€ Subtitle Control Bar â”€â”€ */}
+            {/* ── Subtitle Control Bar ── */}
             <div className="p-3 rounded-2xl bg-[#141418] border border-[#24242A] space-y-3 shadow-sm">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
@@ -812,7 +812,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               </div>
             </div>
 
-            {/* â”€â”€ Subtitle Cues List â”€â”€ */}
+            {/* ── Subtitle Cues List ── */}
             {filteredSubtitles.length === 0 ? (
               <div className="bg-[#141418] border border-dashed border-[#24242A] rounded-2xl p-8 text-center space-y-3">
                 <Type className="w-8 h-8 text-zinc-600 mx-auto" />
@@ -863,7 +863,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                           </span>
 
                           <span className="text-[11px] font-mono text-zinc-300">
-                            {formatTimecode(sub.start)} â†’ {formatTimecode(endTime)}
+                            {formatTimecode(sub.start)} → {formatTimecode(endTime)}
                           </span>
 
                           {isCurrentPlayback && (
@@ -1003,7 +1003,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               </div>
             )}
 
-            {/* â”€â”€ Subtitles Footer Utility Bar â”€â”€ */}
+            {/* ── Subtitles Footer Utility Bar ── */}
             <div className="p-3 rounded-xl bg-[#141418] border border-[#24242A] flex items-center justify-between text-xs gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <button

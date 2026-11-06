@@ -256,7 +256,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
-      {/* â”€â”€ Top Bar: Active Compound Indicator, Home Button & Switcher Dropdown â”€â”€ */}
+      {/* ── Top Bar: Active Compound Indicator, Home Button & Switcher Dropdown ── */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`w-6 h-6 rounded-lg ${compoundMetadata.badgeBg} border ${compoundMetadata.badgeBorder} flex items-center justify-center shrink-0`}>
@@ -335,7 +335,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Separate Compound Inspector Page â”€â”€ */}
+      {/* ── Separate Compound Inspector Page ── */}
       <div className="flex-1 min-h-0 overflow-hidden relative">
         {(activeCompound === 'home' || activeCompound === 'project') && (
           <HomeCompoundInspector

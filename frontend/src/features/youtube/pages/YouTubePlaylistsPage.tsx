@@ -176,7 +176,7 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
         <div className="flex items-center gap-2.5">
           {loading && (
             <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-500/10 text-[#60A5FA] border border-blue-500/25 font-semibold flex items-center gap-1.5 animate-pulse">
-              SyncingÃ¢â‚¬Â¦
+              Syncing…
             </span>
           )}
           <Button
@@ -193,7 +193,7 @@ export const YouTubePlaylistsPage: React.FC<YouTubePlaylistsPageProps> = ({
       {/* Playlists Grid */}
       {isLoading ? (
         <YouTubeLoadingState
-          title="Fetching live YouTube playlistsÃ¢â‚¬Â¦"
+          title="Fetching live YouTube playlists…"
           description="Connecting to YouTube servers for playlists & video series"
         />
       ) : playlists.length === 0 ? (

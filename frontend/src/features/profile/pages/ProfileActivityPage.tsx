@@ -18,7 +18,7 @@ export default function ProfileActivityPage() {
 
   return (
     <div className="w-full space-y-8 font-sans-studio text-[#E5E5E5]">
-      {/* â”€â”€ Page Header â”€â”€ */}
+      {/* ── Page Header ── */}
       <div className="flex items-center justify-between pb-4 border-b border-[#262626]">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
@@ -31,7 +31,7 @@ export default function ProfileActivityPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Section 1: Milestones â”€â”€ */}
+      {/* ── Section 1: Milestones ── */}
       <section className="space-y-3.5">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -84,7 +84,7 @@ export default function ProfileActivityPage() {
         </div>
       </section>
 
-      {/* â”€â”€ Section 2: Reusable Standalone Recent Studio Activity Component â”€â”€ */}
+      {/* ── Section 2: Reusable Standalone Recent Studio Activity Component ── */}
       <RecentStudioActivity />
     </div>
   );

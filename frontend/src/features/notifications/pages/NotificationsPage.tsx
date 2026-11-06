@@ -339,7 +339,7 @@ export default function NotificationsPage({ onNavigate }: NotificationsPageProps
               onClick={() => setSearchQuery('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white text-xs"
             >
-              Ã¢Å“â€¢
+              ✕
             </button>
           )}
         </div>

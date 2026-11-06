@@ -53,7 +53,7 @@ export const YouTubeShortsPage: React.FC<YouTubeShortsPageProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in font-sans-studio text-[#E5E5E5]">
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Top Bar: Search, Live Feed Refresh, and Studio Create Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Top Bar: Search, Live Feed Refresh, and Studio Create  */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-[#141414] border border-[#2F2F2F] shadow-lg">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-[#6B7280] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -76,7 +76,7 @@ export const YouTubeShortsPage: React.FC<YouTubeShortsPageProps> = ({
               disabled={liveShortsLoading}
               className="text-xs"
             >
-              {liveShortsLoading ? 'Syncing FeedÃ¢â‚¬Â¦' : 'Refresh Feed'}
+              {liveShortsLoading ? 'Syncing Feed…' : 'Refresh Feed'}
             </Button>
           )}
 
@@ -92,7 +92,7 @@ export const YouTubeShortsPage: React.FC<YouTubeShortsPageProps> = ({
         </div>
       </div>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ YouTube Shorts Grid (Authentic 9:16 Shorts Experience) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  YouTube Shorts Grid (Authentic 9:16 Shorts Experience)  */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2.5">
@@ -131,7 +131,7 @@ export const YouTubeShortsPage: React.FC<YouTubeShortsPageProps> = ({
 
         {liveShortsLoading ? (
           <YouTubeLoadingState
-            title="Fetching live YouTube Shorts feedÃ¢â‚¬Â¦"
+            title="Fetching live YouTube Shorts feed…"
             description="Connecting to YouTube servers for live video metrics"
           />
         ) : filteredShorts.length === 0 ? (

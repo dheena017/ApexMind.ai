@@ -188,7 +188,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
         const incomingWidth = hasIncomingTrans ? Math.min(45, Math.max(8, ((prevDuration / 2) / (clip.duration || 1)) * 100)) : 0;
         const incomingStyle = hasIncomingTrans ? getTransitionWingStyle(prevTransition) : null;
 
-        // â”€â”€ Animation In / Out / Combo Overlays (CapCut Style Visual Indicators) â”€â”€
+        // ── Animation In / Out / Combo Overlays (CapCut Style Visual Indicators) ──
         const animInType = overrides.animationIn !== undefined ? overrides.animationIn : clip.animationIn;
         const animInDuration = overrides.animationInDuration !== undefined ? overrides.animationInDuration : (clip.animationInDuration ?? 0.5);
         const hasAnimIn = Boolean(animInType && animInType !== 'none');
@@ -235,14 +235,14 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               top: `${topPos}px`,
               height: `${laneHeight}px`,
             }}
-            title={`Image Clip: "${clip.name}" â€¢ Layer: ${clipLane + 1} â€¢ Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s.`}
+            title={`Image Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s.`}
           >
             {/* Optional Thumbnail Strip Background */}
             <ImageStripBackground
               imageUrl={clip.posterUrl || clip.thumbnailUrl || clip.url || imageUrl}
             />
 
-            {/* â”€â”€ Transition Incoming Wing (Head of Right Clip) â”€â”€ */}
+            {/* ── Transition Incoming Wing (Head of Right Clip) ── */}
             {hasIncomingTrans && incomingStyle && (
               <div
                 style={{ width: `${incomingWidth}%` }}
@@ -255,7 +255,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               </div>
             )}
 
-            {/* â”€â”€ Transition Outgoing Wing (Tail of Left Clip) â”€â”€ */}
+            {/* ── Transition Outgoing Wing (Tail of Left Clip) ── */}
             {hasOutgoingTrans && outgoingStyle && (
               <div
                 style={{ width: `${outgoingWidth}%` }}
@@ -268,7 +268,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               </div>
             )}
 
-{/* â”€â”€ Animation In Indicator (Amber/Yellow Highlight Band from Left) â”€â”€ */}
+{/* ── Animation In Indicator (Amber/Yellow Highlight Band from Left) ── */}
             {hasAnimIn && (
               <div
                 style={{ width: `${animInWidth}%` }}
@@ -280,7 +280,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               </div>
             )}
 
-            {/* â”€â”€ Animation Out Indicator (Amber/Yellow Highlight Band from Right) â”€â”€ */}
+            {/* ── Animation Out Indicator (Amber/Yellow Highlight Band from Right) ── */}
             {hasAnimOut && (
               <div
                 style={{ width: `${animOutWidth}%` }}
@@ -292,7 +292,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               </div>
             )}
 
-            {/* â”€â”€ Combo Animation Indicator (Amber/Yellow Full Clip Overlay) â”€â”€ */}
+            {/* ── Combo Animation Indicator (Amber/Yellow Full Clip Overlay) ── */}
             {hasAnimCombo && (
               <div
                 className="absolute inset-0 pointer-events-none select-none z-12 bg-amber-500/25 border-x border-amber-300/60 overflow-hidden transition-all backdrop-brightness-105"
@@ -300,7 +300,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               />
             )}
 
-            {/* â”€â”€ Left Trim Handle (Capsule handle with center notch when selected) â”€â”€ */}
+            {/* ── Left Trim Handle (Capsule handle with center notch when selected) ── */}
             <div
               onPointerDown={(e) => {
                 e.stopPropagation();
@@ -327,7 +327,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
               </span>
             </div>
 
-{/* â”€â”€ Right Trim Handle (Capsule handle with center notch when selected) â”€â”€ */}
+{/* ── Right Trim Handle (Capsule handle with center notch when selected) ── */}
             <div
               onPointerDown={(e) => {
                 e.stopPropagation();
@@ -349,7 +349,7 @@ export const ImageTrackClip: React.FC<ImageTrackClipProps> = ({
         );
       })}
 
-      {/* â”€â”€ Transition Seam Buttons Between Consecutive Clips â”€â”€ */}
+      {/* ── Transition Seam Buttons Between Consecutive Clips ── */}
       {effectiveClips.map((clip, idx) => {
         const nextClip = effectiveClips[idx + 1];
         if (!nextClip) return null;

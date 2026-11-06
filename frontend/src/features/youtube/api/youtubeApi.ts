@@ -21,7 +21,7 @@ const getStoredHandle = (): string => {
 };
 
 export const youtubeApi = {
-  // â”€â”€ Standardized Live RESTful Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Standardized Live RESTful Endpoints ────────────────────────────────────
 
   // 1. Channel Details
   async getChannelDetails(query?: string): Promise<YouTubeChannel> {
@@ -137,7 +137,7 @@ export const youtubeApi = {
     }));
   },
 
-  // â”€â”€ Action / Mutation Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Action / Mutation Operations ──────────────────────────────────────────
 
   // Direct Live Video Publish to YouTube via canonical /api/youtube/publish
   async publishVideo(payload: any): Promise<any> {
@@ -216,7 +216,7 @@ export const youtubeApi = {
     return res.json();
   },
 
-  // â”€â”€ YouTube Channel Connection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── YouTube Channel Connection ─────────────────────────────────────────────
 
   async connectWithCode(code: string, redirectUri = 'postmessage'): Promise<{ success: boolean; channel: YouTubeChannel; message: string }> {
     const res = await fetch(apiUrl('/api/youtube/oauth/code'), {
@@ -296,7 +296,7 @@ export const youtubeApi = {
     };
   },
 
-  // â”€â”€ Video Production & Publishing Schedules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Video Production & Publishing Schedules ─────────────────────────────────
 
   _resolveUserId(explicitId?: string): string | undefined {
     if (explicitId) return explicitId;
@@ -382,9 +382,11 @@ export const youtubeApi = {
   },
 
   async runAutomationNow(jobId: string, payload?: any): Promise<any> {
-    const res = await fetch(apiUrl(`/api/schedules/${jobId}/run-now`), {
+    const uid = this._resolveUserId();
+    const query = uid ? `?userId=${encodeURIComponent(uid)}` : '';
+    const res = await fetch(apiUrl(`/api/schedules/${encodeURIComponent(jobId)}/run-now${query}`), {
       method: 'POST',
-      headers: payload ? { 'Content-Type': 'application/json' } : undefined,
+      headers: this._getScheduleHeaders(uid),
       body: payload ? JSON.stringify(payload) : undefined,
     });
     if (!res.ok) {
@@ -395,8 +397,11 @@ export const youtubeApi = {
   },
 
   async stopAutomation(jobId: string): Promise<any> {
-    const res = await fetch(apiUrl(`/api/schedules/${jobId}/stop`), {
+    const uid = this._resolveUserId();
+    const query = uid ? `?userId=${encodeURIComponent(uid)}` : '';
+    const res = await fetch(apiUrl(`/api/schedules/${encodeURIComponent(jobId)}/stop${query}`), {
       method: 'POST',
+      headers: this._getScheduleHeaders(uid),
     });
     if (!res.ok) return false;
     return res.json();

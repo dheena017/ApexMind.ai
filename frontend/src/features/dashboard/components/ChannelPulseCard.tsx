@@ -88,7 +88,7 @@ export const ChannelPulseCard: React.FC<ChannelPulseCardProps> = ({
                 <div className="text-lg font-extrabold text-white">
                   {typeof channel.subscribers === 'number'
                     ? channel.subscribers.toLocaleString()
-                    : channel.subscribers || 'â€”'}
+                    : channel.subscribers || '—'}
                 </div>
               </div>
 
@@ -136,7 +136,7 @@ export const ChannelPulseCard: React.FC<ChannelPulseCardProps> = ({
         >
           Channel Shorts
         </button>
-        <span className="text-[#333333]">â€¢</span>
+        <span className="text-[#333333]">•</span>
         <button
           type="button"
           onClick={() => onNavigate('youtube-videos')}
@@ -144,7 +144,7 @@ export const ChannelPulseCard: React.FC<ChannelPulseCardProps> = ({
         >
           Videos
         </button>
-        <span className="text-[#333333]">â€¢</span>
+        <span className="text-[#333333]">•</span>
         <button
           type="button"
           onClick={() => onNavigate('youtube-schedules')}

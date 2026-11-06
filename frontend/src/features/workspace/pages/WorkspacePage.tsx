@@ -528,7 +528,7 @@ export default function WorkspacePage({
           );
         }
 
-        // ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ Deep Linking: Load Video, Prompt, or Tab from URL Query Parameters ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬
+        //  Deep Linking: Load Video, Prompt, or Tab from URL Query Parameters
         const urlParams = getQueryParams();
         const deepVideoId = urlParams.videoId || urlParams.video;
         if (deepVideoId) {
@@ -728,7 +728,7 @@ export default function WorkspacePage({
   };
 
   // Run AI Script Generation
-  // ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ Unified Studio Pipeline Executor (Stages 1 -> 4) ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬
+  //  Unified Studio Pipeline Executor (Stages 1 -> 4)
   const handleExecuteStudioPipeline = async (): Promise<boolean> => {
     consoleLogger.info('Studio', `Executing 4-stage pipeline for category: ${category}`);
     try {
@@ -819,7 +819,7 @@ export default function WorkspacePage({
         setScriptSubPane('editor');
         onPaneChange('editor');
         setShowTimeline(true);
-        toast.success('Ã¢Å“Â¨ Viral Reel Generated & AI Directed', {
+        toast.success('✨ Viral Reel Generated & AI Directed', {
           description: `Assembled ${pipelineRes.script.storyboard?.length || 0} scenes with AI motion animations & smart cut transitions.`,
         });
         return true;
@@ -1073,7 +1073,7 @@ export default function WorkspacePage({
     );
   };
 
-  // Ã¢â€�â‚¬Ã¢â€�â‚¬ Two-Stage Video Publishing Pipeline Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬
+  //  Two-Stage Video Publishing Pipeline
   // Stage 1: Render broadcast 1080p MP4 via /api/workspace/render-video
   // Stage 2: Publish rendered MP4 to YouTube Shorts via POST /api/youtube/publish
   const handlePublish = async () => {
@@ -1085,7 +1085,7 @@ export default function WorkspacePage({
     consoleLogger.info('YouTube', `Starting 2-Stage Publish Pipeline for: "${publishTitle}"`);
 
     try {
-      // Ã¢â€�â‚¬Ã¢â€�â‚¬ Stage 1: Render the video frames via render API Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬
+      //  Stage 1: Render the video frames via render API
       toast.info('Stage 1/2: Rendering timeline video preview with FFmpeg...', { duration: 4000 });
       let renderedVideoUrl: string | undefined;
       let renderedThumbnailUrl: string | null = null;
@@ -1138,7 +1138,7 @@ export default function WorkspacePage({
         }
       }
 
-      // Ã¢â€�â‚¬Ã¢â€�â‚¬ Stage 2: Publish to YouTube Shorts via POST /api/youtube/publish Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬Ã¢â€�â‚¬
+      //  Stage 2: Publish to YouTube Shorts via POST /api/youtube/publish
       setPublishingStage('uploading');
       toast.info('Stage 2/2: Publishing rendered video to YouTube Shorts...', { duration: 4000 });
 
@@ -1177,7 +1177,7 @@ export default function WorkspacePage({
           : undefined,
         aspectRatio: canvasAspectRatio,
         duration: Math.round(duration || timelineDuration || 15),
-        description: script.description || (script.hook || script.quote ? `${script.hook ? `${script.hook}\n\n` : ''}${script.quote ? `${script.quote}\n\n` : ''}${script.cta ? `${script.cta}\n\n` : ''}Ã°Å¸Â¤â€“ AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n${(script.hashtags || ['#Shorts', '#ApexMind', '#Motivation', '#AI', '#AIGenerated']).join(' ')}` : undefined),
+        description: script.description || (script.hook || script.quote ? `${script.hook ? `${script.hook}\n\n` : ''}${script.quote ? `${script.quote}\n\n` : ''}${script.cta ? `${script.cta}\n\n` : ''}🤖 AI Disclosure: This video and audio were created with AI (ApexMind AI Studio).\n\n${(script.hashtags || ['#Shorts', '#ApexMind', '#Motivation', '#AI', '#AIGenerated']).join(' ')}` : undefined),
         tags: script.hashtags && script.hashtags.length > 0 ? Array.from(new Set([...script.hashtags, '#AI', '#AIGenerated'])) : ['#Shorts', '#ApexMind', '#Motivation', '#AI', '#AIGenerated'],
       });
 
@@ -1298,7 +1298,7 @@ export default function WorkspacePage({
         tags: script.hashtags || [],
         status: 'ready',
       });
-      consoleLogger.success('Library', `ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Saved "${script.title}" to Website Video Library`);
+      consoleLogger.success('Library', `✅ Saved "${script.title}" to Website Video Library`);
       toast.success(`Saved "${script.title}" to Video Library!`);
       addWorkspaceNotification({
         title: 'Saved to Video Library',
@@ -1343,7 +1343,7 @@ export default function WorkspacePage({
   const [showTimeline, setShowTimeline] = useState(true);
   const [showRightPane, setShowRightPane] = useState(true);
 
-  // ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ Resizable Layout Panel Dimensions ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬
+  //  Resizable Layout Panel Dimensions
   const DEFAULT_LEFT_WIDTH = 380;
   const DEFAULT_RIGHT_WIDTH = 380;
   const DEFAULT_TIMELINE_HEIGHT = 180;
@@ -1709,7 +1709,7 @@ export default function WorkspacePage({
         : getDefaultCanvasOutputSize(canvasAspectRatio);
       addWorkspaceNotification({
         title: 'Export Render Started',
-        message: `Rendering ${renderSize.width} Ãƒâ€” ${renderSize.height} MP4 (${canvasAspectRatio}) with timeline audio...`,
+        message: `Rendering ${renderSize.width} × ${renderSize.height} MP4 (${canvasAspectRatio}) with timeline audio...`,
         category: 'export',
         type: 'render',
         targetPane: 'canvas',
@@ -1840,7 +1840,7 @@ export default function WorkspacePage({
       <audio ref={audioRef} className="hidden" preload="auto" />
       <audio ref={musicAudioRef} className="hidden" preload="auto" crossOrigin="anonymous" loop />
 
-      {/* ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ Left Studio Column: Full-Height (Top to Bottom) ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ */}
+      {/*  Left Studio Column: Full-Height (Top to Bottom)  */}
       {showLeftPane && (
         <div
           style={isDesktop ? { width: `${Math.min(leftPaneWidth, window.innerWidth * 0.3)}px` } : undefined}
@@ -2176,7 +2176,7 @@ export default function WorkspacePage({
           </div>
         )}
 
-      {/* ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ Main Work Area (Right of Left Panel): Top Preview & Controls, Bottom Timeline ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ */}
+      {/*  Main Work Area (Right of Left Panel): Top Preview & Controls, Bottom Timeline  */}
       <div className="workspace-main-area flex-1 min-w-0 h-auto md:h-full flex flex-col min-h-0 overflow-hidden">
         {/* Top Area: Video Preview and Inspiration Studio */}
         <div className="workspace-preview-area flex flex-col md:flex-row gap-0 h-auto min-h-0 flex-1 overflow-hidden relative">
@@ -2342,7 +2342,7 @@ export default function WorkspacePage({
           )}
         </div>
 
-        {/* ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ Studio Multi-Track Timeline Panel (Bottom Studio Area, placed next to Left Panel) ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ï¿½Ã¢â€šÂ¬ */}
+        {/*  Studio Multi-Track Timeline Panel (Bottom Studio Area, placed next to Left Panel)  */}
         {showTimeline && (
           <div className="workspace-timeline-pane flex shrink-0 min-h-[44px] min-w-0 flex-col border-t border-[#242424]">
             <StudioTimelinePane

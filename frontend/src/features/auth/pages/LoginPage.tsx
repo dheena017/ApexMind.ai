@@ -22,7 +22,7 @@ import { authApi } from '../api/authApi';
 import { MetaLoginProvider } from '../types';
 import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
 
-// Ã¢â€�â‚¬Ã¢â€�â‚¬ Google SVG Icon Ã¢â€�â‚¬Ã¢â€�â‚¬
+//  Google SVG Icon
 function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24">
@@ -146,7 +146,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     }
   });
 
-  // Ã¢â€�â‚¬Ã¢â€�â‚¬ Handle Email/Password Sign-In or Register Ã¢â€�â‚¬Ã¢â€�â‚¬
+  //  Handle Email/Password Sign-In or Register
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!requireAgreement()) return;
@@ -195,7 +195,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     }
   };
 
-  // Ã¢â€�â‚¬Ã¢â€�â‚¬ Handle Google Sign-In Ã¢â€�â‚¬Ã¢â€�â‚¬
+  //  Handle Google Sign-In
   const handleGoogleAuth = () => {
     if (!requireAgreement()) return;
 
@@ -303,7 +303,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
     setNotice({ text: 'Google Sign-In is unavailable. Please refresh and try again.', type: 'error' });
   };
 
-  // Ã¢â€�â‚¬Ã¢â€�â‚¬ Legacy Channel Direct Sign-In Ã¢â€�â‚¬Ã¢â€�â‚¬
+  //  Legacy Channel Direct Sign-In
   const handleDirectChannelLogin = async (handle?: string, channelName?: string) => {
     if (!requireAgreement()) return;
     const targetHandle = (handle || channelHandleInput || '').trim();
@@ -360,13 +360,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
 
   return (
     <main className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden bg-[#09090B] text-[#E5E5E5] font-sans-studio select-none selection:bg-[#2563EB]/40 selection:text-white">
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Background: Ambient lights Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Background: Ambient lights  */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[10%] left-[20%] w-[480px] h-[480px] rounded-full bg-gradient-to-br from-red-600/20 via-red-900/10 to-transparent blur-[130px] opacity-30" />
         <div className="absolute bottom-[5%] right-[15%] w-[420px] h-[420px] rounded-full bg-gradient-to-tl from-[#2563EB]/20 via-blue-900/10 to-transparent blur-[140px] opacity-25" />
       </div>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Crisp dark dot pattern overlay Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Crisp dark dot pattern overlay  */}
       <div
         className="absolute inset-0 z-0 pointer-events-none opacity-30"
         style={{
@@ -375,7 +375,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         }}
       />
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Top Header Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Top Header  */}
       <header className="relative z-10 w-full max-w-4xl mx-auto px-4 pt-5 sm:pt-6 flex items-center justify-between">
         <button
           type="button"
@@ -404,7 +404,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         </button>
       </header>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Center: Master SaaS Account Sign-In / Register Card Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Center: Master SaaS Account Sign-In / Register Card  */}
       <div className="relative z-10 w-full flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-[440px]">
           <div className="relative w-full rounded-2xl border border-[#27272A] bg-[#121215]/95 backdrop-blur-xl shadow-2xl p-7 sm:p-8 space-y-5">
@@ -427,7 +427,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </p>
             </div>
 
-            {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Mode Switcher Tabs (Sign In / Register) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+            {/*  Mode Switcher Tabs (Sign In / Register)  */}
             <div className="flex rounded-xl bg-[#18181B] p-1 border border-[#27272A]">
               <button
                 type="button"
@@ -459,7 +459,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </button>
             </div>
 
-            {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Remembered User Quick-Continue Card Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+            {/*  Remembered User Quick-Continue Card  */}
             {rememberedUser && authMode === 'signin' && (
               <div className="flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-950/20 p-3 shadow-sm hover:border-red-500/50 transition-colors">
                 <div className="flex min-w-0 items-center gap-3">
@@ -488,12 +488,12 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                   className="shrink-0 rounded-lg bg-red-600 hover:bg-red-500 px-3 py-1.5 text-xs font-bold text-white cursor-pointer shadow-sm flex items-center gap-1 transition-colors"
                 >
                   <span>Continue</span>
-                  <span>Ã¢â€ â€™</span>
+                  <span>→</span>
                 </button>
               </div>
             )}
 
-            {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Social Sign-In Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+            {/*  Social Sign-In  */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
@@ -529,7 +529,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               Instagram sign-in requires a professional account.
             </p>
 
-            {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Divider Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+            {/*  Divider  */}
             <div className="relative flex items-center justify-center">
               <div className="w-full border-t border-[#27272A]" />
               <span className="absolute bg-[#121215] px-2 text-[10px] font-medium uppercase tracking-wider text-[#71717A]">
@@ -537,7 +537,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </span>
             </div>
 
-            {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Email & Password Form Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+            {/*  Email & Password Form  */}
             <form onSubmit={handleEmailAuth} className="space-y-3.5">
               {authMode === 'register' && (
                 <div className="space-y-1">
@@ -581,7 +581,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢"
+                    placeholder="••••••••"
                     required
                     className="w-full rounded-xl border border-[#27272A] bg-[#18181B] pl-3.5 pr-10 py-2.5 text-xs text-white placeholder-[#52525B] focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
                   />
@@ -595,7 +595,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                 </div>
               </div>
 
-              {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Agreement Checkbox Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+              {/*  Agreement Checkbox  */}
               <div
                 onClick={() => {
                   setAgreementChecked((prev) => !prev);
@@ -677,7 +677,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </button>
             </form>
 
-            {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Notice Alert Banner Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+            {/*  Notice Alert Banner  */}
             {notice && (
               <div
                 role="status"
@@ -694,7 +694,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
               </div>
             )}
 
-            {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Legacy Direct YouTube Channel Sign-In Option Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+            {/*  Legacy Direct YouTube Channel Sign-In Option  */}
             <div className="pt-2 border-t border-[#27272A] text-center space-y-2">
               <button
                 type="button"
@@ -713,18 +713,18 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         </div>
       </div>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Page Footer Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Page Footer  */}
       <footer className="relative z-10 w-full max-w-4xl mx-auto px-4 py-4 text-center text-[11px] text-[#52525B] flex flex-wrap items-center justify-between gap-3">
-        <span>Ã‚Â© 2026 ApexMind.ai Ã¢â‚¬Â¢ Universal Omnichannel Video Studio</span>
+        <span>© 2026 ApexMind.ai • Universal Omnichannel Video Studio</span>
         <div className="flex items-center gap-4">
           <button type="button" onClick={() => onNavigate('terms')} className="hover:text-[#A1A1AA] cursor-pointer">
             Terms of Service
           </button>
-          <span>Ã¢â‚¬Â¢</span>
+          <span>•</span>
           <button type="button" onClick={() => onNavigate('privacy')} className="hover:text-[#A1A1AA] cursor-pointer">
             Privacy Policy
           </button>
-          <span>Ã¢â‚¬Â¢</span>
+          <span>•</span>
           <a
             href="https://developers.google.com/youtube/terms/api-services-terms-of-service"
             target="_blank"
@@ -736,7 +736,7 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         </div>
       </footer>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ YouTube Channel Direct Login Modal Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  YouTube Channel Direct Login Modal  */}
       <Modal
         isOpen={showChannelModal}
         onClose={() => {

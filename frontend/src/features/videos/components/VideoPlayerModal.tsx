@@ -412,7 +412,7 @@ ${video.tags || ''}
           <X className="w-4 h-4" />
         </button>
 
-        {/* â”€â”€ Left: Video Player Frame (9:16 Shorts Presentation) â”€â”€ */}
+        {/* ── Left: Video Player Frame (9:16 Shorts Presentation) ── */}
         <div className="w-full lg:w-[410px] xl:w-[440px] shrink-0 bg-[#080808] border-b lg:border-b-0 lg:border-r border-[#262626] flex flex-col items-center justify-center p-3 sm:p-5 relative">
           
           <div
@@ -659,18 +659,18 @@ ${video.tags || ''}
                 ? 'AI Studio Voiceover Synced'
                 : 'Studio Motion Backdrop'}
             </span>
-            <span>â€¢</span>
+            <span>•</span>
             <span>{video.aspectRatio || '9:16'} Shorts</span>
             {hasLiveAudio && (
               <>
-                <span>â€¢</span>
+                <span>•</span>
                 <span className="text-[#60A5FA] font-medium">{video.voice || 'Studio'} Voice</span>
               </>
             )}
           </div>
         </div>
 
-        {/* â”€â”€ Right: Script & Details Section â”€â”€ */}
+        {/* ── Right: Script & Details Section ── */}
         <div className="flex-1 p-5 sm:p-7 overflow-y-auto space-y-6 max-h-[75vh] lg:max-h-none">
           {/* Header */}
           <div>

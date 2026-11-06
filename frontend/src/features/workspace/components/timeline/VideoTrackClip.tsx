@@ -191,7 +191,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
         const incomingWidth = hasIncomingTrans ? Math.min(45, Math.max(8, ((prevDuration / 2) / (clip.duration || 1)) * 100)) : 0;
         const incomingStyle = hasIncomingTrans ? getTransitionWingStyle(prevTransition) : null;
 
-        // â”€â”€ Animation In / Out / Combo Overlays (CapCut Style Visual Indicators) â”€â”€
+        // ── Animation In / Out / Combo Overlays (CapCut Style Visual Indicators) ──
         const animInType = overrides.animationIn !== undefined ? overrides.animationIn : clip.animationIn;
         const animInDuration = overrides.animationInDuration !== undefined ? overrides.animationInDuration : (clip.animationInDuration ?? 0.5);
         const hasAnimIn = Boolean(animInType && animInType !== 'none');
@@ -241,7 +241,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               top: `${topPos}px`,
               height: `${laneHeight}px`,
             }}
-            title={`Video Clip: "${clip.name}" â€¢ Layer: ${clipLane + 1} â€¢ Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s.`}
+            title={`Video Clip: "${clip.name}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s.`}
           >
             {/* Visual Color Label Top Accent Bar */}
             {activeColorLabel && (
@@ -259,7 +259,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               count={Math.max(4, Math.min(14, Math.round((clip.duration || 3) * 2)))}
             />
 
-            {/* â”€â”€ Transition Incoming Wing (Head of Right Clip) â”€â”€ */}
+            {/* ── Transition Incoming Wing (Head of Right Clip) ── */}
             {hasIncomingTrans && incomingStyle && (
               <div
                 style={{ width: `${incomingWidth}%` }}
@@ -272,7 +272,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               </div>
             )}
 
-            {/* â”€â”€ Transition Outgoing Wing (Tail of Left Clip) â”€â”€ */}
+            {/* ── Transition Outgoing Wing (Tail of Left Clip) ── */}
             {hasOutgoingTrans && outgoingStyle && (
               <div
                 style={{ width: `${outgoingWidth}%` }}
@@ -285,7 +285,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               </div>
             )}
 
-{/* â”€â”€ Animation In Indicator (Amber/Yellow Highlight Band from Left) â”€â”€ */}
+{/* ── Animation In Indicator (Amber/Yellow Highlight Band from Left) ── */}
             {hasAnimIn && (
               <div
                 style={{ width: `${animInWidth}%` }}
@@ -297,7 +297,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               </div>
             )}
 
-            {/* â”€â”€ Animation Out Indicator (Amber/Yellow Highlight Band from Right) â”€â”€ */}
+            {/* ── Animation Out Indicator (Amber/Yellow Highlight Band from Right) ── */}
             {hasAnimOut && (
               <div
                 style={{ width: `${animOutWidth}%` }}
@@ -309,7 +309,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               </div>
             )}
 
-            {/* â”€â”€ Combo Animation Indicator (Amber/Yellow Full Clip Overlay) â”€â”€ */}
+            {/* ── Combo Animation Indicator (Amber/Yellow Full Clip Overlay) ── */}
             {hasAnimCombo && (
               <div
                 className="absolute inset-0 pointer-events-none select-none z-12 bg-amber-500/25 border-x border-amber-300/60 overflow-hidden transition-all backdrop-brightness-105"
@@ -317,7 +317,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               />
             )}
 
-            {/* â”€â”€ Left Trim Handle (Capsule handle with center notch when selected) â”€â”€ */}
+            {/* ── Left Trim Handle (Capsule handle with center notch when selected) ── */}
             <div
               onPointerDown={(e) => {
                 e.stopPropagation();
@@ -345,7 +345,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               )}
               {typeof clip.aestheticScore === 'number' && clip.aestheticScore > 0 && (
                 <span className="text-[8px] font-bold font-mono text-emerald-300">
-                  â˜…{Math.round(clip.aestheticScore)}
+                  ★{Math.round(clip.aestheticScore)}
                 </span>
               )}
               {clip.aestheticBadges && clip.aestheticBadges.length > 0 && (
@@ -355,7 +355,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
               )}
             </div>
 
-{/* â”€â”€ Right Trim Handle (Capsule handle with center notch when selected) â”€â”€ */}
+{/* ── Right Trim Handle (Capsule handle with center notch when selected) ── */}
             <div
               onPointerDown={(e) => {
                 e.stopPropagation();
@@ -377,7 +377,7 @@ export const VideoTrackClip: React.FC<VideoTrackClipProps> = ({
         );
       })}
 
-      {/* â”€â”€ Transition Seam Buttons Between Consecutive Clips â”€â”€ */}
+      {/* ── Transition Seam Buttons Between Consecutive Clips ── */}
       {effectiveClips.map((clip, idx) => {
         const nextClip = effectiveClips[idx + 1];
         if (!nextClip) return null;

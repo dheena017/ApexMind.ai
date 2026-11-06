@@ -77,7 +77,7 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
 
   return (
     <div className={`w-full space-y-3 font-sans-studio ${className}`}>
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 1. Wide YouTube Channel Banner Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  1. Wide YouTube Channel Banner  */}
       <div className="relative w-full h-36 sm:h-44 md:h-52 lg:h-60 rounded-2xl md:rounded-3xl overflow-hidden border border-[#2F2F2F] bg-gradient-to-r from-[#0B0F19] via-[#131127] to-[#0A0A0A] shadow-2xl group">
         {isConnected && bannerImgSrc ? (
           <img
@@ -91,7 +91,7 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
             <div className="space-y-1">
               <span className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-400 uppercase">YouTube Official Creator Feed</span>
               <h2 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">{channelName}</h2>
-              <p className="text-xs sm:text-sm text-gray-400">{handle} Ã‚Â· Live Studio Hub</p>
+              <p className="text-xs sm:text-sm text-gray-400">{handle} · Live Studio Hub</p>
             </div>
             <div className="hidden md:flex items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
               <Video className="w-6 h-6 text-blue-400" />
@@ -159,7 +159,7 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
         )}
       </div>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 2. Channel Profile Identity Header Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  2. Channel Profile Identity Header  */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-2 sm:px-4 pt-1">
         {/* Left: Avatar & Channel Details */}
         <div className="flex items-start sm:items-center gap-4 sm:gap-6 min-w-0">
@@ -212,12 +212,12 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
                 )}
               </div>
 
-              {/* Subtitle Stats: @handle Ã‚Â· 72 subscribers Ã‚Â· 11 videos */}
+              {/* Subtitle Stats: @handle · 72 subscribers · 11 videos */}
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-[#9CA3AF]">
                 <span className="font-mono-studio text-[#E5E5E5] font-semibold">{handle}</span>
-                <span>Ã‚Â·</span>
+                <span>·</span>
                 <span className="text-[#D1D5DB] font-medium">{subscribers} subscribers</span>
-                <span>Ã‚Â·</span>
+                <span>·</span>
                 <span className="text-[#D1D5DB] font-medium">{videoCount} videos</span>
               </div>
 
@@ -246,7 +246,7 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
                 <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold">
                   No Channel Connected
                 </span>
-                <span>Ã‚Â·</span>
+                <span>·</span>
                 <span>Click Connect YouTube Channel to get started</span>
               </div>
             </div>
@@ -288,7 +288,7 @@ export const YouTubeChannelBannerHeader: React.FC<YouTubeChannelBannerHeaderProp
         )}
       </div>
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ About Channel Modal (Triggered by ...more) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  About Channel Modal (Triggered by ...more)  */}
       {isConnected && (
         <Modal
           isOpen={showAboutModal}

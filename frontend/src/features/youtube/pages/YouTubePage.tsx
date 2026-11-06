@@ -239,7 +239,7 @@ export default function YouTubePage({
 
   return (
     <div className="w-full min-h-screen bg-[#0A0A0A] text-[#E5E5E5] space-y-6 pb-20 font-sans-studio animate-fade-in">
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ 1. Top Channel Banner & Studio Navigation Group Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  1. Top Channel Banner & Studio Navigation Group  */}
       <div className="space-y-3">
         <YouTubeChannelBannerHeader
           channel={channel}
@@ -265,7 +265,7 @@ export default function YouTubePage({
       </div>
 
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 1: HOME (Overview) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Tab 1: HOME (Overview)  */}
       {activeTab === 'overview' && (
         <YouTubeHomePage
           channels={channelsList}
@@ -291,7 +291,7 @@ export default function YouTubePage({
         />
       )}
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 2: VIDEOS (Real 16:9 Uploads) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Tab 2: VIDEOS (Real 16:9 Uploads)  */}
       {activeTab === 'videos' && (
         <YouTubeVideosPage
           channels={channelsList}
@@ -302,7 +302,7 @@ export default function YouTubePage({
         />
       )}
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 3: SHORTS (Real 9:16 Vertical Feed) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Tab 3: SHORTS (Real 9:16 Vertical Feed)  */}
       {activeTab === 'shorts' && (
         <YouTubeShortsPage
           channels={channelsList}
@@ -316,7 +316,7 @@ export default function YouTubePage({
         />
       )}
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 4: PLAYLISTS Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Tab 4: PLAYLISTS  */}
       {activeTab === 'playlists' && (
         <YouTubePlaylistsPage
           channels={channelsList}
@@ -327,12 +327,12 @@ export default function YouTubePage({
         />
       )}
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab 5: COMMUNITY Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Tab 5: COMMUNITY  */}
       {activeTab === 'posts' && (
         <YouTubePostsPage channels={channelsList} loading={loading} />
       )}
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ Tab: DAILY SCHEDULES & AUTOMATIONS Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  Tab: DAILY SCHEDULES & AUTOMATIONS  */}
       {activeTab === 'schedules' && (
         <YouTubeSchedulesPage
           automations={automations}
@@ -343,7 +343,7 @@ export default function YouTubePage({
         />
       )}
 
-      {/* Ã¢â€�â‚¬Ã¢â€�â‚¬ In-Studio Embedded Video Player Modal (via React createPortal) Ã¢â€�â‚¬Ã¢â€�â‚¬ */}
+      {/*  In-Studio Embedded Video Player Modal (via React createPortal)  */}
       <YouTubeVideoDetailsModal
         isOpen={Boolean(activePlayingVideo)}
         video={activePlayingVideo}

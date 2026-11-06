@@ -192,7 +192,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
                 <Volume2 className="w-3.5 h-3.5 text-[#3B82F6]" />
                 {video.voice}
               </span>
-              <span>â€¢</span>
+              <span>•</span>
               <span>{formattedDate}</span>
             </div>
           </div>
@@ -247,7 +247,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
       onMouseLeave={handleMouseLeave}
       className="group relative flex flex-col rounded-2xl bg-[#141414] hover:bg-[#181818] border border-[#242424] hover:border-white/10 transition-all duration-300 overflow-hidden cursor-pointer shadow-xl hover:shadow-[#3B82F6]/15 flex-1"
     >
-      {/* â”€â”€ Prominent Video Preview / Cover Section â”€â”€ */}
+      {/* ── Prominent Video Preview / Cover Section ── */}
       <div className="relative w-full aspect-[9/14] sm:aspect-[9/13] overflow-hidden bg-black">
         {/* Live Video Preview on Hover */}
         {resolvedVideoUrl && (
@@ -344,7 +344,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
         </div>
       </div>
 
-      {/* â”€â”€ Content Details Section â”€â”€ */}
+      {/* ── Content Details Section ── */}
       <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-3 bg-[#131313]">
         <div className="space-y-1.5">
           <h3 className="font-extrabold text-sm sm:text-base text-white group-hover:text-[#60A5FA] transition-colors line-clamp-1 leading-snug">
@@ -361,7 +361,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
           <div className="flex items-center gap-1.5 text-[11px] text-[#9CA3AF] truncate">
             <Volume2 className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
             <span className="font-medium text-white truncate">{video.voice}</span>
-            <span className="text-[#555555]">Â·</span>
+            <span className="text-[#555555]">·</span>
             <span className="text-[10px] text-[#777777] shrink-0">{formattedDate}</span>
           </div>
 

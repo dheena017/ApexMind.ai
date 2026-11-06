@@ -210,15 +210,15 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
         {/* Bottom Bar */}
         <div className="mt-14 pt-8 border-t border-[#2F2F2F] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#6B7280]">
           <div className="flex flex-wrap items-center gap-3">
-            <span>Ã‚Â© {new Date().getFullYear()} ApexMind AI Inc. All rights reserved.</span>
-            <span className="hidden sm:inline">Ã¢â‚¬Â¢</span>
+            <span>© {new Date().getFullYear()} ApexMind AI Inc. All rights reserved.</span>
+            <span className="hidden sm:inline">•</span>
             <button
               onClick={() => onNavigate('terms')}
               className="hover:text-[#E5E5E5] transition-colors cursor-pointer"
             >
               Terms of Service
             </button>
-            <span>Ã¢â‚¬Â¢</span>
+            <span>•</span>
             <button
               onClick={() => onNavigate('privacy')}
               className="hover:text-[#E5E5E5] transition-colors cursor-pointer"
