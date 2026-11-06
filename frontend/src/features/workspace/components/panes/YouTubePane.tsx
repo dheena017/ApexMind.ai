@@ -102,6 +102,11 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
 }) => {
   // ── Two Dedicated Subtabs: Publish & Meta | Shorts SEO ──
   const [activeSubTab, setActiveSubTab] = useState<'meta' | 'seo'>('meta');
+  const [showPublishedLink, setShowPublishedLink] = useState(true);
+
+  useEffect(() => {
+    setShowPublishedLink(true);
+  }, [publishedSuccess, publishedVideoUrl]);
 
   // Video Publishing Configuration
   const [privacy, setPrivacy] = useState<'public' | 'unlisted' | 'private'>('public');
@@ -1226,26 +1231,37 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         )}
 
         {/* Live Published YouTube Link Banner */}
-        {publishedSuccess && (
+        {publishedSuccess && showPublishedLink && (
           <div className="p-2.5 rounded-xl bg-[#161616] border border-[#3B82F6]/30 flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-[10px] font-mono-studio">
               <span className="text-[#60A5FA] font-bold flex items-center gap-1">
                 <Youtube className="w-3 h-3 text-[#60A5FA]" /> Published Video Link:
               </span>
-              {publishedVideoUrl && (
+              <div className="flex items-center gap-3">
+                {publishedVideoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(publishedVideoUrl);
+                      toast.success('YouTube Short link copied to clipboard!');
+                    }}
+                    className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                    title="Copy video link"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Link</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(publishedVideoUrl);
-                    toast.success('YouTube Short link copied to clipboard!');
-                  }}
-                  className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                  title="Copy video link"
+                  onClick={() => setShowPublishedLink(false)}
+                  className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                  title="Close published video link"
+                  aria-label="Close published video link"
                 >
-                  <Copy className="w-3 h-3" />
-                  <span>Copy Link</span>
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              )}
+              </div>
             </div>
 
             {publishedVideoUrl ? (

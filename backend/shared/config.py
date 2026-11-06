@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 # Search and load .env from root or current working directory
 env_path = Path(__file__).resolve().parent.parent.parent / ".env"
 if env_path.exists():
-    load_dotenv(dotenv_path=env_path, override=True)
+    load_dotenv(dotenv_path=env_path)
 else:
-    load_dotenv(override=True)
+    load_dotenv()
 
 
 class Settings:
@@ -34,7 +34,7 @@ class Settings:
         return os.environ.get("DEFAULT_TTS_MODEL", "gemini-3.8-flash-tts")
 
     # Google Auth & Search
-    GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", os.environ.get("VITE_GOOGLE_CLIENT_ID", ""))
+    GOOGLE_CLIENT_ID: str = os.environ.get("VITE_GOOGLE_CLIENT_ID") or os.environ.get("GOOGLE_CLIENT_ID", "")
     GOOGLE_SECRET: str = (
         os.environ.get("GOOGLE_SECRET")
         or os.environ.get("GOOGLE_CLIENT_SECRET")

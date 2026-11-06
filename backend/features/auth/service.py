@@ -380,7 +380,10 @@ async def authenticate_google_user(access_token: str) -> Dict[str, Any]:
             raise ValueError("Google could not verify your account. Please sign in again.")
         token_info = token_info_response.json()
         if not settings.GOOGLE_CLIENT_ID or token_info.get("issued_to") != settings.GOOGLE_CLIENT_ID:
-            raise ValueError("Google sign-in token was issued to a different application.")
+            raise ValueError(
+                "Google sign-in token was issued to a different application. Ensure GOOGLE_CLIENT_ID "
+                "and VITE_GOOGLE_CLIENT_ID use the same Google Web OAuth client, then restart the frontend and backend."
+            )
 
         response = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",

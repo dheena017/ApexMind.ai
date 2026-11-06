@@ -147,9 +147,13 @@ export const workspaceApi = {
   }): Promise<any> {
     consoleLogger.info('YouTube', `Publishing Short: "${payload.title}"...`, payload);
     const start = performance.now();
+    const token = typeof window !== 'undefined' ? localStorage.getItem('apexmind_token') : null;
     const res = await fetch(apiUrl('/api/youtube/publish'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(payload),
     });
     const duration = performance.now() - start;
