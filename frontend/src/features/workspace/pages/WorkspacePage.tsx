@@ -2094,6 +2094,8 @@ export default function WorkspacePage({
                   onPaneChange('editor');
                 }}
                 onStartNewVideo={handleStartNewVideo}
+                scriptId={(script as any)?.scriptId || (script as any)?.id}
+                scenes={(script as any)?.scenes}
               />
             ) : activePane === 'canvas' ? (
               <CanvasPane

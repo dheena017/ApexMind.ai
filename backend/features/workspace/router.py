@@ -35,6 +35,13 @@ from .schemas import (
     GenerateMetadataRequest,
     GenerateMetadataResponse,
 )
+from .visual_production.schemas import (
+    VisualProductionRequest,
+    VisualProductionResponse,
+    SceneVisualOutput,
+    SceneRegenerateRequest,
+    SceneApprovalRequest,
+)
 from .service import (
     synthesize_voiceover,
     get_media_library,
@@ -545,6 +552,118 @@ def post_studio_resolve_media(payload: StudioMediaRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Media resolution failed: {e}",
         )
+
+
+# ==============================================================================
+# Stage 3 — Visual Production Endpoints (Media, 3D, Hybrid, Automatic)
+# ==============================================================================
+
+@router.post(
+    "/api/studio/generate-visuals",
+    response_model=VisualProductionResponse,
+    tags=["Studio Visuals"],
+    summary="Generate Visual Production (Stage 3 Sync)",
+    description=(
+        "Synchronously generates visual assets for all storyboard scenes across "
+        "Media (stock B-roll), 3D (Blender 5.2 LTS), Hybrid, or Automatic routing."
+    ),
+)
+async def post_generate_visuals(payload: VisualProductionRequest):
+    from .visual_production.engine.visual_orchestrator import visual_orchestrator
+    try:
+        return await visual_orchestrator.generate_storyboard_visuals(payload)
+    except ValueError as val_err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(val_err))
+    except Exception as exc:
+        logger.exception(f"[Studio/Visuals] Visual generation failed: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Visual generation failed: {exc}")
+
+
+@router.post(
+    "/api/studio/generate-visuals/async",
+    tags=["Studio Visuals"],
+    summary="Dispatch Asynchronous Visual Production Job (Stage 3)",
+    description="Registers durable generation job for multi-scene visual production.",
+)
+def post_generate_visuals_async(
+    payload: VisualProductionRequest,
+    x_idempotency_key: Optional[str] = Header(None, alias="X-Idempotency-Key"),
+):
+    from .generation_jobs.job_service import create_generation_job
+    try:
+        job_info = create_generation_job(
+            payload=payload.model_dump(),
+            idempotency_key=x_idempotency_key,
+            job_type="visuals",
+        )
+        return job_info
+    except Exception as exc:
+        logger.exception(f"[Studio/Visuals] Failed dispatching visual job: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+
+@router.get(
+    "/api/studio/scripts/{script_id}/visuals",
+    tags=["Studio Visuals"],
+    summary="Retrieve Active Visual Outputs & Approval Manifest",
+)
+def get_script_visuals_metadata(script_id: str):
+    from .visual_production.storage.visual_storage import visual_storage
+    manifest = visual_storage.load_manifest(script_id)
+    return {
+        "success": True,
+        "scriptId": script_id,
+        "manifest": manifest,
+        "masterPreviewUrl": manifest.get("masterPreviewUrl") or f"/media/visuals/{script_id}/visual_master.mp4",
+    }
+
+
+@router.post(
+    "/api/studio/scripts/{script_id}/visuals/scenes/{scene_id}/regenerate",
+    response_model=SceneVisualOutput,
+    tags=["Studio Visuals"],
+    summary="Regenerate Visuals for a Single Scene",
+)
+async def post_regenerate_scene_visuals(
+    script_id: str,
+    scene_id: str,
+    payload: SceneRegenerateRequest,
+):
+    from .visual_production.engine.visual_orchestrator import visual_orchestrator
+    try:
+        return await visual_orchestrator.regenerate_scene_visuals(
+            script_id=script_id,
+            scene_id=scene_id,
+            mode_override=payload.modeOverride,
+            prompt_override=payload.promptOverride,
+            aspect_ratio=payload.aspectRatio or "9:16",
+        )
+    except Exception as exc:
+        logger.exception(f"[Studio/Visuals] Failed regenerating scene {scene_id}: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+
+@router.post(
+    "/api/studio/scripts/{script_id}/visuals/scenes/{scene_id}/approve",
+    tags=["Studio Visuals"],
+    summary="Approve or Reject Scene Visual Preview",
+)
+def post_approve_scene_visuals(
+    script_id: str,
+    scene_id: str,
+    payload: SceneApprovalRequest,
+):
+    from .visual_production.engine.visual_orchestrator import visual_orchestrator
+    try:
+        return visual_orchestrator.approve_scene(
+            script_id=script_id,
+            scene_id=scene_id,
+            approved=payload.approved,
+            rejection_reason=payload.rejectionReason,
+        )
+    except Exception as exc:
+        logger.exception(f"[Studio/Visuals] Failed approving scene {scene_id}: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
 
 
 @router.post(

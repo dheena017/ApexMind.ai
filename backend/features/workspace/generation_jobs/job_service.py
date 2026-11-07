@@ -35,7 +35,12 @@ def create_generation_job(
     """
     # Detect job type if not specified
     if not job_type:
-        job_type = "voice" if ("voiceConfig" in payload or ("scriptId" in payload and "scenes" not in payload)) else "script"
+        if "projectMode" in payload or payload.get("jobType") == "visuals":
+            job_type = "visuals"
+        elif "voiceConfig" in payload or ("scriptId" in payload and "scenes" not in payload and "projectMode" not in payload):
+            job_type = "voice"
+        else:
+            job_type = "script"
 
     with _JOBS_LOCK:
         if idempotency_key and idempotency_key in _IDEMPOTENCY_MAP:
@@ -123,6 +128,8 @@ def _execute_job_worker(job_id: str):
 
         if job_type == "voice":
             _execute_voice_job(job_id, payload)
+        elif job_type == "visuals":
+            _execute_visuals_job(job_id, payload)
         else:
             _execute_script_job(job_id, payload)
 
@@ -249,6 +256,57 @@ def _execute_voice_job(job_id: str, payload: Dict[str, Any]):
         job["message"] = "Voice generation and master narration assembly completed successfully"
         job["result"] = voice_resp.model_dump()
         logger.info(f"[Jobs] Voice Job '{job_id}' completed successfully in {time.perf_counter() - job['startTime']:.2f}s")
+
+
+def _execute_visuals_job(job_id: str, payload: Dict[str, Any]):
+    """Drives Stage 3 Visual Production job asynchronously."""
+    from backend.features.workspace.visual_production.engine.visual_orchestrator import visual_orchestrator
+    from backend.features.workspace.visual_production.schemas import VisualProductionRequest
+
+    def _on_progress(completed_idx: int, total_count: int, msg: str):
+        if _is_job_cancelled(job_id):
+            return
+        with _JOBS_LOCK:
+            if job_id in _JOBS:
+                j = _JOBS[job_id]
+                j["lastHeartbeat"] = time.time()
+                j["leaseExpiresAt"] = time.time() + 180.0
+                j["completedScenes"] = completed_idx
+                j["totalScenes"] = total_count
+                j["phase"] = JobPhase.COMPOSITING.value
+                pct = 10 + int(80 * (completed_idx / max(1, total_count)))
+                j["progressPercent"] = min(90, pct)
+                j["message"] = msg
+
+    with _JOBS_LOCK:
+        job = _JOBS[job_id]
+        job["phase"] = JobPhase.ANALYZING.value
+        job["progressPercent"] = 10
+        job["message"] = "Analyzing scenes and staging production paths"
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        req = VisualProductionRequest(**payload)
+        vis_resp = loop.run_until_complete(
+            visual_orchestrator.generate_storyboard_visuals(request=req, on_progress=_on_progress)
+        )
+    finally:
+        loop.close()
+
+    if _is_job_cancelled(job_id):
+        return
+
+    with _JOBS_LOCK:
+        job = _JOBS[job_id]
+        job["phase"] = JobPhase.COMPLETED.value
+        job["status"] = JobStatus.COMPLETED.value
+        job["progressPercent"] = 100
+        job["completedScenes"] = vis_resp.totalScenes
+        job["totalScenes"] = vis_resp.totalScenes
+        job["message"] = "Visual production completed successfully and previews are ready for approval"
+        job["result"] = vis_resp.model_dump()
+        logger.info(f"[Jobs] Visual Job '{job_id}' completed successfully in {time.perf_counter() - job['startTime']:.2f}s")
 
 
 def _is_job_cancelled(job_id: str) -> bool:

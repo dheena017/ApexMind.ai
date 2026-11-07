@@ -26,6 +26,7 @@ import { GenerationProfile } from '../../types/script';
 import { PromptTab } from './ai-agent-creator/PromptTab';
 import { StyleTab } from './ai-agent-creator/StyleTab';
 import { VoiceTab } from './ai-agent-creator/VoiceTab';
+import { VisualsTab } from './ai-agent-creator/VisualsTab';
 import { PublishingTab } from './ai-agent-creator/PublishingTab';
 
 export interface AIAgentCreatorPaneProps {
@@ -64,6 +65,8 @@ export interface AIAgentCreatorPaneProps {
   onSubtitleChange?: (val: string) => void;
   selectedMusicMood?: string;
   onMusicMoodChange?: (val: string) => void;
+  scriptId?: string;
+  scenes?: any[];
 }
 
 export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
@@ -99,8 +102,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   onSubtitleChange: propOnSubtitleChange,
   selectedMusicMood: propMusicMood,
   onMusicMoodChange: propOnMusicMoodChange,
+  scriptId,
+  scenes,
 }) => {
-  const [activeTab, setActiveTab] = useState<'prompt' | 'style' | 'voice' | 'publish'>('prompt');
+  const [activeTab, setActiveTab] = useState<'prompt' | 'style' | 'voice' | 'visuals' | 'publish'>('prompt');
   const [liveVoices, setLiveVoices] = useState<VoiceProfile[]>(voices);
   const [internalProfile, setInternalProfile] = useState<GenerationProfile>(generationProfile);
   const [internalAesthetic, setInternalAesthetic] = useState<string>('dark_cinematic');
@@ -207,11 +212,11 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
 
       {/* ── Tab Segmented Control ── */}
       <div className="p-2.5 bg-[#121215] border-b border-[#24242A] shrink-0">
-        <div className="grid grid-cols-4 gap-1 p-1 bg-[#18181C] rounded-xl border border-[#24242A]">
+        <div className="grid grid-cols-5 gap-1 p-1 bg-[#18181C] rounded-xl border border-[#24242A]">
           <button
             type="button"
             onClick={() => setActiveTab('prompt')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'prompt'
                 ? 'bg-[#2563EB] text-white shadow-xs border border-[#60A5FA]/40 font-bold'
                 : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
@@ -224,7 +229,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('style')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'style'
                 ? 'bg-[#2563EB] text-white shadow-xs border border-[#60A5FA]/40 font-bold'
                 : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
@@ -237,7 +242,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('voice')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'voice'
                 ? 'bg-[#2563EB] text-white shadow-xs border border-[#60A5FA]/40 font-bold'
                 : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
@@ -245,21 +250,25 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
           >
             <Mic className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'voice' ? 'text-white' : 'text-zinc-500'}`} />
             <span className="truncate">Voice</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
-                activeTab === 'voice'
-                  ? 'bg-white/20 text-white font-bold'
-                  : 'bg-[#24242A] text-zinc-400'
-              }`}
-            >
-              {liveVoices.length}
-            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('visuals')}
+            className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+              activeTab === 'visuals'
+                ? 'bg-[#2563EB] text-white shadow-xs border border-[#60A5FA]/40 font-bold'
+                : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
+            }`}
+          >
+            <Film className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'visuals' ? 'text-white' : 'text-zinc-500'}`} />
+            <span className="truncate">Visuals</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('publish')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
+            className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
               activeTab === 'publish'
                 ? 'bg-[#2563EB] text-white shadow-xs border border-[#60A5FA]/40 font-bold'
                 : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
@@ -329,6 +338,14 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             onVoiceChange={onVoiceChange}
             testingVoiceId={testingVoiceId}
             onTestVoice={onTestVoice}
+          />
+        )}
+
+        {activeTab === 'visuals' && (
+          <VisualsTab
+            scriptId={scriptId}
+            scenes={scenes}
+            aspectRatio={aspectRatio}
           />
         )}
 

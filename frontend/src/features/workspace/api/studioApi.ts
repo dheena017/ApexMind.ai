@@ -439,6 +439,107 @@ export const studioApi = {
     return data.data;
   },
 
+  // ── Stage 3 Visual Production (Media, 3D, Hybrid, Automatic) ──────────────
+
+  /**
+   * Stage 3 — Synchronous Visual Production
+   * POST /api/studio/generate-visuals
+   */
+  async generateVisuals(params: {
+    scriptId: string;
+    projectMode?: 'media' | 'three_d' | 'hybrid' | 'automatic';
+    scenes?: any[];
+    aspectRatio?: string;
+    stylePreference?: string;
+    autoRoute?: boolean;
+  }): Promise<any> {
+    consoleLogger.info('Studio', `[Stage 3] Generating visuals | scriptId=${params.scriptId} mode=${params.projectMode || 'media'}`);
+    return post('/api/studio/generate-visuals', {
+      scriptId: params.scriptId,
+      projectMode: params.projectMode || 'media',
+      scenes: params.scenes,
+      aspectRatio: params.aspectRatio || '9:16',
+      stylePreference: params.stylePreference || 'cinematic_3d_story',
+      autoRoute: params.autoRoute ?? false,
+    });
+  },
+
+  /**
+   * Stage 3 — Asynchronous Visual Production Job
+   * POST /api/studio/generate-visuals/async
+   */
+  async generateVisualsAsync(
+    params: {
+      scriptId: string;
+      projectMode?: 'media' | 'three_d' | 'hybrid' | 'automatic';
+      scenes?: any[];
+      aspectRatio?: string;
+      stylePreference?: string;
+      autoRoute?: boolean;
+    },
+    idempotencyKey?: string
+  ): Promise<ScriptJobResponse> {
+    consoleLogger.info('Studio', `[Stage 3] Dispatching async visuals job | scriptId=${params.scriptId}`);
+    return post<ScriptJobResponse>(
+      '/api/studio/generate-visuals/async',
+      {
+        scriptId: params.scriptId,
+        projectMode: params.projectMode || 'media',
+        scenes: params.scenes,
+        aspectRatio: params.aspectRatio || '9:16',
+        stylePreference: params.stylePreference || 'cinematic_3d_story',
+        autoRoute: params.autoRoute ?? false,
+      },
+      idempotencyKey ? { 'X-Idempotency-Key': idempotencyKey } : undefined
+    );
+  },
+
+  /**
+   * Stage 3 — Retrieve Visual Metadata & Manifest
+   * GET /api/studio/scripts/{scriptId}/visuals
+   */
+  async getScriptVisuals(scriptId: string): Promise<any> {
+    return get(`/api/studio/scripts/${scriptId}/visuals`);
+  },
+
+  /**
+   * Stage 3 — Single Scene Visual Regeneration
+   * POST /api/studio/scripts/{scriptId}/visuals/scenes/{sceneId}/regenerate
+   */
+  async regenerateSceneVisuals(
+    scriptId: string,
+    sceneId: string,
+    params: {
+      modeOverride?: 'media' | 'three_d' | 'hybrid' | 'automatic';
+      promptOverride?: string;
+      aspectRatio?: string;
+    }
+  ): Promise<any> {
+    consoleLogger.info('Studio', `[Stage 3] Regenerating visuals for scene ${sceneId} (mode=${params.modeOverride || 'default'})`);
+    return post(`/api/studio/scripts/${scriptId}/visuals/scenes/${sceneId}/regenerate`, {
+      modeOverride: params.modeOverride,
+      promptOverride: params.promptOverride,
+      aspectRatio: params.aspectRatio || '9:16',
+    });
+  },
+
+  /**
+   * Stage 3 — Approve or Reject Scene Visual Preview
+   * POST /api/studio/scripts/{scriptId}/visuals/scenes/{sceneId}/approve
+   */
+  async approveSceneVisual(
+    scriptId: string,
+    sceneId: string,
+    approved: boolean,
+    rejectionReason?: string
+  ): Promise<any> {
+    consoleLogger.info('Studio', `[Stage 3] Marking scene ${sceneId} as ${approved ? 'APPROVED' : 'REJECTED'}`);
+    return post(`/api/studio/scripts/${scriptId}/visuals/scenes/${sceneId}/approve`, {
+      approved,
+      rejectionReason,
+    });
+  },
+
   // ── Stage 4 ───────────────────────────────────────────────────────────────
 
   /**
