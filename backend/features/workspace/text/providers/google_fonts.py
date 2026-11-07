@@ -1,6 +1,9 @@
 """
 backend/features/workspace/text/providers/google_fonts.py
 Live Google Fonts provider (1,959 free open-source fonts).
+Diversified interleaving so cards showcase radically different typography styles:
+Display -> Serif -> Sans-Serif -> Handwriting -> Monospace.
+100% dynamic live stream - zero hardcoded font arrays.
 """
 
 import json
@@ -37,7 +40,7 @@ class GoogleFontsProvider(BaseFontProvider):
                     "Accept": "application/json",
                 },
             )
-            with urllib.request.urlopen(req, timeout=5.0) as resp:
+            with urllib.request.urlopen(req, timeout=6.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 family_list = data.get("familyMetadataList", [])
                 parsed = []
@@ -70,15 +73,25 @@ class GoogleFontsProvider(BaseFontProvider):
                         css_fallback = "monospace"
                     elif "serif" in cat_lower and "sans" not in cat_lower:
                         css_fallback = "serif"
-                    elif "handwriting" in cat_lower:
+                    elif "handwriting" in cat_lower or "script" in cat_lower:
                         css_fallback = "cursive"
                     else:
                         css_fallback = "sans-serif"
 
                     css_family = f"'{family}', {css_fallback}"
                     font_family_encoded = urllib.parse.quote_plus(family)
-                    weight_params = ";".join(str(w) for w in weights)
-                    google_font_url = f"https://fonts.googleapis.com/css2?family={font_family_encoded}:wght@{weight_params}&display=swap"
+
+                    # Bulletproof Google Fonts CSS2 URL (guaranteed 200 OK across all Google Fonts)
+                    if 400 in weights and 700 in weights:
+                        wght_query = ":wght@400;700"
+                    elif 400 in weights:
+                        wght_query = ":wght@400"
+                    elif weights:
+                        wght_query = f":wght@{weights[0]}"
+                    else:
+                        wght_query = ""
+
+                    google_font_url = f"https://fonts.googleapis.com/css2?family={font_family_encoded}{wght_query}&display=swap"
 
                     parsed.append({
                         "id": f"gfont-{family.lower().replace(' ', '-')}",
@@ -99,9 +112,41 @@ class GoogleFontsProvider(BaseFontProvider):
                     })
 
                 if parsed:
-                    parsed.sort(key=lambda x: x.get("popularity", 9999))
-                    self._cache = parsed
-                    logger.info(f"Loaded {len(self._cache)} Google Fonts in GoogleFontsProvider")
+                    # Group by primary category and sort each category by popularity
+                    by_cat: Dict[str, List[Dict[str, Any]]] = {
+                        "display": [],
+                        "serif": [],
+                        "sans-serif": [],
+                        "handwriting": [],
+                        "monospace": [],
+                    }
+                    for f in parsed:
+                        ck = f.get("categoryKey", "sans-serif")
+                        if "mono" in ck:
+                            by_cat["monospace"].append(f)
+                        elif "serif" in ck and "sans" not in ck:
+                            by_cat["serif"].append(f)
+                        elif "display" in ck:
+                            by_cat["display"].append(f)
+                        elif "handwriting" in ck or "script" in ck:
+                            by_cat["handwriting"].append(f)
+                        else:
+                            by_cat["sans-serif"].append(f)
+
+                    for k in by_cat:
+                        by_cat[k].sort(key=lambda x: x.get("popularity", 9999))
+
+                    # Interleave across categories for maximum visual variety in the showcase
+                    interleaved: List[Dict[str, Any]] = []
+                    order = ["display", "serif", "sans-serif", "handwriting", "monospace"]
+                    max_len = max(len(lst) for lst in by_cat.values())
+                    for i in range(max_len):
+                        for c in order:
+                            if i < len(by_cat[c]):
+                                interleaved.append(by_cat[c][i])
+
+                    self._cache = interleaved
+                    logger.info(f"Loaded {len(self._cache)} Google Fonts in GoogleFontsProvider (diversified)")
                     return self._cache
         except Exception as e:
             logger.warning(f"GoogleFontsProvider error: {e}")

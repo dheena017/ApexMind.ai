@@ -63,24 +63,33 @@ export const FONT_CATEGORIES = [
 export const TEXT_PROVIDERS = [
   { id: 'all', label: '✨ All Live Providers' },
   { id: 'google_fonts', label: '🌐 Google Fonts (1,900+)' },
-  { id: 'fontshare', label: '💎 Fontshare (Viral Display)' },
-  { id: 'open_font_library', label: '🏛️ Open Font Library (1,500+)' },
+  { id: 'fontshare', label: '💎 Fontshare ITF (Viral Display)' },
   { id: 'fontsource', label: '📚 Fontsource CDN (1,600+)' },
   { id: 'bunny', label: '🐰 Bunny Fonts (1,900+)' },
-  { id: 'coollabs', label: '⚡ Coollabs CDN (1,900+)' },
+  { id: 'gwfh', label: '🏛️ GWFH Open Fonts (1,500+)' },
 ] as const;
 
-// Dynamic stylesheet injector
-function ensureFontLoaded(url?: string) {
+const loadedFontUrls = new Set<string>();
+
+// Dynamic stylesheet injector without URL hash collisions and with reactive load notification
+function ensureFontLoaded(url?: string, onFontReady?: () => void) {
   if (!url || typeof document === 'undefined') return;
-  const existing = document.querySelector(`link[href="${url}"]`);
-  if (!existing) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = url;
-    link.crossOrigin = 'anonymous';
-    document.head.appendChild(link);
+  if (loadedFontUrls.has(url)) return;
+  loadedFontUrls.add(url);
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = url;
+  if (onFontReady) {
+    link.onload = () => {
+      if (document.fonts) {
+        document.fonts.ready.then(() => onFontReady()).catch(() => onFontReady());
+      } else {
+        onFontReady();
+      }
+    };
   }
+  document.head.appendChild(link);
 }
 
 // Clean preview formatter: truncates long project scripts for card display
@@ -103,16 +112,11 @@ function renderFontProviderBadge(provider?: string) {
           Fontshare
         </span>
       );
+    case 'gwfh':
     case 'open_font_library':
       return (
         <span className="text-[9px] font-mono-studio text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1 rounded shrink-0">
-          OFL
-        </span>
-      );
-    case 'coollabs':
-      return (
-        <span className="text-[9px] font-mono-studio text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-1 rounded shrink-0">
-          Coollabs
+          GWFH
         </span>
       );
     case 'fontsource':
@@ -122,6 +126,7 @@ function renderFontProviderBadge(provider?: string) {
         </span>
       );
     case 'bunny':
+    case 'coollabs':
       return (
         <span className="text-[9px] font-mono-studio text-pink-300 bg-pink-500/15 border border-pink-500/30 px-1 rounded shrink-0">
           Bunny
@@ -151,6 +156,11 @@ export const TextPane: React.FC<TextPaneProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [totalFonts, setTotalFonts] = useState<number>(0);
+  const [, setLoadedVersion] = useState<number>(0);
+
+  const triggerFontRepaint = useCallback(() => {
+    setLoadedVersion((v) => v + 1);
+  }, []);
 
   const triggerFeedback = (msg: string) => {
     toast.success(msg);
@@ -169,7 +179,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
     async (currentPage: number = 1, append: boolean = false) => {
       setIsLoading(true);
       try {
-        const prov = selectedProvider !== 'all' ? selectedProvider : 'google_fonts';
+        const prov = selectedProvider;
         const res = await workspaceApi.searchOpenFonts(
           searchQuery,
           selectedCategory,
@@ -182,7 +192,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           const items: TextPreset[] = res.items;
           items.forEach((item) => {
             if (item.googleFontUrl) {
-              ensureFontLoaded(item.googleFontUrl);
+              ensureFontLoaded(item.googleFontUrl, triggerFontRepaint);
             }
           });
 
@@ -233,7 +243,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
     setSelectedWeight(chosenWeight);
 
     if (font.googleFontUrl) {
-      ensureFontLoaded(font.googleFontUrl);
+      ensureFontLoaded(font.googleFontUrl, triggerFontRepaint);
     }
 
     const applied: TextPreset = {
