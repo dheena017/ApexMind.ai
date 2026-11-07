@@ -64,8 +64,10 @@ export const TEXT_PROVIDERS = [
   { id: 'all', label: '✨ All Live Providers' },
   { id: 'google_fonts', label: '🌐 Google Fonts (1,900+)' },
   { id: 'fontshare', label: '💎 Fontshare (Viral Display)' },
+  { id: 'open_font_library', label: '🏛️ Open Font Library (1,500+)' },
   { id: 'fontsource', label: '📚 Fontsource CDN (1,600+)' },
   { id: 'bunny', label: '🐰 Bunny Fonts (1,900+)' },
+  { id: 'coollabs', label: '⚡ Coollabs CDN (1,900+)' },
 ] as const;
 
 // Dynamic stylesheet injector
@@ -99,6 +101,18 @@ function renderFontProviderBadge(provider?: string) {
       return (
         <span className="text-[9px] font-mono-studio text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1 rounded shrink-0">
           Fontshare
+        </span>
+      );
+    case 'open_font_library':
+      return (
+        <span className="text-[9px] font-mono-studio text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1 rounded shrink-0">
+          OFL
+        </span>
+      );
+    case 'coollabs':
+      return (
+        <span className="text-[9px] font-mono-studio text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-1 rounded shrink-0">
+          Coollabs
         </span>
       );
     case 'fontsource':
@@ -248,7 +262,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
               Font Styles
             </span>
             <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
-              {totalFonts ? `${totalFonts.toLocaleString()} Live Fonts` : '5,500+ Live Fonts'}
+              {totalFonts ? `${totalFonts.toLocaleString()} Live Fonts` : '8,500+ Live Fonts'}
             </span>
           </div>
         </div>

@@ -170,7 +170,7 @@ async def get_open_media_providers_route():
     tags=["Typography"],
     summary="Search Modular Font Providers",
     operation_id="search_modular_fonts",
-    description="Live query to modular open-source font providers: Google Fonts (1,900+ fonts), Fontshare ITF (100+ viral display fonts), Fontsource CDN (1,600+ fonts), and Bunny Fonts CDN (1,900+ fonts). 100% dynamic live APIs with zero hardcoded data."
+    description="Live query to 6 modular open-source font providers: Google Fonts (1,900+ fonts), Fontshare ITF (100+ viral display fonts), Open Font Library (1,500+ independent fonts), Fontsource CDN (1,600+ fonts), Bunny Fonts (1,900+ fonts), and Coollabs CDN (1,900+ fonts). 100% dynamic live APIs with zero hardcoded data."
 )
 async def get_open_fonts_route(
     q: str = "",
