@@ -10,7 +10,6 @@ import {
   Bookmark,
   Trash2,
   Plus,
-  RotateCcw,
   Palette,
   RefreshCw,
 } from 'lucide-react';
@@ -61,10 +60,9 @@ export const FONT_CATEGORIES = [
 ] as const;
 
 export const TEXT_PROVIDERS = [
-  { id: 'all', label: '✨ All Providers' },
+  { id: 'all', label: '✨ All Live Providers' },
   { id: 'google_fonts', label: '🌐 Google Fonts (1,900+)' },
-  { id: 'fontsource', label: '📚 Fontsource CDN' },
-  { id: 'system', label: '💻 System Webfonts' },
+  { id: 'fontsource', label: '📚 Fontsource CDN (1,600+)' },
 ] as const;
 
 const LOCAL_STORAGE_CUSTOM_STYLES_KEY = 'apexmind_saved_custom_typography_styles';
