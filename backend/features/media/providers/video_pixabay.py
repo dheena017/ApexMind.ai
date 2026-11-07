@@ -48,7 +48,7 @@ class PixabayVideoProvider(BaseMediaProvider):
         if not api_key:
             return []
 
-        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic nature"
+        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic"
 
         # Handle Pixabay Photos/Images search
         if media_type == "image":

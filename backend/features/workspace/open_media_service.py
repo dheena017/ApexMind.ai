@@ -87,7 +87,7 @@ def search_open_images(
     elif clean_cat and clean_cat.lower() not in ("all", "*"):
         q = clean_cat
     else:
-        q = "nature landscape"
+        q = "cinematic"
     ratio = "9:16" if orientation == "portrait" else "16:9"
     res = search_media(
         query=q,

@@ -33,7 +33,7 @@ class WikimediaVideoProvider(BaseMediaProvider):
         page: int = 1,
         **kwargs,
     ) -> List[MediaAsset]:
-        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic nature"
+        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic"
         endpoint = "https://commons.wikimedia.org/w/api.php"
         is_image_mode = (media_type == "image")
         search_term = f"{clean_q} filetype:bitmap" if is_image_mode else f"{clean_q} filetype:video"

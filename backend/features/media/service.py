@@ -262,7 +262,7 @@ def search_media(
 
     clean_q = (query or "").strip()
     if not clean_q or clean_q.lower() in ("all", "*"):
-        clean_q = "cinematic nature" if media_type == "video" else "nature landscape"
+        clean_q = "cinematic"
 
     per_prov_limit = limit if provider != "all" else max(6, min(limit, 15))
 
@@ -318,8 +318,8 @@ def search_media(
             seen.add(it.url)
             deduped.append(it)
 
-    # Apply Semantic Negative Filter & Aesthetic Prioritization
-    ranked_items, _ = filter_and_rank_candidates(deduped, target_query=query, min_score_threshold=35.0)
+    # Apply Semantic Quality Filter & Aesthetic Prioritization
+    ranked_items, _ = filter_and_rank_candidates(deduped, target_query=query, min_score_threshold=0.0)
 
     return MediaSearchData(
         query=query,

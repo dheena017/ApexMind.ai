@@ -58,16 +58,19 @@ export type ProviderType = (typeof PROVIDER_OPTIONS)[number]['value'];
 
 export const CURATED_MOOD_PILLS = [
   { id: 'all', query: '', category: 'all', label: '✨ All' },
-  { id: 'rain', query: 'rain', category: 'all', label: '🌧️ Rain' },
-  { id: 'stoic', query: 'stoic', category: 'stoic', label: '🗿 Stoic' },
-  { id: 'gym', query: 'gym', category: 'gym', label: '💪 Gym' },
-  { id: 'cyber', query: 'cyberpunk', category: 'cyber', label: '🌃 Cyber' },
-  { id: 'nature', query: 'nature', category: 'nature', label: '⛰️ Nature' },
-  { id: 'dark', query: 'dark', category: 'minimal', label: '🖤 Dark' },
-  { id: 'space', query: 'space', category: 'all', label: '🌌 Space' },
-  { id: 'ocean', query: 'ocean', category: 'all', label: '🌊 Ocean' },
-  { id: 'fire', query: 'fire', category: 'all', label: '🔥 Fire' },
-  { id: 'luxury', query: 'luxury', category: 'architecture', label: '✨ Luxury' },
+  { id: 'cinematic', query: 'cinematic', category: 'all', label: '🎬 Cinematic' },
+  { id: 'nature', query: 'nature landscape', category: 'nature', label: '⛰️ Nature' },
+  { id: 'city', query: 'city architecture skyline', category: 'architecture', label: '🏙️ City' },
+  { id: 'tech', query: 'technology cyberpunk code', category: 'cyber', label: '💻 Tech' },
+  { id: 'gym', query: 'fitness gym workout', category: 'gym', label: '💪 Gym' },
+  { id: 'people', query: 'people portrait lifestyle', category: 'all', label: '👥 People' },
+  { id: 'cars', query: 'supercar automotive', category: 'all', label: '🏎️ Cars' },
+  { id: 'space', query: 'space galaxy nebula', category: 'all', label: '🌌 Space' },
+  { id: 'ocean', query: 'ocean waves beach', category: 'all', label: '🌊 Ocean' },
+  { id: 'luxury', query: 'luxury interior architecture', category: 'architecture', label: '✨ Luxury' },
+  { id: 'dark', query: 'dark moody aesthetic', category: 'minimal', label: '🖤 Dark' },
+  { id: 'fire', query: 'fire flames energy', category: 'all', label: '🔥 Fire' },
+  { id: 'rain', query: 'rain moody city', category: 'all', label: '🌧️ Rain' },
 ] as const;
 
 const LOCAL_STORAGE_KEY = 'apexmind_custom_images';

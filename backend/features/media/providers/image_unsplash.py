@@ -39,7 +39,7 @@ class UnsplashImageProvider(BaseMediaProvider):
         if not access_key:
             return []
 
-        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic landscape"
+        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic"
         orientation = "portrait" if aspect_ratio in ["9:16", "4:5"] else "landscape"
 
         url = "https://api.unsplash.com/search/photos"

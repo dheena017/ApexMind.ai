@@ -39,7 +39,23 @@ export interface VideoStockPaneProps {
   activeVideoUrl?: string;
 }
 
-const SEARCH_TOPICS = ['#nature', '#mountains', '#forest', '#ocean', '#waterfall', '#clouds', '#sunset', '#aurora', '#river', '#rain'];
+const SEARCH_TOPICS = [
+  '#all',
+  '#trending',
+  '#cinematic',
+  '#nature',
+  '#city',
+  '#gym',
+  '#tech',
+  '#people',
+  '#cars',
+  '#drone',
+  '#space',
+  '#ocean',
+  '#luxury',
+  '#fire',
+  '#abstract',
+];
 
 const LOCAL_STORAGE_VIDEOS_KEY = 'apexmind_custom_videos';
 
@@ -228,7 +244,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         }
 
         const rawQ = query.trim().replace(/^#/, '');
-        const cleanQ = rawQ || (category !== 'all' ? category : 'cinematic nature');
+        const cleanQ = rawQ || (category !== 'all' ? category : 'cinematic');
         const res = await workspaceApi.searchOpenVideos(cleanQ, category, pageNum, 24, provider);
 
         if (res && res.items && res.items.length > 0) {
@@ -391,7 +407,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         <div className="flex items-center gap-2 min-w-0">
           <Film className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="text-xs font-bold text-white truncate">
-            Nature Video Clips
+            Stock Videos & Clips
           </span>
         </div>
 
@@ -596,17 +612,22 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       value={selectedCategory}
                       onChange={(val) => handleCategoryChange(val as any)}
                       options={[
-                        { value: 'all', label: '✨ All Free Loops' },
-                        { value: 'nature', label: '🌲 Nature' },
-                        { value: 'mountains', label: '⛰️ Mountains' },
-                        { value: 'ocean', label: '🌊 Ocean' },
-                        { value: 'city', label: '🏙️ City & Cyber' },
+                        { value: 'all', label: '✨ All Video Clips' },
+                        { value: 'trending', label: '🔥 Trending & Cinematic' },
+                        { value: 'nature', label: '🌲 Nature & Landscapes' },
+                        { value: 'city', label: '🏙️ City & Architecture' },
+                        { value: 'tech', label: '💻 Technology & Cyber' },
                         { value: 'gym', label: '💪 Gym & Fitness' },
+                        { value: 'people', label: '👥 People & Lifestyle' },
+                        { value: 'cars', label: '🏎️ Cars & Automotive' },
+                        { value: 'drone', label: '🚁 Drone & Aerial' },
+                        { value: 'space', label: '🌌 Space & Cosmic' },
+                        { value: 'ocean', label: '🌊 Ocean & Water' },
                         { value: 'clouds', label: '☁️ Sky & Storm' },
-                        { value: 'fire', label: '🔥 Fire & Action' },
+                        { value: 'fire', label: '🔥 Fire & Energy' },
                         { value: 'sunset', label: '🌅 Golden Hour' },
-                        { value: 'space', label: '🌌 Space' },
-                        { value: 'abstract', label: '🌀 Dark & Stoic' },
+                        { value: 'luxury', label: '✨ Luxury & Style' },
+                        { value: 'abstract', label: '🌀 Dark & Abstract' },
                       ]}
                       variant="compact"
                       align="right"

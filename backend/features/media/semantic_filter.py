@@ -17,67 +17,14 @@ from backend.shared.ai_models import resolve_script_model
 
 logger = logging.getLogger("ApexMind.media.semantic_filter")
 
-# ── Semantic Negative Filter Patterns (Hard Rejection) ──────────────────────────
+# ── Semantic Negative Filter Patterns (Hard Rejection for Clipart/Overlays Only) ─
 
-# 1. Humans talking, interviews, podcasts, talking heads to camera
-HUMAN_SPEECH_REJECTIONS: Set[str] = {
-    "talking to camera", "talking head", "interview", "podcast", "speaking to camera",
-    "vlog", "vlogger", "presenter", "webinar", "explaining", "reporter", "news anchor",
-    "speech", "mouth moving", "conversation", "zoom call", "facetime", "testimonial",
-    "video call", "conference call", "talking person", "talking woman", "talking man",
-    "influencer speaking", "talking close up", "person speaking", "dialogue", "host",
-    "spokesperson", "headshot talking", "speaking microphone"
-}
-
-# 2. Crowded city streets, pedestrian traffic, rush hour congestion
-CROWDED_CITY_REJECTIONS: Set[str] = {
-    "crowded street", "crowd of people", "crowded sidewalk", "pedestrians", "pedestrian crossing",
-    "crosswalk crowd", "traffic jam", "rush hour", "commuters", "busy street", "city crowd",
-    "busy sidewalk", "shopping mall crowd", "subway crowd", "metro station crowd",
-    "busy intersection", "crowded market", "traffic congestion", "cars in traffic",
-    "city pedestrians", "walking in crowd", "tourist crowd", "packed street"
-}
-
-# 3. Modern tech, office cubicles, laptops, smartphones, corporate meetings
-MODERN_TECH_REJECTIONS: Set[str] = {
-    "laptop", "smartphone", "cell phone", "typing on keyboard", "typing on laptop",
-    "computer screen", "office desk", "office cubicle", "corporate meeting", "boardroom",
-    "software code", "cellphone", "texting", "call center", "desktop monitor",
-    "business presentation", "excel sheet", "working on laptop", "browsing phone",
-    "scrolling phone", "office workers at desks", "holding smartphone", "programmer coding",
-    "coworking space", "business people handshake", "financial chart on screen"
-}
-
-# 4. Low-effort overlays, green screens, chroma keys, clipart CTA buttons
+# Low-effort overlays, green screens, chroma keys, clipart CTA buttons
 CLIPART_OVERLAY_REJECTIONS: Set[str] = {
     "green screen", "chroma key", "isolated on white", "transparent background",
     "isolated on black", "subscribe button", "like and subscribe", "lower third",
     "subscribe animation", "animated icon", "cartoon character", "infographic",
-    "click button", "red button", "isolated green", "subscribe like"
-}
-
-# 5. Gyms, workout rooms, modern fitness cliches (mismatches stoic/philosophical depth)
-GYM_FITNESS_REJECTIONS: Set[str] = {
-    "gym", "gyms", "weightlifting", "bodybuilder", "bodybuilding", "treadmill",
-    "fitness club", "exercise equipment", "crossfit", "bicep curl", "bench press",
-    "dumbbells", "barbell", "workout video", "gym selfie", "spandex workout",
-    "aerobics class", "spinning class", "gym workout", "lifting weights in gym",
-    "pilates class", "locker room"
-}
-
-# 6. Modern vehicle traffic & street clutter
-MODERN_VEHICLE_REJECTIONS: Set[str] = {
-    "driving car", "car dashboard", "sports car speeding", "traffic light", "parking lot",
-    "gas station", "car interior", "steering wheel", "rear view mirror", "supercar",
-    "highway driving", "car showroom", "car dealership", "sedan", "suv on street",
-    "car engine", "fuel pump", "mechanic shop"
-}
-
-# 7. Commercial retail clutter & supermarkets
-COMMERCIAL_RETAIL_REJECTIONS: Set[str] = {
-    "supermarket", "shopping cart", "retail store", "cash register", "credit card payment",
-    "fast food", "restaurant kitchen", "bar counter", "grocery store", "aisle shopping",
-    "store shelves", "price tag", "checkout counter", "buying clothes", "department store"
+    "click button", "red button", "isolated green", "subscribe like", "watermark demo"
 }
 
 
@@ -96,17 +43,50 @@ DRAMATIC_LIGHTING_KEYWORDS: Set[str] = {
     "silhouette", "chiaroscuro", "dark moody", "volumetric lighting", "atmospheric",
     "fog", "mist", "thunderstorm", "lightning", "rays of light", "god rays",
     "crepuscular rays", "lens flare", "twilight", "dusk", "neon glow", "rim lighting",
-    "backlit", "cinematic lighting", "storm clouds", "golden light", "shadows"
+    "backlit", "cinematic lighting", "storm clouds", "golden light", "shadows", "neon"
 }
 
-# 3. Epic Nature & Stoic Elements (+25 pts)
+# 3. Nature & Scenic Landscapes (+25 pts)
 EPIC_NATURE_KEYWORDS: Set[str] = {
     "mountains", "mountain peak", "ocean waves", "clouds time lapse", "forest",
     "waterfall", "fire", "smoke", "embers", "sparks", "stars", "milky way", "galaxy",
     "nebula", "space", "statue", "marble bust", "ancient ruins", "desert dunes",
     "canyon", "cliff", "glacier", "aurora borealis", "northern lights", "volcano",
     "rain on glass", "dark storm", "ocean horizon", "raging sea", "cascading water",
-    "snow storm", "lone wanderer", "foggy pine trees", "stormy sky"
+    "snow storm", "lone wanderer", "foggy pine trees", "stormy sky", "landscape"
+}
+
+# 4. Urban, Architecture & City Skylines (+25 pts)
+URBAN_CITY_KEYWORDS: Set[str] = {
+    "city", "skyline", "urban", "architecture", "skyscraper", "downtown", "metropolis",
+    "street", "night city", "cyberpunk", "bridge", "traffic lights timelapse",
+    "city aerial", "modern building", "rooftop view"
+}
+
+# 5. Technology, Coding & Digital (+25 pts)
+TECH_DIGITAL_KEYWORDS: Set[str] = {
+    "technology", "code", "coding", "software", "programmer", "developer", "laptop",
+    "computer", "server", "ai", "artificial intelligence", "matrix", "cyber", "data",
+    "screen", "hacker", "microchip", "circuit board"
+}
+
+# 6. Fitness, Gym & Athletic Training (+25 pts)
+FITNESS_ATHLETIC_KEYWORDS: Set[str] = {
+    "gym", "workout", "fitness", "training", "athlete", "running", "crossfit",
+    "weightlifting", "boxing", "martial arts", "calisthenics", "muscles", "bodybuilding",
+    "exercise", "sports", "sprint"
+}
+
+# 7. People, Lifestyle & Portraits (+20 pts)
+PEOPLE_LIFESTYLE_KEYWORDS: Set[str] = {
+    "people", "person", "portrait", "lifestyle", "entrepreneur", "business", "meeting",
+    "travel", "wanderer", "fashion", "model", "artist", "musician", "dancer", "walking"
+}
+
+# 8. Automotive, Cars & Speed (+20 pts)
+AUTOMOTIVE_KEYWORDS: Set[str] = {
+    "car", "supercar", "automotive", "sports car", "driving", "highway", "speed",
+    "racing", "motorcycle", "vehicle", "drift"
 }
 
 
@@ -159,7 +139,7 @@ def evaluate_clip(
     target_q_clean = (target_query or "").lower().strip()
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # STEP 1: HARD NEGATIVE CHECKS
+    # STEP 1: HARD NEGATIVE CHECKS (Low-effort clipart / green screens only)
     # ─────────────────────────────────────────────────────────────────────────────
 
     # 1. Clipart & Green Screen Check (Always Rejected)
@@ -171,78 +151,10 @@ def evaluate_clip(
                 rejection_category="clipart_overlay",
             )
 
-    # 2. Human Speech / Interviews / Talking to Camera Check
-    for bad in HUMAN_SPEECH_REJECTIONS:
-        if bad in text_corpus:
-            return SemanticEvaluationResult(
-                is_accepted=False,
-                rejection_reason=f"Rejected: Talking head / human speech clip ('{bad}')",
-                rejection_category="human_speech",
-            )
-
-    # 3. Crowded City Streets / Pedestrian Congestion Check
-    for bad in CROWDED_CITY_REJECTIONS:
-        if bad in text_corpus:
-            return SemanticEvaluationResult(
-                is_accepted=False,
-                rejection_reason=f"Rejected: Crowded street / pedestrian traffic congestion ('{bad}')",
-                rejection_category="crowded_city",
-            )
-
-    # 4. Modern Tech / Office Cubicle Check (Unless target_query explicitly asked for coding/tech)
-    user_explicitly_wants_tech = bool(
-        allow_tech_if_query_explicit
-        and any(w in target_q_clean for w in ["coding", "code", "programming", "software", "laptop", "computer", "tech"])
-    )
-
-    if not user_explicitly_wants_tech:
-        for bad in MODERN_TECH_REJECTIONS:
-            if bad in text_corpus:
-                return SemanticEvaluationResult(
-                    is_accepted=False,
-                    rejection_reason=f"Rejected: Modern office / tech clutter ('{bad}')",
-                    rejection_category="modern_tech",
-                )
-
-    # 5. Gyms & Workout Rooms Check (Unless target_query explicitly asked for gym/workout)
-    user_explicitly_wants_fitness = bool(
-        any(w in target_q_clean for w in ["gym", "workout", "fitness", "bodybuilding", "exercise", "weightlifting"])
-    )
-    if not user_explicitly_wants_fitness:
-        for bad in GYM_FITNESS_REJECTIONS:
-            if bad in text_corpus:
-                return SemanticEvaluationResult(
-                    is_accepted=False,
-                    rejection_reason=f"Rejected: Gym / workout cliche ('{bad}')",
-                    rejection_category="gym_fitness",
-                )
-
-    # 6. Modern Vehicle Traffic Check (Unless query explicitly asked for cars/driving)
-    user_explicitly_wants_vehicle = bool(
-        any(w in target_q_clean for w in ["car", "cars", "drive", "driving", "automobile", "racing"])
-    )
-    if not user_explicitly_wants_vehicle:
-        for bad in MODERN_VEHICLE_REJECTIONS:
-            if bad in text_corpus:
-                return SemanticEvaluationResult(
-                    is_accepted=False,
-                    rejection_reason=f"Rejected: Modern vehicle traffic clutter ('{bad}')",
-                    rejection_category="modern_vehicle",
-                )
-
-    # 7. Commercial Retail Clutter Check
-    for bad in COMMERCIAL_RETAIL_REJECTIONS:
-        if bad in text_corpus:
-            return SemanticEvaluationResult(
-                is_accepted=False,
-                rejection_reason=f"Rejected: Commercial store / retail clutter ('{bad}')",
-                rejection_category="commercial_retail",
-            )
-
     # ─────────────────────────────────────────────────────────────────────────────
-    # STEP 2: POSITIVE AESTHETIC SCORING & BADGE COMPUTATION
+    # STEP 2: POSITIVE AESTHETIC SCORING & DIVERSE BADGE COMPUTATION
     # ─────────────────────────────────────────────────────────────────────────────
-    score: float = 50.0  # Base passing score
+    score: float = 60.0  # Base passing score for verified stock media
     badges: List[str] = []
     positive_matches: List[str] = []
 
@@ -276,11 +188,11 @@ def evaluate_clip(
             if ("sunset" in dl or "golden hour" in dl or "sunrise" in dl) and "Golden Hour" not in badges:
                 badges.append("Golden Hour")
 
-    # C. Epic Nature & Stoic Mood (+25 pts)
+    # C. Nature & Landscapes (+25 pts)
     for en in EPIC_NATURE_KEYWORDS:
         if en in text_corpus:
             score += 25.0
-            if "mountain" in en or "ocean" in en or "waterfall" in en or "canyon" in en or "cliff" in en:
+            if "mountain" in en or "ocean" in en or "waterfall" in en or "canyon" in en or "cliff" in en or "forest" in en:
                 badges.append("Epic Nature")
             elif "statue" in en or "ruins" in en:
                 badges.append("Stoic Classic")
@@ -289,7 +201,47 @@ def evaluate_clip(
             positive_matches.append(en)
             break
 
-    # D. 4K UHD & High Resolution (+25 pts)
+    # D. Urban & Architecture (+25 pts)
+    for uc in URBAN_CITY_KEYWORDS:
+        if uc in text_corpus:
+            score += 25.0
+            badges.append("Urban & Skyline")
+            positive_matches.append(uc)
+            break
+
+    # E. Tech & Cyber (+25 pts)
+    for tc in TECH_DIGITAL_KEYWORDS:
+        if tc in text_corpus:
+            score += 25.0
+            badges.append("Tech & Cyber")
+            positive_matches.append(tc)
+            break
+
+    # F. Fitness & Athletics (+25 pts)
+    for fa in FITNESS_ATHLETIC_KEYWORDS:
+        if fa in text_corpus:
+            score += 25.0
+            badges.append("Fitness & Energy")
+            positive_matches.append(fa)
+            break
+
+    # G. People & Lifestyle (+20 pts)
+    for pl in PEOPLE_LIFESTYLE_KEYWORDS:
+        if pl in text_corpus:
+            score += 20.0
+            badges.append("Lifestyle")
+            positive_matches.append(pl)
+            break
+
+    # H. Automotive & Speed (+20 pts)
+    for am in AUTOMOTIVE_KEYWORDS:
+        if am in text_corpus:
+            score += 20.0
+            badges.append("Automotive")
+            positive_matches.append(am)
+            break
+
+    # I. 4K UHD & High Resolution (+25 pts)
     w_str, h_str = (cand.resolution or "1080x1920").split("x") if "x" in (cand.resolution or "") else ("1080", "1920")
     try:
         w_val, h_val = int(w_str), int(h_str)
@@ -335,7 +287,7 @@ def evaluate_clip(
 def filter_and_rank_candidates(
     candidates: List[MediaAsset],
     target_query: str = "",
-    min_score_threshold: float = 35.0,
+    min_score_threshold: float = 0.0,
 ) -> Tuple[List[MediaAsset], List[Dict[str, Any]]]:
     """
     Filters a list of candidate MediaAssets through semantic negative filtering,

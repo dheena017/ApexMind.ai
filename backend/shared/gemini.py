@@ -31,8 +31,9 @@ from .config import settings
 SCRIPT_SYSTEM_INSTRUCTION: str = (
     "You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer "
     "for viral YouTube Shorts, Instagram Reels, and Facebook Reels. Produce high-retention motivational "
-    "short video plans with 3 viral hook variations, 100% pure cinematic nature footage queries, "
-    "5-layer broadcast sound design with dynamic sidechain ducking. "
+    "and inspirational short video plans with 3 viral hook variations, diverse cinematic footage queries "
+    "tailored to the theme (nature, urban, technology, fitness, space, luxury, architecture, lifestyle, abstract), "
+    "and 5-layer broadcast sound design with dynamic sidechain ducking. "
     "Strictly output only valid JSON matching the exact schema."
 )
 
@@ -540,12 +541,12 @@ def _build_emergency_theme_script(
             "sfx": "Fast Cinematic Whoosh" if i == 0 else (None if not is_last else "Cash Register Cha-Ching"),
             "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" if i == 0 else (None if not is_last else "https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3"),
             "googleSearchQuery": f"{vis_q} {aspect_tag}",
-            "visualQuery": f"{vis_q} nature",
+            "visualQuery": f"{vis_q}",
             "fallbackQueries": [
-                f"mountain landscape sunrise {aspect_tag}",
-                f"storm waves ocean rocks {aspect_tag}",
+                f"{vis_q} cinematic {aspect_tag}",
+                f"{vis_q} atmospheric {aspect_tag}",
             ],
-            "negativeTerms": ["indoor", "gym", "city", "people", "talking", "cartoon"],
+            "negativeTerms": ["green screen", "clipart", "lower third", "subscribe button"],
             "subtitleText": sub_texts[i],
         })
         current_time += sc_dur
@@ -740,7 +741,7 @@ STRICT ENFORCEMENT RULES FOR THIS {target_seconds}-SECOND VIDEO:
    - Scene 1: Pattern Interrupt Hook (3-4s, 6-9 words)
    - Scene 2 to Scene {target_scenes - 1}: Multi-Part Wisdom Monologue with escalating tension, real-world stoic metaphors, and philosophical depth (approx. 4.0s - 5.5s and 10-14 words per scene).
    - Final Scene {target_scenes}: Decisive Closing Call to Action (4-5s, 8-12 words).
-5. Every single scene MUST feature a unique cinematic 100% nature footage query and distinct subtitleText.
+5. Every single scene MUST feature a unique cinematic visual query tailored specifically to the theme/topic (urban, nature, technology, fitness, lifestyle, space, cars, luxury, or abstract) and distinct subtitleText.
 6. The sum of all scene durations in "storyboard" MUST EQUAL EXACTLY {target_seconds}.0 seconds!
 """
 
@@ -815,10 +816,16 @@ VIRALITY & RETENTION ARCHITECTURE (ENGINEERED FOR 85%+ COMPLETION RATE):
      * 60s Short: ~140-150 words total (10-12 scenes)
    - Every scene duration MUST be 3.2s to 5.5s (never under 3.0s), allowing footage to breathe without visual chaos.
 
-3. 100% PURE CINEMATIC NATURE & STOIC VISUAL DIRECTIVE:
-   - Do NOT use static images or photos! Every single scene MUST be a moving, cinematic VIDEO ("mediaType": "video").
-   - Allowed environments: misty mountain summits, alpine peaks, ancient pine forests, cascading waterfalls, dramatic ocean storm waves, winding rivers, northern lights (aurora borealis), starry cosmos/nebula over ridges, volumetric storm clouds, golden hour sunsets, or desert dunes.
-   - ABSOLUTELY FORBIDDEN: Gyms, workout rooms, treadmills, bodybuilders, city traffic, cars, laptops, office cubicles, corporate desks, or talking humans.
+3. DYNAMIC VISUAL DIRECTIVE (ALL KINDS OF CINEMATIC FOOTAGE):
+   - Every scene MUST be a moving, cinematic VIDEO ("mediaType": "video").
+   - Match footage specifically to the theme, narrative, and mood:
+     * Urban & Modern: skyscrapers, city skylines, night street lights, modern architecture.
+     * Nature & Adventure: mountain summits, pine forests, ocean waves, waterfalls, canyons, aurora borealis, golden sunsets.
+     * Technology & Cyber: digital code, servers, workstations, futuristic neon, AI visual concepts.
+     * Fitness & Athletics: focused gym training, athletes, runners, boxing, calisthenics, intense discipline.
+     * People & Lifestyle: entrepreneurs, travelers, thinkers, creative workshops, dramatic character silhouettes.
+     * Automotive & Speed: sports cars on highways, roads, race tracks, mechanics, headlights at night.
+     * Cosmic & Abstract: deep space nebula, milky way, minimalist dark textures, fluid dynamics, lighting effects.
    - ZERO DUPLICATE CLIPS: Every scene cut MUST use a DISTINCT, UNIQUE visual query and search expression.
    - CAMERA CHOREOGRAPHY: Assign dynamic camera movement to every scene in "cameraMotion":
      * "slow-push-in" (Hook / Urgency)
@@ -831,10 +838,10 @@ VIRALITY & RETENTION ARCHITECTURE (ENGINEERED FOR 85%+ COMPLETION RATE):
 
 4. SEARCH ENGINE & SEMANTIC DISCOVERY PROMPTING:
    - For every scene, provide high-precision sensory queries:
-     * "googleSearchQuery": include lighting and resolution tags, e.g., 'misty alpine mountain peak sunrise volumetric rays 4k vertical 9:16'
-     * "visualQuery": clean semantic keywords, e.g., 'misty mountain peak sunrise clouds volumetric'
-     * "fallbackQueries": 2 viable alternatives, e.g., ['foggy pine forest aerial drone landscape', 'mountain ridge storm clouds timelapse']
-     * "negativeTerms": ["gym", "fitness", "workout", "city", "building", "urban", "office", "car", "technology", "phone", "smiling", "interview", "talking", "cartoon"]
+     * "googleSearchQuery": include lighting and resolution tags, e.g., 'city skyline dusk volumetric rays 4k vertical 9:16'
+     * "visualQuery": clean semantic keywords, e.g., 'city skyline sunset drone golden hour'
+     * "fallbackQueries": 2 viable alternatives, e.g., ['modern architecture glass building reflection', 'downtown street night lights timelapse']
+     * "negativeTerms": ["green screen", "chroma key", "clipart", "lower third", "subscribe button", "low quality", "blurry"]
 
 5. 5-LAYER BROADCAST SOUND DESIGN & SIDECHAIN DUCKING:
    - Soundtrack: Select "soundtrackTrackId" from AVAILABLE SOUNDTRACKS matching the emotional arc.
@@ -1099,15 +1106,16 @@ Output MUST be a single raw JSON object matching this exact schema:
                 sc["tone"] = sc.get("tone") or "motivational"
                 sc["emotion"] = sc.get("emotion") or "Focused, engaging pace"
 
-            # Force final scene (CTA) to always feature breathtaking nature, never green-screen button clipart
-            is_cta = sc.get("beat") == "cta" or any(t in str(sc.get("visualQuery", "")).lower() for t in CTA_EXCLUSION_TERMS)
-            if is_cta:
-                sc["mediaName"] = "Cinematic Golden Hour Mountain Sunset"
-                sc["visualQuery"] = "dramatic golden hour sunset mountain summit vertical 9:16"
-                sc["googleSearchQuery"] = "dramatic golden hour sunset mountain summit vertical 9:16"
+            # Prevent final CTA scene from picking green-screen subscribe clipart buttons
+            has_cta_clipart = any(t in str(sc.get("visualQuery", "")).lower() for t in CTA_EXCLUSION_TERMS)
+            if has_cta_clipart:
+                clean_theme = topic or category or "cinematic motivational finale"
+                sc["mediaName"] = f"Cinematic {category or 'Inspirational'} Finale"
+                sc["visualQuery"] = f"cinematic {clean_theme} {target_aspect_ratio}"
+                sc["googleSearchQuery"] = f"cinematic {clean_theme} {target_aspect_ratio}"
                 sc["fallbackQueries"] = [
-                    "majestic ocean dusk horizon twilight vertical 9:16",
-                    "aurora borealis northern lights night sky vertical 9:16",
+                    f"cinematic {clean_theme} dramatic lighting {target_aspect_ratio}",
+                    f"cinematic {clean_theme} epic atmosphere {target_aspect_ratio}",
                 ]
 
             primary_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic

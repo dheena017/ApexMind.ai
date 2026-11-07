@@ -19,7 +19,7 @@ from backend.features.media.base import BaseMediaProvider, MediaAsset
 
 GOOGLE_SEARCH_API_ENDPOINT: str = "https://www.googleapis.com/customsearch/v1"
 DEFAULT_DOMAINS_FILTER: str = "(site:pexels.com/video OR site:pixabay.com/videos OR site:coverr.co OR site:mixkit.co OR site:videvo.net)"
-DEFAULT_FALLBACK_QUERY: str = "cinematic nature landscape vertical loop"
+DEFAULT_FALLBACK_QUERY: str = "cinematic vertical 9:16"
 DEFAULT_REQUEST_TIMEOUT: int = 6
 COOLDOWN_SECONDS: int = 3600
 DEFAULT_SEARCH_LIMIT: int = 10
@@ -62,7 +62,7 @@ class GoogleVideoProvider(BaseMediaProvider):
 
         clean_q = (query or "").strip().replace("#", "").strip()
         if not clean_q or clean_q.lower() in ["all", "cinematic", "stock", "cinematic stock video background loop"]:
-            clean_q = "cinematic nature landscape vertical loop"
+            clean_q = "cinematic vertical 9:16"
 
         orient_tag = "vertical 9:16 short" if aspect_ratio in ["9:16", "4:5"] else "cinematic 16:9 loop"
         domains = "(site:pexels.com/video OR site:pixabay.com/videos OR site:coverr.co OR site:mixkit.co OR site:videvo.net)"

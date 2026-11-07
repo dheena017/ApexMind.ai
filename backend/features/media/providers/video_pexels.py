@@ -50,7 +50,7 @@ class PexelsVideoProvider(BaseMediaProvider):
             return []
 
         orientation = "portrait" if aspect_ratio in ["9:16", "4:5"] else ("square" if aspect_ratio == "1:1" else "landscape")
-        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic nature"
+        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic"
 
         headers = {"Authorization": api_key}
 
