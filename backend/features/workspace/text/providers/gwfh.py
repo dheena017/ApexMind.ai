@@ -88,16 +88,12 @@ class GWFHProvider(BaseFontProvider):
                     default_weight = 700 if 700 in weights else (weights[-1] if weights else 400)
                     popularity = item.get("popularity", 9999)
 
-                    # Build CSS URL
+                    # Build CSS URL loading all available font weights
                     encoded_family = urllib.parse.quote_plus(family)
-                    if 400 in weights and 700 in weights:
-                        wght_str = ":wght@400;700"
-                    elif 400 in weights:
-                        wght_str = ":wght@400"
-                    elif weights:
-                        wght_str = f":wght@{weights[0]}"
-                    else:
-                        wght_str = ""
+                    valid_weights = sorted([w for w in weights if 100 <= w <= 900 and w % 100 == 0])
+                    if not valid_weights:
+                        valid_weights = [400, 700]
+                    wght_str = ":wght@" + ";".join(str(w) for w in valid_weights)
 
                     css_url = f"https://fonts.googleapis.com/css2?family={encoded_family}{wght_str}&display=swap"
 

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ScrollableTabs, TabItem } from '@/src/shared/ui/ScrollableTabs';
 import WaveSurfer from 'wavesurfer.js';
 import { useReactMediaRecorder } from 'react-media-recorder';
 import {
@@ -15,24 +15,24 @@ import {
   Search,
   X,
   ExternalLink,
-  Sliders,
   Download,
   RefreshCw,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { workspaceApi } from '../../api/workspaceApi';
-
 import { toast } from 'sonner';
 import { addWorkspaceNotification } from '../../utils/workspaceNotificationManager';
 
 export interface SoundtrackItem {
   id: string;
   title: string;
+  artist?: string;
   genre: string;
   duration: string;
   bpm: number;
   mood: string;
   audioUrl: string;
+  provider?: string;
 }
 
 export interface SoundEffectItem {
@@ -41,6 +41,7 @@ export interface SoundEffectItem {
   category: 'Impact' | 'Transition' | 'Tension' | 'Action';
   duration: string;
   audioUrl: string;
+  provider?: string;
 }
 
 export interface AudioPaneProps {
@@ -50,29 +51,75 @@ export interface AudioPaneProps {
   onAddSfxToTimeline?: (sfx: SoundEffectItem) => void;
 }
 
-import {
-  CURATED_SOUNDTRACKS as EXPANDED_SOUNDTRACKS,
-  CURATED_SFX as EXPANDED_SFX,
-  VIRAL_MEME_SOUNDBOARD,
-} from '../../data/mediaCatalogData';
+export const SOUNDTRACK_GENRES = [
+  { value: 'all', label: '✨ All Genres & Moods' },
+  { value: 'cinematic', label: '🎬 Cinematic & Epic' },
+  { value: 'motivational', label: '⚡ Motivational & Focus' },
+  { value: 'ambient', label: '🌌 Ambient & Chill' },
+  { value: 'lofi', label: '☕ Lo-Fi Hip Hop' },
+  { value: 'phonk', label: '🏎️ Drift Phonk & Bass' },
+  { value: 'synthwave', label: '🌆 Synthwave & Cyber' },
+  { value: 'piano', label: '🎹 Piano & Classical' },
+  { value: 'electronic', label: '⚡ Electronic & EDM' },
+] as const;
 
-const CURATED_SOUNDTRACKS: SoundtrackItem[] = EXPANDED_SOUNDTRACKS.map((t) => ({
-  id: t.id,
-  title: t.title,
-  genre: t.genre,
-  duration: t.duration,
-  bpm: t.bpm,
-  mood: t.mood,
-  audioUrl: t.audioUrl,
-}));
+export const SFX_CATEGORIES = [
+  { value: 'all', label: '✨ All Sound Effects' },
+  { value: 'Impact', label: '💥 Impacts & Booms' },
+  { value: 'Transition', label: '⚡ Whooshes & Swishes' },
+  { value: 'Tension', label: '⏳ Risers & Suspense' },
+  { value: 'Action', label: '🎯 Hits, Clicks & Hits' },
+] as const;
 
-const CURATED_SOUND_EFFECTS: SoundEffectItem[] = EXPANDED_SFX.map((s) => ({
-  id: s.id,
-  name: s.name,
-  category: s.category === 'whoosh' ? 'Transition' : s.category === 'impact' ? 'Impact' : s.category === 'riser' ? 'Tension' : 'Action',
-  duration: s.duration,
-  audioUrl: s.audioUrl,
-}));
+export const AUDIO_PROVIDERS = [
+  { id: 'all', label: '✨ All Free Live Providers' },
+  { id: 'jamendo', label: '🎵 Jamendo (500K+ CC)' },
+  { id: 'wikimedia', label: '🏛️ Wikimedia Commons' },
+  { id: 'internet_archive', label: '📚 Internet Archive' },
+  { id: 'fma', label: '📻 Free Music Archive' },
+  { id: 'open_sfx', label: '💥 Open SFX Commons' },
+] as const;
+
+function renderAudioProviderBadge(provider?: string) {
+  switch (provider) {
+    case 'jamendo':
+      return (
+        <span className="text-[9px] font-mono-studio text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1 rounded shrink-0">
+          Jamendo
+        </span>
+      );
+    case 'wikimedia':
+      return (
+        <span className="text-[9px] font-mono-studio text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1 rounded shrink-0">
+          Wikimedia
+        </span>
+      );
+    case 'internet_archive':
+      return (
+        <span className="text-[9px] font-mono-studio text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1 rounded shrink-0">
+          Archive
+        </span>
+      );
+    case 'fma':
+      return (
+        <span className="text-[9px] font-mono-studio text-blue-300 bg-blue-500/15 border border-blue-500/30 px-1 rounded shrink-0">
+          FMA
+        </span>
+      );
+    case 'open_sfx':
+      return (
+        <span className="text-[9px] font-mono-studio text-pink-300 bg-pink-500/15 border border-pink-500/30 px-1 rounded shrink-0">
+          OpenSFX
+        </span>
+      );
+    default:
+      return (
+        <span className="text-[9px] font-mono-studio text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-1 rounded shrink-0">
+          Free Audio
+        </span>
+      );
+  }
+}
 
 export const AudioPane: React.FC<AudioPaneProps> = ({
   onSelectMusic,
@@ -80,30 +127,35 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   onApplyRecordedVoice,
   onAddSfxToTimeline,
 }) => {
-  const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'soundboard' | 'record' | 'mixer' | 'url'>('soundtracks');
-  const [soundtracks, setSoundtracks] = useState<SoundtrackItem[]>(CURATED_SOUNDTRACKS);
+  const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'record' | 'url'>('soundtracks');
+
+  // Live stream states - zero hardcoded data
   const [liveSoundtracks, setLiveSoundtracks] = useState<SoundtrackItem[]>([]);
   const [liveSfx, setLiveSfx] = useState<SoundEffectItem[]>([]);
+  const [totalSoundtracks, setTotalSoundtracks] = useState<number>(0);
+  const [totalSfx, setTotalSfx] = useState<number>(0);
+
+  // Filters & Search
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [selectedSfxCategory, setSelectedSfxCategory] = useState<string>('all');
-  const [pendingMusicId, setPendingMusicId] = useState(selectedMusic || '');
+  const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [musicPage, setMusicPage] = useState<number>(1);
+  const [sfxPage, setSfxPage] = useState<number>(1);
+
+  // Selection & playback
+  const [pendingMusicId, setPendingMusicId] = useState(selectedMusic || '');
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
   const [playingSfxId, setPlayingSfxId] = useState<string | null>(null);
   const [customAudioUrl, setCustomAudioUrl] = useState('');
   const [customAudioTitle, setCustomAudioTitle] = useState('');
   const [customAudioPlaying, setCustomAudioPlaying] = useState(false);
-  const [isLoadingBackend, setIsLoadingBackend] = useState(false);
+
+  // Loading & error flags
   const [isSearchingAudio, setIsSearchingAudio] = useState(false);
   const [isSearchingSfx, setIsSearchingSfx] = useState(false);
   const [audioSearchError, setAudioSearchError] = useState<string | null>(null);
   const [sfxSearchError, setSfxSearchError] = useState<string | null>(null);
-
-  // Audio Mixer State
-  const [musicVolume, setMusicVolume] = useState<number>(65);
-  const [voiceVolume, setVoiceVolume] = useState<number>(100);
-  const [autoDucking, setAutoDucking] = useState<boolean>(true);
-  const [reverbRoom, setReverbRoom] = useState<'dry' | 'studio' | 'hall'>('studio');
 
   // Hidden audio preview elements
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -118,100 +170,129 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const wavesurferInstance = useRef<WaveSurfer | null>(null);
 
-  // Load music tracks from backend media-library API
-  useEffect(() => {
-    let isMounted = true;
-    const fetchBackendMusic = async () => {
-      try {
-        setIsLoadingBackend(true);
-        const data = await workspaceApi.getMediaLibrary();
-        if (isMounted && data?.musicTracks?.length) {
-          const apiTracks: SoundtrackItem[] = data.musicTracks.map((m) => ({
-            id: m.id,
-            title: m.title,
-            genre: m.genre || 'Cinematic',
-            duration: m.duration || '2:00',
-            bpm: m.bpm || 90,
-            mood: m.genre || 'Epic Focus',
-            audioUrl: m.audioUrl || '',
-          }));
-
-          if (apiTracks.length > 0) {
-            setSoundtracks((prev) => {
-              const existingIds = new Set(prev.map((t) => t.id));
-              const newTracks = apiTracks.filter((t) => !existingIds.has(t.id));
-              return [...newTracks, ...prev];
-            });
-          }
-        }
-      } catch {
-        // Fallback
-      } finally {
-        if (isMounted) setIsLoadingBackend(false);
-      }
-    };
-    fetchBackendMusic();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (activeTab !== 'soundtracks') return;
-
-    let cancelled = false;
-    const timeoutId = window.setTimeout(async () => {
+  // Live Soundtrack Search via Backend Service
+  const fetchLiveSoundtracks = useCallback(
+    async (page: number = 1, append: boolean = false) => {
       setIsSearchingAudio(true);
       setAudioSearchError(null);
       try {
         const result = await workspaceApi.searchOpenTracks(
           searchQuery.trim(),
           selectedGenre === 'all' ? '' : selectedGenre,
-          30
+          24,
+          selectedProvider,
+          page
         );
-        if (!cancelled) setLiveSoundtracks(result.items || []);
-      } catch (error) {
-        if (!cancelled) {
-          setAudioSearchError(error instanceof Error ? error.message : 'Could not load soundtrack search results.');
+
+        if (append) {
+          setLiveSoundtracks((prev) => [...prev, ...(result.items || [])]);
+        } else {
+          setLiveSoundtracks(result.items || []);
         }
+        setTotalSoundtracks(result.total || (result.items || []).length);
+      } catch (error) {
+        setAudioSearchError(error instanceof Error ? error.message : 'Could not load live soundtrack streams.');
       } finally {
-        if (!cancelled) setIsSearchingAudio(false);
+        setIsSearchingAudio(false);
       }
-    }, 300);
+    },
+    [searchQuery, selectedGenre, selectedProvider]
+  );
 
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
-    };
-  }, [activeTab, searchQuery, selectedGenre]);
-
-  useEffect(() => {
-    if (activeTab !== 'sfx') return;
-
-    let cancelled = false;
-    const timeoutId = window.setTimeout(async () => {
+  // Live Sound Effects Search via Backend Service
+  const fetchLiveSfx = useCallback(
+    async (page: number = 1, append: boolean = false) => {
       setIsSearchingSfx(true);
       setSfxSearchError(null);
       try {
         const query = searchQuery.trim() || (selectedSfxCategory === 'all' ? '' : selectedSfxCategory);
-        const result = await workspaceApi.searchOpenSfx(query, 30);
-        if (!cancelled) setLiveSfx(result.items || []);
-      } catch (error) {
-        if (!cancelled) {
-          setSfxSearchError(error instanceof Error ? error.message : 'Could not load sound-effect search results.');
+        const result = await workspaceApi.searchOpenSfx(
+          query,
+          24,
+          selectedSfxCategory,
+          selectedProvider,
+          page
+        );
+
+        if (append) {
+          setLiveSfx((prev) => [...prev, ...(result.items || [])]);
+        } else {
+          setLiveSfx(result.items || []);
         }
+        setTotalSfx(result.total || (result.items || []).length);
+      } catch (error) {
+        setSfxSearchError(error instanceof Error ? error.message : 'Could not load sound effect streams.');
       } finally {
-        if (!cancelled) setIsSearchingSfx(false);
+        setIsSearchingSfx(false);
       }
-    }, 300);
+    },
+    [searchQuery, selectedSfxCategory, selectedProvider]
+  );
+
+  // Debounced search on filter changes
+  useEffect(() => {
+    if (activeTab === 'soundtracks') {
+      const timer = setTimeout(() => {
+        setMusicPage(1);
+        fetchLiveSoundtracks(1, false);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, searchQuery, selectedGenre, selectedProvider, fetchLiveSoundtracks]);
+
+  useEffect(() => {
+    if (activeTab === 'sfx') {
+      const timer = setTimeout(() => {
+        setSfxPage(1);
+        fetchLiveSfx(1, false);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, searchQuery, selectedSfxCategory, selectedProvider, fetchLiveSfx]);
+
+  const handleLoadMoreMusic = () => {
+    const nextPage = musicPage + 1;
+    setMusicPage(nextPage);
+    fetchLiveSoundtracks(nextPage, true);
+  };
+
+  const handleLoadMoreSfx = () => {
+    const nextPage = sfxPage + 1;
+    setSfxPage(nextPage);
+    fetchLiveSfx(nextPage, true);
+  };
+
+  // WaveSurfer initialization for recorded audio playback
+  useEffect(() => {
+    if (!mediaBlobUrl || !waveformRef.current) return;
+
+    if (wavesurferInstance.current) {
+      wavesurferInstance.current.destroy();
+    }
+
+    try {
+      wavesurferInstance.current = WaveSurfer.create({
+        container: waveformRef.current,
+        waveColor: '#4B5563',
+        progressColor: '#3B82F6',
+        cursorColor: '#60A5FA',
+        barWidth: 2,
+        barRadius: 2,
+        height: 48,
+        normalize: true,
+      });
+
+      wavesurferInstance.current.load(mediaBlobUrl);
+    } catch {}
 
     return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
+      if (wavesurferInstance.current) {
+        wavesurferInstance.current.destroy();
+      }
     };
-  }, [activeTab, searchQuery, selectedSfxCategory]);
+  }, [mediaBlobUrl]);
 
-  // Handle Recording Timer
+  // Recording duration timer
   useEffect(() => {
     if (status === 'recording') {
       setRecordingDuration(0);
@@ -226,168 +307,85 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     };
   }, [status]);
 
-  // WaveSurfer initialization for recorded audio
-  useEffect(() => {
-    if (mediaBlobUrl && waveformRef.current) {
-      if (wavesurferInstance.current) {
-        wavesurferInstance.current.destroy();
-      }
-      wavesurferInstance.current = WaveSurfer.create({
-        container: waveformRef.current,
-        waveColor: '#3B82F6',
-        progressColor: '#60A5FA',
-        cursorColor: '#FFFFFF',
-        barWidth: 2,
-        barRadius: 2,
-        height: 48,
-        barGap: 3,
-      });
-      wavesurferInstance.current.load(mediaBlobUrl);
-      return () => {
-        wavesurferInstance.current?.destroy();
-      };
-    }
-  }, [mediaBlobUrl]);
-
   const togglePlayTrack = (track: SoundtrackItem, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!previewAudioRef.current) return;
+
     if (playingTrackId === track.id) {
-      previewAudioRef.current?.pause();
+      previewAudioRef.current.pause();
       setPlayingTrackId(null);
     } else {
-      if (previewAudioRef.current) {
-        previewAudioRef.current.src = track.audioUrl;
-        previewAudioRef.current.volume = musicVolume / 100;
-        previewAudioRef.current.play().catch(() => {});
-        setPlayingTrackId(track.id);
-      }
+      previewAudioRef.current.src = track.audioUrl;
+      previewAudioRef.current.volume = 0.8;
+      previewAudioRef.current.play().catch(() => {});
+      setPlayingTrackId(track.id);
     }
   };
 
   const togglePlaySfx = (sfx: SoundEffectItem, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!sfxAudioRef.current) return;
+
     if (playingSfxId === sfx.id) {
-      sfxAudioRef.current?.pause();
+      sfxAudioRef.current.pause();
       setPlayingSfxId(null);
     } else {
-      if (sfxAudioRef.current) {
-        sfxAudioRef.current.src = sfx.audioUrl;
-        sfxAudioRef.current.play().catch(() => {});
-        setPlayingSfxId(sfx.id);
-      }
+      sfxAudioRef.current.src = sfx.audioUrl;
+      sfxAudioRef.current.volume = 0.85;
+      sfxAudioRef.current.play().catch(() => {});
+      setPlayingSfxId(sfx.id);
     }
   };
 
   const handleSelectSoundtrack = (trackId: string) => {
+    setPendingMusicId(trackId);
     if (onSelectMusic) {
       onSelectMusic(trackId);
-      const track = [...liveSoundtracks, ...soundtracks].find((t) => t.id === trackId);
-
-      window.dispatchEvent(
-        new CustomEvent('workspace:add-timeline-clip', {
-          detail: {
-            type: 'music',
-            url: track?.audioUrl || '',
-            name: track?.title || 'Soundtrack',
-            duration: track?.duration || 15.0,
-          },
-        })
-      );
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
-
-      const name = track?.title || 'Soundtrack';
-      toast.success(`Applied "${name}"`);
-      addWorkspaceNotification({
-        title: 'Soundtrack Applied',
-        message: `Applied audio "${name}" to music track A2.`,
-        category: 'voice',
-        type: 'info',
-        targetPane: 'audio',
-        actionLabel: 'Audio Settings',
-      });
     }
+    const track = liveSoundtracks.find((t) => t.id === trackId);
+    toast.success(`Applied Soundtrack: ${track?.title || 'Selected Track'}`);
+    addWorkspaceNotification({
+      title: 'Soundtrack Selected',
+      message: `Selected "${track?.title || 'Track'}" as background music.`,
+      category: 'media',
+      type: 'success',
+      targetPane: 'audio',
+      actionLabel: 'Audio',
+    });
   };
-
-  useEffect(() => {
-    setPendingMusicId(selectedMusic || '');
-  }, [selectedMusic]);
 
   const handleApplyCustomAudio = () => {
     if (!customAudioUrl.trim()) return;
-    const url = customAudioUrl.trim();
-    if (onApplyRecordedVoice) {
-      onApplyRecordedVoice(url);
+    const directUrl = customAudioUrl.trim();
+    if (onSelectMusic) {
+      onSelectMusic(directUrl);
     }
-    window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'music' }));
-    toast.success('Custom audio applied to timeline');
+    toast.success('Applied Custom Audio Stream');
     addWorkspaceNotification({
       title: 'Custom Audio Applied',
-      message: 'Custom web audio URL loaded on soundtrack track.',
-      category: 'voice',
-      type: 'info',
+      message: 'Background music updated from direct stream URL.',
+      category: 'media',
+      type: 'success',
       targetPane: 'audio',
-      actionLabel: 'Audio Settings',
+      actionLabel: 'Audio',
     });
   };
 
   const handleApplyRecordedVoice = () => {
-    if (mediaBlobUrl && onApplyRecordedVoice) {
-      onApplyRecordedVoice(mediaBlobUrl);
-      window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'voice' }));
-      toast.success('Recorded voiceover applied to timeline');
-      addWorkspaceNotification({
-        title: 'Voiceover Applied',
-        message: 'Microphone recording placed on voice track A1.',
-        category: 'voice',
-        type: 'success',
-        targetPane: 'audio',
-        actionLabel: 'Audio Settings',
-      });
-    }
-  };
-
-
-  const downloadRecordedVoice = () => {
     if (!mediaBlobUrl) return;
-    const a = document.createElement('a');
-    a.href = mediaBlobUrl;
-    a.download = `voiceover-${Date.now()}.webm`;
-    a.click();
+    if (onApplyRecordedVoice) {
+      onApplyRecordedVoice(mediaBlobUrl);
+    }
+    toast.success('Applied Studio Voiceover Recording');
+    addWorkspaceNotification({
+      title: 'Voiceover Recording Applied',
+      message: `Mic recording applied to project (${recordingDuration}s).`,
+      category: 'voice',
+      type: 'success',
+      targetPane: 'audio',
+      actionLabel: 'Voice',
+    });
   };
-
-  const filteredSoundtracks = soundtracks.filter((t) => {
-    const matchesGenre = selectedGenre === 'all' || t.genre.toLowerCase().includes(selectedGenre.toLowerCase());
-    const matchesQuery =
-      searchQuery.trim() === '' ||
-      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.mood.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesGenre && matchesQuery;
-  });
-  const availableSoundtracks = [
-    ...liveSoundtracks,
-    ...filteredSoundtracks.filter((track) => !liveSoundtracks.some((liveTrack) => liveTrack.id === track.id)),
-  ].filter((track) => {
-    const matchesGenre = selectedGenre === 'all' || track.genre.toLowerCase().includes(selectedGenre.toLowerCase());
-    const query = searchQuery.trim().toLowerCase();
-    const matchesQuery =
-      !query ||
-      track.title.toLowerCase().includes(query) ||
-      track.mood.toLowerCase().includes(query) ||
-      track.genre.toLowerCase().includes(query);
-    return matchesGenre && matchesQuery;
-  });
-
-  const allSfx = [
-    ...liveSfx,
-    ...CURATED_SOUND_EFFECTS.filter((sfx) => !liveSfx.some((liveEffect) => liveEffect.id === sfx.id)),
-  ];
-  const filteredSfx = allSfx.filter((s) => {
-    const matchesCat = selectedSfxCategory === 'all' || s.category === selectedSfxCategory;
-    const matchesQuery =
-      searchQuery.trim() === '' ||
-      s.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesQuery;
-  });
 
   const formatSeconds = (sec: number) => {
     const mins = Math.floor(sec / 60);
@@ -395,26 +393,21 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     return `${mins}:${remaining < 10 ? '0' : ''}${remaining}`;
   };
 
+  const TABS: TabItem<'soundtracks' | 'sfx' | 'record' | 'url'>[] = [
+    { id: 'soundtracks', label: 'Soundtracks', icon: Music, badge: totalSoundtracks ? `${totalSoundtracks.toLocaleString()}` : undefined },
+    { id: 'sfx', label: 'Sound Effects', icon: Sparkles, badge: totalSfx ? `${totalSfx.toLocaleString()}` : undefined },
+    { id: 'record', label: 'Studio Record', icon: Mic },
+    { id: 'url', label: 'Web Audio Import', icon: ExternalLink },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* Hidden Audio Elements */}
-      <audio
-        ref={previewAudioRef}
-        onEnded={() => setPlayingTrackId(null)}
-        className="hidden"
-      />
-      <audio
-        ref={sfxAudioRef}
-        onEnded={() => setPlayingSfxId(null)}
-        className="hidden"
-      />
-      <audio
-        ref={customAudioRef}
-        onEnded={() => setCustomAudioPlaying(false)}
-        className="hidden"
-      />
+      <audio ref={previewAudioRef} onEnded={() => setPlayingTrackId(null)} className="hidden" />
+      <audio ref={sfxAudioRef} onEnded={() => setPlayingSfxId(null)} className="hidden" />
+      <audio ref={customAudioRef} onEnded={() => setCustomAudioPlaying(false)} className="hidden" />
 
-      {/* ── Top Header Bar (Matching Studio Shell) ── */}
+      {/* ── Top Header Bar ── */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Music className="w-4 h-4 shrink-0 text-emerald-400" />
@@ -424,135 +417,37 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {(isLoadingBackend ||
-            (activeTab === 'soundtracks' && isSearchingAudio) ||
-            (activeTab === 'sfx' && isSearchingSfx)) && (
+          {(isSearchingAudio || isSearchingSfx) && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
           <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-[#242424]">
             {activeTab === 'soundtracks'
-              ? `${filteredSoundtracks.length} Tracks`
+              ? `${liveSoundtracks.length} Live Tracks`
               : activeTab === 'sfx'
-              ? `${filteredSfx.length} SFX`
+              ? `${liveSfx.length} Live SFX`
               : 'Studio Audio'}
           </span>
         </div>
       </div>
 
-      {/* ── Subtabs Segmented Control ── */}
+      {/* ── Standardized Scrollable Tabs (Clean 4-Tab Navigation) ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
-          tabs={[
-            { id: 'soundtracks', label: 'Music', icon: Music },
-            { id: 'sfx', label: 'SFX', icon: Volume2 },
-            { id: 'soundboard', label: 'Board', icon: Sparkles },
-            { id: 'mixer', label: 'Mixer', icon: Sliders },
-            { id: 'record', label: 'Voice', icon: Mic },
-            { id: 'url', label: 'URL', icon: ExternalLink },
-          ]}
+          tabs={TABS}
           activeTab={activeTab}
-          onChange={(tab) => setActiveTab(tab as any)}
+          onChange={(tab) => setActiveTab(tab)}
+          containerBgClassName="bg-[#181818]"
         />
       </div>
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
-        {/* ── Tab: Audio Mixer ── */}
-        {activeTab === 'mixer' && (
-          <div className="flex flex-col gap-3.5">
-            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-[#60A5FA]" />
-                Reel Audio Level Mixing
-              </span>
-
-              {/* Music Volume */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                  <span className="text-slate-500">SOUNDTRACK VOLUME</span>
-                  <span className="text-[#60A5FA] font-bold">{musicVolume}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={musicVolume}
-                  onChange={(e) => setMusicVolume(Number(e.target.value))}
-                  className="w-full accent-[#3B82F6]"
-                />
-              </div>
-
-              {/* Voice Volume */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                  <span className="text-slate-500">VOICEOVER / NARRATION LEVEL</span>
-                  <span className="text-[#60A5FA] font-bold">{voiceVolume}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="150"
-                  value={voiceVolume}
-                  onChange={(e) => setVoiceVolume(Number(e.target.value))}
-                  className="w-full accent-[#3B82F6]"
-                />
-              </div>
-
-              {/* Auto-Ducking Switch */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#242424]">
-                <div>
-                  <p className="text-xs font-semibold text-white">Smart Music Ducking</p>
-                  <p className="text-[10px] text-slate-400">Lower music volume when voiceover speaks</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAutoDucking((d) => !d)}
-                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    autoDucking ? 'bg-[#3B82F6]' : 'bg-zinc-700'
-                  }`}
-                >
-                  <div
-                    className={`w-3.5 h-3.5 rounded-full bg-white transition-transform absolute top-0.5 ${
-                      autoDucking ? 'right-0.5' : 'left-0.5'
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            {/* Room Ambience */}
-            <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-2">
-              <span className="text-[10px] uppercase font-mono-studio text-slate-500">
-                Voiceover Room Reverb
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'dry', label: 'Dry / Clean' },
-                  { id: 'studio', label: 'Studio Room' },
-                  { id: 'hall', label: 'Cathedral Hall' },
-                ].map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => setReverbRoom(r.id as any)}
-                    className={`p-2 rounded-lg text-xs font-semibold border transition-all ${
-                      reverbRoom === r.id
-                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
-                        : 'bg-[#111111] text-slate-400 border-[#242424]'
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Tab 1: Soundtracks ── */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* TAB 1: LIVE SOUNDTRACKS */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'soundtracks' && (
           <div className="flex flex-col gap-2.5">
-            {/* Search & Category Filter in One Row */}
+            {/* Search & Genre Filter */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1 min-w-[140px]">
                 <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -560,7 +455,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search vibes, phonk, lofi, BPM..."
+                  placeholder="Search live soundtracks (e.g. cinematic, phonk, epic, lofi)..."
                   className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 transition-all"
                 />
                 {searchQuery && (
@@ -573,18 +468,14 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   </button>
                 )}
               </div>
-              <div className="shrink-0 w-32 sm:w-36">
+              <div className="shrink-0 w-36 sm:w-44">
                 <CustomSelect
                   value={selectedGenre}
                   onChange={(val) => setSelectedGenre(val)}
-                  options={[
-                    { value: 'all', label: 'All Vibes' },
-                    { value: 'cinematic', label: 'Cinematic' },
-                    { value: 'drone', label: 'Bass Drone' },
-                    { value: 'synthwave', label: 'Synthwave' },
-                    { value: 'phonk', label: 'Phonk' },
-                    { value: 'piano', label: 'Piano' },
-                  ]}
+                  options={SOUNDTRACK_GENRES.map((g) => ({
+                    value: g.value,
+                    label: g.label,
+                  }))}
                   variant="compact"
                   align="right"
                   buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
@@ -592,18 +483,43 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               </div>
             </div>
 
+            {/* Provider Filter Quick Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
+              {AUDIO_PROVIDERS.filter((p) => p.id !== 'open_sfx').map((provider) => {
+                const isProviderActive = selectedProvider === provider.id;
+                return (
+                  <button
+                    key={provider.id}
+                    type="button"
+                    onClick={() => setSelectedProvider(provider.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
+                      isProviderActive
+                        ? 'bg-blue-600 text-white font-bold shadow-sm'
+                        : 'bg-[#181818] hover:bg-[#202020] text-zinc-400 hover:text-white border border-[#262626]'
+                    }`}
+                  >
+                    {provider.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Track Stream List */}
             <div className="flex flex-col gap-2 pt-1">
               {isSearchingAudio && liveSoundtracks.length === 0 && (
-                <p className="py-3 text-center text-xs text-slate-400">Searching soundtrack catalogs…</p>
+                <div className="flex flex-col items-center justify-center py-10 text-zinc-500 gap-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+                  <span className="text-xs font-mono-studio">Querying live royalty-free music streams...</span>
+                </div>
               )}
               {audioSearchError && (
                 <p role="alert" className="py-2 text-xs text-red-400">{audioSearchError}</p>
               )}
-              {!isSearchingAudio && !audioSearchError && availableSoundtracks.length === 0 && (
-                <p className="py-3 text-center text-xs text-slate-400">No soundtrack results found.</p>
+              {!isSearchingAudio && !audioSearchError && liveSoundtracks.length === 0 && (
+                <p className="py-6 text-center text-xs text-zinc-500">No soundtrack streams found matching your query.</p>
               )}
-              {availableSoundtracks.map((track) => {
-                const isSelected = selectedMusic === track.id;
+              {liveSoundtracks.map((track) => {
+                const isSelected = selectedMusic === track.id || selectedMusic === track.audioUrl;
                 const isPending = pendingMusicId === track.id;
                 const isPlaying = playingTrackId === track.id;
 
@@ -611,10 +527,9 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   <div
                     key={track.id}
                     onClick={() => handleSelectSoundtrack(track.id)}
-                    style={{ contentVisibility: 'auto', containIntrinsicSize: '64px' }}
                     className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 transform-gpu ${
                       isSelected
-                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs'
+                        ? 'bg-[#18233C] text-white border-blue-500/80 ring-1 ring-blue-500/30'
                         : isPending
                         ? 'bg-[#1A1E29] border-blue-500/50'
                         : 'bg-[#181818] border-[#242424] hover:border-[#3E3E4B] hover:bg-[#1A1A20]'
@@ -624,10 +539,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       <button
                         type="button"
                         onClick={(e) => togglePlayTrack(track, e)}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all cursor-pointer ${
                           isPlaying
-                            ? 'bg-[#2563EB] text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
-                            : 'bg-[#1E1E1E] text-zinc-300 hover:text-white hover:bg-[#2563EB]'
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
+                            : 'bg-[#1E1E1E] text-zinc-300 hover:text-white hover:bg-blue-600'
                         }`}
                         title={isPlaying ? 'Pause preview' : 'Play preview'}
                       >
@@ -639,37 +554,81 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       </button>
 
                       <div className="min-w-0 flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <p className={`text-xs font-semibold truncate transition-colors ${isSelected ? 'text-white' : 'text-white group-hover:text-blue-300'}`}>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-xs font-semibold truncate text-white group-hover:text-blue-300 transition-colors">
                             {track.title}
                           </p>
+                          {renderAudioProviderBadge(track.provider)}
                           {isSelected && (
-                            <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-white/20 text-white border border-white/30 font-bold shrink-0">
+                            <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold shrink-0">
                               ACTIVE
                             </span>
                           )}
                         </div>
-                        <div className={`flex items-center gap-1.5 text-[10px] ${isSelected ? 'text-blue-100/90' : 'text-zinc-400'}`}>
-                          <span className={`px-1.5 py-0.2 rounded text-[9px] uppercase font-mono tracking-wider ${isSelected ? 'bg-white/20 text-white' : 'bg-zinc-800/80 text-zinc-300'}`}>
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                          <span className="px-1.5 py-0.2 rounded text-[9px] uppercase font-mono tracking-wider bg-zinc-800/80 text-zinc-300">
                             {track.genre}
                           </span>
-                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono ${isSelected ? 'bg-white/20 text-white border border-white/20' : 'bg-[#1E1E1E] text-zinc-300 border border-[#2E2E2E]'}`}>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-[#1E1E1E] text-zinc-300 border border-[#2E2E2E]">
                             {track.bpm} BPM
                           </span>
-                          <span className={`font-mono text-[10px] ${isSelected ? 'text-blue-100/90' : 'text-zinc-500'}`}>
+                          <span className="font-mono text-[10px] text-zinc-500">
                             {track.duration}
                           </span>
+                          {track.artist && (
+                            <span className="text-[10px] text-zinc-500 truncate hidden sm:inline">
+                              by {track.artist}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectSoundtrack(track.id);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all shrink-0 cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-600 text-white font-bold'
+                          : 'bg-[#22222A] hover:bg-blue-600 text-zinc-300 hover:text-white border border-[#2D2D38]'
+                      }`}
+                    >
+                      {isSelected ? 'Applied' : '+ Apply'}
+                    </button>
                   </div>
                 );
               })}
+
+              {/* Load More Soundtracks */}
+              {liveSoundtracks.length > 0 && (
+                <div className="pt-2 pb-1 flex flex-col items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleLoadMoreMusic}
+                    disabled={isSearchingAudio}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] hover:border-blue-500/50 text-xs font-semibold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
+                  >
+                    <Plus className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
+                    <span>Load More Soundtracks</span>
+                    <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                      +24
+                    </span>
+                  </button>
+                  <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
+                    Showing {liveSoundtracks.length} of {totalSoundtracks ? totalSoundtracks.toLocaleString() : '500,000+'} Tracks
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* ── Tab 2: Sound Effects ── */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* TAB 2: LIVE SOUND EFFECTS (SFX) */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'sfx' && (
           <div className="flex flex-col gap-2.5">
             {/* Search & SFX Category in One Row */}
@@ -680,7 +639,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search sound effects..."
+                  placeholder="Search live sound effects (whoosh, boom, hit, riser)..."
                   className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 transition-all"
                 />
                 {searchQuery && (
@@ -693,64 +652,93 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   </button>
                 )}
               </div>
-              <div className="shrink-0 w-32 sm:w-36">
+              <div className="shrink-0 w-36 sm:w-44">
                 <CustomSelect
                   value={selectedSfxCategory}
                   onChange={(val) => setSelectedSfxCategory(val)}
-                  options={[
-                    { value: 'all', label: 'All SFX' },
-                    { value: 'Impact', label: '💥 Impacts' },
-                    { value: 'Transition', label: '⚡ Transitions' },
-                    { value: 'Tension', label: '⏳ Tension' },
-                    { value: 'Action', label: '🎯 Actions' },
-                  ]}
+                  options={SFX_CATEGORIES.map((c) => ({
+                    value: c.value,
+                    label: c.label,
+                  }))}
                   variant="compact"
                   align="right"
                   buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
                 />
               </div>
             </div>
+
+            {/* Provider Filter Quick Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
+              {[
+                { id: 'all', label: '✨ All SFX Providers' },
+                { id: 'open_sfx', label: '💥 Open SFX Commons' },
+                { id: 'wikimedia', label: '🏛️ Wikimedia SFX' },
+                { id: 'internet_archive', label: '📚 Archive SFX' },
+              ].map((provider) => {
+                const isProviderActive = selectedProvider === provider.id;
+                return (
+                  <button
+                    key={provider.id}
+                    type="button"
+                    onClick={() => setSelectedProvider(provider.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
+                      isProviderActive
+                        ? 'bg-blue-600 text-white font-bold shadow-sm'
+                        : 'bg-[#181818] hover:bg-[#202020] text-zinc-400 hover:text-white border border-[#262626]'
+                    }`}
+                  >
+                    {provider.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {isSearchingSfx && liveSfx.length === 0 && (
-              <p className="py-3 text-center text-xs text-slate-400">Searching sound-effect catalogs…</p>
+              <div className="flex flex-col items-center justify-center py-10 text-zinc-500 gap-2">
+                <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+                <span className="text-xs font-mono-studio">Querying live sound effect libraries...</span>
+              </div>
             )}
             {sfxSearchError && (
               <p role="alert" className="py-2 text-xs text-red-400">{sfxSearchError}</p>
             )}
-            {!isSearchingSfx && !sfxSearchError && filteredSfx.length === 0 && (
-              <p className="py-3 text-center text-xs text-slate-400">No sound-effect results found.</p>
+            {!isSearchingSfx && !sfxSearchError && liveSfx.length === 0 && (
+              <p className="py-6 text-center text-xs text-zinc-500">No sound effects found matching your query.</p>
             )}
-            {filteredSfx.map((sfx) => {
+            {liveSfx.map((sfx) => {
               const isPlaying = playingSfxId === sfx.id;
 
               return (
                 <div
                   key={sfx.id}
-                  style={{ contentVisibility: 'auto', containIntrinsicSize: '54px' }}
-                  className="p-2.5 rounded-none border-0 bg-[#181818] hover:border-[#2E2E2E] transition-all flex items-center justify-between gap-3 transform-gpu"
+                  className="p-3 rounded-xl border border-[#242424] hover:border-[#383842] bg-[#181818] hover:bg-[#1D1D22] transition-all flex items-center justify-between gap-3 transform-gpu"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <button
                       type="button"
                       onClick={(e) => togglePlaySfx(sfx, e)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all cursor-pointer ${
                         isPlaying
-                          ? 'bg-[#3B82F6] text-white'
-                          : 'bg-[#1E1E1E] text-slate-400 hover:text-white'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
+                          : 'bg-[#1E1E1E] text-zinc-300 hover:text-white hover:bg-blue-600'
                       }`}
                     >
                       {isPlaying ? (
-                        <Pause className="w-3 h-3" fill="currentColor" />
+                        <Pause className="w-3.5 h-3.5" fill="currentColor" />
                       ) : (
-                        <Play className="w-3 h-3 ml-0.5" fill="currentColor" />
+                        <Play className="w-3.5 h-3.5 ml-0.5" fill="currentColor" />
                       )}
                     </button>
 
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">
-                        {sfx.name}
-                      </p>
-                      <div className="flex items-center gap-1.5 text-[9px] text-slate-400">
-                        <span className="font-mono-studio text-[#60A5FA]">{sfx.category}</span>
+                    <div className="min-w-0 flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">
+                          {sfx.name}
+                        </p>
+                        {renderAudioProviderBadge(sfx.provider)}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[9px] text-zinc-400 font-mono-studio">
+                        <span className="text-blue-400">{sfx.category}</span>
                         <span>•</span>
                         <span>{sfx.duration}</span>
                       </div>
@@ -763,83 +751,43 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       if (onAddSfxToTimeline) {
                         onAddSfxToTimeline(sfx);
                       }
+                      toast.success(`Added SFX: ${sfx.name}`);
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1E1E1E] hover:bg-[#3B82F6] text-white text-[10px] font-semibold transition-all shrink-0 cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#22222A] hover:bg-blue-600 border border-[#2E2E38] hover:border-transparent text-white text-[10px] font-semibold transition-all shrink-0 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
-                    Timeline
+                    + Timeline
                   </button>
                 </div>
               );
             })}
-          </div>
-        )}
 
-        {/* ── Tab: Viral Meme Soundboard ── */}
-        {activeTab === 'soundboard' && (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider">
-                Instant Zero-Latency Viral Pads
-              </span>
-              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                Live Hotkeys
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              {VIRAL_MEME_SOUNDBOARD.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => {
-                    try {
-                      const sound = new Audio(item.audioUrl);
-                      sound.volume = 0.8;
-                      sound.play();
-                    } catch {}
-                  }}
-                  className="p-3 rounded-none border-0 bg-[#181818] hover:border-amber-500/50 hover:bg-[#222222] active:scale-[0.98] transition-all cursor-pointer flex flex-col gap-1.5 group relative"
+            {/* Load More Sound Effects */}
+            {liveSfx.length > 0 && (
+              <div className="pt-2 pb-1 flex flex-col items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleLoadMoreSfx}
+                  disabled={isSearchingSfx}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] hover:border-blue-500/50 text-xs font-semibold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl select-none">{item.emoji}</span>
-                    <span className="text-[9px] font-mono-studio font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
-                      {item.shortcut}
-                    </span>
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-white truncate group-hover:text-amber-400 transition-colors">
-                      {item.name}
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">{item.desc}</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onAddSfxToTimeline) {
-                        onAddSfxToTimeline({
-                          id: item.id,
-                          name: `${item.emoji} ${item.name}`,
-                          category: 'Impact',
-                          duration: '1.5s',
-                          audioUrl: item.audioUrl,
-                        });
-                      }
-                    }}
-                    className="mt-1 text-[9px] font-bold text-blue-400 hover:text-white bg-blue-500/10 hover:bg-blue-600 px-2 py-1 rounded transition-colors flex items-center justify-center gap-1"
-                  >
-                    <Plus className="w-2.5 h-2.5" />
-                    + Timeline
-                  </button>
-                </div>
-              ))}
-            </div>
+                  <Plus className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
+                  <span>Load More Sound Effects</span>
+                  <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                    +24
+                  </span>
+                </button>
+                <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
+                  Showing {liveSfx.length} of {totalSfx ? totalSfx.toLocaleString() : '65,000+'} SFX
+                </span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* ── Tab 3: Studio Voice Record ── */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* TAB 3: STUDIO VOICE RECORD */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'record' && (
           <div className="flex flex-col gap-4">
             <div className="bg-[#181818] border border-[#242424] rounded-2xl p-5 flex flex-col items-center text-center gap-3 shadow-sm">
@@ -850,84 +798,90 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     : 'bg-[#1E1E1E] text-white hover:bg-[#242C40]'
                 }`}
               >
-                <Mic className="w-8 h-8" />
+                {status === 'recording' ? (
+                  <MicOff className="w-8 h-8" />
+                ) : (
+                  <Mic className="w-8 h-8 text-[#60A5FA]" />
+                )}
               </div>
 
               <div>
-                <p className="text-xs font-bold text-white">
-                  {status === 'recording' ? 'Recording Voiceover...' : 'Record Custom Voiceover'}
+                <p className="text-sm font-bold text-white">
+                  {status === 'recording' ? 'Recording Voiceover...' : 'Microphone Voiceover'}
                 </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Speak clearly into your microphone to record your narration
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {status === 'recording'
+                    ? 'Speak clearly into your microphone'
+                    : 'Record custom voice narration directly to video'}
                 </p>
               </div>
 
               {status === 'recording' && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-rose-500/10 border border-rose-500/30 rounded-full">
-                  <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                  <span className="text-xs font-mono-studio text-rose-400 font-bold">
-                    {formatSeconds(recordingDuration)}
-                  </span>
+                <div className="flex items-center gap-2 px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400 text-xs font-mono font-bold">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                  {formatSeconds(recordingDuration)}
                 </div>
               )}
 
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-2 w-full pt-1">
                 {status !== 'recording' ? (
                   <button
                     type="button"
                     onClick={startRecording}
-                    className="bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-xl px-6 py-2.5 text-xs font-bold transition-all shadow-md shadow-rose-600/25 border border-rose-400/30 active:scale-95 cursor-pointer flex items-center gap-2"
+                    className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/20"
                   >
-                    <Mic className="w-3.5 h-3.5" />
+                    <Mic className="w-4 h-4" />
                     Start Recording
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={stopRecording}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl px-5 py-2 text-xs font-bold transition-all border border-zinc-600 cursor-pointer flex items-center gap-2"
+                    className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-rose-500/20"
                   >
-                    <MicOff className="w-3.5 h-3.5 text-rose-400" />
+                    <MicOff className="w-4 h-4" />
                     Stop Recording
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Waveform & Playback of Recorded Voice */}
+            {/* Recording Review Player */}
             {mediaBlobUrl && (
-              <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
+              <div className="bg-[#181818] border border-[#242424] rounded-xl p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-mono-studio text-slate-500">
-                    Recorded Waveform
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Volume2 className="w-3.5 h-3.5 text-[#60A5FA]" />
+                    Recorded Audio Playback
                   </span>
-                  <button
-                    type="button"
-                    onClick={downloadRecordedVoice}
-                    className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white"
-                  >
-                    <Download className="w-3 h-3" /> Download
-                  </button>
+                  <span className="text-[10px] font-mono-studio text-slate-400">
+                    {formatSeconds(recordingDuration)}
+                  </span>
                 </div>
 
-                <div ref={waveformRef} className="w-full bg-[#141416] rounded-lg p-2" />
+                <div ref={waveformRef} className="w-full bg-[#111111] rounded-lg p-2" />
 
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => wavesurferInstance.current?.playPause()}
-                    className="flex-1 bg-[#1E1E1E] hover:bg-[#34343E] text-white rounded-xl py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    onClick={() => {
+                      if (wavesurferInstance.current) {
+                        wavesurferInstance.current.playPause();
+                      }
+                    }}
+                    className="py-2 px-3 rounded-lg bg-[#242424] hover:bg-[#2C2C2C] text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5" />
                     Preview
                   </button>
+
                   <button
                     type="button"
                     onClick={handleApplyRecordedVoice}
-                    className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
+                    className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    Apply Voiceover
+                    Apply to Video Voiceover
                   </button>
                 </div>
               </div>
@@ -935,77 +889,69 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           </div>
         )}
 
-        {/* ── Tab 5: Custom Audio URL ── */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* TAB 4: WEB URL AUDIO IMPORT */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'url' && (
-          <div className="bg-[#181818] border border-[#242424] rounded-xl p-3.5 flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <ExternalLink className="w-4 h-4 text-[#60A5FA]" />
-              <span className="text-xs font-bold text-white">Import Direct Audio URL</span>
-            </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Paste any direct audio link (MP3, WAV, AAC, or podcast stream) to play as the reel&rsquo;s background music or voiceover.
-            </p>
+          <div className="flex flex-col gap-4">
+            <div className="bg-[#181818] border border-[#242424] rounded-xl p-4 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <ExternalLink className="w-3.5 h-3.5 text-[#60A5FA]" />
+                Import Audio from Direct URL
+              </span>
+              <p className="text-xs text-slate-400">
+                Paste any direct MP3, WAV, or AAC audio stream link from Jamendo, Archive.org, or your own CDN.
+              </p>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-slate-500">Track Title</label>
-              <input
-                type="text"
-                value={customAudioTitle}
-                onChange={(e) => setCustomAudioTitle(e.target.value)}
-                placeholder="e.g. Dark Phonk Master"
-                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
-              />
-            </div>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={customAudioTitle}
+                  onChange={(e) => setCustomAudioTitle(e.target.value)}
+                  placeholder="Audio Title (e.g. Cinematic Intro Theme)..."
+                  className="w-full bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] transition-colors"
+                />
+                <input
+                  type="url"
+                  value={customAudioUrl}
+                  onChange={(e) => setCustomAudioUrl(e.target.value)}
+                  placeholder="https://example.com/audio/track.mp3"
+                  className="w-full bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] transition-colors"
+                />
+              </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-slate-500">Direct Audio URL (MP3 / WAV)</label>
-              <input
-                type="url"
-                value={customAudioUrl}
-                onChange={(e) => setCustomAudioUrl(e.target.value)}
-                placeholder="https://cdn.pixabay.com/download/audio/..."
-                className="bg-[#111111] border border-[#242424] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6]"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!customAudioUrl.trim()) return;
-                  if (customAudioPlaying) {
-                    customAudioRef.current?.pause();
-                    setCustomAudioPlaying(false);
-                  } else {
-                    if (customAudioRef.current) {
-                      customAudioRef.current.src = customAudioUrl.trim();
-                      customAudioRef.current.play().catch(() => {});
-                      setCustomAudioPlaying(true);
-                    }
-                  }
-                }}
-                disabled={!customAudioUrl.trim()}
-                className="flex-1 bg-[#1E1E1E] hover:bg-[#34343E] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                {customAudioPlaying ? (
-                  <>
-                    <Pause className="w-3.5 h-3.5" /> Pause
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3.5 h-3.5" /> Test Audio
-                  </>
+              <div className="flex items-center gap-2 pt-1">
+                {customAudioUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!customAudioRef.current) return;
+                      if (customAudioPlaying) {
+                        customAudioRef.current.pause();
+                        setCustomAudioPlaying(false);
+                      } else {
+                        customAudioRef.current.src = customAudioUrl;
+                        customAudioRef.current.play().catch(() => toast.error('Could not load audio from URL'));
+                        setCustomAudioPlaying(true);
+                      }
+                    }}
+                    className="py-2 px-3 rounded-lg bg-[#242424] hover:bg-[#2C2C2C] text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {customAudioPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                    {customAudioPlaying ? 'Pause' : 'Test Audio'}
+                  </button>
                 )}
-              </button>
 
-              <button
-                type="button"
-                onClick={handleApplyCustomAudio}
-                disabled={!customAudioUrl.trim()}
-                className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/20"
-              >
-                <Check className="w-3.5 h-3.5" /> Set as Soundtrack
-              </button>
+                <button
+                  type="button"
+                  onClick={handleApplyCustomAudio}
+                  disabled={!customAudioUrl.trim()}
+                  className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Apply as Background Music
+                </button>
+              </div>
             </div>
           </div>
         )}

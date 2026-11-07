@@ -188,6 +188,72 @@ async def get_open_fonts_route(
         page_size=pageSize,
     )
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# WORKSPACE MODULAR AUDIO SERVICE
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get(
+    "/api/workspace/audio/soundtracks",
+    tags=["Audio"],
+    summary="Search Modular Soundtrack Providers",
+    operation_id="search_modular_soundtracks",
+    description="Live query to modular free audio providers: Jamendo (500K+ CC tracks), Wikimedia Commons, Internet Archive, and Free Music Archive. 100% dynamic live APIs with zero hardcoded data."
+)
+async def get_workspace_soundtracks_route(
+    q: str = "",
+    genre: str = "all",
+    provider: str = "all",
+    page: int = 1,
+    pageSize: int = 24,
+):
+    from .audio import search_soundtracks
+    return search_soundtracks(
+        query=q,
+        genre=genre,
+        provider=provider,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get(
+    "/api/workspace/audio/sfx",
+    tags=["Audio"],
+    summary="Search Modular Sound Effect Providers",
+    operation_id="search_modular_sfx",
+    description="Live query to modular free SFX providers: Open SFX Commons, Wikimedia Commons, and Internet Archive. 100% dynamic live APIs with zero hardcoded data."
+)
+async def get_workspace_sfx_route(
+    q: str = "whoosh",
+    category: str = "all",
+    provider: str = "all",
+    page: int = 1,
+    pageSize: int = 24,
+):
+    from .audio import search_sound_effects
+    return search_sound_effects(
+        query=q,
+        category=category,
+        provider=provider,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get(
+    "/api/workspace/audio/providers",
+    tags=["Audio"],
+    summary="Get Modular Audio Providers Status",
+    operation_id="get_workspace_audio_providers",
+)
+async def get_workspace_audio_providers_route():
+    from .audio import get_audio_providers_status
+    return {
+        "success": True,
+        "providers": get_audio_providers_status(),
+    }
+
 # ══════════════════════════════════════════════════════════════════════════════
 # STUDIO ELEMENTS & OVERLAYS SERVICE
 # ══════════════════════════════════════════════════════════════════════════════

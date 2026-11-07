@@ -272,7 +272,11 @@ export const TextPane: React.FC<TextPaneProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [totalFonts, setTotalFonts] = useState<number>(0);
-  const [, setLoadedVersion] = useState<number>(0);
+  const [loadedVersion, setLoadedVersion] = useState<number>(0);
+
+  // Specimen preview text controls (defaults to 'The quick brown fox' matching Google Fonts)
+  const [previewMode, setPreviewMode] = useState<'sentence' | 'title' | 'numbers' | 'name' | 'custom'>('sentence');
+  const [customPreviewText, setCustomPreviewText] = useState<string>('The quick brown fox');
 
   // Customizer state
   const [customFont, setCustomFont] = useState<string>('Montserrat, sans-serif');
@@ -766,6 +770,78 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 );
               })}
             </div>
+
+            {/* Specimen Preview Text Bar (Classic Google Fonts Pangram & Custom Test) */}
+            <div className="flex items-center gap-2 pt-2 border-t border-[#222226]">
+              <span className="text-[10px] text-zinc-500 font-medium shrink-0">Sample:</span>
+              <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('sentence')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] transition-all shrink-0 cursor-pointer ${
+                    previewMode === 'sentence'
+                      ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 font-semibold'
+                      : 'bg-[#18181A] text-zinc-400 hover:text-white border border-[#26262A]'
+                  }`}
+                  title="Specimen pangram (shows all font characters)"
+                >
+                  🦊 The quick brown fox
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('title')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] transition-all shrink-0 cursor-pointer ${
+                    previewMode === 'title'
+                      ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 font-semibold'
+                      : 'bg-[#18181A] text-zinc-400 hover:text-white border border-[#26262A]'
+                  }`}
+                  title="Headline title preview"
+                >
+                  ⚡ Master Your Mind
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('numbers')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] transition-all shrink-0 cursor-pointer ${
+                    previewMode === 'numbers'
+                      ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 font-semibold'
+                      : 'bg-[#18181A] text-zinc-400 hover:text-white border border-[#26262A]'
+                  }`}
+                  title="Numbers & symbols preview"
+                >
+                  🔢 123 $99
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('name')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] transition-all shrink-0 cursor-pointer ${
+                    previewMode === 'name'
+                      ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 font-semibold'
+                      : 'bg-[#18181A] text-zinc-400 hover:text-white border border-[#26262A]'
+                  }`}
+                  title="Font family name preview"
+                >
+                  🏷️ Font Name
+                </button>
+                <div className="relative flex-1 min-w-[120px]">
+                  <input
+                    type="text"
+                    value={previewMode === 'custom' ? customPreviewText : ''}
+                    placeholder="Type custom text..."
+                    onChange={(e) => {
+                      setPreviewMode('custom');
+                      setCustomPreviewText(e.target.value);
+                    }}
+                    onFocus={() => {
+                      if (previewMode !== 'custom') {
+                        setPreviewMode('custom');
+                      }
+                    }}
+                    className="w-full bg-[#18181A] border border-[#26262A] focus:border-blue-500/50 rounded px-2 py-0.5 text-[10px] text-white placeholder:text-zinc-600 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Live Font Cards Grid */}
@@ -785,9 +861,18 @@ export const TextPane: React.FC<TextPaneProps> = ({
                   const isSelected = selectedFontId === font.id;
                   const availableWeights = font.weights && font.weights.length > 0 ? font.weights : [400, 700];
 
-                  const previewTextToRender = currentText?.trim()
-                    ? getCardPreviewText(currentText)
-                    : font.name;
+                  let textToDisplay = 'The quick brown fox';
+                  if (previewMode === 'sentence') {
+                    textToDisplay = 'The quick brown fox';
+                  } else if (previewMode === 'title') {
+                    textToDisplay = currentText?.trim() ? getCardPreviewText(currentText) : 'Master Your Mind';
+                  } else if (previewMode === 'numbers') {
+                    textToDisplay = '123,456 $99.00 !?#';
+                  } else if (previewMode === 'name') {
+                    textToDisplay = font.name;
+                  } else if (previewMode === 'custom') {
+                    textToDisplay = customPreviewText.trim() || 'The quick brown fox';
+                  }
 
                   return (
                     <div
@@ -799,30 +884,33 @@ export const TextPane: React.FC<TextPaneProps> = ({
                           : 'border-[#242424] hover:border-[#383842]'
                       }`}
                     >
-                      {/* Font Header Info */}
+                      {/* Font Header Info (100% Google Fonts style) */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-xs font-bold text-white truncate">
+                          <span className="text-sm font-bold text-white tracking-tight truncate">
                             {font.name}
                           </span>
                           {renderFontProviderBadge(font.provider)}
-                          <span className="text-[9px] font-mono-studio text-zinc-400 bg-[#1E1E1E] px-1 rounded border border-[#2E2E2E] shrink-0">
-                            {font.category || 'Font'}
+                          <span className="text-[10px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/25 shrink-0">
+                            {font.category || 'Sans Serif'}
                           </span>
-                          <span className="text-[9px] font-mono-studio text-zinc-500 bg-[#141416] px-1 rounded border border-[#242428] shrink-0 hidden sm:inline">
+                          <span className="text-[10px] font-mono-studio text-zinc-400 bg-zinc-800/60 px-2 py-0.5 rounded-full border border-zinc-700/40 shrink-0 hidden sm:inline">
                             {font.stylesCount || availableWeights.length} styles
                           </span>
                         </div>
 
                         {isSelected && (
-                          <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+                          <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shrink-0 shadow-sm">
                             <Check className="w-2.5 h-2.5 text-white stroke-[3]" />
                           </div>
                         )}
                       </div>
 
-                      {/* Dynamic Font Preview */}
-                      <div className="bg-[#0C0C0F] border border-[#23232A] rounded-lg py-3.5 px-4 flex items-center justify-center text-center min-h-[58px] overflow-hidden">
+                      {/* Dynamic Font Specimen Preview Box */}
+                      <div
+                        key={`${font.id}-${loadedVersion}`}
+                        className="bg-[#0C0C0F] border border-[#202028] rounded-xl py-3.5 px-4 flex items-center justify-center text-center min-h-[58px] overflow-hidden group-hover:border-[#2E2E38] transition-colors"
+                      >
                         <span
                           className="text-xl sm:text-2xl leading-snug select-none text-white tracking-tight transition-all duration-150"
                           style={{
@@ -830,25 +918,25 @@ export const TextPane: React.FC<TextPaneProps> = ({
                             fontWeight: isSelected ? selectedWeight : font.defaultWeight || 700,
                           }}
                         >
-                          {previewTextToRender}
+                          {textToDisplay}
                         </span>
                       </div>
 
-                      {/* Provider Details & Weight Selector */}
+                      {/* Provider Details & Weight Selector Chips */}
                       <div className="flex items-center justify-between pt-0.5">
-                        <span className="text-[10px] text-zinc-500 truncate">
+                        <span className="text-[11px] text-zinc-500 truncate">
                           {font.designer ? `by ${font.designer}` : font.name}
                         </span>
 
                         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          {availableWeights.slice(0, 4).map((w) => (
+                          {availableWeights.slice(0, 5).map((w) => (
                             <button
                               key={w}
                               type="button"
                               onClick={() => handleApplyFont(font, w)}
-                              className={`px-1.5 py-0.5 rounded text-[9px] font-mono-studio transition-colors cursor-pointer ${
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-mono-studio transition-all cursor-pointer ${
                                 isSelected && selectedWeight === w
-                                  ? 'bg-blue-600 text-white font-bold'
+                                  ? 'bg-blue-600 text-white font-bold shadow-sm'
                                   : 'bg-[#22222A] text-zinc-400 hover:text-white border border-[#2D2D38]'
                               }`}
                               title={`Apply weight ${w}`}

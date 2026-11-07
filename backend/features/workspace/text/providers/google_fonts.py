@@ -81,15 +81,11 @@ class GoogleFontsProvider(BaseFontProvider):
                     css_family = f"'{family}', {css_fallback}"
                     font_family_encoded = urllib.parse.quote_plus(family)
 
-                    # Bulletproof Google Fonts CSS2 URL (guaranteed 200 OK across all Google Fonts)
-                    if 400 in weights and 700 in weights:
-                        wght_query = ":wght@400;700"
-                    elif 400 in weights:
-                        wght_query = ":wght@400"
-                    elif weights:
-                        wght_query = f":wght@{weights[0]}"
-                    else:
-                        wght_query = ""
+                    # Bulletproof Google Fonts CSS2 URL loading all available font weights
+                    valid_weights = sorted([w for w in weights if 100 <= w <= 900 and w % 100 == 0])
+                    if not valid_weights:
+                        valid_weights = [400, 700]
+                    wght_query = ":wght@" + ";".join(str(w) for w in valid_weights)
 
                     google_font_url = f"https://fonts.googleapis.com/css2?family={font_family_encoded}{wght_query}&display=swap"
 

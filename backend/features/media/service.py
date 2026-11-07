@@ -445,60 +445,49 @@ def search_media(
 
 
 def search_audio(query: str = "", genre: str = "", limit: int = 20) -> AudioSearchData:
-    """Search soundtrack providers and deduplicate results by audio URL."""
-    tracks = []
-    if jamendo_audio.is_configured():
-        tracks.extend(jamendo_audio.search(query=query, genre=genre, limit=limit))
-
-    if len(tracks) < limit:
-        tracks.extend(
-            wikimedia_audio.search_music(
-                query=query,
-                genre=genre,
-                limit=limit - len(tracks),
-            )
+    """Search soundtrack providers via modular live audio service."""
+    from backend.features.workspace.audio import search_soundtracks
+    res = search_soundtracks(query=query, genre=genre, page_size=limit)
+    items = [
+        AudioTrackAsset(
+            id=t["id"],
+            title=t["title"],
+            artist=t.get("artist", ""),
+            genre=t.get("genre", "Cinematic"),
+            duration=t.get("duration", 150),
+            bpm=t.get("bpm", 90),
+            audioUrl=t["audioUrl"],
+            provider=t.get("provider", "live_audio"),
         )
-
-    seen_urls = set()
-    unique_tracks = []
-    for track in tracks:
-        if track.audioUrl not in seen_urls:
-            seen_urls.add(track.audioUrl)
-            unique_tracks.append(track)
-
+        for t in res.get("items", [])
+    ]
     return AudioSearchData(
         query=query,
         genre=genre,
-        total=len(unique_tracks),
-        items=unique_tracks[:limit],
+        total=res.get("total", len(items)),
+        items=items,
     )
 
 
 def search_sfx(query: str = "whoosh", limit: int = 20) -> SfxSearchData:
-    """Queries sound effects catalog from Mixkit open audio and Wikimedia Commons."""
-    effects: List[Any] = []
-    
-    # 1. Search Mixkit curated catalog
-    curated = sfx_provider.search(query=query, limit=limit)
-    effects.extend(curated)
-    
-    # 2. Search open Wikimedia SFX API
-    if len(effects) < limit:
-        remaining = limit - len(effects)
-        wm_effects = wikimedia_audio.search_sfx(query=query, limit=remaining)
-        effects.extend(wm_effects)
-
-    seen_urls = set()
-    unique_effects = []
-    for e in effects:
-        if e.audioUrl not in seen_urls:
-            seen_urls.add(e.audioUrl)
-            unique_effects.append(e)
-
+    """Queries sound effects via modular live SFX service."""
+    from backend.features.workspace.audio import search_sound_effects
+    res = search_sound_effects(query=query, page_size=limit)
+    items = [
+        SfxAsset(
+            id=e["id"],
+            title=e["title"],
+            category=e.get("category", "Impact").lower(),
+            duration=e.get("duration", 1.5),
+            audioUrl=e["audioUrl"],
+            provider=e.get("provider", "open_sfx"),
+        )
+        for e in res.get("items", [])
+    ]
     return SfxSearchData(
         query=query,
-        total=len(unique_effects),
-        items=unique_effects[:limit],
+        total=res.get("total", len(items)),
+        items=items,
     )
 
 

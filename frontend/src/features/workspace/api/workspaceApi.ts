@@ -308,8 +308,20 @@ export const workspaceApi = {
     return { pexels: false, pixabay: false, unsplash: false, jamendo: false, google_cse: false };
   },
 
-  async searchOpenTracks(query: string = '', genre: string = '', limit: number = 20): Promise<any> {
-    const params = new URLSearchParams({ q: query, genre, limit: String(limit) });
+  async searchOpenTracks(
+    query: string = '',
+    genre: string = '',
+    limit: number = 24,
+    provider: string = 'all',
+    page: number = 1
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      q: query,
+      genre,
+      provider,
+      page: String(page),
+      limit: String(limit),
+    });
     const res = await fetch(apiUrl(`/api/media/audio-search?${params.toString()}`));
     const response = await res.json();
     if (!res.ok) {
@@ -329,15 +341,29 @@ export const workspaceApi = {
         bpm: track.bpm || 90,
         audioUrl: track.audioUrl,
         provider: track.provider,
-        duration: track.duration == null
-          ? '2:00'
-          : `${Math.floor(track.duration / 60)}:${String(Math.floor(track.duration % 60)).padStart(2, '0')}`,
+        duration:
+          track.durationFormatted ||
+          (track.duration == null
+            ? '2:30'
+            : `${Math.floor(track.duration / 60)}:${String(Math.floor(track.duration % 60)).padStart(2, '0')}`),
       })),
     };
   },
 
-  async searchOpenSfx(query: string = '', limit: number = 20): Promise<any> {
-    const params = new URLSearchParams({ q: query, limit: String(limit) });
+  async searchOpenSfx(
+    query: string = '',
+    limit: number = 24,
+    category: string = 'all',
+    provider: string = 'all',
+    page: number = 1
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      q: query,
+      category,
+      provider,
+      page: String(page),
+      limit: String(limit),
+    });
     const res = await fetch(apiUrl(`/api/media/sfx-search?${params.toString()}`));
     const response = await res.json();
     if (!res.ok) {
@@ -349,18 +375,18 @@ export const workspaceApi = {
       success: response.success,
       total: data?.total || 0,
       items: (data?.items || []).map((effect: any) => {
-        const category = String(effect.category || '').toLowerCase();
+        const cat = String(effect.category || '').toLowerCase();
         return {
           id: effect.id,
           name: effect.title,
-          category: category.includes('whoosh')
+          category: cat.includes('whoosh') || cat.includes('transition')
             ? 'Transition'
-            : category.includes('impact') || category.includes('sub_drop')
+            : cat.includes('impact') || cat.includes('sub_drop') || cat.includes('boom')
               ? 'Impact'
-              : category.includes('riser')
+              : cat.includes('riser') || cat.includes('tension')
                 ? 'Tension'
                 : 'Action',
-          duration: `${effect.duration ?? 1}s`,
+          duration: effect.durationFormatted || `${effect.duration ?? 1}s`,
           audioUrl: effect.audioUrl,
           provider: effect.provider,
         };
