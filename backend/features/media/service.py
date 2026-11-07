@@ -26,7 +26,11 @@ from .providers import (
     PexelsVideoProvider,
     PixabayVideoProvider,
     WikimediaVideoProvider,
+    MixkitVideoProvider,
+    CoverrVideoProvider,
     UnsplashImageProvider,
+    OpenverseImageProvider,
+    FlickrImageProvider,
     JamendoAudioProvider,
     WikimediaAudioProvider,
     SfxProvider,
@@ -63,7 +67,11 @@ google_video = GoogleVideoProvider()
 pexels_video = PexelsVideoProvider()
 pixabay_video = PixabayVideoProvider()
 wikimedia_video = WikimediaVideoProvider()
+mixkit_video = MixkitVideoProvider()
+coverr_video = CoverrVideoProvider()
 unsplash_image = UnsplashImageProvider()
+openverse_image = OpenverseImageProvider()
+flickr_image = FlickrImageProvider()
 jamendo_audio = JamendoAudioProvider()
 wikimedia_audio = WikimediaAudioProvider()
 sfx_provider = SfxProvider()
@@ -118,7 +126,19 @@ def _resolve_single_scene_internal(
                 except Exception as e:
                     logger.debug(f"Pixabay error on scene {item.sceneNumber}: {e}")
 
-            # Fallback to Wikimedia / Google only if fast providers returned no candidates
+            # Free keyless video providers: Mixkit, Coverr, Wikimedia
+            if not raw_cands:
+                try:
+                    raw_cands.extend(mixkit_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
+                except Exception as e:
+                    logger.debug(f"Mixkit error on scene {item.sceneNumber}: {e}")
+
+            if not raw_cands:
+                try:
+                    raw_cands.extend(coverr_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
+                except Exception as e:
+                    logger.debug(f"Coverr error on scene {item.sceneNumber}: {e}")
+
             if not raw_cands:
                 try:
                     raw_cands.extend(wikimedia_video.search(query=q, aspect_ratio=aspect_ratio, limit=6))
@@ -156,6 +176,56 @@ def _resolve_single_scene_internal(
                         status="resolved",
                         media=cand,
                     )
+
+        # Fallback to high-res photo if no video clips were matched for this cut
+        fallback_photo_q = queries_to_try[0] if queries_to_try else "cinematic backdrop"
+        raw_photo_cands: List[MediaAsset] = []
+        if unsplash_image.is_configured():
+            try:
+                raw_photo_cands.extend(unsplash_image.search(query=fallback_photo_q, aspect_ratio=aspect_ratio, limit=4))
+            except Exception:
+                pass
+        if not raw_photo_cands and pixabay_video.is_configured():
+            try:
+                raw_photo_cands.extend(pixabay_video.search(query=fallback_photo_q, media_type="image", aspect_ratio=aspect_ratio, limit=4))
+            except Exception:
+                pass
+        if not raw_photo_cands:
+            try:
+                raw_photo_cands.extend(openverse_image.search(query=fallback_photo_q, aspect_ratio=aspect_ratio, limit=4))
+            except Exception:
+                pass
+        if not raw_photo_cands:
+            try:
+                raw_photo_cands.extend(flickr_image.search(query=fallback_photo_q, aspect_ratio=aspect_ratio, limit=4))
+            except Exception:
+                pass
+        if not raw_photo_cands:
+            try:
+                raw_photo_cands.extend(wikimedia_video.search(query=fallback_photo_q, media_type="image", aspect_ratio=aspect_ratio, limit=4))
+            except Exception:
+                pass
+
+        ranked_photo_cands, _ = filter_and_rank_candidates(raw_photo_cands, target_query=fallback_photo_q)
+        for cand in ranked_photo_cands:
+            cand_accepted = False
+            if lock:
+                with lock:
+                    if cand.url not in excluded_urls:
+                        excluded_urls.add(cand.url)
+                        cand_accepted = True
+            else:
+                if cand.url not in excluded_urls:
+                    excluded_urls.add(cand.url)
+                    cand_accepted = True
+
+            if cand_accepted:
+                logger.info(f"Scene {item.sceneNumber} fallback to high-res photo '{cand.title[:35]}'")
+                return ResolvedSceneResult(
+                    sceneNumber=item.sceneNumber,
+                    status="resolved",
+                    media=cand,
+                )
 
     else:
         # Image search
@@ -261,12 +331,22 @@ def search_media(
     items: List[MediaAsset] = []
 
     clean_q = (query or "").strip()
-    if not clean_q or clean_q.lower() in ("all", "*"):
-        clean_q = "cinematic"
+    if clean_q.lower() in ("all", "*"):
+        clean_q = ""
 
     per_prov_limit = limit if provider != "all" else max(6, min(limit, 15))
 
     if media_type == "video":
+        if provider in ["all", "mixkit"]:
+            try:
+                items.extend(mixkit_video.search(query=clean_q, aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Mixkit video search error: {e}")
+        if provider in ["all", "coverr"]:
+            try:
+                items.extend(coverr_video.search(query=clean_q, aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Coverr video search error: {e}")
         if provider in ["all", "pixabay"] and pixabay_video.is_configured():
             try:
                 items.extend(pixabay_video.search(query=clean_q, aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
@@ -289,6 +369,21 @@ def search_media(
                 logger.debug(f"Google CSE video search error: {e}")
     else:
         # Search Stock Photos / Images across all supported providers
+        if provider in ["all", "openverse"]:
+            try:
+                items.extend(openverse_image.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Openverse photo search error: {e}")
+        if provider in ["all", "flickr"]:
+            try:
+                items.extend(flickr_image.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Flickr photo search error: {e}")
+        if provider in ["all", "unsplash"] and unsplash_image.is_configured():
+            try:
+                items.extend(unsplash_image.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
+            except Exception as e:
+                logger.debug(f"Unsplash photo search error: {e}")
         if provider in ["all", "pixabay"] and pixabay_video.is_configured():
             try:
                 items.extend(pixabay_video.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
@@ -299,12 +394,7 @@ def search_media(
                 items.extend(pexels_video.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
             except Exception as e:
                 logger.debug(f"Pexels photo search error: {e}")
-        if provider in ["all", "unsplash"] and unsplash_image.is_configured():
-            try:
-                items.extend(unsplash_image.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
-            except Exception as e:
-                logger.debug(f"Unsplash photo search error: {e}")
-        if provider in ["all", "wikimedia", "flickr"]:
+        if provider in ["all", "wikimedia"]:
             try:
                 items.extend(wikimedia_video.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=per_prov_limit))
             except Exception as e:
@@ -447,6 +537,34 @@ def get_providers_status() -> ProvidersStatusData:
             hasKey=False,
             authRequired=False,
             latencyMs=95,
+        ),
+        "mixkit": ProviderInfo(
+            status="active",
+            type=["video"],
+            hasKey=False,
+            authRequired=False,
+            latencyMs=90,
+        ),
+        "coverr": ProviderInfo(
+            status="active",
+            type=["video"],
+            hasKey=False,
+            authRequired=False,
+            latencyMs=180,
+        ),
+        "openverse": ProviderInfo(
+            status="active",
+            type=["image"],
+            hasKey=False,
+            authRequired=False,
+            latencyMs=220,
+        ),
+        "flickr": ProviderInfo(
+            status="active",
+            type=["image"],
+            hasKey=False,
+            authRequired=False,
+            latencyMs=160,
         ),
     }
 

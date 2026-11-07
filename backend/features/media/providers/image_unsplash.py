@@ -39,17 +39,25 @@ class UnsplashImageProvider(BaseMediaProvider):
         if not access_key:
             return []
 
-        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic"
-        orientation = "portrait" if aspect_ratio in ["9:16", "4:5"] else "landscape"
+        clean_q = (query or "").strip().replace("#", "").strip()
+        if aspect_ratio in ["9:16", "4:5", "portrait"]:
+            orientation = "portrait"
+        elif aspect_ratio in ["1:1", "square", "squarish"]:
+            orientation = "squarish"
+        else:
+            orientation = "landscape"
 
-        url = "https://api.unsplash.com/search/photos"
         headers = {"Authorization": f"Client-ID {access_key}"}
         params = {
-            "query": clean_q,
             "per_page": min(limit, 30),
             "page": page,
-            "orientation": orientation,
         }
+        if clean_q:
+            url = "https://api.unsplash.com/search/photos"
+            params["query"] = clean_q
+            params["orientation"] = orientation
+        else:
+            url = "https://api.unsplash.com/photos"
 
         try:
             resp = requests.get(url, headers=headers, params=params, timeout=5)
@@ -61,7 +69,8 @@ class UnsplashImageProvider(BaseMediaProvider):
             return []
 
         images: List[MediaAsset] = []
-        for it in data.get("results", []):
+        raw_list = data.get("results") if isinstance(data, dict) else (data if isinstance(data, list) else [])
+        for it in raw_list:
             urls = it.get("urls", {})
             img_url = urls.get("regular") or urls.get("full") or urls.get("small")
             if img_url:

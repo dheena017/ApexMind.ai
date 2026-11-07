@@ -2164,6 +2164,7 @@ export default function WorkspacePage({
                   setCustomBackdropVideo('');
                 }}
                 activeImageUrl={customBackdropImage}
+                onSwitchToVideos={() => onPaneChange?.('video')}
               />
             ) : activePane === 'video' ? (
               <VideoStockPane
@@ -2174,6 +2175,7 @@ export default function WorkspacePage({
                   window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
                 }}
                 activeVideoUrl={customBackdropVideo}
+                onSwitchToImages={() => onPaneChange?.('image')}
               />
             ) : null}
           </div>

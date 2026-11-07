@@ -48,7 +48,7 @@ class PixabayVideoProvider(BaseMediaProvider):
         if not api_key:
             return []
 
-        clean_q = (query or "").strip().replace("#", "").strip() or "cinematic"
+        clean_q = (query or "").strip().replace("#", "").strip()
 
         # Handle Pixabay Photos/Images search
         if media_type == "image":
@@ -56,13 +56,14 @@ class PixabayVideoProvider(BaseMediaProvider):
             orientation = "vertical" if aspect_ratio in ["9:16", "4:5"] else "horizontal"
             params = {
                 "key": api_key,
-                "q": clean_q,
                 "image_type": "photo",
                 "orientation": orientation,
                 "per_page": max(3, min(limit, 20)),
                 "page": page,
                 "safesearch": "true",
             }
+            if clean_q:
+                params["q"] = clean_q
             try:
                 resp = requests.get(url, params=params, timeout=6)
                 if resp.status_code != 200:
@@ -107,12 +108,13 @@ class PixabayVideoProvider(BaseMediaProvider):
         url = "https://pixabay.com/api/videos/"
         params = {
             "key": api_key,
-            "q": clean_q,
             "per_page": max(3, min(limit, 20)),
             "page": page,
             "safesearch": "true",
-            "video_type": "film",
+            "video_type": "all",
         }
+        if clean_q:
+            params["q"] = clean_q
 
         try:
             resp = requests.get(url, params=params, timeout=6)

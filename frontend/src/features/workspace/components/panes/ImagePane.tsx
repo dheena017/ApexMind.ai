@@ -18,6 +18,7 @@ import {
   Droplets,
   History,
   ChevronDown,
+  Video,
 } from 'lucide-react';
 import { workspaceApi } from '../../api/workspaceApi';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
@@ -43,6 +44,7 @@ export interface StockImageItem {
 export interface ImagePaneProps {
   onSelectImage: (imageUrl: string) => void;
   activeImageUrl?: string;
+  onSwitchToVideos?: () => void;
 }
 
 export const PROVIDER_OPTIONS = [
@@ -81,6 +83,7 @@ interface ImageCardProps {
   isSelected: boolean;
   isActive: boolean;
   activeTab: string;
+  orientation?: 'portrait' | 'landscape' | 'squarish';
   onApply: (img: StockImageItem) => void;
   onDeleteSaved: (id: string, e: React.MouseEvent) => void;
   renderSourceBadge: (source?: string) => React.ReactNode;
@@ -91,10 +94,35 @@ const ImageCard = React.memo<ImageCardProps>(({
   isSelected,
   isActive,
   activeTab,
+  orientation = 'portrait',
   onApply,
   onDeleteSaved,
   renderSourceBadge,
 }) => {
+  const [currentSrc, setCurrentSrc] = useState<string>(img.thumbnail || img.url);
+  const [hasError, setHasError] = useState<boolean>(false);
+
+  useEffect(() => {
+    setCurrentSrc(img.thumbnail || img.url);
+    setHasError(false);
+  }, [img.thumbnail, img.url]);
+
+  const handleImgError = () => {
+    // If thumbnail fails, try full direct url before giving up
+    if (currentSrc !== img.url && img.url) {
+      setCurrentSrc(img.url);
+    } else {
+      setHasError(true);
+    }
+  };
+
+  const aspectClass =
+    orientation === 'landscape'
+      ? 'aspect-video'
+      : orientation === 'squarish'
+      ? 'aspect-square'
+      : 'aspect-[9/16]';
+
   return (
     <div
       role="button"
@@ -107,19 +135,28 @@ const ImageCard = React.memo<ImageCardProps>(({
         }
       }}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
-      className={`group relative rounded-xl border overflow-hidden aspect-[9/16] bg-[#181818] transition-all cursor-pointer text-left transform-gpu ${
+      className={`group relative rounded-xl border overflow-hidden ${aspectClass} bg-[#181818] transition-all cursor-pointer text-left transform-gpu ${
         isSelected
           ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg shadow-blue-500/10'
           : 'border-[#242424] hover:border-[#2E2E2E]'
       }`}
     >
-      <img
-        src={img.thumbnail}
-        alt={img.title}
-        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        loading="lazy"
-        decoding="async"
-      />
+      {!hasError ? (
+        <img
+          src={currentSrc}
+          alt={img.title}
+          referrerPolicy="no-referrer"
+          onError={handleImgError}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-[#17171a] text-zinc-500 p-2 text-center select-none">
+          <ImageIcon className="w-7 h-7 opacity-35 mb-1" />
+          <span className="text-[10px] text-zinc-400 line-clamp-2 px-1 font-medium">{img.title}</span>
+        </div>
+      )}
 
       {/* Top Provider & Theme Badges */}
       <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
@@ -181,6 +218,7 @@ ImageCard.displayName = 'ImageCard';
 export const ImagePane: React.FC<ImagePaneProps> = ({
   onSelectImage,
   activeImageUrl,
+  onSwitchToVideos,
 }) => {
   const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'filters' | 'history'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
@@ -199,6 +237,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [totalFound, setTotalFound] = useState<number>(0);
+  const [selectedOrientation, setSelectedOrientation] = useState<'portrait' | 'landscape' | 'squarish'>('portrait');
 
   // Provider Status & Modal
   const [providerStatus, setProviderStatus] = useState<{
@@ -244,7 +283,8 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
       provider: ProviderType,
       category: string,
       pageNum: number,
-      isAppending: boolean = false
+      isAppending: boolean = false,
+      orientation: 'portrait' | 'landscape' | 'squarish' = selectedOrientation
     ) => {
       try {
         if (isAppending) {
@@ -260,7 +300,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
           category,
           pageNum,
           36,
-          'portrait'
+          orientation
         );
 
         if (res && res.items) {
@@ -272,7 +312,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             thumbnail: it.thumbnail || it.url,
             author: it.author || 'Stock Creator',
             authorUrl: it.authorUrl,
-            resolution: it.resolution || '1080x1920 HD',
+            resolution: it.resolution || (orientation === 'landscape' ? '1920x1080 HD' : orientation === 'squarish' ? '1080x1080 HD' : '1080x1920 HD'),
             source: it.source || provider,
             tags: it.tags || [],
           }));
@@ -303,24 +343,36 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         setIsLoadingMore(false);
       }
     },
-    []
+    [selectedOrientation]
   );
 
   // Provider Select Options
   const providerSelectOptions = useMemo(
     () => [
-      { value: 'all', label: 'All (100M+ Stock)', badge: '100M+' },
+      { value: 'all', label: 'All (700M+ Free Stock)', badge: '700M+' },
+      { value: 'openverse', label: 'Openverse (700M+ Free)', badge: '700M+' },
       { value: 'flickr', label: 'Flickr HD', badge: 'Free HD' },
       { value: 'wikimedia', label: 'Wikimedia', badge: 'Free CC0' },
-      { value: 'pexels', label: 'Pexels' },
-      { value: 'pixabay', label: 'Pixabay' },
       { value: 'unsplash', label: 'Unsplash' },
+      { value: 'pixabay', label: 'Pixabay' },
+      { value: 'pexels', label: 'Pexels' },
     ],
     []
   );
 
   // Debounce search when user types in the search input
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Orientation switch handler
+  const handleOrientationChange = (ori: 'portrait' | 'landscape' | 'squarish') => {
+    setSelectedOrientation(ori);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    setPage(1);
+    setIsLoadingLive(true);
+    fetchLiveStockImages(searchQuery, selectedProvider, selectedCategory, 1, false, ori);
+  };
 
   // Instant provider selection handler
   const handleProviderSelect = (val: string) => {
@@ -331,7 +383,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     }
     setPage(1);
     setIsLoadingLive(true);
-    fetchLiveStockImages(searchQuery, prov, selectedCategory, 1, false);
+    fetchLiveStockImages(searchQuery, prov, selectedCategory, 1, false, selectedOrientation);
   };
 
   // Instant mood pill select handler
@@ -349,7 +401,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     }
     setPage(1);
     setIsLoadingLive(true);
-    fetchLiveStockImages(newQuery, selectedProvider, newCat, 1, false);
+    fetchLiveStockImages(newQuery, selectedProvider, newCat, 1, false, selectedOrientation);
   };
 
   // Debounce keyboard search query changes
@@ -363,7 +415,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
     setPage(1);
 
     searchTimeoutRef.current = setTimeout(() => {
-      fetchLiveStockImages(searchQuery, selectedProvider, selectedCategory, 1, false);
+      fetchLiveStockImages(searchQuery, selectedProvider, selectedCategory, 1, false, selectedOrientation);
     }, 350);
 
     return () => {
@@ -371,13 +423,13 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, activeTab, fetchLiveStockImages]);
+  }, [searchQuery, activeTab, selectedOrientation, fetchLiveStockImages]);
 
   // Load next page
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchLiveStockImages(searchQuery, selectedProvider, selectedCategory, nextPage, true);
+    fetchLiveStockImages(searchQuery, selectedProvider, selectedCategory, nextPage, true, selectedOrientation);
   };
 
   const handleApply = (img: StockImageItem) => {
@@ -502,6 +554,12 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             Unsplash
           </span>
         );
+      case 'openverse':
+        return (
+          <span className="media-source-badge">
+            Openverse
+          </span>
+        );
       case 'wikimedia':
       case 'wikimedia_commons':
         return (
@@ -542,6 +600,21 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          {onSwitchToVideos && (
+            <div className="flex items-center bg-[#1A1A1E] border border-[#2A2A30] rounded-lg p-0.5 text-[10px]">
+              <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-semibold">
+                Photos
+              </span>
+              <button
+                type="button"
+                onClick={onSwitchToVideos}
+                className="px-2 py-0.5 rounded text-[10px] font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                title="Switch to Stock Videos"
+              >
+                Videos
+              </button>
+            </div>
+          )}
           {isLoadingLive && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
@@ -620,37 +693,63 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             </div>
           </div>
 
-          {/* Provider Quick Pills */}
-          <div className="flex items-center gap-1.5 min-w-0">
-            <button
-              type="button"
-              onClick={() => setActiveTab('filters')}
-              className="inline-flex h-7 shrink-0 items-center gap-1 rounded-lg border border-[#2F2F2F] bg-[#181818] px-2 text-[10px] font-semibold text-[#D4D4D8] transition-colors hover:bg-[#26262C] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/60"
-              title="Adjust backdrop image"
-            >
-              <Sliders className="h-3 w-3" />
-              Adjust
-            </button>
-            <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* Provider Quick Pills & Aspect Ratio */}
+          <div className="flex items-center justify-between gap-1.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setActiveTab('filters')}
+                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-lg border border-[#2F2F2F] bg-[#181818] px-2 text-[10px] font-semibold text-[#D4D4D8] transition-colors hover:bg-[#26262C] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/60"
+                title="Adjust backdrop image"
+              >
+                <Sliders className="h-3 w-3" />
+                Adjust
+              </button>
+              <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {[
+                  { id: 'all', label: '✨ All Free' },
+                  { id: 'openverse', label: '🌐 Openverse (700M+)' },
+                  { id: 'flickr', label: '📸 Flickr HD' },
+                  { id: 'wikimedia', label: '🏛️ Wikimedia' },
+                  { id: 'unsplash', label: 'Unsplash' },
+                  { id: 'pixabay', label: 'Pixabay' },
+                  { id: 'pexels', label: 'Pexels' },
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleProviderSelect(p.id)}
+                    className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
+                      selectedProvider === p.id
+                        ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
+                        : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#26262C] border border-[#242424]'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Aspect Ratio Filter Pills */}
+            <div className="flex items-center gap-1 shrink-0 pl-1.5 border-l border-[#242424]">
               {[
-                { id: 'all', label: '✨ All (100M+)' },
-                { id: 'unsplash', label: 'Unsplash' },
-                { id: 'pexels', label: 'Pexels' },
-                { id: 'pixabay', label: 'Pixabay' },
-                { id: 'wikimedia', label: 'Wikimedia' },
-                { id: 'flickr', label: 'Flickr HD' },
-              ].map((p) => (
+                { id: 'portrait', label: '9:16' },
+                { id: 'landscape', label: '16:9' },
+                { id: 'squarish', label: '1:1' },
+              ].map((ar) => (
                 <button
-                  key={p.id}
+                  key={ar.id}
                   type="button"
-                  onClick={() => handleProviderSelect(p.id)}
-                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
-                    selectedProvider === p.id
-                      ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
-                      : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#26262C] border border-[#242424]'
+                  onClick={() => handleOrientationChange(ar.id as any)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
+                    selectedOrientation === ar.id
+                      ? 'bg-[#2563EB] text-white shadow-xs'
+                      : 'bg-[#181818] text-zinc-400 hover:text-white border border-[#242424]'
                   }`}
+                  title={ar.id === 'portrait' ? 'Vertical 9:16 (Shorts/Reels)' : ar.id === 'landscape' ? 'Widescreen 16:9' : 'Square 1:1'}
                 >
-                  {p.label}
+                  {ar.label}
                 </button>
               ))}
             </div>
@@ -974,6 +1073,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       isSelected={selectedId === img.id || (!selectedId && activeImageUrl === img.url)}
                       isActive={activeImageUrl === img.url}
                       activeTab="saved"
+                      orientation={selectedOrientation}
                       onApply={handleApply}
                       onDeleteSaved={handleDeleteSaved}
                       renderSourceBadge={renderSourceBadge}
@@ -988,7 +1088,13 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                 {Array.from({ length: 6 }).map((_, idx) => (
                   <div
                     key={`skel-${idx}`}
-                    className="rounded-none border-0 aspect-[9/16] bg-[#181818] animate-pulse flex flex-col justify-end p-2.5"
+                    className={`rounded-xl border border-[#242424] ${
+                      selectedOrientation === 'landscape'
+                        ? 'aspect-video'
+                        : selectedOrientation === 'squarish'
+                        ? 'aspect-square'
+                        : 'aspect-[9/16]'
+                    } bg-[#181818] animate-pulse flex flex-col justify-end p-2.5`}
                   >
                     <div className="h-3 w-3/4 bg-zinc-800 rounded mb-1" />
                     <div className="h-2.5 w-1/2 bg-zinc-800/60 rounded mb-2" />
@@ -1022,6 +1128,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
                       isSelected={selectedId === img.id || (!selectedId && activeImageUrl === img.url)}
                       isActive={activeImageUrl === img.url}
                       activeTab={activeTab}
+                      orientation={selectedOrientation}
                       onApply={handleApply}
                       onDeleteSaved={handleDeleteSaved}
                       renderSourceBadge={renderSourceBadge}

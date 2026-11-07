@@ -37,6 +37,7 @@ export interface StockVideoItem {
 export interface VideoStockPaneProps {
   onSelectVideo: (videoUrl: string, posterUrl?: string) => void;
   activeVideoUrl?: string;
+  onSwitchToImages?: () => void;
 }
 
 const SEARCH_TOPICS = [
@@ -63,6 +64,7 @@ interface VideoCardProps {
   vid: StockVideoItem;
   isSelected: boolean;
   playbackSpeed: number;
+  aspectRatio?: string;
   onAddToTimeline: (vid: StockVideoItem) => void;
 }
 
@@ -70,6 +72,7 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
   vid,
   isSelected,
   playbackSpeed,
+  aspectRatio = '9:16',
   onAddToTimeline,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -106,6 +109,12 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
   }, [isHovered, playbackSpeed]);
 
   const hasPoster = Boolean(vid.posterUrl) && !imgError;
+  const cardAspectClass =
+    aspectRatio === '16:9'
+      ? 'aspect-video'
+      : aspectRatio === '1:1'
+        ? 'aspect-square'
+        : 'aspect-[9/16]';
 
   return (
     <button
@@ -116,7 +125,7 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
-      className={`group relative block w-full rounded-xl border overflow-hidden aspect-[9/16] bg-[#181818] transition-all cursor-pointer p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/70 transform-gpu ${
+      className={`group relative block w-full rounded-xl border overflow-hidden ${cardAspectClass} bg-[#181818] transition-all cursor-pointer p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA]/70 transform-gpu ${
         isSelected
           ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/50 shadow-lg shadow-blue-500/10'
           : 'border-[#242424] hover:border-[#2E2E2E]'
@@ -141,6 +150,7 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
           alt=""
           loading="lazy"
           decoding="async"
+          referrerPolicy="no-referrer"
           onError={() => setImgError(true)}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
@@ -155,11 +165,24 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
         />
       )}
 
-      {vid.source && (
-        <span className="media-source-badge absolute left-2 top-2 z-10">
-          {vid.source}
-        </span>
-      )}
+      <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10 pointer-events-none">
+        {vid.source && (
+          <span className="media-source-badge">
+            {vid.source === 'mixkit'
+              ? 'Mixkit HD'
+              : vid.source === 'coverr'
+              ? 'Coverr'
+              : vid.source === 'wikimedia'
+              ? 'Wikimedia'
+              : vid.source}
+          </span>
+        )}
+        {vid.aestheticBadges && vid.aestheticBadges.length > 0 && (
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-blue-300 border border-blue-500/30 truncate max-w-[100px]">
+            {vid.aestheticBadges[0]}
+          </span>
+        )}
+      </div>
       {isSelected && (
         <span className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#3B82F6] text-white shadow-md">
           <Check className="h-3 w-3 stroke-[3]" />
@@ -170,9 +193,12 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
         <p className="truncate text-left text-[11px] font-bold leading-tight text-white drop-shadow-md" title={vid.title}>
           {vid.title}
         </p>
-        <p className="truncate text-left text-[9px] text-zinc-400">
-          {[vid.duration, vid.resolution].filter(Boolean).join(' · ')}
-        </p>
+        <div className="flex items-center justify-between text-[9px] text-zinc-400">
+          <span>{[vid.duration, vid.resolution].filter(Boolean).join(' · ')}</span>
+          {vid.resolution?.includes('1080') && (
+            <span className="px-1 py-0.2 rounded bg-white/10 text-zinc-300 font-mono text-[8px]">FHD</span>
+          )}
+        </div>
       </div>
     </button>
   );
@@ -181,11 +207,13 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
 export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   onSelectVideo,
   activeVideoUrl,
+  onSwitchToImages,
 }) => {
   const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'settings' | 'saved'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [videos, setVideos] = useState<StockVideoItem[]>([]);
   const [savedVideos, setSavedVideos] = useState<StockVideoItem[]>([]);
@@ -245,7 +273,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
 
         const rawQ = query.trim().replace(/^#/, '');
         const cleanQ = rawQ || (category !== 'all' ? category : 'cinematic');
-        const res = await workspaceApi.searchOpenVideos(cleanQ, category, pageNum, 24, provider);
+        const res = await workspaceApi.searchOpenVideos(cleanQ, category, pageNum, 24, provider, selectedAspectRatio);
 
         if (res && res.items && res.items.length > 0) {
           const formatted: StockVideoItem[] = res.items.map((it: any) => ({
@@ -303,7 +331,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
     }, 280);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, selectedCategory, selectedProvider, activeTab, fetchVideos]);
+  }, [searchQuery, selectedCategory, selectedProvider, selectedAspectRatio, activeTab, fetchVideos]);
 
   // Load next page of clips down below the current grid
   const handleLoadMore = () => {
@@ -412,6 +440,21 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {onSwitchToImages && (
+            <div className="flex items-center gap-0.5 bg-black/40 p-0.5 rounded-lg border border-[#2E2E2E]">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#2563EB] text-white">
+                Videos
+              </span>
+              <button
+                type="button"
+                onClick={onSwitchToImages}
+                className="px-2 py-0.5 rounded text-[10px] font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                title="Switch to Stock Photos"
+              >
+                Photos
+              </button>
+            </div>
+          )}
           {isLoadingBackend && (
             <RefreshCw className="w-3.5 h-3.5 text-[#60A5FA] animate-spin" />
           )}
@@ -637,29 +680,58 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 )}
               </div>
 
-              {/* Provider Quick Pills */}
+              {/* Provider & Aspect Ratio Quick Pills */}
               {activeTab === 'catalog' && (
-                <ScrollableTabContainer className="pt-0.5">
-                  {[
-                    { id: 'all', label: '✨ All' },
-                    { id: 'pixabay', label: '🎥 Pixabay' },
-                    { id: 'pexels', label: '🎬 Pexels' },
-                    { id: 'wikimedia', label: '🌐 Wikimedia' },
-                  ].map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handleProviderChange(p.id)}
-                      className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
-                        selectedProvider === p.id
-                          ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
-                          : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#26262C] border border-[#242424]'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </ScrollableTabContainer>
+                <div className="flex flex-col gap-1.5 pt-0.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <ScrollableTabContainer className="flex-1">
+                      {[
+                        { id: 'all', label: '✨ All Free' },
+                        { id: 'mixkit', label: '🎬 Mixkit HD' },
+                        { id: 'coverr', label: '📹 Coverr' },
+                        { id: 'pixabay', label: '🎥 Pixabay' },
+                        { id: 'pexels', label: '🎬 Pexels' },
+                        { id: 'wikimedia', label: '🌐 Wikimedia' },
+                      ].map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handleProviderChange(p.id)}
+                          className={`px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors shrink-0 cursor-pointer ${
+                            selectedProvider === p.id
+                              ? 'bg-[#2563EB] text-white border-[#60A5FA]/40 shadow-xs font-semibold'
+                              : 'bg-[#181818] text-zinc-400 hover:text-white hover:bg-[#26262C] border border-[#242424]'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </ScrollableTabContainer>
+
+                    {/* Aspect Ratio Filter Pills */}
+                    <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-[#242424]">
+                      {[
+                        { id: '9:16', label: '9:16' },
+                        { id: '16:9', label: '16:9' },
+                        { id: '1:1', label: '1:1' },
+                      ].map((ar) => (
+                        <button
+                          key={ar.id}
+                          type="button"
+                          onClick={() => setSelectedAspectRatio(ar.id as any)}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors cursor-pointer ${
+                            selectedAspectRatio === ar.id
+                              ? 'bg-blue-600 text-white font-bold'
+                              : 'bg-[#181818] text-zinc-400 hover:text-white border border-[#242424]'
+                          }`}
+                          title={`Filter by ${ar.id} orientation`}
+                        >
+                          {ar.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -706,6 +778,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                       vid={vid}
                       isSelected={selectedId === vid.id || (!selectedId && activeVideoUrl === vid.videoUrl)}
                       playbackSpeed={playbackSpeed}
+                      aspectRatio={selectedAspectRatio}
                       onAddToTimeline={(video) => handleAddToTimeline(video)}
                     />
                   ))}

@@ -19,6 +19,10 @@ def get_media_providers_status() -> Dict[str, Any]:
         "pexels": provs.get("pexels", {}).status == "active",
         "pixabay": provs.get("pixabay", {}).status == "active",
         "unsplash": provs.get("unsplash", {}).status == "active",
+        "mixkit": True,
+        "coverr": True,
+        "openverse": True,
+        "flickr": True,
         "jamendo": True,
         "wikimedia": True,
         "google_cse": provs.get("google_cse", {}).status == "active",
@@ -87,8 +91,13 @@ def search_open_images(
     elif clean_cat and clean_cat.lower() not in ("all", "*"):
         q = clean_cat
     else:
-        q = "cinematic"
-    ratio = "9:16" if orientation == "portrait" else "16:9"
+        q = ""
+    if orientation in ["portrait", "9:16"]:
+        ratio = "9:16"
+    elif orientation in ["squarish", "1:1", "square"]:
+        ratio = "1:1"
+    else:
+        ratio = "16:9"
     res = search_media(
         query=q,
         media_type="image",
