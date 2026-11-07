@@ -1,4 +1,5 @@
 import React, { useRef, useState, useMemo } from 'react';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   Volume2,
   Bold,
@@ -338,43 +339,17 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Segmented Control ── */}
+      {/* ── Subtabs Segmented Control (Standardized ScrollableTabs) ── */}
       <div className="p-2.5 bg-[#121215] border-b border-[#24242A] shrink-0">
-        <div className="flex items-center gap-1 p-1 bg-[#18181C] rounded-xl border border-[#24242A]">
-          <button
-            type="button"
-            onClick={() => setActiveTab('content')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none whitespace-nowrap ${
-              activeTab === 'content'
-                ? 'bg-[#2563EB] text-white shadow-xs border border-[#3B82F6]/60 font-bold'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
-            }`}
-          >
-            <FileText className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'content' ? 'text-white' : 'text-zinc-500'}`} />
-            <span className="truncate">Script Content</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('subtitles')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeTab === 'subtitles'
-                ? 'bg-[#2563EB] text-white shadow-xs border border-[#3B82F6]/60 font-bold'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
-            }`}
-          >
-            <Type className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'subtitles' ? 'text-white' : 'text-zinc-500'}`} />
-            <span className="truncate">Subtitles</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
-                activeTab === 'subtitles'
-                  ? 'bg-white/20 text-white font-bold'
-                  : 'bg-[#24242A] text-zinc-400'
-              }`}
-            >
-              {script.subtitles?.length || 0}
-            </span>
-          </button>
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'content', label: 'Script Content', icon: FileText },
+            { id: 'subtitles', label: 'Subtitles', icon: Type, badge: script.subtitles?.length || 0 },
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab)}
+          containerBgClassName="bg-[#18181C]"
+        />
       </div>
 
       {/* Floating Notice Toast */}

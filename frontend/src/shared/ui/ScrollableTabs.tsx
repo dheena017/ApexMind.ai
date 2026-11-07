@@ -6,7 +6,7 @@ export interface TabItem<T extends string = string> {
   label: string;
   icon?: React.ComponentType<{ className?: string }>;
   color?: string;
-  badge?: string | number;
+  badge?: string | number | React.ReactNode;
   title?: string;
 }
 
@@ -234,15 +234,18 @@ export function ScrollableTabs<T extends string = string>({
                 />
               )}
               <span>{tab.label}</span>
-              {tab.badge !== undefined && (
-                <span
-                  className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ml-0.5 ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-[#242424] text-zinc-400'
-                  }`}
-                >
-                  {tab.badge}
-                </span>
-              )}
+              {tab.badge !== undefined &&
+                (React.isValidElement(tab.badge) ? (
+                  tab.badge
+                ) : (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ml-0.5 ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-[#242424] text-zinc-400'
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                ))}
             </button>
           );
         })}

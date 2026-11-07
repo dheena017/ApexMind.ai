@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import { ScrollableTabs, TabItem } from '@/src/shared/ui/ScrollableTabs';
 import {
   Wand2,
   Sparkles,
@@ -244,57 +245,18 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         </div>
       </div>
 
-      {/* ── 3-Tab Segmented Control (UI/UX Upgrade) ── */}
+      {/* ── 3-Tab Segmented Control (UI/UX Upgrade with ScrollableTabs) ── */}
       <div className="p-2.5 bg-[#121215] border-b border-[#24242A] shrink-0">
-        <div className="grid grid-cols-3 gap-1 p-1 bg-[#18181C] rounded-xl border border-[#24242A]">
-          <button
-            type="button"
-            onClick={() => setActiveTab('prompt')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeTab === 'prompt'
-                ? 'bg-[#2563EB] text-white shadow-xs border border-[#60A5FA]/40 font-bold'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
-            }`}
-          >
-            <Wand2 className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'prompt' ? 'text-white' : 'text-zinc-500'}`} />
-            <span className="truncate">Prompt</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('style')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeTab === 'style'
-                ? 'bg-[#2563EB] text-white shadow-xs border border-[#60A5FA]/40 font-bold'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
-            }`}
-          >
-            <Film className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'style' ? 'text-white' : 'text-zinc-500'}`} />
-            <span className="truncate">Style &amp; Audio</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('voice')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeTab === 'voice'
-                ? 'bg-[#2563EB] text-white shadow-xs border border-[#60A5FA]/40 font-bold'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#202026] border border-transparent'
-            }`}
-          >
-            <Mic className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'voice' ? 'text-white' : 'text-zinc-500'}`} />
-            <span className="truncate">Voice</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
-                activeTab === 'voice'
-                  ? 'bg-white/20 text-white font-bold'
-                  : 'bg-[#24242A] text-zinc-400'
-              }`}
-            >
-              {liveVoices.length}
-            </span>
-          </button>
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'prompt', label: 'Prompt', icon: Wand2 },
+            { id: 'style', label: 'Style & Audio', icon: Film },
+            { id: 'voice', label: 'Voice', icon: Mic, badge: liveVoices.length },
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab)}
+          containerBgClassName="bg-[#18181C]"
+        />
       </div>
 
       {/* ── Error Banner ── */}

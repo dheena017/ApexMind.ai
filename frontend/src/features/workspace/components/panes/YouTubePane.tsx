@@ -28,6 +28,7 @@ import type { YouTubeChannel } from '@/src/features/youtube/types';
 import { youtubeApi } from '@/src/features/youtube/api/youtubeApi';
 import { workspaceApi } from '../../api/workspaceApi';
 import { YouTubeIcon } from '@/src/features/youtube/components/YouTubeIcon';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { toast } from 'sonner';
 
@@ -567,43 +568,17 @@ export const YouTubePane: React.FC<YouTubePaneProps> = ({
         )}
       </div>
 
-      {/* ── Subtabs Segmented Control ── */}
+      {/* ── Subtabs Segmented Control (Standardized ScrollableTabs) ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="grid grid-cols-2 gap-1 p-1 bg-[#181818] rounded-none border-0">
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('meta')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeSubTab === 'meta'
-                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-            }`}
-          >
-            <Upload className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'meta' ? 'text-[#60A5FA]' : 'text-slate-400'}`} />
-            <span className="truncate">Publish &amp; Meta</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('seo')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeSubTab === 'seo'
-                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-            }`}
-          >
-            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'seo' ? 'text-white' : 'text-slate-400'}`} />
-            <span className="truncate">Shorts SEO</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold shrink-0 transition-colors ${
-                activeSubTab === 'seo'
-                  ? 'bg-white/20 text-white border border-white/30'
-                  : 'bg-[#26262B] text-zinc-400'
-              }`}
-            >
-              {viralScore !== null ? `${viralScore}%` : 'AI'}
-            </span>
-          </button>
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'meta', label: 'Publish & Meta', icon: Upload },
+            { id: 'seo', label: 'Shorts SEO', icon: Sparkles, badge: viralScore !== null ? `${viralScore}%` : 'AI' },
+          ]}
+          activeTab={activeSubTab}
+          onChange={(tab) => setActiveSubTab(tab)}
+          containerBgClassName="bg-[#181818]"
+        />
       </div>
 
       {/* ── Main Tab Content ── */}

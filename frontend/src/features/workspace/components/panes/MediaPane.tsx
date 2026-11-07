@@ -4,6 +4,7 @@ import * as htmlToImage from 'html-to-image';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   Upload,
   UploadCloud,
@@ -437,43 +438,17 @@ export const MediaPane: React.FC<MediaPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Segmented Control ── */}
+      {/* ── Subtabs Segmented Control (Standardized ScrollableTabs) ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="grid grid-cols-2 gap-1 p-1 bg-[#181818] rounded-none border-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab('library')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeTab === 'library'
-                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-            }`}
-          >
-            <Upload className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'library' ? 'text-blue-400' : 'text-slate-400'}`} />
-            <span className="truncate">My Uploads</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
-                activeTab === 'library'
-                  ? 'bg-blue-400/20 text-blue-300 font-bold border border-blue-400/30'
-                  : 'bg-[#26262B] text-zinc-400'
-              }`}
-            >
-              {mediaItems.length}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('import-url')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeTab === 'import-url'
-                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-            }`}
-          >
-            <ExternalLink className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'import-url' ? 'text-emerald-400' : 'text-slate-400'}`} />
-            <span className="truncate">Web Import</span>
-          </button>
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'library', label: 'My Uploads', icon: Upload, badge: mediaItems.length },
+            { id: 'import-url', label: 'Web Import', icon: ExternalLink },
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab)}
+          containerBgClassName="bg-[#181818]"
+        />
       </div>
 
       {/* ── Media Type Filter & Sort ── */}

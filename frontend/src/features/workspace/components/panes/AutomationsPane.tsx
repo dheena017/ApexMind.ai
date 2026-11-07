@@ -32,6 +32,7 @@ import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import useAuth from '@/src/features/auth/hooks/useAuth';
 import { DEFAULT_SCRIPT_MODEL, DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
 import { useAvailableScriptModels } from '@/src/shared/hooks/useAvailableScriptModels';
+import { ScrollableTabs, TabItem } from '@/src/shared/ui/ScrollableTabs';
 
 export interface AutomationsPaneProps {
   onNavigate?: (page: string) => void;
@@ -610,68 +611,27 @@ export const AutomationsPane: React.FC<AutomationsPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Subtabs Segmented Control (High-Precision Studio Navigation) ── */}
+      {/* ── Subtabs Segmented Control (Standardized ScrollableTabs) ── */}
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
-        <div className="grid grid-cols-3 gap-1 p-1 bg-[#181818] rounded-none border-0">
-          {/* Tab 1: Pipelines */}
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('pipelines')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeSubTab === 'pipelines'
-                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-            }`}
-            title="Active Autonomous Pipelines"
-          >
-            <Zap className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'pipelines' ? 'text-[#60A5FA]' : 'text-slate-400'}`} />
-            <span className="truncate">Pipelines</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono shrink-0 transition-colors ${
-                activeSubTab === 'pipelines'
-                  ? 'bg-white/20 text-white font-bold border border-white/30'
-                  : 'bg-[#26262B] text-zinc-400'
-              }`}
-            >
-              {automations.length}
-            </span>
-          </button>
-
-          {/* Tab 2: New Schedule */}
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('create')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeSubTab === 'create'
-                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-            }`}
-            title="Configure New Automation Schedule"
-          >
-            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'create' ? 'text-blue-400' : 'text-slate-400'}`} />
-            <span className="truncate">Schedule</span>
-          </button>
-
-          {/* Tab 3: Channel Target */}
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('channel')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none min-w-0 ${
-              activeSubTab === 'channel'
-                ? 'bg-[#2563EB] text-white shadow-sm font-bold border border-[#60A5FA]/40'
-                : 'text-[#9CA3AF] hover:text-white hover:bg-[#26262C] hover:border-white/10 border border-transparent'
-            }`}
-            title="Publishing Destination & Channel Target"
-          >
-            <Youtube className={`w-3.5 h-3.5 shrink-0 ${activeSubTab === 'channel' ? 'text-red-500' : 'text-slate-400'}`} />
-            <span className="truncate">Channel</span>
-            {authStatus?.connected ? (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.8)]" title="Connected to YouTube" />
-            ) : (
-              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" title="Studio Local Mode" />
-            )}
-          </button>
-        </div>
+        <ScrollableTabs
+          tabs={[
+            { id: 'pipelines', label: 'Pipelines', icon: Zap, badge: automations.length },
+            { id: 'create', label: 'Schedule', icon: Sparkles },
+            {
+              id: 'channel',
+              label: 'Channel',
+              icon: Youtube,
+              badge: authStatus?.connected ? (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block shadow-[0_0_6px_rgba(52,211,153,0.8)]" title="Connected to YouTube" />
+              ) : (
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 inline-block" title="Studio Local Mode" />
+              ),
+            },
+          ]}
+          activeTab={activeSubTab}
+          onChange={(tab) => setActiveSubTab(tab)}
+          containerBgClassName="bg-[#181818]"
+        />
       </div>
 
       {/* ── Subtab 1: Pipelines ── */}
