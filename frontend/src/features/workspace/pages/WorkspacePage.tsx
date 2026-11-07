@@ -2078,6 +2078,7 @@ export default function WorkspacePage({
               />
             ) : activePane === 'audio' ? (
               <AudioPane
+                scriptText={script?.hook ? `${script.hook}\n\n${script.quote || ''}` : script?.title || ''}
                 onSelectMusic={(mId) => {
                   setShowTimeline(true);
                   setActiveCompound('music');

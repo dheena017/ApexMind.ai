@@ -17,6 +17,15 @@ import {
   ExternalLink,
   Download,
   RefreshCw,
+  Trash2,
+  FileText,
+  Sliders,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Radio,
+  Edit2,
+  RotateCcw,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { workspaceApi } from '../../api/workspaceApi';
@@ -44,11 +53,21 @@ export interface SoundEffectItem {
   provider?: string;
 }
 
+export interface VoiceoverTake {
+  id: string;
+  name: string;
+  blobUrl: string;
+  duration: number;
+  durationFormatted: string;
+  createdAt: string;
+}
+
 export interface AudioPaneProps {
   onSelectMusic?: (musicId: string) => void;
   selectedMusic?: string;
   onApplyRecordedVoice?: (recordedUrl: string) => void;
   onAddSfxToTimeline?: (sfx: SoundEffectItem) => void;
+  scriptText?: string;
 }
 
 export const SOUNDTRACK_GENRES = [
@@ -126,6 +145,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   selectedMusic,
   onApplyRecordedVoice,
   onAddSfxToTimeline,
+  scriptText = '',
 }) => {
   const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'record' | 'url'>('soundtracks');
 
@@ -161,14 +181,169 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const sfxAudioRef = useRef<HTMLAudioElement | null>(null);
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
+  const takeAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Voice recording state
+  // Voice recording & takes state
   const { status, startRecording, stopRecording, mediaBlobUrl } =
     useReactMediaRecorder({ audio: true });
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const wavesurferInstance = useRef<WaveSurfer | null>(null);
+  const lastProcessedBlob = useRef<string | null>(null);
+
+  const [recordedTakes, setRecordedTakes] = useState<VoiceoverTake[]>(() => {
+    try {
+      const stored = localStorage.getItem('apexmind_recorded_voiceover_takes');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {}
+    return [];
+  });
+  const [playingTakeId, setPlayingTakeId] = useState<string | null>(null);
+  const [editingTakeId, setEditingTakeId] = useState<string | null>(null);
+  const [editingTakeName, setEditingTakeName] = useState<string>('');
+
+  // Teleprompter & studio options
+  const [isTeleprompterOpen, setIsTeleprompterOpen] = useState<boolean>(true);
+  const [teleprompterText, setTeleprompterText] = useState<string>(() => {
+    return scriptText?.trim() || 'Master your mind. The obstacle in your path is not in your way, it is the way. Stay disciplined and focused.';
+  });
+  const [teleprompterFontSize, setTeleprompterFontSize] = useState<number>(14);
+  const [syncVideoPlayhead, setSyncVideoPlayhead] = useState<boolean>(true);
+  const [useCountdown, setUseCountdown] = useState<boolean>(true);
+  const [countdownVal, setCountdownVal] = useState<number | null>(null);
+
+  // Persist takes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('apexmind_recorded_voiceover_takes', JSON.stringify(recordedTakes));
+    } catch {}
+  }, [recordedTakes]);
+
+  // Sync teleprompter with project script changes
+  useEffect(() => {
+    if (scriptText?.trim()) {
+      setTeleprompterText(scriptText.trim());
+    }
+  }, [scriptText]);
+
+  // Auto-save fresh recording takes when completed
+  useEffect(() => {
+    if (mediaBlobUrl && mediaBlobUrl !== lastProcessedBlob.current && status === 'stopped') {
+      lastProcessedBlob.current = mediaBlobUrl;
+      const dur = recordingDuration || 2;
+      const newTake: VoiceoverTake = {
+        id: `take-${Date.now()}`,
+        name: `Take ${recordedTakes.length + 1} (${dur}s)`,
+        blobUrl: mediaBlobUrl,
+        duration: dur,
+        durationFormatted: `${Math.floor(dur / 60)}:${(dur % 60).toString().padStart(2, '0')}`,
+        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setRecordedTakes((prev) => [newTake, ...prev]);
+      toast.success(`Voiceover Take ${recordedTakes.length + 1} saved to library!`);
+      addWorkspaceNotification({
+        title: 'Voiceover Take Captured',
+        message: `Take ${recordedTakes.length + 1} (${dur}s) saved to library.`,
+        category: 'voice',
+        type: 'success',
+        targetPane: 'audio',
+        actionLabel: 'Audio',
+      });
+    }
+  }, [mediaBlobUrl, status, recordingDuration, recordedTakes.length]);
+
+  const handleStartRecording = () => {
+    if (useCountdown) {
+      setCountdownVal(3);
+      const cdTimer = setInterval(() => {
+        setCountdownVal((prev) => {
+          if (prev === null || prev <= 1) {
+            clearInterval(cdTimer);
+            setCountdownVal(null);
+            startRecording();
+            if (syncVideoPlayhead) {
+              window.dispatchEvent(new CustomEvent('workspace:timeline-play'));
+            }
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      startRecording();
+      if (syncVideoPlayhead) {
+        window.dispatchEvent(new CustomEvent('workspace:timeline-play'));
+      }
+    }
+  };
+
+  const handleStopRecording = () => {
+    stopRecording();
+    if (syncVideoPlayhead) {
+      window.dispatchEvent(new CustomEvent('workspace:timeline-pause'));
+    }
+  };
+
+  const togglePlayTake = (take: VoiceoverTake, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!takeAudioRef.current) return;
+    if (playingTakeId === take.id) {
+      takeAudioRef.current.pause();
+      setPlayingTakeId(null);
+    } else {
+      takeAudioRef.current.src = take.blobUrl;
+      takeAudioRef.current.play().catch(() => {});
+      setPlayingTakeId(take.id);
+    }
+  };
+
+  const handleApplyTakeToTimeline = (take: VoiceoverTake, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (onApplyRecordedVoice) {
+      onApplyRecordedVoice(take.blobUrl);
+    }
+    toast.success(`Applied "${take.name}" to Video Timeline!`);
+    addWorkspaceNotification({
+      title: 'Voiceover Inserted',
+      message: `"${take.name}" placed on video timeline at playhead.`,
+      category: 'voice',
+      type: 'success',
+      targetPane: 'audio',
+      actionLabel: 'Voice',
+    });
+  };
+
+  const handleDownloadTake = (take: VoiceoverTake, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const a = document.createElement('a');
+    a.href = take.blobUrl;
+    a.download = `${take.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success(`Downloaded ${take.name}`);
+  };
+
+  const handleDeleteTake = (takeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRecordedTakes((prev) => prev.filter((t) => t.id !== takeId));
+    if (playingTakeId === takeId && takeAudioRef.current) {
+      takeAudioRef.current.pause();
+      setPlayingTakeId(null);
+    }
+    toast.info('Voiceover take removed');
+  };
+
+  const handleSaveRename = (takeId: string) => {
+    if (!editingTakeName.trim()) return;
+    setRecordedTakes((prev) =>
+      prev.map((t) => (t.id === takeId ? { ...t, name: editingTakeName.trim() } : t))
+    );
+    setEditingTakeId(null);
+  };
 
   // Live Soundtrack Search via Backend Service
   const fetchLiveSoundtracks = useCallback(
@@ -396,7 +571,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const TABS: TabItem<'soundtracks' | 'sfx' | 'record' | 'url'>[] = [
     { id: 'soundtracks', label: 'Soundtracks', icon: Music, badge: totalSoundtracks ? `${totalSoundtracks.toLocaleString()}` : undefined },
     { id: 'sfx', label: 'Sound Effects', icon: Sparkles, badge: totalSfx ? `${totalSfx.toLocaleString()}` : undefined },
-    { id: 'record', label: 'Studio Record', icon: Mic },
+    { id: 'record', label: 'Studio Record', icon: Mic, badge: recordedTakes.length ? `${recordedTakes.length}` : undefined },
     { id: 'url', label: 'Web Audio Import', icon: ExternalLink },
   ];
 
@@ -406,6 +581,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       <audio ref={previewAudioRef} onEnded={() => setPlayingTrackId(null)} className="hidden" />
       <audio ref={sfxAudioRef} onEnded={() => setPlayingSfxId(null)} className="hidden" />
       <audio ref={customAudioRef} onEnded={() => setCustomAudioPlaying(false)} className="hidden" />
+      <audio ref={takeAudioRef} onEnded={() => setPlayingTakeId(null)} className="hidden" />
 
       {/* ── Top Header Bar ── */}
       <div className="relative h-11 px-3.5 bg-[#141414] border-b border-[#242424] flex items-center justify-between z-20 shrink-0">
@@ -786,82 +962,234 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* TAB 3: STUDIO VOICE RECORD */}
+        {/* TAB 3: STUDIO VOICE RECORD & TAKES MANAGER */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'record' && (
-          <div className="flex flex-col gap-4">
-            <div className="bg-[#181818] border border-[#242424] rounded-2xl p-5 flex flex-col items-center text-center gap-3 shadow-sm">
+          <div className="flex flex-col gap-3.5">
+            {/* Top Recording Console */}
+            <div className="bg-[#18181A] border border-[#242428] rounded-2xl p-4 flex flex-col items-center text-center gap-3 shadow-md relative overflow-hidden">
+              {/* Background Ambient Glow */}
               <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
                   status === 'recording'
-                    ? 'bg-rose-500/20 text-rose-500 ring-4 ring-rose-500/30 animate-pulse'
-                    : 'bg-[#1E1E1E] text-white hover:bg-[#242C40]'
+                    ? 'bg-rose-500/10 opacity-100'
+                    : 'bg-blue-500/5 opacity-50'
                 }`}
-              >
-                {status === 'recording' ? (
-                  <MicOff className="w-8 h-8" />
-                ) : (
-                  <Mic className="w-8 h-8 text-[#60A5FA]" />
+              />
+
+              {/* Pulsing Mic Indicator */}
+              <div className="relative">
+                <div
+                  className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                    status === 'recording'
+                      ? 'bg-rose-500/20 text-rose-500 ring-4 ring-rose-500/30 animate-pulse'
+                      : 'bg-[#222228] text-white hover:bg-[#282834]'
+                  }`}
+                >
+                  {status === 'recording' ? (
+                    <Radio className="w-7 h-7 text-rose-400 animate-pulse" />
+                  ) : (
+                    <Mic className="w-7 h-7 text-blue-400" />
+                  )}
+                </div>
+
+                {status === 'recording' && (
+                  <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500" />
+                  </span>
                 )}
               </div>
 
               <div>
-                <p className="text-sm font-bold text-white">
-                  {status === 'recording' ? 'Recording Voiceover...' : 'Microphone Voiceover'}
+                <p className="text-sm font-bold text-white tracking-tight">
+                  {status === 'recording' ? 'Recording Voiceover Take...' : 'Microphone Voiceover'}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-zinc-400 mt-0.5">
                   {status === 'recording'
-                    ? 'Speak clearly into your microphone'
-                    : 'Record custom voice narration directly to video'}
+                    ? 'Speak clearly into your microphone — audio is streaming live'
+                    : 'Record custom voice narration directly to your video scenes'}
                 </p>
               </div>
 
+              {/* Live VU Level / Frequency Meter while Recording */}
               {status === 'recording' && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400 text-xs font-mono font-bold">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                  {formatSeconds(recordingDuration)}
+                <div className="w-full flex flex-col items-center gap-2 pt-1">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-rose-500/15 border border-rose-500/30 rounded-full text-rose-400 text-xs font-mono font-bold">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                    REC: {formatSeconds(recordingDuration)}
+                  </div>
+
+                  {/* Simulated Dynamic 24-Bar VU Frequency Spectrum */}
+                  <div className="w-full h-8 bg-[#0F0F12] border border-[#26262E] rounded-xl px-3 flex items-center justify-center gap-1 overflow-hidden">
+                    {[45, 60, 30, 80, 95, 70, 50, 85, 100, 65, 40, 90, 75, 60, 85, 95, 55, 70, 80, 45, 60, 40, 30, 50].map((baseH, idx) => {
+                      const dynamicH = Math.max(15, (baseH * ((recordingDuration % 3) + 1) * 0.4) % 100);
+                      return (
+                        <div
+                          key={idx}
+                          className="w-1.5 rounded-full transition-all duration-150"
+                          style={{
+                            height: `${dynamicH}%`,
+                            backgroundColor:
+                              dynamicH > 80
+                                ? '#F43F5E'
+                                : dynamicH > 50
+                                ? '#F59E0B'
+                                : '#10B981',
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
+              {/* Countdown Overlay Display */}
+              {countdownVal !== null && (
+                <div className="flex items-center justify-center gap-2 py-1">
+                  <span className="text-3xl font-black text-blue-400 animate-bounce">
+                    {countdownVal}
+                  </span>
+                  <span className="text-xs font-bold text-zinc-300 uppercase tracking-widest">
+                    Get Ready...
+                  </span>
+                </div>
+              )}
+
+              {/* Recording Action Buttons */}
               <div className="flex items-center gap-2 w-full pt-1">
                 {status !== 'recording' ? (
                   <button
                     type="button"
-                    onClick={startRecording}
-                    className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/20"
+                    onClick={handleStartRecording}
+                    disabled={countdownVal !== null}
+                    className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/20 active:scale-[0.99]"
                   >
                     <Mic className="w-4 h-4" />
-                    Start Recording
+                    {countdownVal !== null ? `Starting in ${countdownVal}...` : 'Start Recording'}
                   </button>
                 ) : (
                   <button
                     type="button"
-                    onClick={stopRecording}
-                    className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-rose-500/20"
+                    onClick={handleStopRecording}
+                    className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-rose-500/20 active:scale-[0.99]"
                   >
                     <MicOff className="w-4 h-4" />
-                    Stop Recording
+                    Stop &amp; Save Take
                   </button>
                 )}
               </div>
+
+              {/* Quick Options Bar (Sync Video & Teleprompter) */}
+              <div className="w-full flex items-center justify-between pt-2 border-t border-[#26262A] text-[11px] text-zinc-400">
+                <label className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={syncVideoPlayhead}
+                    onChange={(e) => setSyncVideoPlayhead(e.target.checked)}
+                    className="rounded border-zinc-700 bg-zinc-800 text-blue-600 focus:ring-0 w-3.5 h-3.5"
+                  />
+                  <span>Sync Video Playhead</span>
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1 cursor-pointer hover:text-white transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={useCountdown}
+                      onChange={(e) => setUseCountdown(e.target.checked)}
+                      className="rounded border-zinc-700 bg-zinc-800 text-blue-600 focus:ring-0 w-3.5 h-3.5"
+                    />
+                    <span>3s Countdown</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsTeleprompterOpen((v) => !v)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                      isTeleprompterOpen
+                        ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30'
+                        : 'bg-[#222228] text-zinc-400 hover:text-white border border-[#2D2D36]'
+                    }`}
+                  >
+                    <FileText className="w-3 h-3" />
+                    Teleprompter
+                    {isTeleprompterOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Recording Review Player */}
+            {/* Script Teleprompter Reader (Collapsible) */}
+            {isTeleprompterOpen && (
+              <div className="bg-[#18181A] border border-[#26262C] rounded-xl p-3 flex flex-col gap-2 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="text-xs font-bold text-white">Teleprompter Narration Script</span>
+                    <span className="text-[9px] font-mono-studio text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded border border-blue-500/20">
+                      Live Teleprompter
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setTeleprompterFontSize((s) => Math.max(12, s - 1))}
+                      className="px-1.5 py-0.5 rounded bg-[#222226] hover:bg-[#2C2C32] text-[10px] text-zinc-300 cursor-pointer"
+                      title="Decrease text size"
+                    >
+                      A-
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTeleprompterFontSize((s) => Math.min(22, s + 1))}
+                      className="px-1.5 py-0.5 rounded bg-[#222226] hover:bg-[#2C2C32] text-[10px] text-zinc-300 cursor-pointer"
+                      title="Increase text size"
+                    >
+                      A+
+                    </button>
+                    {scriptText?.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setTeleprompterText(scriptText.trim())}
+                        className="px-1.5 py-0.5 rounded bg-[#222226] hover:bg-[#2C2C32] text-[10px] text-zinc-400 hover:text-white flex items-center gap-0.5 cursor-pointer ml-1"
+                        title="Reset to current video script"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <textarea
+                  value={teleprompterText}
+                  onChange={(e) => setTeleprompterText(e.target.value)}
+                  style={{ fontSize: `${teleprompterFontSize}px` }}
+                  rows={3}
+                  className="w-full bg-[#101014] border border-[#24242A] rounded-lg p-2.5 text-zinc-200 leading-relaxed font-sans-studio outline-none focus:border-blue-500/50 resize-y"
+                  placeholder="Paste or write your voiceover narration script here to read while recording..."
+                />
+              </div>
+            )}
+
+            {/* Fresh Recording Review Player (Appears when a take just completed) */}
             {mediaBlobUrl && (
-              <div className="bg-[#181818] border border-[#242424] rounded-xl p-4 flex flex-col gap-3">
+              <div className="bg-[#18181A] border border-[#242428] rounded-xl p-3.5 flex flex-col gap-2.5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Volume2 className="w-3.5 h-3.5 text-[#60A5FA]" />
-                    Recorded Audio Playback
+                    <Volume2 className="w-3.5 h-3.5 text-blue-400" />
+                    Latest Recording Preview
                   </span>
-                  <span className="text-[10px] font-mono-studio text-slate-400">
+                  <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
                     {formatSeconds(recordingDuration)}
                   </span>
                 </div>
 
-                <div ref={waveformRef} className="w-full bg-[#111111] rounded-lg p-2" />
+                <div ref={waveformRef} className="w-full bg-[#0E0E12] border border-[#222228] rounded-lg p-2" />
 
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-2 pt-0.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -869,7 +1197,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                         wavesurferInstance.current.playPause();
                       }
                     }}
-                    className="py-2 px-3 rounded-lg bg-[#242424] hover:bg-[#2C2C2C] text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
+                    className="py-1.5 px-3 rounded-lg bg-[#24242C] hover:bg-[#2E2E38] text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5" />
                     Preview
@@ -878,14 +1206,174 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   <button
                     type="button"
                     onClick={handleApplyRecordedVoice}
-                    className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                    className="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    Apply to Video Voiceover
+                    Insert to Video at Playhead
                   </button>
                 </div>
               </div>
             )}
+
+            {/* ── RECORDED VOICEOVER TAKES & LIBRARY ── */}
+            <div className="flex flex-col gap-2 pt-1">
+              <div className="flex items-center justify-between px-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-blue-400" />
+                    Recorded Voiceover Takes
+                  </span>
+                  <span className="text-[10px] font-mono-studio text-zinc-400 bg-[#222228] px-2 py-0.5 rounded-full border border-[#2D2D36]">
+                    {recordedTakes.length} {recordedTakes.length === 1 ? 'Take' : 'Takes'}
+                  </span>
+                </div>
+
+                {recordedTakes.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecordedTakes([]);
+                      toast.info('Cleared voiceover takes library');
+                    }}
+                    className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-2.5 h-2.5" />
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* Takes List or Empty State */}
+              {recordedTakes.length === 0 ? (
+                <div className="bg-[#18181A] border border-[#242428] rounded-xl p-5 flex flex-col items-center justify-center text-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-[#202026] flex items-center justify-center text-zinc-500">
+                    <Mic className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-zinc-300">No Recorded Takes Yet</p>
+                    <p className="text-[11px] text-zinc-500 max-w-xs mt-0.5">
+                      Your voiceover recordings will be saved here as audio takes. Hit "Start Recording" above to capture narration directly to your video.
+                    </p>
+                  </div>
+                  <div className="pt-1">
+                    <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                      💡 Tip: Enable "Sync Video Playhead" to watch scenes while narrating
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {recordedTakes.map((take) => {
+                    const isPlayingThis = playingTakeId === take.id;
+                    const isEditing = editingTakeId === take.id;
+
+                    return (
+                      <div
+                        key={take.id}
+                        className={`bg-[#18181A] hover:bg-[#1D1D22] border rounded-xl p-3 flex flex-col gap-2 transition-all ${
+                          isPlayingThis
+                            ? 'border-blue-500/60 bg-[#161B26]'
+                            : 'border-[#242428] hover:border-[#33333E]'
+                        }`}
+                      >
+                        {/* Take Header */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editingTakeName}
+                                onChange={(e) => setEditingTakeName(e.target.value)}
+                                onBlur={() => handleSaveRename(take.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveRename(take.id);
+                                }}
+                                autoFocus
+                                className="bg-[#121214] border border-blue-500 rounded px-1.5 py-0.5 text-xs text-white outline-none w-44"
+                              />
+                            ) : (
+                              <span
+                                className="text-xs font-bold text-white truncate cursor-pointer hover:text-blue-400 transition-colors flex items-center gap-1.5"
+                                onClick={() => {
+                                  setEditingTakeId(take.id);
+                                  setEditingTakeName(take.name);
+                                }}
+                                title="Click to rename take"
+                              >
+                                {take.name}
+                                <Edit2 className="w-2.5 h-2.5 text-zinc-500 hover:text-white shrink-0" />
+                              </span>
+                            )}
+
+                            <span className="text-[10px] font-mono-studio text-zinc-400 bg-[#222228] px-1.5 py-0.2 rounded border border-[#2E2E36] shrink-0">
+                              {take.durationFormatted}
+                            </span>
+                            <span className="text-[10px] text-zinc-500 shrink-0 hidden sm:inline">
+                              {take.createdAt}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => handleDownloadTake(take, e)}
+                              className="p-1.5 rounded-lg bg-[#222228] hover:bg-[#2C2C34] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                              title="Download voiceover file (.webm)"
+                            >
+                              <Download className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteTake(take.id, e)}
+                              className="p-1.5 rounded-lg bg-[#222228] hover:bg-rose-950/60 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
+                              title="Delete take"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Take Audio Controls Bar */}
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={(e) => togglePlayTake(take, e)}
+                            className={`p-2 rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${
+                              isPlayingThis
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-[#222228] hover:bg-[#2B2B34] text-zinc-200 hover:text-white'
+                            }`}
+                            title={isPlayingThis ? 'Pause' : 'Play take'}
+                          >
+                            {isPlayingThis ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                          </button>
+
+                          {/* Progress Graphic */}
+                          <div className="flex-1 h-2 bg-[#121214] rounded-full overflow-hidden border border-[#24242A] flex items-center px-1">
+                            <div
+                              className={`h-1 rounded-full transition-all duration-300 ${
+                                isPlayingThis ? 'bg-blue-500 w-2/3 animate-pulse' : 'bg-zinc-700 w-1/4'
+                              }`}
+                            />
+                          </div>
+
+                          {/* Insert Take into Video Timeline */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleApplyTakeToTimeline(take, e)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shrink-0 cursor-pointer shadow-sm shadow-blue-500/20 active:scale-[0.98]"
+                            title="Place this take into the video timeline at the current playhead"
+                          >
+                            <Plus className="w-3 h-3 stroke-[2.5]" />
+                            <span>+ Timeline</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
