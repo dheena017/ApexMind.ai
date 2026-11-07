@@ -150,13 +150,23 @@ def search_open_fonts(
         weight_params = ";".join(str(w) for w in weights)
         google_font_url = f"https://fonts.googleapis.com/css2?family={font_family_encoded}:wght@{weight_params}&display=swap"
 
-        css_family = f"'{family}', {category_key}"
-
-        # Clean typographic classes matched to the font's actual nature
+        # Generic CSS fallback family
         if "mono" in category_key:
-            clean_class = "font-mono tracking-normal font-semibold"
+            css_fallback = "monospace"
         elif "serif" in category_key and "sans" not in category_key:
-            clean_class = "font-serif tracking-wide font-medium"
+            css_fallback = "serif"
+        elif "handwriting" in category_key:
+            css_fallback = "cursive"
+        else:
+            css_fallback = "sans-serif"
+
+        css_family = f"'{family}', {css_fallback}"
+
+        # Clean typographic classes matched to the font's actual nature (without font-family overrides)
+        if "mono" in category_key:
+            clean_class = "tracking-normal font-semibold"
+        elif "serif" in category_key and "sans" not in category_key:
+            clean_class = "tracking-wide font-medium"
         elif "display" in category_key:
             clean_class = "tracking-tight font-black uppercase"
         elif "handwriting" in category_key:

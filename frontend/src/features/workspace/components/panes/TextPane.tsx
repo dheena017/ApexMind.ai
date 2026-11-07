@@ -77,8 +77,22 @@ function ensureGoogleFontLoaded(url?: string) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = url;
+    link.crossOrigin = 'anonymous';
     document.head.appendChild(link);
   }
+}
+
+// Clean, compact preview text formatter for font cards
+function getCardPreviewText(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return 'The quick brown fox';
+  if (trimmed.length <= 36) return trimmed;
+  // If long paragraph, take first clean sentence or hook clause
+  const firstSentence = trimmed.split(/[.?!]/)[0].trim();
+  if (firstSentence && firstSentence.length >= 8 && firstSentence.length <= 40) {
+    return firstSentence;
+  }
+  return trimmed.slice(0, 34).trim() + '...';
 }
 
 export const TextPane: React.FC<TextPaneProps> = ({
@@ -405,7 +419,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
       <div className="px-3 py-2 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
           tabs={[
-            { id: 'presets', label: 'Google Fonts', icon: Sparkles, color: 'text-[#60A5FA]' },
+            { id: 'presets', label: 'Font Styles', icon: Sparkles, color: 'text-[#60A5FA]' },
             { id: 'customizer', label: 'Custom Styler', icon: Sliders, color: 'text-[#60A5FA]' },
             { id: 'saved', label: 'Saved Styles', icon: Bookmark, color: 'text-[#60A5FA]' },
           ]}
@@ -550,15 +564,15 @@ export const TextPane: React.FC<TextPaneProps> = ({
                       </div>
 
                       {/* Live Dynamic Preview Render in the REAL Google Font */}
-                      <div className="bg-[#0C0C0F] border border-[#23232A] rounded-lg p-3.5 flex items-center justify-center text-center min-h-[52px] overflow-hidden">
+                      <div className="bg-[#0C0C0F] border border-[#23232A] rounded-lg py-3.5 px-4 flex items-center justify-center text-center min-h-[58px] overflow-hidden">
                         <span
-                          className={`text-base sm:text-lg leading-tight select-none text-white ${font.className || ''}`}
+                          className="text-xl sm:text-2xl leading-snug select-none text-white tracking-tight"
                           style={{
                             fontFamily: font.fontFamily,
                             fontWeight: isSelected ? selectedWeight : font.defaultWeight || 700,
                           }}
                         >
-                          {effectivePreviewText}
+                          {getCardPreviewText(effectivePreviewText)}
                         </span>
                       </div>
 
@@ -600,13 +614,13 @@ export const TextPane: React.FC<TextPaneProps> = ({
                     className="w-full py-2.5 px-4 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] hover:border-blue-500/50 text-xs font-semibold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
                   >
                     <Plus className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
-                    <span>Load More Google Fonts</span>
+                    <span>Load More Font Styles</span>
                     <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
                       +24
                     </span>
                   </button>
                   <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
-                    Showing {fonts.length} of {totalFonts || '1,959'} Google Fonts
+                    Showing {fonts.length} of {totalFonts || '1,959'} Font Styles
                   </span>
                 </div>
               </div>
