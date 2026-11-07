@@ -226,25 +226,6 @@ const FRAMES: FrameSpec[] = [
   { name: 'Clean Transparent Overlay', containerClass: 'px-2 py-0.5 rounded border-0 bg-transparent', tags: ['pure', 'subtle'] },
 ];
 
-const SAMPLE_TEXTS = [
-  'THIS 1 HABIT WILL CHANGE YOUR LIFE',
-  'NOBODY IS COMING TO SAVE YOU',
-  'STOP WASTING TIME ON THINGS YOU CANNOT CONTROL',
-  '99.8% OF CREATORS QUIT BEFORE THIS STEP',
-  'THE SECRET TO UNSTOPPABLE DISCIPLINE',
-  'DO IT TIRED. DO IT BROKE. JUST START.',
-  'REAL WEALTH IS HAVING TIME AND FREEDOM',
-  'YOUR EXCUSES ARE COMFORTABLE LIES',
-  'WIN IN SILENCE. LET THEM WONDER HOW.',
-  'IF YOU WANT IT BAD ENOUGH, PROVE IT.',
-  'EXECUTE TODAY WHAT OTHERS DELAY TOMORROW',
-  'BE THE CALMEST PERSON IN THE ROOM',
-  'THE HARDER THE BATTLE, THE SWEETER THE VICTORY',
-  'STAY LOW KEY AND BUILD IN OBSCURITY',
-  'SAVE THIS BEFORE THE ALGORITHM HIDES IT',
-  'FOLLOW FOR THE NEXT BLUEPRINT',
-];
-
 const ANIMATIONS: ('pop' | 'typewriter' | 'karaoke' | 'word-bounce' | 'glow-pulse' | 'slide-up')[] = [
   'word-bounce',
   'pop',
@@ -268,7 +249,8 @@ function seededRandom(seed: number) {
 export function generateInfiniteStyles(
   count: number = 24,
   mood: InfiniteStyleMood = 'all',
-  page: number = 1
+  page: number = 1,
+  customText?: string
 ): TypographyPresetItem[] {
   const results: TypographyPresetItem[] = [];
 
@@ -279,13 +261,13 @@ export function generateInfiniteStyles(
       : PALETTES.filter((p) => p.moods.includes(mood) || p.moods.length > 0);
 
   const basePalettes = availablePalettes.length > 0 ? availablePalettes : PALETTES;
+  const defaultText = customText && customText.trim() ? customText.trim() : 'Preview Text';
 
   for (let i = 0; i < count; i++) {
     const seed = page * 1000 + i * 37 + (mood === 'all' ? 7 : mood.length * 13);
     const fontIdx = Math.floor(seededRandom(seed + 1) * FONTS.length);
     const paletteIdx = Math.floor(seededRandom(seed + 2) * basePalettes.length);
     const frameIdx = Math.floor(seededRandom(seed + 3) * FRAMES.length);
-    const textIdx = Math.floor(seededRandom(seed + 4) * SAMPLE_TEXTS.length);
     const animIdx = Math.floor(seededRandom(seed + 5) * ANIMATIONS.length);
     const isUppercase = seededRandom(seed + 6) > 0.3;
     const isItalic = seededRandom(seed + 7) > 0.75;
@@ -293,7 +275,6 @@ export function generateInfiniteStyles(
     const font = FONTS[fontIdx];
     const palette = basePalettes[paletteIdx];
     const frame = FRAMES[frameIdx];
-    const preview = SAMPLE_TEXTS[textIdx];
     const anim = ANIMATIONS[animIdx];
 
     const casingClass = isUppercase ? 'uppercase' : 'normal-case';
@@ -314,11 +295,11 @@ export function generateInfiniteStyles(
       id: styleId,
       name: styleName,
       category: 'subtitles',
-      previewText: preview,
+      previewText: defaultText,
       color: palette.color,
       secondaryColor: palette.secondaryColor,
       className: composedClassName,
-      styleDescription: `Procedural 10M+ style: ${palette.name} on ${font.name} with ${frame.name} (${anim})`,
+      styleDescription: `${palette.name} on ${font.name} with ${frame.name} (${anim})`,
       fontFamily: font.family,
       animationType: anim,
       tags: [mood, 'procedural', 'infinite', ...font.tags, ...frame.tags],

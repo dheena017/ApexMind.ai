@@ -243,6 +243,58 @@ export const workspaceApi = {
     return { success: false, items: [], providers: {} };
   },
 
+  // Search live Google Fonts (1,900+ fonts) & dynamic typography styles
+  async searchOpenFonts(
+    query: string = '',
+    category: string = 'all',
+    provider: string = 'all',
+    page: number = 1,
+    pageSize: number = 24,
+    mood: string = 'all'
+  ): Promise<any> {
+    try {
+      const params = new URLSearchParams({
+        q: query,
+        category,
+        provider,
+        page: String(page),
+        pageSize: String(pageSize),
+        mood,
+      });
+      const res = await fetch(apiUrl(`/api/media/font-search?${params.toString()}`));
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.warn('OpenFonts', `Google Fonts search error: ${e}`);
+    }
+    return { success: false, items: [], total: 0 };
+  },
+
+  // Search live quotes & viral hooks from free public APIs
+  async searchOpenQuotes(
+    query: string = '',
+    category: string = 'all',
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<any> {
+    try {
+      const params = new URLSearchParams({
+        q: query,
+        category,
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      const res = await fetch(apiUrl(`/api/media/quote-search?${params.toString()}`));
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      consoleLogger.warn('OpenQuotes', `Quotes search error: ${e}`);
+    }
+    return { success: false, items: [], total: 0 };
+  },
+
   // Check active status of stock media providers (Pexels, Pixabay, Unsplash, Google CSE)
   async getMediaProvidersStatus(): Promise<{ pexels: boolean; pixabay: boolean; unsplash: boolean; jamendo: boolean; google_cse?: boolean; [key: string]: any }> {
     try {

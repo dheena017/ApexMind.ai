@@ -14,8 +14,6 @@
  * - 36 AI Visual Prompt Starters
  */
 
-import { MASTER_TYPOGRAPHY_PRESETS } from './typographyPresetsData';
-
 // ============================================================================
 // 1. TYPOGRAPHY & SUBTITLE PRESETS
 // ============================================================================
@@ -24,19 +22,22 @@ export interface TypographyPresetItem {
   id: string;
   name: string;
   category: 'subtitles' | 'hooks' | 'quotes' | 'lowerthirds' | 'cta' | 'animations';
-  previewText: string;
+  previewText?: string;
   className: string;
   color: string;
   secondaryColor?: string;
   styleDescription: string;
   fontFamily: string;
+  fontSize?: number;
+  fontWeight?: number;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
   animationType?: 'pop' | 'typewriter' | 'karaoke' | 'word-bounce' | 'glow-pulse' | 'slide-up';
   tags: string[];
   aestheticBadges?: string[];
   aestheticScore?: number;
 }
 
-export const TYPOGRAPHY_PRESETS: TypographyPresetItem[] = MASTER_TYPOGRAPHY_PRESETS;
+export const TYPOGRAPHY_PRESETS: TypographyPresetItem[] = [];
 
 
 

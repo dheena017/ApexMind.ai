@@ -2040,6 +2040,7 @@ export default function WorkspacePage({
               />
             ) : activePane === 'text' ? (
               <TextPane
+                currentText={script?.hook || script?.quote || script?.subtitles?.[0]?.text || script?.title || ''}
                 onUpdateHook={(hook) => {
                   setActiveCompound('text');
                   setScript((prev) => ({ ...prev, hook }));
@@ -2052,7 +2053,7 @@ export default function WorkspacePage({
                     fontSize: p.fontSize,
                     fontWeight: p.fontWeight,
                     textTransform: p.textTransform,
-                    previewText: p.previewText,
+                    previewText: undefined,
                   });
                   addWorkspaceNotification({
                     title: `Subtitle Preset Applied`,
