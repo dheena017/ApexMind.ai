@@ -298,18 +298,18 @@ def post_cancel_studio_job(job_id: str):
 
 
 @router.post(
-    "/api/studio/synthesize-voice",
+    "/api/studio/generate-voice",
     response_model=StudioVoiceResponse,
     tags=["Studio"],
-    summary="Synthesize Storyboard Voice (Stage 2)",
+    summary="Generate Storyboard Voice (Stage 2)",
     description=(
-        "Synthesizes a full narration voiceover using Gemini TTS. "
+        "Generates a full narration voiceover using Gemini TTS. "
         "Accepts either storyboard[] (narration auto-assembled from subtitleText) "
         "or a direct fullNarrationText string. "
         "Returns audioUrl, durationSeconds, and word-level timestamps."
     ),
 )
-def post_studio_synthesize_voice(payload: StudioVoiceRequest):
+def post_studio_generate_voice(payload: StudioVoiceRequest):
     from .studio_voice_service import run_studio_voice
     if not payload.voiceName or not payload.voiceName.strip():
         raise HTTPException(
@@ -337,8 +337,20 @@ def post_studio_synthesize_voice(payload: StudioVoiceRequest):
         logger.error(f"[Studio/Voice] Error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Voice synthesis failed: {e}",
+            detail=f"Voice generation failed: {e}",
         )
+
+
+@router.post(
+    "/api/studio/synthesize-voice",
+    response_model=StudioVoiceResponse,
+    tags=["Studio"],
+    summary="Generate Storyboard Voice (Stage 2) [Deprecated alias]",
+    description="Deprecated alias for POST /api/studio/generate-voice.",
+    include_in_schema=False,
+)
+def post_studio_synthesize_voice(payload: StudioVoiceRequest):
+    return post_studio_generate_voice(payload)
 
 
 @router.post(

@@ -628,8 +628,8 @@ class StudioScriptResponse(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# STUDIO PIPELINE v2 — Stage 2: Voice Synthesis
-# POST /api/studio/synthesize-voice
+# STUDIO PIPELINE v2 — Stage 2: Voice Generation
+# POST /api/studio/generate-voice (legacy alias: /api/studio/synthesize-voice)
 # ══════════════════════════════════════════════════════════════════════════════
 
 class StudioVoiceSceneItem(BaseModel):

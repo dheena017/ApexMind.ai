@@ -5,7 +5,7 @@ import { alignAudioVisualCuts } from '../utils/cutSyncEngine';
  * Custom hook that orchestrates the 4-stage ApexMind Studio pipeline:
  *
  *   Stage 1 → POST /api/studio/generate-script   (AI Script + Storyboard)
- *   Stage 2 → POST /api/studio/synthesize-voice  (Gemini TTS Voiceover)
+ *   Stage 2 → POST /api/studio/generate-voice    (Gemini TTS Voiceover)
  *   Stage 3 → POST /api/studio/resolve-media     (Stock Video/Image/SFX)
  *   Stage 4 → POST /api/studio/generate-captions (Word-level timed captions)
  *
@@ -217,8 +217,8 @@ export function useStudioPipeline() {
         consoleLogger.info('Studio', '[Pipeline] Stage 2+3 → voice + media (parallel)');
 
         const [voiceResult, mediaResult] = await Promise.allSettled([
-          // Stage 2: Voice synthesis
-          studioApi.synthesizeVoice({
+          // Stage 2: Voice generation
+          studioApi.generateVoice({
             voiceName,
             storyboard: storyboard.map((s: any) => ({
               sceneNumber: s.sceneNumber,
@@ -467,7 +467,7 @@ export function useStudioPipeline() {
     async (voiceName: string, storyboard: any[], model?: string) => {
       setStage('voice', 0, 'Re-synthesizing Voiceover…');
       try {
-        const voiceResult = await studioApi.synthesizeVoice({ voiceName, storyboard, model });
+        const voiceResult = await studioApi.generateVoice({ voiceName, storyboard, model });
         setResult((prev) => ({ ...prev, voice: voiceResult }));
         setStage('done', 100, 'Voiceover updated');
         if (voiceResult.audioUrl) {

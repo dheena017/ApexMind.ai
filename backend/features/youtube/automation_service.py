@@ -193,7 +193,7 @@ def execute_automation_job(
     """
     Executes the autonomous 6-stage production pipeline:
     Stage 1: Script Writing (POST /api/studio/generate-script via Gemini AI + Quote Memory)
-    Stage 2: Voiceover Synthesis (POST /api/studio/synthesize-voice via Neural Voice TTS)
+    Stage 2: Voiceover Synthesis (POST /api/studio/generate-voice via Neural Voice TTS)
     Stage 3: B-Roll Media Resolution (POST /api/studio/resolve-media via Pexels and Pixabay)
     Stage 4: Syllable Captions Alignment (POST /api/studio/generate-captions via Acoustic Aligner)
     Stage 5: Full HD MP4 Video Render (POST /api/workspace/render-video via native FFmpeg)
@@ -305,7 +305,7 @@ def execute_automation_job(
                 logger.info(f"[Automation/6-Stage] Job '{job_id}' stop requested before Stage 2. Halting.")
                 return {"success": False, "jobId": job_id, "message": "Pipeline execution stopped by user.", "stopped": True}
 
-            # ── STAGE 2: VOICEOVER SYNTHESIS (POST /api/studio/synthesize-voice) ──
+            # ── STAGE 2: VOICEOVER GENERATION (POST /api/studio/generate-voice) ──
             update_automation_run_state(
                 job_id,
                 last_status="running",

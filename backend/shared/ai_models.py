@@ -31,6 +31,10 @@ _NON_SCRIPT_MODEL_TERMS = (
     "antigravity-preview",
     "banana",
     "lyria",
+    "argon",
+    "omni",
+    "pro",
+    "gemma",
 )
 
 PREFERRED_SCRIPT_MODEL_ORDER = [
@@ -41,7 +45,6 @@ PREFERRED_SCRIPT_MODEL_ORDER = [
     "gemini-3.8-flash",
     "gemini-3.6-flash",
     "gemini-3.1-flash-lite",
-    "gemini-3.1-pro-preview",
     "gemini-flash-latest",
 ]
 

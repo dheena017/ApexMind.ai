@@ -338,8 +338,8 @@ def _generate_script_with_fallback(
                 "temperature": 0.6,
                 "response_mime_type": "application/json",
             }
-            # Attempt to disable thinking budget to eliminate reasoning latency on models that support it
-            if hasattr(types, "ThinkingConfig"):
+            # Only configure thinking budget for models that explicitly feature thinking/reasoning
+            if "thinking" in attempt_model.lower() and hasattr(types, "ThinkingConfig"):
                 try:
                     gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
                 except Exception:

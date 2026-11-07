@@ -7,7 +7,7 @@
  *          POST /api/studio/generate-script/async   → ScriptJobResponse
  *          GET  /api/studio/jobs/{job_id}           → JobStatusResponse
  *          POST /api/studio/jobs/{job_id}/cancel    → { success: boolean }
- * Stage 2  POST /api/studio/synthesize-voice        → VoiceStageResult
+ * Stage 2  POST /api/studio/generate-voice          → VoiceStageResult
  * Stage 3  POST /api/studio/resolve-media           → MediaStageResult
  * Stage 4  POST /api/studio/generate-captions       → CaptionsStageResult
  */
@@ -178,10 +178,10 @@ export const studioApi = {
   // ── Stage 2 ───────────────────────────────────────────────────────────────
 
   /**
-   * Stage 2 — Gemini TTS Voice Synthesis
-   * POST /api/studio/synthesize-voice
+   * Stage 2 — Gemini TTS Voice Generation
+   * POST /api/studio/generate-voice
    */
-  async synthesizeVoice(params: {
+  async generateVoice(params: {
     voiceName: string;
     storyboard?: Array<{ sceneNumber: number; subtitleText: string; start: number; duration: number }>;
     fullNarrationText?: string;
@@ -189,13 +189,13 @@ export const studioApi = {
     speechStyle?: string;
     targetDurationSeconds?: number;
   }): Promise<VoiceStageResult> {
-    if (!params.voiceName?.trim()) throw new Error('voiceName is required for voice synthesis.');
+    if (!params.voiceName?.trim()) throw new Error('voiceName is required for voice generation.');
     if (!params.storyboard?.length && !params.fullNarrationText?.trim()) {
-      throw new Error('Provide either storyboard[] or fullNarrationText for voice synthesis.');
+      throw new Error('Provide either storyboard[] or fullNarrationText for voice generation.');
     }
 
-    consoleLogger.info('Studio', `[Stage 2] Synthesizing voice | persona="${params.voiceName}"`);
-    const data = await post<VoiceStageResult & { success: boolean; stageId: string }>('/api/studio/synthesize-voice', {
+    consoleLogger.info('Studio', `[Stage 2] Generating voice | persona="${params.voiceName}"`);
+    const data = await post<VoiceStageResult & { success: boolean; stageId: string }>('/api/studio/generate-voice', {
       voiceName: params.voiceName,
       storyboard: params.storyboard || undefined,
       fullNarrationText: params.fullNarrationText || undefined,
@@ -214,6 +214,20 @@ export const studioApi = {
       voiceName: data.voiceName,
       wordTimestamps: data.wordTimestamps || [],
     };
+  },
+
+  /**
+   * Backward-compatible alias for generateVoice.
+   */
+  async synthesizeVoice(params: {
+    voiceName: string;
+    storyboard?: Array<{ sceneNumber: number; subtitleText: string; start: number; duration: number }>;
+    fullNarrationText?: string;
+    model?: string;
+    speechStyle?: string;
+    targetDurationSeconds?: number;
+  }): Promise<VoiceStageResult> {
+    return this.generateVoice(params);
   },
 
   // ── Stage 3 ───────────────────────────────────────────────────────────────
