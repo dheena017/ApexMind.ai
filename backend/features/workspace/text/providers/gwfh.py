@@ -161,3 +161,4 @@ class GWFHProvider(BaseFontProvider):
         start = (page - 1) * page_size
         end = start + page_size
         return filtered[start:end]
+
