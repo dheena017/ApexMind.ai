@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { workspaceApi } from '../api/workspaceApi';
 import { useStudioPipeline } from '../hooks/useStudioPipeline';
 import { videosApi } from '@/src/features/videos/api/videosApi';
-import { DEFAULT_VISUAL_BACKDROPS, GeneratedScript, MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
+import { DEFAULT_VISUAL_BACKDROPS, GeneratedScript, MusicTrack, VideoExportSettings, VisualBackdrop, VoiceProfile } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { VideoPreviewPane } from '../components/VideoPreview';
 import { StudioControlsPane, CompoundType } from '../components/StudioControlsPane';
@@ -236,6 +236,15 @@ export default function WorkspacePage({
   const [noiseReduction, setNoiseReduction] = useState(false);
   const [audioOutputStream, setAudioOutputStream] = useState<MediaStream | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportSettings, setExportSettings] = useState<VideoExportSettings>({
+    fps: 60,
+    videoBitrate: 8,
+    codec: 'h264',
+    container: 'mp4',
+    audioSampleRate: 24000,
+    audioBitrate: 192,
+    resolution: 1080,
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioProcessingGraphRef = useRef<{
@@ -474,13 +483,13 @@ export default function WorkspacePage({
     window.dispatchEvent(new CustomEvent('workspace:export-state', {
       detail: {
         exporting: false,
-        message: error || 'MP4 download started.',
+          message: error || `${exportSettings.container.toUpperCase()} download started.`,
       },
     }));
     if (!error) {
       addWorkspaceNotification({
         title: 'Video Export Completed',
-        message: 'High-definition MP4 short rendered and downloaded successfully.',
+        message: `High-definition ${exportSettings.container.toUpperCase()} video rendered and downloaded successfully.`,
         category: 'export',
         type: 'success',
         targetPane: 'canvas',
@@ -496,7 +505,7 @@ export default function WorkspacePage({
         actionLabel: 'Retry',
       });
     }
-  }, []);
+  }, [exportSettings.container]);
 
   // Load Media Library & Quote Memory from live backend API
   useEffect(() => {
@@ -1127,7 +1136,13 @@ export default function WorkspacePage({
           captionColor: captionPreset?.color || '#FACC15',
           captionFont: 'Impact',
           captionTransform: 'uppercase',
-          fps: 30,
+          fps: exportSettings.fps,
+          videoBitrate: exportSettings.videoBitrate,
+          codec: exportSettings.codec,
+          container: exportSettings.container,
+          audioSampleRate: exportSettings.audioSampleRate,
+          audioBitrate: exportSettings.audioBitrate,
+          resolution: exportSettings.resolution,
         }).catch((err) => {
           consoleLogger.warn('YouTube', `Direct render API error: ${err}`);
           return null;
@@ -1686,6 +1701,15 @@ export default function WorkspacePage({
   }, [canPublish, publishing, handlePublish]);
 
   useEffect(() => {
+    const handleExportSettings = (event: Event) => {
+      const settings = (event as CustomEvent<VideoExportSettings>).detail;
+      if (settings) setExportSettings(settings);
+    };
+    window.addEventListener('workspace:export-settings', handleExportSettings);
+    return () => window.removeEventListener('workspace:export-settings', handleExportSettings);
+  }, []);
+
+  useEffect(() => {
     const handleExportRequest = () => {
       if (isExportingRef.current) return;
       isExportingRef.current = true;
@@ -2016,17 +2040,9 @@ export default function WorkspacePage({
               />
             ) : activePane === 'text' ? (
               <TextPane
-                onUpdateTitle={(title) => {
-                  setActiveCompound('text');
-                  setScript((prev) => ({ ...prev, title }));
-                }}
                 onUpdateHook={(hook) => {
                   setActiveCompound('text');
                   setScript((prev) => ({ ...prev, hook }));
-                }}
-                onUpdateQuote={(quote) => {
-                  setActiveCompound('text');
-                  setScript((prev) => ({ ...prev, quote }));
                 }}
                 onApplyPreset={(p) => {
                   setCaptionPreset({
@@ -2221,6 +2237,7 @@ export default function WorkspacePage({
                   )
                 }
                 exportFileName={script.title || 'apexmind-video'}
+                exportSettings={exportSettings}
                 onExportComplete={handleVideoExportComplete}
                 onApplyRecordedVoice={(recordedUrl) => {
                   setAudioUrl(recordedUrl);

@@ -4,3 +4,4 @@ export * from './AudioCompoundInspector';
 export * from './OverlayCompoundInspector';
 export * from './HomeCompoundInspector';
 export * from './TransitionsInspector';
+export * from './MotionInspectorPage';

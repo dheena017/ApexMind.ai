@@ -6,6 +6,16 @@ export interface WordTimestamp {
   highlightColor?: string;
 }
 
+export interface VideoExportSettings {
+  fps: 24 | 30 | 60;
+  videoBitrate: 4 | 8 | 16 | 25;
+  codec: 'h264' | 'hevc' | 'vp9' | 'av1';
+  container: 'mp4' | 'webm' | 'mov';
+  audioSampleRate: 24000 | 44100 | 48000;
+  audioBitrate: 128 | 192 | 320;
+  resolution: 720 | 1080 | 1440;
+}
+
 export interface HookOption {
   id: string;
   angle: string;

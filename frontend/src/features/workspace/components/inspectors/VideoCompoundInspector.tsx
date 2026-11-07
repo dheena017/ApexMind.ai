@@ -11,7 +11,6 @@ import {
   Film,
   Sliders,
   Palette,
-  Clock,
   Volume2,
   VolumeX,
   RefreshCw,
@@ -32,7 +31,7 @@ import {
 } from 'lucide-react';
 import { VisualBackdrop } from '../../types';
 import { SelectedClip } from '../timeline/timelineTypes';
-import { TransitionsInspector } from './TransitionsInspector';
+import { MotionInspectorPage as MotionPresetPicker, VIDEO_MOTION_PRESETS } from './MotionInspectorPage';
 
 export type VideoInspectorTab =
   | 'transform'
@@ -41,8 +40,7 @@ export type VideoInspectorTab =
   | 'adjust'
   | 'style'
   | 'speed'
-  | 'audio'
-  | 'time';
+  | 'audio';
 
 const VIDEO_STYLE_PRESETS = [
   { label: 'Natural', brightness: 100, contrast: 100, saturation: 100, vignette: 0, hue: 0, desc: 'Clean authentic look' },
@@ -139,8 +137,6 @@ const AI_ANIMATION_PAIRS: Record<string, { in: string; inDur: number; out: strin
 export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   activeBackdrop,
   onSelectBackdrop,
-  duration = 15,
-  onUpdateDuration,
   playbackRate = 1,
   onPlaybackRateChange,
   customImageUrl,
@@ -196,7 +192,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   const isImageMode = Boolean(customImageUrl && !customVideoUrl);
 
   useEffect(() => {
-    if (isImageMode && (activeSubTab === 'speed' || activeSubTab === 'audio')) {
+    if (isImageMode && activeSubTab === 'audio') {
       setActiveSubTab('transform');
     }
   }, [isImageMode, activeSubTab]);
@@ -210,13 +206,6 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   const [posX, setPosX] = useState(50);
   const [posY, setPosY] = useState(50);
   const [lockAspect, setLockAspect] = useState(true);
-
-  // Time & Duration
-  const [localDuration, setLocalDuration] = useState(duration > 0 ? duration : 15);
-
-  useEffect(() => {
-    if (duration > 0) setLocalDuration(duration);
-  }, [duration]);
 
   // Visual adjustments
   const [brightness, setBrightness] = useState(100);
@@ -369,7 +358,6 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
   const [animSpeed, setAnimSpeed] = useState<'0.5' | '1' | '1.5' | '2'>('1');
   const [activeLUT, setActiveLUT] = useState('none');
   const [lutIntensity, setLutIntensity] = useState(80);
-  const [loopVideo, setLoopVideo] = useState(true);
   const [muteVideo, setMuteVideo] = useState(false);
 
   // Broadcast transform changes to the canvas in real time (scoped to clipId if single clip selected)
@@ -468,24 +456,6 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     setActiveLUT('none');
   };
 
-  const handleDurationChange = (newDur: number) => {
-    const val = Math.max(0.5, Math.min(300, parseFloat(newDur.toFixed(1))));
-    setLocalDuration(val);
-    if (selectedClip && !selectedClip.all && 'clipId' in selectedClip && selectedClip.clipId) {
-      window.dispatchEvent(
-        new CustomEvent('workspace:update-clip-timing', {
-          detail: {
-            track: selectedClip.track,
-            clipId: selectedClip.clipId,
-            duration: val,
-          },
-        })
-      );
-    } else {
-      onUpdateDuration?.(val);
-    }
-  };
-
   const applyStylePreset = (preset: typeof VIDEO_STYLE_PRESETS[0]) => {
     setBrightness(preset.brightness);
     setContrast(preset.contrast);
@@ -495,21 +465,12 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
     setActiveStyle(preset.label);
   };
 
-  const tabs: VideoInspectorTab[] = isImageMode
-    ? ['transform', 'animations', 'transitions', 'adjust', 'time']
-    : ['transform', 'animations', 'transitions', 'adjust', 'speed', 'time'];
-
   const subtabsConfig = useMemo(() => {
     const list: { id: VideoInspectorTab; label: string; icon: any }[] = [
       { id: 'transform', label: 'Crop', icon: Crop },
       { id: 'animations', label: 'Motion', icon: Sparkles },
-      { id: 'transitions', label: 'FX', icon: Layers },
       { id: 'adjust', label: 'Adjust', icon: Sliders },
     ];
-    if (!isImageMode) {
-      list.push({ id: 'speed', label: 'Speed', icon: Gauge });
-    }
-    list.push({ id: 'time', label: 'Time', icon: Clock });
     return list;
   }, [isImageMode]);
 
@@ -545,50 +506,22 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         {/* ── TRANSFORM TAB ── */}
         {activeSubTab === 'transform' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
-            {/* Aspect Ratio Selector */}
-            <div className="flex flex-col gap-2 p-3 rounded-xl bg-[#181818] border border-[#242424]">
-              <div className="flex items-center justify-between text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold">
-                <span>Canvas Aspect Ratio</span>
-                <span className="text-[#60A5FA] font-bold">{canvasAspectRatio}</span>
+            <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-[#181818]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold">
+                  Fit &amp; Framing
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setLockAspect(!lockAspect)}
+                  className="inline-flex items-center gap-1 rounded-md bg-[#111111] px-1.5 py-0.5 text-[9px] font-mono-studio text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  title={lockAspect ? 'Aspect ratio locked' : 'Aspect ratio free'}
+                >
+                  {lockAspect ? <Lock className="w-3 h-3 text-[#3B82F6]" /> : <Unlock className="w-3 h-3 text-slate-400" />}
+                  {lockAspect ? 'Locked' : 'Free'}
+                </button>
               </div>
-              <div className="grid grid-cols-5 gap-1.5">
-                {[
-                  { id: '9:16' as const, label: '9:16', desc: 'Shorts', icon: Smartphone },
-                  { id: '16:9' as const, label: '16:9', desc: 'Landscape', icon: Monitor },
-                  { id: '1:1' as const, label: '1:1', desc: 'Square', icon: Square },
-                  { id: '4:5' as const, label: '4:5', desc: 'Portrait', icon: Maximize2 },
-                  { id: '21:9' as const, label: '21:9', desc: 'Cinema', icon: Film },
-                ].map((aspect) => {
-                  const Icon = aspect.icon;
-                  const isSelected = canvasAspectRatio === aspect.id;
-                  return (
-                    <button
-                      key={aspect.id}
-                      type="button"
-                      onClick={() => {
-                        onCanvasAspectRatioChange?.(aspect.id);
-                        window.dispatchEvent(new CustomEvent('workspace:aspect-ratio-change', { detail: { aspectRatio: aspect.id } }));
-                      }}
-                      className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-xl border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#2563EB] border-[#60A5FA]/50 text-white shadow-md ring-1 ring-[#60A5FA]/25'
-                          : 'bg-[#141416] border-[#26262E] text-zinc-400 hover:text-white hover:bg-[#1E1E24] hover:border-white/10'
-                      }`}
-                    >
-                      <Icon className={`w-3.5 h-3.5 mb-1.5 ${isSelected ? 'text-white' : 'text-zinc-400'}`} />
-                      <span className="text-[10px] font-bold leading-none">{aspect.label}</span>
-                      <span className={`text-[8.5px] mt-1 font-medium leading-none ${isSelected ? 'text-blue-100' : 'text-zinc-500'}`}>
-                        {aspect.desc}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
 
-            {/* Fit Mode Cards */}
-            <div className="flex flex-col gap-2 p-3 rounded-xl bg-[#181818] border border-[#242424]">
-              <span className="text-[10px] font-mono-studio text-slate-400 uppercase tracking-wider font-bold">Fit &amp; Scaling Mode</span>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { mode: 'fill' as const, label: 'Cover / Fill', desc: 'No letterbox', icon: <Maximize2 className="w-4 h-4" /> },
@@ -601,10 +534,10 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                       key={mode}
                       type="button"
                       onClick={() => setFitMode(mode)}
-                      className={`py-2.5 px-2 rounded-xl flex flex-col items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                      className={`py-2.5 px-2 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-[#2563EB] border-[#60A5FA]/50 text-white shadow-md ring-1 ring-[#60A5FA]/25'
-                          : 'bg-[#141416] border-[#26262E] text-zinc-300 hover:text-white hover:bg-[#1E1E24] hover:border-white/10'
+                          ? 'bg-[#2563EB] text-white shadow-md'
+                          : 'bg-[#141416] text-zinc-300 hover:text-white hover:bg-[#1E1E24]'
                       }`}
                     >
                       <span className={isSelected ? 'text-white' : 'text-zinc-400'}>{icon}</span>
@@ -618,28 +551,17 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               </div>
             </div>
 
-            {/* Scale Slider + Numeric Input */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-                  Scale Zoom
-                  <button
-                    type="button"
-                    onClick={() => setLockAspect(!lockAspect)}
-                    className="cursor-pointer text-slate-500 hover:text-white"
-                    title={lockAspect ? 'Aspect ratio locked' : 'Aspect ratio free'}
-                  >
-                    {lockAspect ? <Lock className="w-3 h-3 text-[#3B82F6]" /> : <Unlock className="w-3 h-3 text-slate-500" />}
-                  </button>
-                </span>
-                <div className="flex items-center gap-1">
+            <div className="p-3 rounded-xl bg-[#181818] flex flex-col gap-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-medium">Scale Zoom</span>
+                <div className="flex items-center gap-1.5 rounded-md border border-[#242424] bg-[#111111] px-1.5 py-0.5">
                   <input
                     type="number"
                     min="10"
                     max="400"
                     value={scale}
                     onChange={(e) => setScale(Math.max(10, Math.min(400, Number(e.target.value) || 100)))}
-                    className="w-14 bg-[#141414] border border-[#242424] rounded px-1.5 py-0.5 text-right font-mono-studio text-xs text-white outline-none"
+                    className="w-12 bg-transparent text-right font-mono-studio text-[11px] text-white outline-none"
                   />
                   <span className="text-[10px] text-slate-500">%</span>
                 </div>
@@ -654,16 +576,15 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               />
             </div>
 
-            {/* Position Offset XY with Numeric Inputs */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Position Offset (Anchor)</span>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] flex flex-col gap-2.5">
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Position Offset</span>
+              <div className="grid grid-cols-2 gap-2.5">
                 {[
                   { label: 'X Center', value: posX, setter: setPosX },
                   { label: 'Y Center', value: posY, setter: setPosY },
                 ].map((ctrl) => (
-                  <div key={ctrl.label} className="flex flex-col gap-1">
-                    <div className="flex justify-between text-[11px] items-center">
+                  <div key={ctrl.label} className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-400">{ctrl.label}</span>
                       <input
                         type="number"
@@ -671,7 +592,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                         max="100"
                         value={ctrl.value}
                         onChange={(e) => ctrl.setter(Math.max(0, Math.min(100, Number(e.target.value) || 50)))}
-                        className="w-11 bg-[#141414] border border-[#242424] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none"
+                        className="w-12 bg-[#141414] border border-[#242424] rounded px-1 py-0.5 text-right font-mono-studio text-[11px] text-white outline-none"
                       />
                     </div>
                     <input
@@ -687,15 +608,14 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               </div>
             </div>
 
-            {/* Flip & Rotation */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Rotation & Orientation</span>
+            <div className="p-3 rounded-xl bg-[#181818] flex flex-col gap-2.5">
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Rotation &amp; Orientation</span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setFlipH(!flipH)}
-                  className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border transition-colors cursor-pointer text-xs font-semibold ${
-                    flipH ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10'
+                  className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-xs font-semibold ${
+                    flipH ? 'bg-[#2E2E36] text-white' : 'bg-[#111111] text-slate-400 hover:bg-[#26262C]'
                   }`}
                   title="Flip Horizontal"
                 >
@@ -705,8 +625,8 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => setFlipV(!flipV)}
-                  className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 border transition-colors cursor-pointer text-xs font-semibold ${
-                    flipV ? 'bg-[#2E2E36] border-[#3B82F6] text-white' : 'bg-[#111111] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10'
+                  className={`flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-xs font-semibold ${
+                    flipV ? 'bg-[#2E2E36] text-white' : 'bg-[#111111] text-slate-400 hover:bg-[#26262C]'
                   }`}
                   title="Flip Vertical"
                 >
@@ -716,12 +636,12 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
-                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-[#D4D4D8] hover:bg-[#26262C] hover:border-white/10 cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-[#111111] flex items-center justify-center text-[#D4D4D8] hover:bg-[#26262C] cursor-pointer"
                   title="Rotate +90°"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
-                <div className="flex items-center bg-[#111111] border border-[#242424] rounded-lg px-2 h-9 gap-1.5">
+                <div className="flex items-center bg-[#111111] rounded-lg px-1.5 h-9 gap-1.5">
                   <button type="button" onClick={() => setRotation((r) => (r - 15 + 360) % 360)} className="text-slate-500 hover:text-white cursor-pointer"><Minus className="w-3 h-3" /></button>
                   <span className="text-xs font-mono-studio text-white font-bold w-9 text-center">{rotation}°</span>
                   <button type="button" onClick={() => setRotation((r) => (r + 15) % 360)} className="text-slate-500 hover:text-white cursor-pointer"><Plus className="w-3 h-3" /></button>
@@ -729,10 +649,9 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               </div>
             </div>
 
-            {/* Canvas Background Color Chooser */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
+            <div className="p-3 rounded-xl bg-[#181818] flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Canvas Background Color</span>
+                <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Canvas Background</span>
                 <span className="font-mono-studio text-[11px] text-white">{canvasBackground}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -740,7 +659,7 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   type="color"
                   value={canvasBackground.startsWith('#') ? canvasBackground : '#050505'}
                   onChange={(e) => onCanvasBackgroundChange?.(e.target.value)}
-                  className="w-8 h-8 rounded-lg border border-[#242424] bg-transparent cursor-pointer shrink-0"
+                  className="w-8 h-8 rounded-lg bg-transparent cursor-pointer shrink-0"
                 />
                 <div className="flex flex-wrap gap-1.5 flex-1">
                   {CANVAS_BG_PRESETS.map((bg) => (
@@ -759,11 +678,10 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               </div>
             </div>
 
-            {/* Reset Button */}
             <button
               type="button"
               onClick={handleResetTransform}
-              className="w-full py-2 rounded-xl bg-[#181818] hover:bg-[#282830] border border-[#242424] text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-2 rounded-xl bg-[#181818] hover:bg-[#282830] text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Reset All Transform Values
@@ -856,270 +774,25 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               </div>
             </div>
 
-            {/* Animation Presets Grid (4 columns, comprehensive modern motion suite) */}
-            <div className="grid grid-cols-4 gap-2.5 pt-0.5">
-              {[
-                {
-                  id: 'none',
-                  label: 'None',
-                  icon: (
-                    <svg viewBox="0 0 24 24" className="w-8 h-8 text-slate-500 stroke-[1.8]" fill="none" stroke="currentColor">
-                      <circle cx="12" cy="12" r="8" />
-                      <line x1="6.3" y1="6.3" x2="17.7" y2="17.7" />
-                    </svg>
-                  ),
-                },
-                {
-                  id: 'fade',
-                  label: 'Fade',
-                  icon: (
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-zinc-200 via-zinc-400 to-zinc-700/30 border border-[#2A2A2A] shadow-inner" />
-                  ),
-                },
-                {
-                  id: 'blur',
-                  label: 'Blur',
-                  icon: (
-                    <div className="w-9 h-9 rounded-xl bg-white/70 blur-[2px] shadow-sm" />
-                  ),
-                },
-                {
-                  id: 'zoom-in',
-                  label: 'Zoom In',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#202026] border border-white/20 flex items-center justify-center relative">
-                      <div className="w-7 h-7 rounded-lg bg-white/40 flex items-center justify-center">
-                        <div className="w-4 h-4 rounded-md bg-white shadow-xs" />
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'zoom-out',
-                  label: 'Zoom Out',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center relative shadow-xs">
-                      <div className="w-7 h-7 rounded-lg bg-[#1E1E1E] flex items-center justify-center">
-                        <div className="w-4 h-4 rounded-md bg-[#121216] border border-white/20" />
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'slide-fade',
-                  label: 'Slide Fade',
-                  icon: (
-                    <div className="w-10 h-10 relative flex items-center justify-center">
-                      <div className="w-6 h-6 rounded-lg bg-white/25 absolute left-1" />
-                      <div className="w-6 h-6 rounded-lg bg-white/50 absolute left-2.5" />
-                      <div className="w-6 h-6 rounded-lg bg-white absolute left-4 shadow-sm" />
-                    </div>
-                  ),
-                },
-                {
-                  id: 'soft-reveal',
-                  label: 'Soft Reveal',
-                  icon: (
-                    <div className="w-9 h-9 rounded-xl overflow-hidden relative bg-[#1c1c24] border border-[#2A2A2A]">
-                      <div className="absolute inset-0 bg-gradient-to-br from-white via-zinc-300 to-transparent" />
-                    </div>
-                  ),
-                },
-                {
-                  id: 'circle',
-                  label: 'Circle',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center relative">
-                      <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                        <div className="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center">
-                          <div className="w-3.5 h-3.5 rounded-full bg-white shadow-xs" />
-                        </div>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'slide-left',
-                  label: 'Slide Left',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
-                      <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs -translate-x-1">
-                        <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'slide-right',
-                  label: 'Slide Right',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
-                      <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs translate-x-1">
-                        <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'slide-up',
-                  label: 'Slide Up',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
-                      <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs -translate-y-1">
-                        <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'slide-down',
-                  label: 'Slide Down',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
-                      <div className="w-7 h-6 rounded-md bg-white/80 flex items-center justify-center shadow-xs translate-y-1">
-                        <svg className="w-3.5 h-3.5 text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'spin',
-                  label: 'Spin 360',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
-                      <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-sky-400 to-indigo-300 rotate-45 shadow-sm flex items-center justify-center">
-                        <div className="w-2.5 h-2.5 rounded-xs bg-zinc-900" />
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'bounce',
-                  label: 'Bounce',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
-                      <div className="w-7 h-7 rounded-xl bg-white shadow-md flex items-center justify-center scale-105">
-                        <div className="w-3 h-3 rounded-md bg-amber-500" />
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'flip-x',
-                  label: 'Flip 3D',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative overflow-hidden">
-                      <div className="w-4 h-7 rounded-sm bg-gradient-to-r from-white to-zinc-400 shadow-sm transform -skew-y-12" />
-                    </div>
-                  ),
-                },
-                {
-                  id: 'flip-y',
-                  label: 'Tilt 3D',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative overflow-hidden">
-                      <div className="w-7 h-4 rounded-sm bg-gradient-to-b from-white to-zinc-400 shadow-sm transform -skew-x-12" />
-                    </div>
-                  ),
-                },
-                {
-                  id: 'wipe-right',
-                  label: 'Wipe H',
-                  icon: (
-                    <div className="w-9 h-9 rounded-xl border border-white/20 overflow-hidden flex bg-zinc-900">
-                      <div className="w-1/2 h-full bg-white" />
-                      <div className="w-1/2 h-full bg-zinc-800" />
-                    </div>
-                  ),
-                },
-                {
-                  id: 'wipe-down',
-                  label: 'Wipe V',
-                  icon: (
-                    <div className="w-9 h-9 rounded-xl border border-white/20 overflow-hidden flex flex-col bg-zinc-900">
-                      <div className="w-full h-1/2 bg-white" />
-                      <div className="w-full h-1/2 bg-zinc-800" />
-                    </div>
-                  ),
-                },
-                {
-                  id: 'diamond',
-                  label: 'Diamond',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
-                      <div className="w-6 h-6 bg-white rotate-45 rounded-sm shadow-xs" />
-                    </div>
-                  ),
-                },
-                {
-                  id: 'flash',
-                  label: 'Flash Glow',
-                  icon: (
-                    <div className="w-10 h-10 rounded-xl bg-[#1b1b22] border border-[#333333] flex items-center justify-center relative">
-                      <div className="w-6 h-6 rounded-full bg-amber-300 blur-[2px] shadow-lg shadow-amber-400/50 flex items-center justify-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                      </div>
-                    </div>
-                  ),
-                },
-              ].map((item) => {
-                const currentActive = animDirection === 'in' ? animationIn : animationOut;
-                const isSelected = currentActive === item.id;
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      if (animDirection === 'in') {
-                        handleInAnimChange(item.id);
-                      } else {
-                        handleOutAnimChange(item.id);
-                      }
-                      window.dispatchEvent(
-                        new CustomEvent('workspace:preview-clip-animation', {
-                          detail: {
-                            type: item.id,
-                            direction: animDirection,
-                            duration: animDirection === 'in' ? animationInDuration : animationOutDuration,
-                          },
-                        })
-                      );
-                    }}
-                    className="group flex flex-col items-center cursor-pointer text-left select-none"
-                    title={item.label}
-                  >
-                    <div
-                      className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 flex items-center justify-center bg-[#15151A] ${
-                        isSelected
-                          ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
-                          : 'border-[#242424] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30'
-                      }`}
-                    >
-                      {item.icon}
-                    </div>
-                    <span
-                      className={`text-[11px] font-medium truncate block text-center mt-1.5 w-full leading-tight transition-colors ${
-                        isSelected ? 'text-white font-bold' : 'text-slate-400 group-hover:text-white'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </button>
+            <MotionPresetPicker
+              presets={VIDEO_MOTION_PRESETS}
+              value={animDirection === 'in' ? animationIn : animationOut}
+              onChange={(motion) => {
+                if (animDirection === 'in') {
+                  handleInAnimChange(motion);
+                } else {
+                  handleOutAnimChange(motion);
+                }
+                window.dispatchEvent(
+                  new CustomEvent('workspace:preview-clip-animation', {
+                    detail: {
+                      type: motion,
+                      direction: animDirection,
+                      duration: animDirection === 'in' ? animationInDuration : animationOutDuration,
+                    },
+                  })
                 );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── TRANSITIONS TAB ── */}
-        {activeSubTab === 'transitions' && (
-          <div className="-m-3 h-full">
-            <TransitionsInspector
-              selectedClip={selectedClip}
-              customImageUrl={customImageUrl}
-              customVideoUrl={customVideoUrl}
-              activeBackdrop={activeBackdrop}
+              }}
             />
           </div>
         )}
@@ -1132,24 +805,27 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
               <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
                 Quick Look Style
               </span>
-              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
-                {VIDEO_STYLE_PRESETS.map((p) => {
-                  const isCur = activeStyle === p.label;
-                  return (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => applyStylePreset(p)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
-                        isCur
-                          ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-xs'
-                          : 'bg-[#181818] text-slate-400 border-[#242424] hover:text-white hover:border-[#383842]'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
+              <div className="relative">
+                <select
+                  aria-label="Quick look style"
+                  value={activeStyle}
+                  onChange={(e) => {
+                    const preset = VIDEO_STYLE_PRESETS.find((p) => p.label === e.target.value);
+                    if (preset) applyStylePreset(preset);
+                  }}
+                  className="w-full appearance-none rounded-xl border border-[#2A2A2D] bg-[#181818] px-3 py-2 pr-9 text-sm font-semibold text-slate-200 shadow-inner shadow-black/10 outline-none transition-colors hover:border-[#383842] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/25 cursor-pointer"
+                >
+                  {VIDEO_STYLE_PRESETS.map((preset) => (
+                    <option key={preset.label} value={preset.label}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                    <path d="M5.25 7.5 10 12.25 14.75 7.5h-9.5Z" />
+                  </svg>
+                </div>
               </div>
             </div>
 
@@ -1420,51 +1096,6 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         )}
 
         {/* ── TRANSITIONS TAB ── */}
-        {/* ── SPEED TAB ── */}
-        {activeSubTab === 'speed' && (
-          <div className="flex flex-col gap-3.5 pt-0.5">
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Playback Velocity Multiplier</span>
-              <div className="grid grid-cols-4 gap-1.5">
-                {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((rate) => (
-                  <button
-                    key={rate}
-                    type="button"
-                    onClick={() => onPlaybackRateChange?.(rate)}
-                    className={`py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                      playbackRate === rate
-                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                        : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
-                    }`}
-                  >
-                    {rate}x
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex items-center justify-between">
-              <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold text-white">Loop Backdrop Clip</p>
-                <p className="text-[10px] text-slate-500">Automatically restart video at end</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setLoopVideo(!loopVideo)}
-                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                  loopVideo ? 'bg-[#2563EB]' : 'bg-[#242424]'
-                }`}
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
-                    loopVideo ? 'left-6' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* ── AUDIO TAB ── */}
         {activeSubTab === 'audio' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
@@ -1505,50 +1136,6 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   100%
                 </button>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── TIME TAB ── */}
-        {activeSubTab === 'time' && (
-          <div className={`flex flex-col gap-3 ${styleSection === 'all' ? 'border-t border-[#242424] pt-3.5 mt-2' : 'pt-0.5'}`}>
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-medium">Active Clip Duration</span>
-                <span className="font-mono-studio text-white font-bold">{formatTimeDigital(localDuration)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleDurationChange(localDuration - 1)}
-                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white hover:bg-[#26262C] hover:border-white/10 cursor-pointer"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="1"
-                  max="300"
-                  value={localDuration}
-                  onChange={(e) => handleDurationChange(Number(e.target.value) || 1)}
-                  className="flex-1 bg-[#141414] border border-[#242424] rounded-lg px-2.5 py-1.5 text-center font-mono-studio text-sm text-white font-bold outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleDurationChange(localDuration + 1)}
-                  className="w-9 h-9 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white hover:bg-[#26262C] hover:border-white/10 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-1.5 text-[11px] font-mono-studio">
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Timeline Diagnostics</span>
-              <div className="flex justify-between"><span className="text-slate-500">Framerate</span><span className="text-white">30.00 fps</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Total Frames</span><span className="text-white">{Math.round(localDuration * 30)} frames</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Clip Speed</span><span className="text-white">{playbackRate}x</span></div>
             </div>
           </div>
         )}

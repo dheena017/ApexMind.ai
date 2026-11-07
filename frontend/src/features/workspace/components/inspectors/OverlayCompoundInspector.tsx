@@ -6,8 +6,6 @@ import {
   RotateCw,
   Minus,
   Plus,
-  Sparkles,
-  Layers,
   RefreshCw,
   Move,
   Lock,
@@ -16,22 +14,11 @@ import {
   Check,
   Palette,
 } from 'lucide-react';
+import { MotionInspectorPage, OVERLAY_MOTION_PRESETS } from './MotionInspectorPage';
 
 export interface OverlayCompoundInspectorProps {
   activeOverlay?: { type: string; value: string; label?: string; id?: string; name?: string } | null;
 }
-
-const ANIMATION_PRESETS = [
-  { id: 'none', label: 'Static (Fixed)', desc: 'No entrance motion', icon: '—' },
-  { id: 'fade', label: 'Smooth Fade In', desc: 'Gentle opacity rise', icon: '✨' },
-  { id: 'pop', label: 'Pop & Scale In', desc: 'Punchy scale-up entrance', icon: '💥' },
-  { id: 'slide-up', label: 'Slide Up Entrance', desc: 'Slides up from bottom', icon: '⬆️' },
-  { id: 'slide-left', label: 'Slide Left', desc: 'Enters from right side', icon: '⬅️' },
-  { id: 'slide-right', label: 'Slide Right', desc: 'Enters from left side', icon: '➡️' },
-  { id: 'bounce', label: 'Bounce Drop', desc: 'Dynamic energetic bounce', icon: '🔵' },
-  { id: 'spin', label: 'Spin Enter', desc: 'Rotational 360 spin entrance', icon: '🌀' },
-  { id: 'pulse', label: 'Pulse Heartbeat', desc: 'Continuous subtle heartbeat', icon: '💓' },
-];
 
 const BLEND_MODES = [
   { id: 'Normal', label: 'Normal', desc: 'Standard opaque alpha' },
@@ -56,15 +43,47 @@ const POSITION_ANCHORS = [
   { label: 'Bottom-Right', x: 90, y: 82 },
 ];
 
+const hslToHex = (h: number, s: number, l: number) => {
+  const hue = h / 360;
+  const saturation = s / 100;
+  const lightness = l / 100;
+
+  const hueToRgb = (p: number, q: number, t: number) => {
+    let temp = t;
+    if (temp < 0) temp += 1;
+    if (temp > 1) temp -= 1;
+    if (temp < 1 / 6) return p + (q - p) * 6 * temp;
+    if (temp < 1 / 2) return q;
+    if (temp < 2 / 3) return p + (q - p) * (2 / 3 - temp) * 6;
+    return p;
+  };
+
+  let r: number; let g: number; let b: number;
+
+  if (saturation === 0) {
+    r = g = b = lightness;
+  } else {
+    const q = lightness < 0.5 ? lightness * (1 + saturation) : lightness + saturation - lightness * saturation;
+    const p = 2 * lightness - q;
+    r = hueToRgb(p, q, hue + 1 / 3);
+    g = hueToRgb(p, q, hue);
+    b = hueToRgb(p, q, hue - 1 / 3);
+  }
+
+  const toHex = (value: number) => Math.round(value * 255).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+};
+
 const COLOR_PRESETS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#EC4899', '#06B6D4', '#FBBF24', '#FFFFFF', '#000000',
+  ...Array.from({ length: 18 }, (_, index) => hslToHex((index * 360) / 18, 82, 58)),
+  '#FFFFFF',
+  '#000000',
 ];
 
 export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> = ({
   activeOverlay,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'transform' | 'animate' | 'color' | 'shadow' | 'time'>('transform');
+  const [activeSubTab, setActiveSubTab] = useState<'transform' | 'color' | 'motion'>('transform');
 
   // Transform states
   const [fitMode, setFitMode] = useState<'fit' | 'fill' | 'stretch'>('fit');
@@ -78,24 +97,10 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
 
   // Style & Color
   const [accentColor, setAccentColor] = useState('#3B82F6');
-  const [gradientEnd] = useState('#1D4ED8');
-  const [useGradient] = useState(false);
-  const [blendMode, setBlendMode] = useState('Normal');
+  const [textColor, setTextColor] = useState('#FFFFFF');
   const [opacity, setOpacity] = useState(100);
-
-  // Glow & Shadow
-  const [glow, setGlow] = useState(false);
-  const [glowColor, setGlowColor] = useState('#3B82F6');
-  const [glowRadius, setGlowRadius] = useState(15);
-  const [shadow, setShadow] = useState(true);
-  const [shadowBlur, setShadowBlur] = useState(10);
-
-  // Animation & Timing
-  const [animation, setAnimation] = useState('pop');
+  const [animation, setAnimation] = useState('none');
   const [animDuration, setAnimDuration] = useState(0.35);
-  const [delay, setDelay] = useState(0.0);
-  const [displayDuration, setDisplayDuration] = useState(4.0);
-  const [loopAnim, setLoopAnim] = useState(false);
 
   // Broadcast overlay style changes in real-time
   useEffect(() => {
@@ -111,27 +116,16 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
           posY,
           lockAspect,
           accentColor,
-          gradientEnd: useGradient ? gradientEnd : undefined,
-          blendMode,
+          textColor,
           opacity,
-          glow,
-          glowColor,
-          glowRadius,
-          shadow,
-          shadowBlur,
           animation,
           animDuration,
-          delay,
-          duration: displayDuration,
-          loop: loopAnim,
         },
       })
     );
   }, [
     fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect,
-    accentColor, gradientEnd, useGradient, blendMode, opacity,
-    glow, glowColor, glowRadius, shadow, shadowBlur,
-    animation, animDuration, delay, displayDuration, loopAnim,
+    accentColor, textColor, opacity, animation, animDuration,
   ]);
 
   const handleResetTransform = () => {
@@ -151,10 +145,8 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
         <ScrollableTabs
           tabs={[
             { id: 'transform', label: 'Position', icon: Move },
-            { id: 'animate', label: 'Motion', icon: Sparkles },
             { id: 'color', label: 'Color', icon: Palette },
-            { id: 'shadow', label: 'Shadow', icon: Layers },
-            { id: 'time', label: 'Timing', icon: Clock },
+            { id: 'motion', label: 'Motion' },
           ]}
           activeTab={activeSubTab}
           onChange={(tab) => setActiveSubTab(tab as any)}
@@ -334,102 +326,13 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
           </div>
         )}
 
-        {/* ── MOTION FX TAB ── */}
-        {activeSubTab === 'animate' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Entrance Motion Presets</span>
-            <div className="flex flex-col gap-1.5">
-              {ANIMATION_PRESETS.map((anim) => (
-                <button
-                  key={anim.id}
-                  type="button"
-                  onClick={() => setAnimation(anim.id)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
-                    animation === anim.id
-                      ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                      : 'bg-[#181818] border-[#242424] text-slate-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{anim.icon}</span>
-                    <div>
-                      <span className="text-xs font-semibold text-white block">{anim.label}</span>
-                      <span className={`text-[10px] ${animation === anim.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{anim.desc}</span>
-                    </div>
-                  </div>
-                  {animation === anim.id && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
-                </button>
-              ))}
-            </div>
-
-            {animation !== 'none' && (
-              <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Entrance Duration</span>
-                    <span className="font-mono-studio text-white">{animDuration}s</span>
-                  </div>
-                  <input
-                    type="range"
-                    step="0.05"
-                    min="0.1"
-                    max="1.5"
-                    value={animDuration}
-                    onChange={(e) => setAnimDuration(parseFloat(e.target.value))}
-                    className="w-full accent-[#3B82F6] cursor-pointer"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1 pt-1 border-t border-[#25252A]">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Start Delay Offset</span>
-                    <span className="font-mono-studio text-white">{delay}s</span>
-                  </div>
-                  <input
-                    type="range"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    value={delay}
-                    onChange={(e) => setDelay(parseFloat(e.target.value))}
-                    className="w-full accent-blue-500 cursor-pointer"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ── COLOR & BLEND TAB ── */}
         {activeSubTab === 'color' && (
           <div className="flex flex-col gap-3.5 pt-0.5">
-            {/* Blend Mode Selector */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Compositing Blend Mode</span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {BLEND_MODES.map((b) => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => setBlendMode(b.id)}
-                    className={`p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
-                      blendMode === b.id
-                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                        : 'bg-[#181818] border-[#242424] text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <p className="text-xs font-bold text-white mb-0.5">{b.label}</p>
-                    <p className="text-[8px] text-slate-500">{b.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Accent Color Chooser */}
             <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-medium">Overlay Color Tint</span>
-                <span className="font-mono-studio text-white">{accentColor}</span>
+                <span className="text-slate-200 font-medium">Overlay Color Tint</span>
+                <span className="font-mono-studio text-slate-100">{accentColor}</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -454,11 +357,38 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
               </div>
             </div>
 
-            {/* Opacity Slider */}
+            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-200 font-medium">Text Color</span>
+                <span className="font-mono-studio text-slate-100">{textColor}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={textColor}
+                  onChange={(e) => setTextColor(e.target.value)}
+                  className="w-8 h-8 rounded-lg border border-[#242424] bg-transparent cursor-pointer shrink-0"
+                />
+                <div className="flex flex-wrap gap-1.5 flex-1">
+                  {COLOR_PRESETS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setTextColor(c)}
+                      style={{ background: c }}
+                      className={`w-5 h-5 rounded-md border transition-transform cursor-pointer ${
+                        textColor.toLowerCase() === c.toLowerCase() ? 'scale-125 border-white ring-2 ring-blue-500/50' : 'border-white/20 hover:scale-110'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Layer Opacity</span>
-                <span className="font-mono-studio text-white font-bold">{opacity}%</span>
+                <span className="text-slate-200">Layer Opacity</span>
+                <span className="font-mono-studio text-slate-100 font-bold">{opacity}%</span>
               </div>
               <input
                 type="range"
@@ -472,141 +402,27 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
           </div>
         )}
 
-        {/* ── SHADOW & GLOW TAB ── */}
-        {activeSubTab === 'shadow' && (
-          <div className="flex flex-col gap-3.5 pt-0.5">
-            {/* Glow Light */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-white">Atmospheric Glow</p>
-                  <p className="text-[10px] text-slate-500">Radiant light halo around edges</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setGlow(!glow)}
-                  className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    glow ? 'bg-[#2563EB]' : 'bg-[#242424]'
-                  }`}
-                >
-                  <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${glow ? 'left-5' : 'left-1'}`} />
-                </button>
-              </div>
-
-              {glow && (
-                <div className="flex flex-col gap-2 pt-2 border-t border-[#25252A]">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-400">Glow Radius</span>
-                    <span className="font-mono-studio text-white">{glowRadius}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="5"
-                    max="40"
-                    value={glowRadius}
-                    onChange={(e) => setGlowRadius(Number(e.target.value))}
-                    className="w-full accent-[#3B82F6] cursor-pointer"
-                  />
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Glow Color</span>
-                    <input
-                      type="color"
-                      value={glowColor}
-                      onChange={(e) => setGlowColor(e.target.value)}
-                      className="w-7 h-7 rounded border border-[#242424] bg-transparent cursor-pointer"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Drop Shadow */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-white">Depth Drop Shadow</p>
-                  <p className="text-[10px] text-slate-500">Separates overlay from video background</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShadow(!shadow)}
-                  className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    shadow ? 'bg-[#2563EB]' : 'bg-[#242424]'
-                  }`}
-                >
-                  <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${shadow ? 'left-5' : 'left-1'}`} />
-                </button>
-              </div>
-
-              {shadow && (
-                <div className="flex flex-col gap-1 pt-2 border-t border-[#25252A]">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Shadow Softness Blur</span>
-                    <span className="font-mono-studio text-white">{shadowBlur}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="2"
-                    max="30"
-                    value={shadowBlur}
-                    onChange={(e) => setShadowBlur(Number(e.target.value))}
-                    className="w-full accent-blue-500 cursor-pointer"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── TIME TAB ── */}
-        {activeSubTab === 'time' && (
-          <div className="flex flex-col gap-3.5 pt-0.5">
+        {activeSubTab === 'motion' && (
+          <div className="flex flex-col gap-3 pt-0.5">
+            <MotionInspectorPage
+              presets={OVERLAY_MOTION_PRESETS}
+              value={animation}
+              onChange={setAnimation}
+            />
             <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">Display Duration</span>
-                <span className="font-mono-studio text-white font-bold">{displayDuration.toFixed(1)}s</span>
+                <span className="text-slate-400">Motion Duration</span>
+                <span className="font-mono-studio text-white">{animDuration.toFixed(2)}s</span>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDisplayDuration((p) => Math.max(0.5, parseFloat((p - 0.5).toFixed(1))))}
-                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#26262C] hover:border-white/10"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  max="60"
-                  value={displayDuration}
-                  onChange={(e) => setDisplayDuration(Math.max(0.5, Math.min(60, Number(e.target.value) || 4)))}
-                  className="flex-1 bg-[#141414] border border-[#242424] rounded-lg px-2 py-1 text-center font-mono-studio text-xs text-white outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setDisplayDuration((p) => Math.min(60, parseFloat((p + 0.5).toFixed(1))))}
-                  className="w-8 h-8 rounded-lg bg-[#111111] border border-[#242424] flex items-center justify-center text-white cursor-pointer hover:bg-[#26262C] hover:border-white/10"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-white">Loop Motion FX</p>
-                <p className="text-[10px] text-slate-500">Keep animation pulsing across entire duration</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setLoopAnim(!loopAnim)}
-                className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                  loopAnim ? 'bg-[#2563EB]' : 'bg-[#242424]'
-                }`}
-              >
-                <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${loopAnim ? 'left-5' : 'left-1'}`} />
-              </button>
+              <input
+                type="range"
+                min="0.1"
+                max="1.5"
+                step="0.05"
+                value={animDuration}
+                onChange={(event) => setAnimDuration(Number(event.target.value))}
+                className="w-full accent-[#3B82F6] cursor-pointer"
+              />
             </div>
           </div>
         )}

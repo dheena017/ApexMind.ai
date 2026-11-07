@@ -3,7 +3,6 @@ import {
   Film,
   Type,
   Mic,
-  Music,
   Layers,
   ChevronDown,
   Home,
@@ -234,7 +233,7 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
     },
     text: { label: 'Captions & Titles', tag: 'T1', icon: Type, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
     voice: { label: `Voice: ${selectedVoice || 'Fenrir'}`, tag: 'A1', icon: Mic, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
-    music: { label: 'Soundtrack Mix', tag: 'A2', icon: Music, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
+    music: { label: 'Voiceover Audio', tag: 'A1', icon: Mic, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
     overlay: { label: 'Overlay Badges', tag: 'FX', icon: Layers, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
     transitions: { label: 'Transitions Studio', tag: 'FX', icon: Sparkles, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' },
   }[activeCompound] || { label: 'Project Home', tag: 'Studio', icon: Home, color: 'text-[#60A5FA]', badgeBg: 'bg-[#1E3A5F]', badgeBorder: 'border-[#3B82F6]/40' };
@@ -307,7 +306,6 @@ export const StudioControlsPane: React.FC<StudioControlsPaneProps> = ({
                   { id: 'video' as CompoundType, label: customImageUrl ? 'Image Inspector (V2)' : 'Video Backdrop (V1)', icon: customImageUrl ? ImageIcon : Film },
                   { id: 'text' as CompoundType, label: 'Captions & Title (T1)', icon: Type },
                   { id: 'voice' as CompoundType, label: 'Voiceover Audio (A1)', icon: Mic },
-                  { id: 'music' as CompoundType, label: 'Soundtrack Audio (A2)', icon: Music },
                   { id: 'overlay' as CompoundType, label: 'Overlays & Badges', icon: Layers },
                   { id: 'transitions' as CompoundType, label: 'Transitions Studio', icon: Sparkles },
                 ].map((c) => {

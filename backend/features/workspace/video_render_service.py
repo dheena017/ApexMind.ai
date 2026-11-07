@@ -510,6 +510,12 @@ def render_studio_video(
     sfx_volume: Optional[float] = 0.85,
     ducking_settings: Optional[Dict[str, Any]] = None,
     fps: int = 30,
+    video_bitrate: int = 8,
+    codec: str = "h264",
+    container: str = "mp4",
+    audio_sample_rate: int = 48000,
+    audio_bitrate: int = 192,
+    resolution: int = 1080,
     **kwargs,
 ) -> Dict[str, Any]:
     """Renders a broadcast-quality Full HD MP4 video using native FFmpeg.
@@ -557,19 +563,42 @@ def render_studio_video(
         safe_duration = max(5.0, min(300.0, target_duration))
 
     # Aspect ratio resolution
-    dim_map = {
-        "9:16": (1080, 1920),
-        "16:9": (1920, 1080),
-        "1:1": (1080, 1080),
-        "4:5": (1080, 1350),
-        "21:9": (1920, 823),
+    aspect_ratios = {
+        "9:16": 9 / 16,
+        "16:9": 16 / 9,
+        "1:1": 1,
+        "4:5": 4 / 5,
+        "21:9": 21 / 9,
     }
-    width, height = dim_map.get(aspect_ratio, (1080, 1920))
-    render_fps = 60 if fps == 60 else 30
+    ratio = aspect_ratios.get(aspect_ratio, 9 / 16)
+    if ratio < 1:
+        width = int(resolution)
+        height = round(width / ratio / 2) * 2
+    else:
+        height = int(resolution)
+        width = round(height * ratio / 2) * 2
+    render_fps = int(fps)
+
+    compatible_codecs = {
+        "mp4": {"h264", "hevc", "av1"},
+        "mov": {"h264", "hevc"},
+        "webm": {"vp9", "av1"},
+    }
+    if container not in compatible_codecs or codec not in compatible_codecs[container]:
+        raise ValueError(f"Codec {codec} is not supported in the {container} container")
+
+    video_encoders = {
+        "h264": ("libx264", ["-preset", "veryfast", "-profile:v", "high", "-level", "4.2"]),
+        "hevc": ("libx265", ["-preset", "ultrafast", "-tag:v", "hvc1"]),
+        "vp9": ("libvpx-vp9", ["-deadline", "realtime", "-cpu-used", "5", "-row-mt", "1"]),
+        "av1": ("libaom-av1", ["-cpu-used", "6", "-row-mt", "1"]),
+    }
+    video_encoder, encoder_args = video_encoders[codec]
+    audio_encoder = "libopus" if container == "webm" else "aac"
 
     clean_title = re.sub(r'[<>:"/\\|?*]+', '', title.strip())[:60] or "apexmind-video"
     time_stamp = int(time.time() * 1000)
-    out_filename = f"{clean_title}_{time_stamp}.mp4"
+    out_filename = f"{clean_title}_{time_stamp}.{container}"
     thumb_filename = f"{clean_title}_{time_stamp}_thumb.jpg"
     out_path = RENDER_DIR / out_filename
     thumb_path = RENDER_DIR / thumb_filename
@@ -827,24 +856,25 @@ def render_studio_video(
             "-map", "[v_out]",
             "-map", audio_out_tag,
             "-t", str(safe_duration),
-            "-c:v", "libx264",
-            "-preset", "veryfast",
-            "-profile:v", "high",
-            "-level", "4.2",
-            "-crf", "18",
+            "-c:v", video_encoder,
+            *encoder_args,
+            "-b:v", f"{video_bitrate}M",
+            "-maxrate", f"{video_bitrate}M",
+            "-bufsize", f"{video_bitrate * 2}M",
             "-pix_fmt", "yuv420p",
             "-colorspace", "bt709",
             "-color_primaries", "bt709",
             "-color_trc", "bt709",
             "-color_range", "tv",
             "-r", str(render_fps),
-            "-c:a", "aac",
-            "-b:a", "256k",
-            "-ar", "48000",
-            "-movflags", "+faststart",
+            "-c:a", audio_encoder,
+            "-b:a", f"{audio_bitrate}k",
+            "-ar", str(audio_sample_rate),
             "-threads", "0",
-            str(out_path.resolve()),
         ])
+        if container in {"mp4", "mov"}:
+            cmd.extend(["-movflags", "+faststart"])
+        cmd.append(str(out_path.resolve()))
 
         t0 = time.time()
         logger.info(f"Starting multi-clip native FFmpeg render: {out_filename} ({width}x{height}, {render_fps} FPS, {safe_duration}s)...")
@@ -893,11 +923,45 @@ def render_studio_video(
             pass
 
 
-def convert_webm_to_mp4(webm_bytes: bytes, filename_base: str = "rendered_video") -> Dict[str, Any]:
-    """Transcodes a browser-recorded WebM (VP9/Opus) into a standardized H.264 / AAC MP4 at 30 FPS."""
+def convert_webm_to_mp4(
+    webm_bytes: bytes,
+    filename_base: str = "rendered_video",
+    fps: int = 30,
+    video_bitrate: int = 8,
+    codec: str = "h264",
+    container: str = "mp4",
+    audio_sample_rate: int = 48000,
+    audio_bitrate: int = 192,
+    resolution: int = 1080,
+    aspect_ratio: str = "9:16",
+) -> Dict[str, Any]:
+    """Transcodes a browser-recorded video using the selected export settings."""
+    compatible_codecs = {
+        "mp4": {"h264", "hevc", "av1"},
+        "mov": {"h264", "hevc"},
+        "webm": {"vp9", "av1"},
+    }
+    if container not in compatible_codecs or codec not in compatible_codecs[container]:
+        raise ValueError(f"Codec {codec} is not supported in the {container} container")
+
+    video_encoders = {
+        "h264": ("libx264", ["-preset", "veryfast", "-profile:v", "high", "-level", "4.2"]),
+        "hevc": ("libx265", ["-preset", "ultrafast", "-tag:v", "hvc1"]),
+        "vp9": ("libvpx-vp9", ["-deadline", "realtime", "-cpu-used", "5", "-row-mt", "1"]),
+        "av1": ("libaom-av1", ["-cpu-used", "6", "-row-mt", "1"]),
+    }
+    video_encoder, encoder_args = video_encoders[codec]
+    audio_encoder = "libopus" if container == "webm" else "aac"
+    ratio_map = {"9:16": 9 / 16, "16:9": 16 / 9, "1:1": 1, "4:5": 4 / 5, "21:9": 21 / 9}
+    ratio = ratio_map.get(aspect_ratio, 9 / 16)
+    if ratio < 1:
+        width, height = int(resolution), round(resolution / ratio / 2) * 2
+    else:
+        height, width = int(resolution), round(resolution * ratio / 2) * 2
+
     clean_title = re.sub(r'[<>:"/\\|?*]+', '', filename_base.strip())[:60] or "apexmind-video"
     time_stamp = int(time.time() * 1000)
-    out_filename = f"{clean_title}_{time_stamp}.mp4"
+    out_filename = f"{clean_title}_{time_stamp}.{container}"
     thumb_filename = f"{clean_title}_{time_stamp}_thumb.jpg"
     out_path = RENDER_DIR / out_filename
     thumb_path = RENDER_DIR / thumb_filename
@@ -912,20 +976,22 @@ def convert_webm_to_mp4(webm_bytes: bytes, filename_base: str = "rendered_video"
         cmd = [
             "ffmpeg", "-y",
             "-i", str(temp_webm.resolve()),
-            "-c:v", "libx264",
-            "-preset", "veryfast",
-            "-profile:v", "high",
-            "-level", "4.2",
-            "-crf", "18",
+            "-vf", f"scale={width}:{height}",
+            "-c:v", video_encoder,
+            *encoder_args,
+            "-b:v", f"{video_bitrate}M",
+            "-maxrate", f"{video_bitrate}M",
+            "-bufsize", f"{video_bitrate * 2}M",
             "-pix_fmt", "yuv420p",
-            "-r", "30",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-ar", "48000",
-            "-movflags", "+faststart",
+            "-r", str(fps),
+            "-c:a", audio_encoder,
+            "-b:a", f"{audio_bitrate}k",
+            "-ar", str(audio_sample_rate),
             "-threads", "0",
-            str(out_path.resolve()),
         ]
+        if container in {"mp4", "mov"}:
+            cmd.extend(["-movflags", "+faststart"])
+        cmd.append(str(out_path.resolve()))
 
         t0 = time.time()
         res = subprocess.run(cmd, capture_output=True, text=True)

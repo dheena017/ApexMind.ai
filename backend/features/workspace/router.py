@@ -4,7 +4,7 @@ FastAPI route endpoints for workspace: script generation, TTS, memory, and media
 """
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, status, Query, UploadFile, File, Form
 from backend.shared.ai_models import (
@@ -388,7 +388,13 @@ class RenderVideoApiRequest(BaseModel):
     musicVolume: Optional[float] = 0.65
     sfxVolume: Optional[float] = 0.85
     duckingSettings: Optional[Dict[str, Any]] = None
-    fps: int = 30
+    fps: Literal[24, 30, 60] = 30
+    videoBitrate: Literal[4, 8, 16, 25] = 8
+    codec: Literal["h264", "hevc", "vp9", "av1"] = "h264"
+    container: Literal["mp4", "webm", "mov"] = "mp4"
+    audioSampleRate: Literal[24000, 44100, 48000] = 48000
+    audioBitrate: Literal[128, 192, 320] = 192
+    resolution: Literal[720, 1080, 1440] = 1080
 
 
 @router.post(
@@ -422,6 +428,12 @@ def post_render_video(payload: RenderVideoApiRequest):
             sfx_volume=payload.sfxVolume,
             ducking_settings=payload.duckingSettings,
             fps=payload.fps,
+            video_bitrate=payload.videoBitrate,
+            codec=payload.codec,
+            container=payload.container,
+            audio_sample_rate=payload.audioSampleRate,
+            audio_bitrate=payload.audioBitrate,
+            resolution=payload.resolution,
         )
         return result
     except Exception as e:
@@ -435,17 +447,36 @@ def post_render_video(payload: RenderVideoApiRequest):
 @router.post(
     "/api/workspace/convert-to-mp4",
     tags=["Studio"],
-    summary="Transcode WebM Recording to MP4",
-    description="Converts canvas-recorded WebM blobs to broadcast-ready H.264 MP4 with AAC audio.",
+    summary="Transcode Browser Recording",
+    description="Converts canvas-recorded video to the requested codec, container, resolution, and audio settings.",
 )
 async def post_convert_to_mp4(
     file: UploadFile = File(...),
     filename: Optional[str] = Form("apexmind-video"),
+    fps: Literal[24, 30, 60] = Form(30),
+    videoBitrate: Literal[4, 8, 16, 25] = Form(8),
+    codec: Literal["h264", "hevc", "vp9", "av1"] = Form("h264"),
+    container: Literal["mp4", "webm", "mov"] = Form("mp4"),
+    audioSampleRate: Literal[24000, 44100, 48000] = Form(48000),
+    audioBitrate: Literal[128, 192, 320] = Form(192),
+    resolution: Literal[720, 1080, 1440] = Form(1080),
+    aspectRatio: Literal["9:16", "16:9", "1:1", "4:5", "21:9"] = Form("9:16"),
 ):
     from .video_render_service import convert_webm_to_mp4
     try:
         content = await file.read()
-        return convert_webm_to_mp4(content, filename_base=filename or "apexmind-video")
+        return convert_webm_to_mp4(
+            content,
+            filename_base=filename or "apexmind-video",
+            fps=fps,
+            video_bitrate=videoBitrate,
+            codec=codec,
+            container=container,
+            audio_sample_rate=audioSampleRate,
+            audio_bitrate=audioBitrate,
+            resolution=resolution,
+            aspect_ratio=aspectRatio,
+        )
     except Exception as e:
         logger.error(f"[Workspace/ConvertToMp4] Error: {e}")
         raise HTTPException(

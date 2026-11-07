@@ -1,6 +1,6 @@
 import { Film, Sparkles } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle, DEFAULT_VISUAL_BACKDROPS } from '../../types';
+import { GeneratedScript, VisualBackdrop, BackdropFilterSettings, ScriptSubtitle, VideoExportSettings, DEFAULT_VISUAL_BACKDROPS } from '../../types';
 import { TimelineMediaClip, TimelineAudioClip, TimelineOverlayClip } from '../timeline/timelineTypes';
 import { mediaCacheService } from '../../services/mediaCacheService';
 
@@ -321,6 +321,7 @@ interface VideoPreviewPaneProps {
   isExporting?: boolean;
   exportDuration?: number;
   exportFileName?: string;
+  exportSettings?: VideoExportSettings;
   audioElement?: HTMLAudioElement | null;
   audioOutputStream?: MediaStream | null;
   onExportComplete?: (error?: string) => void;
@@ -395,6 +396,15 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   isExporting = false,
   exportDuration = 30,
   exportFileName = 'apexmind-video',
+  exportSettings = {
+    fps: 60,
+    videoBitrate: 8,
+    codec: 'h264',
+    container: 'mp4',
+    audioSampleRate: 24000,
+    audioBitrate: 192,
+    resolution: 1080,
+  },
   audioUrl,
   musicUrl,
   audioElement,
@@ -462,8 +472,12 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     posX: number;
     posY: number;
     accentColor: string;
+    textColor: string;
     opacity: number;
     duration: number;
+    animation: string;
+    animDuration: number;
+    delay: number;
   }>({
     fitMode: 'fit' as const,
     flipH: false,
@@ -473,8 +487,12 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     posX: 50,
     posY: 65,
     accentColor: '#3B82F6',
+    textColor: '#FFFFFF',
     opacity: 100,
     duration: 5,
+    animation: 'none',
+    animDuration: 0.35,
+    delay: 0,
   });
 
   // ── Timeline state (live sync from StudioTimelinePane events) ─────────
@@ -642,7 +660,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     };
 
     captureFrame(0);
-    const outputStream = outputCanvas.captureStream(30);
+    const outputStream = outputCanvas.captureStream(exportSettings.fps);
 
     try {
       const captureAudio = audioElement as (HTMLAudioElement & {
@@ -677,8 +695,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     const chunks: BlobPart[] = [];
     const recorder = new MediaRecorder(outputStream, {
       mimeType,
-      videoBitsPerSecond: 10_000_000,
-      audioBitsPerSecond: 192_000,
+      videoBitsPerSecond: exportSettings.videoBitrate * 1_000_000,
+      audioBitsPerSecond: exportSettings.audioBitrate * 1_000,
     });
 
     recorder.ondataavailable = (event) => {
@@ -746,7 +764,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         try { videoTrack.requestFrame(); } catch {}
       }
 
-      await new Promise((resolve) => window.setTimeout(resolve, 1000 / 30));
+      await new Promise((resolve) => window.setTimeout(resolve, 1000 / exportSettings.fps));
     }
 
     window.dispatchEvent(new CustomEvent('workspace:export-state', {
@@ -765,6 +783,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     const formData = new FormData();
     formData.append('file', blob, 'video.webm');
     formData.append('filename', safeName);
+    formData.append('fps', String(exportSettings.fps));
+    formData.append('videoBitrate', String(exportSettings.videoBitrate));
+    formData.append('codec', exportSettings.codec);
+    formData.append('container', exportSettings.container);
+    formData.append('audioSampleRate', String(exportSettings.audioSampleRate));
+    formData.append('audioBitrate', String(exportSettings.audioBitrate));
+    formData.append('resolution', String(exportSettings.resolution));
 
     const convRes = await fetch('/api/workspace/convert-to-mp4', {
       method: 'POST',
@@ -785,7 +810,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     }));
 
     return convData.videoUrl;
-  }, [canvasAspectRatio, script, timelineState, duration, playbackDuration, exportDuration, exportFileName, captionPresetColor, audioElement, audioOutputStream]);
+  }, [canvasAspectRatio, script, timelineState, duration, playbackDuration, exportDuration, exportFileName, captionPresetColor, audioElement, audioOutputStream, exportSettings]);
 
   useEffect(() => {
     const handleTimelineState = (e: Event) => {
@@ -1666,7 +1691,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       musicVolume: 0.65,
       sfxVolume: 0.85,
       duckingSettings: (script as any).soundDesign?.ducking || { active: true, threshold: 0.045, ratio: 4.5, attackMs: 25, releaseMs: 320 },
-      fps: 30,
+      fps: exportSettings.fps,
+      videoBitrate: exportSettings.videoBitrate,
+      codec: exportSettings.codec,
+      container: exportSettings.container,
+      audioSampleRate: exportSettings.audioSampleRate,
+      audioBitrate: exportSettings.audioBitrate,
+      resolution: exportSettings.resolution,
     };
 
     const res = await fetch('/api/workspace/render-video', {
@@ -1686,7 +1717,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     }
 
     return await buildFramesAndTranscodeMp4(true);
-  }, [canvasAspectRatio, script, timelineState, effectiveVisualClips, duration, playbackDuration, exportDuration, exportFileName, customVideoUrl, customImageUrl, activeBackdrop, activeStoryboardVideo, activeStoryboardImage, audioUrl, musicUrl, captionPresetColor, captionPresetFontFamily, captionPresetTextTransform, filterSettings, volume, buildFramesAndTranscodeMp4]);
+  }, [canvasAspectRatio, script, timelineState, effectiveVisualClips, duration, playbackDuration, exportDuration, exportFileName, customVideoUrl, customImageUrl, activeBackdrop, activeStoryboardVideo, activeStoryboardImage, audioUrl, musicUrl, captionPresetColor, captionPresetFontFamily, captionPresetTextTransform, filterSettings, volume, exportSettings, buildFramesAndTranscodeMp4]);
 
   // Expose global frame builder for live YouTube publishing
   useEffect(() => {
@@ -1709,7 +1740,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         const safeName = (script.title || exportFileName || 'apexmind-video').trim().replace(/[<>:"/\\|?*]+/g, '').slice(0, 80) || 'apexmind-video';
         const link = document.createElement('a');
         link.href = videoUrl;
-        link.download = `${safeName}.mp4`;
+        link.download = `${safeName}.${exportSettings.container}`;
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -1726,7 +1757,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isExporting, renderBroadcastStudioVideo, script.title, exportFileName, onExportComplete]);
+  }, [isExporting, renderBroadcastStudioVideo, script.title, exportFileName, exportSettings.container, onExportComplete]);
 
   // Auto-reload video element only when active source changes
   useEffect(() => {
@@ -2053,6 +2084,16 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     } else if (inAnim === 'soft-reveal') {
       inOpacity = inProg;
       inTransform = `scale(${0.9 + inProg * 0.1})`;
+    } else if (inAnim === 'zoom-blur') {
+      inOpacity = inProg;
+      inBlur = (1 - inProg) * 12;
+      inTransform = `scale(${1.12 - inProg * 0.12})`;
+    } else if (inAnim === 'rotate-in') {
+      inOpacity = inProg;
+      inTransform = `rotate(${(1 - inProg) * -45}deg) scale(${0.85 + inProg * 0.15})`;
+    } else if (inAnim === 'drift') {
+      inOpacity = inProg;
+      inTransform = `translateY(${(1 - inProg) * -12}%)`;
     } else if (inAnim === 'circle') {
       inClipPath = `circle(${inProg * 75}% at 50% 50%)`;
     } else if (inAnim === 'slide-left') {
@@ -2084,6 +2125,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       inClipPath = `inset(0 ${(1 - inProg) * 100}% 0 0)`;
     } else if (inAnim === 'wipe-down') {
       inClipPath = `inset(0 0 ${(1 - inProg) * 100}% 0)`;
+    } else if (inAnim === 'wipe-left') {
+      inClipPath = `inset(0 0 0 ${(1 - inProg) * 100}%)`;
+    } else if (inAnim === 'wipe-up') {
+      inClipPath = `inset(${(1 - inProg) * 100}% 0 0 0)`;
     } else if (inAnim === 'diamond') {
       const p = inProg * 50;
       inClipPath = `polygon(50% ${50 - p}%, ${50 + p}% 50%, 50% ${50 + p}%, ${50 - p}% 50%)`;
@@ -2117,6 +2162,16 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     } else if (outAnim === 'soft-reveal') {
       outOpacity = outProg;
       outTransform = `scale(${0.9 + outProg * 0.1})`;
+    } else if (outAnim === 'zoom-blur') {
+      outOpacity = outProg;
+      outBlur = (1 - outProg) * 12;
+      outTransform = `scale(${0.88 + outProg * 0.12})`;
+    } else if (outAnim === 'rotate-in') {
+      outOpacity = outProg;
+      outTransform = `rotate(${(outProg - 1) * -45}deg) scale(${0.85 + outProg * 0.15})`;
+    } else if (outAnim === 'drift') {
+      outOpacity = outProg;
+      outTransform = `translateY(${(outProg - 1) * 12}%)`;
     } else if (outAnim === 'circle') {
       outClipPath = `circle(${outProg * 75}% at 50% 50%)`;
     } else if (outAnim === 'slide-left') {
@@ -2147,6 +2202,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     } else if (outAnim === 'wipe-right') {
       outClipPath = `inset(0 0 0 ${(1 - outProg) * 100}%)`;
     } else if (outAnim === 'wipe-down') {
+      outClipPath = `inset(${(1 - outProg) * 100}% 0 0 0)`;
+    } else if (outAnim === 'wipe-left') {
+      outClipPath = `inset(0 0 0 ${(1 - outProg) * 100}%)`;
+    } else if (outAnim === 'wipe-up') {
       outClipPath = `inset(${(1 - outProg) * 100}% 0 0 0)`;
     } else if (outAnim === 'diamond') {
       const p = outProg * 50;
@@ -2214,10 +2273,41 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     overlayStyle.fitMode === 'fill' ? 'scale(1.15)' : '',
   ].filter(Boolean).join(' ');
 
+  const overlayMotionElapsed = Math.max(0, currentTime - timelineState.overlayStart - (overlayStyle.delay || 0));
+  const overlayMotionDuration = Math.max(0.1, overlayStyle.animDuration || 0.35);
+  const overlayMotionProgress = Math.min(1, overlayMotionElapsed / overlayMotionDuration);
+  let overlayMotionOpacity = 1;
+  let overlayMotionTransform = '';
+  if (overlayStyle.animation !== 'none' && isOverlayTimeActive && overlayMotionElapsed < overlayMotionDuration) {
+    if (overlayStyle.animation === 'fade') {
+      overlayMotionOpacity = overlayMotionProgress;
+    } else if (overlayStyle.animation === 'pop') {
+      overlayMotionOpacity = overlayMotionProgress;
+      overlayMotionTransform = `scale(${0.65 + overlayMotionProgress * 0.35})`;
+    } else if (overlayStyle.animation === 'slide-up') {
+      overlayMotionOpacity = overlayMotionProgress;
+      overlayMotionTransform = `translateY(${(1 - overlayMotionProgress) * 24}px)`;
+    } else if (overlayStyle.animation === 'slide-left') {
+      overlayMotionOpacity = overlayMotionProgress;
+      overlayMotionTransform = `translateX(${(1 - overlayMotionProgress) * 24}px)`;
+    } else if (overlayStyle.animation === 'slide-right') {
+      overlayMotionOpacity = overlayMotionProgress;
+      overlayMotionTransform = `translateX(${(overlayMotionProgress - 1) * 24}px)`;
+    } else if (overlayStyle.animation === 'bounce') {
+      overlayMotionOpacity = overlayMotionProgress;
+      overlayMotionTransform = `scale(${1 + Math.sin(overlayMotionProgress * Math.PI) * 0.2})`;
+    } else if (overlayStyle.animation === 'spin') {
+      overlayMotionOpacity = overlayMotionProgress;
+      overlayMotionTransform = `rotate(${(1 - overlayMotionProgress) * -180}deg) scale(${0.7 + overlayMotionProgress * 0.3})`;
+    }
+  } else if (overlayStyle.animation === 'pulse' && isOverlayTimeActive) {
+    overlayMotionTransform = `scale(${1 + Math.sin(currentTime * 6) * 0.06})`;
+  }
+
   const overlayPositionStyle = {
     left: `${overlayStyle.posX ?? 50}%`,
     top: `${overlayStyle.posY ?? 78}%`,
-    transform: `translate(-50%, -50%) ${overlayTransform}`,
+    transform: `translate(-50%, -50%) ${overlayTransform} ${overlayMotionTransform}`,
   };
 
   // Caption font size styling map
@@ -2538,7 +2628,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
         {/* Dynamic Canvas Progress Bar Overlay */}
         {effectiveOverlay?.type === 'progress' && (
-          <div className="absolute top-0 inset-x-0 h-1.5 bg-[#262626] z-30 overflow-hidden pointer-events-none" style={{ opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0 }}>
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-[#262626] z-30 overflow-hidden pointer-events-none" style={{ opacity: overlayEnabled && isOverlayTimeActive ? (overlayStyle.opacity / 100) * overlayMotionOpacity : 0 }}>
             <div
               className="h-full transition-all duration-200"
               style={{
@@ -2574,7 +2664,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         {effectiveOverlay?.type === 'badge' && (
           <div
             className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-200"
-            style={{ opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0 }}
+            style={{ opacity: overlayEnabled && isOverlayTimeActive ? (overlayStyle.opacity / 100) * overlayMotionOpacity : 0 }}
           >
             <div
               ref={overlayRef}
@@ -2583,9 +2673,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               style={overlayPositionStyle}
             >
               <span
-                className="rounded-full font-black uppercase text-white shadow-lg border border-white/20 tracking-wider pointer-events-none"
+                className="rounded-full font-black uppercase shadow-lg border border-white/20 tracking-wider pointer-events-none"
                 style={{
                   backgroundColor: overlayStyle.accentColor,
+                  color: overlayStyle.textColor || '#FFFFFF',
                   fontSize: `${Math.max(8, Math.min(20, Math.round(10 * canvasScale)))}px`,
                   padding: `${Math.round(2 * canvasScale)}px ${Math.round(10 * canvasScale)}px`,
                 }}
@@ -2604,8 +2695,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             className="absolute z-20 cursor-default select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
             style={{
               ...overlayPositionStyle,
+              color: overlayStyle.textColor || '#FFFFFF',
               fontSize: `${Math.max(16, Math.min(64, Math.round(30 * canvasScale)))}px`,
-              opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0,
+              opacity: overlayEnabled && isOverlayTimeActive ? (overlayStyle.opacity / 100) * overlayMotionOpacity : 0,
             }}
           >
             {effectiveOverlay.value}
@@ -2617,12 +2709,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           <div
             ref={overlayRef}
             onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute z-20 rounded-xl border border-white/20 bg-black/70 backdrop-blur-md text-white font-bold cursor-default select-none shadow-xl transition-opacity duration-200"
+            className="absolute z-20 rounded-xl border border-white/20 bg-black/70 backdrop-blur-md font-bold cursor-default select-none shadow-xl transition-opacity duration-200"
             style={{
               ...overlayPositionStyle,
+              color: overlayStyle.textColor || '#FFFFFF',
               fontSize: `${Math.max(9, Math.min(24, Math.round(12 * canvasScale)))}px`,
               padding: `${Math.round(6 * canvasScale)}px ${Math.round(12 * canvasScale)}px`,
-              opacity: overlayEnabled && isOverlayTimeActive ? overlayStyle.opacity / 100 : 0,
+              opacity: overlayEnabled && isOverlayTimeActive ? (overlayStyle.opacity / 100) * overlayMotionOpacity : 0,
             }}
           >
             {effectiveOverlay.value || effectiveOverlay.label || effectiveOverlay.name}

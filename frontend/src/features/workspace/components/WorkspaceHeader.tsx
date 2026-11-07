@@ -45,6 +45,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   const [hasTimelineContent, setHasTimelineContent] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportContainer, setExportContainer] = useState<'mp4' | 'webm' | 'mov'>('mp4');
   const [videoTitle, setVideoTitle] = useState('');
 
   // Omnichannel Modals State
@@ -105,6 +106,11 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
       }
     };
 
+    const handleExportSettings = (e: Event) => {
+      const settings = (e as CustomEvent<{ container: 'mp4' | 'webm' | 'mov' }>).detail;
+      if (settings?.container) setExportContainer(settings.container);
+    };
+
     const handleSaveDraftState = (e: Event) => {
       const customEvent = e as CustomEvent<{ saved: boolean; message: string }>;
       if (!customEvent.detail) return;
@@ -116,6 +122,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
     window.addEventListener('workspace:panel-state', handlePanelState);
     window.addEventListener('workspace:title-change', handleTitleState);
     window.addEventListener('workspace:export-state', handleExportState);
+    window.addEventListener('workspace:export-settings', handleExportSettings);
     window.addEventListener('workspace:save-draft-state', handleSaveDraftState);
 
     return () => {
@@ -123,6 +130,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
       window.removeEventListener('workspace:panel-state', handlePanelState);
       window.removeEventListener('workspace:title-change', handleTitleState);
       window.removeEventListener('workspace:export-state', handleExportState);
+      window.removeEventListener('workspace:export-settings', handleExportSettings);
       window.removeEventListener('workspace:save-draft-state', handleSaveDraftState);
     };
   }, []);
@@ -319,7 +327,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             }
           >
             <Download className={`w-3 h-3 ${!hasTimelineContent ? 'text-[#3A3A3A]' : 'text-[#60A5FA]'}`} />
-            <span>{exporting ? (notice?.startsWith('Rendering') ? notice : 'Exporting…') : 'Export MP4'}</span>
+            <span>{exporting ? (notice?.startsWith('Rendering') ? notice : 'Exporting…') : `Export ${exportContainer.toUpperCase()}`}</span>
           </button>
 
           {/* Save to Website Library (Pill Button) */}

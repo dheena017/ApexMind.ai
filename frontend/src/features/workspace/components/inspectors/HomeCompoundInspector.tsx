@@ -1,26 +1,19 @@
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Check,
-  Copy,
   Film,
   Type,
   Mic,
-  Music,
   Layers,
   Sparkles,
   Youtube,
-  Zap,
-  AlertCircle,
-  Instagram,
   ChevronRight,
-  Clock,
-  Download, Share2,
+  Download,
   Upload,
-  Smartphone,
+  LoaderCircle,
 } from 'lucide-react';
-import { GeneratedScript } from '../../types';
+import { GeneratedScript, VideoExportSettings } from '../../types';
 
 export interface HomeCompoundInspectorProps {
   onPublish: () => void;
@@ -39,17 +32,6 @@ export interface HomeCompoundInspectorProps {
   ) => void;
 }
 
-const normalizeText = (value?: string): string => (value ?? '').replace(/[#@]/g, ' ').replace(/\s+/g, ' ').trim();
-
-const countWords = (value?: string): number => normalizeText(value).split(' ').filter(Boolean).length;
-
-const normalizeHashtags = (hashtags: string[]): string[] => Array.from(new Set(
-  hashtags
-    .map((tag) => tag.trim().replace(/^#+/, '').toLowerCase())
-    .filter(Boolean)
-    .map((tag) => `#${tag}`),
-));
-
 export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   onPublish,
   publishing,
@@ -60,40 +42,64 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
   canvasAspectRatio = '9:16',
   onSelectCompound,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'audit' | 'distribute' | 'codec'>('overview');
-  const [copiedMetadata, setCopiedMetadata] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'codec'>('overview');
 
   // Dynamic user-customizable Codec & Export settings
-  const [selectedResolution, setSelectedResolution] = useState<'1080x1920' | '1920x1080' | '1080x1080' | '1080x1350' | '3840x2160'>('1080x1920');
   const [selectedFps, setSelectedFps] = useState<'24' | '30' | '60'>('60');
   const [selectedBitrate, setSelectedBitrate] = useState<'4' | '8' | '16' | '25'>('8');
   const [selectedCodec, setSelectedCodec] = useState<'h264' | 'hevc' | 'vp9' | 'av1'>('h264');
   const [selectedContainer, setSelectedContainer] = useState<'mp4' | 'webm' | 'mov'>('mp4');
   const [selectedAudioSampleRate, setSelectedAudioSampleRate] = useState<'24000' | '44100' | '48000'>('24000');
   const [selectedAudioBitrate, setSelectedAudioBitrate] = useState<'128' | '192' | '320'>('192');
+  const [selectedResolution, setSelectedResolution] = useState<VideoExportSettings['resolution']>(1080);
+  const [hasTimelineContent, setHasTimelineContent] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  const title = script?.title || '';
-  const hook = script?.hook || '';
-  const cta = script?.cta || '';
-  const hashtags = script?.hashtags || [];
-  const handleCopyMetadata = () => {
-    const text = `${title || 'ApexMind Video'}\n\n${script?.quote || ''}\n\n${hashtags.join(' ')}`;
-    navigator.clipboard?.writeText(text);
-    setCopiedMetadata(true);
-    setTimeout(() => setCopiedMetadata(false), 2000);
-  };
+  useEffect(() => {
+    const settings: VideoExportSettings = {
+      fps: Number(selectedFps) as VideoExportSettings['fps'],
+      videoBitrate: Number(selectedBitrate) as VideoExportSettings['videoBitrate'],
+      codec: selectedCodec,
+      container: selectedContainer,
+      audioSampleRate: Number(selectedAudioSampleRate) as VideoExportSettings['audioSampleRate'],
+      audioBitrate: Number(selectedAudioBitrate) as VideoExportSettings['audioBitrate'],
+      resolution: selectedResolution,
+    };
+    window.dispatchEvent(new CustomEvent<VideoExportSettings>('workspace:export-settings', { detail: settings }));
+  }, [selectedFps, selectedBitrate, selectedCodec, selectedContainer, selectedAudioSampleRate, selectedAudioBitrate, selectedResolution]);
+
+  useEffect(() => {
+    const handlePublishState = (event: Event) => {
+      const detail = (event as CustomEvent<{ hasTimelineContent?: boolean }>).detail;
+      if (detail?.hasTimelineContent !== undefined) {
+        setHasTimelineContent(detail.hasTimelineContent);
+      }
+    };
+    const handleExportState = (event: Event) => {
+      const detail = (event as CustomEvent<{ exporting: boolean }>).detail;
+      if (detail) setExporting(detail.exporting);
+    };
+
+    window.addEventListener('workspace:publish-state', handlePublishState);
+    window.addEventListener('workspace:export-state', handleExportState);
+    return () => {
+      window.removeEventListener('workspace:publish-state', handlePublishState);
+      window.removeEventListener('workspace:export-state', handleExportState);
+    };
+  }, []);
 
   const compoundShortcuts = [
     { id: 'video' as const, label: 'Video Canvas & Backdrop (V1)', icon: Film, color: 'text-amber-400', bg: 'bg-amber-400/10', badge: 'Visuals' },
     { id: 'video' as const, videoTab: 'style' as const, label: 'Video Looks & Grading', icon: Sparkles, color: 'text-sky-400', bg: 'bg-sky-400/10', badge: 'Looks' },
     { id: 'text' as const, label: 'Typography & Captions (T1)', icon: Type, color: 'text-blue-400', bg: 'bg-blue-400/10', badge: 'Captions' },
     { id: 'voice' as const, label: 'Voiceover Audio (A1)', icon: Mic, color: 'text-emerald-400', bg: 'bg-emerald-400/10', badge: 'Voice' },
-    { id: 'music' as const, label: 'Soundtrack Mix (A2)', icon: Music, color: 'text-blue-400', bg: 'bg-purple-400/10', badge: 'Music' },
     { id: 'overlay' as const, label: 'Stickers & Graphic Badges', icon: Layers, color: 'text-indigo-400', bg: 'bg-indigo-400/10', badge: 'Overlays' },
   ];
 
-  const spokenWordCount = countWords(`${hook} ${script?.quote ?? ''} ${cta}`);
-  const spokenWordsPerMinute = duration > 0 ? Math.round((spokenWordCount / duration) * 60) : 0;
+  const optionCardClass =
+    'p-3.5 rounded-2xl bg-[#151515] border border-[#2A2A2A] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]';
+  const optionChipClass =
+    'min-h-[36px] px-2 py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 cursor-pointer select-none';
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none">
@@ -102,9 +108,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
         <ScrollableTabs
           tabs={[
             { id: 'overview', label: 'Overview', icon: Layers },
-            { id: 'audit', label: 'Audit', icon: AlertCircle },
-            { id: 'distribute', label: 'Share', icon: Share2 },
-            { id: 'codec', label: 'Codec', icon: Download },
+            { id: 'codec', label: 'Export Settings', icon: Download },
           ]}
           activeTab={activeSubTab}
           onChange={(tab) => setActiveSubTab(tab as any)}
@@ -185,188 +189,17 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
           </div>
         )}
 
-        {/* ─────── AUDIT TAB ─────── */}
-        {activeSubTab === 'audit' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            {/* Platform Requirements */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
-                YouTube Shorts Checks
-              </span>
-              {[
-                {
-                  label: `Vertical format: ${canvasAspectRatio}`,
-                  pass: canvasAspectRatio === '9:16',
-                },
-                {
-                  label: `Short-form duration: ${duration > 0 ? `${duration.toFixed(1)}s` : 'not set'} (target ≤60s)`,
-                  pass: duration > 0 && duration <= 60,
-                },
-                {
-                  label: 'Opening hook added',
-                  pass: normalizeText(hook).length > 0,
-                },
-                {
-                  label: 'Call-to-action added',
-                  pass: normalizeText(cta).length > 0,
-                },
-                {
-                  label: `Export: ${selectedContainer.toUpperCase()} / ${selectedCodec.toUpperCase()}`,
-                  pass: selectedContainer === 'mp4' && selectedCodec === 'h264',
-                },
-                {
-                  label: `Video title: ${title.trim().length}/100 characters`,
-                  pass: title.trim().length > 0 && title.trim().length <= 100,
-                },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  {item.pass
-                    ? <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                    : <AlertCircle className="w-3 h-3 text-amber-400 shrink-0" />}
-                  <span className={`text-[11px] ${item.pass ? 'text-[#D4D4D8]' : 'text-amber-300'}`}>{item.label}</span>
-                </div>
-              ))}
-              <p className="text-[9px] leading-relaxed text-slate-500 border-t border-[#25252A] pt-2">
-                Checks use current project settings and are guidance, not a guarantee of platform acceptance.
-              </p>
-            </div>
-
-            {/* Measurable readiness signals */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">Readiness Signals</span>
-              {[
-                {
-                  label: 'Spoken pace',
-                  icon: Clock,
-                  value: !spokenWordCount ? 'Add spoken script' : duration > 0 ? `${spokenWordsPerMinute} words/min` : 'Set duration',
-                  color: 'text-blue-400',
-                  pass: spokenWordsPerMinute >= 110 && spokenWordsPerMinute <= 175,
-                },
-                {
-                  label: 'Opening hook',
-                  icon: Zap,
-                  value: hook ? `${countWords(hook)} words` : 'Missing',
-                  color: 'text-amber-400',
-                  pass: countWords(hook) >= 5 && countWords(hook) <= 20,
-                },
-                {
-                  label: 'Captions',
-                  icon: Type,
-                  value: script?.subtitles?.length ? `${script.subtitles.length} lines` : 'Not added',
-                  color: 'text-sky-400',
-                  pass: (script?.subtitles?.length ?? 0) > 0,
-                },
-                {
-                  label: 'Short-form format',
-                  icon: Smartphone,
-                  value: canvasAspectRatio === '9:16' ? '9:16 · vertical' : `${canvasAspectRatio} · not vertical`,
-                  color: 'text-emerald-400',
-                  pass: canvasAspectRatio === '9:16',
-                },
-              ].map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Icon className={`w-3 h-3 ${item.color}`} />
-                      <span className="text-[11px] text-slate-400">{item.label}</span>
-                    </div>
-                    <span className={`text-[11px] font-bold ${item.pass ? item.color : 'text-amber-400'}`}>{item.value}</span>
-                  </div>
-                );
-              })}
-              <p className="text-[9px] leading-relaxed text-slate-500 border-t border-[#25252A] pt-2">
-                Checklist guidance only; actual reach depends on audience response and platform distribution.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ─────── DISTRIBUTE TAB ─────── */}
-        {activeSubTab === 'distribute' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">Publish & Share</span>
-              {[
-                { label: 'YouTube Shorts', icon: Youtube, desc: 'Direct API publish', color: 'text-red-400', action: onPublish, disabled: !canPublish || publishing },
-                { label: 'Instagram Reels', icon: Instagram, desc: 'Export optimized video', color: 'text-pink-400', action: () => window.dispatchEvent(new CustomEvent('workspace:export-video')), disabled: false },
-                { label: 'Copy Video Metadata', icon: Copy, desc: 'Title + Description + Tags', color: 'text-blue-400', action: handleCopyMetadata, disabled: false },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={item.action}
-                    disabled={item.disabled}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-[#181818] hover:bg-[#26262C] hover:border-white/10 border border-[#242424] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-left group"
-                  >
-                    <Icon className={`w-4 h-4 ${item.color} shrink-0`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-white">{item.label}</p>
-                      <p className="text-[10px] text-slate-500">{item.desc}</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#555] group-hover:text-white transition-colors" />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Export Actions */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">One-Click Render</span>
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent('workspace:export-video'))}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-xs font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Render & Download {selectedContainer.toUpperCase()} ({selectedResolution})
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* ─────── CODEC & EXPORT TAB (Fully User Configurable) ─────── */}
         {activeSubTab === 'codec' && (
           <div className="flex flex-col gap-3 pt-0.5">
-            {/* Resolution Selector */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <div className="flex justify-between items-center text-[10px] font-mono-studio text-slate-500 uppercase tracking-wider font-bold">
-                <span>Output Resolution</span>
-                <span className="text-white font-semibold">{selectedResolution}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {[
-                  { id: '1080x1920' as const, label: '1080×1920 (9:16)', badge: 'Shorts/Reels' },
-                  { id: '1920x1080' as const, label: '1920×1080 (16:9)', badge: 'Landscape' },
-                  { id: '1080x1080' as const, label: '1080×1080 (1:1)', badge: 'Square' },
-                  { id: '1080x1350' as const, label: '1080×1350 (4:5)', badge: 'Portrait Feed' },
-                  { id: '3840x2160' as const, label: '3840×2160 (4K)', badge: 'Ultra HD' },
-                ].map((res) => (
-                  <button
-                    key={res.id}
-                    type="button"
-                    onClick={() => setSelectedResolution(res.id)}
-                    className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
-                      selectedResolution === res.id
-                        ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                        : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
-                    }`}
-                  >
-                    <p className="text-[11px] font-bold leading-tight">{res.label}</p>
-                    <span className={`text-[9px] ${selectedResolution === res.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{res.badge}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Framerate & Bitrate */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between text-[10px] font-mono-studio text-slate-500 uppercase font-bold">
+            <div className={`${optionCardClass} flex flex-col gap-2.5`}>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio text-slate-500 uppercase tracking-[0.14em] font-bold">
                   <span>Framerate</span>
-                  <span className="text-white font-semibold">{selectedFps} FPS</span>
+                  <span className="rounded-full border border-white/10 bg-[#1d1d1d] px-1.5 py-0.5 text-[10px] text-white font-semibold tracking-normal">
+                    {selectedFps} FPS
+                  </span>
                 </div>
                 <div className="flex gap-1.5">
                   {(['24', '30', '60'] as const).map((fps) => (
@@ -374,10 +207,10 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       key={fps}
                       type="button"
                       onClick={() => setSelectedFps(fps)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                      className={`${optionChipClass} flex-1 ${
                         selectedFps === fps
-                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
+                          ? 'bg-gradient-to-b from-[#2d74ff] to-[#1e5fe6] border-[#7bb0ff]/60 text-white shadow-[0_8px_20px_rgba(37,99,235,0.22)]'
+                          : 'bg-[#1a1a1a] border-[#2b2b2b] text-zinc-400 hover:bg-[#232326] hover:border-white/10 hover:text-white'
                       }`}
                     >
                       {fps} FPS
@@ -386,10 +219,12 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between text-[10px] font-mono-studio text-slate-500 uppercase font-bold">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio text-slate-500 uppercase tracking-[0.14em] font-bold">
                   <span>Video Target Bitrate</span>
-                  <span className="text-white font-semibold">{selectedBitrate} Mbps</span>
+                  <span className="rounded-full border border-white/10 bg-[#1d1d1d] px-1.5 py-0.5 text-[10px] text-white font-semibold tracking-normal">
+                    {selectedBitrate} Mbps
+                  </span>
                 </div>
                 <div className="flex gap-1.5">
                   {[
@@ -402,10 +237,10 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                       key={bit.id}
                       type="button"
                       onClick={() => setSelectedBitrate(bit.id)}
-                      className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                      className={`${optionChipClass} flex-1 text-[10px] ${
                         selectedBitrate === bit.id
-                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
+                          ? 'bg-gradient-to-b from-[#2d74ff] to-[#1e5fe6] border-[#7bb0ff]/60 text-white shadow-[0_8px_20px_rgba(37,99,235,0.22)]'
+                          : 'bg-[#1a1a1a] border-[#2b2b2b] text-zinc-400 hover:bg-[#232326] hover:border-white/10 hover:text-white'
                       }`}
                     >
                       {bit.label}
@@ -415,10 +250,32 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
               </div>
             </div>
 
+            <div className={`${optionCardClass} flex flex-col gap-1.5`}>
+              <div className="flex items-center justify-between text-[10px] font-mono-studio text-slate-500 uppercase tracking-[0.14em] font-bold">
+                <span>Output Resolution</span>
+                <span className="text-white tracking-normal">{selectedResolution}p</span>
+              </div>
+              <div className="flex gap-1.5">
+                {([720, 1080, 1440] as const).map((resolution) => (
+                  <button
+                    key={resolution}
+                    type="button"
+                    onClick={() => setSelectedResolution(resolution)}
+                    className={`${optionChipClass} flex-1 ${selectedResolution === resolution
+                      ? 'bg-gradient-to-b from-[#2d74ff] to-[#1e5fe6] border-[#7bb0ff]/60 text-white shadow-[0_8px_20px_rgba(37,99,235,0.22)]'
+                      : 'bg-[#1a1a1a] border-[#2b2b2b] text-zinc-400 hover:bg-[#232326] hover:border-white/10 hover:text-white'
+                    }`}
+                  >
+                    {resolution}p
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Video Codec & Container */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-mono-studio text-slate-500 uppercase font-bold">Video Codec</span>
+            <div className={`${optionCardClass} flex flex-col gap-2.5`}>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-[0.14em] font-bold">Video Codec</span>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { id: 'h264' as const, label: 'H.264 / AVC', desc: 'Universal compatibility' },
@@ -429,32 +286,44 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                     <button
                       key={codec.id}
                       type="button"
-                      onClick={() => setSelectedCodec(codec.id)}
-                      className={`p-2 rounded-lg border text-left cursor-pointer transition-colors ${
+                      onClick={() => {
+                        setSelectedCodec(codec.id);
+                        if (codec.id === 'vp9') setSelectedContainer('webm');
+                        else if (codec.id === 'av1' && selectedContainer === 'mov') setSelectedContainer('mp4');
+                        else if ((codec.id === 'h264' || codec.id === 'hevc') && selectedContainer === 'webm') setSelectedContainer('mp4');
+                      }}
+                      className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all duration-200 ${
                         selectedCodec === codec.id
-                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
+                          ? 'bg-gradient-to-b from-[#2d74ff] to-[#1e5fe6] border-[#7bb0ff]/60 text-white shadow-[0_10px_22px_rgba(37,99,235,0.2)]'
+                          : 'bg-[#1a1a1a] border-[#2b2b2b] text-zinc-400 hover:bg-[#232326] hover:border-white/10 hover:text-white'
                       }`}
                     >
-                      <p className="text-[10px] font-bold">{codec.label}</p>
-                      <p className={`text-[8.5px] ${selectedCodec === codec.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>{codec.desc}</p>
+                      <p className="text-[10px] font-bold leading-none">{codec.label}</p>
+                      <p className={`mt-1 text-[8.5px] leading-snug ${selectedCodec === codec.id ? 'text-blue-100/90 font-medium' : 'text-zinc-500'}`}>
+                        {codec.desc}
+                      </p>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-mono-studio text-slate-500 uppercase font-bold">File Container</span>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-[0.14em] font-bold">File Container</span>
                 <div className="flex gap-1.5">
                   {(['mp4', 'webm', 'mov'] as const).map((cnt) => (
                     <button
                       key={cnt}
                       type="button"
-                      onClick={() => setSelectedContainer(cnt)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase border transition-colors cursor-pointer ${
+                      onClick={() => {
+                        setSelectedContainer(cnt);
+                        if (cnt === 'webm' && selectedCodec !== 'vp9' && selectedCodec !== 'av1') setSelectedCodec('vp9');
+                        if (cnt === 'mov' && (selectedCodec === 'vp9' || selectedCodec === 'av1')) setSelectedCodec('h264');
+                        if (cnt === 'mp4' && selectedCodec === 'vp9') setSelectedCodec('h264');
+                      }}
+                      className={`${optionChipClass} flex-1 text-xs uppercase ${
                         selectedContainer === cnt
-                          ? 'bg-[#2563EB] border-[#60A5FA]/40 text-white shadow-xs'
-                          : 'bg-[#181818] border-[#242424] text-zinc-400 hover:bg-[#26262C] hover:border-white/10 hover:text-white'
+                          ? 'bg-gradient-to-b from-[#2d74ff] to-[#1e5fe6] border-[#7bb0ff]/60 text-white shadow-[0_8px_20px_rgba(37,99,235,0.22)]'
+                          : 'bg-[#1a1a1a] border-[#2b2b2b] text-zinc-400 hover:bg-[#232326] hover:border-white/10 hover:text-white'
                       }`}
                     >
                       .{cnt}
@@ -465,10 +334,10 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
             </div>
 
             {/* Audio Encoder Options */}
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <span className="text-[10px] font-mono-studio text-slate-500 uppercase font-bold">Audio Output Encoding</span>
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div className="flex flex-col gap-1">
+            <div className={`${optionCardClass} flex flex-col gap-2.5`}>
+              <span className="text-[10px] font-mono-studio text-slate-500 uppercase tracking-[0.14em] font-bold">Audio Output Encoding</span>
+              <div className="grid grid-cols-2 gap-2.5 text-[11px]">
+                <div className="flex flex-col gap-1.5">
                   <span className="text-slate-500">Sample Rate:</span>
                   <CustomSelect
                     size="sm"
@@ -482,7 +351,7 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                   />
                 </div>
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                   <span className="text-slate-500">Bitrate:</span>
                   <CustomSelect
                     size="sm"
@@ -497,6 +366,21 @@ export const HomeCompoundInspector: React.FC<HomeCompoundInspectorProps> = ({
                 </div>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('workspace:export-video'))}
+              disabled={exporting || !hasTimelineContent}
+              title={!hasTimelineContent ? 'Add media to the timeline to export' : exporting ? 'Rendering the final video...' : 'Export the composed video'}
+              className={`flex w-full min-h-10 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition-all ${
+                exporting || !hasTimelineContent
+                  ? 'cursor-not-allowed border-[#2A2A2A] bg-[#171717] text-zinc-500'
+                  : 'cursor-pointer border-[#7bb0ff]/50 bg-gradient-to-b from-[#2d74ff] to-[#1e5fe6] text-white shadow-[0_8px_20px_rgba(37,99,235,0.22)] hover:brightness-110'
+              }`}
+            >
+              {exporting ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {exporting ? 'Exporting...' : `Export ${selectedContainer.toUpperCase()}`}
+            </button>
           </div>
         )}
       </div>

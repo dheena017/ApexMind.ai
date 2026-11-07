@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
-  Volume2,
   Mic,
   Activity,
   Headphones,
   Sliders,
+  Volume2,
   Play,
   VolumeX,
   Clock,
@@ -54,13 +54,6 @@ const EQ_PRESETS = [
   { id: 'lofi', label: 'Radio Lo-Fi', bass: -6, mid: 5, treble: -4, desc: 'Vintage telephone effect' },
 ];
 
-const SFX_ITEMS = [
-  { id: 'whoosh', name: 'Whoosh Hit', desc: 'Fast cinematic transition', audioUrl: 'https://cdn.freesound.org/previews/387/387232_1474204-lq.mp3' },
-  { id: 'riser', name: 'Bass Drop', desc: 'Deep sub impact', audioUrl: 'https://cdn.freesound.org/previews/442/442943_5121236-lq.mp3' },
-  { id: 'bell', name: 'Chime Ding', desc: 'Positive attention bell', audioUrl: 'https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3' },
-  { id: 'pop', name: 'Bubble Pop', desc: 'Light interface pop', audioUrl: 'https://cdn.freesound.org/previews/242/242501_4414128-lq.mp3' },
-];
-
 export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   audioType,
   voices,
@@ -76,7 +69,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   currentTime = 0,
   script,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'audio' | 'eq' | 'effects' | 'sfx' | 'time'>('audio');
+  const [activeSubTab, setActiveSubTab] = useState<'audio' | 'eq' | 'effects'>('audio');
 
   // Volume & Dynamics
   const [localVolume, setLocalVolume] = useState(Math.round(volume * 100));
@@ -167,9 +160,6 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   const [trimEnd, setTrimEnd] = useState(duration > 0 ? duration : 15);
   const [loopAudio, setLoopAudio] = useState(true);
 
-  // SFX preview audio state
-  const [previewingSfx, setPreviewingSfx] = useState<string | null>(null);
-
   useEffect(() => {
     setLocalVolume(Math.round(volume * 100));
   }, [volume]);
@@ -221,14 +211,6 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
     setTreble(preset.treble);
   };
 
-  const handlePlaySfxPreview = (sfx: typeof SFX_ITEMS[0]) => {
-    setPreviewingSfx(sfx.id);
-    const audio = new Audio(sfx.audioUrl);
-    audio.volume = 0.8;
-    audio.play().catch(() => {});
-    audio.onended = () => setPreviewingSfx(null);
-  };
-
   const buildSpectrumBars = (volume: number, muted: boolean) =>
     Array.from({ length: 20 }, (_, index) => {
       if (muted) return 4;
@@ -259,8 +241,6 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
             { id: 'audio', label: 'Mix', icon: Sliders },
             { id: 'eq', label: 'EQ', icon: Activity },
             { id: 'effects', label: 'Effects', icon: Sparkles },
-            { id: 'sfx', label: 'SFX', icon: Volume2 },
-            { id: 'time', label: 'Time', icon: Clock },
           ]}
           activeTab={activeSubTab}
           onChange={(tab) => setActiveSubTab(tab as any)}
@@ -754,115 +734,6 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${noiseReduction ? 'left-5' : 'left-1'}`} />
                 </button>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── SFX BOARD TAB ── */}
-        {activeSubTab === 'sfx' && (
-          <div className="flex flex-col gap-3 pt-0.5">
-            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Quick SFX Triggers</span>
-            <div className="flex flex-col gap-1.5">
-              {SFX_ITEMS.map((sfx) => (
-                <div
-                  key={sfx.id}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-[#181818] border border-[#242424] hover:border-[#3B82F6]/50 transition-colors"
-                >
-                  <div>
-                    <span className="text-xs font-bold text-white block">{sfx.name}</span>
-                    <span className="text-[10px] text-slate-500">{sfx.desc}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handlePlaySfxPreview(sfx)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                        previewingSfx === sfx.id ? 'bg-emerald-600 text-white' : 'bg-[#111111] border border-[#242424] text-[#D4D4D8] hover:text-white'
-                      }`}
-                    >
-                      <Play className="w-3 h-3" />
-                      {previewingSfx === sfx.id ? 'Playing' : 'Preview'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        window.dispatchEvent(
-                          new CustomEvent('workspace:add-sfx-timeline', {
-                            detail: { id: sfx.id, name: sfx.name, audioUrl: sfx.audioUrl, duration: 0.6 },
-                          })
-                        );
-                      }}
-                      className="px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 bg-[#3B82F6]/20 hover:bg-[#3B82F6] text-sky-400 hover:text-white border border-[#3B82F6]/40 cursor-pointer transition-colors"
-                      title="Place SFX on multi-track timeline"
-                    >
-                      <span>+ Track</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── TIME & TRIM TAB ── */}
-        {activeSubTab === 'time' && (
-          <div className="flex flex-col gap-3.5 pt-0.5">
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2.5">
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Precision Audio Boundaries</span>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">In Point (Start)</span>
-                    <span className="font-mono-studio text-white">{trimStart.toFixed(1)}s</span>
-                  </div>
-                  <input
-                    type="range"
-                    step="0.1"
-                    min="0"
-                    max={Math.max(1, trimEnd - 0.5)}
-                    value={trimStart}
-                    onChange={(e) => setTrimStart(parseFloat(e.target.value))}
-                    className="w-full accent-blue-500 cursor-pointer"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Out Point (End)</span>
-                    <span className="font-mono-studio text-white">{trimEnd.toFixed(1)}s</span>
-                  </div>
-                  <input
-                    type="range"
-                    step="0.1"
-                    min={trimStart + 0.5}
-                    max={Math.max(15, duration)}
-                    value={trimEnd}
-                    onChange={(e) => setTrimEnd(parseFloat(e.target.value))}
-                    className="w-full accent-blue-500 cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center pt-2 border-t border-[#25252A] text-xs">
-                <span className="text-slate-500">Net Audio Duration:</span>
-                <span className="font-mono-studio text-emerald-400 font-bold">{Math.max(0, trimEnd - trimStart).toFixed(1)}s</span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-white">Loop Audio Segment</p>
-                <p className="text-[10px] text-slate-500">Seamlessly loop when playhead reaches end</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setLoopAudio(!loopAudio)}
-                className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                  loopAudio ? 'bg-[#2563EB]' : 'bg-[#242424]'
-                }`}
-              >
-                <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${loopAudio ? 'left-5' : 'left-1'}`} />
-              </button>
             </div>
           </div>
         )}
