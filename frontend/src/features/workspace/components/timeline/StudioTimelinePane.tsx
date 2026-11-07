@@ -526,9 +526,6 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         applyToAll?: boolean;
         colorLabel?: string;
         color?: string;
-        animationOut?: string;
-        animationInDuration?: number;
-        animationOutDuration?: number;
         fontFamily?: string;
         fontSize?: number;
         fontWeight?: string;
