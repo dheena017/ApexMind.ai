@@ -106,7 +106,7 @@ def test_three_tier_mode_resolution():
     assert analysis.characterCount == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_batch_storyboard_visual_generation(temp_orchestrator):
     """Verify batch visual production across scenes with voice timeline alignment."""
     orch, temp_dir = temp_orchestrator
@@ -150,7 +150,7 @@ async def test_batch_storyboard_visual_generation(temp_orchestrator):
     assert prev_end > 20.0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_scene_selective_regeneration_and_versioning(temp_orchestrator):
     """Verify single scene regeneration increments version from v1 to v2."""
     orch, temp_dir = temp_orchestrator

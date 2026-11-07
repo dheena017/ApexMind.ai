@@ -83,6 +83,10 @@ class ApprovalManager:
         # Verify every scene is in APPROVED status
         all_approved = all(s.get("status") == SceneVisualStatus.APPROVED.value for s in scenes_dict.values())
         if not all_approved:
+            if manifest.get("masterPreviewUrl"):
+                manifest["masterPreviewUrl"] = None
+                st.save_manifest(script_id, manifest)
+                st.invalidate_master_preview(script_id)
             return None
 
         s_dir = st.get_script_dir(script_id)

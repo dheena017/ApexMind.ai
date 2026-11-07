@@ -204,6 +204,19 @@ class VisualStorageManager:
         logger.info(f"[VisualStorage] Promoted master preview: {active_master_path} (v{v})")
         return active_master_path, public_url, v
 
+    def invalidate_master_preview(self, script_id: str):
+        """
+        Invalidates active and cached master previews when approved scene versions change.
+        """
+        s_dir = self.get_script_dir(script_id)
+        active_master = s_dir / "visual_master.mp4"
+        if active_master.exists():
+            try:
+                active_master.unlink()
+                logger.info(f"[VisualStorage] Invalidated master preview for {script_id}")
+            except Exception as exc:
+                logger.warning(f"[VisualStorage] Error removing master preview: {exc}")
+
     def load_manifest(self, script_id: str) -> Dict[str, Any]:
         """Loads the metadata sidecar manifest.json for the script."""
         manifest_path = self.get_script_dir(script_id) / "manifest.json"

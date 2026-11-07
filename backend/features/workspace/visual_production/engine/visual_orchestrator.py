@@ -11,6 +11,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -236,6 +237,7 @@ class VisualOrchestrator:
         version = self.storage.get_next_scene_version(script_id, scene_id)
 
         # Path-specific generator execution
+        start_prod = time.perf_counter()
         if resolved_path == ProductionMode.MEDIA:
             video_bytes, thumb_bytes, provenance = media_engine.resolve_and_produce_scene_media(
                 script_id=script_id,
@@ -263,23 +265,9 @@ class VisualOrchestrator:
                 aspect_ratio=aspect_ratio,
             )
         else:
-            video_bytes = self._create_placeholder_mp4(
-                scene_num=scene_num,
-                duration=target_duration,
-                path_type=resolved_path.value,
-            )
-            thumb_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00"
-            provider_name = "procedural_blender" if resolved_path == ProductionMode.THREE_D else "hybrid_compositor"
-            provenance = AssetLicenseProvenance(
-                provider=provider_name,
-                licenseType=LicenseType.PROCEDURAL if resolved_path == ProductionMode.THREE_D else LicenseType.CUSTOM,
-                commercialUseAllowed=True,
-                attributionRequired=False,
-                sourceUrl=f"https://apexmind.ai/assets/{resolved_path.value}/{scene_id}",
-                assetId=f"{resolved_path.value}_{scene_id}_v{version}",
-                sha256=hashlib.sha256(video_bytes).hexdigest(),
-                verifiedAt=datetime.now(timezone.utc).isoformat(),
-            )
+            raise ValueError(f"Unsupported production path: '{resolved_path}'")
+
+        prod_time = round(time.perf_counter() - start_prod, 2)
 
         # Atomic persistence
         vid_path, vid_url, v = self.storage.save_scene_video(
@@ -297,7 +285,7 @@ class VisualOrchestrator:
             version=v,
         )
 
-        # Quality Gate evaluation
+        # Quality Gate evaluation (Human review is mandatory; status never automatically set to approved)
         from backend.features.workspace.visual_production.quality import quality_gate
         qg = quality_gate.evaluate_scene_visuals(
             video_path=vid_path,
@@ -328,13 +316,12 @@ class VisualOrchestrator:
                 "visualComplexity": analysis.visualComplexity,
                 "cameraMovement": analysis.cameraMovementType,
                 "rationale": analysis.rationale,
+                "renderTimeSeconds": prod_time,
+                "computeDevice": "cpu",
+                "retryCount": 0,
             },
             updatedAt=datetime.now(timezone.utc).isoformat(),
         )
-
-    def _create_placeholder_mp4(self, scene_num: int, duration: float, path_type: str) -> bytes:
-        """Creates valid initial video bytes for pipeline testing."""
-        return f"MP4_VIDEO_SCENE_{scene_num}_{path_type}_{duration:.2f}s".encode("utf-8")
 
     async def regenerate_scene_visuals(
         self,
@@ -367,6 +354,13 @@ class VisualOrchestrator:
             scene_mode_override=mode_override,
             scene_data=target_scene,
         )
+
+        # Invalidate master preview since an approved scene version is being regenerated
+        self.storage.invalidate_master_preview(script_id)
+        manifest = self.storage.load_manifest(script_id)
+        if manifest.get("masterPreviewUrl"):
+            manifest["masterPreviewUrl"] = None
+            self.storage.save_manifest(script_id, manifest)
 
         failed_version = self.storage.get_next_scene_version(script_id, scene_id)
 

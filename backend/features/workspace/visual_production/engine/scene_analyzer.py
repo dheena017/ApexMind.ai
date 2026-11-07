@@ -121,20 +121,28 @@ def resolve_production_path(
 ) -> tuple[ProductionMode, SceneAnalysisResult]:
     """
     Resolves the actual production path using the 3-Tier Resolution Hierarchy:
-      Tier 1: Per-scene override (if set and not AUTOMATIC)
-      Tier 2: Project-level mode (if set and not AUTOMATIC)
-      Tier 3: Automatic content-based classification via Scene Analyzer
+      Tier 1: Explicit per-scene override (if specified):
+              - If explicitly AUTOMATIC, routes dynamically based on scene content.
+              - Otherwise, enforces the explicit scene mode (MEDIA, THREE_D, HYBRID).
+      Tier 2: Project-level mode (when no scene override is specified):
+              - If AUTOMATIC, routes dynamically based on scene content.
+              - Otherwise, uses project mode (MEDIA, THREE_D, HYBRID).
+      Tier 3: Default system fallback (ProductionMode.MEDIA).
     """
     analysis = analyze_scene_complexity(scene_data or {})
 
     # Tier 1: Per-scene explicit override
-    if scene_mode_override and scene_mode_override != ProductionMode.AUTOMATIC:
+    if scene_mode_override is not None:
+        if scene_mode_override == ProductionMode.AUTOMATIC:
+            return analysis.recommendedPath, analysis
         return scene_mode_override, analysis
 
-    # Tier 2: Project-level explicit mode
-    if project_mode and project_mode != ProductionMode.AUTOMATIC:
+    # Tier 2: Project-level mode
+    if project_mode is not None:
+        if project_mode == ProductionMode.AUTOMATIC:
+            return analysis.recommendedPath, analysis
         return project_mode, analysis
 
-    # Tier 3: Content-based automatic recommendation
-    return analysis.recommendedPath, analysis
+    # Tier 3: Default system fallback
+    return ProductionMode.MEDIA, analysis
 

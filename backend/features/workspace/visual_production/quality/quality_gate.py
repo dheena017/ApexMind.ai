@@ -20,6 +20,7 @@ from backend.features.workspace.visual_production.schemas import (
     AestheticQualityMetrics,
     AssetLicenseProvenance,
     ComplianceMetrics,
+    LicensePermissionState,
     LicenseType,
     QualityGateResult,
     TechnicalQualityMetrics,
@@ -65,6 +66,7 @@ class QualityGate:
             tech_metrics=tech_metrics,
             aspect_ratio=aspect_ratio,
             characters=characters or [],
+            video_path=video_path,
         )
         failures.extend(cat2_fails)
         warnings.extend(cat2_warns)
@@ -112,7 +114,7 @@ class QualityGate:
         aspect_ratio: str,
         expected_fps: float,
     ) -> tuple[TechnicalQualityMetrics, List[str]]:
-        """Probes stream info using FFprobe to validate resolution, codec, duration, and decode errors."""
+        """Probes stream info using FFprobe to validate resolution, codec, duration, and decode health."""
         failures: List[str] = []
         target_w, target_h = self.config.get_resolution(aspect_ratio)
 
@@ -147,6 +149,7 @@ class QualityGate:
         codec = "h264"
         bitrate: Optional[int] = None
         has_corrupt = False
+        ffprobe_succeeded = False
 
         try:
             res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
@@ -169,18 +172,29 @@ class QualityGate:
                     else:
                         actual_fps = float(fps_str)
 
-                # Duration resolution
-                dur_str = fmt.get("duration") or (streams[0].get("duration") if streams else None)
-                if dur_str:
-                    actual_duration = round(float(dur_str), 2)
+                    dur_str = fmt.get("duration") or s0.get("duration")
+                    if dur_str:
+                        actual_duration = round(float(dur_str), 2)
 
-                if fmt.get("bit_rate"):
-                    bitrate = int(int(fmt["bit_rate"]) / 1000)
+                    if fmt.get("bit_rate"):
+                        bitrate = int(int(fmt["bit_rate"]) / 1000)
+
+                    ffprobe_succeeded = True
+                else:
+                    failures.append("FFprobe detected no readable video streams in asset.")
+                    has_corrupt = True
+                    codec = "unknown"
+            else:
+                err_msg = res.stderr.decode("utf-8", errors="ignore").strip()[:180]
+                failures.append(f"FFprobe execution failed (exit code {res.returncode}): {err_msg or 'Invalid media stream'}")
+                has_corrupt = True
+                codec = "unknown"
 
         except Exception as exc:
             logger.warning(f"[QualityGate] FFprobe inspection error: {exc}")
-            # If video is small synthetic test buffer, treat as valid test stream
-            actual_duration = target_duration
+            failures.append(f"FFprobe validation failure: {exc}")
+            has_corrupt = True
+            codec = "unknown"
 
         drift = abs(round(actual_duration - target_duration, 3))
 
@@ -211,8 +225,9 @@ class QualityGate:
         tech_metrics: TechnicalQualityMetrics,
         aspect_ratio: str,
         characters: List[Dict[str, Any]],
+        video_path: Optional[Path] = None,
     ) -> tuple[AestheticQualityMetrics, List[str], List[str]]:
-        """Evaluates framing, aspect ratio, motion dynamics, and character continuity."""
+        """Evaluates framing, aspect ratio, motion dynamics, frame brightness/contrast, and character continuity."""
         failures: List[str] = []
         warnings: List[str] = []
 
@@ -228,6 +243,45 @@ class QualityGate:
                 f"Aspect ratio {tech_metrics.resolution} does not adhere to requested '{aspect_ratio}' framing."
             )
 
+        # Genuine frame-based pixel telemetry evaluation
+        brightness = 0.5
+        contrast = 0.5
+        if video_path and video_path.exists() and tech_metrics.passed:
+            try:
+                ffmpeg_bin = self.config.ffmpeg_path
+                t_offset = min(1.0, max(0.1, tech_metrics.actualDuration / 2.0))
+                # Sample a 160x90 thumbnail frame to extract RGB telemetry
+                cmd = [
+                    ffmpeg_bin,
+                    "-y",
+                    "-ss", f"{t_offset:.2f}",
+                    "-i", str(video_path),
+                    "-vframes", "1",
+                    "-s", "160x90",
+                    "-f", "rawvideo",
+                    "-pix_fmt", "rgb24",
+                    "-"
+                ]
+                res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=8)
+                if res.returncode == 0 and len(res.stdout) == 160 * 90 * 3:
+                    raw = res.stdout
+                    lumas = []
+                    for i in range(0, len(raw), 30):
+                        r, g, b = raw[i], raw[i + 1], raw[i + 2]
+                        lumas.append((0.299 * r + 0.587 * g + 0.114 * b) / 255.0)
+                    if lumas:
+                        mean_luma = sum(lumas) / len(lumas)
+                        brightness = round(mean_luma, 3)
+                        var = sum((x - mean_luma) ** 2 for x in lumas) / len(lumas)
+                        contrast = round(min(1.0, (var ** 0.5) * 3.5), 3)
+
+                        if brightness < 0.02:
+                            warnings.append("Video frame appears nearly black / underexposed.")
+                        elif brightness > 0.98:
+                            warnings.append("Video frame appears blown out / overexposed.")
+            except Exception as e:
+                logger.debug(f"[QualityGate] Frame telemetry inspection skipped: {e}")
+
         # Character continuity validation
         char_continuity_score = 1.0
         if characters:
@@ -239,7 +293,7 @@ class QualityGate:
 
         framing_score = 0.92 if aspect_passed else 0.65
         motion_score = 0.88
-        visual_score = 0.90
+        visual_score = round(min(0.95, max(0.65, 0.72 + (contrast * 0.18) + (0.05 if 0.10 <= brightness <= 0.90 else -0.15))), 2)
 
         cat2_passed = len(failures) == 0
 
@@ -267,16 +321,24 @@ class QualityGate:
                 passed=False,
             ), failures
 
-        # Validate commercial terms
-        if not provenance.commercialUseAllowed:
-            failures.append(f"Commercial usage prohibited for asset provider '{provenance.provider}'")
+        # Validate explicit commercial permission state (allowed, denied, unknown)
+        if provenance.commercialPermission == LicensePermissionState.UNKNOWN:
+            failures.append(
+                f"Commercial rights for asset provider '{provenance.provider}' are UNKNOWN; "
+                "license provenance must be explicitly verified before commercial publication."
+            )
+        elif provenance.commercialPermission == LicensePermissionState.DENIED or not provenance.commercialUseAllowed:
+            failures.append(
+                f"Commercial usage prohibited for asset provider '{provenance.provider}' under license '{provenance.licenseType}'"
+            )
 
-        # Watermark / prohibited providers check
-        has_watermark = False
+        # Approved licenses check
         approved_licenses = {
             LicenseType.CC0,
             LicenseType.PEXELS,
             LicenseType.PIXABAY,
+            LicenseType.WIKIMEDIA,
+            LicenseType.UNSPLASH,
             LicenseType.PROCEDURAL,
             LicenseType.CUSTOM,
             LicenseType.PROPRIETARY,
@@ -284,11 +346,16 @@ class QualityGate:
         if provenance.licenseType not in approved_licenses:
             failures.append(f"Unrecognized or unapproved license type '{provenance.licenseType}'")
 
+        commercial_passed = (
+            provenance.commercialPermission == LicensePermissionState.ALLOWED
+            and provenance.commercialUseAllowed
+            and len([f for f in failures if "Commercial" in f]) == 0
+        )
         cat3_passed = len(failures) == 0
 
         return ComplianceMetrics(
-            commercialLicensingPassed=provenance.commercialUseAllowed,
-            watermarkDetected=has_watermark,
+            commercialLicensingPassed=commercial_passed,
+            watermarkDetected=False,
             safetyContentPassed=True,
             passed=cat3_passed,
         ), failures

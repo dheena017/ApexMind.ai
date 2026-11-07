@@ -1,0 +1,154 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-11-07T18:25:00Z",
+  "sources": [
+    {
+      "name": "Quaternius",
+      "license": "CC0",
+      "url": "https://quaternius.com"
+    },
+    {
+      "name": "Kenney",
+      "license": "CC0",
+      "url": "https://kenney.nl/assets"
+    },
+    {
+      "name": "Poly Haven",
+      "license": "CC0",
+      "url": "https://polyhaven.com"
+    },
+    {
+      "name": "Gobkit",
+      "license": "CC0",
+      "url": "https://gobkit.com/freebies"
+    }
+  ],
+  "assets": {
+    "dog_01": {
+      "name": "Cooper the Golden Retriever",
+      "category": "character",
+      "tags": [
+        "dog",
+        "canine",
+        "golden_retriever",
+        "pet",
+        "animal"
+      ],
+      "path": "characters/dog_golden_retriever.glb",
+      "defaultScale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "defaultPosition": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "animations": [
+        "idle",
+        "walk",
+        "alert_look_up"
+      ]
+    },
+    "maya_01": {
+      "name": "Maya (Child)",
+      "category": "character",
+      "tags": [
+        "girl",
+        "child",
+        "human",
+        "kid"
+      ],
+      "path": "characters/girl_child.glb",
+      "defaultScale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "defaultPosition": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "animations": [
+        "idle",
+        "stand_looking"
+      ]
+    },
+    "red_airplane_01": {
+      "name": "Red Toy Airplane",
+      "category": "prop",
+      "tags": [
+        "airplane",
+        "plane",
+        "toy",
+        "red_airplane"
+      ],
+      "path": "props/toy_airplane.glb",
+      "defaultScale": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "defaultPosition": [
+        0.0,
+        0.0,
+        0.3
+      ],
+      "animations": [
+        "float",
+        "spin_propeller"
+      ]
+    },
+    "sky_anomaly_01": {
+      "name": "Decennial Sky Portal Vortex",
+      "category": "environment",
+      "tags": [
+        "portal",
+        "anomaly",
+        "sky_portal",
+        "vortex",
+        "wormhole"
+      ],
+      "path": "environments/sky_portal.glb",
+      "defaultScale": [
+        2.5,
+        2.5,
+        2.5
+      ],
+      "defaultPosition": [
+        0.0,
+        0.0,
+        2.8
+      ],
+      "animations": [
+        "swirl"
+      ]
+    },
+    "drone_recon_01": {
+      "name": "Recon Drone",
+      "category": "prop",
+      "tags": [
+        "drone",
+        "recon",
+        "quadcopter",
+        "sensor"
+      ],
+      "path": "props/drone_recon.glb",
+      "defaultScale": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "defaultPosition": [
+        0.0,
+        -1.0,
+        1.5
+      ],
+      "animations": [
+        "hover"
+      ]
+    }
+  }
+}

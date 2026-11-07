@@ -92,6 +92,16 @@ def run_blender_scene_generation():
     ground = bpy.context.active_object
     ground.name = "Ground_Plane"
 
+    if render_alpha:
+        # For transparent overlay renders, configure ground as shadow catcher or hide
+        try:
+            ground.is_shadow_catcher = True
+        except Exception:
+            pass
+        if engine != "CYCLES":
+            # In EEVEE, hide ground plane in render so alpha channel remains pure transparent
+            ground.hide_render = True
+
     # Material for ground
     mat_ground = bpy.data.materials.new(name="Mat_Ground")
     try:
@@ -105,23 +115,60 @@ def run_blender_scene_generation():
         pass
     ground.data.materials.append(mat_ground)
 
-    # 5. Create stylized focal subject / character mannequin
-    bpy.ops.mesh.primitive_cylinder_add(radius=0.4, depth=1.6, location=(0, 0, 0.8))
-    subject = bpy.context.active_object
-    subject.name = "Focal_Subject"
+    # 5. Import Pre-Created / Reusable 3D Assets or Fallback to Stylized Subject
+    assets = payload.get("assets") or []
+    has_imported_character = False
 
-    mat_subject = bpy.data.materials.new(name="Mat_Subject")
-    try:
-        mat_subject.use_nodes = True
-        bsdf_subject = mat_subject.node_tree.nodes.get("Principled BSDF")
-        if bsdf_subject:
-            # Subtle warm bronze or teal metallic tone
-            bsdf_subject.inputs["Base Color"].default_value = (0.65, 0.42, 0.22, 1.0)
-            bsdf_subject.inputs["Metallic"].default_value = 0.4
-            bsdf_subject.inputs["Roughness"].default_value = 0.35
-    except Exception:
-        pass
-    subject.data.materials.append(mat_subject)
+    for item in assets:
+        m_path = item.get("path")
+        if m_path and os.path.exists(m_path):
+            try:
+                bpy.ops.object.select_all(action='DESELECT')
+                ext = os.path.splitext(m_path)[1].lower()
+
+                if ext == ".blend":
+                    # Append objects from external .blend asset catalog
+                    with bpy.data.libraries.load(m_path, link=False) as (data_from, data_to):
+                        data_to.objects = [o for o in data_from.objects if not o.startswith("_")]
+                    for o in data_to.objects:
+                        if o is not None:
+                            scene.collection.objects.link(o)
+                            o.select_set(True)
+                elif ext in (".gltf", ".glb"):
+                    bpy.ops.import_scene.gltf(filepath=m_path)
+                elif ext == ".obj":
+                    bpy.ops.wm.obj_import(filepath=m_path)
+
+                imported = [o for o in bpy.context.selected_objects if not o.parent]
+                pos = item.get("position", [0.0, 0.0, 0.0])
+                scale = item.get("scale", [1.0, 1.0, 1.0])
+                for o in imported:
+                    o.location = (pos[0], pos[1], pos[2])
+                    o.scale = (scale[0], scale[1], scale[2])
+                if item.get("type") in ("character", "focal", "animal"):
+                    has_imported_character = True
+                print(f"[Blender] Successfully imported 3D asset: {item.get('name')} from {m_path}")
+            except Exception as imp_err:
+                print(f"WARN: Failed importing {m_path}: {imp_err}")
+
+    # Fallback to procedural focal subject mannequin if no pre-created character imported
+    if not has_imported_character:
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.4, depth=1.6, location=(0, 0, 0.8))
+        subject = bpy.context.active_object
+        subject.name = "Focal_Subject"
+
+        mat_subject = bpy.data.materials.new(name="Mat_Subject")
+        try:
+            mat_subject.use_nodes = True
+            bsdf_subject = mat_subject.node_tree.nodes.get("Principled BSDF")
+            if bsdf_subject:
+                # Subtle warm bronze or teal metallic tone
+                bsdf_subject.inputs["Base Color"].default_value = (0.65, 0.42, 0.22, 1.0)
+                bsdf_subject.inputs["Metallic"].default_value = 0.4
+                bsdf_subject.inputs["Roughness"].default_value = 0.35
+        except Exception:
+            pass
+        subject.data.materials.append(mat_subject)
 
     # 6. Cinematic 3-point lighting rig
     # Key light

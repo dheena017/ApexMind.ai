@@ -17,6 +17,7 @@ from backend.features.workspace.visual_production.config import visual_config
 from backend.features.workspace.visual_production.media.media_engine import media_engine
 from backend.features.workspace.visual_production.schemas import (
     AssetLicenseProvenance,
+    LicensePermissionState,
     LicenseType,
     ProductionMode,
 )
@@ -53,7 +54,7 @@ class HybridEngine:
         w, h = self.config.get_resolution(aspect_ratio)
 
         bg_path = self.hybrid_dir / f"{script_id}_{scene_id}_bg.mp4"
-        fg_path = self.hybrid_dir / f"{script_id}_{scene_id}_fg.mp4"
+        fg_path = self.hybrid_dir / f"{script_id}_{scene_id}_fg.mov"
         composite_path = self.hybrid_dir / f"{script_id}_{scene_id}_composite.mp4"
         thumb_path = self.hybrid_dir / f"{script_id}_{scene_id}_thumb.jpg"
 
@@ -89,11 +90,20 @@ class HybridEngine:
             height=h,
         )
 
+        # Strict check: NEVER substitute background-only plate on hybrid failure!
         if not success or not composite_path.exists():
-            logger.warning(f"[HybridEngine] Compositing failed for {scene_id}; falling back to background plate.")
-            composite_bytes = bg_bytes
-        else:
-            composite_bytes = composite_path.read_bytes()
+            for p in (bg_path, fg_path, composite_path, thumb_path):
+                if p.exists():
+                    try:
+                        p.unlink()
+                    except Exception:
+                        pass
+            raise RuntimeError(
+                f"[HybridEngine] Compositing failed for scene '{scene_id}'. "
+                "Unable to merge 3D foreground layer over background media plate."
+            )
+
+        composite_bytes = composite_path.read_bytes()
 
         # 4. Extract poster thumbnail
         if composite_path.exists():
@@ -112,6 +122,7 @@ class HybridEngine:
         provenance = AssetLicenseProvenance(
             provider="hybrid_composite",
             licenseType=LicenseType.CUSTOM,
+            commercialPermission=LicensePermissionState.ALLOWED,
             commercialUseAllowed=True,
             attributionRequired=False,
             sourceUrl=f"hybrid://{bg_prov.provider}+{fg_prov.provider}/{scene_id}",

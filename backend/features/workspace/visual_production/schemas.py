@@ -37,13 +37,25 @@ class ProductionMode(str, Enum):
 
 
 class SceneVisualStatus(str, Enum):
-    """Lifecycle status of a visual scene within the preview & approval loop."""
-    DRAFT = "draft"
+    """Lifecycle status of a visual scene within the preview & approval loop (Stage 3 v1.1.0)."""
+    PENDING = "pending"
+    ANALYZING = "analyzing"
     GENERATING = "generating"
-    PREVIEW_READY = "preview_ready"
+    VALIDATING = "validating"
+    NEEDS_REVIEW = "needs_review"
+    PREVIEW_READY = "preview_ready"  # Backward-compatible alias for needs_review
     APPROVED = "approved"
     REJECTED = "rejected"
     FAILED = "failed"
+    CANCELLED = "cancelled"
+    DRAFT = "draft"  # Initial draft alias
+
+
+class LicensePermissionState(str, Enum):
+    """Explicit legal permission state: allowed, denied, or unknown."""
+    ALLOWED = "allowed"
+    DENIED = "denied"
+    UNKNOWN = "unknown"
 
 
 class VisualQualityTier(str, Enum):
@@ -84,7 +96,11 @@ class AssetLicenseProvenance(BaseModel):
 
     provider: str = Field(..., description="Asset provider (pexels, pixabay, unsplash, blender, etc.)")
     licenseType: LicenseType = Field(default=LicenseType.CC0, description="License classification")
-    commercialUseAllowed: bool = Field(default=True, description="Whether commercial use is permitted")
+    commercialPermission: LicensePermissionState = Field(
+        default=LicensePermissionState.UNKNOWN,
+        description="Explicit commercial permission state (allowed, denied, unknown)",
+    )
+    commercialUseAllowed: bool = Field(default=False, description="Whether commercial use is permitted")
     attributionRequired: bool = Field(default=False, description="Whether attribution is mandatory")
     attributionText: Optional[str] = Field(None, description="Formatted attribution or credit string")
     sourceUrl: Optional[str] = Field(None, description="Original asset URL or repository identifier")

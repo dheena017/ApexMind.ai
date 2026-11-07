@@ -49,7 +49,7 @@ def isolated_suite():
     shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_01_the_decennial_sky_8_scenes_automatic_routing_and_alignment(isolated_suite):
     """
     Test 1: Execute visual production on all 8 scenes of The Decennial Sky.
@@ -115,7 +115,7 @@ async def test_01_the_decennial_sky_8_scenes_automatic_routing_and_alignment(iso
     assert cumulative_time > 20.0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_02_scene_regeneration_versioning_and_rollback(isolated_suite):
     """
     Test 2: Selective single scene regeneration.

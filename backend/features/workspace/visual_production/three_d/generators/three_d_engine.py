@@ -13,11 +13,13 @@ import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from backend.features.workspace.asset_resolution.asset_resolver import BlenderAssetResolver
 from backend.features.workspace.visual_production.config import visual_config
 from backend.features.workspace.visual_production.schemas import (
     AssetLicenseProvenance,
+    LicensePermissionState,
     LicenseType,
     ProductionMode,
 )
@@ -27,14 +29,55 @@ logger = logging.getLogger("ApexMind.Visuals.ThreeDEngine")
 
 
 class ThreeDEngine:
-    """Orchestrates procedural 3D animation generation using headless Blender 5.2 LTS."""
+    """Orchestrates procedural and reusable 3D animation generation using headless Blender 5.2 LTS."""
 
     def __init__(self):
         self.config = visual_config
         self.executor = blender_executor
+        self.resolver = BlenderAssetResolver()
         self.render_dir = self.config.temp_render_dir / "3d_renders"
         self.render_dir.mkdir(parents=True, exist_ok=True)
         self.template_path = Path(__file__).parent / "render_template.py"
+
+    def _resolve_scene_catalog_assets(self, scene_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Resolves characters, environments, and props using BlenderAssetResolver."""
+        assets: List[Dict[str, Any]] = []
+
+        # 1. Resolve characters
+        raw_chars = scene_data.get("characters") or []
+        for c in raw_chars:
+            c_name = c.get("name") if isinstance(c, dict) else str(c)
+            if not c_name:
+                continue
+            res = self.resolver.resolve_entity(entity_name=c_name, entity_type="character")
+            model_p = self.resolver.catalog_root / res.get("sourceFile", "")
+            assets.append({
+                "type": "character",
+                "name": c_name,
+                "assetId": res.get("assetId"),
+                "path": str(model_p) if model_p.exists() else None,
+                "scale": [res.get("scale", 1.0)] * 3,
+                "position": [0.0, 0.0, 0.0],
+            })
+
+        # 2. Resolve props
+        raw_props = scene_data.get("props") or []
+        for p in raw_props:
+            p_name = p.get("name") if isinstance(p, dict) else str(p)
+            if not p_name:
+                continue
+            res = self.resolver.resolve_entity(entity_name=p_name, entity_type="prop")
+            model_p = self.resolver.catalog_root / res.get("sourceFile", "")
+            assets.append({
+                "type": "prop",
+                "name": p_name,
+                "assetId": res.get("assetId"),
+                "path": str(model_p) if model_p.exists() else None,
+                "scale": [res.get("scale", 1.0)] * 3,
+                "position": [0.5, 0.5, 0.0],
+            })
+
+        return assets
 
     def produce_scene_3d(
         self,
@@ -68,6 +111,8 @@ class ThreeDEngine:
         cam_meta = scene_data.get("camera") or {}
         cam_movement = cam_meta.get("movement") if isinstance(cam_meta, dict) else "push_in"
 
+        resolved_assets = self._resolve_scene_catalog_assets(scene_data)
+
         payload = {
             "frames_prefix": frames_prefix,
             "output_path": frames_prefix,
@@ -82,94 +127,96 @@ class ThreeDEngine:
             "visual_description": scene_data.get("visualDescription", ""),
             "environment": scene_data.get("environment", ""),
             "characters": scene_data.get("characters", []),
+            "assets": resolved_assets,
         }
 
         video_bytes: Optional[bytes] = None
         thumb_bytes: Optional[bytes] = None
+        last_stderr = ""
 
-        if self.executor.is_available():
-            logger.info(f"[ThreeDEngine] Launching Blender 5.2 headless render for {scene_id} ({frame_count} frames)...")
-            code, stdout, stderr = self.executor.execute_script(
-                script_path=self.template_path,
-                payload=payload,
-                timeout_seconds=self.config.blender_timeout_seconds,
+        if not self.executor.is_available():
+            raise RuntimeError(
+                f"[ThreeDEngine] Headless Blender is not available at '{self.executor.blender_path}'. "
+                "Cannot produce 3D visual scene without verified Blender installation."
             )
 
-            # Check rendered PNG frames
-            rendered_pngs = sorted(list(frames_dir.glob("frame_*.png")))
-            if rendered_pngs:
-                logger.info(f"[ThreeDEngine] Blender generated {len(rendered_pngs)} PNG frames; encoding via FFmpeg...")
-                input_pattern = str(frames_dir / "frame_%04d.png")
+        logger.info(f"[ThreeDEngine] Launching Blender 5.2 headless render for {scene_id} ({frame_count} frames)...")
+        code, stdout, stderr = self.executor.execute_script(
+            script_path=self.template_path,
+            payload=payload,
+            timeout_seconds=self.config.blender_timeout_seconds,
+            allow_cpu_retry=True,
+        )
+        last_stderr = stderr
 
-                if render_alpha:
-                    # QuickTime Animation RLE preserves full 32-bit RGBA alpha channel
-                    ffmpeg_cmd = [
-                        self.config.ffmpeg_path,
-                        "-y",
-                        "-framerate", str(fps),
-                        "-i", input_pattern,
-                        "-c:v", "qtrle",
-                        "-t", f"{target_duration:.3f}",
-                        str(raw_out_path),
-                    ]
+        # Check rendered PNG frames
+        rendered_pngs = sorted(list(frames_dir.glob("frame_*.png")))
+        if rendered_pngs:
+            logger.info(f"[ThreeDEngine] Blender generated {len(rendered_pngs)} PNG frames; encoding via FFmpeg...")
+            input_pattern = str(frames_dir / "frame_%04d.png")
+
+            if render_alpha:
+                # QuickTime Animation RLE preserves full 32-bit RGBA alpha channel
+                ffmpeg_cmd = [
+                    self.config.ffmpeg_path,
+                    "-y",
+                    "-framerate", str(fps),
+                    "-i", input_pattern,
+                    "-c:v", "qtrle",
+                    "-t", f"{target_duration:.3f}",
+                    str(raw_out_path),
+                ]
+            else:
+                ffmpeg_cmd = [
+                    self.config.ffmpeg_path,
+                    "-y",
+                    "-framerate", str(fps),
+                    "-i", input_pattern,
+                    "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p",
+                    "-crf", "18",
+                    "-preset", "fast",
+                    "-t", f"{target_duration:.3f}",
+                    str(raw_out_path),
+                ]
+
+            try:
+                p_ff = subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+                if p_ff.returncode == 0 and raw_out_path.exists():
+                    video_bytes = raw_out_path.read_bytes()
+                    logger.info(f"[ThreeDEngine] Successfully encoded 3D scene MP4 ({len(video_bytes)} bytes)")
                 else:
-                    ffmpeg_cmd = [
-                        self.config.ffmpeg_path,
-                        "-y",
-                        "-framerate", str(fps),
-                        "-i", input_pattern,
-                        "-c:v", "libx264",
-                        "-pix_fmt", "yuv420p",
-                        "-crf", "18",
-                        "-preset", "fast",
-                        "-t", f"{target_duration:.3f}",
-                        str(raw_out_path),
-                    ]
+                    last_stderr = p_ff.stderr.decode("utf-8", errors="ignore")
+                    logger.warning(f"[ThreeDEngine] FFmpeg frame encoding failed: {last_stderr}")
+            except Exception as ff_exc:
+                last_stderr = str(ff_exc)
+                logger.warning(f"[ThreeDEngine] FFmpeg subprocess error: {ff_exc}")
 
-                try:
-                    p_ff = subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
-                    if p_ff.returncode == 0 and raw_out_path.exists():
-                        video_bytes = raw_out_path.read_bytes()
-                        logger.info(f"[ThreeDEngine] Successfully encoded 3D scene MP4 ({len(video_bytes)} bytes)")
-                    else:
-                        logger.warning(f"[ThreeDEngine] FFmpeg frame encoding failed: {p_ff.stderr.decode('utf-8', errors='ignore')}")
-                except Exception as ff_exc:
-                    logger.warning(f"[ThreeDEngine] FFmpeg subprocess error: {ff_exc}")
-
-                # Thumbnail from first frame
-                try:
-                    first_frame = rendered_pngs[0]
-                    thumb_cmd = [
-                        self.config.ffmpeg_path,
-                        "-y",
-                        "-i", str(first_frame),
-                        "-vf", f"scale={min(width, 720)}:-1",
-                        "-vframes", "1",
-                        str(thumb_out_path),
-                    ]
-                    subprocess.run(thumb_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
-                    if thumb_out_path.exists():
-                        thumb_bytes = thumb_out_path.read_bytes()
-                except Exception as th_exc:
-                    logger.warning(f"[ThreeDEngine] Thumbnail extraction failed: {th_exc}")
-
-        # Fallback if Blender or FFmpeg encoding failed
-        if not video_bytes:
-            logger.warning(
-                f"[ThreeDEngine] Headless Blender render unavailable or failed for {scene_id}; "
-                f"generating procedural fallback plate."
-            )
-            video_bytes = self._generate_fallback_3d_plate(
-                out_path=raw_out_path,
-                target_duration=target_duration,
-                width=width,
-                height=height,
-                camera_movement=str(cam_movement),
-            )
-            if raw_out_path.exists():
-                self._extract_poster_thumbnail(raw_out_path, thumb_out_path)
+            # Thumbnail from first frame
+            try:
+                first_frame = rendered_pngs[0]
+                thumb_cmd = [
+                    self.config.ffmpeg_path,
+                    "-y",
+                    "-i", str(first_frame),
+                    "-vf", f"scale={min(width, 720)}:-1",
+                    "-vframes", "1",
+                    str(thumb_out_path),
+                ]
+                subprocess.run(thumb_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
                 if thumb_out_path.exists():
                     thumb_bytes = thumb_out_path.read_bytes()
+            except Exception as th_exc:
+                logger.warning(f"[ThreeDEngine] Thumbnail extraction failed: {th_exc}")
+
+        # Strict check: NEVER substitute fake fallback plate as 3D success!
+        if not video_bytes or len(video_bytes) < 500:
+            # Cleanup temp frames before raising
+            shutil.rmtree(frames_dir, ignore_errors=True)
+            raise RuntimeError(
+                f"[ThreeDEngine] Blender 3D render failed for scene '{scene_id}' (exit={code}). "
+                f"Output video missing or corrupted. Stderr: {last_stderr[:300]}"
+            )
 
         if not thumb_bytes:
             thumb_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF"
@@ -188,6 +235,7 @@ class ThreeDEngine:
         provenance = AssetLicenseProvenance(
             provider="procedural_blender",
             licenseType=LicenseType.PROCEDURAL,
+            commercialPermission=LicensePermissionState.ALLOWED,
             commercialUseAllowed=True,
             attributionRequired=False,
             sourceUrl=f"blender://procedural/{aspect_ratio}/{target_duration:.2f}s",
