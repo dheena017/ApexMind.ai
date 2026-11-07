@@ -168,9 +168,9 @@ async def get_open_media_providers_route():
 @router.get(
     "/api/media/font-search",
     tags=["Typography"],
-    summary="Search Google Fonts & Typography Styles",
-    operation_id="search_google_fonts_and_typography",
-    description="Live query to Google Fonts catalog (1,900+ fonts) and creator typography styles."
+    summary="Search Modular Font Providers",
+    operation_id="search_modular_fonts",
+    description="Live query to modular open-source font providers: Google Fonts (1,900+ fonts) and Fontsource CDN (1,600+ fonts). Zero hardcoded data."
 )
 async def get_open_fonts_route(
     q: str = "",
@@ -178,37 +178,14 @@ async def get_open_fonts_route(
     provider: str = "all",
     page: int = 1,
     pageSize: int = 24,
-    mood: str = "all"
 ):
-    from .open_text_service import search_open_fonts
-    return search_open_fonts(
+    from .text import search_fonts
+    return search_fonts(
         query=q,
         category=category,
         provider=provider,
         page=page,
         page_size=pageSize,
-        mood=mood
-    )
-
-@router.get(
-    "/api/media/quote-search",
-    tags=["Typography"],
-    summary="Search Live Quotes and Viral Hooks",
-    operation_id="search_live_quotes",
-    description="Live search across public quotes and viral hooks."
-)
-async def get_open_quotes_route(
-    q: str = "",
-    category: str = "all",
-    page: int = 1,
-    pageSize: int = 20
-):
-    from .open_text_service import search_open_quotes
-    return search_open_quotes(
-        query=q,
-        category=category,
-        page=page,
-        page_size=pageSize
     )
 
 # ══════════════════════════════════════════════════════════════════════════════

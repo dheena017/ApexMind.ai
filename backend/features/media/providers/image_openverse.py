@@ -54,11 +54,13 @@ class OpenverseImageProvider(BaseMediaProvider):
 
         params = {
             "q": search_query,
+            "category": "photograph",
             "page": page,
             "page_size": min(limit, 30),
         }
         headers = {
-            "User-Agent": "ApexMindStudio/2.0 (OpenStockMedia; https://apexmind.ai)"
+            "User-Agent": "ApexMindStudio/2.0 (OpenStockMedia; https://apexmind.ai)",
+            "Accept": "application/json",
         }
 
         try:
@@ -80,12 +82,18 @@ class OpenverseImageProvider(BaseMediaProvider):
             if not img_url:
                 continue
 
-            # Reject vector graphics, coats of arms, and non-displayable formats
+            # Reject vector graphics, coats of arms, shields, and non-displayable formats
             filetype = (it.get("filetype") or "").lower()
-            if filetype == "svg" or img_url.lower().endswith((".svg", ".tif", ".tiff")):
+            title = (it.get("title") or "Stock Photo").strip()
+            title_lower = title.lower()
+
+            if (
+                filetype == "svg"
+                or img_url.lower().endswith((".svg", ".tif", ".tiff"))
+                or any(bad in title_lower for bad in ["escut", "coat of arms", "blason", "shield", "wappen", "heraldry"])
+            ):
                 continue
 
-            title = it.get("title") or "Stock Photo"
             creator = it.get("creator") or "Open Creator"
             license_code = it.get("license", "CC0").upper()
             width = it.get("width", 1080)

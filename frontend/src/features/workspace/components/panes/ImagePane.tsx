@@ -144,7 +144,8 @@ const ImageCard = React.memo<ImageCardProps>(({
       {!hasError ? (
         <img
           src={currentSrc}
-          alt={img.title}
+          alt=""
+          aria-label={img.title}
           referrerPolicy="no-referrer"
           onError={handleImgError}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
