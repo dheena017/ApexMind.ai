@@ -62,7 +62,9 @@ export const FONT_CATEGORIES = [
 export const TEXT_PROVIDERS = [
   { id: 'all', label: '✨ All Live Providers' },
   { id: 'google_fonts', label: '🌐 Google Fonts (1,900+)' },
+  { id: 'fontshare', label: '💎 Fontshare ITF (Premium)' },
   { id: 'fontsource', label: '📚 Fontsource CDN (1,600+)' },
+  { id: 'bunny', label: '🐰 Bunny Fonts (1,900+)' },
 ] as const;
 
 const LOCAL_STORAGE_CUSTOM_STYLES_KEY = 'apexmind_saved_custom_typography_styles';
@@ -91,6 +93,35 @@ function getCardPreviewText(text: string): string {
     return firstSentence;
   }
   return trimmed.slice(0, 34).trim() + '...';
+}
+
+function renderFontProviderBadge(provider?: string) {
+  switch (provider) {
+    case 'fontshare':
+      return (
+        <span className="text-[9px] font-mono-studio text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1 rounded shrink-0">
+          Fontshare
+        </span>
+      );
+    case 'fontsource':
+      return (
+        <span className="text-[9px] font-mono-studio text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1 rounded shrink-0">
+          Fontsource
+        </span>
+      );
+    case 'bunny':
+      return (
+        <span className="text-[9px] font-mono-studio text-pink-300 bg-pink-500/15 border border-pink-500/30 px-1 rounded shrink-0">
+          Bunny
+        </span>
+      );
+    default:
+      return (
+        <span className="text-[9px] font-mono-studio text-blue-300 bg-blue-500/15 border border-blue-500/30 px-1 rounded shrink-0">
+          Google
+        </span>
+      );
+  }
 }
 
 export const TextPane: React.FC<TextPaneProps> = ({
@@ -347,10 +378,10 @@ export const TextPane: React.FC<TextPaneProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold tracking-tight text-white">
-              Google Fonts Provider
+              Live Font Styles
             </span>
             <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
-              1,959 Live Fonts
+              5,500+ Live Fonts
             </span>
           </div>
         </div>
@@ -360,7 +391,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
           onClick={() => fetchFonts(1, false)}
           disabled={isLoading}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] text-zinc-300 hover:text-white text-[11px] font-semibold transition-all cursor-pointer"
-          title="Refresh live Google Fonts"
+          title="Refresh live font catalog"
         >
           <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">Sync</span>
@@ -390,7 +421,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Google Fonts (e.g. Montserrat, Bebas, Cinzel)..."
+                placeholder="Search live fonts (e.g. Satoshi, Montserrat, Clash Display, Bebas)..."
                 className="w-full bg-[#181818] border border-[#242424] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none transition-all"
               />
               {searchQuery && (
@@ -500,10 +531,11 @@ export const TextPane: React.FC<TextPaneProps> = ({
                           <span className="text-xs font-bold text-white truncate">
                             {font.name}
                           </span>
-                          <span className="text-[9px] font-mono-studio text-blue-400 bg-blue-500/15 border border-blue-500/30 px-1 rounded shrink-0">
-                            {font.category || 'Google Font'}
-                          </span>
+                          {renderFontProviderBadge(font.provider)}
                           <span className="text-[9px] font-mono-studio text-zinc-400 bg-[#1E1E1E] px-1 rounded border border-[#2E2E2E] shrink-0">
+                            {font.category || 'Font'}
+                          </span>
+                          <span className="text-[9px] font-mono-studio text-zinc-500 bg-[#141416] px-1 rounded border border-[#242428] shrink-0 hidden sm:inline">
                             {font.stylesCount || availableWeights.length} styles
                           </span>
                         </div>
