@@ -692,91 +692,21 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
         {/* ── ANIMATIONS TAB (In & Out Animations) ── */}
         {activeSubTab === 'animations' && (
           <div className="flex flex-col gap-3 pt-0.5 select-none">
-            {/* In / Out Direction Segmented Pill Switcher */}
-            <div className="grid grid-cols-2 p-1 rounded-xl bg-[#181818] border border-[#242424]">
-              <button
-                type="button"
-                onClick={() => setAnimDirection('in')}
-                className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  animDirection === 'in'
-                    ? 'bg-[#282834] text-white shadow-xs border border-[#2A2A2A]'
-                    : 'text-slate-500 hover:text-white'
-                }`}
-              >
-                In
-              </button>
-              <button
-                type="button"
-                onClick={() => setAnimDirection('out')}
-                className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  animDirection === 'out'
-                    ? 'bg-[#282834] text-white shadow-xs border border-[#2A2A2A]'
-                    : 'text-slate-500 hover:text-white'
-                }`}
-              >
-                Out
-              </button>
-            </div>
-
-            {/* Animation Duration Slider */}
-            <div className="p-2.5 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-medium">
-                  {animDirection === 'in' ? 'In Animation Duration' : 'Out Animation Duration'}
-                </span>
-                <span className="font-mono-studio text-sky-400 font-bold bg-sky-950/40 border border-sky-500/30 px-2 py-0.5 rounded text-[11px]">
-                  {(animDirection === 'in' ? animationInDuration : animationOutDuration).toFixed(1)}s
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min="0.1"
-                  max="2.0"
-                  step="0.1"
-                  value={animDirection === 'in' ? animationInDuration : animationOutDuration}
-                  onChange={(e) => {
-                    const d = Number(e.target.value);
-                    if (animDirection === 'in') {
-                      setAnimationInDuration(d);
-                      handleInAnimChange(animationIn, d);
-                    } else {
-                      setAnimationOutDuration(d);
-                      handleOutAnimChange(animationOut, d);
-                    }
-                  }}
-                  className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#222222] rounded-lg"
-                />
-                <div className="flex gap-1 shrink-0">
-                  {[0.3, 0.5, 0.8, 1.0].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => {
-                        if (animDirection === 'in') {
-                          setAnimationInDuration(d);
-                          handleInAnimChange(animationIn, d);
-                        } else {
-                          setAnimationOutDuration(d);
-                          handleOutAnimChange(animationOut, d);
-                        }
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
-                        Math.abs((animDirection === 'in' ? animationInDuration : animationOutDuration) - d) < 0.05
-                          ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
-                          : 'bg-[#111111] text-slate-500 hover:text-white border border-[#242424]'
-                      }`}
-                    >
-                      {d}s
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             <MotionPresetPicker
               presets={VIDEO_MOTION_PRESETS}
               value={animDirection === 'in' ? animationIn : animationOut}
+              direction={animDirection}
+              onDirectionChange={setAnimDirection}
+              duration={animDirection === 'in' ? animationInDuration : animationOutDuration}
+              onDurationChange={(duration) => {
+                if (animDirection === 'in') {
+                  setAnimationInDuration(duration);
+                  handleInAnimChange(animationIn, duration);
+                } else {
+                  setAnimationOutDuration(duration);
+                  handleOutAnimChange(animationOut, duration);
+                }
+              }}
               onChange={(motion) => {
                 if (animDirection === 'in') {
                   handleInAnimChange(motion);

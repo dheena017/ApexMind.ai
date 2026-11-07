@@ -10,6 +10,10 @@ interface MotionInspectorPageProps {
   presets: MotionPreset[];
   value: string;
   onChange: (value: string) => void;
+  direction?: 'in' | 'out';
+  onDirectionChange?: (direction: 'in' | 'out') => void;
+  duration?: number;
+  onDurationChange?: (duration: number) => void;
 }
 
 export const VIDEO_MOTION_PRESETS: MotionPreset[] = [
@@ -49,40 +53,103 @@ export const VIDEO_MOTION_PRESETS: MotionPreset[] = [
   { id: 'wipe-up', label: 'Wipe Up', icon: <div className="w-6 h-8 rounded-md bg-white/80 border border-white/20" /> },
 ];
 
-export const OVERLAY_MOTION_PRESETS = VIDEO_MOTION_PRESETS.filter(({ id }) =>
-  ['none', 'fade', 'slide-up', 'slide-left', 'slide-right', 'bounce', 'spin'].includes(id)
-);
+export const OVERLAY_MOTION_PRESETS = VIDEO_MOTION_PRESETS;
 
 export const MotionInspectorPage: React.FC<MotionInspectorPageProps> = ({
   presets,
   value,
   onChange,
+  direction,
+  onDirectionChange,
+  duration,
+  onDurationChange,
 }) => (
-  <div className="grid grid-cols-4 gap-2.5 pt-0.5">
-    {presets.map((preset) => {
-      const isSelected = value === preset.id;
-      return (
-        <button
-          key={preset.id}
-          type="button"
-          onClick={() => onChange(preset.id)}
-          className="group flex flex-col items-center cursor-pointer text-left select-none"
-          title={preset.label}
-        >
-          <span className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 flex items-center justify-center bg-[#15151A] ${
-            isSelected
-              ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
-              : 'border-[#242424] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30'
-          }`}>
-            {preset.icon}
+  <div className="flex flex-col gap-3">
+    {direction && onDirectionChange && (
+      <div className="grid grid-cols-2 p-1 rounded-xl bg-[#181818] border border-[#242424]">
+        {(['in', 'out'] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onDirectionChange(value)}
+            className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer capitalize ${
+              direction === value
+                ? 'bg-[#282834] text-white shadow-xs border border-[#2A2A2A]'
+                : 'text-slate-500 hover:text-white'
+            }`}
+          >
+            {value === 'in' ? 'In' : 'Out'}
+          </button>
+        ))}
+      </div>
+    )}
+
+    {direction && typeof duration === 'number' && onDurationChange && (
+      <div className="p-2.5 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-400 font-medium">
+            {direction === 'in' ? 'In Animation Duration' : 'Out Animation Duration'}
           </span>
-          <span className={`text-[11px] font-medium truncate block text-center mt-1.5 w-full leading-tight transition-colors ${
-            isSelected ? 'text-white font-bold' : 'text-slate-400 group-hover:text-white'
-          }`}>
-            {preset.label}
+          <span className="font-mono-studio text-sky-400 font-bold bg-sky-950/40 border border-sky-500/30 px-2 py-0.5 rounded text-[11px]">
+            {duration.toFixed(1)}s
           </span>
-        </button>
-      );
-    })}
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            min="0.1"
+            max="2.0"
+            step="0.1"
+            value={duration}
+            onChange={(event) => onDurationChange(Number(event.target.value))}
+            className="flex-1 accent-[#3B82F6] cursor-pointer h-1.5 bg-[#222222] rounded-lg"
+          />
+          <div className="flex gap-1 shrink-0">
+            {[0.3, 0.5, 0.8, 1.0].map((presetDuration) => (
+              <button
+                key={presetDuration}
+                type="button"
+                onClick={() => onDurationChange(presetDuration)}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
+                  Math.abs(duration - presetDuration) < 0.05
+                    ? 'bg-[#3B82F6] text-white font-bold shadow-xs'
+                    : 'bg-[#111111] text-slate-500 hover:text-white border border-[#242424]'
+                }`}
+              >
+                {presetDuration}s
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+
+    <div className="grid grid-cols-4 gap-2.5 pt-0.5">
+      {presets.map((preset) => {
+        const isSelected = value === preset.id;
+        return (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => onChange(preset.id)}
+            className="group flex flex-col items-center cursor-pointer text-left select-none"
+            title={preset.label}
+          >
+            <span className={`w-full aspect-square rounded-2xl overflow-hidden relative border transition-all duration-150 flex items-center justify-center bg-[#15151A] ${
+              isSelected
+                ? 'border-2 border-[#3B82F6] ring-2 ring-[#3B82F6]/30 shadow-md shadow-blue-500/15'
+                : 'border-[#242424] hover:border-[#3B82F6]/70 hover:ring-1 hover:ring-[#3B82F6]/30'
+            }`}>
+              {preset.icon}
+            </span>
+            <span className={`text-[11px] font-medium truncate block text-center mt-1.5 w-full leading-tight transition-colors ${
+              isSelected ? 'text-white font-bold' : 'text-slate-400 group-hover:text-white'
+            }`}>
+              {preset.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   </div>
 );

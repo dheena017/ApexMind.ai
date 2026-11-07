@@ -348,6 +348,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   const [titleStart, setTitleStart] = useState<number>(0);
   const [titleDuration, setTitleDuration] = useState<number>(3.5);
+  const [titleAnimation, setTitleAnimation] = useState('none');
+  const [titleAnimationDirection, setTitleAnimationDirection] = useState<'in' | 'out'>('in');
+  const [titleAnimationDuration, setTitleAnimationDuration] = useState(0.35);
 
   const [voiceStart, setVoiceStart] = useState<number>(0);
   const [voiceDuration, setVoiceDuration] = useState<number>(12.1);
@@ -360,6 +363,26 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
 
   // Subtitle clips for fluid dragging, trimming, and editing
   const [localClips, setLocalClips] = useState<ScriptSubtitle[]>([]);
+
+  useEffect(() => {
+    const handleTitleMotion = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        target?: 'caption' | 'title';
+        direction?: 'in' | 'out';
+        animation?: string;
+        duration?: number;
+      }>).detail;
+      if (detail?.target !== 'title') return;
+      setTitleAnimation(detail.animation || 'none');
+      setTitleAnimationDirection(detail.direction || 'in');
+      if (typeof detail.duration === 'number') {
+        setTitleAnimationDuration(detail.duration);
+      }
+    };
+
+    window.addEventListener('workspace:preview-text-motion', handleTitleMotion);
+    return () => window.removeEventListener('workspace:preview-text-motion', handleTitleMotion);
+  }, []);
 
   // Listen for clip timing changes dispatched from inspectors
   useEffect(() => {
@@ -503,6 +526,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
         applyToAll?: boolean;
         colorLabel?: string;
         color?: string;
+        animationOut?: string;
+        animationInDuration?: number;
+        animationOutDuration?: number;
         fontFamily?: string;
         fontSize?: number;
         fontWeight?: string;
@@ -558,6 +584,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                   opacity: detail.opacity ?? c.opacity,
                   posY: detail.posY ?? c.posY,
                   animation: detail.animation ?? c.animation,
+                  animationOut: detail.animationOut ?? c.animationOut,
+                  animationInDuration: detail.animationInDuration ?? c.animationInDuration,
+                  animationOutDuration: detail.animationOutDuration ?? c.animationOutDuration,
                 }
               : c
           )
@@ -951,6 +980,9 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
   const laneGap = 4;
   const captionTrackHeight = Math.max(40, (captionMaxLane + 1) * (laneHeight + laneGap) + 4);
   const titleTrackHeight = 40;
+  const titleMotionWidth = titleAnimation !== 'none'
+    ? Math.min(100, Math.max(1, (titleAnimationDuration / (titleDuration || 1)) * 100))
+    : 0;
 
   // Dynamic Lane Stacking for Media & Audio Tracks (overlapping clips automatically move above & below!)
   const { lanes: videoLanes, maxLane: videoMaxLane } = computeClipLanes(videoClips);
@@ -4167,6 +4199,19 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
                           height: '32px',
                         }}
                       >
+                        {titleMotionWidth > 0 && (
+                          <div
+                            className={`absolute top-0 bottom-0 pointer-events-none select-none z-0 bg-amber-500/35 overflow-hidden ${
+                              titleAnimationDirection === 'in' ? 'left-0 border-r border-amber-300/80' : 'right-0 border-l border-amber-300/80'
+                            }`}
+                            style={{ width: `${titleMotionWidth}%` }}
+                            title={`Title ${titleAnimationDirection} motion: ${titleAnimation} (${titleAnimationDuration.toFixed(1)}s)`}
+                          >
+                            <div className={`absolute inset-0 ${titleAnimationDirection === 'in' ? 'bg-linear-to-r' : 'bg-linear-to-l'} from-amber-400/20 via-amber-400/30 to-amber-500/40`} />
+                            <div className="absolute right-0 top-0 bottom-0 w-[1.5px] bg-amber-300 shadow-[0_0_4px_rgba(251,191,36,0.8)]" />
+                          </div>
+                        )}
+
                         {/* Left Trim Handle */}
                         {!titleTrackLocked && (
                           <div

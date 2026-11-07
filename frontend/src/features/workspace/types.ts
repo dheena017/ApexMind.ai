@@ -86,6 +86,9 @@ export interface ScriptSubtitle {
   opacity?: number;
   posY?: number;
   animation?: string;
+  animationOut?: string;
+  animationInDuration?: number;
+  animationOutDuration?: number;
 }
 
 export interface StoryboardScene {

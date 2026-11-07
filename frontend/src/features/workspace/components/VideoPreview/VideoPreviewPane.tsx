@@ -271,6 +271,62 @@ const getTransitionStyles = (type: string, progress: number): { styleA: React.CS
   }
 };
 
+const getTextMotionStyles = (animation: string, progress: number): React.CSSProperties => {
+  const p = Math.max(0, Math.min(1, progress));
+  const fade = { opacity: p };
+
+  switch (animation) {
+    case 'fade':
+      return fade;
+    case 'blur':
+    case 'zoom-blur':
+      return { ...fade, filter: `blur(${(1 - p) * 12}px)`, transform: `scale(${0.88 + p * 0.12})` };
+    case 'zoom-in':
+      return { ...fade, transform: `scale(${0.65 + p * 0.35})` };
+    case 'zoom-out':
+      return { ...fade, transform: `scale(${1.35 - p * 0.35})` };
+    case 'slide-fade':
+    case 'slide-left':
+      return { ...fade, transform: `translateX(${(p - 1) * 72}px)` };
+    case 'slide-right':
+      return { ...fade, transform: `translateX(${(1 - p) * 72}px)` };
+    case 'slide-up':
+      return { ...fade, transform: `translateY(${(1 - p) * 48}px)` };
+    case 'slide-down':
+      return { ...fade, transform: `translateY(${(p - 1) * 48}px)` };
+    case 'spin':
+      return { ...fade, transform: `rotate(${(1 - p) * -180}deg) scale(${0.75 + p * 0.25})` };
+    case 'bounce':
+    case 'pop':
+      return { ...fade, transform: `translateY(${(1 - p) * -28}px) scale(${0.82 + p * 0.18})` };
+    case 'flip-x':
+      return { ...fade, transform: `perspective(500px) rotateY(${(1 - p) * 90}deg)` };
+    case 'flip-y':
+      return { ...fade, transform: `perspective(500px) rotateX(${(1 - p) * -90}deg)` };
+    case 'wipe-right':
+      return { clipPath: `inset(0 ${(1 - p) * 100}% 0 0)` };
+    case 'wipe-left':
+      return { clipPath: `inset(0 0 0 ${(1 - p) * 100}%)` };
+    case 'wipe-down':
+      return { clipPath: `inset(0 0 ${(1 - p) * 100}% 0)` };
+    case 'wipe-up':
+      return { clipPath: `inset(${(1 - p) * 100}% 0 0 0)` };
+    case 'circle':
+    case 'diamond':
+      return { clipPath: `circle(${p * 72}% at 50% 50%)` };
+    case 'flash':
+      return { opacity: p < 0.35 ? p / 0.35 : p < 0.65 ? 1 : 0.65 + (p - 0.65) / 0.35 };
+    case 'rotate-in':
+      return { ...fade, transform: `rotate(${(1 - p) * -32}deg) scale(${0.82 + p * 0.18})` };
+    case 'drift':
+      return { ...fade, transform: `translate(${Math.sin(p * Math.PI) * 14}px, ${(1 - p) * 22}px)` };
+    case 'soft-reveal':
+      return { ...fade, filter: `blur(${(1 - p) * 6}px)` };
+    default:
+      return {};
+  }
+};
+
 interface VideoPreviewPaneProps {
   script: GeneratedScript;
   activeBackdrop?: VisualBackdrop | null;
@@ -431,6 +487,24 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   const [backdropFitMode, setBackdropFitMode] = useState<'fill' | 'fit' | 'crop'>('fill');
   const [backdropAnimation, setBackdropAnimation] = useState('none');
   const [videoTrackVolume, setVideoTrackVolume] = useState(0);
+  const [titleStyle, setTitleStyle] = useState({
+    color: '#FFFFFF',
+    fontFamily: 'inherit',
+    fontWeight: 'Black',
+    fontSize: 52,
+    textTransform: 'uppercase' as 'none' | 'uppercase' | 'lowercase' | 'capitalize',
+    animation: 'none',
+    animationOut: 'none',
+    animDuration: 0.35,
+    animationOutDuration: 0.35,
+  });
+  const [liveTextMotionPreview, setLiveTextMotionPreview] = useState<{
+    target: 'caption' | 'title';
+    direction: 'in' | 'out';
+    animation: string;
+    duration: number;
+    progress: number;
+  } | null>(null);
   const [captionStyle, setCaptionStyle] = useState({
     text: '',
     overridePreset: false,
@@ -462,6 +536,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     posY: 76, // 9:16 safe zone avoids short-form platform UI clipping while keeping captions prominent
     customWidth: undefined as number | undefined,
     duration: 2.2,
+    animation: 'none',
+    animationOut: 'none',
+    animDuration: 0.35,
+    animationOutDuration: 0.35,
   });
   const [overlayStyle, setOverlayStyle] = useState<{
     fitMode: 'fit' | 'fill';
@@ -477,6 +555,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     duration: number;
     animation: string;
     animDuration: number;
+    animationOut: string;
+    animOutDuration: number;
     delay: number;
   }>({
     fitMode: 'fit' as const,
@@ -492,6 +572,8 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     duration: 5,
     animation: 'none',
     animDuration: 0.35,
+    animationOut: 'none',
+    animOutDuration: 0.35,
     delay: 0,
   });
 
@@ -1080,6 +1162,50 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    let animId: number;
+    let timerId: ReturnType<typeof setTimeout>;
+
+    const handleTextMotionPreview = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        animation?: string;
+        duration?: number;
+        target?: 'caption' | 'title';
+        direction?: 'in' | 'out';
+      }>).detail;
+      const animation = detail?.animation || 'none';
+      if (!detail || animation === 'none') {
+        setLiveTextMotionPreview(null);
+        return;
+      }
+
+      const target = detail.target || 'caption';
+      const direction = detail.direction || 'in';
+      const duration = Math.max(0.1, Math.min(detail.duration ?? 0.35, 2));
+      const startTime = performance.now();
+      const animate = (now: number) => {
+        const progress = Math.min(1, (now - startTime) / (duration * 1000));
+        setLiveTextMotionPreview({ target, direction, animation, duration, progress });
+        if (progress < 1) {
+          animId = requestAnimationFrame(animate);
+        } else {
+          timerId = setTimeout(() => setLiveTextMotionPreview(null), 150);
+        }
+      };
+
+      cancelAnimationFrame(animId);
+      clearTimeout(timerId);
+      animId = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('workspace:preview-text-motion', handleTextMotionPreview);
+    return () => {
+      window.removeEventListener('workspace:preview-text-motion', handleTextMotionPreview);
+      cancelAnimationFrame(animId);
+      clearTimeout(timerId);
+    };
+  }, []);
+
   // Detect cut transition at current playhead between consecutive clips
   const activeCutTransition = useMemo(() => {
     const evalTrack = (clips?: TimelineMediaClip[]) => {
@@ -1373,13 +1499,34 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
       }
     };
     const handleCaptionStyle = (e: Event) => {
-      const detail = (e as CustomEvent<Partial<typeof captionStyle> & { cueIndex?: number | null }>).detail;
+      const detail = (e as CustomEvent<Partial<typeof captionStyle> & {
+        cueIndex?: number | null;
+        targetLayer?: string;
+        animationInDuration?: number;
+        direction?: 'in' | 'out';
+      }>).detail;
       if (!detail) return;
       // Do not mutate global captionStyle if this is an isolated single cue change
       if (typeof detail.cueIndex === 'number') {
         return;
       }
-      setCaptionStyle((prev) => ({ ...prev, ...detail }));
+      const { targetLayer, ...style } = detail;
+      if (targetLayer === 'title') {
+        setTitleStyle((prev) => ({
+          ...prev,
+          color: style.color ?? prev.color,
+          fontFamily: style.fontFamily ?? prev.fontFamily,
+          fontWeight: style.fontWeight ?? prev.fontWeight,
+          fontSize: style.fontSize ?? prev.fontSize,
+          textTransform: style.textTransform ?? prev.textTransform,
+          animation: style.animation ?? prev.animation,
+          animationOut: style.animationOut ?? prev.animationOut,
+          animDuration: style.animationInDuration ?? style.animDuration ?? prev.animDuration,
+          animationOutDuration: style.animationOutDuration ?? prev.animationOutDuration,
+        }));
+        return;
+      }
+      setCaptionStyle((prev) => ({ ...prev, ...style }));
     };
     const handleOverlayStyle = (e: Event) => {
       const detail = (e as CustomEvent<Partial<typeof overlayStyle>>).detail;
@@ -2274,40 +2421,37 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
   ].filter(Boolean).join(' ');
 
   const overlayMotionElapsed = Math.max(0, currentTime - timelineState.overlayStart - (overlayStyle.delay || 0));
-  const overlayMotionDuration = Math.max(0.1, overlayStyle.animDuration || 0.35);
-  const overlayMotionProgress = Math.min(1, overlayMotionElapsed / overlayMotionDuration);
-  let overlayMotionOpacity = 1;
-  let overlayMotionTransform = '';
-  if (overlayStyle.animation !== 'none' && isOverlayTimeActive && overlayMotionElapsed < overlayMotionDuration) {
-    if (overlayStyle.animation === 'fade') {
-      overlayMotionOpacity = overlayMotionProgress;
-    } else if (overlayStyle.animation === 'pop') {
-      overlayMotionOpacity = overlayMotionProgress;
-      overlayMotionTransform = `scale(${0.65 + overlayMotionProgress * 0.35})`;
-    } else if (overlayStyle.animation === 'slide-up') {
-      overlayMotionOpacity = overlayMotionProgress;
-      overlayMotionTransform = `translateY(${(1 - overlayMotionProgress) * 24}px)`;
-    } else if (overlayStyle.animation === 'slide-left') {
-      overlayMotionOpacity = overlayMotionProgress;
-      overlayMotionTransform = `translateX(${(1 - overlayMotionProgress) * 24}px)`;
-    } else if (overlayStyle.animation === 'slide-right') {
-      overlayMotionOpacity = overlayMotionProgress;
-      overlayMotionTransform = `translateX(${(overlayMotionProgress - 1) * 24}px)`;
-    } else if (overlayStyle.animation === 'bounce') {
-      overlayMotionOpacity = overlayMotionProgress;
-      overlayMotionTransform = `scale(${1 + Math.sin(overlayMotionProgress * Math.PI) * 0.2})`;
-    } else if (overlayStyle.animation === 'spin') {
-      overlayMotionOpacity = overlayMotionProgress;
-      overlayMotionTransform = `rotate(${(1 - overlayMotionProgress) * -180}deg) scale(${0.7 + overlayMotionProgress * 0.3})`;
-    }
-  } else if (overlayStyle.animation === 'pulse' && isOverlayTimeActive) {
-    overlayMotionTransform = `scale(${1 + Math.sin(currentTime * 6) * 0.06})`;
-  }
+  const overlayMotionTotalDuration = Math.max(0.1, activeOverlayClip?.duration ?? Math.min(timelineState.overlayDuration, overlayStyle.duration));
+  const overlayMotionRemaining = Math.max(0, overlayMotionTotalDuration - overlayMotionElapsed);
+  const overlayMotionInDuration = Math.max(0.1, overlayStyle.animDuration || 0.35);
+  const overlayMotionOutDuration = Math.max(0.1, overlayStyle.animOutDuration || 0.35);
+  const isOverlayMotionOutActive = overlayStyle.animationOut !== 'none' &&
+    isOverlayTimeActive && overlayMotionRemaining <= overlayMotionOutDuration;
+  const isOverlayMotionInActive = overlayStyle.animation !== 'none' &&
+    isOverlayTimeActive && overlayMotionElapsed < overlayMotionInDuration;
+  const isOverlayMotionActive = isOverlayMotionOutActive || isOverlayMotionInActive;
+  const overlayMotionAnimation = isOverlayMotionOutActive ? overlayStyle.animationOut : overlayStyle.animation;
+  const overlayMotionDuration = isOverlayMotionOutActive ? overlayMotionOutDuration : overlayMotionInDuration;
+  const overlayMotionProgress = isOverlayMotionOutActive
+    ? Math.min(1, overlayMotionRemaining / overlayMotionDuration)
+    : Math.min(1, overlayMotionElapsed / overlayMotionDuration);
+  const overlayMotionStyle = isOverlayMotionActive
+    ? getTextMotionStyles(overlayMotionAnimation, overlayMotionProgress)
+    : {};
+  const overlayMotionOpacity = typeof overlayMotionStyle.opacity === 'number' ? overlayMotionStyle.opacity : 1;
+  const overlayMotionTransform = typeof overlayMotionStyle.transform === 'string' ? overlayMotionStyle.transform : '';
+  const overlayMotionFilter = typeof overlayMotionStyle.filter === 'string' ? overlayMotionStyle.filter : undefined;
+  const overlayMotionClipPath = typeof overlayMotionStyle.clipPath === 'string' ? overlayMotionStyle.clipPath : undefined;
+  const pulseMotionTransform = overlayStyle.animation === 'pulse' && isOverlayTimeActive
+    ? `scale(${1 + Math.sin(currentTime * 6) * 0.06})`
+    : '';
 
   const overlayPositionStyle = {
     left: `${overlayStyle.posX ?? 50}%`,
     top: `${overlayStyle.posY ?? 78}%`,
-    transform: `translate(-50%, -50%) ${overlayTransform} ${overlayMotionTransform}`,
+    transform: `translate(-50%, -50%) ${overlayTransform} ${overlayMotionTransform || pulseMotionTransform}`,
+    filter: overlayMotionFilter,
+    clipPath: overlayMotionClipPath,
   };
 
   // Caption font size styling map
@@ -2640,25 +2784,55 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         )}
 
         {/* ── Title Header ────────────────────────────────────────────── */}
-        {Boolean(currentTitle) && titleEnabled && isTitleTimeActive && (
-          <div className="relative z-20 px-3 pt-6 pb-0.5 flex justify-center pointer-events-none transition-opacity duration-200">
+        {Boolean(currentTitle) && titleEnabled && isTitleTimeActive && (() => {
+          const titleElapsed = Math.max(0, currentTime - timelineState.titleStart);
+          const titleRemaining = Math.max(0, timelineState.titleStart + timelineState.titleDuration - currentTime);
+          const isPreviewingTitleMotion = liveTextMotionPreview?.target === 'title';
+          const titleExitActive = titleStyle.animationOut !== 'none' && titleRemaining <= titleStyle.animationOutDuration;
+          const titleAnimation = isPreviewingTitleMotion
+            ? liveTextMotionPreview.animation
+            : titleExitActive ? titleStyle.animationOut : titleStyle.animation;
+          const titleMotionDuration = Math.max(0.1, isPreviewingTitleMotion
+            ? liveTextMotionPreview.duration
+            : titleExitActive ? titleStyle.animationOutDuration : titleStyle.animDuration);
+          const titleMotionProgress = isPreviewingTitleMotion
+            ? liveTextMotionPreview.direction === 'out' ? 1 - liveTextMotionPreview.progress : liveTextMotionPreview.progress
+            : titleExitActive
+              ? Math.max(0, Math.min(1, titleRemaining / titleMotionDuration))
+            : isPlaying ? Math.min(1, titleElapsed / titleMotionDuration) : 1;
+          const titleMotionStyle = getTextMotionStyles(titleAnimation, titleMotionProgress);
+          const titleWeight = titleStyle.fontWeight === 'Black' ? 900 : titleStyle.fontWeight === 'ExtraBold' ? 800 : titleStyle.fontWeight === 'Bold' ? 700 : titleStyle.fontWeight === 'SemiBold' ? 600 : titleStyle.fontWeight === 'Medium' ? 500 : 400;
+
+          return (
             <div
-              ref={titleRef}
-              onClick={(e) => handleSelectLayer(e, 'title')}
-              className="w-fit max-w-[92%] px-3 py-1 cursor-default select-none pointer-events-auto"
+              className="relative z-20 px-3 pt-6 pb-0.5 flex justify-center pointer-events-none transition-opacity duration-200"
+              style={{ opacity: titleMotionStyle.opacity ?? 1 }}
             >
-              <h1
-                className="font-black uppercase tracking-tight text-white text-center leading-tight drop-shadow-md pointer-events-none"
-                style={{
-                  fontSize: `${Math.max(12, Math.min(36, Math.round(18 * canvasScale)))}px`,
-                  textShadow: theme ? theme.titleShadow : '0 2px 10px rgba(0,0,0,0.9)',
-                }}
+              <div
+                ref={titleRef}
+                onClick={(e) => handleSelectLayer(e, 'title')}
+                className="w-fit max-w-[92%] px-3 py-1 cursor-default select-none pointer-events-auto"
               >
-                {currentTitle}
-              </h1>
+                <h1
+                  className="font-black tracking-tight text-center leading-tight drop-shadow-md pointer-events-none"
+                  style={{
+                    color: titleStyle.color,
+                    fontFamily: titleStyle.fontFamily,
+                    fontWeight: titleWeight,
+                    textTransform: titleStyle.textTransform,
+                    fontSize: `${Math.max(12, Math.min(64, Math.round(titleStyle.fontSize * 0.35 * canvasScale)))}px`,
+                    textShadow: theme ? theme.titleShadow : '0 2px 10px rgba(0,0,0,0.9)',
+                    transform: titleMotionStyle.transform,
+                    filter: titleMotionStyle.filter,
+                    clipPath: titleMotionStyle.clipPath,
+                  }}
+                >
+                  {currentTitle}
+                </h1>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Dynamic Motivational Badge Overlay */}
         {effectiveOverlay?.type === 'badge' && (
@@ -2726,8 +2900,29 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
         {Boolean(visibleSubtitle) && captionsEnabled && (() => {
           const activeSubStart = activeSubtitleObj?.start ?? (activeStoryboardScene?.start ?? 0);
           const subElapsed = Math.max(0, currentTime - activeSubStart);
+          const subDuration = Math.max(0.1, activeSubtitleObj?.duration ?? activeStoryboardScene?.duration ?? captionStyle.duration);
+          const subRemaining = Math.max(0, activeSubStart + subDuration - currentTime);
           const subPopProgress = Math.min(1, subElapsed / 0.22);
           const subScale = 0.94 + Math.sin(subPopProgress * Math.PI * 0.5) * 0.06;
+          const isPreviewingCaptionMotion = liveTextMotionPreview?.target === 'caption';
+          const captionAnimationOut = activeSubtitleObj?.animationOut || captionStyle.animationOut;
+          const captionExitDuration = Math.max(0.1, activeSubtitleObj?.animationOutDuration ?? captionStyle.animationOutDuration);
+          const captionExitActive = captionAnimationOut !== 'none' && subRemaining <= captionExitDuration;
+          const captionAnimation = isPreviewingCaptionMotion
+            ? liveTextMotionPreview.animation
+            : captionExitActive ? captionAnimationOut : activeSubtitleObj?.animation || captionStyle.animation;
+          const captionMotionDuration = Math.max(0.1, isPreviewingCaptionMotion
+            ? liveTextMotionPreview.duration
+            : captionExitActive
+              ? captionExitDuration
+              : activeSubtitleObj?.animationInDuration ?? captionStyle.animDuration);
+          const captionMotionProgress = isPreviewingCaptionMotion
+            ? liveTextMotionPreview.direction === 'out' ? 1 - liveTextMotionPreview.progress : liveTextMotionPreview.progress
+            : captionExitActive
+              ? Math.max(0, Math.min(1, subRemaining / captionMotionDuration))
+              : isPlaying ? Math.min(1, subElapsed / captionMotionDuration) : 1;
+          const captionMotionStyle = getTextMotionStyles(captionAnimation, captionMotionProgress);
+          const captionMotionOpacity = typeof captionMotionStyle.opacity === 'number' ? captionMotionStyle.opacity : 1;
 
           const activePosY = (activeSubtitleObj?.posY !== undefined)
             ? activeSubtitleObj.posY
@@ -2743,8 +2938,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
               style={{
                 left: `${captionStyle.posX ?? 50}%`,
                 top: `${activePosY}%`,
-                transform: `translate(-50%, -50%) scale(${subScale})`,
-                opacity: captionStyle.opacity / 100,
+                transform: `translate(-50%, -50%) ${captionMotionStyle.transform || ''} scale(${subScale})`,
+                opacity: (captionStyle.opacity / 100) * captionMotionOpacity,
+                filter: captionMotionStyle.filter,
+                clipPath: captionMotionStyle.clipPath,
                 width: captionStyle.customWidth ? `${Math.round(captionStyle.customWidth * canvasScale)}px` : 'auto',
                 maxWidth: '88%',
                 minWidth: 'min(82%, 300px)',

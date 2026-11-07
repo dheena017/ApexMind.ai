@@ -100,7 +100,10 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
   const [textColor, setTextColor] = useState('#FFFFFF');
   const [opacity, setOpacity] = useState(100);
   const [animation, setAnimation] = useState('none');
-  const [animDuration, setAnimDuration] = useState(0.35);
+  const [animationOut, setAnimationOut] = useState('none');
+  const [animationDirection, setAnimationDirection] = useState<'in' | 'out'>('in');
+  const [animDuration, setAnimDuration] = useState(0.5);
+  const [animOutDuration, setAnimOutDuration] = useState(0.5);
 
   // Broadcast overlay style changes in real-time
   useEffect(() => {
@@ -119,13 +122,15 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
           textColor,
           opacity,
           animation,
+          animationOut,
           animDuration,
+          animOutDuration,
         },
       })
     );
   }, [
     fitMode, flipH, flipV, rotation, scale, posX, posY, lockAspect,
-    accentColor, textColor, opacity, animation, animDuration,
+    accentColor, textColor, opacity, animation, animationOut, animDuration, animOutDuration,
   ]);
 
   const handleResetTransform = () => {
@@ -406,24 +411,19 @@ export const OverlayCompoundInspector: React.FC<OverlayCompoundInspectorProps> =
           <div className="flex flex-col gap-3 pt-0.5">
             <MotionInspectorPage
               presets={OVERLAY_MOTION_PRESETS}
-              value={animation}
-              onChange={setAnimation}
+              value={animationDirection === 'in' ? animation : animationOut}
+              onChange={(preset) => {
+                if (animationDirection === 'in') setAnimation(preset);
+                else setAnimationOut(preset);
+              }}
+              direction={animationDirection}
+              onDirectionChange={setAnimationDirection}
+              duration={animationDirection === 'in' ? animDuration : animOutDuration}
+              onDurationChange={(nextDuration) => {
+                if (animationDirection === 'in') setAnimDuration(nextDuration);
+                else setAnimOutDuration(nextDuration);
+              }}
             />
-            <div className="p-3 rounded-xl bg-[#181818] border border-[#242424] flex flex-col gap-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">Motion Duration</span>
-                <span className="font-mono-studio text-white">{animDuration.toFixed(2)}s</span>
-              </div>
-              <input
-                type="range"
-                min="0.1"
-                max="1.5"
-                step="0.05"
-                value={animDuration}
-                onChange={(event) => setAnimDuration(Number(event.target.value))}
-                className="w-full accent-[#3B82F6] cursor-pointer"
-              />
-            </div>
           </div>
         )}
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   AlignLeft,
   AlignCenter,
@@ -11,6 +12,7 @@ import {
   Underline,
   Strikethrough,
 } from 'lucide-react';
+import { MotionInspectorPage as MotionPresetPicker, VIDEO_MOTION_PRESETS } from './MotionInspectorPage';
 import { GeneratedScript, ScriptSubtitle } from '../../types';
 import { SelectedClip } from '../timeline/timelineTypes';
 import '@/src/shared/ui/CustomSelect';
@@ -74,6 +76,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     window.addEventListener('workspace:selected-clip-details', handleSelectedClipDetails);
     return () => window.removeEventListener('workspace:selected-clip-details', handleSelectedClipDetails);
   }, []);
+  const [activeSubTab, setActiveSubTab] = useState<'text' | 'motion'>('text');
   // Text target selector: user can choose what part of script they are styling
   const [textTarget, setTextTarget] = useState<'cue' | 'quote' | 'hook' | 'cta' | 'title'>(isTitleSelected ? 'title' : isSingleCue ? 'cue' : 'quote');
 
@@ -117,7 +120,10 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
 
   // Animation & Timing
   const [activeAnimation, setActiveAnimation] = useState('pop');
+  const [activeAnimationOut, setActiveAnimationOut] = useState('none');
+  const [animationDirection, setAnimationDirection] = useState<'in' | 'out'>('in');
   const [animDuration, setAnimDuration] = useState(0.35);
+  const [animOutDuration, setAnimOutDuration] = useState(0.35);
   const [displayDuration, setDisplayDuration] = useState(3.0);
 
   const isSyncingFromCueRef = useRef(false);
@@ -154,6 +160,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
       if (activeCue.opacity !== undefined) setOpacity(activeCue.opacity);
       if (activeCue.posY !== undefined) setPosY(activeCue.posY);
       if (activeCue.animation) setActiveAnimation(activeCue.animation);
+      if (activeCue.animationOut) setActiveAnimationOut(activeCue.animationOut);
+      if (typeof activeCue.animationInDuration === 'number') setAnimDuration(activeCue.animationInDuration);
+      if (typeof activeCue.animationOutDuration === 'number') setAnimOutDuration(activeCue.animationOutDuration);
       setTimeout(() => { isSyncingFromCueRef.current = false; }, 50);
     } else if (isTitleSelected) {
       setTextTarget('title');
@@ -177,6 +186,10 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     activeCue?.fontFamily,
     activeCue?.fontSize,
     activeCue?.fontWeight,
+    activeCue?.animation,
+    activeCue?.animationOut,
+    activeCue?.animationInDuration,
+    activeCue?.animationOutDuration,
     textTarget,
     script?.quote,
     script?.hook,
@@ -235,6 +248,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
       opacity,
       posY,
       animation: activeAnimation,
+      animationOut: activeAnimationOut,
+      animationInDuration: animDuration,
+      animationOutDuration: animOutDuration,
     }));
     onUpdateSubtitles(updated);
     window.dispatchEvent(
@@ -267,7 +283,10 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
           opacity,
           posY,
           animation: activeAnimation,
+          animationOut: activeAnimationOut,
           animDuration,
+          animationOutDuration: animOutDuration,
+          direction: animationDirection,
           duration: displayDuration,
         },
       })
@@ -310,7 +329,10 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
         currentSub.bgPadding !== bgPadding ||
         currentSub.opacity !== opacity ||
         currentSub.posY !== posY ||
-        currentSub.animation !== activeAnimation
+        currentSub.animation !== activeAnimation ||
+        currentSub.animationOut !== activeAnimationOut ||
+        currentSub.animationInDuration !== animDuration ||
+        currentSub.animationOutDuration !== animOutDuration
       )) {
         const updated = subs.map((sub, idx) =>
           idx === activeCueIndex
@@ -341,6 +363,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                 opacity,
                 posY,
                 animation: activeAnimation,
+                animationOut: activeAnimationOut,
+                animationInDuration: animDuration,
+                animationOutDuration: animOutDuration,
               }
             : sub
         );
@@ -375,6 +400,9 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
               opacity,
               posY,
               animation: activeAnimation,
+              animationOut: activeAnimationOut,
+              animationInDuration: animDuration,
+              animationOutDuration: animOutDuration,
             },
           })
         );
@@ -385,6 +413,7 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
       new CustomEvent('workspace:caption-style-change', {
         detail: {
           cueIndex: isSingleCue ? activeCueIndex : null,
+          targetLayer: textTarget,
           text: isSingleCue ? undefined : textContent,
           overridePreset,
           color: isSingleCue ? undefined : textColor,
@@ -413,6 +442,10 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
           opacity: isSingleCue ? undefined : opacity,
           posY: isSingleCue ? undefined : posY,
           animation: isSingleCue ? undefined : activeAnimation,
+          animationOut: isSingleCue ? undefined : activeAnimationOut,
+          animationInDuration: animDuration,
+          animationOutDuration: animOutDuration,
+          direction: animationDirection,
           animDuration,
           duration: displayDuration,
         },
@@ -422,7 +455,8 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     textContent, overridePreset, textColor, textFont, textWeight, textSize, textAlign, textTransform,
     isBold, isItalic, isUnderline, isStrikethrough, strokeOutline, strokeColor, strokeWidth,
     dropShadow, shadowColor, shadowBlur, neonGlow, glowColor, letterSpacing, lineHeight,
-    bgColor, bgRadius, bgPadding, opacity, posY, activeAnimation, animDuration, displayDuration,
+    bgColor, bgRadius, bgPadding, opacity, posY, activeAnimation, activeAnimationOut,
+    animationDirection, animDuration, animOutDuration, displayDuration,
     isSingleCue, activeCueIndex, onUpdateSubtitles, script?.subtitles
   ]);
 
@@ -519,14 +553,60 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
     }
   };
 
+  const handleMotionChange = (animation: string) => {
+    if (animationDirection === 'in') {
+      setActiveAnimation(animation);
+    } else {
+      setActiveAnimationOut(animation);
+    }
+    window.dispatchEvent(
+      new CustomEvent('workspace:preview-text-motion', {
+        detail: {
+          animation,
+          direction: animationDirection,
+          duration: animationDirection === 'in' ? animDuration : animOutDuration,
+          target: textTarget === 'title' ? 'title' : 'caption',
+        },
+      })
+    );
+  };
+
+  const handleMotionDurationChange = (duration: number) => {
+    if (animationDirection === 'in') {
+      setAnimDuration(duration);
+    } else {
+      setAnimOutDuration(duration);
+    }
+    window.dispatchEvent(
+      new CustomEvent('workspace:preview-text-motion', {
+        detail: {
+          animation: animationDirection === 'in' ? activeAnimation : activeAnimationOut,
+          direction: animationDirection,
+          duration,
+          target: textTarget === 'title' ? 'title' : 'caption',
+        },
+      })
+    );
+  };
+
   const activateCustomTextStyle = () => setOverridePreset(true);
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none">
+      <div className="px-2.5 pt-2 pb-2 shrink-0 border-b border-[#242424] bg-[#111111]">
+        <ScrollableTabs
+          tabs={[
+            { id: 'text', label: 'Text' },
+            { id: 'motion', label: 'Motion' },
+          ]}
+          activeTab={activeSubTab}
+          onChange={(tab) => setActiveSubTab(tab as 'text' | 'motion')}
+        />
+      </div>
       {/*  Tab Content Area  */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
 
-        {/*  TEXT TAB  */}
+        {activeSubTab === 'text' && (
         <div className="flex flex-col gap-3 pt-0.5">
             {/* Single Cue Active Banner */}
             {isSingleCue && activeCue && (
@@ -810,7 +890,23 @@ export const TextCompoundInspector: React.FC<TextCompoundInspectorProps> = ({
                 </div>
               </div>
             </div>
+
           </div>
+        )}
+
+        {activeSubTab === 'motion' && (
+          <div className="flex flex-col gap-3 pt-0.5">
+            <MotionPresetPicker
+              presets={VIDEO_MOTION_PRESETS}
+              value={animationDirection === 'in' ? activeAnimation : activeAnimationOut}
+              direction={animationDirection}
+              onDirectionChange={setAnimationDirection}
+              duration={animationDirection === 'in' ? animDuration : animOutDuration}
+              onDurationChange={handleMotionDurationChange}
+              onChange={handleMotionChange}
+            />
+          </div>
+        )}
 
       </div>
     </div>
