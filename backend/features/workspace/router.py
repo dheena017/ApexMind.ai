@@ -19,6 +19,9 @@ from .schemas import (
     # Studio Pipeline v2 schemas
     StudioScriptRequest,
     StudioScriptResponse,
+    ScriptJobResponse,
+    JobStatusResponse,
+    ScriptGenerationResponse,
     StudioVoiceRequest,
     StudioVoiceResponse,
     StudioMediaRequest,
@@ -228,6 +231,12 @@ def post_studio_generate_script(payload: StudioScriptRequest):
             creative_context=payload.creativeContext,
             available_assets=payload.availableAssets,
             user_prompt=payload.userPrompt,
+            generation_profile=payload.generationProfile,
+            visual_style=payload.visualStyle,
+            subtitle_style=payload.subtitleStyle,
+            music_mood=payload.musicMood,
+            project_id=payload.projectId,
+            user_id=payload.userId,
         )
     except ValueError as ve:
         logger.warning(f"[Studio/Script] Validation error: {ve}")
@@ -235,6 +244,57 @@ def post_studio_generate_script(payload: StudioScriptRequest):
     except Exception as e:
         logger.error(f"[Studio/Script] Error: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post(
+    "/api/studio/generate-script/async",
+    response_model=ScriptJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["Studio"],
+    summary="Initiate Asynchronous Script Generation Job",
+    description="Dispatches a durable generation job returning a jobId for progress polling.",
+)
+def post_studio_generate_script_async(payload: StudioScriptRequest):
+    from .generation_jobs import create_generation_job
+    try:
+        job_info = create_generation_job(
+            payload=payload.model_dump(),
+            user_id=payload.userId,
+            project_id=payload.projectId,
+        )
+        return job_info
+    except Exception as e:
+        logger.error(f"[Studio/Jobs] Failed to dispatch generation job: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get(
+    "/api/studio/jobs/{job_id}",
+    response_model=JobStatusResponse,
+    tags=["Studio"],
+    summary="Get Generation Job Status",
+    description="Polls execution phase, progress percent, and retrieves result when completed.",
+)
+def get_studio_job_status(job_id: str):
+    from .generation_jobs import get_generation_job_status
+    status_info = get_generation_job_status(job_id)
+    if not status_info:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job '{job_id}' not found.")
+    return status_info
+
+
+@router.post(
+    "/api/studio/jobs/{job_id}/cancel",
+    tags=["Studio"],
+    summary="Cancel Generation Job",
+    description="Signals cooperative cancellation for an in-flight generation job.",
+)
+def post_cancel_studio_job(job_id: str):
+    from .generation_jobs import cancel_generation_job
+    success = cancel_generation_job(job_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job '{job_id}' not found.")
+    return {"success": True, "jobId": job_id, "status": "cancelled"}
 
 
 @router.post(

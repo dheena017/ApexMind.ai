@@ -154,6 +154,7 @@ export interface GeneratedScript {
   subtitleMotion?: string;
   textAnimation?: string;
   cameraMovement?: string;
+  scenes?: any[];
   sceneStructure?: {
     hookPlacement?: string;
     ctaTiming?: string;

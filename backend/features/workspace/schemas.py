@@ -3,7 +3,7 @@ backend/features/workspace/schemas.py
 Pydantic schemas and DTOs for the Workspace feature (Scripting, Voiceover, Memory, Media Library).
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
 from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 
@@ -274,6 +274,311 @@ class GenerateCaptionsResponse(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SCRIPT GENERATION v2.1.2 — 3D Cinematic & Animation Contract Schemas
+# ══════════════════════════════════════════════════════════════════════════════
+
+class Vector3D(BaseModel):
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+
+class Transform3D(BaseModel):
+    position: Vector3D = Field(default_factory=Vector3D)
+    rotation: Vector3D = Field(default_factory=Vector3D, description="Euler degrees (pitch, roll, yaw)")
+    scale: Vector3D = Field(default_factory=lambda: Vector3D(x=1.0, y=1.0, z=1.0))
+
+class CameraLens(BaseModel):
+    focalLengthMm: int = 35
+    depthOfField: bool = True
+    fStop: float = 2.8
+    focusDistanceMeters: Optional[float] = 3.5
+    sensorWidthMm: float = 36.0
+
+class CameraPathKeyframe(BaseModel):
+    timestamp: float = Field(default=0.0, description="Seconds relative to global video timeline")
+    position: Vector3D = Field(default_factory=Vector3D)
+    rotation: Vector3D = Field(default_factory=Vector3D)
+    fovDegrees: float = 54.43
+    tension: float = 0.0
+    continuity: float = 0.0
+    bias: float = 0.0
+
+class SceneCamera(BaseModel):
+    shot: str = "wide"
+    angle: str = "low_angle"
+    movement: str = "slow_dolly_in"
+    lens: CameraLens = Field(default_factory=CameraLens)
+    focusTarget: Optional[str] = None
+    trackingMode: str = "look_at"
+    duration: float = 5.0
+    splinePath: List[CameraPathKeyframe] = Field(default_factory=list)
+    startTransform: Transform3D = Field(default_factory=Transform3D)
+    endTransform: Transform3D = Field(default_factory=Transform3D)
+
+class SceneLighting(BaseModel):
+    style: str = "warm_cinematic"
+    intensity: str = "soft"
+    keyLightAngle: str = "side_45_deg"
+    colorTemperature: int = 4500
+
+class SceneTransition(BaseModel):
+    inTransition: str = "cut"
+    outTransition: str = "cut"
+    duration: float = 0.5
+
+class SceneEnvironment(BaseModel):
+    assetId: str = "default_environment"
+    name: str = "Suburban Street"
+    timeOfDay: str = "morning"
+    weather: str = "clear"
+    ambientLighting: str = "warm_sunlight"
+    layoutMapId: Optional[str] = None
+
+class PropInScene(BaseModel):
+    propId: str = ""
+    name: str = ""
+    placement: str = "ground"
+    state: str = "idle"
+
+class CharacterLocomotion(BaseModel):
+    type: str = "walk"
+    speedMps: float = 1.2
+    pathType: str = "spline"
+
+class AnimationKeyframe(BaseModel):
+    timestamp: float = 0.0
+    poseName: str = "idle"
+    rootTransform: Optional[Transform3D] = None
+    blendWeight: float = 1.0
+
+class CharacterAnimationClip(BaseModel):
+    clipId: str = "idle"
+    startTime: float = 0.0
+    endTime: float = 4.0
+    loop: bool = False
+    blendInDuration: float = 0.3
+    blendOutDuration: float = 0.3
+    keyframes: List[AnimationKeyframe] = Field(default_factory=list)
+
+class VisemeKeyframe(BaseModel):
+    timestamp: float = 0.0
+    viseme: str = "aa"
+    weight: float = Field(default=1.0, ge=0.0, le=1.0)
+
+class FacialKeyframe(BaseModel):
+    timestamp: float = 0.0
+    expression: str = "curious"
+    intensity: float = Field(default=0.8, ge=0.0, le=1.0)
+
+class CharacterInScene(BaseModel):
+    characterId: str = ""
+    role: str = "primary"
+    action: str = ""
+    locomotion: CharacterLocomotion = Field(default_factory=CharacterLocomotion)
+    animation: CharacterAnimationClip = Field(default_factory=CharacterAnimationClip)
+    facialAnimation: List[FacialKeyframe] = Field(default_factory=list)
+    lipSyncVisemes: List[VisemeKeyframe] = Field(default_factory=list)
+    startTransform: Transform3D = Field(default_factory=Transform3D)
+    endTransform: Transform3D = Field(default_factory=Transform3D)
+
+class WordTimestamp(BaseModel):
+    word: str = ""
+    start: float = 0.0
+    end: float = 0.0
+    confidence: float = 1.0
+
+class SceneDialogue(BaseModel):
+    speakerId: str = "narrator"
+    voiceName: str = "Puck"
+    text: str = ""
+    startOffset: float = 0.2
+    words: List[WordTimestamp] = Field(default_factory=list)
+
+class SceneAmbient(BaseModel):
+    trackId: str = "ambient_default"
+    volumeDb: float = -18.0
+    fadeInDuration: float = 0.5
+    fadeOutDuration: float = 0.5
+
+class SceneSFX(BaseModel):
+    cueId: str = "sfx_cue"
+    timestamp: float = 0.0
+    volumeDb: float = -12.0
+    pan: float = 0.0
+
+class SceneAudio(BaseModel):
+    sampleRate: int = 24000
+    dialogue: Optional[SceneDialogue] = None
+    ambient: SceneAmbient = Field(default_factory=SceneAmbient)
+    sfx: List[SceneSFX] = Field(default_factory=list)
+    musicMood: str = "orchestral_wonder"
+
+class SceneItem(BaseModel):
+    sceneId: str = ""
+    sceneNumber: int = 1
+    startTime: float = 0.0
+    endTime: float = 5.0
+    duration: float = 5.0
+    narration: str = ""
+    visualDescription: str = ""
+    action: str = ""
+    characters: List[CharacterInScene] = Field(default_factory=list)
+    environment: SceneEnvironment = Field(default_factory=SceneEnvironment)
+    props: List[PropInScene] = Field(default_factory=list)
+    camera: SceneCamera = Field(default_factory=SceneCamera)
+    lighting: SceneLighting = Field(default_factory=SceneLighting)
+    audio: SceneAudio = Field(default_factory=SceneAudio)
+    transitions: SceneTransition = Field(default_factory=SceneTransition)
+    continuityNotes: str = ""
+    beat: str = "body"
+    mediaType: str = "video"
+    mediaStatus: str = "unresolved"
+    videoPrompt: str = ""
+    subtitleText: str = ""
+
+class ScriptAssetCharacter(BaseModel):
+    id: str = ""
+    assetType: str = "character"
+    name: str = ""
+    appearance: Dict[str, Any] = Field(default_factory=dict)
+    accessories: List[Dict[str, Any]] = Field(default_factory=list)
+    identityRules: Dict[str, Any] = Field(default_factory=dict)
+    usage: Dict[str, Any] = Field(default_factory=dict)
+
+class ScriptAssetEnvironment(BaseModel):
+    id: str = ""
+    assetType: str = "environment"
+    name: str = ""
+    layoutMapId: Optional[str] = None
+    fixedLandmarks: List[str] = Field(default_factory=list)
+    timeOfDay: str = "morning"
+    weather: str = "clear"
+    lightingDefaults: Dict[str, Any] = Field(default_factory=dict)
+    usage: Dict[str, Any] = Field(default_factory=dict)
+
+class ScriptAssetProp(BaseModel):
+    id: str = ""
+    assetType: str = "prop"
+    name: str = ""
+    description: str = ""
+    scale: str = "medium"
+    firstAppearsInScene: int = 1
+    reuseAcrossScenes: bool = True
+
+class AssetManifest(BaseModel):
+    characters: List[ScriptAssetCharacter] = Field(default_factory=list)
+    environments: List[ScriptAssetEnvironment] = Field(default_factory=list)
+    props: List[ScriptAssetProp] = Field(default_factory=list)
+
+class AssetBinding(BaseModel):
+    assetType: Literal[
+        "character", "animal", "environment", "house",
+        "prop", "material", "texture", "animation", "camera"
+    ] = "character"
+    storyAssetId: str = ""
+    catalogAssetId: str = ""
+    category: Literal[
+        "characters", "animals", "environments", "houses",
+        "props", "materials", "textures", "animations", "cameras"
+    ] = "characters"
+    status: Literal[
+        "resolved", "needs_modeling", "needs_generation", "unresolved", "incompatible"
+    ] = "unresolved"
+    modelFilePath: Optional[str] = None
+    sha256: Optional[str] = None
+    blenderVersion: Optional[str] = "4.2.0"
+    rigType: Optional[str] = None
+    activeMaterials: Dict[str, str] = Field(default_factory=dict)
+    activeAccessories: List[str] = Field(default_factory=list)
+    isGenericBackground: bool = False
+    classification: Literal["hero", "secondary", "background_generic"] = "hero"
+    notes: Optional[str] = None
+    # Backward compatibility
+    storyCharacterId: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.storyCharacterId and self.storyAssetId:
+            self.storyCharacterId = self.storyAssetId
+        elif not self.storyAssetId and self.storyCharacterId:
+            self.storyAssetId = self.storyCharacterId
+
+CharacterAssetBinding = AssetBinding
+
+class ScriptDocument(BaseModel):
+    id: str = ""
+    version: int = 1
+    title: str = ""
+    description: Optional[str] = None
+    targetAudience: Optional[str] = None
+    totalDuration: float = 30.0
+    aspectRatio: str = "9:16"
+    scenes: List[SceneItem] = Field(default_factory=list)
+    hook: Optional[str] = None
+    hooks: Optional[List[Dict[str, Any]]] = None
+    quote: Optional[str] = None
+    cta: Optional[str] = None
+    soundDesign: Optional[Dict[str, Any]] = None
+
+class ScriptGenerationMetadata(BaseModel):
+    modelUsed: str = ""
+    promptVersion: str = "v2.1.2"
+    totalInputTokens: int = 0
+    totalOutputTokens: int = 0
+    generationLatencyMs: int = 0
+    tags: List[str] = Field(default_factory=list)
+    hashtags: List[str] = Field(default_factory=list)
+    createdAt: str = ""
+
+class PromptAdherenceCheck(BaseModel):
+    criterion: str
+    passed: bool
+    severity: Literal["info", "warning", "error"] = "info"
+    details: str = ""
+
+class ValidationSummary(BaseModel):
+    isValid: bool = True
+    targetDuration: float = 30.0
+    actualDuration: float = 30.0
+    durationDeltaPercent: float = 0.0
+    sceneCount: int = 0
+    repairedIssues: List[str] = Field(default_factory=list)
+    errors: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    adherenceChecks: List[PromptAdherenceCheck] = Field(default_factory=list)
+    adherenceScorePercent: float = 100.0
+
+class ScriptGenerationResponse(BaseModel):
+    success: bool = True
+    generationId: str = ""
+    generationProfile: Literal["motivational_reel", "cinematic_3d_story"] = "motivational_reel"
+    script: ScriptDocument = Field(default_factory=ScriptDocument)
+    assetManifest: AssetManifest = Field(default_factory=AssetManifest)
+    assetBindings: List[AssetBinding] = Field(default_factory=list)
+    metadata: ScriptGenerationMetadata = Field(default_factory=ScriptGenerationMetadata)
+    validation: ValidationSummary = Field(default_factory=ValidationSummary)
+
+class ScriptJobResponse(BaseModel):
+    success: bool = True
+    jobId: str
+    status: Literal["queued", "in_progress", "completed", "failed", "cancelled"] = "queued"
+    phase: str = "QUEUED"
+    progressPercent: int = 0
+    createdAt: str = ""
+    pollUrl: str = ""
+    cancelUrl: str = ""
+
+class JobStatusResponse(BaseModel):
+    jobId: str
+    status: Literal["queued", "in_progress", "completed", "failed", "cancelled"] = "queued"
+    phase: str = "QUEUED"
+    progressPercent: int = 0
+    message: Optional[str] = None
+    elapsedSeconds: float = 0.0
+    error: Optional[str] = None
+    result: Optional[ScriptGenerationResponse] = None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # STUDIO PIPELINE v2 — Stage 1: Script Generation
 # POST /api/studio/generate-script
 # ══════════════════════════════════════════════════════════════════════════════
@@ -282,11 +587,17 @@ class StudioScriptRequest(BaseModel):
     category: str = Field(default="Stoic Mindset & Discipline", description="Motivational theme/niche")
     topic: Optional[str] = Field(default=None, description="Specific topic focus")
     userPrompt: Optional[str] = Field(default=None, description="Free-text creative direction from the user")
+    generationProfile: Literal["motivational_reel", "cinematic_3d_story"] = Field(default="motivational_reel", description="Generation profile: motivational_reel or cinematic_3d_story")
     tone: Optional[str] = Field(default=None, description="Vocal delivery tone (raw, aggressive, calm, etc.)")
     length: Optional[str] = Field(default="30 seconds", description="Target video duration")
     model: Optional[str] = Field(default=DEFAULT_SCRIPT_MODEL, description="Gemini model to use")
     aspectRatio: Optional[str] = Field(default="9:16", description="Video aspect ratio")
     voiceName: Optional[str] = Field(default=None, description="Selected voice profile ID")
+    visualStyle: Optional[str] = Field(default="dark_cinematic", description="Visual aesthetic preset")
+    subtitleStyle: Optional[str] = Field(default="hormozi", description="Subtitle animation preset")
+    musicMood: Optional[str] = Field(default="orchestral", description="Audio music mood")
+    projectId: Optional[str] = Field(default=None, description="Associated project ID")
+    userId: Optional[str] = Field(default=None, description="Requesting user ID")
     musicTrackId: Optional[str] = Field(default=None, description="Selected music track ID from media library")
     captionStylePreset: Optional[str] = Field(default=None, description="Caption visual preset class")
     backdropId: Optional[str] = Field(default=None, description="Selected backdrop/visual theme ID")
@@ -307,6 +618,13 @@ class StudioScriptResponse(BaseModel):
     data: Dict[str, Any] = Field(description="Full script + storyboard (title, hook, storyboard[], soundDesign, etc.)")
     memoryCount: int = 0
     generatedAt: str = ""
+    generationId: Optional[str] = None
+    generationProfile: Optional[str] = "motivational_reel"
+    script: Optional[ScriptDocument] = None
+    assetManifest: Optional[AssetManifest] = None
+    assetBindings: Optional[List[CharacterAssetBinding]] = None
+    metadata: Optional[ScriptGenerationMetadata] = None
+    validation: Optional[ValidationSummary] = None
 
 
 # ══════════════════════════════════════════════════════════════════════════════

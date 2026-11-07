@@ -3,6 +3,7 @@ import { workspaceApi } from '../api/workspaceApi';
 import { useStudioPipeline } from '../hooks/useStudioPipeline';
 import { videosApi } from '@/src/features/videos/api/videosApi';
 import { DEFAULT_VISUAL_BACKDROPS, GeneratedScript, MusicTrack, VideoExportSettings, VisualBackdrop, VoiceProfile } from '../types';
+import { GenerationProfile } from '../types/script';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { VideoPreviewPane } from '../components/VideoPreview';
 import { StudioControlsPane, CompoundType } from '../components/StudioControlsPane';
@@ -104,6 +105,8 @@ export default function WorkspacePage({
     progress: pipelineProgress,
     isRunning: pipelineRunning,
     runPipeline,
+    generateScriptOnly,
+    runStagesFromScript,
     retryVoice: retryPipelineVoice,
     retryCaptions: retryPipelineCaptions,
   } = useStudioPipeline();
@@ -112,6 +115,7 @@ export default function WorkspacePage({
 
   // AI Model & Script Generation
   const [selectedModel, setSelectedModel] = useState(DEFAULT_SCRIPT_MODEL);
+  const [generationProfile, setGenerationProfile] = useState<GenerationProfile>('motivational_reel');
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
   const [targetLength, setTargetLength] = useState('30 seconds');
@@ -837,6 +841,141 @@ export default function WorkspacePage({
       return false;
     } catch (err) {
       consoleLogger.error('Studio', 'Pipeline execution error:', err);
+      return false;
+    }
+  };
+
+  // Stage 1 Only: Standalone AI Script Generation (Milestones 4 & 5)
+  const handleGenerateScriptOnly = async (): Promise<boolean> => {
+    consoleLogger.info('Studio', `Executing standalone Stage 1 Script Generation | profile="${generationProfile}"`);
+    try {
+      const creativeBrief = getActiveCreativeBrief();
+      const creativeContext: Record<string, unknown> = {
+        category,
+        topic: targetAudience || 'broad audience',
+        tone: preferredTone || 'motivational',
+        length: targetLength || '30 seconds',
+        model: selectedModel,
+        audience: targetAudience,
+        creatorPrompt: agentPrompt || null,
+        visual: {
+          aspectRatio: canvasAspectRatio,
+          backgroundColor: canvasBackground,
+        },
+      };
+
+      const scriptData = await generateScriptOnly({
+        category,
+        topic: targetAudience || undefined,
+        userPrompt: agentPrompt || undefined,
+        tone: preferredTone || undefined,
+        length: targetLength || '30 seconds',
+        model: selectedModel || DEFAULT_SCRIPT_MODEL,
+        aspectRatio: canvasAspectRatio,
+        voiceName: selectedVoice || 'Fenrir',
+        musicTrackId: selectedMusic || undefined,
+        captionStylePreset: captionPreset?.className || undefined,
+        backdropId: selectedBackdrop || undefined,
+        audioMood: creativeBrief.audioMood,
+        backgroundStyle: creativeBrief.backgroundStyle,
+        textStyle: creativeBrief.textStyle,
+        videoStyle: creativeBrief.videoStyle,
+        visualTheme: creativeBrief.visualTheme,
+        motionStyle: creativeBrief.motionStyle,
+        generationProfile,
+        creativeContext,
+        availableAssets: {
+          visualBackdrops: backdrops.map((b) => ({ id: b.id, name: b.name, category: b.category })),
+          musicTracks: musicTracks.map((m) => ({ id: m.id, title: m.title, bpm: m.bpm, genre: m.genre })),
+          voices: voices.map((v) => ({ id: v.id, name: v.name, style: v.style })),
+        },
+      });
+
+      if (scriptData) {
+        setScript({
+          speechStyle: '',
+          visualTheme: '',
+          ...scriptData,
+          recommendedVoice: selectedVoice || scriptData.recommendedVoice || 'Fenrir',
+        } as unknown as GeneratedScript);
+
+        if (scriptData.aspectRatio && scriptData.aspectRatio !== canvasAspectRatio) {
+          handleCanvasAspectRatioChange(scriptData.aspectRatio as CanvasAspectRatio);
+        }
+
+        setScriptSubPane('editor');
+        onPaneChange('editor');
+        toast.success('✨ Script Generated!', {
+          description: `Generated "${scriptData.title}". Review in Script Editor and click Approve to continue.`,
+        });
+        return true;
+      }
+      return false;
+    } catch (err) {
+      consoleLogger.error('Studio', 'Script generation error:', err);
+      return false;
+    }
+  };
+
+  // Stages 2-4: Approve Script & Continue to Video (Milestones 4 & 5)
+  const handleApproveScriptAndContinue = async (): Promise<boolean> => {
+    consoleLogger.info('Studio', `Executing Stages 2-4 for approved script: "${script.title}"`);
+    try {
+      const creativeBrief = getActiveCreativeBrief();
+      const creativeContext: Record<string, unknown> = {
+        category,
+        topic: targetAudience || 'broad audience',
+        tone: preferredTone || 'motivational',
+        length: targetLength || '30 seconds',
+        model: selectedModel,
+        audience: targetAudience,
+        creatorPrompt: agentPrompt || null,
+      };
+
+      const pipelineRes = await runStagesFromScript(script as any, {
+        category,
+        topic: targetAudience || undefined,
+        userPrompt: agentPrompt || undefined,
+        tone: preferredTone || undefined,
+        length: targetLength || '30 seconds',
+        model: selectedModel || DEFAULT_SCRIPT_MODEL,
+        aspectRatio: canvasAspectRatio,
+        voiceName: selectedVoice || 'Fenrir',
+        musicTrackId: selectedMusic || undefined,
+        captionStylePreset: captionPreset?.className || undefined,
+        backdropId: selectedBackdrop || undefined,
+        audioMood: creativeBrief.audioMood,
+        backgroundStyle: creativeBrief.backgroundStyle,
+        textStyle: creativeBrief.textStyle,
+        videoStyle: creativeBrief.videoStyle,
+        visualTheme: creativeBrief.visualTheme,
+        motionStyle: creativeBrief.motionStyle,
+        generationProfile,
+        creativeContext,
+        availableAssets: {
+          visualBackdrops: backdrops.map((b) => ({ id: b.id, name: b.name, category: b.category })),
+          musicTracks: musicTracks.map((m) => ({ id: m.id, title: m.title, bpm: m.bpm, genre: m.genre })),
+          voices: voices.map((v) => ({ id: v.id, name: v.name, style: v.style })),
+        },
+      });
+
+      if (pipelineRes?.voice?.audioUrl) {
+        setAudioUrl(pipelineRes.voice.audioUrl);
+        const reqSec = parseInt(targetLength.match(/\d+/)?.[0] || '30', 10);
+        const effectiveDur = pipelineRes.voice.durationSeconds >= reqSec * 0.85
+          ? pipelineRes.voice.durationSeconds
+          : reqSec;
+        setDuration(effectiveDur);
+        setTimelineDuration(effectiveDur);
+      }
+
+      setShowTimeline(true);
+      toast.success('🎬 Video Assembled & Directed!', {
+        description: 'Voiceover, media, and kinetic captions are ready on the timeline.',
+      });
+      return true;
+    } catch (err) {
+      consoleLogger.error('Studio', 'Failed to assemble video from script:', err);
       return false;
     }
   };
@@ -1901,6 +2040,8 @@ export default function WorkspacePage({
                 currentTime={currentTime}
                 onSeek={handleSeek}
                 timelineDuration={timelineDuration || duration || 30}
+                onApproveAndContinue={handleApproveScriptAndContinue}
+                isContinuing={pipelineRunning}
               />
             ) : activePane === 'prompt' || (activePane === 'script' && scriptSubPane === 'prompt') ? (
               <AIAgentCreatorPane
@@ -1941,11 +2082,13 @@ export default function WorkspacePage({
                 onModelChange={setSelectedModel}
                 tone={preferredTone}
                 onToneChange={setPreferredTone}
+                generationProfile={generationProfile}
+                onGenerationProfileChange={setGenerationProfile}
                 loadingAgent={pipelineRunning}
                 pipelineStage={pipelineProgress.stage}
                 pipelinePercent={pipelineProgress.percent}
                 pipelineLabel={pipelineProgress.label}
-                onRunAgent={handleExecuteStudioPipeline}
+                onRunAgent={handleGenerateScriptOnly}
                 onSwitchToEditor={() => {
                   setScriptSubPane('editor');
                   onPaneChange('editor');

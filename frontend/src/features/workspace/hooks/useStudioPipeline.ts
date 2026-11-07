@@ -19,6 +19,7 @@ import { studioApi } from '../api/studioApi';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { toast } from 'sonner';
 import { addWorkspaceNotification } from '../utils/workspaceNotificationManager';
+import { GenerationProfile } from '../types/script';
 
 // ── Pipeline stage identifiers ─────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export interface ScriptStageResult {
   recommendedVoice?: string;
   aspectRatio?: string;
   musicTrack?: string;
+  scenes?: any[];
   [key: string]: any;
 }
 
@@ -119,6 +121,7 @@ export interface RunPipelineParams {
   motionStyle?: string;
   captionColor?: string;
   captionFontFamily?: string;
+  generationProfile?: GenerationProfile;
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────
@@ -145,25 +148,14 @@ export function useStudioPipeline() {
     []
   );
 
-  /** Run the full 4-stage pipeline sequentially */
-  const runPipeline = useCallback(
-    async (params: RunPipelineParams): Promise<StudioPipelineResult | null> => {
+  /** Run Stage 1 only and return script */
+  const generateScriptOnly = useCallback(
+    async (params: RunPipelineParams): Promise<ScriptStageResult | null> => {
       if (isRunning) return null;
       setIsRunning(true);
-      setResult({ script: null, voice: null, media: null, captions: null });
-
-      const pipelineResult: StudioPipelineResult = {
-        script: null,
-        voice: null,
-        media: null,
-        captions: null,
-      };
+      setStage('script', 15, 'Generating AI Script & Storyboard…');
 
       try {
-        // ── Stage 1: AI Script Generation ─────────────────────────────────
-        setStage('script', 5, 'Generating AI Script & Storyboard…');
-        consoleLogger.info('Studio', '[Pipeline] Stage 1 → /api/studio/generate-script');
-
         const scriptData = await studioApi.generateScript({
           category: params.category,
           topic: params.topic,
@@ -184,22 +176,39 @@ export function useStudioPipeline() {
           motionStyle: params.motionStyle,
           creativeContext: params.creativeContext,
           availableAssets: params.availableAssets,
+          generationProfile: params.generationProfile || 'motivational_reel',
         });
 
-        pipelineResult.script = scriptData;
         setResult((prev) => ({ ...prev, script: scriptData }));
-        setStage('script', 25, `Script ready: "${scriptData.title}"`);
-
+        setStage('done', 100, `Script ready: "${scriptData.title}"`);
         toast.success('Script Generated!', { description: scriptData.title });
-        addWorkspaceNotification({
-          title: 'AI Script Generated',
-          message: `"${scriptData.title}" with ${scriptData.storyboard?.length ?? 0} scenes`,
-          category: 'script',
-          type: 'ai',
-          targetPane: 'editor',
-          actionLabel: 'Review Script',
-        });
+        return scriptData;
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setStage('error', 0, 'Script generation failed', errMsg);
+        toast.error('Script generation failed', { description: errMsg });
+        return null;
+      } finally {
+        setIsRunning(false);
+      }
+    },
+    [isRunning, setStage]
+  );
 
+  /** Execute Stages 2, 3, and 4 from an already approved script */
+  const runStagesFromScript = useCallback(
+    async (scriptData: ScriptStageResult, params: RunPipelineParams): Promise<StudioPipelineResult | null> => {
+      if (isRunning) return null;
+      setIsRunning(true);
+
+      const pipelineResult: StudioPipelineResult = {
+        script: scriptData,
+        voice: null,
+        media: null,
+        captions: null,
+      };
+
+      try {
         const storyboard: any[] = scriptData.storyboard || [];
         const voiceName = params.voiceName || scriptData.recommendedVoice || 'Fenrir';
 
@@ -307,7 +316,7 @@ export function useStudioPipeline() {
           consoleLogger.warn('Studio', `[Pipeline] Stage 3 failed: ${mediaResult.reason}`);
         }
 
-        // ── Voice Audio Master Clock: Dynamic Acoustic Speech & Syllable Alignment ──
+        // Voice Master Clock Alignment
         const voiceVal = voiceResult.status === 'fulfilled' ? voiceResult.value : null;
         if (voiceVal?.alignedStoryboard && voiceVal.alignedStoryboard.length > 0) {
           const alignedMap = new Map<number, any>();
@@ -326,7 +335,6 @@ export function useStudioPipeline() {
             }
             return s;
           });
-          consoleLogger.info('Studio', `[Pipeline] Locked ${resolvedStoryboard.length} scenes to acoustic speech audio pauses (duration: ${durationSeconds}s)`);
         } else if (durationSeconds > 0 && resolvedStoryboard.length > 0) {
           const totalSbDuration = resolvedStoryboard.reduce(
             (sum, s) => sum + (Number(s.duration) || 3.0),
@@ -348,15 +356,12 @@ export function useStudioPipeline() {
                 duration: proportionalDur,
               };
             });
-            consoleLogger.info('Studio', `[Pipeline] Scaled ${resolvedStoryboard.length} storyboard scenes to match audio duration: ${durationSeconds}s`);
           }
         }
 
         setStage('captions', 75, 'Generating Captions…');
 
         // ── Stage 4: Caption Generation ────────────────────────────────────
-        consoleLogger.info('Studio', '[Pipeline] Stage 4 → /api/studio/generate-captions');
-
         const captionScenes = resolvedStoryboard
           .filter((s: any) => s.subtitleText)
           .map((s: any) => ({
@@ -380,45 +385,17 @@ export function useStudioPipeline() {
           });
           pipelineResult.captions = captionsResult;
           setResult((prev) => ({ ...prev, captions: captionsResult }));
-          consoleLogger.success(
-            'Studio',
-            `[Pipeline] Stage 4 done | segments=${captionsResult.segments.length} words=${captionsResult.totalWords}`
-          );
         } catch (captionErr) {
           consoleLogger.warn('Studio', `[Pipeline] Stage 4 failed: ${captionErr}`);
         }
 
-        // ── AI Audio-Visual Cut Sync: Align Cuts to Voice Pauses & Music Beat ──
+        // ── AI Audio-Visual Cut Sync ──
         const effectiveDuration = durationSeconds >= requestedTargetSec * 0.85 ? durationSeconds : requestedTargetSec;
-        
-        // Ensure storyboard scene cuts span the entire selected target duration
-        if (durationSeconds < requestedTargetSec * 0.85 && resolvedStoryboard.length > 0) {
-          const totalSbDuration = resolvedStoryboard.reduce((sum: number, s: any) => sum + (Number(s.duration) || 3.0), 0);
-          if (totalSbDuration > 0) {
-            let runningStart = 0;
-            resolvedStoryboard = resolvedStoryboard.map((s: any, idx: number) => {
-              const isLast = idx === resolvedStoryboard.length - 1;
-              const origDur = Number(s.duration) || 3.0;
-              const proportionalDur = isLast
-                ? Math.max(0.4, parseFloat((requestedTargetSec - runningStart).toFixed(2)))
-                : Math.max(0.4, parseFloat(((origDur / totalSbDuration) * requestedTargetSec).toFixed(2)));
-              const start = parseFloat(runningStart.toFixed(2));
-              runningStart = parseFloat((runningStart + proportionalDur).toFixed(2));
-              return {
-                ...s,
-                start,
-                duration: proportionalDur,
-              };
-            });
-            durationSeconds = requestedTargetSec;
-          }
-        }
-
         const bpm = scriptData.soundDesign?.bpm || 140;
         const sfxDrops = (scriptData.soundDesign?.sfxEvents || [])
           .map((e: any) => e.time)
           .filter((t: any) => typeof t === 'number' && t > 0);
-        
+
         try {
           const cutSynced = alignAudioVisualCuts({
             storyboard: resolvedStoryboard,
@@ -430,7 +407,6 @@ export function useStudioPipeline() {
             const synced = cutSynced[idx];
             return synced ? { ...s, start: synced.start, duration: synced.duration } : s;
           });
-          consoleLogger.success('Studio', `[Pipeline] AI Cut Sync applied to ${resolvedStoryboard.length} scenes (BPM=${bpm})`);
         } catch (syncErr) {
           consoleLogger.warn('Studio', `[Pipeline] Cut sync notice: ${syncErr}`);
         }
@@ -445,7 +421,6 @@ export function useStudioPipeline() {
               musicTrack: scriptData.soundDesign?.soundtrackTrackId || scriptData.musicTrack,
               soundDesign: scriptData.soundDesign,
               hooks: scriptData.hooks,
-              // Stage 2 — inject captions from Stage 4 directly as LocalClips
               captions: captionsResult?.timelineClips ?? [],
               duration: effectiveDuration,
               audioUrl,
@@ -463,11 +438,9 @@ export function useStudioPipeline() {
           actionLabel: 'Preview Video',
         });
 
-        consoleLogger.success('Studio', '[Pipeline] All 4 stages complete ✓');
         return pipelineResult;
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        consoleLogger.error('Studio', `[Pipeline] Fatal error: ${errMsg}`);
         setStage('error', 0, 'Pipeline failed', errMsg);
         toast.error('Studio pipeline failed', { description: errMsg });
         return null;
@@ -476,6 +449,17 @@ export function useStudioPipeline() {
       }
     },
     [isRunning, setStage]
+  );
+
+  /** Run the full 4-stage pipeline sequentially (1-click generation) */
+  const runPipeline = useCallback(
+    async (params: RunPipelineParams): Promise<StudioPipelineResult | null> => {
+      if (isRunning) return null;
+      const scriptData = await generateScriptOnly(params);
+      if (!scriptData) return null;
+      return runStagesFromScript(scriptData, params);
+    },
+    [generateScriptOnly, runStagesFromScript, isRunning]
   );
 
   /** Re-run only Stage 2 (voice) with current storyboard */
@@ -560,6 +544,8 @@ export function useStudioPipeline() {
     progress,
     result,
     isRunning,
+    generateScriptOnly,
+    runStagesFromScript,
     runPipeline,
     retryVoice,
     retryMedia,

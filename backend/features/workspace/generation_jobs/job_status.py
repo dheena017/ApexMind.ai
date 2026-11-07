@@ -1,0 +1,27 @@
+"""
+backend/features/workspace/generation_jobs/job_status.py
+Status and lifecycle phases for ApexMind generation jobs.
+"""
+
+from enum import Enum
+
+
+class JobStatus(str, Enum):
+    QUEUED = "queued"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class JobPhase(str, Enum):
+    QUEUED = "QUEUED"
+    BUILDING_PROMPT = "BUILDING_PROMPT"
+    CALLING_AI = "CALLING_AI"
+    PARSING_RESPONSE = "PARSING_RESPONSE"
+    VALIDATING_SCENES = "VALIDATING_SCENES"
+    PLANNING_ASSETS = "PLANNING_ASSETS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+

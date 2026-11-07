@@ -1,12 +1,15 @@
 /**
  * frontend/src/features/workspace/api/studioApi.ts
  *
- * ApexMind Studio Pipeline API client — 4 dedicated endpoints.
+ * ApexMind Studio Pipeline API client — 4 dedicated endpoints + Script Generation v2.
  *
- * Stage 1  POST /api/studio/generate-script   → ScriptStageResult
- * Stage 2  POST /api/studio/synthesize-voice  → VoiceStageResult
- * Stage 3  POST /api/studio/resolve-media     → MediaStageResult
- * Stage 4  POST /api/studio/generate-captions → CaptionsStageResult
+ * Stage 1  POST /api/studio/generate-script         → ScriptStageResult
+ *          POST /api/studio/generate-script/async   → ScriptJobResponse
+ *          GET  /api/studio/jobs/{job_id}           → JobStatusResponse
+ *          POST /api/studio/jobs/{job_id}/cancel    → { success: boolean }
+ * Stage 2  POST /api/studio/synthesize-voice        → VoiceStageResult
+ * Stage 3  POST /api/studio/resolve-media           → MediaStageResult
+ * Stage 4  POST /api/studio/generate-captions       → CaptionsStageResult
  */
 
 import { consoleLogger } from '@/src/shared/utils/logger';
@@ -18,6 +21,11 @@ import type {
   MediaStageResult,
   CaptionsStageResult,
 } from '../hooks/useStudioPipeline';
+import type {
+  GenerationProfile,
+  ScriptJobResponse,
+  JobStatusResponse,
+} from '../types/script';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -40,9 +48,27 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return data as T;
 }
 
+async function get<T>(path: string): Promise<T> {
+  const start = performance.now();
+  const res = await fetch(apiUrl(path), {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const elapsed = performance.now() - start;
+  consoleLogger.api('GET', path, res.status, elapsed);
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.detail || data?.message || `${path} failed (${res.status})`;
+    consoleLogger.error('StudioApi', msg);
+    throw new Error(msg);
+  }
+  return data as T;
+}
+
 // ── Stage 1 ─────────────────────────────────────────────────────────────────
 
-interface GenerateScriptParams {
+export interface GenerateScriptParams {
   category: string;
   topic?: string;
   userPrompt?: string;
@@ -63,6 +89,7 @@ interface GenerateScriptParams {
   outputFormat?: string;
   creativeContext?: Record<string, unknown>;
   availableAssets?: Record<string, unknown>;
+  generationProfile?: GenerationProfile;
 }
 
 interface StudioScriptEnvelope {
@@ -75,13 +102,13 @@ interface StudioScriptEnvelope {
 
 export const studioApi = {
   /**
-   * Stage 1 — AI Script + Storyboard Generation
+   * Stage 1 — AI Script + Storyboard Generation (Synchronous)
    * POST /api/studio/generate-script
    */
   async generateScript(params: GenerateScriptParams): Promise<ScriptStageResult> {
     consoleLogger.info(
       'Studio',
-      `[Stage 1] Generating script | category="${params.category}" model=${params.model || DEFAULT_SCRIPT_MODEL_LABEL}`
+      `[Stage 1] Generating script | category="${params.category}" profile="${params.generationProfile || 'motivational_reel'}" model=${params.model || DEFAULT_SCRIPT_MODEL_LABEL}`
     );
     const envelope = await post<StudioScriptEnvelope>('/api/studio/generate-script', {
       category: params.category,
@@ -104,9 +131,48 @@ export const studioApi = {
       outputFormat: params.outputFormat || undefined,
       creativeContext: params.creativeContext || undefined,
       availableAssets: params.availableAssets || undefined,
+      generationProfile: params.generationProfile || 'motivational_reel',
     });
     consoleLogger.success('Studio', `[Stage 1] Script ready: "${envelope.data?.title}"`);
     return envelope.data;
+  },
+
+  /**
+   * Stage 1 — AI Script Generation (Asynchronous Background Job)
+   * POST /api/studio/generate-script/async
+   */
+  async generateScriptAsync(params: GenerateScriptParams): Promise<ScriptJobResponse> {
+    consoleLogger.info(
+      'Studio',
+      `[Stage 1 Async] Enqueuing generation job | profile="${params.generationProfile || 'motivational_reel'}"`
+    );
+    return post<ScriptJobResponse>('/api/studio/generate-script/async', {
+      category: params.category,
+      topic: params.topic || params.category,
+      userPrompt: params.userPrompt || undefined,
+      tone: params.tone || undefined,
+      length: params.length || '30 seconds',
+      model: params.model || DEFAULT_SCRIPT_MODEL,
+      aspectRatio: params.aspectRatio || '9:16',
+      voiceName: params.voiceName || undefined,
+      generationProfile: params.generationProfile || 'motivational_reel',
+    });
+  },
+
+  /**
+   * Polling endpoint for background script generation job status.
+   * GET /api/studio/jobs/{job_id}
+   */
+  async getJobStatus(jobId: string): Promise<JobStatusResponse> {
+    return get<JobStatusResponse>(`/api/studio/jobs/${jobId}`);
+  },
+
+  /**
+   * Cancel background script generation job.
+   * POST /api/studio/jobs/{job_id}/cancel
+   */
+  async cancelJob(jobId: string): Promise<{ success: boolean; message: string }> {
+    return post<{ success: boolean; message: string }>(`/api/studio/jobs/${jobId}/cancel`, {});
   },
 
   // ── Stage 2 ───────────────────────────────────────────────────────────────

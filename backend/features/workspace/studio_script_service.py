@@ -1,21 +1,16 @@
 """
 backend/features/workspace/studio_script_service.py
 Stage 1 of the ApexMind Studio Pipeline.
-Handles AI script + multi-scene storyboard generation via Gemini.
-Thin wrapper that delegates to the existing generate_script() service,
-adding a pipeline-ready response envelope with a stageId field.
+Handles AI script + multi-scene storyboard generation via modular Script Generation service.
+Returns complete ScriptGenerationResponse envelope while maintaining full backward compatibility.
 """
 
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from .service import generate_script
+from backend.features.workspace.script_generation.generation_service import run_script_generation
 from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
-
-# ==============================================================================
-# Defaults & Fixed Constants (Placed at Top Below Imports)
-# ==============================================================================
 
 STAGE_ID: str = "script"
 DEFAULT_ASPECT_RATIO: str = "9:16"
@@ -44,55 +39,50 @@ def run_studio_script(
     creative_context: Optional[Dict[str, Any]] = None,
     available_assets: Optional[Dict[str, Any]] = None,
     user_prompt: Optional[str] = None,
+    generation_profile: str = "motivational_reel",
+    visual_style: Optional[str] = None,
+    subtitle_style: Optional[str] = None,
+    music_mood: Optional[str] = None,
+    project_id: Optional[str] = None,
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Studio pipeline Stage 1: Generate AI script + storyboard.
-
-    Returns a pipeline-ready envelope with:
-      - stageId: "script"
-      - data: full GeneratedScriptData (storyboard scenes mediaStatus="unresolved")
-      - memoryCount: int
-      - generatedAt: ISO timestamp
+    Delegates to run_script_generation to support both motivational_reel and cinematic_3d_story.
     """
+    effective_topic = user_prompt.strip() if user_prompt and user_prompt.strip() else topic
+    effective_visual_style = visual_style or background_style or visual_theme or backdrop_id or "dark_cinematic"
+    effective_subtitle_style = subtitle_style or caption_style_preset or text_style or "hormozi"
+    effective_music_mood = music_mood or audio_mood or "orchestral"
+
     logger.info(
-        f"[Studio/Script] Starting Stage 1 | category='{category}' "
-        f"topic='{topic}' model={model} aspect={aspect_ratio}"
+        f"[Studio/Script] Starting Stage 1 | profile='{generation_profile}' "
+        f"category='{category}' topic='{effective_topic}' model={model} aspect={aspect_ratio}"
     )
 
-    # Merge user prompt into topic if provided
-    effective_topic = user_prompt.strip() if user_prompt and user_prompt.strip() else topic
-
-    result = generate_script(
+    result = run_script_generation(
         category=category,
         topic=effective_topic,
+        user_prompt=user_prompt,
+        generation_profile=generation_profile,
         tone=tone,
-        length=length,
+        length=length or "30 seconds",
         model=model,
-        audio_mood=audio_mood,
-        background_style=background_style or (backdrop_id or ""),
-        text_style=text_style or (caption_style_preset or ""),
-        video_style=video_style,
+        aspect_ratio=aspect_ratio or DEFAULT_ASPECT_RATIO,
         voice_name=voice_name,
-        aspect_ratio=aspect_ratio,
-        music_track=music_track_id,
-        caption_style=caption_style_preset,
-        visual_theme=visual_theme or backdrop_id,
-        motion_style=motion_style,
-        output_format=output_format,
+        visual_style=effective_visual_style,
+        subtitle_style=effective_subtitle_style,
+        music_mood=effective_music_mood,
+        project_id=project_id,
+        user_id=user_id,
+        music_track_id=music_track_id,
         creative_context=creative_context,
         available_assets=available_assets,
-        user_prompt=user_prompt,
     )
 
     logger.info(
-        f"[Studio/Script] Stage 1 complete | title='{result.get('data', {}).get('title')}' "
-        f"scenes={len(result.get('data', {}).get('storyboard', []))}"
+        f"[Studio/Script] Stage 1 complete | id='{result.get('generationId')}' "
+        f"scenes={len(result.get('script', {}).get('scenes', []))}"
     )
 
-    return {
-        "success": True,
-        "stageId": STAGE_ID,
-        "data": result.get("data", {}),
-        "memoryCount": result.get("memoryCount", 0),
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
-    }
+    return result
