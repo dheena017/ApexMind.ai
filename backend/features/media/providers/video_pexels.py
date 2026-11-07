@@ -33,8 +33,7 @@ class PexelsVideoProvider(BaseMediaProvider):
         return ["video", "image"]
 
     def is_configured(self) -> bool:
-        key = (os.getenv("PEXELS_API_KEY") or "").strip().strip('"').strip("'")
-        return bool(key) and not key.startswith("your_") and key != "..."
+        return True  # Active with official key or seamless open stock fallback
 
     def search(
         self,
@@ -46,11 +45,39 @@ class PexelsVideoProvider(BaseMediaProvider):
         **kwargs,
     ) -> List[MediaAsset]:
         api_key = (os.getenv("PEXELS_API_KEY") or "").strip().strip('"').strip("'")
-        if not api_key:
-            return []
-
         orientation = "portrait" if aspect_ratio in ["9:16", "4:5"] else ("square" if aspect_ratio == "1:1" else "landscape")
         clean_q = (query or "").strip().replace("#", "").strip() or "cinematic"
+
+        # If Pexels key is absent, seamlessly query open stock providers so user never gets 0 results
+        if not api_key:
+            if media_type == "image":
+                try:
+                    from .image_unsplash import UnsplashImageProvider
+                    from .image_openverse import OpenverseImageProvider
+                    u = UnsplashImageProvider()
+                    if u.is_configured():
+                        cands = u.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, limit=limit, page=page)
+                        if cands:
+                            return cands
+                    op = OpenverseImageProvider()
+                    return op.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, limit=limit, page=page)
+                except Exception as fb_err:
+                    logger.debug(f"Pexels image fallback notice: {fb_err}")
+                    return []
+            else:
+                try:
+                    from .video_pixabay import PixabayVideoProvider
+                    from .video_mixkit import MixkitVideoProvider
+                    px = PixabayVideoProvider()
+                    if px.is_configured():
+                        cands = px.search(query=clean_q, aspect_ratio=aspect_ratio, limit=limit, page=page)
+                        if cands:
+                            return cands
+                    mk = MixkitVideoProvider()
+                    return mk.search(query=clean_q, aspect_ratio=aspect_ratio, limit=limit, page=page)
+                except Exception as fb_err:
+                    logger.debug(f"Pexels video fallback notice: {fb_err}")
+                    return []
 
         headers = {"Authorization": api_key}
 

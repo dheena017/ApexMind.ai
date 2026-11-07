@@ -400,6 +400,29 @@ def search_media(
             except Exception as e:
                 logger.debug(f"Wikimedia photo search error: {e}")
 
+    # If the user-selected specific provider returned 0 results, cascade search to open providers
+    # so the user is NEVER left with an empty "No photos found" screen!
+    if not items and provider != "all":
+        logger.info(f"Provider '{provider}' returned 0 results for '{clean_q}'; auto-cascading to open stock providers")
+        if media_type == "video":
+            for fb_prov in [mixkit_video, pixabay_video, coverr_video, wikimedia_video]:
+                try:
+                    fb_res = fb_prov.search(query=clean_q, aspect_ratio=aspect_ratio, page=page, limit=limit)
+                    if fb_res:
+                        items.extend(fb_res)
+                        break
+                except Exception:
+                    pass
+        else:
+            for fb_prov in [unsplash_image, pixabay_video, flickr_image, openverse_image, wikimedia_video]:
+                try:
+                    fb_res = fb_prov.search(query=clean_q, media_type="image", aspect_ratio=aspect_ratio, page=page, limit=limit)
+                    if fb_res:
+                        items.extend(fb_res)
+                        break
+                except Exception:
+                    pass
+
     # Deduplicate by URL
     seen = set()
     deduped = []

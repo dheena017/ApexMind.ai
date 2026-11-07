@@ -707,7 +707,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
               </button>
               <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {[
-                  { id: 'all', label: '✨ All Free' },
+                  { id: 'all', label: '✨ All Providers' },
                   { id: 'openverse', label: '🌐 Openverse (700M+)' },
                   { id: 'flickr', label: '📸 Flickr HD' },
                   { id: 'wikimedia', label: '🏛️ Wikimedia' },

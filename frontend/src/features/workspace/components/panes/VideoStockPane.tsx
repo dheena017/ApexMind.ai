@@ -686,7 +686,7 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                   <div className="flex items-center justify-between gap-1">
                     <ScrollableTabContainer className="flex-1">
                       {[
-                        { id: 'all', label: '✨ All Free' },
+                        { id: 'all', label: '✨ All Providers' },
                         { id: 'mixkit', label: '🎬 Mixkit HD' },
                         { id: 'coverr', label: '📹 Coverr' },
                         { id: 'pixabay', label: '🎥 Pixabay' },

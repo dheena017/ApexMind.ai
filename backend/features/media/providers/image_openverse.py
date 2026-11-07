@@ -54,11 +54,8 @@ class OpenverseImageProvider(BaseMediaProvider):
 
         params = {
             "q": search_query,
-            "category": "photograph",
-            "extension": "jpg,png,webp",
             "page": page,
             "page_size": min(limit, 30),
-            "aspect_ratio": ar_param,
         }
         headers = {
             "User-Agent": "ApexMindStudio/2.0 (OpenStockMedia; https://apexmind.ai)"
