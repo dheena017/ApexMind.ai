@@ -282,6 +282,11 @@ export interface TimelineOverlayClip {
   start: number;
   duration: number;
   laneOffset?: number;
+  animation?: string;
+  animationIn?: string;
+  animationInDuration?: number;
+  animationOut?: string;
+  animationOutDuration?: number;
 }
 
 export type SelectedClip =

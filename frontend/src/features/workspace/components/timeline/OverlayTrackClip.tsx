@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Layers } from 'lucide-react';
 import { SelectedClip, TimelineOverlayClip } from './timelineTypes';
 import { TimelineClipContextMenu } from './TimelineClipContextMenu';
@@ -81,6 +81,94 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
   const [colorLabels, setColorLabels] = useState<Record<string, string>>({});
+  const [animationOverrides, setAnimationOverrides] = useState<Record<string, {
+    animation?: string;
+    animationIn?: string;
+    animationInDuration?: number;
+    animationOut?: string;
+    animationOutDuration?: number;
+  }>>({});
+  const [overlayMotionState, setOverlayMotionState] = useState<{
+    animation?: string;
+    animationOut?: string;
+    animDuration?: number;
+    animOutDuration?: number;
+  }>({});
+
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || detail.track !== 'overlay') return;
+      if (detail.clipId) {
+        setAnimationOverrides((prev) => ({
+          ...prev,
+          [detail.clipId]: {
+            ...prev[detail.clipId],
+            animation: detail.animation !== undefined ? detail.animation : prev[detail.clipId]?.animation,
+            animationIn: detail.animationIn !== undefined ? detail.animationIn : prev[detail.clipId]?.animationIn,
+            animationInDuration: detail.animationInDuration !== undefined ? detail.animationInDuration : prev[detail.clipId]?.animationInDuration,
+            animationOut: detail.animationOut !== undefined ? detail.animationOut : prev[detail.clipId]?.animationOut,
+            animationOutDuration: detail.animationOutDuration !== undefined ? detail.animationOutDuration : prev[detail.clipId]?.animationOutDuration,
+          },
+        }));
+      } else {
+        setAnimationOverrides((prev) => {
+          const updated = { ...prev };
+          effectiveClips.forEach((c) => {
+            updated[c.id] = {
+              ...updated[c.id],
+              animation: detail.animation !== undefined ? detail.animation : updated[c.id]?.animation,
+              animationIn: detail.animationIn !== undefined ? detail.animationIn : updated[c.id]?.animationIn,
+              animationInDuration: detail.animationInDuration !== undefined ? detail.animationInDuration : updated[c.id]?.animationInDuration,
+              animationOut: detail.animationOut !== undefined ? detail.animationOut : updated[c.id]?.animationOut,
+              animationOutDuration: detail.animationOutDuration !== undefined ? detail.animationOutDuration : updated[c.id]?.animationOutDuration,
+            };
+          });
+          return updated;
+        });
+      }
+    };
+
+    const handlePreviewAnim = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || !detail.type) return;
+      const targetClipId = (selectedClip && selectedClip.track === 'overlay' && 'clipId' in selectedClip && selectedClip.clipId)
+        ? selectedClip.clipId
+        : effectiveClips[0]?.id;
+      if (!targetClipId) return;
+
+      setAnimationOverrides((prev) => ({
+        ...prev,
+        [targetClipId]: {
+          ...prev[targetClipId],
+          ...(detail.direction === 'in'
+            ? { animationIn: detail.type, animationInDuration: detail.duration ?? 0.5 }
+            : { animationOut: detail.type, animationOutDuration: detail.duration ?? 0.5 }),
+        },
+      }));
+    };
+
+    const handleOverlayStyle = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      setOverlayMotionState({
+        animation: detail.animation,
+        animationOut: detail.animationOut,
+        animDuration: detail.animDuration,
+        animOutDuration: detail.animOutDuration,
+      });
+    };
+
+    window.addEventListener('workspace:update-clip-props', handleUpdate);
+    window.addEventListener('workspace:preview-clip-animation', handlePreviewAnim);
+    window.addEventListener('workspace:overlay-style-change', handleOverlayStyle);
+
+    return () => {
+      window.removeEventListener('workspace:update-clip-props', handleUpdate);
+      window.removeEventListener('workspace:preview-clip-animation', handlePreviewAnim);
+      window.removeEventListener('workspace:overlay-style-change', handleOverlayStyle);
+    };
+  }, [effectiveClips, selectedClip]);
 
   const actualTrackHeight = trackHeight ?? 40;
 
@@ -107,6 +195,22 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
         const colorLabel = colorLabels[clip.id] || '';
         const clipLane = clip.lane ?? 0;
         const topPos = 4 + clipLane * (laneHeight + laneGap);
+
+        const overrides = animationOverrides[clip.id] || {};
+        const animInType = overrides.animationIn ?? clip.animationIn ?? (overlayMotionState.animation && !overlayMotionState.animationOut ? overlayMotionState.animation : undefined);
+        const animInDuration = overrides.animationInDuration ?? clip.animationInDuration ?? (overlayMotionState.animDuration ?? 0.5);
+        const hasAnimIn = Boolean(animInType && animInType !== 'none');
+        const animInWidth = hasAnimIn ? Math.min(100, Math.max(14, (Number(animInDuration) / (Number(clip.duration) || 1)) * 100)) : 0;
+
+        const animOutType = overrides.animationOut ?? clip.animationOut ?? overlayMotionState.animationOut;
+        const animOutDuration = overrides.animationOutDuration ?? clip.animationOutDuration ?? (overlayMotionState.animOutDuration ?? 0.5);
+        const hasAnimOut = Boolean(animOutType && animOutType !== 'none');
+        const animOutWidth = hasAnimOut ? Math.min(100, Math.max(14, (Number(animOutDuration) / (Number(clip.duration) || 1)) * 100)) : 0;
+
+        const animComboType = overrides.animation ?? clip.animation ?? overlayMotionState.animation;
+        const comboMotionDuration = Number.isFinite(Number(overlayMotionState.animDuration)) ? Number(overlayMotionState.animDuration) : 0.5;
+        const hasAnimCombo = Boolean(animComboType && animComboType !== 'none' && !hasAnimIn && !hasAnimOut);
+        const animComboWidth = hasAnimCombo ? Math.min(100, Math.max(8, (comboMotionDuration / (Number(clip.duration) || 1)) * 100)) : 0;
 
         return (
           <div
@@ -143,6 +247,36 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
             }}
             title={`Overlay Clip: "${clip.name || clip.label}" • Layer: ${clipLane + 1} • Start: ${(Number(clip.start) || 0).toFixed(1)}s, Dur: ${(Number(clip.duration) || 0).toFixed(1)}s. Drag anywhere to move, edge handles to trim.`}
           >
+            {hasAnimIn && (
+              <div
+                style={{ width: `${animInWidth}%` }}
+                className="absolute left-0 top-0 bottom-0 pointer-events-none select-none z-12 bg-amber-500/35 border-r border-amber-300/80 flex items-center overflow-hidden transition-all backdrop-brightness-110"
+                title={`In Motion: ${animInType} (${Number(animInDuration).toFixed(1)}s)`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-amber-400/30 to-amber-500/40" />
+                <div className="absolute right-0 top-0 bottom-0 w-[1.5px] bg-amber-300 shadow-[0_0_4px_rgba(251,191,36,0.8)]" />
+              </div>
+            )}
+
+            {hasAnimOut && (
+              <div
+                style={{ width: `${animOutWidth}%` }}
+                className="absolute right-0 top-0 bottom-0 pointer-events-none select-none z-12 bg-amber-500/35 border-l border-amber-300/80 flex items-center justify-end overflow-hidden transition-all backdrop-brightness-110"
+                title={`Out Motion: ${animOutType} (${Number(animOutDuration).toFixed(1)}s)`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-l from-amber-400/20 via-amber-400/30 to-amber-500/40" />
+                <div className="absolute left-0 top-0 bottom-0 w-[1.5px] bg-amber-300 shadow-[0_0_4px_rgba(251,191,36,0.8)]" />
+              </div>
+            )}
+
+            {hasAnimCombo && (
+              <div
+                style={{ width: `${animComboWidth}%` }}
+                className="absolute left-0 top-0 bottom-0 pointer-events-none select-none z-12 bg-amber-500/25 border-r border-amber-300/60 overflow-hidden transition-all backdrop-brightness-105"
+                title={`Motion: ${animComboType} (${Number(comboMotionDuration).toFixed(1)}s)`}
+              />
+            )}
+
             {/* Left Trim Handle */}
             <div
               onPointerDown={(e) => {
