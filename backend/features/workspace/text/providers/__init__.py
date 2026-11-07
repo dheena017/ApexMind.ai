@@ -1,7 +1,7 @@
 """
 backend/features/workspace/text/providers/__init__.py
-Exports all live modular font providers.
-Zero hardcoded data - 100% dynamic live services.
+Exports live modular font providers.
+Zero hardcoded data - 100% dynamic live API streams only.
 """
 
 from .base import BaseFontProvider

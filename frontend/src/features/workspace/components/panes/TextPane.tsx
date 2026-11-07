@@ -52,17 +52,24 @@ export interface TextPaneProps {
 
 export const FONT_CATEGORIES = [
   { value: 'all', label: '✨ All Categories' },
+  { value: 'bold-impact', label: '⚡ Bold & Impactful (Viral Shorts)' },
   { value: 'display', label: '💥 Display & Headlines' },
-  { value: 'sans-serif', label: '⚡ Sans-Serif (Modern)' },
-  { value: 'serif', label: '🗿 Serif (Stoic & Classical)' },
-  { value: 'monospace', label: '💻 Monospace (Terminal)' },
-  { value: 'handwriting', label: '✍️ Handwriting & Script' },
+  { value: 'sans-serif', label: '⚡ Sans-Serif (Clean & Modern)' },
+  { value: 'minimal', label: '💎 Minimal & Geometric (Tech)' },
+  { value: 'condensed', label: '📐 Condensed & Tall (Titles)' },
+  { value: 'serif', label: '🗿 Serif (Stoic & Editorial)' },
+  { value: 'slab-serif', label: '🏛️ Slab Serif (Heavy & News)' },
+  { value: 'monospace', label: '💻 Monospace (Terminal & Cyber)' },
+  { value: 'futuristic', label: '🚀 Futuristic & Sci-Fi' },
+  { value: 'retro', label: '👾 Retro, Y2K & Pixel' },
+  { value: 'handwriting', label: '✍️ Handwriting & Casual' },
+  { value: 'calligraphy', label: '✒️ Calligraphy & Signature' },
 ] as const;
 
 export const TEXT_PROVIDERS = [
   { id: 'all', label: '✨ All Live Providers' },
   { id: 'google_fonts', label: '🌐 Google Fonts (1,900+)' },
-  { id: 'fontshare', label: '💎 Fontshare ITF (Premium)' },
+  { id: 'fontshare', label: '💎 Fontshare (Viral Display)' },
   { id: 'fontsource', label: '📚 Fontsource CDN (1,600+)' },
   { id: 'bunny', label: '🐰 Bunny Fonts (1,900+)' },
 ] as const;
@@ -435,8 +442,8 @@ export const TextPane: React.FC<TextPaneProps> = ({
               )}
             </div>
 
-            {/* Category Dropdown (All, Display, Sans-Serif, Serif, Monospace, Handwriting) */}
-            <div className="shrink-0 w-36 sm:w-44">
+            {/* Category Dropdown */}
+            <div className="shrink-0 w-40 sm:w-52">
               <CustomSelect
                 value={selectedCategory}
                 onChange={(val) => {

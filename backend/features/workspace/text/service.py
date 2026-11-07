@@ -1,12 +1,12 @@
 """
 backend/features/workspace/text/service.py
-Central typography and font service coordinating real live modular providers:
-- Google Fonts (1,959+ live fonts)
-- Fontshare by Indian Type Foundry (Premium free viral fonts: Satoshi, Clash Display, etc.)
-- Fontsource CDN (1,600+ open-source fonts)
-- Bunny Fonts CDN (Privacy-first global open font CDN)
+Central typography and font service coordinating purely live API providers:
+- Google Fonts (1,959+ live fonts via official metadata API)
+- Fontshare by Indian Type Foundry (100+ live fonts via official v2 REST API)
+- Fontsource CDN (1,600+ live open-source fonts via official v1 REST API)
+- Bunny Fonts CDN (1,900+ live open-source fonts via official CDN API)
 
-Zero hardcoded presets - only live open-source font services.
+Zero hardcoded font lists - 100% dynamic live stream.
 """
 
 import logging
@@ -46,7 +46,7 @@ def search_fonts(
     page_size: int = 24,
 ) -> Dict[str, Any]:
     """
-    Search fonts across real live modular providers.
+    Search fonts across purely live modular providers.
     Supports single provider search ('google_fonts', 'fontshare', 'fontsource', 'bunny')
     or aggregated live search ('all').
     """
@@ -58,7 +58,6 @@ def search_fonts(
         items = prov.search(query, category, page, page_size)
     else:
         # Aggregated search across live services:
-        # Prioritize Google Fonts & Fontshare (viral caption typography), supplemented by Fontsource & Bunny
         g_prov = _PROVIDERS["google_fonts"]
         fsh_prov = _PROVIDERS["fontshare"]
         fs_prov = _PROVIDERS["fontsource"]
@@ -74,15 +73,15 @@ def search_fonts(
         # Primary live search on Google Fonts
         items = g_prov.search(query, category, page, page_size)
 
-        # On the first page, interleave standout Fontshare fonts (Satoshi, Clash Display)
+        # On the first page, interleave standout live Fontshare fonts (Satoshi, Clash Display, etc.)
         if page == 1:
             standouts = fsh_prov.search(query, category, 1, 6)
             if standouts:
-                # Insert viral Fontshare fonts at the top of results
-                items = standouts + [it for it in items if it.get("family") not in {s.get("family") for s in standouts}]
+                seen_families = {s.get("family") for s in standouts}
+                items = standouts + [it for it in items if it.get("family") not in seen_families]
                 items = items[:page_size]
 
-        # If page space still available, augment with fontsource & bunny
+        # If page space still available, augment with live fontsource & bunny
         if len(items) < page_size:
             extra = fs_prov.search(query, category, page, page_size - len(items))
             items.extend(extra)

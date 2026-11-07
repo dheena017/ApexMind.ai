@@ -121,27 +121,16 @@ class FontshareProvider(BaseFontProvider):
     def _filter(self, query: str = "", category: str = "all") -> List[Dict[str, Any]]:
         fonts = self._ensure_loaded()
         q = query.strip().lower()
-        cat = category.strip().lower()
 
         filtered: List[Dict[str, Any]] = []
         for f in fonts:
-            f_name = f["name"].lower()
-            f_cat_key = f["categoryKey"]
-            f_designer = f.get("designer", "").lower()
-
-            if cat != "all":
-                if cat in ["sans-serif", "sans"] and "sans" not in f_cat_key:
-                    continue
-                elif cat in ["serif"] and ("sans" in f_cat_key or "serif" not in f_cat_key):
-                    continue
-                elif cat in ["display"] and "display" not in f_cat_key:
-                    continue
-                elif cat in ["monospace", "mono"] and "mono" not in f_cat_key:
-                    continue
-                elif cat in ["handwriting", "script"] and "handwriting" not in f_cat_key:
-                    continue
+            if not self.matches_category(f, category):
+                continue
 
             if q:
+                f_name = f["name"].lower()
+                f_designer = f.get("designer", "").lower()
+                f_cat_key = f["categoryKey"]
                 if q not in f_name and q not in f_designer and q not in f_cat_key:
                     continue
 
