@@ -104,9 +104,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Live dynamic preview text from project
-  const [previewText, setPreviewText] = useState<string>(currentText || 'Your Caption Text');
-
   // Real provider stream state
   const [fonts, setFonts] = useState<TextPreset[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -126,13 +123,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
 
   // Saved styles library
   const [savedCustomStyles, setSavedCustomStyles] = useState<TextPreset[]>([]);
-
-  // Sync previewText with script text if available
-  useEffect(() => {
-    if (currentText && currentText.trim()) {
-      setPreviewText(currentText.trim());
-    }
-  }, [currentText]);
 
   // Load saved styles from localStorage
   useEffect(() => {
@@ -278,7 +268,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
     const applied: TextPreset = {
       ...font,
       fontWeight: chosenWeight,
-      previewText: previewText.trim() || 'Your Text Here',
+      previewText: currentText?.trim() || font.name,
       color: '#FFFFFF',
     };
 
@@ -292,7 +282,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
     const customPreset: TextPreset = {
       id: `custom-${Date.now()}`,
       name: customStyleName.trim() || 'Custom Typography',
-      previewText: previewText.trim() || 'Your Text Here',
+      previewText: currentText?.trim() || 'Your Text Here',
       className: computedCustomClass,
       color: customColor,
       fontFamily: customFont,
@@ -315,7 +305,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
     const newStyle: TextPreset = {
       id: `saved-style-${Date.now()}`,
       name: styleName,
-      previewText: previewText.trim() || 'Your Text Here',
+      previewText: currentText?.trim() || 'Your Text Here',
       className: computedCustomClass,
       color: customColor,
       fontFamily: customFont,
@@ -345,7 +335,7 @@ export const TextPane: React.FC<TextPaneProps> = ({
     toast.success('Removed style from library');
   };
 
-  const effectivePreviewText = previewText.trim() || 'Your Text Here';
+  const effectivePreviewText = currentText?.trim() || 'The quick brown fox';
 
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
@@ -375,42 +365,6 @@ export const TextPane: React.FC<TextPaneProps> = ({
           <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">Sync</span>
         </button>
-      </div>
-
-      {/* ── Dynamic Preview Text Bar (Applies dynamically to all cards) ── */}
-      <div className="px-3 py-2 bg-[#101012] border-b border-[#242424] shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={previewText}
-              onChange={(e) => setPreviewText(e.target.value)}
-              placeholder="Type dynamic preview text..."
-              className="w-full bg-[#181818] border border-[#242424] focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
-            />
-            {previewText && (
-              <button
-                type="button"
-                onClick={() => setPreviewText('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer"
-                title="Clear preview text"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-          {currentText && previewText !== currentText && (
-            <button
-              type="button"
-              onClick={() => setPreviewText(currentText)}
-              className="px-2 py-1.5 rounded-lg bg-[#1C1C22] hover:bg-[#25252E] border border-[#2E2E38] text-[10px] text-zinc-300 hover:text-white flex items-center gap-1 shrink-0 cursor-pointer"
-              title="Reset to project script text"
-            >
-              <RotateCcw className="w-2.5 h-2.5" />
-              <span>Script</span>
-            </button>
-          )}
-        </div>
       </div>
 
       {/* ── Navigation Tabs ── */}
