@@ -7,22 +7,52 @@ from typing import Any
 from .config import settings
 
 
-DEFAULT_SCRIPT_MODEL = os.environ.get("DEFAULT_SCRIPT_MODEL", "").strip()
-DEFAULT_TTS_MODEL = os.environ.get("DEFAULT_TTS_MODEL", "").strip()
+DEFAULT_SCRIPT_MODEL = os.environ.get("DEFAULT_SCRIPT_MODEL", "gemini-3.5-flash").strip() or "gemini-3.5-flash"
+DEFAULT_TTS_MODEL = os.environ.get("DEFAULT_TTS_MODEL", "gemini-3.8-flash-tts").strip() or "gemini-3.8-flash-tts"
 _MODEL_CACHE_SECONDS = 300
 _MODEL_CACHE_LOCK = threading.Lock()
 _MODEL_CACHE: tuple[float, list[dict[str, str]], list[dict[str, str]]] | None = None
 logger = logging.getLogger("ApexMind.AI.Models")
+
 _NON_SCRIPT_MODEL_TERMS = (
     "tts",
     "embedding",
     "image",
+    "imagen",
+    "veo",
     "live",
     "transcribe",
     "robotics",
     "computer-use",
     "computer_use",
+    "deep-research",
+    "research",
+    "gemini-2.5",
+    "antigravity-preview",
+    "banana",
+    "lyria",
 )
+
+PREFERRED_SCRIPT_MODEL_ORDER = [
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3-flash-preview",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-3.1-pro-preview",
+    "gemini-flash-latest",
+]
+
+
+def _script_model_sort_key(model: dict[str, str]) -> tuple[int, str]:
+    m_id = model["id"]
+    if m_id == DEFAULT_SCRIPT_MODEL:
+        return (-1, model["name"].casefold())
+    if m_id in PREFERRED_SCRIPT_MODEL_ORDER:
+        return (PREFERRED_SCRIPT_MODEL_ORDER.index(m_id), model["name"].casefold())
+    return (len(PREFERRED_SCRIPT_MODEL_ORDER) + 1, model["name"].casefold())
 
 
 def _model_value(model: Any, field: str, default: Any = None) -> Any:
@@ -71,7 +101,7 @@ def get_available_models(force_refresh: bool = False) -> tuple[list[dict[str, st
         if not script_models:
             raise RuntimeError("Gemini returned no available text-generation models for this API key.")
 
-        script_models.sort(key=lambda model: (model["id"] != DEFAULT_SCRIPT_MODEL, model["name"].casefold()))
+        script_models.sort(key=_script_model_sort_key)
         tts_models.sort(key=lambda model: (model["id"] != DEFAULT_TTS_MODEL, model["name"].casefold()))
         _MODEL_CACHE = (now, script_models, tts_models)
         return script_models, tts_models

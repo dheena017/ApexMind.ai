@@ -371,6 +371,15 @@ def _generate_script_with_fallback(
                         contents=prompt,
                         config=types.GenerateContentConfig(**gen_config),
                     )
+                # If JSON mode is rejected (e.g. 400 JSON mode is not enabled)
+                elif "json mode" in err_str or "response_mime_type" in err_str:
+                    logger.warning(f"[Studio/Script] Model '{attempt_model}' does not support JSON mode, retrying without response_mime_type...")
+                    gen_config.pop("response_mime_type", None)
+                    response = client.models.generate_content(
+                        model=attempt_model,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(**gen_config),
+                    )
                 # If transient 503 / temporary demand spike, pause 1.5s and retry once
                 elif "503" in err_str or "unavailable" in err_str or "high demand" in err_str:
                     logger.warning(f"[Studio/Script] Model '{attempt_model}' experienced temporary demand spike, retrying in 1.5s...")
@@ -401,11 +410,24 @@ def _generate_script_with_fallback(
     elif "```" in raw:
         raw = raw.split("```")[1].split("```")[0].strip()
 
+    raw_clean = raw.strip()
+    parsed = None
     try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as decode_err:
-        logger.error(f"Failed to parse Gemini response as JSON: {raw[:300]}")
-        raise ValueError(f"Invalid JSON returned by Gemini: {decode_err}")
+        parsed = json.loads(raw_clean)
+    except json.JSONDecodeError:
+        # LLMs may include trailing commentary after the closing brace, causing "Extra data" errors.
+        # Fall back to raw_decode from the first '{' to parse just the valid JSON document.
+        start_idx = raw_clean.find("{")
+        if start_idx != -1:
+            try:
+                decoder = json.JSONDecoder()
+                parsed, _ = decoder.raw_decode(raw_clean[start_idx:])
+            except Exception as e:
+                logger.error(f"Failed to parse Gemini response via raw_decode: {raw_clean[:300]}")
+                raise ValueError(f"Invalid JSON returned by Gemini: {e}") from e
+        else:
+            logger.error(f"No JSON object found in Gemini response: {raw_clean[:300]}")
+            raise ValueError("Invalid JSON returned by Gemini: no JSON object found")
 
     return parsed, used_model
 
