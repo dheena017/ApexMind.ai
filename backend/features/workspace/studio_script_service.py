@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from .service import generate_script
-from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL, resolve_script_model
 
 # ==============================================================================
 # Defaults & Fixed Constants (Placed at Top Below Imports)
@@ -54,9 +54,10 @@ def run_studio_script(
       - memoryCount: int
       - generatedAt: ISO timestamp
     """
+    effective_model = resolve_script_model(model)
     logger.info(
         f"[Studio/Script] Starting Stage 1 | category='{category}' "
-        f"topic='{topic}' model={model} aspect={aspect_ratio}"
+        f"topic='{topic}' model={effective_model} aspect={aspect_ratio}"
     )
 
     # Merge user prompt into topic if provided
@@ -67,7 +68,7 @@ def run_studio_script(
         topic=effective_topic,
         tone=tone,
         length=length,
-        model=model,
+        model=effective_model,
         audio_mood=audio_mood,
         background_style=background_style or (backdrop_id or ""),
         text_style=text_style or (caption_style_preset or ""),

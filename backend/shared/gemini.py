@@ -17,6 +17,7 @@ from .ai_models import (
     get_cached_models,
     get_script_fallback_models,
     get_tts_fallback_models,
+    is_unwanted_model,
     resolve_script_model as resolve_available_script_model,
     resolve_tts_model as resolve_available_tts_model,
 )
@@ -322,14 +323,24 @@ def _generate_script_with_fallback(
         return None, "GEMINI_API_KEY is not configured in environment."
 
     # Deduplicated list of models starting with caller target_model
-    models_to_try: list[str] = [target_model]
+    models_to_try: list[str] = []
+    if target_model and not is_unwanted_model(target_model):
+        models_to_try.append(target_model)
+    else:
+        resolved = resolve_script_model(target_model)
+        if resolved and not is_unwanted_model(resolved):
+            models_to_try.append(resolved)
+
     for alt in get_script_fallback_models(target_model):
-        if alt not in models_to_try:
+        if alt not in models_to_try and not is_unwanted_model(alt):
             models_to_try.append(alt)
+
+    if not models_to_try:
+        models_to_try = [resolve_script_model()]
 
     response = None
     last_err: Exception | None = None
-    used_model: str = target_model
+    used_model: str = models_to_try[0] if models_to_try else target_model
 
     for attempt_model in models_to_try:
         try:

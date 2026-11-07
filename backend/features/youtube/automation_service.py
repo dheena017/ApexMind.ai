@@ -15,7 +15,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
+from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL, resolve_script_model
 from backend.database.repository import (
     get_automation_by_id,
     get_automations,
@@ -208,7 +208,8 @@ def execute_automation_job(
     privacy = job.get("privacyStatus", "public")
     publish_time = job.get("publishTime", "08:00")
     channel_id = job.get("channelId")
-    ai_model = job.get("aiModel") or job.get("ai_model") or DEFAULT_SCRIPT_MODEL
+    raw_model = job.get("aiModel") or job.get("ai_model") or DEFAULT_SCRIPT_MODEL
+    ai_model = resolve_script_model(raw_model)
     aspect_ratio = job.get("aspectRatio") or job.get("aspect_ratio") or "9:16"
     length_str = job.get("length") or "30 seconds"
     m_sec = re.search(r'(\d+)', length_str)
