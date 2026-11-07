@@ -60,6 +60,7 @@ export interface VoiceStageResult {
   voiceName: string;
   wordTimestamps: any[];
   alignedStoryboard?: any[];
+  scriptVoiceData?: any;
 }
 
 export interface MediaStageResult {
@@ -217,22 +218,42 @@ export function useStudioPipeline() {
         consoleLogger.info('Studio', '[Pipeline] Stage 2+3 → voice + media (parallel)');
 
         const [voiceResult, mediaResult] = await Promise.allSettled([
-          // Stage 2: Voice generation
-          studioApi.generateVoice({
-            voiceName,
-            storyboard: storyboard.map((s: any) => ({
-              sceneNumber: s.sceneNumber,
-              subtitleText: s.subtitleText || '',
-              start: s.start,
-              duration: s.duration,
-            })),
-            model: params.model,
-            speechStyle: scriptData.speechStyle,
-            targetDurationSeconds: (() => {
-              const m = String(params.length || '').match(/(\d+)/);
-              return m ? parseInt(m[1], 10) : 30;
-            })(),
-          }),
+          // Stage 2: Voice generation (Script-based or inline storyboard fallback)
+          (async () => {
+            if (scriptData.scriptId) {
+              try {
+                const sv = await studioApi.generateScriptVoice({
+                  scriptId: scriptData.scriptId,
+                  voiceConfig: { voiceId: voiceName },
+                });
+                return {
+                  audioUrl: sv.masterAudioUrl,
+                  durationSeconds: sv.masterDuration,
+                  mimeType: 'audio/wav',
+                  voiceName,
+                  wordTimestamps: [],
+                  scriptVoiceData: sv,
+                };
+              } catch (voiceErr) {
+                consoleLogger.warn('Studio', `Script voice failed, falling back to inline storyboard voice: ${voiceErr}`);
+              }
+            }
+            return studioApi.generateVoice({
+              voiceName,
+              storyboard: storyboard.map((s: any) => ({
+                sceneNumber: s.sceneNumber,
+                subtitleText: s.subtitleText || '',
+                start: s.start,
+                duration: s.duration,
+              })),
+              model: params.model,
+              speechStyle: scriptData.speechStyle,
+              targetDurationSeconds: (() => {
+                const m = String(params.length || '').match(/(\d+)/);
+                return m ? parseInt(m[1], 10) : 30;
+              })(),
+            });
+          })(),
 
           // Stage 3: Media resolution
           studioApi.resolveMedia({
@@ -534,6 +555,25 @@ export function useStudioPipeline() {
     [setStage]
   );
 
+  const regenerateSceneVoice = useCallback(
+    async (
+      scriptId: string,
+      sceneId: string,
+      options?: { provider?: string; voiceId?: string; preset?: string; speed?: number; pitch?: number }
+    ) => {
+      try {
+        const update = await studioApi.regenerateSceneVoice(scriptId, sceneId, options);
+        toast.success(`Scene ${sceneId} narration regenerated`);
+        return update;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error(`Scene voice regeneration failed: ${msg}`);
+        throw err;
+      }
+    },
+    []
+  );
+
   const reset = useCallback(() => {
     setProgress({ stage: 'idle', percent: 0, label: '', error: null });
     setResult({ script: null, voice: null, media: null, captions: null });
@@ -550,6 +590,7 @@ export function useStudioPipeline() {
     retryVoice,
     retryMedia,
     retryCaptions,
+    regenerateSceneVoice,
     reset,
   };
 }

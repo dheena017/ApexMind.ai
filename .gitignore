@@ -1,5 +1,10 @@
 # Dependencies & Build Artifacts
 node_modules/
+# Generated Media & Machine Learning Model Weights
+media/
+models/
+*.onnx
+*.onnx.json
 build/
 scratch/
 dist/

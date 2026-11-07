@@ -2,7 +2,7 @@
  * frontend/src/features/workspace/components/panes/script-editor/ScriptContentTab.tsx
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Volume2,
   Bold,
@@ -13,10 +13,15 @@ import {
   ArrowLeftRight,
   Camera,
   Layers,
+  Play,
+  Pause,
+  RefreshCw,
+  Music,
 } from 'lucide-react';
 import { GeneratedScript, HookOption } from '../../../types';
 import { HookSelector } from './HookSelector';
 import { applyFormatting, countWords, estimateReadingDuration } from '../../../utils/scriptFormatter';
+import { studioApi } from '../../../api/studioApi';
 
 interface ScriptContentTabProps {
   script: GeneratedScript;
@@ -26,6 +31,8 @@ interface ScriptContentTabProps {
   onPlayPreview: (text: string, rate: number, key: string) => void;
   onSyncToCues: () => void;
   onShowNotice: (msg: string) => void;
+  onRegenerateSceneVoice?: (sceneId: string) => Promise<void>;
+  regeneratingSceneId?: string | null;
 }
 
 export const ScriptContentTab: React.FC<ScriptContentTabProps> = ({
@@ -36,9 +43,14 @@ export const ScriptContentTab: React.FC<ScriptContentTabProps> = ({
   onPlayPreview,
   onSyncToCues,
   onShowNotice,
+  onRegenerateSceneVoice,
+  regeneratingSceneId,
 }) => {
   const hookRef = useRef<HTMLTextAreaElement | null>(null);
   const quoteRef = useRef<HTMLTextAreaElement | null>(null);
+  const [playingAudioKey, setPlayingAudioKey] = useState<string | null>(null);
+  const [audioElement] = useState<HTMLAudioElement>(() => new Audio());
+  const [localRegeneratingScene, setLocalRegeneratingScene] = useState<string | null>(null);
 
   const fullText = [script.hook, script.quote, script.cta].filter(Boolean).join(' ').trim();
   const totalWords = countWords(fullText);
@@ -63,6 +75,43 @@ export const ScriptContentTab: React.FC<ScriptContentTabProps> = ({
   };
 
   const scenes = (script as any).scenes || [];
+
+  const togglePlayAudio = (key: string, url?: string) => {
+    if (!url) return;
+    if (playingAudioKey === key) {
+      audioElement.pause();
+      setPlayingAudioKey(null);
+    } else {
+      audioElement.src = url;
+      audioElement.play().catch(() => {});
+      setPlayingAudioKey(key);
+      audioElement.onended = () => setPlayingAudioKey(null);
+    }
+  };
+
+  const handleRegenerateScene = async (sceneId: string) => {
+    if (localRegeneratingScene || regeneratingSceneId) return;
+    setLocalRegeneratingScene(sceneId);
+    try {
+      if (onRegenerateSceneVoice) {
+        await onRegenerateSceneVoice(sceneId);
+      } else {
+        const scriptId = (script as any).scriptId;
+        if (scriptId) {
+          await studioApi.regenerateSceneVoice(scriptId, sceneId);
+          onShowNotice(`Scene ${sceneId} voice regenerated`);
+        } else {
+          onShowNotice('No active script ID found for selective scene regeneration');
+        }
+      }
+    } catch (err: any) {
+      onShowNotice(`Regeneration failed: ${err.message || err}`);
+    } finally {
+      setLocalRegeneratingScene(null);
+    }
+  };
+
+  const masterAudioUrl = (script as any).audioUrl || (script as any).masterAudioUrl || ((script as any).scriptId ? `/media/voice/${(script as any).scriptId}/narration_master.wav` : undefined);
 
   return (
     <div className="space-y-4">
@@ -299,6 +348,29 @@ export const ScriptContentTab: React.FC<ScriptContentTabProps> = ({
         </div>
       </div>
 
+      {/* Master Narration Track (if available) */}
+      {masterAudioUrl && (
+        <div className="p-3 rounded-xl bg-[#141C2E] border border-[#2563EB]/40 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#2563EB]/25 flex items-center justify-center text-[#60A5FA]">
+              <Music className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white">Master Narration Track</div>
+              <div className="text-[10px] text-[#93C5FD]">Stage 2 Assembled Voice Timeline</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => togglePlayAudio('master', masterAudioUrl)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold transition-colors cursor-pointer"
+          >
+            {playingAudioKey === 'master' ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            <span>{playingAudioKey === 'master' ? 'Pause' : 'Play Narration'}</span>
+          </button>
+        </div>
+      )}
+
       {/* 3D Cinematic Storyboard Breakdown (if scenes present) */}
       {scenes.length > 0 && (
         <div className="p-3 rounded-xl bg-[#141418] border border-[#24242A] space-y-2.5">
@@ -311,27 +383,68 @@ export const ScriptContentTab: React.FC<ScriptContentTabProps> = ({
               </span>
             </div>
           </div>
-          <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-            {scenes.map((scene: any, sIdx: number) => (
-              <div
-                key={scene.sceneId || sIdx}
-                className="p-2.5 rounded-lg bg-[#18181C] border border-[#27272A] text-xs space-y-1"
-              >
-                <div className="flex items-center justify-between text-[10px] text-[#60A5FA] font-mono">
-                  <span>Scene {scene.sceneNumber || sIdx + 1} ({scene.duration || 4}s)</span>
-                  <span className="text-zinc-400 capitalize">{scene.camera?.framing || 'Medium'}</span>
-                </div>
-                <p className="text-zinc-200 text-[11px] leading-relaxed">
-                  {scene.visualDescription || scene.narration}
-                </p>
-                {scene.characters && scene.characters.length > 0 && (
-                  <div className="flex items-center gap-1 text-[9px] text-zinc-400">
-                    <Layers className="w-3 h-3 text-zinc-500" />
-                    <span>Characters: {scene.characters.map((c: any) => c.name || c.characterId).join(', ')}</span>
+          <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+            {scenes.map((scene: any, sIdx: number) => {
+              const sceneId = scene.sceneId || `scene_${scene.sceneNumber || sIdx + 1}`;
+              const scriptId = (script as any).scriptId;
+              const sceneAudioUrl = scene.audioUrl || (scriptId ? `/media/voice/${scriptId}/${sceneId}_v${scene.version || 1}.wav` : undefined);
+              const isPlaying = playingAudioKey === sceneId;
+              const isThisRegenerating = localRegeneratingScene === sceneId || regeneratingSceneId === sceneId;
+
+              return (
+                <div
+                  key={sceneId}
+                  className="p-2.5 rounded-lg bg-[#18181C] border border-[#27272A] text-xs space-y-1.5"
+                >
+                  <div className="flex items-center justify-between text-[10px] font-mono">
+                    <span className="text-[#60A5FA]">Scene {scene.sceneNumber || sIdx + 1} ({scene.duration || 4}s)</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#24242A] text-zinc-300 font-mono">
+                        v{scene.version || 1}
+                      </span>
+                      <span className="text-zinc-400 capitalize">{scene.camera?.framing || 'Medium'}</span>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+                  <p className="text-zinc-200 text-[11px] leading-relaxed">
+                    {scene.visualDescription || scene.narration}
+                  </p>
+                  {scene.characters && scene.characters.length > 0 && (
+                    <div className="flex items-center gap-1 text-[9px] text-zinc-400">
+                      <Layers className="w-3 h-3 text-zinc-500" />
+                      <span>Characters: {scene.characters.map((c: any) => c.name || c.characterId).join(', ')}</span>
+                    </div>
+                  )}
+
+                  {/* Stage 2 Scene Audio & Regeneration Controls */}
+                  <div className="flex items-center justify-between pt-1.5 border-t border-[#24242A]/60">
+                    <button
+                      type="button"
+                      onClick={() => togglePlayAudio(sceneId, sceneAudioUrl)}
+                      className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                        isPlaying
+                          ? 'bg-[#2563EB] text-white'
+                          : 'bg-[#1A2234] hover:bg-[#2563EB]/30 text-[#93C5FD] border border-[#3B82F6]/30'
+                      }`}
+                      title={isPlaying ? 'Pause scene audio' : 'Play scene audio'}
+                    >
+                      {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                      <span>{isPlaying ? 'Pause' : 'Scene Audio'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRegenerateScene(sceneId)}
+                      disabled={isThisRegenerating}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#141418] hover:bg-[#202026] text-zinc-300 hover:text-white text-[10px] border border-[#27272A] transition-colors cursor-pointer disabled:opacity-50"
+                      title="Regenerate Voice for this Scene"
+                    >
+                      <RefreshCw className={`w-2.5 h-2.5 ${isThisRegenerating ? 'animate-spin text-[#3B82F6]' : 'text-zinc-400'}`} />
+                      <span>{isThisRegenerating ? 'Regenerating…' : 'Regenerate'}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

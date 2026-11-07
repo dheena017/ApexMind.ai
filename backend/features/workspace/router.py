@@ -6,7 +6,7 @@ FastAPI route endpoints for workspace: script generation, TTS, memory, and media
 import logging
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException, status, Query, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, status, Query, UploadFile, File, Form, Body, Header
 from backend.shared.ai_models import (
     DEFAULT_SCRIPT_MODEL,
     get_available_models,
@@ -299,36 +299,68 @@ def post_cancel_studio_job(job_id: str):
 
 @router.post(
     "/api/studio/generate-voice",
-    response_model=StudioVoiceResponse,
     tags=["Studio"],
     summary="Generate Storyboard Voice (Stage 2)",
     description=(
-        "Generates a full narration voiceover using Gemini TTS. "
-        "Accepts either storyboard[] (narration auto-assembled from subtitleText) "
-        "or a direct fullNarrationText string. "
-        "Returns audioUrl, durationSeconds, and word-level timestamps."
+        "Generates full narration audio using zero-cost or cloud speech engines. "
+        "Accepts either a Stage 1 script reference (scriptId) for multi-scene and regeneration workflows, "
+        "or an inline storyboard/fullNarrationText."
     ),
 )
-def post_studio_generate_voice(payload: StudioVoiceRequest):
+async def post_studio_generate_voice(payload: dict = Body(...)):
+    # 1. New Stage 2 Architecture: Script-based Generation / Regeneration
+    if "scriptId" in payload and payload.get("scriptId"):
+        from .voice_generation.schemas import GenerateVoiceRequest, VoiceGenerationMode
+        from .voice_generation.services.script_reader import load_and_validate_script
+        from .voice_generation.engine.voice_orchestrator import voice_orchestrator
+
+        try:
+            req = GenerateVoiceRequest(**payload)
+            script_doc = load_and_validate_script(
+                script_id=req.scriptId,
+                project_id=req.projectId,
+            )
+            return await voice_orchestrator.generate_script_voice(
+                script_document=script_doc,
+                voice_config=req.voiceConfig,
+                loudness_profile=req.loudnessProfile,
+                mode=req.mode,
+                selected_scene_ids=req.sceneIds,
+                force_regenerate=req.forceRegenerate,
+            )
+        except ValueError as ve:
+            logger.warning(f"[Studio/Voice] Validation error: {ve}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+        except PermissionError as pe:
+            logger.warning(f"[Studio/Voice] Permission error: {pe}")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(pe))
+        except Exception as e:
+            logger.error(f"[Studio/Voice] Error: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+    # 2. Legacy / Inline Storyboard Synthesis
     from .studio_voice_service import run_studio_voice
-    if not payload.voiceName or not payload.voiceName.strip():
+    voice_name = payload.get("voiceName") or payload.get("voice_name")
+    if not voice_name or not str(voice_name).strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="voiceName is required. Please select a voice from the workspace.",
+            detail="voiceName or scriptId is required. Please provide a valid voice or script.",
         )
-    if not payload.storyboard and not payload.fullNarrationText:
+    storyboard = payload.get("storyboard")
+    full_narration = payload.get("fullNarrationText") or payload.get("full_narration_text")
+    if not storyboard and not full_narration:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provide either storyboard[] or fullNarrationText.",
+            detail="Provide either scriptId, storyboard[], or fullNarrationText.",
         )
     try:
         return run_studio_voice(
-            voice_name=payload.voiceName,
-            storyboard=[s.model_dump() for s in (payload.storyboard or [])],
-            full_narration_text=payload.fullNarrationText,
-            model=payload.model,
-            speech_style=payload.speechStyle,
-            target_duration_seconds=payload.targetDurationSeconds,
+            voice_name=voice_name,
+            storyboard=[s if isinstance(s, dict) else s.model_dump() for s in (storyboard or [])],
+            full_narration_text=full_narration,
+            model=payload.get("model"),
+            speech_style=payload.get("speechStyle"),
+            target_duration_seconds=payload.get("targetDurationSeconds"),
         )
     except ValueError as ve:
         logger.warning(f"[Studio/Voice] Validation error: {ve}")
@@ -342,15 +374,130 @@ def post_studio_generate_voice(payload: StudioVoiceRequest):
 
 
 @router.post(
+    "/api/studio/generate-voice/async",
+    response_model=ScriptJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["Studio"],
+    summary="Initiate Asynchronous Voice Generation Job",
+    description="Dispatches a durable voice generation job returning a jobId for progress polling.",
+)
+def post_studio_generate_voice_async(
+    payload: dict = Body(...),
+    idempotency_key: Optional[str] = Header(None, alias="X-Idempotency-Key"),
+):
+    from .generation_jobs import create_generation_job
+    try:
+        job_info = create_generation_job(
+            payload=payload,
+            idempotency_key=idempotency_key,
+            user_id=payload.get("userId"),
+            project_id=payload.get("projectId"),
+            job_type="voice",
+        )
+        return job_info
+    except Exception as e:
+        logger.error(f"[Studio/Jobs] Failed to dispatch voice generation job: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post(
     "/api/studio/synthesize-voice",
-    response_model=StudioVoiceResponse,
     tags=["Studio"],
     summary="Generate Storyboard Voice (Stage 2) [Deprecated alias]",
     description="Deprecated alias for POST /api/studio/generate-voice.",
     include_in_schema=False,
 )
-def post_studio_synthesize_voice(payload: StudioVoiceRequest):
-    return post_studio_generate_voice(payload)
+async def post_studio_synthesize_voice(payload: dict = Body(...)):
+    return await post_studio_generate_voice(payload)
+
+
+@router.get(
+    "/api/studio/voices",
+    tags=["Studio"],
+    summary="List Available Voice Providers & Voices",
+    description="Discovers installed and available voices grouped by provider (Piper, Edge-TTS, System OS).",
+)
+def get_studio_voices():
+    from .voice_generation.providers import voice_registry
+    providers_list = []
+    for p in voice_registry.list_providers():
+        providers_list.append({
+            "providerId": p.provider_id,
+            "name": p.name,
+            "isOffline": p.capabilities.isOffline,
+            "voices": [
+                {
+                    "voiceId": v.voiceId,
+                    "name": v.name,
+                    "gender": v.gender,
+                    "language": v.language,
+                    "capabilities": v.capabilities.model_dump(),
+                }
+                for v in p.list_voices()
+            ],
+        })
+    default_p = "piper" if (voice_registry.get_provider("piper") and voice_registry.get_provider("piper").is_available()) else "edge_tts"
+    return {
+        "success": True,
+        "defaultProvider": default_p,
+        "providers": providers_list,
+    }
+
+
+@router.get(
+    "/api/studio/scripts/{script_id}/voice",
+    tags=["Studio"],
+    summary="Retrieve Generated Voice Metadata for Script",
+    description="Returns scene audio URLs and master narration track metadata for a given scriptId.",
+)
+def get_script_voice_metadata(script_id: str):
+    import soundfile as sf
+    from .voice_generation.storage.audio_storage import audio_storage
+    s_dir = audio_storage.get_script_dir(script_id)
+    master_path = s_dir / "narration_master.wav"
+    if not master_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No generated voice assets found for script '{script_id}'.",
+        )
+
+    try:
+        data, sr = sf.read(str(master_path))
+        dur = float(len(data)) / float(sr)
+    except Exception as e:
+        dur = 0.0
+
+    scene_files = sorted(s_dir.glob("*_v*.wav"))
+    scenes = []
+    seen_ids = set()
+    for sf_path in reversed(scene_files):
+        if "narration_master" in sf_path.name or sf_path.name.startswith("."):
+            continue
+        base_id = sf_path.stem.split("_v")[0]
+        if base_id not in seen_ids:
+            seen_ids.add(base_id)
+            try:
+                s_data, s_sr = sf.read(str(sf_path))
+                s_dur = float(len(s_data)) / float(s_sr)
+            except Exception:
+                s_dur = 0.0
+            v = int(sf_path.stem.split("_v")[-1])
+            scenes.append({
+                "sceneId": base_id,
+                "version": v,
+                "audioUrl": f"/media/voice/{script_id}/{sf_path.name}",
+                "actualDuration": round(s_dur, 3),
+            })
+    scenes.reverse()
+
+    return {
+        "success": True,
+        "schemaVersion": "2.0",
+        "scriptId": script_id,
+        "masterAudioUrl": f"/media/voice/{script_id}/narration_master.wav",
+        "masterDuration": round(dur, 3),
+        "scenes": scenes,
+    }
 
 
 @router.post(

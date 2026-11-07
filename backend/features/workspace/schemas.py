@@ -569,13 +569,16 @@ class ScriptJobResponse(BaseModel):
 
 class JobStatusResponse(BaseModel):
     jobId: str
-    status: Literal["queued", "in_progress", "completed", "failed", "cancelled"] = "queued"
+    jobType: Optional[str] = "script"
+    status: Literal["queued", "in_progress", "processing", "completed", "partially_completed", "failed", "cancelled"] = "queued"
     phase: str = "QUEUED"
     progressPercent: int = 0
+    completedScenes: Optional[int] = 0
+    totalScenes: Optional[int] = 0
     message: Optional[str] = None
     elapsedSeconds: float = 0.0
     error: Optional[str] = None
-    result: Optional[ScriptGenerationResponse] = None
+    result: Optional[Any] = None
 
 
 # ══════════════════════════════════════════════════════════════════════════════

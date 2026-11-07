@@ -29,11 +29,11 @@ import type {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+async function post<T>(path: string, body: unknown, customHeaders?: Record<string, string>): Promise<T> {
   const start = performance.now();
   const res = await fetch(apiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(customHeaders || {}) },
     body: JSON.stringify(body),
   });
   const elapsed = performance.now() - start;
@@ -90,6 +90,94 @@ export interface GenerateScriptParams {
   creativeContext?: Record<string, unknown>;
   availableAssets?: Record<string, unknown>;
   generationProfile?: GenerationProfile;
+}
+
+// ── Stage 2 Types ──────────────────────────────────────────────────────────
+
+export interface VoiceCapabilityOption {
+  isOffline: boolean;
+  supportsEmotions?: boolean;
+  supportsPitch?: boolean;
+  supportsRate?: boolean;
+  supportsWordTimestamps?: boolean;
+}
+
+export interface VoiceItemOption {
+  voiceId: string;
+  name: string;
+  gender: string;
+  language: string;
+  capabilities?: VoiceCapabilityOption;
+}
+
+export interface VoiceProviderOption {
+  providerId: string;
+  name: string;
+  isOffline: boolean;
+  voices: VoiceItemOption[];
+}
+
+export interface ListVoicesResponse {
+  success: boolean;
+  defaultProvider: string;
+  providers: VoiceProviderOption[];
+}
+
+export interface SceneAudioMetadataResponse {
+  sceneId: string;
+  version: number;
+  audioUrl: string;
+  actualDuration: number;
+}
+
+export interface ScriptVoiceMetadataResponse {
+  success: boolean;
+  schemaVersion: string;
+  scriptId: string;
+  masterAudioUrl: string;
+  masterDuration: number;
+  scenes: SceneAudioMetadataResponse[];
+}
+
+export interface GenerateScriptVoiceParams {
+  scriptId: string;
+  projectId?: string;
+  voiceConfig?: {
+    provider?: string;
+    voiceId?: string;
+    language?: string;
+    speed?: number;
+    pitch?: number;
+    preset?: string;
+  };
+  loudnessProfile?: {
+    targetI?: number;
+    targetTp?: number;
+    targetLra?: number;
+  };
+  mode?: 'all' | 'selected_scenes' | 'regenerate';
+  sceneIds?: string[];
+  forceRegenerate?: boolean;
+}
+
+export interface ScriptVoiceResponseData {
+  schemaVersion: string;
+  scriptId: string;
+  totalScenes: number;
+  masterAudioUrl: string;
+  masterDuration: number;
+  timelineOffsets: Array<{ sceneId: string; timelineOffset: number; duration: number }>;
+  loudnessMetrics: Record<string, unknown>;
+  scenes: Array<{
+    sceneId: string;
+    version: number;
+    audioUrl: string;
+    actualDuration: number;
+    timelineOffset: number;
+    sampleRate: number;
+    channels: number;
+    loudness: Record<string, unknown>;
+  }>;
 }
 
 interface StudioScriptEnvelope {
@@ -176,6 +264,76 @@ export const studioApi = {
   },
 
   // ── Stage 2 ───────────────────────────────────────────────────────────────
+
+  /**
+   * List installed voice providers (Piper, Edge-TTS, System OS) and their available voices.
+   * GET /api/studio/voices
+   */
+  async listVoices(): Promise<ListVoicesResponse> {
+    consoleLogger.info('Studio', '[Stage 2] Fetching voice providers and installed models');
+    return get<ListVoicesResponse>('/api/studio/voices');
+  },
+
+  /**
+   * Retrieve generated voice assets and scene audio files for an approved script.
+   * GET /api/studio/scripts/{scriptId}/voice
+   */
+  async getScriptVoice(scriptId: string): Promise<ScriptVoiceMetadataResponse> {
+    return get<ScriptVoiceMetadataResponse>(`/api/studio/scripts/${scriptId}/voice`);
+  },
+
+  /**
+   * Dispatch an asynchronous Stage 2 voice generation job for progress polling.
+   * POST /api/studio/generate-voice/async
+   */
+  async generateVoiceAsync(
+    params: GenerateScriptVoiceParams,
+    idempotencyKey?: string
+  ): Promise<ScriptJobResponse> {
+    consoleLogger.info(
+      'Studio',
+      `[Stage 2 Async] Dispatching voice job for script "${params.scriptId}" (mode=${params.mode || 'all'})`
+    );
+    const headers = idempotencyKey ? { 'X-Idempotency-Key': idempotencyKey } : undefined;
+    return post<ScriptJobResponse>('/api/studio/generate-voice/async', params, headers);
+  },
+
+  /**
+   * Stage 2 — Generate Multi-Scene Voiceover (Synchronous or script-based)
+   * POST /api/studio/generate-voice
+   */
+  async generateScriptVoice(params: GenerateScriptVoiceParams): Promise<ScriptVoiceResponseData> {
+    consoleLogger.info(
+      'Studio',
+      `[Stage 2] Generating multi-scene voice | scriptId="${params.scriptId}" mode="${params.mode || 'all'}"`
+    );
+    return post<ScriptVoiceResponseData>('/api/studio/generate-voice', params);
+  },
+
+  /**
+   * Regenerate a single scene's voice audio with version increment (v1 -> v2)
+   * POST /api/studio/generate-voice
+   */
+  async regenerateSceneVoice(
+    scriptId: string,
+    sceneId: string,
+    options?: {
+      provider?: string;
+      voiceId?: string;
+      preset?: string;
+      speed?: number;
+      pitch?: number;
+    }
+  ): Promise<ScriptVoiceResponseData> {
+    consoleLogger.info('Studio', `[Stage 2] Regenerating scene audio | script="${scriptId}" scene="${sceneId}"`);
+    return post<ScriptVoiceResponseData>('/api/studio/generate-voice', {
+      scriptId,
+      mode: 'selected_scenes',
+      sceneIds: [sceneId],
+      forceRegenerate: true,
+      voiceConfig: options,
+    });
+  },
 
   /**
    * Stage 2 — Gemini TTS Voice Generation
