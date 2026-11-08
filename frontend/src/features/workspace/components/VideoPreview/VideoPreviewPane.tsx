@@ -2524,10 +2524,10 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             }
           }}
           id="apex-video-canvas-container"
-          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-[border-color,box-shadow,opacity] duration-300 cursor-default focus:outline-none @container shrink-0 my-auto`}
+          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#222228] bg-[#0A0A0C] shadow-2xl shadow-black/90 ring-1 ring-white/[0.04] transition-all duration-200 cursor-default focus:outline-none @container shrink-0 my-auto`}
           tabIndex={-1}
           style={{
-            background: canvasBackground || '#050505',
+            background: canvasBackground || '#0A0A0C',
             containerType: 'inline-size',
           }}
         >
@@ -3092,55 +3092,27 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           );
         })()}
 
-        {/* Empty Canvas Placeholder */}
+        {/* Empty Canvas Placeholder - Simplest Perfect Box */}
         {!activeVideo && !activeImage && !visibleSubtitle && !effectiveOverlay && !script.title && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none z-10 pointer-events-none">
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-b from-blue-500/10 to-indigo-500/5 border border-blue-500/20 flex items-center justify-center mb-3 text-blue-400 shadow-lg shadow-blue-500/5">
+            <div className="w-14 h-14 rounded-2xl bg-[#141418] border border-[#26262E] flex items-center justify-center mb-3 shadow-xl">
               <Film className="w-6 h-6 text-blue-400" />
             </div>
-            <span className="text-sm font-bold text-white tracking-wide mb-1">Canvas Ready</span>
-            <span className="text-xs text-zinc-400 max-w-[240px] leading-relaxed mb-4">
-              {canvasAspectRatio} Short ready for generation, editing & timeline playback
-            </span>
+            <span className="text-base font-bold text-white tracking-tight mb-1">Canvas Ready</span>
+            <span className="text-xs text-zinc-500 mb-5">Start with AI or add your media to the timeline</span>
 
-            {/* Quick Action Pills for Immediate Creator Onboarding */}
-            <div className="flex flex-col gap-2 w-full max-w-[210px] pointer-events-auto">
-              <button
-                type="button"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('workspace:switch-pane', { detail: { pane: 'prompt' } }));
-                }}
-                className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 transition-all cursor-pointer active:scale-95"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Generate Script with AI</span>
-              </button>
-              <div className="grid grid-cols-2 gap-1.5 w-full">
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('workspace:switch-pane', { detail: { pane: 'video' } }));
-                  }}
-                  className="py-1.5 px-2 rounded-lg bg-[#181818] hover:bg-[#222222] border border-[#2A2A2A] text-zinc-300 hover:text-white text-[11px] font-medium transition-colors cursor-pointer"
-                >
-                  + Add Video
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('workspace:switch-pane', { detail: { pane: 'elements' } }));
-                  }}
-                  className="py-1.5 px-2 rounded-lg bg-[#181818] hover:bg-[#222222] border border-[#2A2A2A] text-zinc-300 hover:text-white text-[11px] font-medium transition-colors cursor-pointer"
-                >
-                  + Elements
-                </button>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('workspace:switch-pane', { detail: { pane: 'prompt' } }));
+              }}
+              className="pointer-events-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Generate with AI</span>
+            </button>
           </div>
         )}
-
-        {/* Bottom Spacing Anchor */}
-        <div className="h-6 pointer-events-none" />
 
         </div>
       </div>
