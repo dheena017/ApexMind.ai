@@ -412,172 +412,6 @@ def _generate_script_with_fallback(
     return parsed, used_model
 
 
-def _build_emergency_theme_script(
-    category: str,
-    topic: str,
-    target_aspect_ratio: str = "9:16",
-    target_seconds: int = 30,
-) -> dict[str, Any]:
-    """Generates an intelligent, high-retention viral blueprint when online Gemini API is unavailable or quota limited."""
-    theme_key = f"{category} {topic}".lower()
-    
-    if any(k in theme_key for k in ["stoic", "discipline", "mindset", "marcus", "philosophy", "grit", "warrior"]):
-        title = f"The Stoic Rule of Unshakable Focus | {category}"
-        hook = "Stop waiting for motivation to strike."
-        quote_p1 = "Marcus Aurelius wrote that the obstacle in the path becomes the path."
-        quote_p2 = "Discipline is not an emotion you wait for in the morning."
-        quote_p3 = "It is an unyielding contract you honor with yourself in total silence."
-        quote_p4 = "Master your impulses today, before they master your destiny."
-        cta = "Control your mind or someone else will. Execute today."
-        hooks = [
-            {"id": "hook_1", "angle": "Brutal Truth", "text": "Stop waiting for motivation to strike.", "viralityScore": 98, "spokenDuration": 2.2},
-            {"id": "hook_2", "angle": "Curiosity Gap", "text": "The quiet rule Marcus Aurelius never broke.", "viralityScore": 94, "spokenDuration": 2.5},
-            {"id": "hook_3", "angle": "Identity Challenge", "text": "Can you master pure silence for 24 hours?", "viralityScore": 91, "spokenDuration": 2.3},
-        ]
-        visuals = [
-            ("misty alpine mountain peak sunrise volumetric rays 4k", "Atmospheric Mountain Ridge & Mist"),
-            ("cascading waterfall deep pine forest rocky rapids 4k", "Majestic Forest Waterfall Rapids"),
-            ("dramatic ocean storm waves crashing rocky cliff 4k", "Dramatic Ocean Storm Waves"),
-            ("ancient dense pine forest sun rays morning fog 4k", "Misty Evergreen Forest Canopy"),
-            ("starry night sky milky way over mountain ridge timelapse 4k", "Celestial Night Sky Horizon"),
-            ("dramatic golden hour sunset mountain summit glowing ridge 4k", "Cinematic Golden Hour Mountain Sunset"),
-        ]
-    elif any(k in theme_key for k in ["fitness", "body", "workout", "gym", "health", "iron", "muscle"]):
-        title = f"The Law of Iron Discipline | {category}"
-        hook = "Your body can stand almost anything."
-        quote_p1 = "It's your mind you have to convince."
-        quote_p2 = "The pain you feel today will be the strength you feel tomorrow."
-        quote_p3 = "Consistency in the shadows creates greatness in the light."
-        quote_p4 = "Every single rep builds the armor you wear into battle."
-        cta = "Show up when you don't feel like it. Start now."
-        hooks = [
-            {"id": "hook_1", "angle": "Direct Challenge", "text": "Your body can stand almost anything.", "viralityScore": 97, "spokenDuration": 2.1},
-            {"id": "hook_2", "angle": "Brutal Truth", "text": "Excuses will cost you your entire future.", "viralityScore": 95, "spokenDuration": 2.3},
-            {"id": "hook_3", "angle": "Curiosity Gap", "text": "The one habit that separates winners from dreamers.", "viralityScore": 92, "spokenDuration": 2.6},
-        ]
-        visuals = [
-            ("dramatic ocean waves crashing cliff sunset 4k", "Powerful Ocean Breakers"),
-            ("rushing mountain river rapids deep gorge 4k", "Relentless Mountain Torrent"),
-            ("volumetric storm clouds rolling over mountain peak 4k", "Storm Clouds Ridge"),
-            ("ancient pine trees wind storm resilience 4k", "Enduring Forest Ridge"),
-            ("sunrise cresting over snow peak horizon 4k", "Apex Dawn Summit"),
-            ("golden hour dusk horizon glowing mountain summit 4k", "Golden Hour Horizon Peak"),
-        ]
-    else:
-        title = f"The Unstoppable Mindset Blueprint | {category}"
-        hook = "The version of you that wins never made excuses."
-        quote_p1 = "Greatness is not an accident of talent or luck."
-        quote_p2 = "It is the relentless daily repetition of difficult choices."
-        quote_p3 = "Silence the doubt by taking massive, immediate action."
-        quote_p4 = "Your future is shaped by the decisions you make right now."
-        cta = "Stop doubting your potential. Step forward today."
-        hooks = [
-            {"id": "hook_1", "angle": "Negative Bias", "text": "The version of you that wins never made excuses.", "viralityScore": 96, "spokenDuration": 2.4},
-            {"id": "hook_2", "angle": "Curiosity Gap", "text": "Why 99% of people quit right before the breakthrough.", "viralityScore": 93, "spokenDuration": 2.5},
-            {"id": "hook_3", "angle": "Identity Challenge", "text": "Are you willing to sacrifice who you are for who you can become?", "viralityScore": 91, "spokenDuration": 2.7},
-        ]
-        visuals = [
-            ("misty mountain peak sunrise clouds volumetric 4k", "Atmospheric Mountain Ridge"),
-            ("cascading waterfall deep pine forest 4k", "Majestic Forest Waterfall"),
-            ("dramatic storm waves rocky coast 4k", "Dramatic Ocean Storm Waves"),
-            ("dense forest sunlight piercing mist 4k", "Sunlight Piercing Deep Forest"),
-            ("aurora borealis northern lights over mountains 4k", "Celestial Aurora Borealis"),
-            ("dramatic golden hour sunset mountain summit 4k", "Cinematic Golden Hour Sunset"),
-        ]
-
-    quote_parts = [quote_p1, quote_p2, quote_p3, quote_p4]
-    full_quote = " ".join(quote_parts)
-
-    scene_count = max(4, min(8, round(target_seconds / 4.8)))
-    beats = ["hook"] + ["escalation"] * max(1, scene_count - 3) + ["quote"] + ["cta"]
-    while len(beats) < scene_count:
-        beats.insert(-1, "quote")
-    beats = beats[:scene_count]
-
-    dur_per_scene = round(target_seconds / scene_count, 2)
-    scenes = []
-    current_time = 0.0
-
-    sub_texts = [hook]
-    num_mid = scene_count - 2
-    if num_mid == 1:
-        sub_texts.append(full_quote)
-    elif num_mid == 2:
-        sub_texts.append(f"{quote_p1} {quote_p2}")
-        sub_texts.append(f"{quote_p3} {quote_p4}")
-    elif num_mid == 3:
-        sub_texts.append(quote_p1)
-        sub_texts.append(f"{quote_p2} {quote_p3}")
-        sub_texts.append(quote_p4)
-    else:
-        for i in range(num_mid):
-            sub_texts.append(quote_parts[i % len(quote_parts)])
-    sub_texts.append(cta)
-
-    for i in range(scene_count):
-        is_last = (i == scene_count - 1)
-        sc_dur = round(target_seconds - current_time, 2) if is_last else dur_per_scene
-        sc_dur = max(2.5, sc_dur)
-        beat = beats[i]
-        vis_q, vis_name = visuals[i % len(visuals)]
-        aspect_tag = f"vertical {target_aspect_ratio}" if target_aspect_ratio == "9:16" else f"cinematic {target_aspect_ratio}"
-        
-        scenes.append({
-            "sceneNumber": i + 1,
-            "beat": beat,
-            "start": round(current_time, 2),
-            "duration": sc_dur,
-            "mediaType": "video",
-            "mediaId": "",
-            "mediaUrl": "",
-            "mediaName": vis_name,
-            "textStyleId": "sub-hormozi" if beat == "hook" else ("sub-mrbeast" if beat == "escalation" else ("quote-stoic-roman" if beat == "quote" else "cta-save-reel")),
-            "textStyleName": "Hormozi Viral Yellow" if beat == "hook" else "MrBeast Pop Bold",
-            "captionPresetClass": "font-black tracking-tight text-yellow-400 uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,1)] bg-black/85 px-3 py-1 rounded-md border border-yellow-400/30" if beat == "hook" else "font-black tracking-tighter text-sky-400 uppercase drop-shadow-[0_4px_16px_rgba(0,0,0,1)]",
-            "captionPresetColor": "#FACC15" if beat == "hook" else "#38BDF8",
-            "captionPresetFontFamily": "Impact, sans-serif" if beat == "hook" else "Anton, sans-serif",
-            "transition": "glitch" if i == 0 else ("match-cut" if i == 1 else ("zoom" if i == 2 else "fade")),
-            "cameraMotion": "push-in" if beat == "hook" else ("pan-right" if beat == "escalation" else ("slow-zoom" if beat == "quote" else "static")),
-            "sfx": "Fast Cinematic Whoosh" if i == 0 else (None if not is_last else "Cash Register Cha-Ching"),
-            "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" if i == 0 else (None if not is_last else "https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3"),
-            "googleSearchQuery": f"{vis_q} {aspect_tag}",
-            "visualQuery": f"{vis_q}",
-            "fallbackQueries": [
-                f"{vis_q} cinematic {aspect_tag}",
-                f"{vis_q} atmospheric {aspect_tag}",
-            ],
-            "negativeTerms": ["green screen", "clipart", "lower third", "subscribe button"],
-            "subtitleText": sub_texts[i],
-        })
-        current_time += sc_dur
-
-    return {
-        "title": title,
-        "hook": hook,
-        "quote": full_quote,
-        "cta": cta,
-        "aspectRatio": target_aspect_ratio,
-        "recommendedVoice": "Fenrir",
-        "musicTrack": "track-phonk-titan",
-        "captionStyle": "Hormozi Viral Yellow",
-        "tags": ["#Shorts", "#StoicMindset", "#Discipline", "#Philosophy", "#ApexMind"],
-        "hooks": hooks,
-        "soundDesign": {
-            "soundtrackTrackId": "track-phonk-titan",
-            "soundtrackTitle": "Titan Momentum Phonk",
-            "genre": "phonk",
-            "bpm": 140,
-            "ducking": DEFAULT_DUCKING_CONFIG.copy(),
-            "sfxEvents": [
-                {"time": 0.0, "sfxId": "sfx-impact-subdrop", "label": "Opening Hook Boom"},
-                {"time": 2.5, "sfxId": "sfx-whoosh-fast", "label": "Scene Transition Swish"},
-                {"time": max(0.0, target_seconds - 3.0), "sfxId": "sfx-notif-cash", "label": "Closing CTA Ding"},
-            ],
-        },
-        "storyboard": scenes,
-    }
-
-
 def generate_gemini_script(
     category: str,
     topic: str,
@@ -1040,47 +874,30 @@ Output MUST be a single raw JSON object matching this exact schema:
     start_t = time.perf_counter()
 
     try:
-        result = None
-        used_model = target_model
-        try:
-            result, used_model = _generate_script_with_fallback(
-                prompt=prompt,
-                target_model=target_model,
-                system_instruction=SCRIPT_SYSTEM_INSTRUCTION,
-            )
-        except Exception as api_fetch_err:
-            logger.warning(f"[Studio/Script] Online Gemini script attempt failed: {api_fetch_err}")
-            result = None
-            used_model = str(api_fetch_err)
+        result, used_model = _generate_script_with_fallback(
+            prompt=prompt,
+            target_model=target_model,
+            system_instruction=SCRIPT_SYSTEM_INSTRUCTION,
+        )
 
-        if result is None:
-            logger.warning(
-                f"[Studio/Script] Online Gemini API unavailable or quota/billing restricted ({used_model}). "
-                f"Activating ApexMind High-Impact Viral Blueprint Engine for theme '{category}'..."
+        if result is None or not isinstance(result, dict):
+            logger.error(f"[Studio/Script] Online Gemini AI generation failed: {used_model}")
+            raise RuntimeError(
+                f"Gemini script generation failed: All online models were unavailable or quota-limited ({used_model}). "
+                "Please verify your GEMINI_API_KEY and model quota."
             )
-            result = _build_emergency_theme_script(
-                category=category,
-                topic=topic,
-                target_aspect_ratio=target_aspect_ratio,
-                target_seconds=target_seconds,
-            )
-            used_model = "apexmind-viral-engine"
 
         elapsed = time.perf_counter() - start_t
 
         # ── Multi-Scene Storyboard Validation (Zero Fake Fallbacks) ───────────
         storyboard = result.get("storyboard") or []
 
-        # If storyboard is empty, rebuild with emergency theme generator
         if not storyboard:
-            logger.warning("[Studio/Script] Storyboard missing from response. Re-generating via emergency theme blueprint...")
-            result = _build_emergency_theme_script(
-                category=category,
-                topic=topic,
-                target_aspect_ratio=target_aspect_ratio,
-                target_seconds=target_seconds,
+            logger.error(f"[Studio/Script] Storyboard missing from Gemini response (model: {used_model})")
+            raise RuntimeError(
+                f"Gemini model '{used_model}' generated a response without a valid 'storyboard' scene array. "
+                "Please re-try generation with refined parameters."
             )
-            storyboard = result.get("storyboard") or []
 
         # ── Fast Decoupled Storyboard Formatting (Queries Only, Zero Media Latency) ──
         for sc in storyboard:
