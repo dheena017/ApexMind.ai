@@ -95,13 +95,13 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   const addTrackAnchorRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="workspace-timeline-toolbar flex items-center justify-between px-3 h-10 bg-[#121215] border-b border-[#222228] select-none min-w-0 w-full shrink-0 relative z-20">
+    <div className="workspace-timeline-toolbar flex items-center justify-between px-2 sm:px-3 h-10 bg-[#121215] border-b border-[#222228] select-none min-w-0 w-full shrink-0 relative z-20 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x gap-2">
       {/* ── 1. Left: Collapse, Title & Editing Tools ── */}
-      <div className="workspace-timeline-toolbar-main flex items-center gap-1.5 min-w-0 shrink-0">
+      <div className="workspace-timeline-toolbar-main flex items-center gap-1 sm:gap-1.5 min-w-0 shrink-0">
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+          className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer shrink-0"
           title={isCollapsed ? 'Expand Timeline' : 'Collapse Timeline'}
           aria-label={isCollapsed ? 'Expand timeline' : 'Collapse timeline'}
           aria-expanded={!isCollapsed}
@@ -109,28 +109,28 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />}
         </button>
 
-        <div className="workspace-timeline-toolbar-heading flex items-center gap-1.5 mr-1">
+        <div className="workspace-timeline-toolbar-heading flex items-center gap-1 sm:gap-1.5 mr-0.5 sm:mr-1 shrink-0">
           <span className="text-[11px] font-bold tracking-wider uppercase flex items-center gap-1 text-zinc-200">
             <Sliders className="w-3.5 h-3.5 text-blue-400" />
             <span className="hidden sm:inline">Timeline</span>
           </span>
           <span
-            className="text-[9.5px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-full"
+            className="text-[9px] sm:text-[9.5px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-full"
             title="Tracks containing content"
           >
             {activeTracksCount} {activeTracksCount === 1 ? 'Track' : 'Tracks'}
           </span>
         </div>
 
-        <div className="workspace-timeline-toolbar-divider h-3.5 w-px bg-zinc-800 mx-1" />
+        <div className="workspace-timeline-toolbar-divider h-3.5 w-px bg-zinc-800 mx-0.5 sm:mx-1 hidden xs:block shrink-0" />
 
         {/* ── Action Tools: Split, Duplicate, Delete, Transitions ── */}
-        <div className="workspace-timeline-toolbar-actions flex items-center gap-1">
+        <div className="workspace-timeline-toolbar-actions flex items-center gap-0.5 sm:gap-1 shrink-0">
           <button
             type="button"
             onClick={onSplitClip}
             disabled={!hasSelection}
-            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer ${hasSelection
+            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${hasSelection
                 ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
                 : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
               }`}
@@ -144,7 +144,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onDuplicateClip}
             disabled={!hasSelection}
-            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer ${hasSelection
+            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${hasSelection
                 ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
                 : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
               }`}
@@ -158,7 +158,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             type="button"
             onClick={onDeleteClip}
             disabled={!hasSelection}
-            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer ${hasSelection
+            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${hasSelection
                 ? 'border-red-900/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 hover:border-red-700/60 shadow-sm'
                 : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
               }`}
@@ -173,7 +173,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             onClick={() => {
               window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'transitions' }));
             }}
-            className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-amber-500/40 hover:bg-zinc-800 shadow-sm transition-all cursor-pointer text-[10.5px] font-medium"
+            className="h-7 px-2 sm:px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-amber-500/40 hover:bg-zinc-800 shadow-sm transition-all cursor-pointer text-[10.5px] font-medium shrink-0"
             title="Open Transitions Studio"
             aria-label="Open Transitions Studio"
           >
@@ -184,7 +184,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
       </div>
 
       {/* ── 2. Center: Dedicated Transport Controls & Timecode Display ── */}
-      <div className="workspace-timeline-toolbar-playback flex items-center gap-2 shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
+      <div className="workspace-timeline-toolbar-playback flex items-center gap-1 sm:gap-2 shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
         <button
           type="button"
           onClick={() => onSeek(0)}
@@ -199,19 +199,19 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
         <button
           type="button"
           onClick={onTogglePlay}
-          className="h-7 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 active:scale-95 transition-all cursor-pointer font-semibold text-[11px] shrink-0"
+          className="h-7 px-2.5 sm:px-3.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 active:scale-95 transition-all cursor-pointer font-semibold text-[11px] shrink-0"
           title={isPlaying ? 'Pause Timeline (Space)' : 'Play Timeline (Space)'}
           aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
         >
           {isPlaying ? (
             <>
               <Pause className="w-3 h-3 fill-current shrink-0" />
-              <span>Pause</span>
+              <span className="hidden sm:inline">Pause</span>
             </>
           ) : (
             <>
               <Play className="w-3 h-3 fill-current ml-0.5 shrink-0" />
-              <span>Play</span>
+              <span className="hidden sm:inline">Play</span>
             </>
           )}
         </button>
@@ -228,7 +228,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
 
         {/* Time Readout: Playhead / Media Duration */}
         <div
-          className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-black/60 border border-zinc-800/80 font-mono text-[11px] text-zinc-200 flex items-center gap-1.5 shadow-inner select-none shrink-0"
+          className="h-7 whitespace-nowrap tabular-nums px-2 sm:px-2.5 rounded-lg bg-black/60 border border-zinc-800/80 font-mono text-[10px] sm:text-[11px] text-zinc-200 flex items-center gap-1 sm:gap-1.5 shadow-inner select-none shrink-0"
           title={`Playhead: ${formatTime(currentTime)} | Duration: ${formatTime(displayDuration)}`}
           aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
         >
@@ -239,13 +239,13 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
       </div>
 
       {/* ── 3. Right: Add Track, Snapping, Zoom Level Controls & Shortcuts ── */}
-      <div className="workspace-timeline-toolbar-secondary flex items-center gap-2 shrink-0 min-w-0">
+      <div className="workspace-timeline-toolbar-secondary flex items-center gap-1 sm:gap-2 shrink-0 min-w-0">
         {/* ── Add Track ── */}
-        <div ref={addTrackAnchorRef} className="relative">
+        <div ref={addTrackAnchorRef} className="relative shrink-0">
           <button
             type="button"
             onClick={onToggleAddTrackMenu}
-            className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg text-[10.5px] font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-sm"
+            className="h-7 flex items-center justify-center gap-1 px-2 sm:px-2.5 rounded-lg text-[10.5px] font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
             title="Add a new track from media categories"
             aria-label="Add track"
             aria-expanded={addTrackMenuOpen}
@@ -262,10 +262,10 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           />
         </div>
 
-        <div className="workspace-timeline-toolbar-divider h-3.5 w-px bg-zinc-800 mx-0.5 hidden sm:block" />
+        <div className="workspace-timeline-toolbar-divider h-3.5 w-px bg-zinc-800 mx-0.5 hidden sm:block shrink-0" />
 
         {/* ── Zoom Controls & Shortcuts ── */}
-        <div className="flex items-center h-7 bg-zinc-900/90 border border-zinc-800 rounded-lg p-0.5 text-zinc-400">
+        <div className="flex items-center h-7 bg-zinc-900/90 border border-zinc-800 rounded-lg p-0.5 text-zinc-400 shrink-0">
           <button
             type="button"
             onClick={onZoomFit}
