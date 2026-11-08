@@ -27,6 +27,7 @@ from .schemas import (
     StudioBackgroundInfo,
     StudioCaptionsRequest,
     StudioCaptionsResponse,
+    ElementsCatalogResponse,
     CreateCustomBadgeRequest,
     CreateCustomBadgeResponse,
     GenerateMetadataRequest,
@@ -255,8 +256,48 @@ async def get_workspace_audio_providers_route():
     }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# STUDIO ELEMENTS & OVERLAYS SERVICE
+# STUDIO ELEMENTS & OVERLAYS SERVICE — 16 Live Providers
 # ══════════════════════════════════════════════════════════════════════════════
+
+@router.get(
+    "/api/studio/elements/search",
+    response_model=ElementsCatalogResponse,
+    tags=["Elements"],
+    summary="Search Studio Elements & Overlays",
+    operation_id="search_studio_elements",
+    description="Live search across 16 modular vector, emoji, sticker, shape, and badge providers with zero hardcoded arrays."
+)
+async def get_search_studio_elements(
+    query: str = Query("", description="Keyword search term"),
+    category: str = Query("all", description="Element category: all, badges, icons, emojis, stickers, shapes, brands, progress, frames"),
+    provider: str = Query("all", description="Target provider or 'all'"),
+    page: int = Query(1, ge=1, description="Page number"),
+    pageSize: int = Query(24, ge=1, le=100, description="Items per page"),
+):
+    from .elements import search_elements
+    return search_elements(
+        query=query,
+        category=category,
+        provider=provider,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get(
+    "/api/studio/elements/providers",
+    tags=["Elements"],
+    summary="Get Element Providers Status",
+    operation_id="get_studio_element_providers",
+    description="Returns availability status for all 16 live element providers."
+)
+async def get_studio_element_providers():
+    from .elements import get_element_providers_status
+    return {
+        "success": True,
+        "providers": get_element_providers_status(),
+    }
+
 
 @router.post(
     "/api/studio/elements/custom-badge",
@@ -267,7 +308,7 @@ async def get_workspace_audio_providers_route():
     description="Generates a customized viral badge with gradient, styling, and text."
 )
 def post_create_custom_badge_route(payload: CreateCustomBadgeRequest):
-    from .elements_service import create_custom_badge
+    from .elements import create_custom_badge
     try:
         return create_custom_badge(
             text=payload.text,

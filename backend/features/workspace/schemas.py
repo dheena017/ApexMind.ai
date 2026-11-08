@@ -531,6 +531,9 @@ class VisualElementItem(BaseModel):
     id: str
     name: str
     category: str
+    provider: Optional[str] = "studio"
+    previewUrl: Optional[str] = None
+    svgUrl: Optional[str] = None
     label: Optional[str] = None
     desc: Optional[str] = None
     color: Optional[str] = None
@@ -538,13 +541,19 @@ class VisualElementItem(BaseModel):
     symbol: Optional[str] = None
     type: str = "badge"
     tags: List[str] = []
+    aspectRatio: Optional[str] = "1:1"
 
 
 class ElementsCatalogResponse(BaseModel):
     success: bool = True
+    error: Optional[str] = None
+    page: int = 1
+    pageSize: int = 24
     total: int = 0
+    provider: str = "all"
     category: str = "all"
     categories: List[Dict[str, Any]] = []
+    providers: Dict[str, bool] = {}
     elements: List[VisualElementItem] = []
 
 
