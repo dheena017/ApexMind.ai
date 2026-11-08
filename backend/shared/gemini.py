@@ -496,21 +496,14 @@ def generate_gemini_script(
     else:
         sfx_summary = "- [Dynamic Sound Design]. Plan sound effect events (whoosh, subdrop, riser, impact) with time offsets."
 
-    avail_voices = catalog.get("voiceProfiles") or [
-        {"id": "Kore", "name": "Kore", "gender": "Female", "style": "Clear, Inspiring, Authoritative"},
-        {"id": "Fenrir", "name": "Fenrir", "gender": "Male", "style": "Deep, Powerful, Stoic Leader"},
-        {"id": "Puck", "name": "Puck", "gender": "Male", "style": "Energetic, High-Octane Motivational"},
-        {"id": "Zephyr", "name": "Zephyr", "gender": "Female", "style": "Smooth, Calming Wisdom and Meditation"},
-        {"id": "Charon", "name": "Charon", "gender": "Male", "style": "Grit and Relentless Focus"},
-        {"id": "Aoede", "name": "Aoede", "gender": "Female", "style": "Warm, Expressive Storytelling"},
-        {"id": "Leda", "name": "Leda", "gender": "Female", "style": "Bright, Youthful, Upbeat"},
-        {"id": "Orus", "name": "Orus", "gender": "Male", "style": "Firm, Confident, Composed"},
-        {"id": "Enceladus", "name": "Enceladus", "gender": "Male", "style": "Deep, Resonant, Dramatic"},
-    ]
-    voice_summary = "\n".join([
-        f"- ID: {v.get('id')} | Name: '{v.get('name')}' | Gender: {v.get('gender')} | Style: {v.get('style')}"
-        for v in avail_voices
-    ])
+    avail_voices = catalog.get("voiceProfiles") or []
+    if avail_voices:
+        voice_summary = "\n".join([
+            f"- ID: {v.get('id')} | Name: '{v.get('name')}' | Gender: {v.get('gender')} | Style: {v.get('style')}"
+            for v in avail_voices
+        ])
+    else:
+        voice_summary = "- [Dynamic Voice Selection]. Recommend an optimal voice matching the script tone and narrative style (e.g. Fenrir, Nova, Kore, Puck)."
 
     selected_context = []
     for label, value in [
@@ -899,6 +892,20 @@ Output MUST be a single raw JSON object matching this exact schema:
                 "Please re-try generation with refined parameters."
             )
 
+        if not result.get("title") or not str(result.get("title")).strip():
+            logger.error(f"[Studio/Script] Title missing from Gemini response (model: {used_model})")
+            raise RuntimeError(
+                f"Gemini model '{used_model}' generated a response without a valid 'title'. "
+                "Please re-try generation."
+            )
+
+        if not result.get("quote") and not result.get("hook"):
+            logger.error(f"[Studio/Script] Narration text missing from Gemini response (model: {used_model})")
+            raise RuntimeError(
+                f"Gemini model '{used_model}' generated a response without monologue narration ('quote' or 'hook'). "
+                "Please re-try generation."
+            )
+
         # ── Fast Decoupled Storyboard Formatting (Queries Only, Zero Media Latency) ──
         for sc in storyboard:
             sc["mediaType"] = "video"
@@ -964,40 +971,38 @@ Output MUST be a single raw JSON object matching this exact schema:
             if middle_text:
                 result["quote"] = middle_text
 
-        # ── Multi-Hook Resolution (Ensure dynamic hook angles are available) ──
+        # ── Multi-Hook Resolution (Strict Gemini outputs only) ──
         hooks_data = result.get("hooks") or []
-        if not hooks_data:
-            primary_hook = result.get("hook") or f"The brutal truth about {topic.lower() or 'this goal'}."
+        if not hooks_data and result.get("hook"):
             hooks_data = [
                 {
                     "id": "hook_1",
-                    "angle": "Primary Angle",
-                    "text": primary_hook,
-                    "viralityScore": 95,
-                    "spokenDuration": 2.2,
+                    "angle": "Opening Hook",
+                    "text": result.get("hook"),
+                    "viralityScore": 90,
+                    "spokenDuration": 2.5,
                 },
             ]
         result["hooks"] = hooks_data
 
-
         # ── Sound Design & Multi-Track SFX Resolution ──
         sound_design = result.get("soundDesign") or {}
-        st_id = sound_design.get("soundtrackTrackId") or result.get("musicTrack") or "track-phonk-titan"
+        st_id = sound_design.get("soundtrackTrackId") or result.get("musicTrack") or music_track or ""
         avail_tracks = catalog.get("musicTracks") or []
         matched_track = next(
             (m for m in avail_tracks if m.get("id") == st_id or m.get("title", "").lower() in str(st_id).lower()),
             {}
-        ) if avail_tracks else {}
+        ) if (avail_tracks and st_id) else {}
 
-        sound_design["soundtrackTrackId"] = matched_track.get("id", str(st_id))
-        sound_design["soundtrackTitle"] = matched_track.get("title", sound_design.get("soundtrackTitle", "Dynamic Soundtrack"))
-        sound_design["genre"] = matched_track.get("genre", sound_design.get("genre", "phonk"))
-        sound_design["bpm"] = matched_track.get("bpm", sound_design.get("bpm", 140))
+        sound_design["soundtrackTrackId"] = matched_track.get("id", str(st_id)) if st_id else ""
+        sound_design["soundtrackTitle"] = matched_track.get("title", sound_design.get("soundtrackTitle", ""))
+        sound_design["genre"] = matched_track.get("genre", sound_design.get("genre", audio_mood or ""))
+        sound_design["bpm"] = matched_track.get("bpm", sound_design.get("bpm", 0))
         sound_design["audioUrl"] = matched_track.get("audioUrl", sound_design.get("audioUrl", ""))
         if not sound_design.get("ducking"):
             sound_design["ducking"] = DEFAULT_DUCKING_CONFIG.copy()
 
-        # Resolve SFX event URLs dynamically from available sound effects
+        # Resolve SFX event URLs dynamically from available sound effects catalog
         sfx_events = sound_design.get("sfxEvents") or []
         avail_sfx_list = catalog.get("soundEffects") or []
         for evt in sfx_events:
@@ -1005,11 +1010,11 @@ Output MUST be a single raw JSON object matching this exact schema:
             matched_sfx = next(
                 (s for s in avail_sfx_list if s.get("id") == s_id or s.get("name", "").lower() in str(evt.get("label", "")).lower()),
                 None
-            ) if avail_sfx_list else None
+            ) if (avail_sfx_list and s_id) else None
             if matched_sfx:
                 evt["sfxUrl"] = matched_sfx.get("audioUrl")
             elif not evt.get("sfxUrl"):
-                evt["sfxUrl"] = avail_sfx_list[0].get("audioUrl") if avail_sfx_list else ""
+                evt["sfxUrl"] = ""
         sound_design["sfxEvents"] = sfx_events
         result["soundDesign"] = sound_design
 
@@ -1090,22 +1095,19 @@ Output MUST be a single raw JSON object matching this exact schema:
         result["durationSeconds"] = target_seconds
         result["estimatedDuration"] = f"{target_seconds}s"
         if not result.get("hashtags"):
-            result["hashtags"] = result.get("tags") or ["#Shorts", "#Motivation", "#Discipline", "#Mindset", "#StoicMindset", "#ApexMind"]
+            result["hashtags"] = result.get("tags") or []
         if not result.get("tags"):
-            result["tags"] = result.get("hashtags")
+            result["tags"] = result.get("hashtags") or []
         if not result.get("description"):
             h_line = result.get("hook", "")
             q_line = result.get("quote", "")
             c_line = result.get("cta", "")
             t_line = " ".join(result.get("hashtags", []))
-            result["description"] = f"⚡ {h_line}\n\n📜 {q_line}\n\nKey Takeaways:\n• Discipline is an unyielding contract with yourself.\n• The obstacle in front of you becomes your path forward.\n• Silence and execution beat loud excuses.\n\n🎯 {c_line}\n\n{t_line}\n\nProduced with ApexMind AI Studio."
-        if not result.get("titleIdeas"):
-            orig_t = result.get("title") or "The Stoic Discipline Code"
+            parts = [p for p in [h_line, q_line, c_line, t_line] if p]
+            result["description"] = "\n\n".join(parts)
+        if not result.get("titleIdeas") and result.get("title"):
             result["titleIdeas"] = [
-                {"title": orig_t, "angle": "Curiosity Gap", "viralityScore": 98},
-                {"title": f"Stop Waiting for Motivation ({category})", "angle": "Brutal Truth", "viralityScore": 95},
-                {"title": "The Rule Marcus Aurelius Never Broke", "angle": "Stoic Insight", "viralityScore": 93},
-                {"title": "Why 99% Fail Before 6:00 AM", "angle": "Direct Challenge", "viralityScore": 91},
+                {"title": result["title"], "angle": "Primary Title", "viralityScore": 95}
             ]
         if not result.get("outputFormat"):
             result["outputFormat"] = f"{target_aspect_ratio} Vertical Video (1080x1920)" if target_aspect_ratio == "9:16" else f"{target_aspect_ratio} Video"
@@ -1324,8 +1326,6 @@ def generate_gemini_voiceover(
         elapsed = time.perf_counter() - start_t
         logger.error(f"Voiceover generation error after {elapsed:.2f}s for voice '{voice_name}': {e}")
         raise RuntimeError(f"Voiceover synthesis failed: {e}")
-
-
 
 
 def generate_gemini_metadata(

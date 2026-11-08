@@ -64,19 +64,24 @@ def generate_script(
         available_assets=merged_assets,
         user_prompt=user_prompt,
     )
-    if data.get("title") and data.get("quote"):
-        scenes_count = len(data.get("storyboard") or data.get("scenes") or [])
-        logger.debug(f"Generated AI script: '{data.get('title')}' ({scenes_count} scenes, {data.get('estimatedDuration', '30s')})")
-        try:
-            add_notification(
-                title="AI Script Crafted",
-                message=f"Generated script: '{data.get('title')}' in {category or 'General Motivation'}",
-                type="info",
-                category="studio",
-                action_url="/workspace",
-            )
-        except Exception as e:
-            logger.warning(f"Could not dispatch script notification: {e}")
+    if not data or not isinstance(data, dict):
+        raise ValueError("AI Script Generation returned empty data from Gemini.")
+
+    if not data.get("title") or not (data.get("storyboard") or data.get("scenes")):
+        raise ValueError("AI script generation failed: Gemini did not provide required 'title' or 'storyboard'.")
+
+    scenes_count = len(data.get("storyboard") or data.get("scenes") or [])
+    logger.debug(f"Generated AI script: '{data.get('title')}' ({scenes_count} scenes, {data.get('estimatedDuration', '30s')})")
+    try:
+        add_notification(
+            title="AI Script Crafted",
+            message=f"Generated script: '{data.get('title')}' in {category or 'General Motivation'}",
+            type="info",
+            category="studio",
+            action_url="/workspace",
+        )
+    except Exception as e:
+        logger.warning(f"Could not dispatch script notification: {e}")
 
     return {
         "success": True,
