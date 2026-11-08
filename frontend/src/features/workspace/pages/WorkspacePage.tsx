@@ -1566,9 +1566,10 @@ export default function WorkspacePage({
       if (customEvent.detail.panel === 'right') setShowRightPane((prev) => !prev);
     };
     const handleSwitchPane = (e: Event) => {
-      const pane = (e as CustomEvent<{ pane: WorkspaceTabType }>).detail?.pane;
+      const detail = (e as CustomEvent<any>).detail;
+      const pane = typeof detail === 'string' ? detail : detail?.pane;
       if (pane && onPaneChange) {
-        onPaneChange(pane);
+        onPaneChange(pane as WorkspaceTabType);
         setShowLeftPane(true);
       }
     };

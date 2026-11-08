@@ -345,6 +345,48 @@ export default function AppLayout({
                 {children}
               </div>
             </main>
+
+            {/* Mobile Studio Tools Bottom Bar (< 768px / md:hidden) */}
+            <nav
+              aria-label="Studio tools bottom bar"
+              className="flex md:hidden w-full h-13 bg-[#111114]/98 border-t border-[#222228] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-center gap-1 px-2 shrink-0 z-30 select-none font-sans-studio backdrop-blur-xl touch-pan-x"
+            >
+              {WORKSPACE_SIDEBAR_ITEMS.map((item) => {
+                const IconComp = item.icon;
+                const isActive = item.isScriptGroup
+                  ? activeWorkspacePane === 'script' || activeWorkspacePane === 'prompt' || activeWorkspacePane === 'editor'
+                  : item.id === 'text'
+                  ? activeWorkspacePane === 'text' || activeWorkspacePane === 'captions'
+                  : item.id === 'youtube'
+                  ? activeWorkspacePane === 'youtube' || activeWorkspacePane === 'publish'
+                  : activeWorkspacePane === item.id;
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      onWorkspacePaneChange(item.id);
+                      window.dispatchEvent(
+                        new CustomEvent('workspace:switch-pane', { detail: { pane: item.id } })
+                      );
+                    }}
+                    aria-label={item.label}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex flex-col items-center justify-center min-w-[58px] h-11 px-1.5 py-1 rounded-xl transition-all cursor-pointer shrink-0 gap-0.5 ${
+                      isActive
+                        ? 'bg-blue-600/15 border border-blue-500/40 text-blue-400 font-semibold shadow-xs'
+                        : 'border border-transparent text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <IconComp className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-400 scale-105' : 'text-zinc-400'}`} />
+                    <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap">
+                      {item.shortLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         </div>
       ) : (
