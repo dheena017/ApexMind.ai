@@ -1376,6 +1376,18 @@ export default function WorkspacePage({
   const [showTimeline, setShowTimeline] = useState(true);
   const [showRightPane, setShowRightPane] = useState(true);
 
+  useEffect(() => {
+    if (activePane) {
+      setShowLeftPane(true);
+    }
+  }, [activePane]);
+
+  useEffect(() => {
+    if (!showLeftPane && mobileView === 'tools') {
+      setMobileView('preview');
+    }
+  }, [showLeftPane, mobileView]);
+
   //  Resizable Layout Panel Dimensions
   const DEFAULT_LEFT_WIDTH = 380;
   const DEFAULT_RIGHT_WIDTH = 380;
@@ -1567,6 +1579,8 @@ export default function WorkspacePage({
       if (customEvent.detail.panel === 'preview') {
         setShowLeftPane(false);
         setShowTimeline(true);
+        setMobileView('preview');
+        window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: 'preview' }));
       }
     };
     const handleSwitchPane = (e: Event) => {
@@ -1575,6 +1589,8 @@ export default function WorkspacePage({
       if (pane && onPaneChange) {
         onPaneChange(pane as WorkspaceTabType);
         setShowLeftPane(true);
+        setMobileView('tools');
+        window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: 'tools' }));
       }
     };
     window.addEventListener('workspace:toggle-panel', handleToggle);

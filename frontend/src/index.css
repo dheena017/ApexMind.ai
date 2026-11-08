@@ -101,13 +101,13 @@
     overflow-x: auto;
   }
 
-  .workspace-editor-root[data-mobile-view="tools"] .workspace-main-area,
-  .workspace-editor-root[data-mobile-view="tools"] .workspace-timeline-pane,
+  .workspace-editor-root[data-mobile-view="tools"]:has(.workspace-left-pane) .workspace-main-area,
+  .workspace-editor-root[data-mobile-view="tools"]:has(.workspace-left-pane) .workspace-timeline-pane,
   .workspace-editor-root[data-mobile-view="preview"] .workspace-left-pane,
   .workspace-editor-root[data-mobile-view="preview"] .workspace-inspector-pane,
-  .workspace-editor-root[data-mobile-view="inspector"] .workspace-left-pane,
-  .workspace-editor-root[data-mobile-view="inspector"] .workspace-preview-pane,
-  .workspace-editor-root[data-mobile-view="inspector"] .workspace-timeline-pane,
+  .workspace-editor-root[data-mobile-view="inspector"]:has(.workspace-inspector-pane) .workspace-left-pane,
+  .workspace-editor-root[data-mobile-view="inspector"]:has(.workspace-inspector-pane) .workspace-preview-pane,
+  .workspace-editor-root[data-mobile-view="inspector"]:has(.workspace-inspector-pane) .workspace-timeline-pane,
   .workspace-editor-root[data-mobile-view="timeline"] .workspace-left-pane,
   .workspace-editor-root[data-mobile-view="timeline"] .workspace-inspector-pane {
     display: none;

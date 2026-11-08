@@ -43,7 +43,10 @@ export default function AppLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [workspaceMobileView, setWorkspaceMobileView] = useState<'tools' | 'preview' | 'inspector' | 'timeline'>('tools');
-  const [showLeftPaneMobile, setShowLeftPaneMobile] = useState(false);
+  const [showLeftPaneMobile, setShowLeftPaneMobile] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return activePage.startsWith('workspace-') || activeWorkspacePane !== 'canvas';
+  });
   const [dynamicUnread, setDynamicUnread] = useState(0);
   const [workspaceStatus, setWorkspaceStatus] = useState({
     aspectRatio: '9:16',
@@ -148,6 +151,7 @@ export default function AppLayout({
   }, []);
 
   useEffect(() => {
+    setShowLeftPaneMobile(true);
     setWorkspaceMobileView('tools');
   }, [activeWorkspacePane]);
 
@@ -369,6 +373,10 @@ export default function AppLayout({
                   type="button"
                   onClick={() => {
                     setShowLeftPaneMobile(false);
+                    setWorkspaceMobileView('preview');
+                    window.dispatchEvent(
+                      new CustomEvent('workspace:set-mobile-view', { detail: 'preview' })
+                    );
                     window.dispatchEvent(
                       new CustomEvent('workspace:toggle-panel', { detail: { panel: 'preview' } })
                     );
@@ -407,6 +415,10 @@ export default function AppLayout({
                       type="button"
                       onClick={() => {
                         setShowLeftPaneMobile(true);
+                        setWorkspaceMobileView('tools');
+                        window.dispatchEvent(
+                          new CustomEvent('workspace:set-mobile-view', { detail: 'tools' })
+                        );
                         onWorkspacePaneChange(item.id);
                         window.dispatchEvent(
                           new CustomEvent('workspace:switch-pane', { detail: { pane: item.id } })
