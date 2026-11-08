@@ -277,9 +277,9 @@ export default function AppLayout({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {([
-                      ['tools', 'Tools'],
-                      ['preview', 'Preview + Timeline'],
-                      ['inspector', 'Inspector'],
+                      ['tools', 'Studio Tools'],
+                      ['preview', 'Studio Preview'],
+                      ['inspector', 'Properties'],
                     ] as const).map(([view, label]) => (
                       <button
                         key={view}
@@ -363,7 +363,7 @@ export default function AppLayout({
               aria-label="Studio tools bottom bar"
               className="flex md:hidden w-full h-13 bg-[#111114]/98 border-t border-[#222228] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-center gap-1 px-2 shrink-0 z-30 select-none font-sans-studio backdrop-blur-xl touch-pan-x"
             >
-              {/* Preview + Timeline Button */}
+              {/* Studio Preview Button */}
               <button
                 type="button"
                 onClick={() => {
@@ -372,9 +372,10 @@ export default function AppLayout({
                     new CustomEvent('workspace:toggle-panel', { detail: { panel: 'preview' } })
                   );
                 }}
-                aria-label="Preview + Timeline"
+                aria-label="Studio Preview"
+                title="Studio Preview & Timeline"
                 aria-current={!showLeftPaneMobile ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center min-w-[84px] h-11 px-2.5 py-1 rounded-xl transition-all cursor-pointer shrink-0 gap-0.5 ${
+                className={`flex flex-col items-center justify-center min-w-[62px] h-11 px-2 py-1 rounded-xl transition-all cursor-pointer shrink-0 gap-0.5 ${
                   !showLeftPaneMobile
                     ? 'bg-blue-600/15 border border-blue-500/40 text-blue-400 font-semibold shadow-xs'
                     : 'border border-zinc-800/80 bg-zinc-900/60 text-zinc-300 hover:text-white hover:bg-white/[0.04]'
@@ -382,7 +383,7 @@ export default function AppLayout({
               >
                 <Film className={`h-4 w-4 shrink-0 ${!showLeftPaneMobile ? 'text-blue-400 scale-105' : 'text-zinc-400'}`} />
                 <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap font-medium">
-                  Preview + Timeline
+                  Preview
                 </span>
               </button>
 
