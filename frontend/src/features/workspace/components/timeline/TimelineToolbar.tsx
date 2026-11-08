@@ -289,28 +289,29 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* ── MOBILE / NARROW VIEWPORT (Clean 2-Row Responsive Layout) ─────── */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      <div className="flex md:hidden flex-col w-full gap-1.5 min-w-0">
-        {/* Mobile Row 1: Status & Transport Controls & Timecode */}
-        <div className="flex items-center justify-between w-full gap-1.5 min-w-0">
+      <div className="flex md:hidden flex-col w-full gap-2 min-w-0">
+        {/* Mobile Row 1: Status & Strictly-Centered Transport & Timecode */}
+        <div className="relative flex items-center justify-between w-full h-7.5 min-w-0">
           {/* Left: Heading & Track Count */}
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-[10px] font-bold tracking-wider uppercase flex items-center gap-1 text-zinc-200">
+          <div className="flex items-center gap-1.5 shrink-0 z-10">
+            <span className="text-[11px] font-bold tracking-wider uppercase flex items-center gap-1 text-zinc-200">
               <Sliders className="w-3.5 h-3.5 text-blue-400" />
+              <span>Timeline</span>
             </span>
             <span
-              className="text-[9px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-full"
+              className="text-[9.5px] font-mono text-zinc-400 bg-[#18181B] border border-[#27272A] px-1.5 py-0.5 rounded-full"
               title="Tracks containing content"
             >
               {activeTracksCount} {activeTracksCount === 1 ? 'Track' : 'Tracks'}
             </span>
           </div>
 
-          {/* Center: Playback Controls */}
-          <div className="flex items-center gap-1 shrink-0">
+          {/* Center: Playback Controls (Strictly Centered via absolute positioning) */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 shrink-0 z-20">
             <button
               type="button"
               onClick={() => onSeek(0)}
-              className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-lg bg-[#18181B] border border-[#27272A] hover:border-zinc-600 text-zinc-400 hover:text-white transition-colors cursor-pointer shadow-xs"
               title="Jump to Start (00:00)"
               aria-label="Jump to start"
             >
@@ -320,18 +321,18 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             <button
               type="button"
               onClick={onTogglePlay}
-              className="h-7 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center gap-1 shadow-md shadow-blue-600/25 active:scale-95 transition-all cursor-pointer font-semibold text-[11px]"
+              className="h-7 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/30 active:scale-95 transition-all cursor-pointer font-semibold text-xs shrink-0"
               title={isPlaying ? 'Pause Timeline' : 'Play Timeline'}
               aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
             >
               {isPlaying ? (
                 <>
-                  <Pause className="w-3 h-3 fill-current" />
+                  <Pause className="w-3 h-3 fill-current shrink-0" />
                   <span>Pause</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-3 h-3 fill-current ml-0.5" />
+                  <Play className="w-3 h-3 fill-current ml-0.5 shrink-0" />
                   <span>Play</span>
                 </>
               )}
@@ -340,7 +341,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
             <button
               type="button"
               onClick={() => onSeek(displayDuration)}
-              className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-lg bg-[#18181B] border border-[#27272A] hover:border-zinc-600 text-zinc-400 hover:text-white transition-colors cursor-pointer shadow-xs"
               title={`Jump to End (${formatTime(displayDuration)})`}
               aria-label="Jump to end"
             >
@@ -350,7 +351,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
 
           {/* Right: Timecode Readout */}
           <div
-            className="h-7 whitespace-nowrap tabular-nums px-2 rounded-lg bg-black/60 border border-zinc-800/80 font-mono text-[10px] text-zinc-200 flex items-center gap-1 shadow-inner select-none shrink-0"
+            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-[#18181B] border border-[#27272A] font-mono text-[10.5px] text-zinc-200 flex items-center gap-1.5 shadow-xs select-none shrink-0 z-10"
             title={`Playhead: ${formatTime(currentTime)} | Duration: ${formatTime(displayDuration)}`}
             aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
           >
@@ -360,65 +361,70 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
           </div>
         </div>
 
+        {/* Divider */}
+        <div className="h-px w-full bg-[#1F1F24]" />
+
         {/* Mobile Row 2: Clip Tools & Track Management & Zoom */}
-        <div className="flex items-center justify-between w-full gap-1.5 pt-1 border-t border-zinc-800/40 min-w-0">
+        <div className="flex items-center justify-between w-full h-7.5 min-w-0">
           {/* Left: Action Tools (Split, Duplicate, Delete, Transitions) */}
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={onSplitClip}
-              disabled={!hasSelection}
-              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
-                hasSelection
-                  ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
-                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
-              }`}
-              title={hasSelection ? 'Split clip at playhead (S)' : 'Select a clip to split'}
-              aria-label="Split selected clip at playhead"
-            >
-              <Scissors className="w-3.5 h-3.5" />
-            </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-lg p-0.5 shadow-xs">
+              <button
+                type="button"
+                onClick={onSplitClip}
+                disabled={!hasSelection}
+                className={`h-6 w-6 inline-flex items-center justify-center rounded transition-all cursor-pointer ${
+                  hasSelection
+                    ? 'text-zinc-200 hover:text-white hover:bg-zinc-800'
+                    : 'text-zinc-600 opacity-30 cursor-not-allowed'
+                }`}
+                title={hasSelection ? 'Split clip at playhead (S)' : 'Select a clip to split'}
+                aria-label="Split selected clip at playhead"
+              >
+                <Scissors className="w-3.5 h-3.5" />
+              </button>
 
-            <button
-              type="button"
-              onClick={onDuplicateClip}
-              disabled={!hasSelection}
-              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
-                hasSelection
-                  ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
-                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
-              }`}
-              title={hasSelection ? 'Duplicate clip' : 'Select a clip to duplicate'}
-              aria-label="Duplicate selected clip"
-            >
-              <Copy className="w-3.5 h-3.5" />
-            </button>
+              <button
+                type="button"
+                onClick={onDuplicateClip}
+                disabled={!hasSelection}
+                className={`h-6 w-6 inline-flex items-center justify-center rounded transition-all cursor-pointer ${
+                  hasSelection
+                    ? 'text-zinc-200 hover:text-white hover:bg-zinc-800'
+                    : 'text-zinc-600 opacity-30 cursor-not-allowed'
+                }`}
+                title={hasSelection ? 'Duplicate clip' : 'Select a clip to duplicate'}
+                aria-label="Duplicate selected clip"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
 
-            <button
-              type="button"
-              onClick={onDeleteClip}
-              disabled={!hasSelection}
-              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
-                hasSelection
-                  ? 'border-red-900/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 hover:border-red-700/60 shadow-sm'
-                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
-              }`}
-              title={hasSelection ? 'Delete clip' : 'Select a clip to delete'}
-              aria-label="Delete selected clip"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+              <button
+                type="button"
+                onClick={onDeleteClip}
+                disabled={!hasSelection}
+                className={`h-6 w-6 inline-flex items-center justify-center rounded transition-all cursor-pointer ${
+                  hasSelection
+                    ? 'text-red-400 hover:text-red-300 hover:bg-red-950/60'
+                    : 'text-zinc-600 opacity-30 cursor-not-allowed'
+                }`}
+                title={hasSelection ? 'Delete clip' : 'Select a clip to delete'}
+                aria-label="Delete selected clip"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
             <button
               type="button"
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'transitions' }));
               }}
-              className="h-7 px-2 inline-flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-amber-500/40 hover:bg-zinc-800 shadow-sm transition-all cursor-pointer text-[10px] font-medium shrink-0"
+              className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-[#27272A] bg-[#18181B] hover:border-amber-500/40 hover:bg-[#222226] text-zinc-300 hover:text-white shadow-xs transition-all cursor-pointer text-[10.5px] font-medium shrink-0"
               title="Open Transitions Studio"
               aria-label="Open Transitions Studio"
             >
-              <Sparkles className="w-3 h-3 text-amber-400" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>Transitions</span>
             </button>
           </div>
@@ -429,7 +435,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
               <button
                 type="button"
                 onClick={onToggleAddTrackMenu}
-                className="h-7 flex items-center gap-1 px-2 rounded-lg text-[10px] font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+                className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg text-[10.5px] font-medium text-zinc-300 bg-[#18181B] border border-[#27272A] hover:bg-[#222226] hover:text-white hover:border-zinc-600 transition-all cursor-pointer shadow-xs shrink-0"
                 title="Add a new track from media categories"
                 aria-label="Add track"
                 aria-expanded={addTrackMenuOpen}
@@ -439,7 +445,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
               </button>
             </div>
 
-            <div className="flex items-center h-7 bg-zinc-900/90 border border-zinc-800 rounded-lg p-0.5 text-zinc-400 shrink-0">
+            <div className="flex items-center h-7 bg-[#18181B] border border-[#27272A] rounded-lg p-0.5 text-zinc-400 shadow-xs shrink-0">
               <button
                 type="button"
                 onClick={onZoomFit}
@@ -460,7 +466,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
               >
                 <ZoomOut className="w-3 h-3" />
               </button>
-              <span className="whitespace-nowrap text-[8.5px] font-mono px-1 text-zinc-200 font-medium" aria-label={`Zoom level ${zoomLevel}x`}>
+              <span className="whitespace-nowrap text-[9px] font-mono px-1.5 text-zinc-200 font-medium" aria-label={`Zoom level ${zoomLevel}x`}>
                 {zoomLevel}x
               </span>
               <button
