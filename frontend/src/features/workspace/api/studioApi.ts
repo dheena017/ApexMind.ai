@@ -109,6 +109,73 @@ export const studioApi = {
     return envelope.data;
   },
 
+  /**
+   * Stage 1A — Core Script Text Writer
+   * POST /api/studio/script/write
+   */
+  async writeScriptText(params: {
+    category: string;
+    topic?: string;
+    userPrompt?: string;
+    tone?: string;
+    length?: string;
+    model?: string;
+  }) {
+    const res = await post<{ success: boolean; data: any }>('/api/studio/script/write', params);
+    return res.data;
+  },
+
+  /**
+   * Stage 1B — Viral Hook Variations
+   * POST /api/studio/script/hooks
+   */
+  async generateHooks(params: {
+    topic: string;
+    scriptText: string;
+    model?: string;
+    count?: number;
+  }) {
+    const res = await post<{ success: boolean; hooks: any[] }>('/api/studio/script/hooks', params);
+    return res.hooks;
+  },
+
+  /**
+   * Stage 1C — Storyboard Scene Director
+   * POST /api/studio/script/storyboard
+   */
+  async generateStoryboard(params: {
+    hook: string;
+    quote: string;
+    cta?: string;
+    targetSeconds?: number;
+    aspectRatio?: string;
+    category?: string;
+    topic?: string;
+    visualTheme?: string;
+    motionStyle?: string;
+    captionStyle?: string;
+    model?: string;
+    availableAssets?: any;
+  }) {
+    const res = await post<{ success: boolean; storyboard: any[] }>('/api/studio/script/storyboard', params);
+    return res.storyboard;
+  },
+
+  /**
+   * Stage 1D — 5-Layer Sound Design
+   * POST /api/studio/script/sound-design
+   */
+  async generateSoundDesign(params: {
+    storyboard: any[];
+    targetSeconds?: number;
+    audioMood?: string;
+    musicTrack?: string;
+    availableAssets?: any;
+  }) {
+    const res = await post<{ success: boolean; soundDesign: any }>('/api/studio/script/sound-design', params);
+    return res.soundDesign;
+  },
+
   // ── Stage 2 ───────────────────────────────────────────────────────────────
 
   /**
