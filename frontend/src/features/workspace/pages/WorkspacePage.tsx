@@ -326,8 +326,12 @@ export default function WorkspacePage({
     const musicAudio = musicAudioRef.current;
     if (!graph || !musicAudio) return null;
     if (!graph.musicSource) {
-      graph.musicSource = graph.context.createMediaElementSource(musicAudio);
-      graph.musicSource.connect(graph.musicGain);
+      try {
+        graph.musicSource = graph.context.createMediaElementSource(musicAudio);
+        graph.musicSource.connect(graph.musicGain);
+      } catch (err) {
+        consoleLogger.warn('Audio', 'Music audio element playing natively:', err);
+      }
     }
     return graph;
   }, [ensureAudioProcessingGraph]);
@@ -432,8 +436,8 @@ export default function WorkspacePage({
   useEffect(() => {
     const musicAudio = musicAudioRef.current;
     if (!musicAudio) return;
-    const selectedTrack = musicTracks.find((track) => track.id === selectedMusic);
-    const sourceUrl = selectedTrack ? selectedTrack.audioUrl || '' : '';
+    const selectedTrack = musicTracks.find((track) => track.id === selectedMusic || track.audioUrl === selectedMusic);
+    const sourceUrl = selectedTrack ? selectedTrack.audioUrl || '' : (selectedMusic && selectedMusic.startsWith('http') ? selectedMusic : '');
     if (!sourceUrl) {
       musicAudio.pause();
       musicAudio.removeAttribute('src');
@@ -441,9 +445,17 @@ export default function WorkspacePage({
       return;
     }
 
-    if (musicAudio.src !== new URL(sourceUrl, window.location.href).href) {
-      musicAudio.src = sourceUrl;
-      musicAudio.load();
+    try {
+      const targetHref = new URL(sourceUrl, window.location.href).href;
+      if (musicAudio.src !== targetHref) {
+        musicAudio.src = sourceUrl;
+        musicAudio.load();
+      }
+    } catch {
+      if (musicAudio.src !== sourceUrl) {
+        musicAudio.src = sourceUrl;
+        musicAudio.load();
+      }
     }
     const graph = ensureMusicAudioGraph();
     if (graph?.context.state === 'suspended') void graph.context.resume();
@@ -986,6 +998,12 @@ export default function WorkspacePage({
 
   // Play / Pause Audio & Timeline Playhead
   const togglePlay = () => {
+    // Unlock / resume Web Audio context on user gesture
+    const graph = audioProcessingGraphRef.current;
+    if (graph && graph.context.state === 'suspended') {
+      void graph.context.resume();
+    }
+
     if (isPlaying) {
       setIsPlaying(false);
       if (audioRef.current && !audioRef.current.paused) {
@@ -1011,8 +1029,18 @@ export default function WorkspacePage({
           audioRef.current.pause();
         }
       }
-      if (musicAudioRef.current && selectedMusic) {
-        musicAudioRef.current.play().catch(() => {});
+      if (musicAudioRef.current && (selectedMusic || musicAudioRef.current.src)) {
+        const musicDur = musicAudioRef.current.duration;
+        if (Number.isFinite(musicDur) && musicDur > 0) {
+          musicAudioRef.current.currentTime = startTime % musicDur;
+        } else {
+          musicAudioRef.current.currentTime = startTime;
+        }
+        musicAudioRef.current.volume = (isMuted || musicTrackMuted) ? 0 : musicVolume;
+        musicAudioRef.current.muted = isMuted || musicTrackMuted;
+        musicAudioRef.current.play().catch((err) => {
+          consoleLogger.warn('Audio', 'Music playback failed on play toggle:', err);
+        });
       }
     }
   };
@@ -1909,7 +1937,7 @@ export default function WorkspacePage({
     >
       {/* Hidden Audio Element */}
       <audio ref={audioRef} className="hidden" preload="auto" />
-      <audio ref={musicAudioRef} className="hidden" preload="auto" crossOrigin="anonymous" loop />
+      <audio ref={musicAudioRef} className="hidden" preload="auto" loop />
 
       {/*  Left Studio Column: Full-Height (Top to Bottom)  */}
       {showLeftPane && (
@@ -2139,15 +2167,60 @@ export default function WorkspacePage({
             ) : activePane === 'audio' ? (
               <AudioPane
                 scriptText={script?.hook ? `${script.hook}\n\n${script.quote || ''}` : script?.title || ''}
-                onSelectMusic={(mId) => {
+                onSelectMusic={(mId, trackItem) => {
                   setShowTimeline(true);
                   setActiveCompound('music');
+
+                  const resolvedTrack: MusicTrack = trackItem ? {
+                    id: trackItem.id,
+                    title: trackItem.title || 'Soundtrack',
+                    name: trackItem.title || 'Soundtrack',
+                    genre: trackItem.genre || 'Soundtrack',
+                    duration: String(trackItem.duration || '3:00'),
+                    mood: trackItem.mood || 'Royalty-Free',
+                    audioUrl: trackItem.audioUrl,
+                    bpm: trackItem.bpm || 115,
+                    copyrightFree: true,
+                    license: 'Creative Commons / Royalty-Free',
+                    frequencyData: [],
+                  } : (
+                    musicTracks.find((t) => t.id === mId || t.audioUrl === mId) || {
+                      id: mId,
+                      title: 'Soundtrack',
+                      name: 'Soundtrack',
+                      genre: 'Cinematic',
+                      duration: '3:00',
+                      mood: 'Royalty-Free',
+                      audioUrl: mId.startsWith('http') ? mId : '',
+                      bpm: 115,
+                      copyrightFree: true,
+                      license: 'Creative Commons / Royalty-Free',
+                      frequencyData: [],
+                    }
+                  );
+
+                  // Register into musicTracks catalog so timeline & inspector immediately have full metadata & audioUrl
+                  setMusicTracks((prev) => {
+                    const exists = prev.some((t) => t.id === resolvedTrack.id || (resolvedTrack.audioUrl && t.audioUrl === resolvedTrack.audioUrl));
+                    if (!exists) {
+                      return [...prev, resolvedTrack];
+                    }
+                    return prev.map((t) => (t.id === resolvedTrack.id ? { ...t, ...resolvedTrack } : t));
+                  });
+
                   setSelectedMusic(mId);
-                  const track = musicTracks.find((t) => t.id === mId);
-                  const sourceUrl = track?.audioUrl || '';
-                  if (musicAudioRef.current) {
-                    musicAudioRef.current.src = sourceUrl;
-                    musicAudioRef.current.play().catch(() => {});
+
+                  const sourceUrl = resolvedTrack.audioUrl || (mId.startsWith('http') ? mId : '');
+                  const musicAudio = musicAudioRef.current;
+                  if (musicAudio && sourceUrl) {
+                    musicAudio.src = sourceUrl;
+                    musicAudio.currentTime = currentTime;
+                    musicAudio.volume = (isMuted || musicTrackMuted) ? 0 : musicVolume;
+                    musicAudio.muted = isMuted || musicTrackMuted;
+                    musicAudio.load();
+                    musicAudio.play().catch((err) => {
+                      consoleLogger.warn('Audio', 'Auto-play of selected music track blocked by browser policy:', err);
+                    });
                     setIsPlaying(true);
                   }
                 }}

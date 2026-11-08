@@ -1477,14 +1477,14 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
     }
     lastMusicIdRef.current = selectedMusic;
 
-    const trackObj = musicTracks.find((m) => m.id === selectedMusic);
+    const trackObj = musicTracks.find((m) => m.id === selectedMusic || m.audioUrl === selectedMusic);
     setMusicClips((prev) => {
       if (prev.length <= 1) {
         return [
           {
             id: `mus-${selectedMusic}`,
             type: 'music',
-            url: trackObj?.audioUrl || '',
+            url: trackObj?.audioUrl || (selectedMusic.startsWith('http') ? selectedMusic : ''),
             name: trackObj ? trackObj.title : 'Soundtrack',
             start: prev[0]?.start ?? 0,
             duration: prev[0]?.duration ?? 15.0,

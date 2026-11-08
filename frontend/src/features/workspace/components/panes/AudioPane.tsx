@@ -64,7 +64,7 @@ export interface VoiceoverTake {
 }
 
 export interface AudioPaneProps {
-  onSelectMusic?: (musicId: string) => void;
+  onSelectMusic?: (musicId: string, track?: SoundtrackItem) => void;
   selectedMusic?: string;
   onApplyRecordedVoice?: (recordedUrl: string) => void;
   onAddSfxToTimeline?: (sfx: SoundEffectItem) => void;
@@ -111,23 +111,23 @@ export const SFX_CATEGORIES = [
 ] as const;
 
 export const SOUNDTRACK_PROVIDERS = [
-  { id: 'all', label: '✨ All Music Sources' },
-  { id: 'incompetech', label: '🎬 Incompetech (Kevin MacLeod)' },
-  { id: 'jamendo', label: '🎵 Jamendo (500K+ CC)' },
-  { id: 'ccmixter', label: '🎧 ccMixter (45K+ CC)' },
-  { id: 'netlabels', label: '💿 Netlabels Open Music (70K+)' },
-  { id: 'fma', label: '📻 Free Music Archive (150K+)' },
-  { id: 'wikimedia', label: '🏛️ Wikimedia Commons' },
-  { id: 'internet_archive', label: '📚 Internet Archive' },
+  { id: 'all', label: '✨ All' },
+  { id: 'incompetech', label: '🎬 Incompetech' },
+  { id: 'jamendo', label: '🎵 Jamendo' },
+  { id: 'ccmixter', label: '🎧 ccMixter' },
+  { id: 'netlabels', label: '💿 Netlabels' },
+  { id: 'fma', label: '📻 Free Music' },
+  { id: 'wikimedia', label: '🏛️ Wikimedia' },
+  { id: 'internet_archive', label: '📚 Archive' },
 ] as const;
 
 export const SFX_PROVIDERS = [
-  { id: 'all', label: '✨ All Sound FX' },
-  { id: 'bbc_sfx', label: '🎙️ BBC Sound Effects (16K+)' },
-  { id: 'opengameart', label: '🎮 OpenGameArt SFX' },
-  { id: 'open_sfx', label: '💥 Open SFX Commons' },
-  { id: 'wikimedia', label: '🏛️ Wikimedia Commons SFX' },
-  { id: 'internet_archive', label: '📚 Internet Archive SFX' },
+  { id: 'all', label: '✨ All SFX' },
+  { id: 'bbc_sfx', label: '🎙️ BBC SFX' },
+  { id: 'opengameart', label: '🎮 OpenGameArt' },
+  { id: 'open_sfx', label: '💥 Open SFX' },
+  { id: 'wikimedia', label: '🏛️ Wikimedia' },
+  { id: 'internet_archive', label: '📚 Archive' },
 ] as const;
 
 export const AUDIO_PROVIDERS = SOUNDTRACK_PROVIDERS;
@@ -735,10 +735,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
   const handleSelectSoundtrack = (trackId: string) => {
     setPendingMusicId(trackId);
-    if (onSelectMusic) {
-      onSelectMusic(trackId);
-    }
     const track = liveSoundtracks.find((t) => t.id === trackId);
+    if (onSelectMusic) {
+      onSelectMusic(trackId, track);
+    }
     toast.success(`Applied Soundtrack: ${track?.title || 'Selected Track'}`);
     addWorkspaceNotification({
       title: 'Soundtrack Selected',
@@ -753,8 +753,17 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const handleApplyCustomAudio = () => {
     if (!customAudioUrl.trim()) return;
     const directUrl = customAudioUrl.trim();
+    const customTrack: SoundtrackItem = {
+      id: directUrl,
+      title: 'Custom Audio Stream',
+      genre: 'Custom',
+      duration: '03:00',
+      bpm: 120,
+      mood: 'Custom',
+      audioUrl: directUrl,
+    };
     if (onSelectMusic) {
-      onSelectMusic(directUrl);
+      onSelectMusic(directUrl, customTrack);
     }
     toast.success('Applied Custom Audio Stream');
     addWorkspaceNotification({
@@ -865,9 +874,9 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'soundtracks' && (
           <div className="flex flex-col gap-2.5">
-            {/* Search & Genre Filter */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 min-w-[140px]">
+            {/* Search & Genre Filter (Responsive Clean Layout - No Edge Overflow) */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+              <div className="relative flex-1 min-w-0 w-full">
                 <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
@@ -886,7 +895,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   </button>
                 )}
               </div>
-              <div className="shrink-0 w-36 sm:w-44">
+              <div className="w-full sm:w-48 sm:shrink-0">
                 <CustomSelect
                   value={selectedGenre}
                   onChange={(val) => {
@@ -897,15 +906,15 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     value: g.value,
                     label: g.label,
                   }))}
-                  variant="compact"
                   align="right"
-                  buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
+                  className="w-full"
+                  buttonClassName="!w-full !flex !items-center !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
                 />
               </div>
             </div>
 
-            {/* Provider Filter Quick Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
+            {/* Provider Filter Quick Pills (Smooth Touch Scroll with Clean Padding) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1 px-0.5 touch-pan-x w-full">
               {SOUNDTRACK_PROVIDERS.map((provider) => {
                 const isProviderActive = selectedProvider === provider.id;
                 return (
@@ -916,10 +925,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       setSelectedProvider(provider.id);
                       updateUrlQuery({ provider: provider.id !== 'all' ? provider.id : null }, true);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
                       isProviderActive
-                        ? 'bg-blue-600 text-white font-bold shadow-sm'
-                        : 'bg-[#181818] hover:bg-[#202020] text-zinc-400 hover:text-white border border-[#262626]'
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-sm shadow-blue-500/30'
+                        : 'bg-[#181818] border-[#242424] text-zinc-400 hover:text-white hover:bg-[#202020]'
                     }`}
                   >
                     {provider.label}
@@ -1073,9 +1082,9 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'sfx' && (
           <div className="flex flex-col gap-2.5">
-            {/* Search & SFX Category in One Row */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 min-w-[140px]">
+            {/* Search & SFX Category (Responsive Clean Layout - No Edge Overflow) */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+              <div className="relative flex-1 min-w-0 w-full">
                 <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
@@ -1094,7 +1103,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   </button>
                 )}
               </div>
-              <div className="shrink-0 w-36 sm:w-44">
+              <div className="w-full sm:w-48 sm:shrink-0">
                 <CustomSelect
                   value={selectedSfxCategory}
                   onChange={(val) => {
@@ -1105,15 +1114,15 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     value: c.value,
                     label: c.label,
                   }))}
-                  variant="compact"
                   align="right"
-                  buttonClassName="!w-full !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
+                  className="w-full"
+                  buttonClassName="!w-full !flex !items-center !justify-between !bg-[#181818] !border-[#242424] !text-xs !py-2 !px-3 font-semibold hover:!border-white/10"
                 />
               </div>
             </div>
 
-            {/* Provider Filter Quick Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
+            {/* Provider Filter Quick Pills (Smooth Touch Scroll with Clean Padding) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1 px-0.5 touch-pan-x w-full">
               {SFX_PROVIDERS.map((provider) => {
                 const isProviderActive = selectedProvider === provider.id;
                 return (
@@ -1124,10 +1133,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       setSelectedProvider(provider.id);
                       updateUrlQuery({ provider: provider.id !== 'all' ? provider.id : null }, true);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
                       isProviderActive
-                        ? 'bg-blue-600 text-white font-bold shadow-sm'
-                        : 'bg-[#181818] hover:bg-[#202020] text-zinc-400 hover:text-white border border-[#262626]'
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-sm shadow-blue-500/30'
+                        : 'bg-[#181818] border-[#242424] text-zinc-400 hover:text-white hover:bg-[#202020]'
                     }`}
                   >
                     {provider.label}
