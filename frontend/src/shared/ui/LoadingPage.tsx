@@ -9,6 +9,7 @@ import {
   Radio,
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
+import { ApexMindLogo } from './ApexMindLogo';
 import { parseRoute, type PageRoute } from '@/src/app/routes';
 import { DEFAULT_SCRIPT_MODEL_LABEL, DEFAULT_TTS_MODEL_LABEL } from '@/src/shared/aiModels';
 
@@ -55,7 +56,7 @@ export default function LoadingPage({ onNavigate }: LoadingPageProps) {
     studio: {
       title: 'Initializing ApexMind Studio',
       subtitle: 'Starting autonomous video pipelines, AI models, and YouTube sync',
-      icon: <Sparkles className="w-8 h-8 text-[#60A5FA]" />,
+      icon: <ApexMindLogo size={42} variant="3d" interactive={false} />,
       steps: [
         `Connecting to ${DEFAULT_SCRIPT_MODEL_LABEL} AI Engine...`,
         `Loading 24kHz ${DEFAULT_TTS_MODEL_LABEL} neural voice synthesizer...`,

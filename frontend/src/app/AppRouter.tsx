@@ -76,6 +76,7 @@ export default function AppRouter({
           case 'workspace':
           case 'studio':
           case 'workspace-youtube':
+          case 'workspace-publish':
           case 'workspace-automations':
           case 'workspace-script':
           case 'workspace-prompt':
@@ -84,6 +85,7 @@ export default function AppRouter({
           case 'workspace-audio':
           case 'workspace-elements':
           case 'workspace-text':
+          case 'workspace-captions':
           case 'workspace-canvas':
           case 'workspace-image':
           case 'workspace-video':
@@ -96,6 +98,7 @@ export default function AppRouter({
             );
 
           case 'youtube':
+          case 'youtube-overview':
             return <YouTubePage onNavigate={onNavigate} initialTab="overview" />;
           case 'youtube-videos':
             return <YouTubePage onNavigate={onNavigate} initialTab="videos" />;

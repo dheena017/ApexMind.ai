@@ -1,6 +1,7 @@
 import 'react';
 import { Sparkles, Wand2, Youtube, Compass, Home } from 'lucide-react';
 import { Button } from './common';
+import { ApexMindLogo } from './ApexMindLogo';
 
 interface NotFoundPageProps {
   onNavigate: (page: string) => void;
@@ -21,6 +22,9 @@ export default function NotFoundPage({ onNavigate, currentPath }: NotFoundPagePr
       <div className="max-w-xl w-full text-center space-y-8 relative z-10">
         {/* Glowing Badge & Big 404 */}
         <div className="space-y-3">
+          <div className="flex justify-center">
+            <ApexMindLogo size={48} variant="3d" interactive={false} />
+          </div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1E1E1E] border border-[#2F2F2F] text-xs font-semibold text-[#9CA3AF]">
             <Compass className="w-4 h-4 text-[#60A5FA] animate-spin" style={{ animationDuration: '8s' }} />
             <span>Navigation Error</span>

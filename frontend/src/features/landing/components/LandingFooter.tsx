@@ -1,5 +1,6 @@
 import 'react';
-import { Sparkles, Youtube, ArrowUp, Github, Twitter, ShieldCheck } from 'lucide-react';
+import { Youtube, ArrowUp, Github, Twitter, ShieldCheck } from 'lucide-react';
+import { ApexMindLogo } from '@/src/shared/ui';
 import { DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
 
 interface LandingFooterProps {
@@ -18,10 +19,8 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12">
           {/* Brand & Mission (2 cols on lg) */}
           <div className="lg:col-span-2 space-y-5">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-black/40 border border-[#60A5FA]/30">
-                <Sparkles className="w-5 h-5" />
-              </div>
+            <div className="flex items-center gap-3">
+              <ApexMindLogo size={36} variant="3d" interactive={false} />
               <span className="text-xl font-extrabold tracking-tight text-gradient-brand">
                 ApexMind Studio
               </span>
@@ -77,37 +76,45 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
             <ul className="space-y-2.5 text-sm text-[#9CA3AF]">
               <li>
                 <button
-                  onClick={() => onNavigate('workspace')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  type="button"
+                  onClick={() => onNavigate('workspace-prompt')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   Script Generator
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('workspace')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  type="button"
+                  onClick={() => onNavigate('workspace-audio')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   Voiceover TTS
                 </button>
               </li>
               <li>
-                <a href="#features" className="hover:text-[#60A5FA] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('workspace-media')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
+                >
                   Media Library
-                </a>
+                </button>
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('youtube')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  type="button"
+                  onClick={() => onNavigate('workspace-publish')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   YouTube Publisher
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('workspace')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  type="button"
+                  onClick={() => onNavigate('youtube-analytics')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   Analytics Sync
                 </button>
@@ -122,32 +129,46 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
             </h4>
             <ul className="space-y-2.5 text-sm text-[#9CA3AF]">
               <li>
-                <a href="#features" className="hover:text-[#60A5FA] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('workspace')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
+                >
                   Stoic Motivation
-                </a>
-              </li>
-              <li>
-                <a href="#features" className="hover:text-[#60A5FA] transition-colors">
-                  Discipline & Focus
-                </a>
-              </li>
-              <li>
-                <a href="#workflow" className="hover:text-[#60A5FA] transition-colors">
-                  Daily Auto-Publishing
-                </a>
+                </button>
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('youtube')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  type="button"
+                  onClick={() => onNavigate('workspace')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
+                >
+                  Discipline & Focus
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('workspace-automations')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
+                >
+                  Daily Auto-Publishing
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('channels')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   Multi-Channel Manager
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('workspace')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  type="button"
+                  onClick={() => onNavigate('workspace-script')}
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   AI Script Generation
                 </button>
@@ -162,38 +183,42 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
             </h4>
             <ul className="space-y-2.5 text-sm text-[#9CA3AF]">
               <li>
-                <a href="#faq" className="hover:text-[#60A5FA] transition-colors">
+                <a href="#faq" className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors block">
                   Frequently Asked Questions
                 </a>
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onNavigate('login')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   Account Sign In
                 </button>
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onNavigate('settings')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   API Keys & Settings
                 </button>
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onNavigate('terms')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   Terms of Service
                 </button>
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onNavigate('privacy')}
-                  className="hover:text-[#60A5FA] transition-colors cursor-pointer text-left"
+                  className="bg-transparent border-0 p-0 text-left text-sm text-[#9CA3AF] hover:text-[#60A5FA] transition-colors cursor-pointer block"
                 >
                   Privacy Policy
                 </button>
@@ -214,15 +239,17 @@ export default function LandingFooter({ onNavigate }: LandingFooterProps) {
             <span>© {new Date().getFullYear()} ApexMind AI Inc. All rights reserved.</span>
             <span className="hidden sm:inline">•</span>
             <button
+              type="button"
               onClick={() => onNavigate('terms')}
-              className="hover:text-[#E5E5E5] transition-colors cursor-pointer"
+              className="bg-transparent border-0 p-0 hover:text-[#E5E5E5] transition-colors cursor-pointer"
             >
               Terms of Service
             </button>
             <span>•</span>
             <button
+              type="button"
               onClick={() => onNavigate('privacy')}
-              className="hover:text-[#E5E5E5] transition-colors cursor-pointer"
+              className="bg-transparent border-0 p-0 hover:text-[#E5E5E5] transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>

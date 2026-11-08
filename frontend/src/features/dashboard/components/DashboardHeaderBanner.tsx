@@ -5,7 +5,7 @@ import {
   RefreshCw,
   Film,
 } from 'lucide-react';
-import { Button } from '@/src/shared/ui/common';
+import { Button, ApexMindLogo } from '@/src/shared/ui';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
 
@@ -38,8 +38,8 @@ export const DashboardHeaderBanner: React.FC<DashboardHeaderBannerProps> = ({
         {/* Left: User greeting and inspirational title */}
         <div className="space-y-2.5 max-w-2xl">
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-            <span className="px-2.5 py-1 rounded-full bg-[#2563EB] text-white border border-[#60A5FA]/40 shadow-xs flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#60A5FA]" />
+            <span className="px-2.5 py-1 rounded-full bg-[#1E293B] text-white border border-[#3B82F6]/40 shadow-xs flex items-center gap-1.5">
+              <ApexMindLogo size={16} variant="3d" interactive={false} />
               AI Motivational Studio
             </span>
             <span className="text-[#737373] hidden sm:inline">•</span>

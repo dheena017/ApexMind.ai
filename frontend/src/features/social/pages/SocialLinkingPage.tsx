@@ -23,6 +23,7 @@ import { connectYouTubeWithGoogle } from '@/src/features/youtube/utils/googleOAu
 import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
 import { getSocialAvatarFallback, handleSocialAvatarError } from '../utils/avatar';
 import useAuth from '@/src/features/auth/hooks/useAuth';
+import { getQueryParams, updateUrlQuery } from '@/src/app/routes';
 
 const SOCIAL_FLEET_CHANNEL_NAME = 'apexmind-social-fleet';
 
@@ -65,7 +66,19 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
   const [accountsError, setAccountsError] = useState<string | null>(null);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsError, setPostsError] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<'all' | SocialPlatform>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | SocialPlatform>(() => {
+    if (typeof window === 'undefined') return 'all';
+    const q = getQueryParams();
+    const plat = q.platform || q.filter;
+    if (plat === 'youtube' || plat === 'instagram' || plat === 'facebook' || plat === 'tiktok') {
+      return plat as SocialPlatform;
+    }
+    return 'all';
+  });
+
+  useEffect(() => {
+    updateUrlQuery({ platform: activeFilter !== 'all' ? activeFilter : null }, true);
+  }, [activeFilter]);
   const [activeChannelKey, setActiveChannelKey] = useState<string>('');
   const [activeYouTubeChannelId, setActiveYouTubeChannelId] = useState<string>('');
   const [verifiedActiveUserId, setVerifiedActiveUserId] = useState<string | null>(null);
@@ -711,7 +724,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{notice}</span>
           </div>
-          <button type="button" onClick={() => setNotice(null)} className="text-[10px] underline hover:text-white cursor-pointer">
+          <button type="button" onClick={() => setNotice(null)} className="bg-transparent border-0 p-0 text-[10px] underline hover:text-white cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -723,7 +736,7 @@ export default function SocialLinkingPage({ onNavigate }: { onNavigate: (page: s
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
             <span>{actionError}</span>
           </div>
-          <button type="button" onClick={() => setActionError(null)} className="text-[10px] underline hover:text-white cursor-pointer">
+          <button type="button" onClick={() => setActionError(null)} className="bg-transparent border-0 p-0 text-[10px] underline hover:text-white cursor-pointer">
             Dismiss
           </button>
         </div>

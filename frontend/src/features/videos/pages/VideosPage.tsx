@@ -60,13 +60,18 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
       });
       setVideos(data);
 
-      // Deep Linking: Auto-play/open video if ?play= or ?video= is in URL query
+      // Deep Linking: Auto-play/open video if ?play=, ?video=, or ?videoId= is in URL query
       const q = getQueryParams();
-      const targetVideoId = q.play || q.video;
+      const targetVideoId = q.play || q.video || q.videoId;
+      const targetAction = q.action;
       if (targetVideoId) {
         const found = data.find((v) => v.id === targetVideoId);
         if (found) {
-          setSelectedVideo(found);
+          if (targetAction === 'edit') {
+            onNavigate(buildRouteUrl('workspace', { tab: 'editor', videoId: found.id }));
+          } else {
+            setSelectedVideo(found);
+          }
         }
       }
     } catch (err) {
@@ -80,13 +85,29 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
     loadVideos();
   }, [loadVideos]);
 
+  const handleSelectVideo = useCallback((video: WebsiteVideo | null) => {
+    setSelectedVideo(video);
+    updateUrlQuery({ videoId: video ? video.id : null, play: null, video: null }, true);
+  }, []);
+
+  useEffect(() => {
+    updateUrlQuery(
+      {
+        category: filter.category !== 'All' ? filter.category : null,
+        search: filter.search || null,
+        sortBy: filter.sortBy !== 'newest' ? filter.sortBy : null,
+        aspectRatio: filter.aspectRatio !== 'all' ? filter.aspectRatio : null,
+      },
+      true
+    );
+  }, [filter.category, filter.search, filter.sortBy, filter.aspectRatio]);
+
   const handleDelete = async (videoId: string) => {
     try {
       await videosApi.deleteVideo(videoId);
       setVideos((prev) => prev.filter((v) => v.id !== videoId));
       if (selectedVideo?.id === videoId) {
-        setSelectedVideo(null);
-        updateUrlQuery({ play: null, video: null });
+        handleSelectVideo(null);
       }
     } catch (err) {
       console.error('Failed to delete video:', err);
@@ -301,7 +322,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
               key={video.id}
               video={video}
               viewMode="grid"
-              onPlay={setSelectedVideo}
+              onPlay={handleSelectVideo}
               onEditInStudio={handleEditInStudio}
               onDelete={handleDelete}
             />
@@ -314,7 +335,7 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
               key={video.id}
               video={video}
               viewMode="list"
-              onPlay={setSelectedVideo}
+              onPlay={handleSelectVideo}
               onEditInStudio={handleEditInStudio}
               onDelete={handleDelete}
             />
@@ -326,14 +347,14 @@ export default function VideosPage({ onNavigate }: { onNavigate: (page: string) 
       {selectedVideo && (
         <VideoPlayerModal
           video={selectedVideo}
-          onClose={() => setSelectedVideo(null)}
+          onClose={() => handleSelectVideo(null)}
           onEditInStudio={(v) => {
-            setSelectedVideo(null);
+            handleSelectVideo(null);
             handleEditInStudio(v);
           }}
           onDelete={(id) => {
             handleDelete(id);
-            setSelectedVideo(null);
+            handleSelectVideo(null);
           }}
         />
       )}

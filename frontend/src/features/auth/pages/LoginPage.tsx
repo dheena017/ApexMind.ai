@@ -12,6 +12,7 @@ import { useAuth, isSessionValid } from '../context/AuthContext';
 import { getPostLoginRedirect, clearPostLoginRedirect } from '@/src/app/routes';
 import { getGoogleClientId } from '@/src/features/youtube/utils/googleOAuthConnect';
 import { authApi } from '../api/authApi';
+import { ApexMindLogo } from '@/src/shared/ui';
 import { navigateOAuthPopup, openOAuthPopup } from '@/src/shared/utils/oauthPopup';
 
 //  Google SVG Icon
@@ -304,15 +305,13 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
         <button
           type="button"
           onClick={() => onNavigate('landing')}
-          className="flex items-center gap-2.5 hover:opacity-90 cursor-pointer text-left"
+          className="flex items-center gap-3 hover:opacity-90 cursor-pointer text-left"
           aria-label="ApexMind Studio Home"
         >
-          <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-rose-700 text-white flex items-center justify-center shadow-lg shadow-red-900/40 border border-red-500/30">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
+          <ApexMindLogo size={36} variant="3d" interactive={false} />
           <div className="flex flex-col">
             <span className="text-base font-bold tracking-tight text-white leading-none">ApexMind.ai</span>
-            <span className="text-[10px] font-semibold text-rose-400 uppercase tracking-wider mt-0.5">
+            <span className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider mt-0.5">
               Omnichannel Studio
             </span>
           </div>
@@ -506,11 +505,11 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
       <footer className="relative z-10 w-full max-w-4xl mx-auto px-4 py-4 text-center text-[11px] text-[#52525B] flex flex-wrap items-center justify-between gap-3">
         <span>© 2026 ApexMind.ai • Universal Omnichannel Video Studio</span>
         <div className="flex items-center gap-4">
-          <button type="button" onClick={() => onNavigate('terms')} className="hover:text-[#A1A1AA] cursor-pointer">
+          <button type="button" onClick={() => onNavigate('terms')} className="bg-transparent border-0 p-0 hover:text-[#A1A1AA] cursor-pointer">
             Terms of Service
           </button>
           <span>•</span>
-          <button type="button" onClick={() => onNavigate('privacy')} className="hover:text-[#A1A1AA] cursor-pointer">
+          <button type="button" onClick={() => onNavigate('privacy')} className="bg-transparent border-0 p-0 hover:text-[#A1A1AA] cursor-pointer">
             Privacy Policy
           </button>
           <span>•</span>

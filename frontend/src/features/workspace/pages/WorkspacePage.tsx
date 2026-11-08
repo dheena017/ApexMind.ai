@@ -28,7 +28,7 @@ import { WorkspaceCommandPalette } from '../components/WorkspaceCommandPalette';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DEFAULT_CREATOR_PROFILE, getCreatorProfile } from '@/src/features/profile/api/profileApi';
 import { addWorkspaceNotification } from '../utils/workspaceNotificationManager';
-import { getQueryParams } from '@/src/app/routes';
+import { getQueryParams, updateUrlQuery } from '@/src/app/routes';
 import { DEFAULT_SCRIPT_MODEL } from '@/src/shared/aiModels';
 
 interface WorkspacePageProps {
@@ -136,7 +136,15 @@ export default function WorkspacePage({
   const [customBackdropImage, setCustomBackdropImage] = useState<string | undefined>(undefined);
   const [customBackdropVideo, setCustomBackdropVideo] = useState<string | undefined>(undefined);
   const [activeElementOverlay, setActiveElementOverlay] = useState<{ id?: string; name?: string; type: string; value: string; label?: string } | null>(null);
-  const [activeCompound, setActiveCompound] = useState<CompoundType>('home');
+  const [activeCompound, setActiveCompound] = useState<CompoundType>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const q = getQueryParams();
+    const insp = q.inspector as CompoundType;
+    if (['home', 'project', 'video', 'text', 'voice', 'music', 'overlay', 'transitions'].includes(insp)) {
+      return insp;
+    }
+    return 'home';
+  });
   const [selectedClip, setSelectedClip] = useState<SelectedClip | null>(null);
   const [mobileView, setMobileView] = useState<MobileWorkspaceView>('tools');
   const [canvasAspectRatio, setCanvasAspectRatio] = useState<'9:16' | '16:9' | '1:1' | '4:5' | '21:9'>('9:16');
@@ -149,9 +157,18 @@ export default function WorkspacePage({
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
+    if (activePane === 'editor') {
+      setScriptSubPane('editor');
+    } else if (activePane === 'prompt') {
+      setScriptSubPane('prompt');
+    }
     setMobileView('tools');
     window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: 'tools' }));
   }, [activePane]);
+
+  useEffect(() => {
+    updateUrlQuery({ inspector: activeCompound !== 'home' ? activeCompound : null }, true);
+  }, [activeCompound]);
 
   useEffect(() => {
     const mobileBreakpoint = window.matchMedia('(max-width: 767px)');
@@ -1872,7 +1889,7 @@ export default function WorkspacePage({
                   duration: duration,
                 }}
               />
-            ) : activePane === 'youtube' ? (
+            ) : activePane === 'youtube' || activePane === 'publish' ? (
               <YouTubePane
                 script={script}
                 onUpdateScript={(updated) => setScript((prev) => ({ ...prev, ...updated }))}
@@ -2038,7 +2055,7 @@ export default function WorkspacePage({
                 }}
                 activeMediaUrl={customBackdropVideo || customBackdropImage}
               />
-            ) : activePane === 'text' ? (
+            ) : activePane === 'text' || activePane === 'captions' ? (
               <TextPane
                 currentText={script?.hook || script?.quote || script?.subtitles?.[0]?.text || script?.title || ''}
                 onUpdateHook={(hook) => {
@@ -2052,7 +2069,7 @@ export default function WorkspacePage({
                     fontFamily: p.fontFamily,
                     fontSize: p.fontSize,
                     fontWeight: p.fontWeight,
-                    textTransform: p.textTransform,
+                    textTransform: p.textTransform as 'capitalize' | 'lowercase' | 'none' | 'uppercase' | undefined,
                     previewText: undefined,
                   });
                   addWorkspaceNotification({

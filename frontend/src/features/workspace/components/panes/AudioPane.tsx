@@ -31,6 +31,7 @@ import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { workspaceApi } from '../../api/workspaceApi';
 import { toast } from 'sonner';
 import { addWorkspaceNotification } from '../../utils/workspaceNotificationManager';
+import { updateUrlQuery, getQueryParams } from '@/src/app/routes';
 
 export interface SoundtrackItem {
   id: string;
@@ -291,7 +292,12 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   onAddSfxToTimeline,
   scriptText = '',
 }) => {
-  const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'record' | 'url'>('soundtracks');
+  const [activeTab, setActiveTab] = useState<'soundtracks' | 'sfx' | 'record' | 'url'>(() => {
+    if (typeof window === 'undefined') return 'soundtracks';
+    const q = getQueryParams();
+    if (q.tab === 'sfx' || q.tab === 'record' || q.tab === 'url' || q.tab === 'soundtracks') return q.tab;
+    return 'soundtracks';
+  });
 
   // Live stream states - zero hardcoded data
   const [liveSoundtracks, setLiveSoundtracks] = useState<SoundtrackItem[]>([]);
@@ -300,12 +306,36 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   const [totalSfx, setTotalSfx] = useState<number>(0);
 
   // Filters & Search
-  const [selectedGenre, setSelectedGenre] = useState<string>('all');
-  const [selectedSfxCategory, setSelectedSfxCategory] = useState<string>('all');
-  const [selectedProvider, setSelectedProvider] = useState<string>('all');
+  const [selectedGenre, setSelectedGenre] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'all';
+    return getQueryParams().genre || 'all';
+  });
+  const [selectedSfxCategory, setSelectedSfxCategory] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'all';
+    return getQueryParams().category || 'all';
+  });
+  const [selectedProvider, setSelectedProvider] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'all';
+    return getQueryParams().provider || 'all';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [musicPage, setMusicPage] = useState<number>(1);
   const [sfxPage, setSfxPage] = useState<number>(1);
+
+  // Deep-link popstate synchronization
+  useEffect(() => {
+    const handlePopState = () => {
+      const q = getQueryParams();
+      if (q.tab && (q.tab === 'soundtracks' || q.tab === 'sfx' || q.tab === 'record' || q.tab === 'url')) {
+        setActiveTab(q.tab as any);
+      }
+      if (q.genre) setSelectedGenre(q.genre);
+      if (q.category) setSelectedSfxCategory(q.category);
+      if (q.provider) setSelectedProvider(q.provider);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Selection & playback
   const [pendingMusicId, setPendingMusicId] = useState(selectedMusic || '');
@@ -822,6 +852,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             setActiveTab(tab);
             setSelectedProvider('all');
             setSearchQuery('');
+            updateUrlQuery({ tab, genre: null, category: null, provider: null }, false);
           }}
           containerBgClassName="bg-[#181818]"
         />
@@ -858,7 +889,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               <div className="shrink-0 w-36 sm:w-44">
                 <CustomSelect
                   value={selectedGenre}
-                  onChange={(val) => setSelectedGenre(val)}
+                  onChange={(val) => {
+                    setSelectedGenre(val);
+                    updateUrlQuery({ genre: val !== 'all' ? val : null }, true);
+                  }}
                   options={SOUNDTRACK_GENRES.map((g) => ({
                     value: g.value,
                     label: g.label,
@@ -878,7 +912,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   <button
                     key={provider.id}
                     type="button"
-                    onClick={() => setSelectedProvider(provider.id)}
+                    onClick={() => {
+                      setSelectedProvider(provider.id);
+                      updateUrlQuery({ provider: provider.id !== 'all' ? provider.id : null }, true);
+                    }}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
                       isProviderActive
                         ? 'bg-blue-600 text-white font-bold shadow-sm'
@@ -1060,7 +1097,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               <div className="shrink-0 w-36 sm:w-44">
                 <CustomSelect
                   value={selectedSfxCategory}
-                  onChange={(val) => setSelectedSfxCategory(val)}
+                  onChange={(val) => {
+                    setSelectedSfxCategory(val);
+                    updateUrlQuery({ category: val !== 'all' ? val : null }, true);
+                  }}
                   options={SFX_CATEGORIES.map((c) => ({
                     value: c.value,
                     label: c.label,
@@ -1080,7 +1120,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   <button
                     key={provider.id}
                     type="button"
-                    onClick={() => setSelectedProvider(provider.id)}
+                    onClick={() => {
+                      setSelectedProvider(provider.id);
+                      updateUrlQuery({ provider: provider.id !== 'all' ? provider.id : null }, true);
+                    }}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
                       isProviderActive
                         ? 'bg-blue-600 text-white font-bold shadow-sm'

@@ -642,9 +642,9 @@ export const VideoCompoundInspector: React.FC<VideoCompoundInspectorProps> = ({
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
                 <div className="flex items-center bg-[#111111] rounded-lg px-1.5 h-9 gap-1.5">
-                  <button type="button" onClick={() => setRotation((r) => (r - 15 + 360) % 360)} className="text-slate-500 hover:text-white cursor-pointer"><Minus className="w-3 h-3" /></button>
+                  <button type="button" onClick={() => setRotation((r) => (r - 15 + 360) % 360)} className="bg-transparent border-0 p-0 text-slate-500 hover:text-white cursor-pointer"><Minus className="w-3 h-3" /></button>
                   <span className="text-xs font-mono-studio text-white font-bold w-9 text-center">{rotation}°</span>
-                  <button type="button" onClick={() => setRotation((r) => (r + 15) % 360)} className="text-slate-500 hover:text-white cursor-pointer"><Plus className="w-3 h-3" /></button>
+                  <button type="button" onClick={() => setRotation((r) => (r + 15) % 360)} className="bg-transparent border-0 p-0 text-slate-500 hover:text-white cursor-pointer"><Plus className="w-3 h-3" /></button>
                 </div>
               </div>
             </div>

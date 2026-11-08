@@ -1,12 +1,13 @@
 import React from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { ApexMindLogo } from './ApexMindLogo';
 
 export const RouteLoadingFallback: React.FC = () => {
   return (
     <div className="flex-1 w-full min-h-[70vh] flex flex-col items-center justify-center space-y-4 bg-[#0A0A0A] text-[#E5E5E5]">
-      <div className="relative flex items-center justify-center p-4 rounded-2xl bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#60A5FA]">
-        <Sparkles className="w-8 h-8 animate-pulse text-[#60A5FA]" />
-        <Loader2 className="w-12 h-12 animate-spin absolute text-[#3B82F6]/40" />
+      <div className="relative flex items-center justify-center p-3">
+        <ApexMindLogo size={64} variant="3d" interactive={false} />
+        <Loader2 className="w-20 h-20 animate-spin absolute text-[#3B82F6]/30 pointer-events-none" />
       </div>
       <div className="text-center">
         <h3 className="text-lg font-bold text-white tracking-tight">ApexMind AI Studio</h3>

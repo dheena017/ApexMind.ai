@@ -671,7 +671,7 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
                   <div className="flex items-center gap-1.5">
                     <span className="font-mono-studio text-white text-[11px]">{pan === 0 ? 'Center' : pan < 0 ? `${Math.abs(pan)}% L` : `${pan}% R`}</span>
                     {pan !== 0 && (
-                      <button type="button" onClick={() => setPan(0)} className="text-[10px] text-[#3B82F6] hover:underline cursor-pointer">Reset</button>
+                      <button type="button" onClick={() => setPan(0)} className="bg-transparent border-0 p-0 text-[10px] text-[#3B82F6] hover:underline cursor-pointer">Reset</button>
                     )}
                   </div>
                 </div>

@@ -18,6 +18,7 @@ import { Button, Card } from '@/src/shared/ui/common';
 import { notificationsApi } from '../api/notificationsApi';
 import { NotificationItem, NotificationCategory } from '../types';
 import { formatTimeAgo } from '../utils';
+import { getQueryParams, updateUrlQuery } from '@/src/app/routes';
 
 interface NotificationsPageProps {
   onNavigate?: (page: string) => void;
@@ -26,9 +27,20 @@ interface NotificationsPageProps {
 export default function NotificationsPage({ onNavigate }: NotificationsPageProps) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<NotificationCategory>('all');
+  const [activeTab, setActiveTab] = useState<NotificationCategory>(() => {
+    if (typeof window === 'undefined') return 'all';
+    const t = getQueryParams().tab as NotificationCategory;
+    if (['all', 'unread', 'studio', 'youtube', 'achievements', 'system'].includes(t)) {
+      return t;
+    }
+    return 'all';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    updateUrlQuery({ tab: activeTab !== 'all' ? activeTab : null }, true);
+  }, [activeTab]);
 
   const loadNotifications = async () => {
     setLoading(true);

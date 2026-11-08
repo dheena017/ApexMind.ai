@@ -1,6 +1,6 @@
 import React from 'react';
-import { Sparkles, FileText, ShieldCheck, Printer, ArrowLeft, Zap, Search } from 'lucide-react';
-import { Button } from '@/src/shared/ui/common';
+import { FileText, ShieldCheck, Printer, ArrowLeft, Zap, Search } from 'lucide-react';
+import { Button, ApexMindLogo } from '@/src/shared/ui';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 
 interface LegalHeaderProps {
@@ -49,9 +49,7 @@ export const LegalHeader: React.FC<LegalHeaderProps> = ({
             onClick={() => onNavigate('landing')}
             className="flex items-center gap-2.5 text-left cursor-pointer group"
           >
-            <div className="p-1.5 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-black/40 border border-[#60A5FA]/30">
-              <Sparkles className="w-4 h-4" />
-            </div>
+            <ApexMindLogo size={30} variant="3d" interactive={false} />
             <div>
               <span className="font-extrabold tracking-tight text-white group-hover:text-[#60A5FA] transition-colors text-base">
                 ApexMind

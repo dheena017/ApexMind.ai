@@ -31,6 +31,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/common';
+import { ApexMindLogo } from '@/src/shared/ui';
 import LandingFooter from '../components/LandingFooter';
 import { isSessionValid } from '@/src/features/auth/context/AuthContext';
 import {
@@ -585,11 +586,9 @@ export default function LandingPage({
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 px-4 sm:px-6 h-full">
           <a
             href="#hero"
-            className="text-xl font-bold tracking-tight flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90"
+            className="text-xl font-bold tracking-tight flex items-center gap-3 whitespace-nowrap shrink-0 hover:opacity-95 transition-opacity"
           >
-            <div className="relative p-2 rounded-xl bg-gradient-to-tr from-[#2563EB] to-[#3B82F6] text-white shadow-lg shadow-blue-900/30 border border-[#60A5FA]/30">
-              <Sparkles className="w-5 h-5" />
-            </div>
+            <ApexMindLogo size={36} variant="3d" interactive={false} />
             <span className="font-extrabold tracking-tight text-white flex items-center gap-1.5">
               ApexMind
               <span className="text-[#3B82F6] text-xs font-mono font-normal px-1.5 py-0.5 rounded-md bg-[#2563EB]/15 border border-[#3B82F6]/30">
@@ -676,6 +675,10 @@ export default function LandingPage({
         {/* Mobile Navigation Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-b border-[#242424] bg-[#0E0E11]/95 backdrop-blur-2xl px-5 py-4 space-y-3 shadow-2xl">
+            <div className="flex items-center gap-2.5 pb-2 border-b border-[#242424]">
+              <ApexMindLogo size={28} variant="3d" interactive={false} />
+              <span className="text-sm font-bold text-white tracking-tight">ApexMind Studio</span>
+            </div>
             <div className="flex flex-col space-y-2 text-sm font-semibold">
               <a
                 href="#hero"
@@ -1798,8 +1801,8 @@ export default function LandingPage({
           <div className="rounded-3xl border border-[#242424] bg-gradient-to-b from-[#141417] to-[#0E0E11] p-8 lg:p-12 text-center space-y-5 shadow-2xl relative overflow-hidden">
             <div className="absolute inset-0 bg-radial from-[#2563EB]/10 via-transparent to-transparent pointer-events-none" />
 
-            <div className="relative mx-auto w-fit p-3.5 rounded-2xl bg-[#2563EB]/15 text-[#60A5FA] border border-[#3B82F6]/30 shadow-md">
-              <Sparkles className="w-6 h-6" />
+            <div className="relative mx-auto w-fit mb-2">
+              <ApexMindLogo size={52} variant="3d" interactive={false} />
             </div>
             <h2 className="relative text-3xl font-bold text-white tracking-tight">
               Your next viral Short starts with one idea.

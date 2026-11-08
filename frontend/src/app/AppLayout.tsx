@@ -19,6 +19,7 @@ import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHe
 import { WorkspaceSidebar, WORKSPACE_SIDEBAR_ITEMS, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
 import { WorkspaceStatusBar } from '@/src/features/workspace/components/WorkspaceStatusBar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
+import { ApexMindLogo } from '@/src/shared/ui';
 import { Radio } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -296,6 +297,10 @@ export default function AppLayout({
                       const Icon = item.icon;
                       const isActive = item.isScriptGroup
                         ? activeWorkspacePane === 'script' || activeWorkspacePane === 'prompt' || activeWorkspacePane === 'editor'
+                        : item.id === 'text'
+                        ? activeWorkspacePane === 'text' || activeWorkspacePane === 'captions'
+                        : item.id === 'youtube'
+                        ? activeWorkspacePane === 'youtube' || activeWorkspacePane === 'publish'
                         : activeWorkspacePane === item.id;
                       return (
                         <button
@@ -383,12 +388,10 @@ export default function AppLayout({
               {/* Brand Logo */}
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-none border-0 bg-transparent px-0 py-0 text-sm font-extrabold text-white transition-opacity hover:border-transparent hover:bg-transparent hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 sm:text-base"
+                className="flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-none border-0 bg-transparent px-0 py-0 text-sm font-extrabold text-white transition-opacity hover:border-transparent hover:bg-transparent hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/60 sm:text-base cursor-pointer"
                 aria-label="ApexMind Studio home"
               >
-                <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white border border-[#60A5FA]/30 shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
+                <ApexMindLogo size={32} variant="3d" interactive={false} />
                 <span className="text-gradient-brand">ApexMind Studio</span>
               </button>
             </div>
@@ -458,9 +461,7 @@ export default function AppLayout({
         {/* Top Header of Sidebar - Aligns perfectly with the 64px top bar line */}
         <div className="h-16 shrink-0 flex items-center justify-between px-5 sm:px-6 border-b border-[#2F2F2F]">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] text-white border border-[#60A5FA]/30">
-              <Sparkles className="w-4 h-4" />
-            </div>
+            <ApexMindLogo size={32} variant="3d" interactive={false} />
             <div className="flex flex-col">
               <span className="text-base font-extrabold tracking-tight text-gradient-brand">ApexMind</span>
               <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider -mt-0.5">Navigation Menu</span>

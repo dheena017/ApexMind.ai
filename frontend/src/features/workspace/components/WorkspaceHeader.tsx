@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '@/src/features/auth/types';
 import { OmnichannelPublishModal } from '@/src/features/social/components/OmnichannelPublishModal';
+import { ApexMindLogo } from '@/src/shared/ui';
 import { WorkspaceTabType } from './WorkspaceSidebar';
 
 interface WorkspaceHeaderProps {
@@ -199,9 +200,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           </button>
           {/* Brand Logo & Name */}
           <div className="flex items-center gap-2">
-            <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]">
-              <Sparkles className="w-3.5 h-3.5" />
-            </div>
+            <ApexMindLogo size={24} variant="3d" interactive={false} />
             <span className="font-extrabold text-xs tracking-tight text-white whitespace-nowrap hidden min-[440px]:inline">
               ApexMind <span className="text-[#60A5FA]">Studio</span>
             </span>

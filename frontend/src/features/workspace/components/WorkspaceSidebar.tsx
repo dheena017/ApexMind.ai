@@ -26,7 +26,9 @@ export type WorkspaceTabType =
   | 'elements'
   | 'audio'
   | 'image'
-  | 'video';
+  | 'video'
+  | 'captions'
+  | 'publish';
 
 export interface WorkspaceSidebarProps {
   activeTab: WorkspaceTabType;
@@ -100,6 +102,10 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             const IconComp = item.icon;
             const isActive = item.isScriptGroup
               ? activeTab === 'script' || activeTab === 'prompt' || activeTab === 'editor'
+              : item.id === 'text'
+              ? activeTab === 'text' || activeTab === 'captions'
+              : item.id === 'youtube'
+              ? activeTab === 'youtube' || activeTab === 'publish'
               : activeTab === item.id;
 
             return (
@@ -131,6 +137,10 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               const IconComp = item.icon;
               const isActive = item.isScriptGroup
                 ? activeTab === 'script' || activeTab === 'prompt' || activeTab === 'editor'
+                : item.id === 'text'
+                ? activeTab === 'text' || activeTab === 'captions'
+                : item.id === 'youtube'
+                ? activeTab === 'youtube' || activeTab === 'publish'
                 : activeTab === item.id;
 
               return (
