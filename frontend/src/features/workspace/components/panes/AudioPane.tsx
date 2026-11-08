@@ -797,7 +797,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
+    <div className="flex flex-col h-full w-full max-w-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0 min-h-0">
       {/* Hidden Audio Elements */}
       <audio
         ref={previewAudioRef}
@@ -858,8 +858,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         />
       </div>
 
-      {/* ── Main Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 flex flex-col gap-3">
+      {/* ── Main Content Area (Strict Height Scroll Only, Zero Horizontal Overflow) ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar p-3 sm:p-3.5 flex flex-col gap-3 w-full max-w-full">
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* TAB 1: LIVE SOUNDTRACKS */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -964,7 +964,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   <div
                     key={track.id}
                     onClick={() => handleSelectSoundtrack(track.id)}
-                    className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 transform-gpu ${
+                    className={`group p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 transform-gpu min-w-0 w-full max-w-full ${
                       isSelected
                         ? 'bg-[#18233C] text-white border-blue-500/80 ring-1 ring-blue-500/30'
                         : isPending
@@ -972,7 +972,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                         : 'bg-[#181818] border-[#242424] hover:border-[#3E3E4B] hover:bg-[#1A1A20]'
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 overflow-hidden">
                       <button
                         type="button"
                         onClick={(e) => togglePlayTrack(track, e)}
@@ -993,8 +993,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       {(() => {
                         const { title: cleanTitle, artist: cleanArtist } = cleanTrackDisplayMetadata(track.title, track.artist);
                         return (
-                          <div className="min-w-0 flex flex-col gap-0.5">
-                            <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="min-w-0 flex-1 flex flex-col gap-0.5 overflow-hidden">
+                            <div className="flex items-center gap-1.5 min-w-0 max-w-full">
                               <p className="text-xs font-semibold truncate text-white group-hover:text-blue-300 transition-colors" title={cleanTitle}>
                                 {cleanTitle}
                               </p>
@@ -1005,9 +1005,9 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 text-[10px] text-zinc-400 min-w-0 max-w-full">
                               {cleanArtist && (
-                                <span className="text-[10px] text-blue-400/90 font-medium truncate max-w-[130px]" title={`by ${cleanArtist}`}>
+                                <span className="text-[10px] text-blue-400/90 font-medium truncate max-w-[110px] sm:max-w-[130px]" title={`by ${cleanArtist}`}>
                                   by {cleanArtist}
                                 </span>
                               )}
@@ -1167,9 +1167,9 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               return (
                 <div
                   key={sfx.id}
-                  className="p-3 rounded-xl border border-[#242424] hover:border-[#383842] bg-[#181818] hover:bg-[#1D1D22] transition-all flex items-center justify-between gap-3 transform-gpu"
+                  className="p-2.5 sm:p-3 rounded-xl border border-[#242424] hover:border-[#383842] bg-[#181818] hover:bg-[#1D1D22] transition-all flex items-center justify-between gap-2.5 sm:gap-3 transform-gpu min-w-0 w-full max-w-full"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
                     <button
                       type="button"
                       onClick={(e) => togglePlaySfx(sfx, e)}
@@ -1189,8 +1189,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     {(() => {
                       const cleanSfxName = cleanTrackDisplayMetadata(sfx.name).title;
                       return (
-                        <div className="min-w-0 flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="min-w-0 flex-1 flex flex-col gap-0.5 overflow-hidden">
+                          <div className="flex items-center gap-1.5 min-w-0 max-w-full">
                             <p className="text-xs font-semibold text-white truncate" title={cleanSfxName}>
                               {cleanSfxName}
                             </p>

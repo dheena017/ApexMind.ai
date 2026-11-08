@@ -1904,7 +1904,7 @@ export default function WorkspacePage({
 
   return (
     <div
-      className="workspace-editor-root w-full h-auto md:h-full flex flex-col md:flex-row min-h-0 font-sans-studio select-none gap-0 overflow-hidden"
+      className="workspace-editor-root w-full h-full flex flex-col md:flex-row min-h-0 font-sans-studio select-none gap-0 overflow-hidden"
       data-mobile-view={mobileView}
     >
       {/* Hidden Audio Element */}
@@ -1915,7 +1915,7 @@ export default function WorkspacePage({
       {showLeftPane && (
         <div
           style={isDesktop ? { width: `${Math.min(leftPaneWidth, window.innerWidth * 0.3)}px` } : undefined}
-          className="workspace-left-pane w-full max-w-full md:w-auto shrink-0 min-h-130 md:h-full md:min-h-0 flex flex-col overflow-hidden border-r border-[#242424]"
+          className="workspace-left-pane w-full max-w-full md:w-auto shrink-0 h-full flex flex-col min-h-0 overflow-hidden border-r border-[#242424]"
         >
             {activePane === 'automations' ? (
               <AutomationsPane
@@ -2244,11 +2244,11 @@ export default function WorkspacePage({
         )}
 
       {/*  Main Work Area (Right of Left Panel): Top Preview & Controls, Bottom Timeline  */}
-      <div className="workspace-main-area flex-1 min-w-0 h-auto md:h-full flex flex-col min-h-0 overflow-hidden">
+      <div className="workspace-main-area flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden">
         {/* Top Area: Video Preview and Inspiration Studio */}
-        <div className="workspace-preview-area flex flex-col md:flex-row gap-0 h-auto min-h-0 flex-1 overflow-hidden relative">
+        <div className="workspace-preview-area flex flex-col md:flex-row gap-0 h-full min-h-0 flex-1 overflow-hidden relative">
           {/* Center Pane: Video Preview Canvas */}
-          <div className="workspace-preview-pane flex-1 min-w-0 w-full max-w-full min-h-130 md:h-full md:min-h-0 flex flex-col items-center justify-center overflow-hidden">
+          <div className="workspace-preview-pane flex-1 min-w-0 w-full max-w-full h-full md:min-h-0 flex flex-col items-center justify-center min-h-0 overflow-hidden">
             <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
               <VideoPreviewPane
                 canvasAspectRatio={canvasAspectRatio}
@@ -2332,7 +2332,7 @@ export default function WorkspacePage({
           {showRightPane && (
             <div
               style={isDesktop ? { width: `${Math.min(rightPaneWidth, window.innerWidth * 0.3)}px` } : undefined}
-              className="workspace-inspector-pane w-full max-w-full md:w-auto shrink-0 min-h-130 md:h-full md:min-h-0 flex flex-col overflow-hidden border-l border-[#242424]"
+              className="workspace-inspector-pane w-full max-w-full md:w-auto shrink-0 h-full flex flex-col min-h-0 overflow-hidden border-l border-[#242424]"
             >
               <StudioControlsPane
                 voices={voices}
