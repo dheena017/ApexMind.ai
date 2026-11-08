@@ -5,10 +5,13 @@ Zero hardcoded data - 100% dynamic live API streams only.
 """
 
 from .base import BaseAudioProvider
+from .bbc_sfx import BBCSoundEffectsProvider
+from .ccmixter import CCMixterAudioProvider
 from .fma import FMAAudioProvider
 from .freesound_open import OpenSFXProvider
 from .internet_archive import InternetArchiveAudioProvider
 from .jamendo import JamendoAudioProvider
+from .netlabels import NetlabelsAudioProvider
 from .wikimedia import WikimediaAudioProvider
 
 __all__ = [
@@ -17,6 +20,8 @@ __all__ = [
     "WikimediaAudioProvider",
     "InternetArchiveAudioProvider",
     "FMAAudioProvider",
+    "CCMixterAudioProvider",
+    "NetlabelsAudioProvider",
     "OpenSFXProvider",
+    "BBCSoundEffectsProvider",
 ]
-

@@ -90,14 +90,25 @@ export const SFX_CATEGORIES = [
   { value: 'Action', label: '🎯 Hits, Clicks & Hits' },
 ] as const;
 
-export const AUDIO_PROVIDERS = [
+export const SOUNDTRACK_PROVIDERS = [
   { id: 'all', label: '✨ All Free Live Providers' },
   { id: 'jamendo', label: '🎵 Jamendo (500K+ CC)' },
+  { id: 'ccmixter', label: '🎧 ccMixter (45K+ CC)' },
+  { id: 'netlabels', label: '💿 Netlabels Open Music (70K+)' },
+  { id: 'fma', label: '📻 Free Music Archive (150K+)' },
   { id: 'wikimedia', label: '🏛️ Wikimedia Commons' },
   { id: 'internet_archive', label: '📚 Internet Archive' },
-  { id: 'fma', label: '📻 Free Music Archive' },
-  { id: 'open_sfx', label: '💥 Open SFX Commons' },
 ] as const;
+
+export const SFX_PROVIDERS = [
+  { id: 'all', label: '✨ All Free SFX Providers' },
+  { id: 'bbc_sfx', label: '🎙️ BBC Sound Effects (16K+)' },
+  { id: 'open_sfx', label: '💥 Open SFX Commons' },
+  { id: 'wikimedia', label: '🏛️ Wikimedia Commons SFX' },
+  { id: 'internet_archive', label: '📚 Internet Archive SFX' },
+] as const;
+
+export const AUDIO_PROVIDERS = SOUNDTRACK_PROVIDERS;
 
 function renderAudioProviderBadge(provider?: string) {
   switch (provider) {
@@ -105,6 +116,18 @@ function renderAudioProviderBadge(provider?: string) {
       return (
         <span className="text-[9px] font-mono-studio text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1 rounded shrink-0">
           Jamendo
+        </span>
+      );
+    case 'ccmixter':
+      return (
+        <span className="text-[9px] font-mono-studio text-teal-300 bg-teal-500/15 border border-teal-500/30 px-1 rounded shrink-0">
+          ccMixter
+        </span>
+      );
+    case 'netlabels':
+      return (
+        <span className="text-[9px] font-mono-studio text-violet-300 bg-violet-500/15 border border-violet-500/30 px-1 rounded shrink-0">
+          Netlabels
         </span>
       );
     case 'wikimedia':
@@ -123,6 +146,12 @@ function renderAudioProviderBadge(provider?: string) {
       return (
         <span className="text-[9px] font-mono-studio text-blue-300 bg-blue-500/15 border border-blue-500/30 px-1 rounded shrink-0">
           FMA
+        </span>
+      );
+    case 'bbc_sfx':
+      return (
+        <span className="text-[9px] font-mono-studio text-rose-300 bg-rose-500/15 border border-rose-500/30 px-1 rounded shrink-0">
+          BBC SFX
         </span>
       );
     case 'open_sfx':
@@ -611,7 +640,11 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
         <ScrollableTabs
           tabs={TABS}
           activeTab={activeTab}
-          onChange={(tab) => setActiveTab(tab)}
+          onChange={(tab) => {
+            setActiveTab(tab);
+            setSelectedProvider('all');
+            setSearchQuery('');
+          }}
           containerBgClassName="bg-[#181818]"
         />
       </div>
@@ -661,7 +694,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
             {/* Provider Filter Quick Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
-              {AUDIO_PROVIDERS.filter((p) => p.id !== 'open_sfx').map((provider) => {
+              {SOUNDTRACK_PROVIDERS.map((provider) => {
                 const isProviderActive = selectedProvider === provider.id;
                 return (
                   <button
@@ -845,12 +878,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
 
             {/* Provider Filter Quick Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
-              {[
-                { id: 'all', label: '✨ All SFX Providers' },
-                { id: 'open_sfx', label: '💥 Open SFX Commons' },
-                { id: 'wikimedia', label: '🏛️ Wikimedia SFX' },
-                { id: 'internet_archive', label: '📚 Archive SFX' },
-              ].map((provider) => {
+              {SFX_PROVIDERS.map((provider) => {
                 const isProviderActive = selectedProvider === provider.id;
                 return (
                   <button
