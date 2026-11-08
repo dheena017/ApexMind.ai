@@ -19,10 +19,6 @@ from .schemas import (
     # Studio Pipeline v2 schemas
     StudioScriptRequest,
     StudioScriptResponse,
-    ScriptWriteRequest,
-    ScriptHooksRequest,
-    ScriptStoryboardRequest,
-    ScriptSoundDesignRequest,
     StudioVoiceRequest,
     StudioVoiceResponse,
     StudioMediaRequest,
@@ -368,101 +364,6 @@ def post_studio_generate_script(payload: StudioScriptRequest):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
         logger.error(f"[Studio/Script] Error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
-@router.post(
-    "/api/studio/script/write",
-    tags=["Studio"],
-    summary="Generate Core Script Text",
-    description="Generates spoken monologue, pattern-interrupt hook, title, and CTA via Gemini AI with strict duration pacing.",
-)
-def post_studio_script_write(payload: ScriptWriteRequest):
-    from backend.shared.script import write_script
-    try:
-        data = write_script(
-            category=payload.category,
-            topic=payload.topic or payload.category,
-            tone=payload.tone or "",
-            length=payload.length or "30 seconds",
-            model=payload.model or DEFAULT_SCRIPT_MODEL,
-            user_prompt=payload.userPrompt,
-        )
-        return {"success": True, "data": data}
-    except Exception as e:
-        logger.error(f"[Studio/ScriptWrite] Error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
-@router.post(
-    "/api/studio/script/hooks",
-    tags=["Studio"],
-    summary="Generate Viral Hook Variations",
-    description="Generates 3 psychological thumb-stopping hook variations for an existing script monologue.",
-)
-def post_studio_script_hooks(payload: ScriptHooksRequest):
-    from backend.shared.script import generate_hooks
-    try:
-        hooks = generate_hooks(
-            topic=payload.topic,
-            script_text=payload.scriptText,
-            model=payload.model or DEFAULT_SCRIPT_MODEL,
-            count=payload.count,
-        )
-        return {"success": True, "hooks": hooks}
-    except Exception as e:
-        logger.error(f"[Studio/ScriptHooks] Error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
-@router.post(
-    "/api/studio/script/storyboard",
-    tags=["Studio"],
-    summary="Generate Visual Scene Storyboard",
-    description="Divides script monologue into sequential visual scenes with camera motions, cut transitions, and search queries.",
-)
-def post_studio_script_storyboard(payload: ScriptStoryboardRequest):
-    from backend.shared.script import generate_storyboard
-    try:
-        storyboard = generate_storyboard(
-            hook=payload.hook,
-            quote=payload.quote,
-            cta=payload.cta,
-            target_seconds=payload.targetSeconds,
-            aspect_ratio=payload.aspectRatio,
-            category=payload.category or "",
-            topic=payload.topic or "",
-            visual_theme=payload.visualTheme or "",
-            motion_style=payload.motionStyle or "",
-            caption_style=payload.captionStyle or "",
-            model=payload.model or DEFAULT_SCRIPT_MODEL,
-            catalog=payload.availableAssets or {},
-        )
-        return {"success": True, "storyboard": storyboard}
-    except Exception as e:
-        logger.error(f"[Studio/ScriptStoryboard] Error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
-@router.post(
-    "/api/studio/script/sound-design",
-    tags=["Studio"],
-    summary="Generate 5-Layer Sound Design Plan",
-    description="Plans background soundtrack, acoustic sidechain ducking, and timed SFX events synchronized to scene cuts.",
-)
-def post_studio_script_sound_design(payload: ScriptSoundDesignRequest):
-    from backend.shared.script import design_sound
-    try:
-        sound_design = design_sound(
-            storyboard=payload.storyboard,
-            target_seconds=payload.targetSeconds,
-            audio_mood=payload.audioMood,
-            music_track=payload.musicTrack,
-            catalog=payload.availableAssets or {},
-        )
-        return {"success": True, "soundDesign": sound_design}
-    except Exception as e:
-        logger.error(f"[Studio/ScriptSoundDesign] Error: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 

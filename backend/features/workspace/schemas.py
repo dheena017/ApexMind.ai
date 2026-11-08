@@ -309,47 +309,6 @@ class StudioScriptResponse(BaseModel):
     generatedAt: str = ""
 
 
-# ── Modular Stage 1 Component Schemas ──
-
-class ScriptWriteRequest(BaseModel):
-    category: str = Field(default="Stoic Mindset & Discipline", description="Motivational theme/niche")
-    topic: Optional[str] = Field(default=None, description="Specific topic focus")
-    userPrompt: Optional[str] = Field(default=None, description="Creative direction from the user")
-    tone: Optional[str] = Field(default=None, description="Vocal delivery tone")
-    length: Optional[str] = Field(default="30 seconds", description="Target video duration")
-    model: Optional[str] = Field(default=DEFAULT_SCRIPT_MODEL, description="Gemini model to use")
-
-
-class ScriptHooksRequest(BaseModel):
-    topic: str = Field(..., description="Video topic or theme")
-    scriptText: str = Field(..., description="Script text to generate hooks for")
-    model: Optional[str] = Field(default=DEFAULT_SCRIPT_MODEL, description="Gemini model to use")
-    count: int = Field(default=3, ge=1, le=5, description="Number of hook angles to generate")
-
-
-class ScriptStoryboardRequest(BaseModel):
-    hook: str = Field(..., description="Opening hook text")
-    quote: str = Field(..., description="Monologue quote body text")
-    cta: str = Field(default="", description="Closing call to action")
-    targetSeconds: int = Field(default=30, ge=5, le=120, description="Target total video duration")
-    aspectRatio: str = Field(default="9:16", description="Video aspect ratio")
-    category: Optional[str] = Field(default=None, description="Theme or category")
-    topic: Optional[str] = Field(default=None, description="Topic")
-    visualTheme: Optional[str] = Field(default=None, description="Visual theme")
-    motionStyle: Optional[str] = Field(default=None, description="Camera motion style")
-    captionStyle: Optional[str] = Field(default=None, description="Caption preset style")
-    model: Optional[str] = Field(default=DEFAULT_SCRIPT_MODEL, description="Gemini model to use")
-    availableAssets: Optional[Dict[str, Any]] = Field(default=None, description="Catalog assets")
-
-
-class ScriptSoundDesignRequest(BaseModel):
-    storyboard: List[Dict[str, Any]] = Field(..., description="Storyboard scenes to synchronize")
-    targetSeconds: int = Field(default=30, ge=5, le=120, description="Target total video duration")
-    audioMood: Optional[str] = Field(default=None, description="Audio mood (e.g. phonk, cinematic)")
-    musicTrack: Optional[str] = Field(default=None, description="Selected music track ID")
-    availableAssets: Optional[Dict[str, Any]] = Field(default=None, description="Catalog audio assets")
-
-
 # ══════════════════════════════════════════════════════════════════════════════
 # STUDIO PIPELINE v2 — Stage 2: Voice Synthesis
 # POST /api/studio/synthesize-voice
