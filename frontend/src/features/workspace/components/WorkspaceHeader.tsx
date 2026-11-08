@@ -392,26 +392,30 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             onNavigate={onNavigate}
           />
 
+          <div className="h-4 w-px bg-[#262626] mx-0.5 hidden sm:block" />
+
           {/* Settings button */}
           <button
             type="button"
             onClick={() => onNavigate('settings')}
-            className="h-7.5 w-7.5 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-white hover:bg-[#202020] border border-transparent hover:border-[#2A2A2A] transition-all cursor-pointer"
+            className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white bg-[#18181B] hover:bg-[#222226] border border-[#27272A] hover:border-zinc-600 transition-all cursor-pointer shadow-xs"
             title="Studio Settings"
             aria-label="Studio Settings"
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-4 h-4" />
           </button>
+
+          <div className="h-4 w-px bg-[#262626] mx-0.5 hidden sm:block" />
 
           {/* Profile button */}
           <div className="relative" ref={accountMenuRef}>
             <button
               type="button"
               onClick={() => setAccountMenuOpen((open) => !open)}
-              className={`flex items-center gap-1 p-0.5 rounded-full border transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-xl border transition-all cursor-pointer shadow-xs ${
                 accountMenuOpen
-                  ? 'text-white bg-[#202020] border-[#3B82F6]/50'
-                  : 'text-[#9CA3AF] hover:text-white hover:bg-[#202020] border-transparent hover:border-[#2A2A2A]'
+                  ? 'text-white bg-[#222226] border-blue-500/50 ring-1 ring-blue-500/20'
+                  : 'text-zinc-400 hover:text-white bg-[#18181B] hover:bg-[#222226] border-[#27272A] hover:border-zinc-600'
               }`}
               title={user ? `${user.name} (${user.email || `${user.provider} sign-in`})` : 'Profile'}
               aria-label="Open account menu"
@@ -426,11 +430,11 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
                   className="w-6 h-6 rounded-full bg-[#181818] border border-[#2A2A2A] object-cover shadow-xs"
                 />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] border border-[#60A5FA]/30 flex items-center justify-center text-[9px] font-bold text-white shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#2563EB] border border-[#60A5FA]/30 flex items-center justify-center text-[10px] font-bold text-white shadow-xs">
                   {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AM'}
                 </div>
               )}
-              <ChevronDown className={`w-3 h-3 text-[#737373] transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3 h-3 text-zinc-400 transition-transform ${accountMenuOpen ? 'rotate-180 text-white' : ''}`} />
             </button>
 
             {accountMenuOpen && (
