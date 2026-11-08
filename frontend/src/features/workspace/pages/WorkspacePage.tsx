@@ -1565,9 +1565,20 @@ export default function WorkspacePage({
       if (customEvent.detail.panel === 'bottom') setShowTimeline((prev) => !prev);
       if (customEvent.detail.panel === 'right') setShowRightPane((prev) => !prev);
     };
+    const handleSwitchPane = (e: Event) => {
+      const pane = (e as CustomEvent<{ pane: WorkspaceTabType }>).detail?.pane;
+      if (pane && onPaneChange) {
+        onPaneChange(pane);
+        setShowLeftPane(true);
+      }
+    };
     window.addEventListener('workspace:toggle-panel', handleToggle);
-    return () => window.removeEventListener('workspace:toggle-panel', handleToggle);
-  }, []);
+    window.addEventListener('workspace:switch-pane', handleSwitchPane);
+    return () => {
+      window.removeEventListener('workspace:toggle-panel', handleToggle);
+      window.removeEventListener('workspace:switch-pane', handleSwitchPane);
+    };
+  }, [onPaneChange]);
 
   // Left-pane selections update the active inspector without changing panel visibility.
   useEffect(() => {

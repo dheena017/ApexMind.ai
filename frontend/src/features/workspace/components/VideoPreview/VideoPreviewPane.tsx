@@ -565,7 +565,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     rotation: 0,
     scale: 100,
     posX: 50,
-    posY: 65,
+    posY: 50,
     accentColor: '#3B82F6',
     textColor: '#FFFFFF',
     opacity: 100,
@@ -2448,7 +2448,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   const overlayPositionStyle = {
     left: `${overlayStyle.posX ?? 50}%`,
-    top: `${overlayStyle.posY ?? 78}%`,
+    top: `${overlayStyle.posY ?? 50}%`,
     transform: `translate(-50%, -50%) ${overlayTransform} ${overlayMotionTransform || pulseMotionTransform}`,
     filter: overlayMotionFilter,
     clipPath: overlayMotionClipPath,
@@ -2513,7 +2513,7 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 select-none font-sans-studio overflow-hidden px-0.5 py-0.5">
-      {/* ── Dynamic Aspect Ratio Video Studio Canvas ────────────────── */}
+      {/* ── Fixed Aspect Ratio Video Studio Canvas ────────────────── */}
       <div ref={canvasFrameRef} className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden rounded-2xl">
         <div
           ref={canvasRef}
@@ -2524,15 +2524,12 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             }
           }}
           id="apex-video-canvas-container"
-          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-[border-color,box-shadow,opacity] duration-300 cursor-default focus:outline-none @container`}
+          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#333333] shadow-2xl transition-[border-color,box-shadow,opacity] duration-300 cursor-default focus:outline-none @container shrink-0 my-auto`}
           tabIndex={-1}
           style={{
             background: canvasBackground || '#050505',
-            width: fittedCanvasWidth,
-            height: fittedCanvasHeight,
             containerType: 'inline-size',
           }}
-          title="Canvas"
         >
         {/* Layer 1: Cinematic Background (Custom Color/Gradient or Theme Gradient) */}
         <div
@@ -3097,14 +3094,48 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
         {/* Empty Canvas Placeholder */}
         {!activeVideo && !activeImage && !visibleSubtitle && !effectiveOverlay && !script.title && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none pointer-events-none z-10">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-[#242424] flex items-center justify-center mb-3 text-sky-400 shadow-md">
-              <Film className="w-5 h-5 text-white/40" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none z-10 pointer-events-none">
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-b from-blue-500/10 to-indigo-500/5 border border-blue-500/20 flex items-center justify-center mb-3 text-blue-400 shadow-lg shadow-blue-500/5">
+              <Film className="w-6 h-6 text-blue-400" />
             </div>
-            <span className="text-xs font-bold text-slate-200 tracking-wide mb-1">Canvas Ready</span>
-            <span className="text-[11px] text-slate-400 max-w-[220px] leading-relaxed">
-              Generate a script with AI or add media to the timeline to begin
+            <span className="text-sm font-bold text-white tracking-wide mb-1">Canvas Ready</span>
+            <span className="text-xs text-zinc-400 max-w-[240px] leading-relaxed mb-4">
+              {canvasAspectRatio} Short ready for generation, editing & timeline playback
             </span>
+
+            {/* Quick Action Pills for Immediate Creator Onboarding */}
+            <div className="flex flex-col gap-2 w-full max-w-[210px] pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('workspace:switch-pane', { detail: { pane: 'prompt' } }));
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 transition-all cursor-pointer active:scale-95"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Generate Script with AI</span>
+              </button>
+              <div className="grid grid-cols-2 gap-1.5 w-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('workspace:switch-pane', { detail: { pane: 'video' } }));
+                  }}
+                  className="py-1.5 px-2 rounded-lg bg-[#181818] hover:bg-[#222222] border border-[#2A2A2A] text-zinc-300 hover:text-white text-[11px] font-medium transition-colors cursor-pointer"
+                >
+                  + Add Video
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('workspace:switch-pane', { detail: { pane: 'elements' } }));
+                  }}
+                  className="py-1.5 px-2 rounded-lg bg-[#181818] hover:bg-[#222222] border border-[#2A2A2A] text-zinc-300 hover:text-white text-[11px] font-medium transition-colors cursor-pointer"
+                >
+                  + Elements
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
