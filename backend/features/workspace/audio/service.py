@@ -16,6 +16,7 @@ Zero hardcoded audio arrays - 100% dynamic live stream.
 import logging
 from typing import Any, Dict, List
 
+from .metadata_cleaner import clean_track_title_and_artist
 from .providers import (
     BaseAudioProvider,
     BBCSoundEffectsProvider,
@@ -68,6 +69,19 @@ def search_soundtracks(
         prov = _PROVIDERS[target_prov]
         items = prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size)
         total = prov.get_total_tracks(query=query, genre=genre)
+
+        # Resilient live failover: if the specific provider returns 0 tracks (e.g. API suspended or Cloudflare block),
+        # automatically augment with active live Creative Commons providers so the user NEVER gets an empty panel
+        if not items:
+            logger.info(f"Audio provider '{target_prov}' returned 0 live streams; gracefully augmenting with live open audio.")
+            soundtrack_sources = ["ccmixter", "netlabels", "fma", "wikimedia", "internet_archive"]
+            for alt_id in soundtrack_sources:
+                if alt_id != target_prov and alt_id in _PROVIDERS:
+                    more = _PROVIDERS[alt_id].search_tracks(query=query, genre=genre, page=page, page_size=page_size)
+                    if more:
+                        items.extend(more)
+                        if len(items) >= page_size:
+                            break
     else:
         # Aggregated live search across soundtrack providers
         j_prov = _PROVIDERS["jamendo"]
@@ -116,13 +130,20 @@ def search_soundtracks(
             ia_tracks = ia_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size - len(items))
             items.extend(ia_tracks)
 
-    # Deduplicate by audioUrl
+    # Deduplicate and clean track titles & artist names
     seen_urls = set()
     deduped_items = []
     for it in items:
         url = it.get("audioUrl", "")
         if url and url not in seen_urls:
             seen_urls.add(url)
+            clean_t, clean_a = clean_track_title_and_artist(
+                it.get("title", ""),
+                it.get("artist", ""),
+                default_artist="Independent Creator",
+            )
+            it["title"] = clean_t
+            it["artist"] = clean_a
             deduped_items.append(it)
 
     return {
@@ -153,6 +174,17 @@ def search_sound_effects(
         prov = _PROVIDERS[target_prov]
         items = prov.search_sfx(query=query, category=category, page=page, page_size=page_size)
         total = prov.get_total_sfx(query=query, category=category)
+
+        # Resilient live failover for SFX providers
+        if not items:
+            sfx_sources = ["bbc_sfx", "open_sfx", "wikimedia", "internet_archive"]
+            for alt_id in sfx_sources:
+                if alt_id != target_prov and alt_id in _PROVIDERS:
+                    more = _PROVIDERS[alt_id].search_sfx(query=query, category=category, page=page, page_size=page_size)
+                    if more:
+                        items.extend(more)
+                        if len(items) >= page_size:
+                            break
     else:
         bbc_prov = _PROVIDERS["bbc_sfx"]
         sfx_prov = _PROVIDERS["open_sfx"]
@@ -187,13 +219,20 @@ def search_sound_effects(
             ia_items = ia_prov.search_sfx(query=query, category=category, page=page, page_size=page_size - len(items))
             items.extend(ia_items)
 
-    # Deduplicate by audioUrl
+    # Deduplicate and clean track titles & artist names
     seen_urls = set()
     deduped_items = []
     for it in items:
         url = it.get("audioUrl", "")
         if url and url not in seen_urls:
             seen_urls.add(url)
+            clean_t, clean_a = clean_track_title_and_artist(
+                it.get("title", ""),
+                it.get("artist", ""),
+                default_artist="Independent Creator",
+            )
+            it["title"] = clean_t
+            it["artist"] = clean_a
             deduped_items.append(it)
 
     return {

@@ -11,6 +11,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List
 
+from ..metadata_cleaner import clean_track_title_and_artist
 from .base import BaseAudioProvider
 
 logger = logging.getLogger("ApexMind.Audio.Wikimedia")
@@ -101,10 +102,15 @@ class WikimediaAudioProvider(BaseAudioProvider):
         parsed: List[Dict[str, Any]] = []
 
         for it in raw:
+            clean_title, clean_artist = clean_track_title_and_artist(
+                it["title"],
+                raw_artist="",
+                default_artist="Wikimedia Creator",
+            )
             parsed.append({
                 "id": it["id"],
-                "title": it["title"],
-                "artist": "Wikimedia Contributor",
+                "title": clean_title,
+                "artist": clean_artist,
                 "genre": genre.title() if genre != "all" else "Orchestral",
                 "mood": "Atmospheric",
                 "duration": 150,
@@ -139,7 +145,12 @@ class WikimediaAudioProvider(BaseAudioProvider):
         parsed: List[Dict[str, Any]] = []
 
         for it in raw:
-            title_lower = it["title"].lower()
+            clean_sfx_title, _ = clean_track_title_and_artist(
+                it["title"],
+                raw_artist="",
+                default_artist="Open SFX Creator",
+            )
+            title_lower = clean_sfx_title.lower()
             if "whoosh" in title_lower or "swoosh" in title_lower or "transition" in title_lower:
                 cat = "Transition"
                 dur = 1.2
@@ -155,7 +166,7 @@ class WikimediaAudioProvider(BaseAudioProvider):
 
             parsed.append({
                 "id": it["id"],
-                "title": it["title"],
+                "title": clean_sfx_title,
                 "category": cat,
                 "duration": dur,
                 "durationFormatted": f"{dur}s",

@@ -76,20 +76,22 @@ class JamendoAudioProvider(BaseAudioProvider):
                 "offset": str((page - 1) * page_size),
                 "order": "popularity_total",
                 "include": "musicinfo",
-                "audioformat": "mp31",  # mp31 is public free stream; mp32 requires commercial license
+                "audioformat": "mp32",
             }
 
             if clean_q:
                 params["namesearch"] = clean_q
             elif genre_key != "all":
                 params["fuzzytags"] = target_tag
-            else:
-                params["fuzzytags"] = "soundtrack"
 
             url = f"https://api.jamendo.com/v3.0/tracks/?{urllib.parse.urlencode(params)}"
             req = urllib.request.Request(
                 url,
-                headers={"User-Agent": "ApexMindStudio/2.0 (LiveJamendo; https://apexmind.ai)"},
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+                    "Accept": "application/json, text/plain, */*",
+                    "Accept-Language": "en-US,en;q=0.9",
+                },
             )
 
             try:

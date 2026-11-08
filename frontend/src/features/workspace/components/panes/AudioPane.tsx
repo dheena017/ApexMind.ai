@@ -169,6 +169,88 @@ function renderAudioProviderBadge(provider?: string) {
   }
 }
 
+export function formatCompactAudioCount(num: number): string {
+  if (!num) return '0';
+  if (num >= 10_000_000) return `${(num / 1_000_000).toFixed(1)}M+`;
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M+`;
+  if (num >= 100_000) return `${Math.round(num / 1_000)}K+`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K+`;
+  return num.toString();
+}
+
+export function cleanTrackDisplayMetadata(rawTitle: string, rawArtist?: string): { title: string; artist: string } {
+  let title = (rawTitle || '').replace(/^File:/i, '').replace(/\.(mp3|ogg|wav|flac|m4a|opus|aac)$/i, '').trim();
+  let artist = (rawArtist || '').trim();
+
+  // Strip license tags like (cc-by-3.0), (CC BY), [CC-BY], (public domain), etc.
+  title = title.replace(/[\(\[]\s*cc[\s\-_0-9a-z.]*[\)\]]/gi, '').trim();
+  title = title.replace(/[\(\[]\s*(public domain|royalty[\s\-_]free|creative commons|open audio)[\)\]]/gi, '').trim();
+  title = title.replace(/[\(\[]\s*\d{4}\s*[\)\]]/g, '').trim();
+
+  // Handle '"Title" by Artist'
+  const byMatch = title.match(/^["']?(.+?)["']?\s+by\s+(.+)$/i);
+  if (byMatch) {
+    title = byMatch[1].trim();
+    if (!artist || artist === 'Wikimedia Contributor' || artist.includes('Artist') || artist === 'Independent Creator') {
+      artist = byMatch[2].trim();
+    }
+  }
+
+  // Handle 'Artist - Title' or 'Title - Artist'
+  if (title.includes(' - ') || title.includes(' – ')) {
+    const parts = title.split(/\s+[-–]\s+/);
+    if (parts.length === 2) {
+      const p0 = parts[0].trim();
+      const p1 = parts[1].trim();
+      const p1Clean = p1.replace(/([a-zA-Z]+)[0-9]{2,}$/, '$1').trim();
+      const p0Clean = p0.replace(/([a-zA-Z]+)[0-9]{2,}$/, '$1').trim();
+
+      if (!artist || artist === 'Wikimedia Contributor' || artist.includes('Artist') || artist === 'Independent Creator') {
+        if (p0.split(' ').length <= 3 && !/waltz|anthem|sound|theme|piano|loop|effect/i.test(p0)) {
+          artist = p0Clean;
+          title = p1Clean;
+        } else {
+          title = p0Clean;
+          artist = p1Clean;
+        }
+      } else {
+        title = p1Clean.length > p0Clean.length ? p1Clean : p0Clean;
+      }
+    }
+  }
+
+  // Strip date prefixes like '03may2020-tobefree' or '2020-05-03_'
+  title = title.replace(/^\d{1,4}[a-zA-Z]{3,4}\d{2,4}[-_\s]*/, '');
+  title = title.replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_\s]*/, '');
+
+  // Clean hyphenated/snake case words like 'tobefree' -> 'To Be Free'
+  if (title.includes('-') || title.includes('_')) {
+    title = title.replace(/[-_]+/g, ' ').trim();
+  } else if (title.toLowerCase() === 'tobefree') {
+    title = 'To Be Free';
+  }
+
+  // Strip trailing usernames/digits like Felipe RuizBRX11
+  if (artist) {
+    artist = artist.replace(/([a-zA-Z]+)[0-9]{2,}$/, '$1').trim();
+    artist = artist.replace(/^by\s+/i, '').replace(/[\(\[].*?[\)\]]/g, '').trim();
+  }
+
+  // Clean extra quotes
+  title = title.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+  title = title.replace(/\s{2,}/g, ' ');
+
+  // Title-case if all lower or upper
+  if (title === title.toLowerCase() || title === title.toUpperCase()) {
+    title = title.replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  return {
+    title: title || 'Soundtrack Track',
+    artist: artist && artist !== 'Wikimedia Contributor' && artist !== 'Independent Creator' ? artist : 'Independent Artist',
+  };
+}
+
 export const AudioPane: React.FC<AudioPaneProps> = ({
   onSelectMusic,
   selectedMusic,
@@ -598,8 +680,8 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   };
 
   const TABS: TabItem<'soundtracks' | 'sfx' | 'record' | 'url'>[] = [
-    { id: 'soundtracks', label: 'Soundtracks', icon: Music, badge: totalSoundtracks ? `${totalSoundtracks.toLocaleString()}` : undefined },
-    { id: 'sfx', label: 'Sound Effects', icon: Sparkles, badge: totalSfx ? `${totalSfx.toLocaleString()}` : undefined },
+    { id: 'soundtracks', label: 'Soundtracks', icon: Music, badge: totalSoundtracks ? formatCompactAudioCount(totalSoundtracks) : undefined },
+    { id: 'sfx', label: 'Sound Effects', icon: Sparkles, badge: totalSfx ? formatCompactAudioCount(totalSfx) : undefined },
     { id: 'record', label: 'Studio Record', icon: Mic, badge: recordedTakes.length ? `${recordedTakes.length}` : undefined },
     { id: 'url', label: 'Web Audio Import', icon: ExternalLink },
   ];
@@ -725,7 +807,20 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 <p role="alert" className="py-2 text-xs text-red-400">{audioSearchError}</p>
               )}
               {!isSearchingAudio && !audioSearchError && liveSoundtracks.length === 0 && (
-                <p className="py-6 text-center text-xs text-zinc-500">No soundtrack streams found matching your query.</p>
+                <div className="py-8 flex flex-col items-center justify-center gap-2.5 text-center">
+                  <p className="text-xs text-zinc-400">No soundtrack streams found for this specific filter.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProvider('all');
+                      setSelectedGenre('all');
+                      setSearchQuery('');
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors cursor-pointer shadow-sm"
+                  >
+                    Explore All Free Live Providers
+                  </button>
+                </div>
               )}
               {liveSoundtracks.map((track) => {
                 const isSelected = selectedMusic === track.id || selectedMusic === track.audioUrl;
@@ -762,35 +857,40 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                         )}
                       </button>
 
-                      <div className="min-w-0 flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <p className="text-xs font-semibold truncate text-white group-hover:text-blue-300 transition-colors">
-                            {track.title}
-                          </p>
-                          {renderAudioProviderBadge(track.provider)}
-                          {isSelected && (
-                            <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold shrink-0">
-                              ACTIVE
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                          <span className="px-1.5 py-0.2 rounded text-[9px] uppercase font-mono tracking-wider bg-zinc-800/80 text-zinc-300">
-                            {track.genre}
-                          </span>
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-[#1E1E1E] text-zinc-300 border border-[#2E2E2E]">
-                            {track.bpm} BPM
-                          </span>
-                          <span className="font-mono text-[10px] text-zinc-500">
-                            {track.duration}
-                          </span>
-                          {track.artist && (
-                            <span className="text-[10px] text-zinc-500 truncate hidden sm:inline">
-                              by {track.artist}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      {(() => {
+                        const { title: cleanTitle, artist: cleanArtist } = cleanTrackDisplayMetadata(track.title, track.artist);
+                        return (
+                          <div className="min-w-0 flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <p className="text-xs font-semibold truncate text-white group-hover:text-blue-300 transition-colors" title={cleanTitle}>
+                                {cleanTitle}
+                              </p>
+                              {renderAudioProviderBadge(track.provider)}
+                              {isSelected && (
+                                <span className="text-[9px] font-mono-studio px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold shrink-0">
+                                  ACTIVE
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                              {cleanArtist && (
+                                <span className="text-[10px] text-blue-400/90 font-medium truncate max-w-[130px]" title={`by ${cleanArtist}`}>
+                                  by {cleanArtist}
+                                </span>
+                              )}
+                              <span className="px-1.5 py-0.2 rounded text-[9px] uppercase font-mono tracking-wider bg-zinc-800/80 text-zinc-300 shrink-0">
+                                {track.genre}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-[#1E1E1E] text-zinc-300 border border-[#2E2E2E] shrink-0">
+                                {track.bpm} BPM
+                              </span>
+                              <span className="font-mono text-[10px] text-zinc-500 shrink-0">
+                                {track.duration}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <button
@@ -827,7 +927,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     </span>
                   </button>
                   <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
-                    Showing {liveSoundtracks.length} of {totalSoundtracks ? totalSoundtracks.toLocaleString() : '500,000+'} Tracks
+                    Showing {liveSoundtracks.length} of {totalSoundtracks ? formatCompactAudioCount(totalSoundtracks) : '500K+'} Live Tracks
                   </span>
                 </div>
               )}
@@ -907,7 +1007,20 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               <p role="alert" className="py-2 text-xs text-red-400">{sfxSearchError}</p>
             )}
             {!isSearchingSfx && !sfxSearchError && liveSfx.length === 0 && (
-              <p className="py-6 text-center text-xs text-zinc-500">No sound effects found matching your query.</p>
+              <div className="py-8 flex flex-col items-center justify-center gap-2.5 text-center">
+                <p className="text-xs text-zinc-400">No sound effects found for this specific filter.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProvider('all');
+                    setSelectedSfxCategory('all');
+                    setSearchQuery('');
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors cursor-pointer shadow-sm"
+                >
+                  Explore All Free Sound Effects
+                </button>
+              </div>
             )}
             {liveSfx.map((sfx) => {
               const isPlaying = playingSfxId === sfx.id;
@@ -934,19 +1047,24 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       )}
                     </button>
 
-                    <div className="min-w-0 flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">
-                          {sfx.name}
-                        </p>
-                        {renderAudioProviderBadge(sfx.provider)}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[9px] text-zinc-400 font-mono-studio">
-                        <span className="text-blue-400">{sfx.category}</span>
-                        <span>•</span>
-                        <span>{sfx.duration}</span>
-                      </div>
-                    </div>
+                    {(() => {
+                      const cleanSfxName = cleanTrackDisplayMetadata(sfx.name).title;
+                      return (
+                        <div className="min-w-0 flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <p className="text-xs font-semibold text-white truncate" title={cleanSfxName}>
+                              {cleanSfxName}
+                            </p>
+                            {renderAudioProviderBadge(sfx.provider)}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[9px] text-zinc-400 font-mono-studio">
+                            <span className="text-blue-400">{sfx.category}</span>
+                            <span>•</span>
+                            <span>{sfx.duration}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <button
@@ -982,7 +1100,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   </span>
                 </button>
                 <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
-                  Showing {liveSfx.length} of {totalSfx ? totalSfx.toLocaleString() : '65,000+'} SFX
+                  Showing {liveSfx.length} of {totalSfx ? formatCompactAudioCount(totalSfx) : '600K+'} Live SFX
                 </span>
               </div>
             )}
