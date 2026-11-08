@@ -2512,9 +2512,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
     : 'h-full max-h-full'; // height-driven → width auto-computed by aspect-ratio
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-1 select-none font-sans-studio overflow-hidden px-0.5 py-0.5">
+    <div className="w-full h-full flex flex-col items-center justify-center select-none font-sans-studio overflow-hidden p-2 sm:p-3 md:p-4">
       {/* ── Fixed Aspect Ratio Video Studio Canvas ────────────────── */}
-      <div ref={canvasFrameRef} className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden rounded-2xl">
+      <div ref={canvasFrameRef} className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
         <div
           ref={canvasRef}
           onClick={(e) => {
@@ -2524,11 +2524,13 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
             }
           }}
           id="apex-video-canvas-container"
-          className={`group relative flex flex-col justify-between overflow-hidden ${dimensionClass} ${aspectClass} rounded-2xl border border-[#222228] bg-[#0A0A0C] shadow-2xl shadow-black/90 ring-1 ring-white/[0.04] transition-all duration-200 cursor-default focus:outline-none @container shrink-0 my-auto`}
+          className={`group relative flex flex-col justify-between overflow-hidden max-w-full max-h-full ${aspectClass} rounded-xl border border-[#27272A] bg-[#0A0A0C] shadow-2xl shadow-black/90 ring-1 ring-white/[0.06] transition-all duration-200 cursor-default focus:outline-none @container shrink-0 my-auto`}
           tabIndex={-1}
           style={{
             background: canvasBackground || '#0A0A0C',
             containerType: 'inline-size',
+            width: fittedCanvasWidth ? `${Math.round(fittedCanvasWidth)}px` : undefined,
+            height: fittedCanvasHeight ? `${Math.round(fittedCanvasHeight)}px` : undefined,
           }}
         >
         {/* Layer 1: Cinematic Background (Custom Color/Gradient or Theme Gradient) */}
@@ -3094,21 +3096,21 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
 
         {/* Empty Canvas Placeholder - Simplest Perfect Box */}
         {!activeVideo && !activeImage && !visibleSubtitle && !effectiveOverlay && !script.title && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none z-10 pointer-events-none">
-            <div className="w-14 h-14 rounded-2xl bg-[#141418] border border-[#26262E] flex items-center justify-center mb-3 shadow-xl">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none z-10 pointer-events-none">
+            <div className="w-13 h-13 rounded-xl bg-[#141418] border border-[#26262E] flex items-center justify-center mb-3 shadow-xl">
               <Film className="w-6 h-6 text-blue-400" />
             </div>
-            <span className="text-base font-bold text-white tracking-tight mb-1">Canvas Ready</span>
-            <span className="text-xs text-zinc-500 mb-5">Start with AI or add your media to the timeline</span>
+            <span className="text-sm sm:text-base font-bold text-white tracking-tight mb-1">Canvas Ready</span>
+            <span className="text-[11px] sm:text-xs text-zinc-500 mb-4 sm:mb-5 max-w-[220px]">Start with AI or add your media to the timeline</span>
 
             <button
               type="button"
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('workspace:switch-pane', { detail: { pane: 'prompt' } }));
               }}
-              className="pointer-events-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+              className="pointer-events-auto px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span>Generate with AI</span>
             </button>
           </div>
