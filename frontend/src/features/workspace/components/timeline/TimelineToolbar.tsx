@@ -8,8 +8,6 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  ChevronDown,
-  ChevronUp,
   Scissors,
   Plus,
   Trash2,
@@ -20,8 +18,8 @@ import { formatTime, SelectedClip, EnabledTracks, MIN_TIMELINE_ZOOM, MAX_TIMELIN
 import { TimelineAddTrackMenu } from './TimelineAddTrackMenu';
 
 export interface TimelineToolbarProps {
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
   isExpandedHeight?: boolean;
   onToggleExpandedHeight?: () => void;
   activeTracksCount?: number;
@@ -56,23 +54,11 @@ export interface TimelineToolbarProps {
 }
 
 export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
-  isCollapsed,
-  onToggleCollapse,
-  isExpandedHeight = false,
-  onToggleExpandedHeight,
   activeTracksCount = 0,
   selectedClip,
-  captionsTrackLocked,
   onSplitClip,
   onDuplicateClip,
-  onAddCaption,
   onDeleteClip,
-  snapEnabled,
-  onToggleSnap,
-  onSyncAudioAndCC,
-  hasAudioMismatch = false,
-  voiceDuration = 0,
-  captionsEnd = 0,
   addTrackMenuOpen,
   onToggleAddTrackMenu,
   onCloseAddTrackMenu,
@@ -88,219 +74,418 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
   onZoomIn,
   onZoomOut,
   onZoomFit,
-  onDurationChange,
 }) => {
   const hasSelection = Boolean(selectedClip);
   const displayDuration = projectDuration && projectDuration > 0 ? projectDuration : totalDuration;
-  const addTrackAnchorRef = useRef<HTMLDivElement>(null);
+  const anchorDesktopRef = useRef<HTMLDivElement>(null);
+  const anchorMobileRef = useRef<HTMLDivElement>(null);
+
+  const currentAnchorRef = {
+    get current() {
+      if (anchorMobileRef.current && anchorMobileRef.current.offsetParent !== null) {
+        return anchorMobileRef.current;
+      }
+      return anchorDesktopRef.current;
+    },
+  };
 
   return (
-    <div className="workspace-timeline-toolbar flex items-center justify-between px-2 sm:px-3 h-10 bg-[#121215] border-b border-[#222228] select-none min-w-0 w-full shrink-0 relative z-20 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x gap-2">
-      {/* ── 1. Left: Collapse, Title & Editing Tools ── */}
-      <div className="workspace-timeline-toolbar-main flex items-center gap-1 sm:gap-1.5 min-w-0 shrink-0">
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer shrink-0"
-          title={isCollapsed ? 'Expand Timeline' : 'Collapse Timeline'}
-          aria-label={isCollapsed ? 'Expand timeline' : 'Collapse timeline'}
-          aria-expanded={!isCollapsed}
-        >
-          {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />}
-        </button>
+    <div className="workspace-timeline-toolbar flex flex-col md:flex-row md:items-center md:justify-between px-2.5 sm:px-3 py-1.5 md:py-0 md:h-10 bg-[#121215] border-b border-[#222228] select-none min-w-0 w-full shrink-0 relative z-20 gap-1.5 md:gap-2">
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* ── DESKTOP VIEWPORT (Single Elegant Row with Centered Transport) ── */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      <div className="hidden md:flex items-center justify-between w-full h-full min-w-0">
+        {/* 1. Desktop Left: Title & Editing Tools */}
+        <div className="workspace-timeline-toolbar-main flex items-center gap-1.5 min-w-0 shrink-0">
+          <div className="workspace-timeline-toolbar-heading flex items-center gap-1.5 mr-1 shrink-0">
+            <span className="text-[11px] font-bold tracking-wider uppercase flex items-center gap-1 text-zinc-200">
+              <Sliders className="w-3.5 h-3.5 text-blue-400" />
+              <span>Timeline</span>
+            </span>
+            <span
+              className="text-[9.5px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-full"
+              title="Tracks containing content"
+            >
+              {activeTracksCount} {activeTracksCount === 1 ? 'Track' : 'Tracks'}
+            </span>
+          </div>
 
-        <div className="workspace-timeline-toolbar-heading flex items-center gap-1 sm:gap-1.5 mr-0.5 sm:mr-1 shrink-0">
-          <span className="text-[11px] font-bold tracking-wider uppercase flex items-center gap-1 text-zinc-200">
-            <Sliders className="w-3.5 h-3.5 text-blue-400" />
-            <span className="hidden sm:inline">Timeline</span>
-          </span>
-          <span
-            className="text-[9px] sm:text-[9.5px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-full"
-            title="Tracks containing content"
-          >
-            {activeTracksCount} {activeTracksCount === 1 ? 'Track' : 'Tracks'}
-          </span>
+          <div className="workspace-timeline-toolbar-divider h-3.5 w-px bg-zinc-800 mx-1 shrink-0" />
+
+          {/* Action Tools: Split, Duplicate, Delete, Transitions */}
+          <div className="workspace-timeline-toolbar-actions flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={onSplitClip}
+              disabled={!hasSelection}
+              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
+                hasSelection
+                  ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
+                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
+              }`}
+              title={hasSelection ? 'Split clip at playhead (S)' : 'Select a clip to split'}
+              aria-label="Split selected clip at playhead"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onDuplicateClip}
+              disabled={!hasSelection}
+              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
+                hasSelection
+                  ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
+                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
+              }`}
+              title={hasSelection ? 'Duplicate clip' : 'Select a clip to duplicate'}
+              aria-label="Duplicate selected clip"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onDeleteClip}
+              disabled={!hasSelection}
+              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
+                hasSelection
+                  ? 'border-red-900/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 hover:border-red-700/60 shadow-sm'
+                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
+              }`}
+              title={hasSelection ? 'Delete clip' : 'Select a clip to delete'}
+              aria-label="Delete selected clip"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'transitions' }));
+              }}
+              className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-amber-500/40 hover:bg-zinc-800 shadow-sm transition-all cursor-pointer text-[10.5px] font-medium shrink-0"
+              title="Open Transitions Studio"
+              aria-label="Open Transitions Studio"
+            >
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>Transitions</span>
+            </button>
+          </div>
         </div>
 
-        <div className="workspace-timeline-toolbar-divider h-3.5 w-px bg-zinc-800 mx-0.5 sm:mx-1 hidden xs:block shrink-0" />
-
-        {/* ── Action Tools: Split, Duplicate, Delete, Transitions ── */}
-        <div className="workspace-timeline-toolbar-actions flex items-center gap-0.5 sm:gap-1 shrink-0">
+        {/* 2. Desktop Center: Dedicated Transport Controls & Timecode Display */}
+        <div className="workspace-timeline-toolbar-playback flex items-center gap-2 shrink-0 absolute left-1/2 -translate-x-1/2">
           <button
             type="button"
-            onClick={onSplitClip}
-            disabled={!hasSelection}
-            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${hasSelection
-                ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
-                : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
-              }`}
-            title={hasSelection ? 'Split clip at playhead (S)' : 'Select a clip to split'}
-            aria-label="Split selected clip at playhead"
+            onClick={() => onSeek(0)}
+            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+            title="Jump to Start (00:00)"
+            aria-label="Jump to start"
           >
-            <Scissors className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Primary Hero Play / Pause Pill Button */}
+          <button
+            type="button"
+            onClick={onTogglePlay}
+            className="h-7 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 active:scale-95 transition-all cursor-pointer font-semibold text-[11px] shrink-0"
+            title={isPlaying ? 'Pause Timeline (Space)' : 'Play Timeline (Space)'}
+            aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
+          >
+            {isPlaying ? (
+              <>
+                <Pause className="w-3 h-3 fill-current shrink-0" />
+                <span>Pause</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3 fill-current ml-0.5 shrink-0" />
+                <span>Play</span>
+              </>
+            )}
           </button>
 
           <button
             type="button"
-            onClick={onDuplicateClip}
-            disabled={!hasSelection}
-            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${hasSelection
-                ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
-                : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
-              }`}
-            title={hasSelection ? 'Duplicate clip' : 'Select a clip to duplicate'}
-            aria-label="Duplicate selected clip"
+            onClick={() => onSeek(displayDuration)}
+            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+            title={`Jump to End (${formatTime(displayDuration)})`}
+            aria-label="Jump to end"
           >
-            <Copy className="w-3.5 h-3.5" />
+            <SkipForward className="w-3.5 h-3.5" />
           </button>
 
-          <button
-            type="button"
-            onClick={onDeleteClip}
-            disabled={!hasSelection}
-            className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${hasSelection
-                ? 'border-red-900/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 hover:border-red-700/60 shadow-sm'
-                : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
-              }`}
-            title={hasSelection ? 'Delete clip' : 'Select a clip to delete'}
-            aria-label="Delete selected clip"
+          {/* Time Readout: Playhead / Media Duration */}
+          <div
+            className="h-7 whitespace-nowrap tabular-nums px-2.5 rounded-lg bg-black/60 border border-zinc-800/80 font-mono text-[11px] text-zinc-200 flex items-center gap-1.5 shadow-inner select-none shrink-0"
+            title={`Playhead: ${formatTime(currentTime)} | Duration: ${formatTime(displayDuration)}`}
+            aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+            <span className="text-white font-bold">{formatTime(currentTime)}</span>
+            <span className="text-zinc-600">/</span>
+            <span className="text-blue-400 font-medium">{formatTime(displayDuration)}</span>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'transitions' }));
-            }}
-            className="h-7 px-2 sm:px-2.5 inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-amber-500/40 hover:bg-zinc-800 shadow-sm transition-all cursor-pointer text-[10.5px] font-medium shrink-0"
-            title="Open Transitions Studio"
-            aria-label="Open Transitions Studio"
-          >
-            <Sparkles className="w-3 h-3 text-amber-400" />
-            <span className="hidden md:inline">Transitions</span>
-          </button>
+        {/* 3. Desktop Right: Add Track & Zoom Controls */}
+        <div className="workspace-timeline-toolbar-secondary flex items-center gap-2 shrink-0 min-w-0">
+          <div ref={anchorDesktopRef} className="relative shrink-0">
+            <button
+              type="button"
+              onClick={onToggleAddTrackMenu}
+              className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg text-[10.5px] font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+              title="Add a new track from media categories"
+              aria-label="Add track"
+              aria-expanded={addTrackMenuOpen}
+            >
+              <Plus className="w-3 h-3 text-zinc-400" />
+              <span>Add Track</span>
+            </button>
+          </div>
+
+          <div className="workspace-timeline-toolbar-divider h-3.5 w-px bg-zinc-800 mx-0.5 shrink-0" />
+
+          {/* Zoom Controls */}
+          <div className="flex items-center h-7 bg-zinc-900/90 border border-zinc-800 rounded-lg p-0.5 text-zinc-400 shrink-0">
+            <button
+              type="button"
+              onClick={onZoomFit}
+              disabled={zoomLevel === 1}
+              className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
+              title="Fit full project in timeline"
+              aria-label="Fit timeline to project"
+            >
+              <Maximize2 className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={onZoomOut}
+              disabled={zoomLevel <= MIN_TIMELINE_ZOOM}
+              className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
+              title="Zoom Out"
+              aria-label="Zoom out"
+            >
+              <ZoomOut className="w-3 h-3" />
+            </button>
+            <span className="whitespace-nowrap text-[9px] font-mono px-1.5 text-zinc-200 font-medium" aria-label={`Zoom level ${zoomLevel}x`}>
+              {zoomLevel}x
+            </span>
+            <button
+              type="button"
+              onClick={onZoomIn}
+              disabled={zoomLevel >= MAX_TIMELINE_ZOOM}
+              className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
+              title="Zoom In"
+              aria-label="Zoom in"
+            >
+              <ZoomIn className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── 2. Center: Dedicated Transport Controls & Timecode Display ── */}
-      <div className="workspace-timeline-toolbar-playback flex items-center gap-1 sm:gap-2 shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
-        <button
-          type="button"
-          onClick={() => onSeek(0)}
-          className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
-          title="Jump to Start (00:00)"
-          aria-label="Jump to start"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-        </button>
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* ── MOBILE / NARROW VIEWPORT (Clean 2-Row Responsive Layout) ─────── */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      <div className="flex md:hidden flex-col w-full gap-1.5 min-w-0">
+        {/* Mobile Row 1: Status & Transport Controls & Timecode */}
+        <div className="flex items-center justify-between w-full gap-1.5 min-w-0">
+          {/* Left: Heading & Track Count */}
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-[10px] font-bold tracking-wider uppercase flex items-center gap-1 text-zinc-200">
+              <Sliders className="w-3.5 h-3.5 text-blue-400" />
+            </span>
+            <span
+              className="text-[9px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-full"
+              title="Tracks containing content"
+            >
+              {activeTracksCount} {activeTracksCount === 1 ? 'Track' : 'Tracks'}
+            </span>
+          </div>
 
-        {/* Primary Hero Play / Pause Pill Button */}
-        <button
-          type="button"
-          onClick={onTogglePlay}
-          className="h-7 px-2.5 sm:px-3.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 active:scale-95 transition-all cursor-pointer font-semibold text-[11px] shrink-0"
-          title={isPlaying ? 'Pause Timeline (Space)' : 'Play Timeline (Space)'}
-          aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
-        >
-          {isPlaying ? (
-            <>
-              <Pause className="w-3 h-3 fill-current shrink-0" />
-              <span className="hidden sm:inline">Pause</span>
-            </>
-          ) : (
-            <>
-              <Play className="w-3 h-3 fill-current ml-0.5 shrink-0" />
-              <span className="hidden sm:inline">Play</span>
-            </>
-          )}
-        </button>
+          {/* Center: Playback Controls */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => onSeek(0)}
+              className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Jump to Start (00:00)"
+              aria-label="Jump to start"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
 
-        <button
-          type="button"
-          onClick={() => onSeek(displayDuration)}
-          className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
-          title={`Jump to End (${formatTime(displayDuration)})`}
-          aria-label="Jump to end"
-        >
-          <SkipForward className="w-3.5 h-3.5" />
-        </button>
+            <button
+              type="button"
+              onClick={onTogglePlay}
+              className="h-7 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center gap-1 shadow-md shadow-blue-600/25 active:scale-95 transition-all cursor-pointer font-semibold text-[11px]"
+              title={isPlaying ? 'Pause Timeline' : 'Play Timeline'}
+              aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
+            >
+              {isPlaying ? (
+                <>
+                  <Pause className="w-3 h-3 fill-current" />
+                  <span>Pause</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3 h-3 fill-current ml-0.5" />
+                  <span>Play</span>
+                </>
+              )}
+            </button>
 
-        {/* Time Readout: Playhead / Media Duration */}
-        <div
-          className="h-7 whitespace-nowrap tabular-nums px-2 sm:px-2.5 rounded-lg bg-black/60 border border-zinc-800/80 font-mono text-[10px] sm:text-[11px] text-zinc-200 flex items-center gap-1 sm:gap-1.5 shadow-inner select-none shrink-0"
-          title={`Playhead: ${formatTime(currentTime)} | Duration: ${formatTime(displayDuration)}`}
-          aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
-        >
-          <span className="text-white font-bold">{formatTime(currentTime)}</span>
-          <span className="text-zinc-600">/</span>
-          <span className="text-blue-400 font-medium">{formatTime(displayDuration)}</span>
+            <button
+              type="button"
+              onClick={() => onSeek(displayDuration)}
+              className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              title={`Jump to End (${formatTime(displayDuration)})`}
+              aria-label="Jump to end"
+            >
+              <SkipForward className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Right: Timecode Readout */}
+          <div
+            className="h-7 whitespace-nowrap tabular-nums px-2 rounded-lg bg-black/60 border border-zinc-800/80 font-mono text-[10px] text-zinc-200 flex items-center gap-1 shadow-inner select-none shrink-0"
+            title={`Playhead: ${formatTime(currentTime)} | Duration: ${formatTime(displayDuration)}`}
+            aria-label={`Current time ${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
+          >
+            <span className="text-white font-bold">{formatTime(currentTime)}</span>
+            <span className="text-zinc-600">/</span>
+            <span className="text-blue-400 font-medium">{formatTime(displayDuration)}</span>
+          </div>
+        </div>
+
+        {/* Mobile Row 2: Clip Tools & Track Management & Zoom */}
+        <div className="flex items-center justify-between w-full gap-1.5 pt-1 border-t border-zinc-800/40 min-w-0">
+          {/* Left: Action Tools (Split, Duplicate, Delete, Transitions) */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={onSplitClip}
+              disabled={!hasSelection}
+              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
+                hasSelection
+                  ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
+                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
+              }`}
+              title={hasSelection ? 'Split clip at playhead (S)' : 'Select a clip to split'}
+              aria-label="Split selected clip at playhead"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onDuplicateClip}
+              disabled={!hasSelection}
+              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
+                hasSelection
+                  ? 'border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700 hover:text-white shadow-sm'
+                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
+              }`}
+              title={hasSelection ? 'Duplicate clip' : 'Select a clip to duplicate'}
+              aria-label="Duplicate selected clip"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onDeleteClip}
+              disabled={!hasSelection}
+              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg border transition-all cursor-pointer shrink-0 ${
+                hasSelection
+                  ? 'border-red-900/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 hover:border-red-700/60 shadow-sm'
+                  : 'border-transparent text-zinc-600 opacity-40 cursor-not-allowed'
+              }`}
+              title={hasSelection ? 'Delete clip' : 'Select a clip to delete'}
+              aria-label="Delete selected clip"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'transitions' }));
+              }}
+              className="h-7 px-2 inline-flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-amber-500/40 hover:bg-zinc-800 shadow-sm transition-all cursor-pointer text-[10px] font-medium shrink-0"
+              title="Open Transitions Studio"
+              aria-label="Open Transitions Studio"
+            >
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>Transitions</span>
+            </button>
+          </div>
+
+          {/* Right: Add Track + Zoom Controls */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div ref={anchorMobileRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={onToggleAddTrackMenu}
+                className="h-7 flex items-center gap-1 px-2 rounded-lg text-[10px] font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+                title="Add a new track from media categories"
+                aria-label="Add track"
+                aria-expanded={addTrackMenuOpen}
+              >
+                <Plus className="w-3 h-3 text-zinc-400" />
+                <span>Track</span>
+              </button>
+            </div>
+
+            <div className="flex items-center h-7 bg-zinc-900/90 border border-zinc-800 rounded-lg p-0.5 text-zinc-400 shrink-0">
+              <button
+                type="button"
+                onClick={onZoomFit}
+                disabled={zoomLevel === 1}
+                className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
+                title="Fit full project in timeline"
+                aria-label="Fit timeline to project"
+              >
+                <Maximize2 className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={onZoomOut}
+                disabled={zoomLevel <= MIN_TIMELINE_ZOOM}
+                className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
+                title="Zoom Out"
+                aria-label="Zoom out"
+              >
+                <ZoomOut className="w-3 h-3" />
+              </button>
+              <span className="whitespace-nowrap text-[8.5px] font-mono px-1 text-zinc-200 font-medium" aria-label={`Zoom level ${zoomLevel}x`}>
+                {zoomLevel}x
+              </span>
+              <button
+                type="button"
+                onClick={onZoomIn}
+                disabled={zoomLevel >= MAX_TIMELINE_ZOOM}
+                className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
+                title="Zoom In"
+                aria-label="Zoom in"
+              >
+                <ZoomIn className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── 3. Right: Add Track, Snapping, Zoom Level Controls & Shortcuts ── */}
-      <div className="workspace-timeline-toolbar-secondary flex items-center gap-1 sm:gap-2 shrink-0 min-w-0">
-        {/* ── Add Track ── */}
-        <div ref={addTrackAnchorRef} className="relative shrink-0">
-          <button
-            type="button"
-            onClick={onToggleAddTrackMenu}
-            className="h-7 flex items-center justify-center gap-1 px-2 sm:px-2.5 rounded-lg text-[10.5px] font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
-            title="Add a new track from media categories"
-            aria-label="Add track"
-            aria-expanded={addTrackMenuOpen}
-          >
-            <Plus className="w-3 h-3 text-zinc-400" />
-            <span className="hidden sm:inline">Add Track</span>
-          </button>
-          <TimelineAddTrackMenu
-            isOpen={addTrackMenuOpen}
-            onClose={onCloseAddTrackMenu}
-            anchorRef={addTrackAnchorRef}
-            onEnableTrack={onEnableTrack}
-            enabledTracks={enabledTracks}
-          />
-        </div>
-
-        <div className="workspace-timeline-toolbar-divider h-3.5 w-px bg-zinc-800 mx-0.5 hidden sm:block shrink-0" />
-
-        {/* ── Zoom Controls & Shortcuts ── */}
-        <div className="flex items-center h-7 bg-zinc-900/90 border border-zinc-800 rounded-lg p-0.5 text-zinc-400 shrink-0">
-          <button
-            type="button"
-            onClick={onZoomFit}
-            disabled={zoomLevel === 1}
-            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
-            title="Fit full project in timeline"
-            aria-label="Fit timeline to project"
-          >
-            <Maximize2 className="w-3 h-3" />
-          </button>
-          <button
-            type="button"
-            onClick={onZoomOut}
-            disabled={zoomLevel <= MIN_TIMELINE_ZOOM}
-            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
-            title="Zoom Out"
-            aria-label="Zoom out"
-          >
-            <ZoomOut className="w-3 h-3" />
-          </button>
-          <span className="whitespace-nowrap text-[9px] font-mono px-1.5 text-zinc-200 font-medium" aria-label={`Zoom level ${zoomLevel}x`}>
-            {zoomLevel}x
-          </span>
-          <button
-            type="button"
-            onClick={onZoomIn}
-            disabled={zoomLevel >= MAX_TIMELINE_ZOOM}
-            className="h-6 w-6 inline-flex items-center justify-center rounded hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
-            title="Zoom In"
-            aria-label="Zoom in"
-          >
-            <ZoomIn className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
+      {/* Shared Portal Dropdown for Add Track (automatically binds to active viewport button) */}
+      <TimelineAddTrackMenu
+        isOpen={addTrackMenuOpen}
+        onClose={onCloseAddTrackMenu}
+        anchorRef={currentAnchorRef}
+        onEnableTrack={onEnableTrack}
+        enabledTracks={enabledTracks}
+      />
     </div>
   );
 };
