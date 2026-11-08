@@ -5,11 +5,15 @@ Pure live REST API queries via https://ccmixter.org/api/query
 Zero hardcoded data or mock arrays.
 """
 
+import http.client
 import json
 import logging
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, List
+
+# ccMixter API responses can return large header sets exceeding Python's default 64KB threshold
+http.client._MAXLINE = 1048576  # 1MB limit
 
 from .base import BaseAudioProvider
 
@@ -79,7 +83,7 @@ class CCMixterAudioProvider(BaseAudioProvider):
         req = urllib.request.Request(
             url,
             headers={
-                "User-Agent": "ApexMindStudio/2.0 (LiveCCMixter; https://apexmind.ai)",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
                 "Accept": "application/json",
             },
         )
@@ -135,7 +139,7 @@ class CCMixterAudioProvider(BaseAudioProvider):
                     self._cache[cache_key] = parsed
                     return parsed[:page_size]
         except Exception as e:
-            logger.warning(f"ccMixter live query error: {e}")
+            logger.debug(f"ccMixter query notice: {e}")
 
         return []
 

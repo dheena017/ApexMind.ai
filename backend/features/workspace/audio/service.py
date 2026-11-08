@@ -13,8 +13,12 @@ Central audio service coordinating modular live music & SFX API providers:
 Zero hardcoded audio arrays - 100% dynamic live stream.
 """
 
+import http.client
 import logging
 from typing import Any, Dict, List
+
+# Increase HTTP header line buffer from 64KB default to 1MB to prevent LineTooLong errors
+http.client._MAXLINE = 1048576
 
 from .metadata_cleaner import clean_track_title_and_artist
 from .providers import (
