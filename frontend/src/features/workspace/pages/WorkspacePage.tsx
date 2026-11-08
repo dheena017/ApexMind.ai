@@ -1559,11 +1559,15 @@ export default function WorkspacePage({
 
   useEffect(() => {
     const handleToggle = (e: Event) => {
-      const customEvent = e as CustomEvent<{ panel: 'left' | 'bottom' | 'right' }>;
+      const customEvent = e as CustomEvent<{ panel: 'left' | 'bottom' | 'right' | 'preview' }>;
       if (!customEvent.detail) return;
       if (customEvent.detail.panel === 'left') setShowLeftPane((prev) => !prev);
       if (customEvent.detail.panel === 'bottom') setShowTimeline((prev) => !prev);
       if (customEvent.detail.panel === 'right') setShowRightPane((prev) => !prev);
+      if (customEvent.detail.panel === 'preview') {
+        setShowLeftPane(false);
+        setShowTimeline(true);
+      }
     };
     const handleSwitchPane = (e: Event) => {
       const detail = (e as CustomEvent<any>).detail;
