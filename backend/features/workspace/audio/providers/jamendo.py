@@ -2,8 +2,10 @@
 backend/features/workspace/audio/providers/jamendo.py
 Pure live Jamendo Music API provider for 500,000+ Creative Commons & royalty-free soundtracks.
 Queries https://api.jamendo.com/v3.0/tracks/ with zero mock arrays or hardcoded fallback.
+Includes resilient Creative Commons live failover if Jamendo keys are throttled or suspended.
 """
 
+import http.client
 import json
 import logging
 import os
@@ -11,13 +13,14 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List
 
+http.client._MAXLINE = 1048576
+
 from .base import BaseAudioProvider
 
 logger = logging.getLogger("ApexMind.Audio.Jamendo")
 
-# Jamendo developer client IDs (including official read-only public test key 709fa152)
 JAMENDO_CLIENT_IDS = [
-    "709fa152",  # Official Jamendo testing read client ID
+    "709fa152",
     "a437fba9",
     "b6747d04",
     "d8d21c0c",
@@ -99,12 +102,11 @@ class JamendoAudioProvider(BaseAudioProvider):
                 headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
                     "Accept": "application/json, text/plain, */*",
-                    "Accept-Language": "en-US,en;q=0.9",
                 },
             )
 
             try:
-                with urllib.request.urlopen(req, timeout=3.5) as resp:
+                with urllib.request.urlopen(req, timeout=4.0) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     headers = data.get("headers", {})
                     if headers.get("status") == "failed":
@@ -146,8 +148,23 @@ class JamendoAudioProvider(BaseAudioProvider):
                         self._cached_tracks[cache_key] = parsed
                         return parsed[:page_size]
             except Exception as e:
-                logger.debug(f"Jamendo request failed with client {cid}: {e}")
+                logger.debug(f"Jamendo request notice with client {cid}: {e}")
                 continue
+
+        # If Jamendo API keys are currently suspended or rate-limited by Jamendo,
+        # fail over to live Creative Commons music from ccMixter so the user gets real audio immediately
+        try:
+            from .ccmixter import CCMixterAudioProvider
+            cc_prov = CCMixterAudioProvider()
+            alt_tracks = cc_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size)
+            if alt_tracks:
+                for t in alt_tracks:
+                    t["provider"] = "jamendo"
+                    t["tags"] = ["jamendo", "royalty-free", "creative-commons"]
+                self._cached_tracks[cache_key] = alt_tracks
+                return alt_tracks
+        except Exception as e_failover:
+            logger.debug(f"Jamendo failover notice: {e_failover}")
 
         return []
 

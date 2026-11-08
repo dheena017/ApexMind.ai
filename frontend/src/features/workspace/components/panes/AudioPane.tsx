@@ -111,6 +111,7 @@ export const SFX_CATEGORIES = [
 
 export const SOUNDTRACK_PROVIDERS = [
   { id: 'all', label: '✨ All Music Sources' },
+  { id: 'incompetech', label: '🎬 Incompetech (Kevin MacLeod)' },
   { id: 'jamendo', label: '🎵 Jamendo (500K+ CC)' },
   { id: 'ccmixter', label: '🎧 ccMixter (45K+ CC)' },
   { id: 'netlabels', label: '💿 Netlabels Open Music (70K+)' },
@@ -122,6 +123,7 @@ export const SOUNDTRACK_PROVIDERS = [
 export const SFX_PROVIDERS = [
   { id: 'all', label: '✨ All Sound FX' },
   { id: 'bbc_sfx', label: '🎙️ BBC Sound Effects (16K+)' },
+  { id: 'opengameart', label: '🎮 OpenGameArt SFX' },
   { id: 'open_sfx', label: '💥 Open SFX Commons' },
   { id: 'wikimedia', label: '🏛️ Wikimedia Commons SFX' },
   { id: 'internet_archive', label: '📚 Internet Archive SFX' },
@@ -131,6 +133,18 @@ export const AUDIO_PROVIDERS = SOUNDTRACK_PROVIDERS;
 
 function renderAudioProviderBadge(provider?: string) {
   switch (provider) {
+    case 'incompetech':
+      return (
+        <span className="text-[9px] font-mono-studio text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-1 rounded shrink-0">
+          Incompetech
+        </span>
+      );
+    case 'opengameart':
+      return (
+        <span className="text-[9px] font-mono-studio text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1 rounded shrink-0">
+          OpenGameArt
+        </span>
+      );
     case 'jamendo':
       return (
         <span className="text-[9px] font-mono-studio text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1 rounded shrink-0">
@@ -620,16 +634,33 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       previewAudioRef.current.pause();
       setPlayingTrackId(null);
     } else {
-      previewAudioRef.current.src = track.audioUrl;
-      previewAudioRef.current.volume = 0.8;
-      previewAudioRef.current
+      const audioEl = previewAudioRef.current;
+      const initialUrl = track.audioUrl;
+      audioEl.src = initialUrl;
+      audioEl.volume = 0.8;
+      audioEl
         .play()
         .then(() => {
           setPlayingTrackId(track.id);
         })
-        .catch((err) => {
-          setPlayingTrackId(null);
-          toast.error(`Track stream unavailable: ${err?.message || 'Unsupported audio codec'}`);
+        .catch(() => {
+          // Automatic resilient fallback to backend stream resolver if direct link 404s
+          const fallbackUrl = `/api/media/audio-stream?id=${encodeURIComponent(track.id)}&url=${encodeURIComponent(initialUrl)}`;
+          if (audioEl.src !== fallbackUrl) {
+            audioEl.src = fallbackUrl;
+            audioEl
+              .play()
+              .then(() => {
+                setPlayingTrackId(track.id);
+              })
+              .catch((err2) => {
+                setPlayingTrackId(null);
+                toast.error(`Track stream unavailable: ${err2?.message || 'Unsupported audio codec'}`);
+              });
+          } else {
+            setPlayingTrackId(null);
+            toast.error('Track stream unavailable: No supported audio source');
+          }
         });
     }
   };
@@ -642,16 +673,32 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       sfxAudioRef.current.pause();
       setPlayingSfxId(null);
     } else {
-      sfxAudioRef.current.src = sfx.audioUrl;
-      sfxAudioRef.current.volume = 0.85;
-      sfxAudioRef.current
+      const sfxEl = sfxAudioRef.current;
+      const initialUrl = sfx.audioUrl;
+      sfxEl.src = initialUrl;
+      sfxEl.volume = 0.85;
+      sfxEl
         .play()
         .then(() => {
           setPlayingSfxId(sfx.id);
         })
-        .catch((err) => {
-          setPlayingSfxId(null);
-          toast.error(`Sound effect unavailable: ${err?.message || 'Unsupported format'}`);
+        .catch(() => {
+          const fallbackUrl = `/api/media/audio-stream?id=${encodeURIComponent(sfx.id)}&url=${encodeURIComponent(initialUrl)}`;
+          if (sfxEl.src !== fallbackUrl) {
+            sfxEl.src = fallbackUrl;
+            sfxEl
+              .play()
+              .then(() => {
+                setPlayingSfxId(sfx.id);
+              })
+              .catch((err2) => {
+                setPlayingSfxId(null);
+                toast.error(`Sound effect unavailable: ${err2?.message || 'Unsupported format'}`);
+              });
+          } else {
+            setPlayingSfxId(null);
+            toast.error('Sound effect unavailable: No supported source');
+          }
         });
     }
   };

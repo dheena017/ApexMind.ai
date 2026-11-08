@@ -3,12 +3,14 @@ backend/features/workspace/audio/service.py
 Central audio service coordinating modular live music & SFX API providers:
 - Jamendo Music (500,000+ live Creative Commons & royalty-free tracks)
 - ccMixter Music (45,000+ live Creative Commons remixes & ambient beats)
+- Incompetech / Kevin MacLeod (4,000+ legendary CC-BY film & video tracks)
 - Netlabels Open Music (70,000+ live indie netlabel releases)
 - Free Music Archive (150,000+ live indie and ambient creator tracks)
 - Wikimedia Commons Audio (120,000+ live public domain tracks and SFX)
 - Internet Archive Audio (14M+ live open audio recordings and SFX)
 - BBC Sound Effects (16,000+ broadcast sound effects)
 - Open SFX Commons (65,000+ live transitions, impacts, risers, and hits)
+- OpenGameArt SFX (35,000+ live gaming, arcade, and UI sound effects)
 
 Zero hardcoded audio arrays - 100% dynamic live stream.
 """
@@ -26,9 +28,11 @@ from .providers import (
     BBCSoundEffectsProvider,
     CCMixterAudioProvider,
     FMAAudioProvider,
+    IncompetechAudioProvider,
     InternetArchiveAudioProvider,
     JamendoAudioProvider,
     NetlabelsAudioProvider,
+    OpenGameArtProvider,
     OpenSFXProvider,
     WikimediaAudioProvider,
 )
@@ -38,12 +42,14 @@ logger = logging.getLogger("ApexMind.Workspace.AudioService")
 _PROVIDERS: Dict[str, BaseAudioProvider] = {
     "jamendo": JamendoAudioProvider(),
     "ccmixter": CCMixterAudioProvider(),
+    "incompetech": IncompetechAudioProvider(),
     "netlabels": NetlabelsAudioProvider(),
     "fma": FMAAudioProvider(),
     "wikimedia": WikimediaAudioProvider(),
     "internet_archive": InternetArchiveAudioProvider(),
     "bbc_sfx": BBCSoundEffectsProvider(),
     "open_sfx": OpenSFXProvider(),
+    "opengameart": OpenGameArtProvider(),
 }
 
 
@@ -64,8 +70,7 @@ def search_soundtracks(
 ) -> Dict[str, Any]:
     """
     Search background soundtracks across pure live API providers.
-    Supports single provider search ('jamendo', 'ccmixter', 'netlabels', 'fma', 'wikimedia', 'internet_archive')
-    or aggregated multi-provider search ('all').
+    Supports single provider search or aggregated multi-provider search ('all').
     """
     target_prov = provider.strip().lower()
 
@@ -74,11 +79,11 @@ def search_soundtracks(
         items = prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size)
         total = prov.get_total_tracks(query=query, genre=genre)
 
-        # Resilient live failover: if the specific provider returns 0 tracks (e.g. API suspended or Cloudflare block),
+        # Resilient live failover: if the specific provider returns 0 tracks (e.g. API suspended or throttled),
         # automatically augment with active live Creative Commons providers so the user NEVER gets an empty panel
         if not items:
             logger.info(f"Audio provider '{target_prov}' returned 0 live streams; gracefully augmenting with live open audio.")
-            soundtrack_sources = ["ccmixter", "netlabels", "fma", "wikimedia", "internet_archive"]
+            soundtrack_sources = ["incompetech", "ccmixter", "wikimedia", "netlabels", "fma", "internet_archive"]
             for alt_id in soundtrack_sources:
                 if alt_id != target_prov and alt_id in _PROVIDERS:
                     more = _PROVIDERS[alt_id].search_tracks(query=query, genre=genre, page=page, page_size=page_size)
@@ -89,46 +94,53 @@ def search_soundtracks(
     else:
         # Aggregated live search across soundtrack providers
         j_prov = _PROVIDERS["jamendo"]
+        inc_prov = _PROVIDERS["incompetech"]
         cc_prov = _PROVIDERS["ccmixter"]
+        wm_prov = _PROVIDERS["wikimedia"]
         nl_prov = _PROVIDERS["netlabels"]
         fma_prov = _PROVIDERS["fma"]
-        wm_prov = _PROVIDERS["wikimedia"]
         ia_prov = _PROVIDERS["internet_archive"]
 
         total = (
             j_prov.get_total_tracks(query, genre)
+            + inc_prov.get_total_tracks(query, genre)
             + cc_prov.get_total_tracks(query, genre)
+            + wm_prov.get_total_tracks(query, genre)
             + nl_prov.get_total_tracks(query, genre)
             + fma_prov.get_total_tracks(query, genre)
-            + wm_prov.get_total_tracks(query, genre)
             + ia_prov.get_total_tracks(query, genre)
         )
 
         items: List[Dict[str, Any]] = []
 
-        # 1. Primary live search on Jamendo
-        j_tracks = j_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size)
-        items.extend(j_tracks)
+        # 1. Primary Incompetech / Kevin MacLeod creator library
+        inc_tracks = inc_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size)
+        items.extend(inc_tracks)
 
         # 2. Interleave ccMixter CC tracks
         if len(items) < page_size:
             cc_tracks = cc_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size - len(items))
             items.extend(cc_tracks)
 
-        # 3. Interleave Netlabels
+        # 3. Interleave Wikimedia Commons
+        if len(items) < page_size:
+            wm_tracks = wm_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size - len(items))
+            items.extend(wm_tracks)
+
+        # 4. Interleave Netlabels
         if len(items) < page_size:
             nl_tracks = nl_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size - len(items))
             items.extend(nl_tracks)
 
-        # 4. Interleave Free Music Archive
+        # 5. Interleave Free Music Archive
         if len(items) < page_size:
             fma_tracks = fma_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size - len(items))
             items.extend(fma_tracks)
 
-        # 5. Interleave Wikimedia & Internet Archive
+        # 6. Interleave Jamendo & Internet Archive
         if len(items) < page_size:
-            wm_tracks = wm_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size - len(items))
-            items.extend(wm_tracks)
+            j_tracks = j_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size - len(items))
+            items.extend(j_tracks)
 
         if len(items) < page_size:
             ia_tracks = ia_prov.search_tracks(query=query, genre=genre, page=page, page_size=page_size - len(items))
@@ -172,8 +184,8 @@ def search_sound_effects(
     page_size: int = 24,
 ) -> Dict[str, Any]:
     """
-    Search sound effects (whooshes, impacts, tension risers) across pure live SFX providers.
-    Supports single provider search ('bbc_sfx', 'open_sfx', 'wikimedia', 'internet_archive')
+    Search sound effects across pure live SFX providers.
+    Supports single provider search ('bbc_sfx', 'open_sfx', 'opengameart', 'wikimedia', 'internet_archive')
     or aggregated search ('all').
     """
     target_prov = provider.strip().lower()
@@ -185,7 +197,7 @@ def search_sound_effects(
 
         # Resilient live failover for SFX providers
         if not items:
-            sfx_sources = ["bbc_sfx", "open_sfx", "wikimedia", "internet_archive"]
+            sfx_sources = ["bbc_sfx", "open_sfx", "opengameart", "wikimedia", "internet_archive"]
             for alt_id in sfx_sources:
                 if alt_id != target_prov and alt_id in _PROVIDERS:
                     more = _PROVIDERS[alt_id].search_sfx(query=query, category=category, page=page, page_size=page_size)
@@ -196,12 +208,14 @@ def search_sound_effects(
     else:
         bbc_prov = _PROVIDERS["bbc_sfx"]
         sfx_prov = _PROVIDERS["open_sfx"]
+        oga_prov = _PROVIDERS["opengameart"]
         wm_prov = _PROVIDERS["wikimedia"]
         ia_prov = _PROVIDERS["internet_archive"]
 
         total = (
             bbc_prov.get_total_sfx(query, category)
             + sfx_prov.get_total_sfx(query, category)
+            + oga_prov.get_total_sfx(query, category)
             + wm_prov.get_total_sfx(query, category)
             + ia_prov.get_total_sfx(query, category)
         )
@@ -217,12 +231,17 @@ def search_sound_effects(
             sfx_items = sfx_prov.search_sfx(query=query, category=category, page=page, page_size=page_size - len(items))
             items.extend(sfx_items)
 
-        # 3. Augment with Wikimedia SFX
+        # 3. Augment with OpenGameArt SFX
+        if len(items) < page_size:
+            oga_items = oga_prov.search_sfx(query=query, category=category, page=page, page_size=page_size - len(items))
+            items.extend(oga_items)
+
+        # 4. Augment with Wikimedia SFX
         if len(items) < page_size:
             wm_items = wm_prov.search_sfx(query=query, category=category, page=page, page_size=page_size - len(items))
             items.extend(wm_items)
 
-        # 4. Augment with Internet Archive SFX
+        # 5. Augment with Internet Archive SFX
         if len(items) < page_size:
             ia_items = ia_prov.search_sfx(query=query, category=category, page=page, page_size=page_size - len(items))
             items.extend(ia_items)

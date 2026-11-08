@@ -59,7 +59,12 @@ class WikimediaAudioProvider(BaseAudioProvider):
                     audio_url = imageinfo.get("url", "")
                     mime = imageinfo.get("mime", "")
 
-                    if not audio_url or not ("audio" in mime or audio_url.endswith((".mp3", ".ogg", ".wav", ".opus", ".m4a"))):
+                    clean_path = audio_url.split("?")[0].lower()
+                    if not audio_url or not (
+                        "audio" in mime
+                        or "ogg" in mime
+                        or clean_path.endswith((".mp3", ".ogg", ".oga", ".wav", ".opus", ".m4a", ".flac"))
+                    ):
                         continue
 
                     # Direct HTTPS streaming URL

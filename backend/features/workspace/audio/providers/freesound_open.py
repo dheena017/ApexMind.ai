@@ -4,11 +4,14 @@ Live Open Sound Effects (SFX) provider querying open creative commons sound desi
 Zero hardcoded audio arrays.
 """
 
+import http.client
 import json
 import logging
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, List
+
+http.client._MAXLINE = 1048576
 
 from .base import BaseAudioProvider
 
@@ -43,35 +46,35 @@ class OpenSFXProvider(BaseAudioProvider):
     ) -> List[Dict[str, Any]]:
         clean_q = (query or "").strip().replace("#", "").strip()
         cat_search_terms = {
-            "all": "whoosh impact sound effect",
-            "impact": "impact boom hit slam crash strike",
-            "transition": "whoosh swoosh transition swish sweep",
-            "tension": "riser tension buildup suspense drone",
-            "scifi": "laser sci-fi cyber robot glitch hologram",
-            "ui": "click button pop chime beep notification",
-            "gaming": "8bit arcade retro coin game jump bonus",
-            "foley": "footstep door walk glass handling paper",
-            "vehicle": "engine car drift vehicle motor rev",
-            "nature": "rain thunder wind storm river water ambient",
-            "horror": "horror scream creak scary monster ghost dark",
-            "cartoon": "cartoon boing whistle comic funny slide",
-            "cinematic": "cinematic braam dramatic horn brass trailer",
-            "bassdrop": "bass sub drop rumble 808 subdrop",
-            "action": "action fight punch kick combat strike",
+            "all": "whoosh OR impact OR transition",
+            "impact": "impact OR boom OR slam OR crash",
+            "transition": "whoosh OR swoosh OR transition OR swish",
+            "tension": "riser OR tension OR suspense OR drone",
+            "scifi": "laser OR scifi OR cyber OR glitch",
+            "ui": "click OR button OR pop OR chime OR bell",
+            "gaming": "arcade OR 8bit OR coin OR jump OR retro",
+            "foley": "footstep OR door OR walk OR glass",
+            "vehicle": "engine OR car OR drift OR motor",
+            "nature": "rain OR thunder OR wind OR storm",
+            "horror": "horror OR scream OR creak OR scary",
+            "cartoon": "cartoon OR boing OR whistle OR comic",
+            "cinematic": "cinematic OR braam OR trailer OR horn",
+            "bassdrop": "bass OR subdrop OR 808 OR rumble",
+            "action": "action OR punch OR fight OR kick",
         }
-        term = clean_q or cat_search_terms.get(category.lower(), "sound effect")
+        term = clean_q or cat_search_terms.get(category.lower(), "whoosh OR impact")
 
         cache_key = f"opensfx_{term}_{page}"
         if cache_key in self._cache_sfx:
             return self._cache_sfx[cache_key][:page_size]
 
-        # Query Wikimedia Commons open sound effect repository
+        # Query Wikimedia Commons open audio repository
         params = {
             "action": "query",
             "format": "json",
             "generator": "search",
             "gsrnamespace": "6",
-            "gsrsearch": f"filetype:audio {term} sound effect",
+            "gsrsearch": f"filetype:audio {term}",
             "gsrlimit": str(min(page_size * 2, 40)),
             "prop": "imageinfo",
             "iiprop": "url|mime|size",
@@ -81,13 +84,13 @@ class OpenSFXProvider(BaseAudioProvider):
         req = urllib.request.Request(
             url,
             headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+                "User-Agent": "ApexMindStudio/2.0 (LiveOpenSFX; https://apexmind.ai)",
                 "Accept": "application/json",
             },
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=6.0) as resp:
+            with urllib.request.urlopen(req, timeout=7.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 pages = data.get("query", {}).get("pages", {})
                 parsed: List[Dict[str, Any]] = []
@@ -97,72 +100,56 @@ class OpenSFXProvider(BaseAudioProvider):
                     title_clean = title_raw.rsplit(".", 1)[0].replace("_", " ").strip()
                     imageinfo = page.get("imageinfo", [{}])[0]
                     audio_url = imageinfo.get("url", "")
+                    mime = imageinfo.get("mime", "")
 
-                    if not audio_url or not audio_url.startswith("http"):
+                    clean_path = audio_url.split("?")[0].lower()
+                    if not audio_url or not (
+                        "audio" in mime
+                        or "ogg" in mime
+                        or clean_path.endswith((".mp3", ".ogg", ".oga", ".wav", ".opus", ".m4a", ".flac"))
+                    ):
                         continue
 
+                    if audio_url.startswith("http://"):
+                        audio_url = "https://" + audio_url[7:]
+
                     title_lower = title_clean.lower()
-                    if any(w in title_lower for w in ["whoosh", "swoosh", "transition", "swish"]):
+                    if any(w in title_lower for w in ["whoosh", "swoosh", "transition"]):
                         cat = "Transition"
-                        dur = 1.0
-                    elif any(w in title_lower for w in ["impact", "hit", "boom", "slam", "crash"]):
+                    elif any(w in title_lower for w in ["impact", "hit", "boom", "crash", "strike"]):
                         cat = "Impact"
-                        dur = 1.8
-                    elif any(w in title_lower for w in ["riser", "tension", "buildup", "suspense"]):
+                    elif any(w in title_lower for w in ["riser", "tension", "creak", "alarm"]):
                         cat = "Tension"
-                        dur = 2.8
-                    elif any(w in title_lower for w in ["laser", "scifi", "sci-fi", "cyber", "robot"]):
+                    elif any(w in title_lower for w in ["laser", "plasma", "cyber"]):
                         cat = "Sci-Fi"
-                        dur = 1.4
-                    elif any(w in title_lower for w in ["click", "pop", "button", "chime", "beep"]):
+                    elif any(w in title_lower for w in ["click", "button", "pop", "ui"]):
                         cat = "UI & Tech"
-                        dur = 0.5
-                    elif any(w in title_lower for w in ["8bit", "arcade", "game", "coin"]):
-                        cat = "Gaming"
-                        dur = 1.0
-                    elif any(w in title_lower for w in ["footstep", "door", "walk", "foley"]):
-                        cat = "Foley"
-                        dur = 1.8
-                    elif any(w in title_lower for w in ["car", "engine", "drift", "motor"]):
-                        cat = "Vehicles"
-                        dur = 2.4
-                    elif any(w in title_lower for w in ["rain", "thunder", "wind", "nature"]):
-                        cat = "Nature"
-                        dur = 3.0
-                    elif any(w in title_lower for w in ["horror", "scream", "creak", "ghost"]):
-                        cat = "Horror"
-                        dur = 2.2
-                    elif any(w in title_lower for w in ["cartoon", "boing", "whistle", "funny"]):
-                        cat = "Cartoon"
-                        dur = 1.2
-                    elif any(w in title_lower for w in ["braam", "cinematic", "trailer"]):
-                        cat = "Cinematic"
-                        dur = 3.0
-                    elif any(w in title_lower for w in ["sub", "808", "bass", "drop"]):
-                        cat = "Bass Drop"
-                        dur = 1.5
                     else:
-                        cat = "Action"
-                        dur = 1.5
+                        cat = category.title() if category != "all" else "Action"
 
                     parsed.append({
-                        "id": f"opensfx-{page_id}",
+                        "id": f"sfx-{page_id}",
                         "title": title_clean[:45],
+                        "name": title_clean[:45],
                         "category": cat,
-                        "duration": dur,
-                        "durationFormatted": f"{dur}s",
+                        "duration": 1.5,
+                        "durationFormatted": "1.5s",
                         "audioUrl": audio_url,
                         "provider": "open_sfx",
                         "type": "sfx",
-                        "tags": ["open-sfx", "cc0", cat.lower()],
+                        "tags": ["sfx", cat.lower(), "creative-commons"],
                     })
 
-                self._cache_sfx[cache_key] = parsed
-                return parsed[:page_size]
+                if parsed:
+                    self._cache_sfx[cache_key] = parsed
+                    return parsed[:page_size]
         except Exception as e:
-            logger.warning(f"Open SFX query error: {e}")
-            return []
+            logger.warning(f"OpenSFX query error: {e}")
+
+        return []
+
+    def get_total_tracks(self, query: str = "", genre: str = "all") -> int:
+        return 0
 
     def get_total_sfx(self, query: str = "", category: str = "all") -> int:
         return 65000
-
