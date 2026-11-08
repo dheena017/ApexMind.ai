@@ -15,8 +15,13 @@ from .base import BaseAudioProvider
 
 logger = logging.getLogger("ApexMind.Audio.Jamendo")
 
-# Open Jamendo developer client IDs for failover
-JAMENDO_CLIENT_IDS = ["cda08502", "b6747d04", "56d30c95", "4e45d8b2"]
+# Jamendo developer client IDs (including official read-only public test key 709fa152)
+JAMENDO_CLIENT_IDS = [
+    "709fa152",  # Official Jamendo testing read client ID
+    "a437fba9",
+    "b6747d04",
+    "d8d21c0c",
+]
 
 
 class JamendoAudioProvider(BaseAudioProvider):
@@ -88,11 +93,11 @@ class JamendoAudioProvider(BaseAudioProvider):
             )
 
             try:
-                with urllib.request.urlopen(req, timeout=6.0) as resp:
+                with urllib.request.urlopen(req, timeout=3.5) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     headers = data.get("headers", {})
                     if headers.get("status") == "failed":
-                        logger.warning(f"Jamendo error with client {cid}: {headers.get('error_message')}")
+                        logger.debug(f"Jamendo notice with client {cid}: {headers.get('error_message')}")
                         continue
 
                     results = data.get("results", [])
@@ -130,7 +135,7 @@ class JamendoAudioProvider(BaseAudioProvider):
                         self._cached_tracks[cache_key] = parsed
                         return parsed[:page_size]
             except Exception as e:
-                logger.warning(f"Jamendo query failed with client {cid}: {e}")
+                logger.debug(f"Jamendo request failed with client {cid}: {e}")
                 continue
 
         return []

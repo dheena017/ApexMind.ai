@@ -33,15 +33,19 @@ class NetlabelsAudioProvider(BaseAudioProvider):
         page_size: int = 24,
     ) -> List[Dict[str, Any]]:
         clean_q = (query or "").strip().replace("#", "").strip()
-        genre_val = genre.lower() if genre != "all" else "electronic"
-        search_term = clean_q or genre_val
+        genre_key = (genre or "all").lower()
 
-        cache_key = f"netlabels_{search_term}_{page}"
+        cache_key = f"netlabels_{clean_q}_{genre_key}_{page}"
         if cache_key in self._cached_tracks:
             return self._cached_tracks[cache_key][:page_size]
 
-        # Fast and robust query targeting verified Netlabels audio with VBR MP3 streams
-        lucene_query = f'collection:(netlabels) AND format:("VBR MP3") AND ({search_term})'
+        # Fast and robust query targeting verified Netlabels audio with MP3 streams
+        if clean_q:
+            lucene_query = f'collection:(netlabels) AND format:("VBR MP3" OR "MP3") AND ({clean_q})'
+        elif genre_key != "all":
+            lucene_query = f'collection:(netlabels) AND format:("VBR MP3" OR "MP3") AND ({genre_key})'
+        else:
+            lucene_query = 'collection:(netlabels) AND format:("VBR MP3" OR "MP3")'
         params = {
             "q": lucene_query,
             "fl[]": ["identifier", "title", "creator", "description", "downloads", "publicdate"],

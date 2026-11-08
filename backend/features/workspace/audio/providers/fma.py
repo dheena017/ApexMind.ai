@@ -33,15 +33,20 @@ class FMAAudioProvider(BaseAudioProvider):
         page_size: int = 24,
     ) -> List[Dict[str, Any]]:
         clean_q = (query or "").strip().replace("#", "").strip()
-        genre_val = genre.lower() if genre != "all" else "soundtrack"
-        search_term = clean_q or genre_val
+        genre_key = (genre or "all").lower()
 
-        cache_key = f"fma_{search_term}_{page}"
+        cache_key = f"fma_{clean_q}_{genre_key}_{page}"
         if cache_key in self._cached_tracks:
             return self._cached_tracks[cache_key][:page_size]
 
         # Fast and robust query targeting verified Free Music Archive audio on Archive.org
-        lucene_query = f'mediatype:audio AND (collection:freemusicarchive OR collection:free_music_archive OR collection:netlabels OR "Free Music Archive") AND format:("VBR MP3") AND ({search_term})'
+        base_collections = "(collection:freemusicarchive OR collection:free_music_archive OR collection:audio_music OR collection:netlabels)"
+        if clean_q:
+            lucene_query = f'mediatype:audio AND {base_collections} AND format:("VBR MP3" OR "MP3") AND ({clean_q})'
+        elif genre_key != "all":
+            lucene_query = f'mediatype:audio AND {base_collections} AND format:("VBR MP3" OR "MP3") AND ({genre_key})'
+        else:
+            lucene_query = f'mediatype:audio AND {base_collections} AND format:("VBR MP3" OR "MP3")'
         params = {
             "q": lucene_query,
             "fl[]": ["identifier", "title", "creator", "description", "downloads", "publicdate"],

@@ -37,7 +37,6 @@ class CCMixterAudioProvider(BaseAudioProvider):
         genre_key = (genre or "all").lower()
 
         genre_map = {
-            "all": "ambient",
             "cinematic": "soundtrack",
             "motivational": "pop",
             "ambient": "ambient",
@@ -47,7 +46,7 @@ class CCMixterAudioProvider(BaseAudioProvider):
             "piano": "piano",
             "electronic": "electronic",
         }
-        tag = genre_map.get(genre_key, "soundtrack")
+        tag = genre_map.get(genre_key, "")
 
         cache_key = f"{clean_q}_{genre_key}_{page}"
         if cache_key in self._cache:
@@ -59,8 +58,9 @@ class CCMixterAudioProvider(BaseAudioProvider):
             "limit": str(min(page_size * 2, 40)),
             "offset": str(offset),
             "sort": "rank",
-            "tags": tag,
         }
+        if tag:
+            params["tags"] = tag
 
         if clean_q:
             params["search"] = clean_q

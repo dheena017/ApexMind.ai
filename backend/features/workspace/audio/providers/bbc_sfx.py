@@ -44,14 +44,18 @@ class BBCSoundEffectsProvider(BaseAudioProvider):
     ) -> List[Dict[str, Any]]:
         clean_q = (query or "").strip().replace("#", "").strip()
         cat_key = category.lower() if category != "all" else ""
-        search_term = clean_q or cat_key or "effect"
 
-        cache_key = f"bbc_{search_term}_{page}"
+        cache_key = f"bbc_{clean_q}_{cat_key}_{page}"
         if cache_key in self._cache_sfx:
             return self._cache_sfx[cache_key][:page_size]
 
         # Query live BBC Sound Effects collection on Archive.org
-        lucene_query = f'collection:(bbc_sound_effects) AND ({search_term})'
+        if clean_q:
+            lucene_query = f'collection:(bbc_sound_effects) AND ({clean_q})'
+        elif cat_key:
+            lucene_query = f'collection:(bbc_sound_effects) AND ({cat_key})'
+        else:
+            lucene_query = 'collection:(bbc_sound_effects)'
         params = {
             "q": lucene_query,
             "fl[]": ["identifier", "title", "description", "downloads", "duration"],
