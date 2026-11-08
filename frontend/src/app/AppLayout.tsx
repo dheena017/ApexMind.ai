@@ -361,70 +361,73 @@ export default function AppLayout({
             {/* Mobile Studio Tools Bottom Bar (< 768px / md:hidden) */}
             <nav
               aria-label="Studio tools bottom bar"
-              className="flex md:hidden w-full h-13 bg-[#111114]/98 border-t border-[#222228] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-center gap-1 px-2 shrink-0 z-30 select-none font-sans-studio backdrop-blur-xl touch-pan-x"
+              className="flex md:hidden w-full h-13 bg-[#0A0A0A] border-t border-[#222228] items-center px-2 shrink-0 z-30 select-none font-sans-studio backdrop-blur-xl relative"
             >
-              {/* Studio Preview Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLeftPaneMobile(false);
-                  window.dispatchEvent(
-                    new CustomEvent('workspace:toggle-panel', { detail: { panel: 'preview' } })
+              {/* Pinned Left: Studio Preview Button (Stays visible while scrolling tools) */}
+              <div className="shrink-0 flex items-center pr-1.5 bg-[#0A0A0A] z-10 border-r border-[#222228]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLeftPaneMobile(false);
+                    window.dispatchEvent(
+                      new CustomEvent('workspace:toggle-panel', { detail: { panel: 'preview' } })
+                    );
+                  }}
+                  aria-label="Studio Preview"
+                  title="Studio Preview & Timeline"
+                  aria-current={!showLeftPaneMobile ? 'page' : undefined}
+                  className={`flex flex-col items-center justify-center min-w-[60px] h-10 px-2 py-0.5 rounded-xl transition-all cursor-pointer gap-0.5 ${
+                    !showLeftPaneMobile
+                      ? 'bg-[#18181C] border border-blue-500/60 text-blue-400 font-semibold shadow-xs'
+                      : 'bg-[#121214] border border-[#222226] text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <Film className={`h-4 w-4 shrink-0 ${!showLeftPaneMobile ? 'text-blue-400' : 'text-zinc-400'}`} />
+                  <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap font-medium">
+                    Preview
+                  </span>
+                </button>
+              </div>
+
+              {/* Scrolling Tools Container (Uses pure website dark theme) */}
+              <div className="flex-1 flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pl-1.5 touch-pan-x">
+                {WORKSPACE_SIDEBAR_ITEMS.map((item) => {
+                  const IconComp = item.icon;
+                  const isActive = showLeftPaneMobile && (item.isScriptGroup
+                    ? activeWorkspacePane === 'script' || activeWorkspacePane === 'prompt' || activeWorkspacePane === 'editor'
+                    : item.id === 'text'
+                    ? activeWorkspacePane === 'text' || activeWorkspacePane === 'captions'
+                    : item.id === 'youtube'
+                    ? activeWorkspacePane === 'youtube' || activeWorkspacePane === 'publish'
+                    : activeWorkspacePane === item.id);
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setShowLeftPaneMobile(true);
+                        onWorkspacePaneChange(item.id);
+                        window.dispatchEvent(
+                          new CustomEvent('workspace:switch-pane', { detail: { pane: item.id } })
+                        );
+                      }}
+                      aria-label={item.label}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`flex flex-col items-center justify-center min-w-[56px] h-10 px-1.5 py-0.5 rounded-xl transition-all cursor-pointer shrink-0 gap-0.5 ${
+                        isActive
+                          ? 'bg-[#18181C] border border-blue-500/60 text-blue-400 font-semibold shadow-xs'
+                          : 'border border-transparent text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <IconComp className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-400' : 'text-zinc-400'}`} />
+                      <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap">
+                        {item.shortLabel}
+                      </span>
+                    </button>
                   );
-                }}
-                aria-label="Studio Preview"
-                title="Studio Preview & Timeline"
-                aria-current={!showLeftPaneMobile ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center min-w-[62px] h-11 px-2 py-1 rounded-xl transition-all cursor-pointer shrink-0 gap-0.5 ${
-                  !showLeftPaneMobile
-                    ? 'bg-blue-600/15 border border-blue-500/40 text-blue-400 font-semibold shadow-xs'
-                    : 'border border-zinc-800/80 bg-zinc-900/60 text-zinc-300 hover:text-white hover:bg-white/[0.04]'
-                }`}
-              >
-                <Film className={`h-4 w-4 shrink-0 ${!showLeftPaneMobile ? 'text-blue-400 scale-105' : 'text-zinc-400'}`} />
-                <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap font-medium">
-                  Preview
-                </span>
-              </button>
-
-              <div className="h-5 w-px bg-zinc-800/80 mx-0.5 shrink-0" />
-
-              {WORKSPACE_SIDEBAR_ITEMS.map((item) => {
-                const IconComp = item.icon;
-                const isActive = showLeftPaneMobile && (item.isScriptGroup
-                  ? activeWorkspacePane === 'script' || activeWorkspacePane === 'prompt' || activeWorkspacePane === 'editor'
-                  : item.id === 'text'
-                  ? activeWorkspacePane === 'text' || activeWorkspacePane === 'captions'
-                  : item.id === 'youtube'
-                  ? activeWorkspacePane === 'youtube' || activeWorkspacePane === 'publish'
-                  : activeWorkspacePane === item.id);
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setShowLeftPaneMobile(true);
-                      onWorkspacePaneChange(item.id);
-                      window.dispatchEvent(
-                        new CustomEvent('workspace:switch-pane', { detail: { pane: item.id } })
-                      );
-                    }}
-                    aria-label={item.label}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={`flex flex-col items-center justify-center min-w-[58px] h-11 px-1.5 py-1 rounded-xl transition-all cursor-pointer shrink-0 gap-0.5 ${
-                      isActive
-                        ? 'bg-blue-600/15 border border-blue-500/40 text-blue-400 font-semibold shadow-xs'
-                        : 'border border-transparent text-zinc-400 hover:text-white hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <IconComp className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-400 scale-105' : 'text-zinc-400'}`} />
-                    <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap">
-                      {item.shortLabel}
-                    </span>
-                  </button>
-                );
-              })}
+                })}
+              </div>
             </nav>
           </div>
         </div>
