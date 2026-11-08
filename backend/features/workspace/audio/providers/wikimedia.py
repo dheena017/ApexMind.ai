@@ -86,8 +86,12 @@ class WikimediaAudioProvider(BaseAudioProvider):
         page_size: int = 24,
     ) -> List[Dict[str, Any]]:
         clean_q = (query or "").strip().replace("#", "").strip()
-        search_filter = clean_q or (genre if genre != "all" else "cinematic music soundtrack")
-        search_term = f"filetype:audio {search_filter}"
+        if clean_q:
+            search_term = f"filetype:audio incategory:Audio_files_of_music {clean_q}"
+        elif genre and genre != "all":
+            search_term = f"filetype:audio incategory:Audio_files_of_music {genre}"
+        else:
+            search_term = "filetype:audio incategory:Audio_files_of_music (soundtrack OR orchestral OR ambient OR piano OR cinematic)"
 
         cache_key = f"{search_term}_{page}"
         if cache_key in self._cache_music:

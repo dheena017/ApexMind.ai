@@ -42,8 +42,8 @@ class InternetArchiveAudioProvider(BaseAudioProvider):
         if cache_key in self._cached:
             return self._cached[cache_key][:page_size]
 
-        # Query Internet Archive search API for audio items with MP3 downloads
-        lucene_query = f'mediatype:audio AND (title:({search_filter}) OR description:({search_filter}))'
+        # Query Internet Archive search API for audio items with verified MP3 streams
+        lucene_query = f'mediatype:audio AND format:("VBR MP3") AND (title:({search_filter}) OR description:({search_filter}))'
         params = {
             "q": lucene_query,
             "fl[]": ["identifier", "title", "creator", "description", "downloads", "publicdate"],
@@ -60,7 +60,7 @@ class InternetArchiveAudioProvider(BaseAudioProvider):
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=6.5) as resp:
+            with urllib.request.urlopen(req, timeout=9.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 docs = data.get("response", {}).get("docs", [])
                 parsed: List[Dict[str, Any]] = []
