@@ -293,9 +293,9 @@ export default function AppLayout({
                           setWorkspaceMenuOpen(false);
                         }}
                         aria-current={workspaceMobileView === view ? 'page' : undefined}
-                        className={`min-h-11 rounded-xl border px-3 text-left text-xs font-semibold transition-colors ${
+                        className={`min-h-11 rounded-xl border px-3 text-left text-xs font-semibold transition-all ${
                           workspaceMobileView === view
-                            ? 'border-[#60A5FA]/40 bg-[#2563EB]/20 text-white'
+                            ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/30'
                             : 'border-[#2A2A2A] bg-[#1B1B1B] text-[#D4D4D8] hover:border-[#3B82F6]/50 hover:bg-[#202020] hover:text-white'
                         }`}
                       >
@@ -327,13 +327,13 @@ export default function AppLayout({
                             setWorkspaceMenuOpen(false);
                           }}
                           aria-current={isActive ? 'page' : undefined}
-                          className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-left text-xs font-semibold transition-colors ${
+                          className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-left text-xs font-semibold transition-all ${
                             isActive
-                              ? 'border-[#60A5FA]/40 bg-[#2563EB]/20 text-white'
+                              ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/30'
                               : 'border-[#2A2A2A] bg-[#1B1B1B] text-[#B4B4B8] hover:bg-[#202020] hover:text-white'
                           }`}
                         >
-                          <Icon className="h-4 w-4 shrink-0 text-[#60A5FA]" />
+                          <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-[#60A5FA]'}`} />
                           <span className="truncate">{item.label}</span>
                         </button>
                       );
@@ -386,12 +386,12 @@ export default function AppLayout({
                   aria-current={!showLeftPaneMobile ? 'page' : undefined}
                   className={`flex flex-col items-center justify-center min-w-[60px] h-10 px-2 py-0.5 rounded-xl transition-all cursor-pointer gap-0.5 ${
                     !showLeftPaneMobile
-                      ? 'bg-[#18181C] border border-blue-500/60 text-blue-400 font-semibold shadow-xs'
+                      ? 'bg-blue-600 border border-blue-500 text-white font-semibold shadow-md shadow-blue-600/30'
                       : 'bg-[#121214] border border-[#222226] text-zinc-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <Film className={`h-4 w-4 shrink-0 ${!showLeftPaneMobile ? 'text-blue-400' : 'text-zinc-400'}`} />
-                  <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap font-medium">
+                  <Film className={`h-4 w-4 shrink-0 ${!showLeftPaneMobile ? 'text-white' : 'text-zinc-400'}`} />
+                  <span className={`text-[9.5px] leading-tight tracking-tight whitespace-nowrap ${!showLeftPaneMobile ? 'text-white font-semibold' : 'text-zinc-400 font-medium'}`}>
                     Preview
                   </span>
                 </button>
@@ -428,12 +428,12 @@ export default function AppLayout({
                       aria-current={isActive ? 'page' : undefined}
                       className={`flex flex-col items-center justify-center min-w-[56px] h-10 px-1.5 py-0.5 rounded-xl transition-all cursor-pointer shrink-0 gap-0.5 ${
                         isActive
-                          ? 'bg-[#18181C] border border-blue-500/60 text-blue-400 font-semibold shadow-xs'
+                          ? 'bg-blue-600 border border-blue-500 text-white font-semibold shadow-md shadow-blue-600/30'
                           : 'border border-transparent text-zinc-400 hover:text-white hover:bg-white/[0.04]'
                       }`}
                     >
-                      <IconComp className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-400' : 'text-zinc-400'}`} />
-                      <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap">
+                      <IconComp className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-zinc-400'}`} />
+                      <span className={`text-[9.5px] leading-tight tracking-tight whitespace-nowrap ${isActive ? 'text-white font-semibold' : 'text-zinc-400'}`}>
                         {item.shortLabel}
                       </span>
                     </button>
