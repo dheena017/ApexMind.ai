@@ -17,7 +17,6 @@ import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import { WorkspaceHeader } from '@/src/features/workspace/components/WorkspaceHeader';
 import { WorkspaceSidebar, WORKSPACE_SIDEBAR_ITEMS, WorkspaceTabType } from '@/src/features/workspace/components/WorkspaceSidebar';
-import { WorkspaceStatusBar } from '@/src/features/workspace/components/WorkspaceStatusBar';
 import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
 import { ApexMindLogo } from '@/src/shared/ui';
 import { Radio } from 'lucide-react';
@@ -346,15 +345,6 @@ export default function AppLayout({
                 {children}
               </div>
             </main>
-
-            {/* Bottom Docked Status Bar */}
-            <WorkspaceStatusBar
-              activePage={activePage}
-              onNavigate={onNavigate}
-              activeWorkspacePane={activeWorkspacePane}
-              onWorkspacePaneChange={onWorkspacePaneChange}
-              workspaceStatus={workspaceStatus}
-            />
           </div>
         </div>
       ) : (

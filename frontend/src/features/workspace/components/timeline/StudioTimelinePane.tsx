@@ -4877,7 +4877,7 @@ export const StudioTimelinePane: React.FC<StudioTimelinePaneProps> = ({
             onScroll={handleTracksScroll}
             onWheel={handleTimelineWheel}
             style={timelineHeight ? { height: `${timelineHeight}px`, maxHeight: `${timelineHeight}px` } : undefined}
-            className={`workspace-timeline-track-scroll min-w-0 w-full overflow-x-auto overflow-y-auto custom-scrollbar relative ${timelineHeight ? '' : timelineViewportHeight}`}
+            className={`workspace-timeline-track-scroll min-w-0 w-full overflow-x-auto overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#26262E_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#26262E] [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#3B82F6]/50 relative ${timelineHeight ? '' : timelineViewportHeight}`}
           >
             <div
               className="flex min-w-full"

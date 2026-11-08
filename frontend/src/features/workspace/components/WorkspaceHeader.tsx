@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '@/src/features/auth/types';
 import { OmnichannelPublishModal } from '@/src/features/social/components/OmnichannelPublishModal';
+import { NotificationDropdown } from '@/src/features/notifications/components/NotificationDropdown';
 import { ApexMindLogo } from '@/src/shared/ui';
 import { WorkspaceTabType } from './WorkspaceSidebar';
 
@@ -34,6 +35,7 @@ interface WorkspaceHeaderProps {
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   user,
+  unreadCount = 0,
   onNavigate,
   activeWorkspacePane,
   mobileMenuOpen,
@@ -383,6 +385,12 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           </button>
 
           <div className="h-4 w-px bg-[#262626] mx-0.5 hidden sm:block" />
+
+          {/* Studio Notifications */}
+          <NotificationDropdown
+            unreadCount={unreadCount || 0}
+            onNavigate={onNavigate}
+          />
 
           {/* Settings button */}
           <button

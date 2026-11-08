@@ -34,12 +34,12 @@ export default function App() {
   const [activePage, setActivePage] = useState<PageRoute>(() => {
     const parsed = typeof window === 'undefined' ? 'landing' : parseRoute(window.location.pathname);
     canonicalizeRouteAlias(parsed);
-    // If user is already authenticated and visits '/' or '/login', send directly to dashboard
+    // If user is already authenticated and visits '/' or '/login', send directly to workspace
     if ((parsed === 'landing' || parsed === 'login') && typeof window !== 'undefined' && isSessionValid()) {
-      if (window.location.pathname !== '/dashboard') {
-        window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
+      if (window.location.pathname !== '/workspace') {
+        window.history.replaceState({ page: 'workspace' }, '', '/workspace');
       }
-      return 'dashboard';
+      return 'workspace';
     }
 
     // If an unauthenticated user opens directly to an internal studio page, store the intent and load login
@@ -104,10 +104,10 @@ export default function App() {
     }
   }, [isAuthenticated, activePage]);
 
-  // If already authenticated and on login or landing, send directly to Dashboard
+  // If already authenticated and on login or landing, send directly to Workspace Studio
   useEffect(() => {
     if (isAuthenticated && (activePage === 'login' || activePage === 'landing')) {
-      const destination = getPostLoginRedirect() || 'dashboard';
+      const destination = getPostLoginRedirect() || 'workspace';
       clearPostLoginRedirect();
       consoleLogger.info('Auth', `Authenticated creator on [${activePage}] -> directing directly to Studio [${destination}]`);
       setActivePage(destination);
