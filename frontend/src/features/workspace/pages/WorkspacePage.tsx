@@ -1039,6 +1039,7 @@ export default function WorkspacePage({
         musicAudioRef.current.volume = (isMuted || musicTrackMuted) ? 0 : musicVolume;
         musicAudioRef.current.muted = isMuted || musicTrackMuted;
         musicAudioRef.current.play().catch((err) => {
+          if (err?.name === 'AbortError' || err?.message?.includes('interrupted')) return;
           consoleLogger.warn('Audio', 'Music playback failed on play toggle:', err);
         });
       }

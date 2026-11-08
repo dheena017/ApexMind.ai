@@ -103,13 +103,11 @@ def get_audio_stream_redirect(
     id: str = Query(..., description="Track identifier or item id"),
     url: str = Query("", description="Direct audio URL if already known"),
 ):
-    if url and url.startswith("http") and not url.endswith("_vbr.mp3"):
+    if url and url.startswith("http"):
         return RedirectResponse(url=url, status_code=307)
     resolved = resolve_archive_item_audio(id)
     if resolved and resolved.get("url"):
         return RedirectResponse(url=resolved["url"], status_code=307)
-    if url and url.startswith("http"):
-        return RedirectResponse(url=url, status_code=307)
     # Default fallback to open Wikimedia CC0 stream
     return RedirectResponse(url="https://upload.wikimedia.org/wikipedia/commons/4/4b/Silence_1s.ogg", status_code=307)
 

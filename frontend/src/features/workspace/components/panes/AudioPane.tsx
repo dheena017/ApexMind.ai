@@ -9,6 +9,7 @@ import {
   MicOff,
   Play,
   Pause,
+  Loader2,
   Check,
   Volume2,
   Sparkles,
@@ -340,7 +341,9 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   // Selection & playback
   const [pendingMusicId, setPendingMusicId] = useState(selectedMusic || '');
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
   const [playingSfxId, setPlayingSfxId] = useState<string | null>(null);
+  const [loadingSfxId, setLoadingSfxId] = useState<string | null>(null);
   const [customAudioUrl, setCustomAudioUrl] = useState('');
   const [customAudioTitle, setCustomAudioTitle] = useState('');
   const [customAudioPlaying, setCustomAudioPlaying] = useState(false);
@@ -660,34 +663,68 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     e.stopPropagation();
     if (!previewAudioRef.current) return;
 
-    if (playingTrackId === track.id) {
+    if (playingTrackId === track.id || loadingTrackId === track.id) {
       previewAudioRef.current.pause();
       setPlayingTrackId(null);
+      setLoadingTrackId(null);
     } else {
       const audioEl = previewAudioRef.current;
+      audioEl.pause();
+      setPlayingTrackId(null);
+      setLoadingTrackId(track.id);
+
       const initialUrl = track.audioUrl;
-      audioEl.src = initialUrl;
+      const targetHref = new URL(initialUrl, window.location.href).href;
+      if (audioEl.src !== targetHref) {
+        audioEl.src = initialUrl;
+        audioEl.load();
+      }
       audioEl.volume = 0.8;
       audioEl
         .play()
         .then(() => {
-          setPlayingTrackId(track.id);
+          setLoadingTrackId((curr) => {
+            if (curr === track.id) {
+              setPlayingTrackId(track.id);
+              return null;
+            }
+            return curr;
+          });
         })
-        .catch(() => {
-          // Automatic resilient fallback to backend stream resolver if direct link 404s
+        .catch((err1) => {
+          // If aborted by user action or subsequent load request, ignore cleanly
+          if (err1?.name === 'AbortError' || err1?.message?.includes('interrupted')) {
+            setLoadingTrackId((curr) => (curr === track.id ? null : curr));
+            return;
+          }
+
+          // Automatic resilient fallback to backend stream resolver if direct link 404s or has CORS
           const fallbackUrl = `/api/media/audio-stream?id=${encodeURIComponent(track.id)}&url=${encodeURIComponent(initialUrl)}`;
-          if (audioEl.src !== fallbackUrl) {
+          const fallbackHref = new URL(fallbackUrl, window.location.href).href;
+          if (audioEl.src !== fallbackHref) {
             audioEl.src = fallbackUrl;
+            audioEl.load();
             audioEl
               .play()
               .then(() => {
-                setPlayingTrackId(track.id);
+                setLoadingTrackId((curr) => {
+                  if (curr === track.id) {
+                    setPlayingTrackId(track.id);
+                    return null;
+                  }
+                  return curr;
+                });
               })
               .catch((err2) => {
+                setLoadingTrackId((curr) => (curr === track.id ? null : curr));
                 setPlayingTrackId(null);
+                if (err2?.name === 'AbortError' || err2?.message?.includes('interrupted')) {
+                  return;
+                }
                 toast.error(`Track stream unavailable: ${err2?.message || 'Unsupported audio codec'}`);
               });
           } else {
+            setLoadingTrackId((curr) => (curr === track.id ? null : curr));
             setPlayingTrackId(null);
             toast.error('Track stream unavailable: No supported audio source');
           }
@@ -699,33 +736,66 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     e.stopPropagation();
     if (!sfxAudioRef.current) return;
 
-    if (playingSfxId === sfx.id) {
+    if (playingSfxId === sfx.id || loadingSfxId === sfx.id) {
       sfxAudioRef.current.pause();
       setPlayingSfxId(null);
+      setLoadingSfxId(null);
     } else {
       const sfxEl = sfxAudioRef.current;
+      sfxEl.pause();
+      setPlayingSfxId(null);
+      setLoadingSfxId(sfx.id);
+
       const initialUrl = sfx.audioUrl;
-      sfxEl.src = initialUrl;
+      const targetHref = new URL(initialUrl, window.location.href).href;
+      if (sfxEl.src !== targetHref) {
+        sfxEl.src = initialUrl;
+        sfxEl.load();
+      }
       sfxEl.volume = 0.85;
       sfxEl
         .play()
         .then(() => {
-          setPlayingSfxId(sfx.id);
+          setLoadingSfxId((curr) => {
+            if (curr === sfx.id) {
+              setPlayingSfxId(sfx.id);
+              return null;
+            }
+            return curr;
+          });
         })
-        .catch(() => {
+        .catch((err1) => {
+          if (err1?.name === 'AbortError' || err1?.message?.includes('interrupted')) {
+            setLoadingSfxId((curr) => (curr === sfx.id ? null : curr));
+            return;
+          }
+
           const fallbackUrl = `/api/media/audio-stream?id=${encodeURIComponent(sfx.id)}&url=${encodeURIComponent(initialUrl)}`;
-          if (sfxEl.src !== fallbackUrl) {
+          const fallbackHref = new URL(fallbackUrl, window.location.href).href;
+          if (sfxEl.src !== fallbackHref) {
             sfxEl.src = fallbackUrl;
+            sfxEl.load();
             sfxEl
               .play()
               .then(() => {
-                setPlayingSfxId(sfx.id);
+                setLoadingSfxId((curr) => {
+                  if (curr === sfx.id) {
+                    setPlayingSfxId(sfx.id);
+                    return null;
+                  }
+                  return curr;
+                });
               })
               .catch((err2) => {
+                setLoadingSfxId((curr) => (curr === sfx.id ? null : curr));
                 setPlayingSfxId(null);
+                if (err2?.name === 'AbortError' || err2?.message?.includes('interrupted')) {
+                  return;
+                }
                 toast.error(`Sound effect unavailable: ${err2?.message || 'Unsupported format'}`);
               });
           } else {
+            setLoadingSfxId((curr) => (curr === sfx.id ? null : curr));
             setPlayingSfxId(null);
             toast.error('Sound effect unavailable: No supported source');
           }
@@ -810,8 +880,14 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       {/* Hidden Audio Elements */}
       <audio
         ref={previewAudioRef}
-        onEnded={() => setPlayingTrackId(null)}
+        onEnded={() => {
+          setPlayingTrackId(null);
+          setLoadingTrackId(null);
+        }}
         onError={() => {
+          const mediaErr = previewAudioRef.current?.error;
+          if (mediaErr?.code === 1) return; // MEDIA_ERR_ABORTED: intentionally ignored
+          setLoadingTrackId(null);
           setPlayingTrackId(null);
           toast.error('Preview stream unavailable for this track');
         }}
@@ -819,8 +895,14 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
       />
       <audio
         ref={sfxAudioRef}
-        onEnded={() => setPlayingSfxId(null)}
+        onEnded={() => {
+          setPlayingSfxId(null);
+          setLoadingSfxId(null);
+        }}
         onError={() => {
+          const mediaErr = sfxAudioRef.current?.error;
+          if (mediaErr?.code === 1) return; // MEDIA_ERR_ABORTED: intentionally ignored
+          setLoadingSfxId(null);
           setPlayingSfxId(null);
           toast.error('Sound stream unavailable for this effect');
         }}
@@ -968,6 +1050,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                 const isSelected = selectedMusic === track.id || selectedMusic === track.audioUrl;
                 const isPending = pendingMusicId === track.id;
                 const isPlaying = playingTrackId === track.id;
+                const isLoading = loadingTrackId === track.id;
 
                 return (
                   <div
@@ -986,13 +1069,15 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                         type="button"
                         onClick={(e) => togglePlayTrack(track, e)}
                         className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-                          isPlaying
+                          isPlaying || isLoading
                             ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
                             : 'bg-[#1E1E1E] text-zinc-300 hover:text-white hover:bg-blue-600'
                         }`}
-                        title={isPlaying ? 'Pause preview' : 'Play preview'}
+                        title={isLoading ? 'Buffering track...' : isPlaying ? 'Pause preview' : 'Play preview'}
                       >
-                        {isPlaying ? (
+                        {isLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        ) : isPlaying ? (
                           <Pause className="w-4 h-4" fill="currentColor" />
                         ) : (
                           <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
@@ -1172,6 +1257,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             )}
             {liveSfx.map((sfx) => {
               const isPlaying = playingSfxId === sfx.id;
+              const isLoading = loadingSfxId === sfx.id;
 
               return (
                 <div
@@ -1183,12 +1269,15 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                       type="button"
                       onClick={(e) => togglePlaySfx(sfx, e)}
                       className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-                        isPlaying
+                        isPlaying || isLoading
                           ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-400/50'
                           : 'bg-[#1E1E1E] text-zinc-300 hover:text-white hover:bg-blue-600'
                       }`}
+                      title={isLoading ? 'Buffering sound...' : isPlaying ? 'Pause preview' : 'Play preview'}
                     >
-                      {isPlaying ? (
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      ) : isPlaying ? (
                         <Pause className="w-3.5 h-3.5" fill="currentColor" />
                       ) : (
                         <Play className="w-3.5 h-3.5 ml-0.5" fill="currentColor" />
