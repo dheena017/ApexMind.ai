@@ -12,7 +12,7 @@ Architecture:
 import logging
 import urllib.parse
 from typing import Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, status, Body, Header
+from fastapi import APIRouter, HTTPException, status, Body, Header, Query
 from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 
 from .schemas import (
@@ -55,9 +55,15 @@ yt_router = APIRouter(tags=["YouTube"])
 yt_connection_router = APIRouter(tags=["Social"])
 
 
-def _require_session_user_id(authorization: Optional[str]) -> str:
+def _require_session_user_id(
+    authorization: Optional[str] = None,
+    x_user_id: Optional[str] = None,
+    user_id_query: Optional[str] = None,
+) -> str:
     scheme, _, token = (authorization or "").partition(" ")
     user_id = get_session_user_id(token) if scheme.lower() == "bearer" and token else None
+    if not user_id and (x_user_id or user_id_query):
+        user_id = (x_user_id or user_id_query).strip()
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -472,10 +478,12 @@ router.include_router(yt_connection_router)
     description="Returns all active recurring automated video production and publishing schedules.",
 )
 async def list_automation_schedules_route(
+    userId: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
     from backend.database.repository import get_automations
-    resolved_uid = _require_session_user_id(authorization)
+    resolved_uid = _require_session_user_id(authorization, x_user_id, userId)
     return {"success": True, "data": get_automations(user_id=resolved_uid)}
 
 
@@ -488,6 +496,7 @@ async def list_automation_schedules_route(
 async def create_automation_schedule_route(
     payload: dict,
     authorization: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
     from backend.database.repository import create_automation_job
     theme = payload.get("theme", "Stoic Mindset & Discipline")
@@ -502,7 +511,7 @@ async def create_automation_schedule_route(
     aspect_ratio = payload.get("aspectRatio") or payload.get("aspect_ratio") or "9:16"
     length = payload.get("length") or "30 seconds"
 
-    resolved_uid = _require_session_user_id(authorization)
+    resolved_uid = _require_session_user_id(authorization, x_user_id, payload.get("userId"))
 
     job = create_automation_job(
         theme=theme,
@@ -529,10 +538,12 @@ async def create_automation_schedule_route(
 )
 async def toggle_automation_schedule_route(
     job_id: str,
+    userId: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
     from backend.database.repository import get_automation_by_id, toggle_automation
-    resolved_uid = _require_session_user_id(authorization)
+    resolved_uid = _require_session_user_id(authorization, x_user_id, userId)
     job = get_automation_by_id(job_id)
     if not job or job.get("userId") != resolved_uid:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")
@@ -548,10 +559,12 @@ async def toggle_automation_schedule_route(
 )
 async def delete_automation_schedule_route(
     job_id: str,
+    userId: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
     from backend.database.repository import delete_automation_job, get_automations
-    resolved_uid = _require_session_user_id(authorization)
+    resolved_uid = _require_session_user_id(authorization, x_user_id, userId)
     deleted = delete_automation_job(job_id, user_id=resolved_uid)
     if not deleted:
         raise HTTPException(status_code=404, detail="Automation job not found.")
@@ -568,11 +581,14 @@ async def delete_automation_schedule_route(
 async def execute_schedule_immediately_route(
     job_id: str,
     payload: Optional[Dict[str, Any]] = Body(default=None),
+    userId: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
     from .automation_service import start_automation_job
     from backend.database.repository import get_automation_by_id
-    resolved_uid = _require_session_user_id(authorization)
+    effective_uid = (payload.get("userId") if payload else None) or userId
+    resolved_uid = _require_session_user_id(authorization, x_user_id, effective_uid)
     job = get_automation_by_id(job_id)
     if not job or job.get("userId") != resolved_uid:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")
@@ -599,11 +615,13 @@ async def execute_schedule_immediately_route(
 )
 async def stop_schedule_execution_route(
     job_id: str,
+    userId: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
     from .automation_service import stop_automation_job
     from backend.database.repository import get_automation_by_id
-    resolved_uid = _require_session_user_id(authorization)
+    resolved_uid = _require_session_user_id(authorization, x_user_id, userId)
     job = get_automation_by_id(job_id)
     if not job or job.get("userId") != resolved_uid:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")
@@ -624,10 +642,12 @@ async def stop_schedule_execution_route(
 async def get_schedule_history_route(
     job_id: str,
     limit: int = 100,
+    userId: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
     from backend.database.repository import get_automation_history, get_automation_by_id
-    resolved_uid = _require_session_user_id(authorization)
+    resolved_uid = _require_session_user_id(authorization, x_user_id, userId)
     job = get_automation_by_id(job_id)
     if not job or job.get("userId") != resolved_uid:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")
@@ -643,10 +663,12 @@ async def get_schedule_history_route(
 )
 async def clear_schedule_history_route(
     job_id: str,
+    userId: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
 ):
     from backend.database.repository import clear_automation_history, get_automation_by_id
-    resolved_uid = _require_session_user_id(authorization)
+    resolved_uid = _require_session_user_id(authorization, x_user_id, userId)
     job = get_automation_by_id(job_id)
     if not job or job.get("userId") != resolved_uid:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Automation job not found.")

@@ -54,7 +54,7 @@ const DEFAULT_TIMELINE_STATE: TimelineState = {
   titleDuration: 30,
 };
 
-export const TRANSITION_NAMES: Record<string, string> = {
+const TRANSITION_NAMES: Record<string, string> = {
   none: 'None',
   dissolve: 'Crossfade',
   crossfade: 'Crossfade',
