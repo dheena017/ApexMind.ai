@@ -62,7 +62,7 @@ class OpenverseElementProvider(BaseElementProvider):
                     title = it.get("title", "").strip() or f"Openverse Vector {item_id[:8]}"
                     img_url = it.get("url", "")
                     thumb_url = it.get("thumbnail", "") or img_url
-                    filetype = it.get("filetype", "svg")
+                    filetype = (it.get("filetype") or "svg").lower()
 
                     if not img_url:
                         continue

@@ -4,6 +4,7 @@ Abstract base class for modular live visual elements and overlay providers.
 Zero hardcoded data - pure live API queries and dynamic generation only.
 """
 
+import base64
 import json
 import logging
 import urllib.request
@@ -90,6 +91,9 @@ class IconifyCollectionProvider(BaseElementProvider):
 
     def __init__(self) -> None:
         self._all_icons: Optional[List[str]] = None
+        self._icons_data: Dict[str, Any] = {}
+        self._default_width: int = 24
+        self._default_height: int = 24
 
     def is_configured(self) -> bool:
         return bool(self.prefix)
@@ -108,6 +112,9 @@ class IconifyCollectionProvider(BaseElementProvider):
                 data = json.loads(resp.read().decode("utf-8"))
                 icons_dict = data.get("icons", {})
                 if icons_dict:
+                    self._icons_data = icons_dict
+                    self._default_width = data.get("width", 24)
+                    self._default_height = data.get("height", 24)
                     self._all_icons = list(icons_dict.keys())
                     return self._all_icons
         except Exception as e:
@@ -172,7 +179,18 @@ class IconifyCollectionProvider(BaseElementProvider):
         elements: List[Dict[str, Any]] = []
         for icon_name in matched_names:
             clean_name = icon_name.replace("-", " ").title()
-            svg_url = f"https://api.iconify.design/{self.prefix}/{icon_name}.svg"
+            icon_info = self._icons_data.get(icon_name, {}) if self._icons_data else {}
+            body = icon_info.get("body", "")
+
+            if body:
+                w = icon_info.get("width", self._default_width)
+                h = icon_info.get("height", self._default_height)
+                svg_markup = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}">{body}</svg>'
+                b64 = base64.b64encode(svg_markup.encode("utf-8")).decode("utf-8")
+                svg_url = f"data:image/svg+xml;base64,{b64}"
+            else:
+                svg_url = f"https://api.iconify.design/{self.prefix}/{icon_name}.svg"
+
             elements.append(
                 self.format_element(
                     id=f"{self.prefix}-{icon_name}",
