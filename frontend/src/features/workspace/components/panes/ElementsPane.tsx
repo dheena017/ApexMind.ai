@@ -249,6 +249,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
@@ -267,6 +268,8 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         if (!append) {
           setIsLoading(true);
           setErrorMessage(null);
+        } else {
+          setIsLoadingMore(true);
         }
         const res = await elementsApi.searchElements({
           query: q.trim(),
@@ -285,7 +288,11 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         if (res && res.elements) {
           setErrorMessage(null);
           if (append) {
-            setElements((prev) => [...prev, ...res.elements]);
+            setElements((prev) => {
+              const existingIds = new Set(prev.map((e) => e.id));
+              const freshItems = res.elements.filter((e) => !existingIds.has(e.id));
+              return [...prev, ...freshItems];
+            });
           } else {
             setElements(res.elements);
           }
@@ -298,6 +305,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
         if (!append) setElements([]);
       } finally {
         setIsLoading(false);
+        setIsLoadingMore(false);
       }
     },
     []
@@ -320,6 +328,7 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
 
   // Load more pagination
   const handleLoadMore = () => {
+    if (isLoading || isLoadingMore) return;
     const nextPage = page + 1;
     setPage(nextPage);
     fetchLiveElements(searchQuery, selectedCategory, selectedProvider, nextPage, true);
@@ -633,12 +642,21 @@ export const ElementsPane: React.FC<ElementsPaneProps> = ({
             {elements.length > 0 && elements.length < totalCount && (
               <button
                 type="button"
-                disabled={isLoading}
+                disabled={isLoading || isLoadingMore}
                 onClick={handleLoadMore}
-                className="w-full py-2 my-2 rounded-xl bg-[#181818] hover:bg-[#202020] border border-[#242424] text-xs text-zinc-300 hover:text-white font-semibold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                className="w-full py-2.5 my-2 rounded-xl bg-[#181818] hover:bg-[#202020] border border-[#242424] text-xs text-zinc-300 hover:text-white font-semibold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
-                {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                <span>Load More Elements</span>
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                    <span>Loading more live elements...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Load More Elements ({elements.length} of {totalCount.toLocaleString()})</span>
+                  </>
+                )}
               </button>
             )}
           </div>

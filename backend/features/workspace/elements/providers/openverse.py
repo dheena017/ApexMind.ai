@@ -31,24 +31,27 @@ class OpenverseElementProvider(BaseElementProvider):
         query: str = "",
         category: str = "all",
         page: int = 1,
-        page_size: int = 24,
+        page_size: int = 20,
     ) -> List[Dict[str, Any]]:
-        clean_q = (query or "").strip().lower() or "badge vector illustration"
-        cache_key = f"ov_{clean_q}_{page}_{page_size}"
+        raw_q = (query or "").strip().lower()
+        clean_q = raw_q.split()[0] if raw_q else "badge"
+        clamped_page_size = min(max(1, page_size), 20)
+        cache_key = f"ov_{clean_q}_{page}_{clamped_page_size}"
 
         if cache_key in self._cache:
             return self._cache[cache_key]
 
         params = {
             "q": clean_q,
-            "extension": "svg,png",
             "page": str(page),
-            "page_size": str(min(page_size, 30)),
+            "page_size": str(clamped_page_size),
         }
         url = f"https://api.openverse.org/v1/images/?{urllib.parse.urlencode(params)}"
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "ApexMindStudio/2.0 (LiveOpenverseElements; https://apexmind.ai)"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
         )
 
         try:

@@ -43,13 +43,37 @@ class StudioElementProvider(BaseElementProvider):
 
         # If user typed a search query, procedurally generate tailored dynamic badges for that query
         if clean_q:
-            base_terms = [clean_q, f"RULE #1: {clean_q}", f"THE 1% {clean_q}", f"NO EXCUSES: {clean_q}", f"{clean_q} MINDSET", f"DAY 1 {clean_q}"]
+            base_terms = [
+                clean_q,
+                f"RULE #1: {clean_q}",
+                f"THE 1% {clean_q}",
+                f"NO EXCUSES: {clean_q}",
+                f"{clean_q} MINDSET",
+                f"DAY 1 {clean_q}",
+                f"RELENTLESS {clean_q}",
+                f"DISCIPLINE IN {clean_q}",
+                f"FOCUS: {clean_q}",
+                f"MASTER {clean_q}",
+            ]
         else:
             base_terms = [
+                # Page 1: Stoic & Viral Discipline
                 "RULE #1", "THE 1% CLUB", "NO EXCUSES", "STOIC MINDSET",
                 "DAY 1 OR ONE DAY", "SILENT WARRIOR", "4:00 AM CLUB", "ZERO DISTRACTIONS",
                 "FORGE YOURSELF", "UNSTOPPABLE", "MEMENTO MORI", "EMPIRE BUILDER",
                 "MONK MODE", "STAY HARD", "DOPAMINE DETOX", "HIGH AGENCY",
+                "DEEP WORK", "RELENTLESS", "DISCIPLINE > MOTIVATION", "OBSESSED",
+                # Page 2: High Performance & Financial Victory
+                "WIN AT ALL COSTS", "LOCK IN", "BEAST MODE", "EXECUTION IS EVERYTHING",
+                "10X RULE", "CREATE DON'T CONSUME", "COMPOUND EFFECT", "CHAMPION MINDSET",
+                "SHADOW WORK", "NEVER SETTLE", "OUTWORK EVERYONE", "KILL THE WEAKNESS",
+                "PROOF OF WORK", "STAND ALONE", "SAVAGE AMBITION", "LEVEL UP",
+                "FEARLESS", "LIMITLESS", "ALPHA FREQUENCY", "GRIND IN SILENCE",
+                # Page 3: Leadership & Creator Mastery
+                "DOMINATE YOUR FIELD", "NO ZERO DAYS", "LEAD FROM FRONT", "VISIONARY",
+                "COLD SHOWER CLUB", "FAST TRACK", "HIGH ROI", "UNBREAKABLE",
+                "HYPER FOCUS", "ENERGY FOLLOWS ATTENTION", "BE THE ANOMALY", "TITAN",
+                "WAR MODE", "RISE & CONQUER", "IRON WILL", "PRESSURE IS A PRIVILEGE",
             ]
 
         for idx, term in enumerate(base_terms):
@@ -102,7 +126,7 @@ class StudioElementProvider(BaseElementProvider):
         return results[start : start + page_size]
 
     def get_total_elements(self, query: str = "", category: str = "all") -> int:
-        return 20
+        return 60
 
     def create_custom_badge(
         self,

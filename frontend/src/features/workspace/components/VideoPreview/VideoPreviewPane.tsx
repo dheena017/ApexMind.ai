@@ -2834,67 +2834,105 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
           );
         })()}
 
-        {/* Dynamic Motivational Badge Overlay */}
-        {effectiveOverlay?.type === 'badge' && (
-          <div
-            className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-200"
-            style={{ opacity: overlayEnabled && isOverlayTimeActive ? (overlayStyle.opacity / 100) * overlayMotionOpacity : 0 }}
-          >
+        {/* Dynamic Overlay Rendering on Canvas (SVGs, Vectors, Stickers, Badges) */}
+        {(() => {
+          if (!effectiveOverlay || !overlayEnabled || !isOverlayTimeActive) return null;
+          if (effectiveOverlay.type === 'progress') return null; // Handled separately above
+
+          const rawVal = effectiveOverlay.value || '';
+          const isImageUri =
+            typeof rawVal === 'string' &&
+            (rawVal.startsWith('http://') ||
+              rawVal.startsWith('https://') ||
+              rawVal.startsWith('data:image/') ||
+              rawVal.startsWith('blob:') ||
+              rawVal.includes('.svg') ||
+              rawVal.includes('.png') ||
+              rawVal.includes('.webp') ||
+              rawVal.includes('.gif'));
+
+          const isRawSvgMarkup = typeof rawVal === 'string' && rawVal.trim().startsWith('<svg');
+
+          if (isImageUri || isRawSvgMarkup) {
+            return (
+              <div
+                ref={overlayRef}
+                onClick={(e) => handleSelectLayer(e, 'overlay')}
+                className="absolute z-20 cursor-default select-none transition-opacity duration-200"
+                style={{
+                  ...overlayPositionStyle,
+                  opacity: (overlayStyle.opacity / 100) * overlayMotionOpacity,
+                }}
+              >
+                {isImageUri ? (
+                  <img
+                    src={rawVal}
+                    alt={effectiveOverlay.name || 'overlay'}
+                    className="object-contain pointer-events-none drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]"
+                    style={{
+                      width: `${Math.max(48, Math.min(320, Math.round(96 * canvasScale)))}px`,
+                      height: `${Math.max(48, Math.min(320, Math.round(96 * canvasScale)))}px`,
+                    }}
+                  />
+                ) : (
+                  <div
+                    dangerouslySetInnerHTML={{ __html: rawVal }}
+                    className="pointer-events-none drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]"
+                    style={{
+                      width: `${Math.max(48, Math.min(320, Math.round(96 * canvasScale)))}px`,
+                      height: `${Math.max(48, Math.min(320, Math.round(96 * canvasScale)))}px`,
+                    }}
+                  />
+                )}
+              </div>
+            );
+          }
+
+          if (effectiveOverlay.type === 'badge') {
+            return (
+              <div
+                className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-200"
+                style={{ opacity: (overlayStyle.opacity / 100) * overlayMotionOpacity }}
+              >
+                <div
+                  ref={overlayRef}
+                  onClick={(e) => handleSelectLayer(e, 'overlay')}
+                  className="absolute w-fit cursor-default select-none pointer-events-auto"
+                  style={overlayPositionStyle}
+                >
+                  <span
+                    className="rounded-full font-black uppercase shadow-lg border border-white/20 tracking-wider pointer-events-none"
+                    style={{
+                      backgroundColor: overlayStyle.accentColor,
+                      color: overlayStyle.textColor || '#FFFFFF',
+                      fontSize: `${Math.max(8, Math.min(20, Math.round(10 * canvasScale)))}px`,
+                      padding: `${Math.round(2 * canvasScale)}px ${Math.round(10 * canvasScale)}px`,
+                    }}
+                  >
+                    {effectiveOverlay.label || effectiveOverlay.name || effectiveOverlay.value}
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
+          // Fallback text / emoji symbol overlay
+          return (
             <div
               ref={overlayRef}
               onClick={(e) => handleSelectLayer(e, 'overlay')}
-              className="absolute w-fit cursor-default select-none pointer-events-auto"
-              style={overlayPositionStyle}
+              className="absolute z-20 cursor-default select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
+              style={{
+                ...overlayPositionStyle,
+                color: overlayStyle.textColor || '#FFFFFF',
+                fontSize: `${Math.max(16, Math.min(64, Math.round(36 * canvasScale)))}px`,
+                opacity: (overlayStyle.opacity / 100) * overlayMotionOpacity,
+              }}
             >
-              <span
-                className="rounded-full font-black uppercase shadow-lg border border-white/20 tracking-wider pointer-events-none"
-                style={{
-                  backgroundColor: overlayStyle.accentColor,
-                  color: overlayStyle.textColor || '#FFFFFF',
-                  fontSize: `${Math.max(8, Math.min(20, Math.round(10 * canvasScale)))}px`,
-                  padding: `${Math.round(2 * canvasScale)}px ${Math.round(10 * canvasScale)}px`,
-                }}
-              >
-                {effectiveOverlay.value}
-              </span>
+              {effectiveOverlay.value || effectiveOverlay.label || effectiveOverlay.name}
             </div>
-          </div>
-        )}
-
-        {/* Dynamic Motivational Sticker Overlay */}
-        {effectiveOverlay?.type === 'sticker' && (
-          <div
-            ref={overlayRef}
-            onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute z-20 cursor-default select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] transition-opacity duration-200"
-            style={{
-              ...overlayPositionStyle,
-              color: overlayStyle.textColor || '#FFFFFF',
-              fontSize: `${Math.max(16, Math.min(64, Math.round(30 * canvasScale)))}px`,
-              opacity: overlayEnabled && isOverlayTimeActive ? (overlayStyle.opacity / 100) * overlayMotionOpacity : 0,
-            }}
-          >
-            {effectiveOverlay.value}
-          </div>
-        )}
-
-        {/* Dynamic Shape / Generic Graphic Overlay */}
-        {effectiveOverlay && effectiveOverlay.type !== 'progress' && effectiveOverlay.type !== 'badge' && effectiveOverlay.type !== 'sticker' && (
-          <div
-            ref={overlayRef}
-            onClick={(e) => handleSelectLayer(e, 'overlay')}
-            className="absolute z-20 rounded-xl border border-white/20 bg-black/70 backdrop-blur-md font-bold cursor-default select-none shadow-xl transition-opacity duration-200"
-            style={{
-              ...overlayPositionStyle,
-              color: overlayStyle.textColor || '#FFFFFF',
-              fontSize: `${Math.max(9, Math.min(24, Math.round(12 * canvasScale)))}px`,
-              padding: `${Math.round(6 * canvasScale)}px ${Math.round(12 * canvasScale)}px`,
-              opacity: overlayEnabled && isOverlayTimeActive ? (overlayStyle.opacity / 100) * overlayMotionOpacity : 0,
-            }}
-          >
-            {effectiveOverlay.value || effectiveOverlay.label || effectiveOverlay.name}
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── Subtitle / Quote Dynamic Stage ─────────────────────────── */}
         {Boolean(visibleSubtitle) && captionsEnabled && (() => {
