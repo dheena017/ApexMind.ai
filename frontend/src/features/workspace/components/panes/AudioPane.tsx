@@ -83,7 +83,7 @@ export const SOUNDTRACK_GENRES = [
 ] as const;
 
 export const SFX_CATEGORIES = [
-  { value: 'all', label: '✨ All Sound Effects' },
+  { value: 'all', label: '✨ All Sound FX' },
   { value: 'Impact', label: '💥 Impacts & Booms' },
   { value: 'Transition', label: '⚡ Whooshes & Swishes' },
   { value: 'Tension', label: '⏳ Risers & Suspense' },
@@ -91,7 +91,7 @@ export const SFX_CATEGORIES = [
 ] as const;
 
 export const SOUNDTRACK_PROVIDERS = [
-  { id: 'all', label: '✨ All Free Live Providers' },
+  { id: 'all', label: '✨ All Music Sources' },
   { id: 'jamendo', label: '🎵 Jamendo (500K+ CC)' },
   { id: 'ccmixter', label: '🎧 ccMixter (45K+ CC)' },
   { id: 'netlabels', label: '💿 Netlabels Open Music (70K+)' },
@@ -101,7 +101,7 @@ export const SOUNDTRACK_PROVIDERS = [
 ] as const;
 
 export const SFX_PROVIDERS = [
-  { id: 'all', label: '✨ All Free SFX Providers' },
+  { id: 'all', label: '✨ All Sound FX' },
   { id: 'bbc_sfx', label: '🎙️ BBC Sound Effects (16K+)' },
   { id: 'open_sfx', label: '💥 Open SFX Commons' },
   { id: 'wikimedia', label: '🏛️ Wikimedia Commons SFX' },
@@ -680,10 +680,10 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   };
 
   const TABS: TabItem<'soundtracks' | 'sfx' | 'record' | 'url'>[] = [
-    { id: 'soundtracks', label: 'Soundtracks', icon: Music, badge: totalSoundtracks ? formatCompactAudioCount(totalSoundtracks) : undefined },
-    { id: 'sfx', label: 'Sound Effects', icon: Sparkles, badge: totalSfx ? formatCompactAudioCount(totalSfx) : undefined },
-    { id: 'record', label: 'Studio Record', icon: Mic, badge: recordedTakes.length ? `${recordedTakes.length}` : undefined },
-    { id: 'url', label: 'Web Audio Import', icon: ExternalLink },
+    { id: 'soundtracks', label: 'Music', icon: Music, badge: totalSoundtracks ? formatCompactAudioCount(totalSoundtracks) : undefined },
+    { id: 'sfx', label: 'Sound FX', icon: Sparkles, badge: totalSfx ? formatCompactAudioCount(totalSfx) : undefined },
+    { id: 'record', label: 'Voiceover', icon: Mic, badge: recordedTakes.length ? `${recordedTakes.length}` : undefined },
+    { id: 'url', label: 'Import', icon: ExternalLink },
   ];
 
   return (
@@ -709,9 +709,9 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           )}
           <span className="text-[10px] font-mono-studio text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-[#242424]">
             {activeTab === 'soundtracks'
-              ? `${liveSoundtracks.length} Live Tracks`
+              ? `${liveSoundtracks.length} Music Tracks`
               : activeTab === 'sfx'
-              ? `${liveSfx.length} Live SFX`
+              ? `${liveSfx.length} Sound FX`
               : 'Studio Audio'}
           </span>
         </div>
@@ -746,7 +746,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search live soundtracks (e.g. cinematic, phonk, epic, lofi)..."
+                  placeholder="Search background music (cinematic, phonk, epic, lofi)..."
                   className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 transition-all"
                 />
                 {searchQuery && (
@@ -808,7 +808,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
               )}
               {!isSearchingAudio && !audioSearchError && liveSoundtracks.length === 0 && (
                 <div className="py-8 flex flex-col items-center justify-center gap-2.5 text-center">
-                  <p className="text-xs text-zinc-400">No soundtrack streams found for this specific filter.</p>
+                  <p className="text-xs text-zinc-400">No music tracks found for this specific filter.</p>
                   <button
                     type="button"
                     onClick={() => {
@@ -818,7 +818,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     }}
                     className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors cursor-pointer shadow-sm"
                   >
-                    Explore All Free Live Providers
+                    Explore All Music Sources
                   </button>
                 </div>
               )}
@@ -921,13 +921,13 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                     className="w-full py-2.5 px-4 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] hover:border-blue-500/50 text-xs font-semibold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
                   >
                     <Plus className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
-                    <span>Load More Soundtracks</span>
+                    <span>Load More Music Tracks</span>
                     <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
                       +24
                     </span>
                   </button>
                   <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
-                    Showing {liveSoundtracks.length} of {totalSoundtracks ? formatCompactAudioCount(totalSoundtracks) : '500K+'} Live Tracks
+                    Showing {liveSoundtracks.length} of {totalSoundtracks ? formatCompactAudioCount(totalSoundtracks) : '500K+'} Music Tracks
                   </span>
                 </div>
               )}
@@ -948,7 +948,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search live sound effects (whoosh, boom, hit, riser)..."
+                  placeholder="Search sound effects & FX (whoosh, boom, hit, riser)..."
                   className="w-full bg-[#181818] border border-[#242424] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/40 transition-all"
                 />
                 {searchQuery && (
@@ -1008,7 +1008,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             )}
             {!isSearchingSfx && !sfxSearchError && liveSfx.length === 0 && (
               <div className="py-8 flex flex-col items-center justify-center gap-2.5 text-center">
-                <p className="text-xs text-zinc-400">No sound effects found for this specific filter.</p>
+                <p className="text-xs text-zinc-400">No sound FX found for this specific filter.</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -1018,7 +1018,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   }}
                   className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors cursor-pointer shadow-sm"
                 >
-                  Explore All Free Sound Effects
+                  Explore All Sound FX
                 </button>
               </div>
             )}
@@ -1094,13 +1094,13 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
                   className="w-full py-2.5 px-4 rounded-xl bg-[#1C1C22] hover:bg-[#25252E] border border-[#2D2D35] hover:border-blue-500/50 text-xs font-semibold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
                 >
                   <Plus className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
-                  <span>Load More Sound Effects</span>
+                  <span>Load More Sound FX</span>
                   <span className="text-[10px] font-mono-studio text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
                     +24
                   </span>
                 </button>
                 <span className="text-[10px] font-mono-studio text-zinc-500 text-center">
-                  Showing {liveSfx.length} of {totalSfx ? formatCompactAudioCount(totalSfx) : '600K+'} Live SFX
+                  Showing {liveSfx.length} of {totalSfx ? formatCompactAudioCount(totalSfx) : '600K+'} Sound FX
                 </span>
               </div>
             )}
