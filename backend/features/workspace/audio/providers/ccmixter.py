@@ -43,8 +43,17 @@ class CCMixterAudioProvider(BaseAudioProvider):
             "lofi": "chill",
             "phonk": "hip_hop",
             "synthwave": "electro",
+            "hiphop": "hip_hop",
             "piano": "piano",
             "electronic": "electronic",
+            "rock": "rock",
+            "jazz": "jazz",
+            "acoustic": "acoustic",
+            "orchestral": "classical",
+            "gaming": "chiptune",
+            "meditation": "meditation",
+            "tropical": "reggae",
+            "darkwave": "industrial",
         }
         tag = genre_map.get(genre_key, "")
 

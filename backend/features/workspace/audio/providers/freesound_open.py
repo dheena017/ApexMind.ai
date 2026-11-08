@@ -42,8 +42,24 @@ class OpenSFXProvider(BaseAudioProvider):
         page_size: int = 24,
     ) -> List[Dict[str, Any]]:
         clean_q = (query or "").strip().replace("#", "").strip()
-        cat_term = category if category != "all" else "whoosh impact transition"
-        term = clean_q or cat_term
+        cat_search_terms = {
+            "all": "whoosh impact sound effect",
+            "impact": "impact boom hit slam crash strike",
+            "transition": "whoosh swoosh transition swish sweep",
+            "tension": "riser tension buildup suspense drone",
+            "scifi": "laser sci-fi cyber robot glitch hologram",
+            "ui": "click button pop chime beep notification",
+            "gaming": "8bit arcade retro coin game jump bonus",
+            "foley": "footstep door walk glass handling paper",
+            "vehicle": "engine car drift vehicle motor rev",
+            "nature": "rain thunder wind storm river water ambient",
+            "horror": "horror scream creak scary monster ghost dark",
+            "cartoon": "cartoon boing whistle comic funny slide",
+            "cinematic": "cinematic braam dramatic horn brass trailer",
+            "bassdrop": "bass sub drop rumble 808 subdrop",
+            "action": "action fight punch kick combat strike",
+        }
+        term = clean_q or cat_search_terms.get(category.lower(), "sound effect")
 
         cache_key = f"opensfx_{term}_{page}"
         if cache_key in self._cache_sfx:
@@ -64,7 +80,10 @@ class OpenSFXProvider(BaseAudioProvider):
         url = f"https://commons.wikimedia.org/w/api.php?{urllib.parse.urlencode(params)}"
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "ApexMindStudio/2.0 (LiveOpenSFX; https://apexmind.ai)"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+                "Accept": "application/json",
+            },
         )
 
         try:
@@ -83,18 +102,45 @@ class OpenSFXProvider(BaseAudioProvider):
                         continue
 
                     title_lower = title_clean.lower()
-                    if "whoosh" in title_lower or "transition" in title_lower or "swoosh" in title_lower:
+                    if any(w in title_lower for w in ["whoosh", "swoosh", "transition", "swish"]):
                         cat = "Transition"
                         dur = 1.0
-                    elif "impact" in title_lower or "hit" in title_lower or "boom" in title_lower or "drop" in title_lower:
+                    elif any(w in title_lower for w in ["impact", "hit", "boom", "slam", "crash"]):
                         cat = "Impact"
                         dur = 1.8
-                    elif "riser" in title_lower or "tension" in title_lower or "suspense" in title_lower:
+                    elif any(w in title_lower for w in ["riser", "tension", "buildup", "suspense"]):
                         cat = "Tension"
                         dur = 2.8
-                    elif "click" in title_lower or "button" in title_lower or "pop" in title_lower:
-                        cat = "Action"
+                    elif any(w in title_lower for w in ["laser", "scifi", "sci-fi", "cyber", "robot"]):
+                        cat = "Sci-Fi"
+                        dur = 1.4
+                    elif any(w in title_lower for w in ["click", "pop", "button", "chime", "beep"]):
+                        cat = "UI & Tech"
                         dur = 0.5
+                    elif any(w in title_lower for w in ["8bit", "arcade", "game", "coin"]):
+                        cat = "Gaming"
+                        dur = 1.0
+                    elif any(w in title_lower for w in ["footstep", "door", "walk", "foley"]):
+                        cat = "Foley"
+                        dur = 1.8
+                    elif any(w in title_lower for w in ["car", "engine", "drift", "motor"]):
+                        cat = "Vehicles"
+                        dur = 2.4
+                    elif any(w in title_lower for w in ["rain", "thunder", "wind", "nature"]):
+                        cat = "Nature"
+                        dur = 3.0
+                    elif any(w in title_lower for w in ["horror", "scream", "creak", "ghost"]):
+                        cat = "Horror"
+                        dur = 2.2
+                    elif any(w in title_lower for w in ["cartoon", "boing", "whistle", "funny"]):
+                        cat = "Cartoon"
+                        dur = 1.2
+                    elif any(w in title_lower for w in ["braam", "cinematic", "trailer"]):
+                        cat = "Cinematic"
+                        dur = 3.0
+                    elif any(w in title_lower for w in ["sub", "808", "bass", "drop"]):
+                        cat = "Bass Drop"
+                        dur = 1.5
                     else:
                         cat = "Action"
                         dur = 1.5

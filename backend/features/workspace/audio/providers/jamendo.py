@@ -58,8 +58,17 @@ class JamendoAudioProvider(BaseAudioProvider):
             "lofi": "lofi",
             "phonk": "electronic",
             "synthwave": "synthwave",
+            "hiphop": "hiphop",
             "piano": "piano",
             "electronic": "electronic",
+            "rock": "rock",
+            "jazz": "jazz",
+            "acoustic": "acoustic",
+            "orchestral": "classical",
+            "gaming": "chiptune",
+            "meditation": "relaxation",
+            "tropical": "reggae",
+            "darkwave": "darkwave",
         }
         target_tag = genre_map.get(genre_key, "soundtrack")
 

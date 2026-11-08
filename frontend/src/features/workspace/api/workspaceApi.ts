@@ -376,16 +376,26 @@ export const workspaceApi = {
       total: data?.total || 0,
       items: (data?.items || []).map((effect: any) => {
         const cat = String(effect.category || '').toLowerCase();
+        let formattedCat = 'Action';
+        if (cat.includes('whoosh') || cat.includes('transition') || cat.includes('swoosh')) formattedCat = 'Transition';
+        else if (cat.includes('impact') || cat.includes('sub_drop') || cat.includes('boom') || cat.includes('slam')) formattedCat = 'Impact';
+        else if (cat.includes('riser') || cat.includes('tension') || cat.includes('buildup')) formattedCat = 'Tension';
+        else if (cat.includes('scifi') || cat.includes('laser') || cat.includes('cyber')) formattedCat = 'Sci-Fi';
+        else if (cat.includes('ui') || cat.includes('click') || cat.includes('bell') || cat.includes('pop')) formattedCat = 'UI & Tech';
+        else if (cat.includes('game') || cat.includes('8bit') || cat.includes('arcade')) formattedCat = 'Gaming';
+        else if (cat.includes('foley') || cat.includes('footstep') || cat.includes('door')) formattedCat = 'Foley';
+        else if (cat.includes('vehicle') || cat.includes('car') || cat.includes('engine')) formattedCat = 'Vehicles';
+        else if (cat.includes('nature') || cat.includes('rain') || cat.includes('thunder')) formattedCat = 'Nature';
+        else if (cat.includes('horror') || cat.includes('scream') || cat.includes('creak')) formattedCat = 'Horror';
+        else if (cat.includes('cartoon') || cat.includes('boing') || cat.includes('whistle')) formattedCat = 'Cartoon';
+        else if (cat.includes('cinematic') || cat.includes('braam')) formattedCat = 'Cinematic';
+        else if (cat.includes('bass') || cat.includes('808')) formattedCat = 'Bass Drop';
+        else if (effect.category) formattedCat = effect.category;
+
         return {
           id: effect.id,
-          name: effect.title,
-          category: cat.includes('whoosh') || cat.includes('transition')
-            ? 'Transition'
-            : cat.includes('impact') || cat.includes('sub_drop') || cat.includes('boom')
-              ? 'Impact'
-              : cat.includes('riser') || cat.includes('tension')
-                ? 'Tension'
-                : 'Action',
+          name: effect.title || effect.name || 'Sound Effect',
+          category: formattedCat,
           duration: effect.durationFormatted || `${effect.duration ?? 1}s`,
           audioUrl: effect.audioUrl,
           provider: effect.provider,

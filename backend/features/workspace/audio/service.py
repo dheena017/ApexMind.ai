@@ -135,14 +135,18 @@ def search_soundtracks(
     deduped_items = []
     for it in items:
         url = it.get("audioUrl", "")
-        if url and url not in seen_urls:
+        # Filter out bad unplayable links (ISOs, disk images, zip archives)
+        if not url or not url.startswith("http") or any(b in url.lower() for b in [".iso", ".nrg", ".zip", ".tar", ".gz"]):
+            continue
+        if url not in seen_urls:
             seen_urls.add(url)
             clean_t, clean_a = clean_track_title_and_artist(
-                it.get("title", ""),
+                it.get("title", "") or it.get("name", ""),
                 it.get("artist", ""),
-                default_artist="Independent Creator",
+                default_artist="Open Sound Designer",
             )
             it["title"] = clean_t
+            it["name"] = clean_t
             it["artist"] = clean_a
             deduped_items.append(it)
 
@@ -224,14 +228,18 @@ def search_sound_effects(
     deduped_items = []
     for it in items:
         url = it.get("audioUrl", "")
-        if url and url not in seen_urls:
+        # Filter out bad unplayable links (ISOs, disk images, zip archives)
+        if not url or not url.startswith("http") or any(b in url.lower() for b in [".iso", ".nrg", ".zip", ".tar", ".gz"]):
+            continue
+        if url not in seen_urls:
             seen_urls.add(url)
             clean_t, clean_a = clean_track_title_and_artist(
-                it.get("title", ""),
+                it.get("title", "") or it.get("name", ""),
                 it.get("artist", ""),
-                default_artist="Independent Creator",
+                default_artist="Open Sound Designer",
             )
             it["title"] = clean_t
+            it["name"] = clean_t
             it["artist"] = clean_a
             deduped_items.append(it)
 

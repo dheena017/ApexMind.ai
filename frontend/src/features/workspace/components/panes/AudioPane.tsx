@@ -47,7 +47,7 @@ export interface SoundtrackItem {
 export interface SoundEffectItem {
   id: string;
   name: string;
-  category: 'Impact' | 'Transition' | 'Tension' | 'Action';
+  category: string;
   duration: string;
   audioUrl: string;
   provider?: string;
@@ -75,19 +75,38 @@ export const SOUNDTRACK_GENRES = [
   { value: 'cinematic', label: '🎬 Cinematic & Epic' },
   { value: 'motivational', label: '⚡ Motivational & Focus' },
   { value: 'ambient', label: '🌌 Ambient & Chill' },
-  { value: 'lofi', label: '☕ Lo-Fi Hip Hop' },
-  { value: 'phonk', label: '🏎️ Drift Phonk & Bass' },
-  { value: 'synthwave', label: '🌆 Synthwave & Cyber' },
-  { value: 'piano', label: '🎹 Piano & Classical' },
-  { value: 'electronic', label: '⚡ Electronic & EDM' },
+  { value: 'lofi', label: '☕ Lo-Fi Hip Hop & Study' },
+  { value: 'phonk', label: '🏎️ Drift Phonk & Heavy Bass' },
+  { value: 'synthwave', label: '🌆 Synthwave & Cyber 80s' },
+  { value: 'hiphop', label: '🎤 Hip Hop, Trap & Beats' },
+  { value: 'piano', label: '🎹 Emotional Piano & Strings' },
+  { value: 'electronic', label: '⚡ Electronic, EDM & House' },
+  { value: 'rock', label: '🎸 Rock, Metal & Alternative' },
+  { value: 'jazz', label: '🎷 Smooth Jazz, Blues & Soul' },
+  { value: 'acoustic', label: '🎙️ Acoustic, Folk & Guitar' },
+  { value: 'orchestral', label: '🎻 Classical Symphony & Dramatic' },
+  { value: 'gaming', label: '👾 8-Bit Chiptune & Arcade' },
+  { value: 'meditation', label: '🧘 Deep Meditation & Sleep Drone' },
+  { value: 'tropical', label: '🌴 Tropical, Reggae & Summer' },
+  { value: 'darkwave', label: '🚀 Cyberpunk, Darkwave & Industrial' },
 ] as const;
 
 export const SFX_CATEGORIES = [
   { value: 'all', label: '✨ All Sound FX' },
-  { value: 'Impact', label: '💥 Impacts & Booms' },
-  { value: 'Transition', label: '⚡ Whooshes & Swishes' },
-  { value: 'Tension', label: '⏳ Risers & Suspense' },
-  { value: 'Action', label: '🎯 Hits, Clicks & Hits' },
+  { value: 'impact', label: '💥 Impacts, Booms & Slams' },
+  { value: 'transition', label: '⚡ Whooshes & Fast Swishes' },
+  { value: 'tension', label: '⏳ Risers, Tension & Buildups' },
+  { value: 'scifi', label: '🔫 Cyber, Sci-Fi & Lasers' },
+  { value: 'ui', label: '🔔 UI, Clicks, Pops & Bells' },
+  { value: 'gaming', label: '🎮 Gaming, 8-Bit & Arcade' },
+  { value: 'foley', label: '👣 Foley, Footsteps & Doors' },
+  { value: 'vehicle', label: '🏎️ Vehicles, Engines & Drifts' },
+  { value: 'nature', label: '🌿 Ambient, Rain & Thunder' },
+  { value: 'horror', label: '👻 Horror, Creaks & Dark FX' },
+  { value: 'cartoon', label: '😂 Cartoon, Boings & Whistles' },
+  { value: 'cinematic', label: '🎬 Cinematic Braams & Brass' },
+  { value: 'bassdrop', label: '🔊 Sub Drops & Bass Hits' },
+  { value: 'action', label: '🎯 Action Hits & Fight Punches' },
 ] as const;
 
 export const SOUNDTRACK_PROVIDERS = [
@@ -603,8 +622,15 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     } else {
       previewAudioRef.current.src = track.audioUrl;
       previewAudioRef.current.volume = 0.8;
-      previewAudioRef.current.play().catch(() => {});
-      setPlayingTrackId(track.id);
+      previewAudioRef.current
+        .play()
+        .then(() => {
+          setPlayingTrackId(track.id);
+        })
+        .catch((err) => {
+          setPlayingTrackId(null);
+          toast.error(`Track stream unavailable: ${err?.message || 'Unsupported audio codec'}`);
+        });
     }
   };
 
@@ -618,8 +644,15 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
     } else {
       sfxAudioRef.current.src = sfx.audioUrl;
       sfxAudioRef.current.volume = 0.85;
-      sfxAudioRef.current.play().catch(() => {});
-      setPlayingSfxId(sfx.id);
+      sfxAudioRef.current
+        .play()
+        .then(() => {
+          setPlayingSfxId(sfx.id);
+        })
+        .catch((err) => {
+          setPlayingSfxId(null);
+          toast.error(`Sound effect unavailable: ${err?.message || 'Unsupported format'}`);
+        });
     }
   };
 
@@ -689,8 +722,24 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#141414] text-white font-sans-studio select-none overflow-hidden rounded-none border-0">
       {/* Hidden Audio Elements */}
-      <audio ref={previewAudioRef} onEnded={() => setPlayingTrackId(null)} className="hidden" />
-      <audio ref={sfxAudioRef} onEnded={() => setPlayingSfxId(null)} className="hidden" />
+      <audio
+        ref={previewAudioRef}
+        onEnded={() => setPlayingTrackId(null)}
+        onError={() => {
+          setPlayingTrackId(null);
+          toast.error('Preview stream unavailable for this track');
+        }}
+        className="hidden"
+      />
+      <audio
+        ref={sfxAudioRef}
+        onEnded={() => setPlayingSfxId(null)}
+        onError={() => {
+          setPlayingSfxId(null);
+          toast.error('Sound stream unavailable for this effect');
+        }}
+        className="hidden"
+      />
       <audio ref={customAudioRef} onEnded={() => setCustomAudioPlaying(false)} className="hidden" />
       <audio ref={takeAudioRef} onEnded={() => setPlayingTakeId(null)} className="hidden" />
 

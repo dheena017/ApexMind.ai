@@ -133,8 +133,24 @@ class WikimediaAudioProvider(BaseAudioProvider):
         page_size: int = 24,
     ) -> List[Dict[str, Any]]:
         clean_q = (query or "").strip().replace("#", "").strip()
-        cat_term = category if category != "all" else "whoosh impact"
-        search_filter = clean_q or cat_term
+        cat_search_terms = {
+            "all": "whoosh impact sound effect",
+            "impact": "impact boom hit slam crash strike",
+            "transition": "whoosh swoosh transition swish sweep",
+            "tension": "riser tension buildup suspense drone",
+            "scifi": "laser sci-fi cyber robot glitch hologram",
+            "ui": "click button pop chime beep notification",
+            "gaming": "8bit arcade retro coin game jump bonus",
+            "foley": "footstep door walk glass handling paper",
+            "vehicle": "engine car drift vehicle motor rev",
+            "nature": "rain thunder wind storm river water ambient",
+            "horror": "horror scream creak scary monster ghost dark",
+            "cartoon": "cartoon boing whistle comic funny slide",
+            "cinematic": "cinematic braam dramatic horn brass trailer",
+            "bassdrop": "bass sub drop rumble 808 subdrop",
+            "action": "action fight punch kick combat strike",
+        }
+        search_filter = clean_q or cat_search_terms.get(category.lower(), "sound effect")
         search_term = f"filetype:audio sound effect {search_filter}"
 
         cache_key = f"sfx_{search_term}_{page}"
@@ -151,15 +167,45 @@ class WikimediaAudioProvider(BaseAudioProvider):
                 default_artist="Open SFX Creator",
             )
             title_lower = clean_sfx_title.lower()
-            if "whoosh" in title_lower or "swoosh" in title_lower or "transition" in title_lower:
+            if any(w in title_lower for w in ["whoosh", "swoosh", "transition", "swish"]):
                 cat = "Transition"
                 dur = 1.2
-            elif "impact" in title_lower or "hit" in title_lower or "boom" in title_lower:
+            elif any(w in title_lower for w in ["impact", "hit", "boom", "slam", "crash"]):
                 cat = "Impact"
                 dur = 1.8
-            elif "riser" in title_lower or "tension" in title_lower:
+            elif any(w in title_lower for w in ["riser", "tension", "buildup", "suspense"]):
                 cat = "Tension"
                 dur = 2.5
+            elif any(w in title_lower for w in ["laser", "scifi", "sci-fi", "cyber", "robot", "glitch"]):
+                cat = "Sci-Fi"
+                dur = 1.4
+            elif any(w in title_lower for w in ["click", "pop", "button", "chime", "beep", "ui"]):
+                cat = "UI & Tech"
+                dur = 0.6
+            elif any(w in title_lower for w in ["8bit", "arcade", "game", "coin", "jump"]):
+                cat = "Gaming"
+                dur = 1.0
+            elif any(w in title_lower for w in ["footstep", "door", "walk", "foley"]):
+                cat = "Foley"
+                dur = 2.0
+            elif any(w in title_lower for w in ["car", "engine", "drift", "motor"]):
+                cat = "Vehicles"
+                dur = 2.5
+            elif any(w in title_lower for w in ["rain", "thunder", "wind", "nature", "water"]):
+                cat = "Nature"
+                dur = 3.0
+            elif any(w in title_lower for w in ["horror", "scream", "creak", "ghost"]):
+                cat = "Horror"
+                dur = 2.2
+            elif any(w in title_lower for w in ["cartoon", "boing", "whistle", "funny"]):
+                cat = "Cartoon"
+                dur = 1.3
+            elif any(w in title_lower for w in ["braam", "cinematic", "trailer"]):
+                cat = "Cinematic"
+                dur = 3.2
+            elif any(w in title_lower for w in ["sub", "808", "bass", "drop"]):
+                cat = "Bass Drop"
+                dur = 1.5
             else:
                 cat = "Action"
                 dur = 1.5

@@ -49,13 +49,15 @@ class BBCSoundEffectsProvider(BaseAudioProvider):
         if cache_key in self._cache_sfx:
             return self._cache_sfx[cache_key][:page_size]
 
-        # Query live BBC Sound Effects collection on Archive.org
+        # Query live broadcast sound effects with verified MP3 streams
+        base_sfx = '(collection:bbc_sound_effects OR collection:audio_effects OR collection:freesound)'
+        neg_filter = '-title:(complete OR iso OR nrg OR cd-rom OR disc OR dump)'
         if clean_q:
-            lucene_query = f'collection:(bbc_sound_effects) AND ({clean_q})'
+            lucene_query = f'mediatype:audio AND {base_sfx} AND format:("VBR MP3" OR "MP3") AND ({clean_q}) AND {neg_filter}'
         elif cat_key:
-            lucene_query = f'collection:(bbc_sound_effects) AND ({cat_key})'
+            lucene_query = f'mediatype:audio AND {base_sfx} AND format:("VBR MP3" OR "MP3") AND ({cat_key}) AND {neg_filter}'
         else:
-            lucene_query = 'collection:(bbc_sound_effects)'
+            lucene_query = f'mediatype:audio AND {base_sfx} AND format:("VBR MP3" OR "MP3") AND {neg_filter}'
         params = {
             "q": lucene_query,
             "fl[]": ["identifier", "title", "description", "downloads", "duration"],
@@ -68,7 +70,10 @@ class BBCSoundEffectsProvider(BaseAudioProvider):
         url = f"https://archive.org/advancedsearch.php?{urllib.parse.urlencode(params, doseq=True)}"
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "ApexMindStudio/2.0 (LiveBBCSFX; https://apexmind.ai)"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+                "Accept": "application/json",
+            },
         )
 
         try:

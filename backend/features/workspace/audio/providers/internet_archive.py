@@ -109,17 +109,26 @@ class InternetArchiveAudioProvider(BaseAudioProvider):
         page_size: int = 24,
     ) -> List[Dict[str, Any]]:
         clean_q = (query or "").strip().replace("#", "").strip()
-        cat_str = category if category != "all" else "sound effect"
-        search_filter = clean_q or f"{cat_str} effect"
+        cat_key = (category or "all").lower()
 
-        cache_key = f"ia_sfx_{search_filter}_{page}"
+        cache_key = f"ia_sfx_{clean_q}_{cat_key}_{page}"
         if cache_key in self._cached:
             return self._cached[cache_key][:page_size]
 
-        lucene_query = f'mediatype:audio AND (subject:("sound effects" OR sfx) OR title:({search_filter}))'
+        # Require verified single-track VBR MP3 audio streams; exclude disk images, ISOs, multi-disc dumps
+        base_sfx = '(collection:freesound OR collection:audio_effects OR subject:("sound effects") OR subject:sfx)'
+        negative_filter = '-title:(iso OR nrg OR complete OR disc OR software OR collection OR library OR "cd-rom" OR torrent OR dump OR "sound scans")'
+
+        if clean_q:
+            lucene_query = f'mediatype:audio AND {base_sfx} AND format:("VBR MP3") AND ({clean_q}) AND {negative_filter}'
+        elif cat_key != "all":
+            lucene_query = f'mediatype:audio AND {base_sfx} AND format:("VBR MP3") AND ({cat_key}) AND {negative_filter}'
+        else:
+            lucene_query = f'mediatype:audio AND {base_sfx} AND format:("VBR MP3") AND {negative_filter}'
+
         params = {
             "q": lucene_query,
-            "fl[]": ["identifier", "title", "creator"],
+            "fl[]": ["identifier", "title", "creator", "description", "downloads"],
             "sort[]": "downloads desc",
             "rows": str(min(page_size * 2, 40)),
             "page": str(page),
@@ -129,11 +138,14 @@ class InternetArchiveAudioProvider(BaseAudioProvider):
         url = f"https://archive.org/advancedsearch.php?{urllib.parse.urlencode(params, doseq=True)}"
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "ApexMindStudio/2.0 (LiveArchiveSFX; https://apexmind.ai)"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+                "Accept": "application/json",
+            },
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=6.5) as resp:
+            with urllib.request.urlopen(req, timeout=7.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 docs = data.get("response", {}).get("docs", [])
                 parsed: List[Dict[str, Any]] = []
@@ -143,22 +155,35 @@ class InternetArchiveAudioProvider(BaseAudioProvider):
                     if not identifier:
                         continue
 
+                    # Filter out non-playable ISO/dump identifiers
+                    ident_lower = identifier.lower()
+                    if any(bad in ident_lower for bad in ["iso", "nrg", "complete", "cdrom", "disc", "dump", "torrent"]):
+                        continue
+
                     title = doc.get("title") or identifier.replace("-", " ").title()
+                    if isinstance(title, list):
+                        title = title[0] if title else identifier
+
+                    title_str = str(title).strip()
+                    title_lower = title_str.lower()
+                    if any(bad in title_lower for bad in ["iso", "nrg", "complete", "software", "cd-rom"]):
+                        continue
+
                     audio_url = f"https://archive.org/download/{identifier}/{identifier}_vbr.mp3"
 
-                    title_lower = title.lower()
-                    if "whoosh" in title_lower or "transition" in title_lower:
+                    if any(w in title_lower for w in ["whoosh", "swoosh", "transition", "pass"]):
                         cat = "Transition"
-                    elif "impact" in title_lower or "hit" in title_lower or "boom" in title_lower:
+                    elif any(w in title_lower for w in ["impact", "hit", "boom", "crash", "strike"]):
                         cat = "Impact"
-                    elif "tension" in title_lower or "riser" in title_lower:
+                    elif any(w in title_lower for w in ["tension", "riser", "alarm", "suspense"]):
                         cat = "Tension"
                     else:
                         cat = "Action"
 
                     parsed.append({
                         "id": f"ia-sfx-{identifier}",
-                        "title": title[:50],
+                        "title": title_str[:50],
+                        "name": title_str[:50],
                         "category": cat,
                         "duration": 2.0,
                         "durationFormatted": "2.0s",
@@ -171,7 +196,7 @@ class InternetArchiveAudioProvider(BaseAudioProvider):
                 self._cached[cache_key] = parsed
                 return parsed[:page_size]
         except Exception as e:
-            logger.warning(f"Internet Archive SFX load error: {e}")
+            logger.debug(f"Internet Archive SFX load error: {e}")
             return []
 
     def get_total_tracks(self, query: str = "", genre: str = "all") -> int:
