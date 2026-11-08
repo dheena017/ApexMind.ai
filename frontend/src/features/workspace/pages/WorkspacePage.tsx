@@ -264,6 +264,8 @@ export default function WorkspacePage({
   });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
+  const currentTimeRef = useRef(0);
+  currentTimeRef.current = currentTime;
   const audioProcessingGraphRef = useRef<{
     context: AudioContext;
     source: MediaElementAudioSourceNode;
@@ -405,14 +407,22 @@ export default function WorkspacePage({
         noiseReduction: boolean;
       }>).detail;
       if (detail?.audioType === 'voice') {
-        setVoiceFadeSettings({ fadeIn: detail.fadeIn, fadeOut: detail.fadeOut });
-        setNoiseReduction(detail.noiseReduction);
+        setVoiceFadeSettings((prev) =>
+          prev.fadeIn === detail.fadeIn && prev.fadeOut === detail.fadeOut
+            ? prev
+            : { fadeIn: detail.fadeIn, fadeOut: detail.fadeOut }
+        );
+        setNoiseReduction((prev) => (prev === detail.noiseReduction ? prev : detail.noiseReduction));
         if (detail.noiseReduction) {
           const graph = ensureAudioProcessingGraph();
           if (graph?.context.state === 'suspended') void graph.context.resume();
         }
       } else if (detail?.audioType === 'music') {
-        setMusicFadeSettings({ fadeIn: detail.fadeIn, fadeOut: detail.fadeOut });
+        setMusicFadeSettings((prev) =>
+          prev.fadeIn === detail.fadeIn && prev.fadeOut === detail.fadeOut
+            ? prev
+            : { fadeIn: detail.fadeIn, fadeOut: detail.fadeOut }
+        );
       }
     };
     window.addEventListener('workspace:audio-effects-change', handleAudioEffects);
@@ -936,13 +946,14 @@ export default function WorkspacePage({
     let animId: number;
 
     const tick = (now: number) => {
-      const mult = getDynamicCadenceMultiplier(currentTime);
+      const mult = getDynamicCadenceMultiplier(currentTimeRef.current);
       const deltaSec = ((now - lastTs) / 1000) * (playbackRate * mult);
       lastTs = now;
 
       const audio = audioRef.current;
       if (audio && audioUrl && !audio.paused && !audio.ended && Number.isFinite(audio.duration) && audio.currentTime < audio.duration - 0.05) {
-        setCurrentTime(audio.currentTime);
+        const nextTime = Math.round(audio.currentTime * 100) / 100;
+        setCurrentTime((prev) => (Math.abs(prev - nextTime) >= 0.03 ? nextTime : prev));
       } else {
         setCurrentTime((prev) => {
           const next = prev + deltaSec;

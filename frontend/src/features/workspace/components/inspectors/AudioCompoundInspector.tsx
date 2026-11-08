@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ScrollableTabs } from '@/src/shared/ui/ScrollableTabs';
 import {
   Mic,
@@ -161,7 +161,8 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   const [loopAudio, setLoopAudio] = useState(true);
 
   useEffect(() => {
-    setLocalVolume(Math.round(volume * 100));
+    const rounded = Math.round(volume * 100);
+    setLocalVolume((prev) => (prev === rounded ? prev : rounded));
   }, [volume]);
 
   useEffect(() => {
@@ -169,7 +170,12 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   }, [duration]);
 
   // Broadcast audio effects and filter parameters to workspace audio graph
+  const prevBroadcastRef = useRef<string>('');
   useEffect(() => {
+    const key = `${audioType}_${isMuted}_${localVolume}_${fadeIn}_${fadeOut}_${noiseReduction}_${noiseReductionLevel}_${reverb}_${reverbMix}_${compression}_${stereoWidth}_${pan}_${ducking}_${duckingLevel}_${bass}_${mid}_${treble}`;
+    if (prevBroadcastRef.current === key) return;
+    prevBroadcastRef.current = key;
+
     window.dispatchEvent(
       new CustomEvent('workspace:audio-effects-change', {
         detail: {
@@ -226,10 +232,11 @@ export const AudioCompoundInspector: React.FC<AudioCompoundInspectorProps> = ({
   const [spectrumBars, setSpectrumBars] = useState<number[]>(() => buildSpectrumBars(localVolume, isMuted));
 
   useEffect(() => {
-    const tick = () => setSpectrumBars(buildSpectrumBars(localVolume, isMuted));
-    tick();
-    const interval = window.setInterval(tick, 140);
-    return () => window.clearInterval(interval);
+    setSpectrumBars((prev) => {
+      const next = buildSpectrumBars(localVolume, isMuted);
+      if (prev.length === next.length && prev.every((v, i) => v === next[i])) return prev;
+      return next;
+    });
   }, [localVolume, isMuted]);
 
   return (
