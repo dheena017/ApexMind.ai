@@ -876,6 +876,7 @@ export default function WorkspacePage({
       return false;
     } catch (err) {
       consoleLogger.error('Studio', 'Pipeline execution error:', err);
+      toast.error(err instanceof Error ? err.message : 'AI Script Generation failed');
       return false;
     }
   };

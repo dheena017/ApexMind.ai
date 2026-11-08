@@ -735,10 +735,10 @@ Output MUST be a single raw JSON object matching this exact schema:
     }}
   ],
   "soundDesign": {{
-    "soundtrackTrackId": "track-phonk-titan",
-    "soundtrackTitle": "Titan Momentum Phonk",
-    "genre": "phonk",
-    "bpm": 140,
+    "soundtrackTrackId": "recommended-track-id",
+    "soundtrackTitle": "Recommended Soundtrack Title",
+    "genre": "cinematic",
+    "bpm": 120,
     "ducking": {{
       "active": true,
       "voiceActiveVolume": 0.18,
@@ -747,10 +747,8 @@ Output MUST be a single raw JSON object matching this exact schema:
       "releaseMs": 300
     }},
     "sfxEvents": [
-      {{ "time": 0.0, "sfxId": "sfx-impact-subdrop", "label": "Opening Hook Boom" }},
-      {{ "time": 2.5, "sfxId": "sfx-whoosh-fast", "label": "Scene 1 to 2 Swish" }},
-      {{ "time": 5.5, "sfxId": "sfx-whoosh-swish", "label": "Scene 2 to 3 Swish" }},
-      {{ "time": 9.0, "sfxId": "sfx-notif-cash", "label": "Closing CTA Ding" }}
+      {{ "time": 0.0, "sfxId": "sfx-impact", "label": "Opening Hook Boom" }},
+      {{ "time": 2.5, "sfxId": "sfx-whoosh", "label": "Scene Transition" }}
     ]
   }},
   "storyboard": [
@@ -772,7 +770,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "transition": "glitch",
       "cameraMotion": "push-in",
       "sfx": "Fast Cinematic Whoosh",
-      "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
+      "sfxUrl": null,
       "googleSearchQuery": "misty mountain peak sunrise clouds vertical 9:16",
       "visualQuery": "misty mountain peak sunrise clouds nature",
       "fallbackQueries": ["foggy pine forest aerial landscape", "mountain ridge clouds timelapse"],
@@ -844,7 +842,7 @@ Output MUST be a single raw JSON object matching this exact schema:
       "transition": "fade",
       "cameraMotion": "static",
       "sfx": "Cash Register Cha-Ching",
-      "sfxUrl": "https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3",
+      "sfxUrl": null,
       "googleSearchQuery": "northern lights aurora borealis mountain night sky 9:16",
       "visualQuery": "aurora borealis northern lights mountain nature",
       "fallbackQueries": ["starry night sky mountain timelapse nature", "green aurora night landscape"],
