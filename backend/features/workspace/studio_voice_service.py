@@ -10,7 +10,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from .audio_aligner import align_storyboard_to_audio
+from .audio import align_storyboard_to_audio
 from .service import synthesize_voiceover
 from backend.shared.ai_models import DEFAULT_TTS_MODEL
 

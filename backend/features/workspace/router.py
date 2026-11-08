@@ -166,157 +166,28 @@ async def get_open_media_providers_route():
     from .open_media_service import get_media_providers_status
     return get_media_providers_status()
 
-@router.get(
-    "/api/media/font-search",
-    tags=["Typography"],
-    summary="Search Modular Font Providers",
-    operation_id="search_modular_fonts",
-    description="Live query to 6 modular open-source font providers: Google Fonts (1,900+ fonts), Fontshare ITF (100+ viral display fonts), Open Font Library (1,500+ independent fonts), Fontsource CDN (1,600+ fonts), Bunny Fonts (1,900+ fonts), and Coollabs CDN (1,900+ fonts). 100% dynamic live APIs with zero hardcoded data."
-)
-async def get_open_fonts_route(
-    q: str = "",
-    category: str = "all",
-    provider: str = "all",
-    page: int = 1,
-    pageSize: int = 24,
-):
-    from .text import search_fonts
-    return search_fonts(
-        query=q,
-        category=category,
-        provider=provider,
-        page=page,
-        page_size=pageSize,
-    )
+# ══════════════════════════════════════════════════════════════════════════════
+# WORKSPACE MODULAR TEXT & TYPOGRAPHY SERVICE
+# ══════════════════════════════════════════════════════════════════════════════
+from .text import text_router
+
+router.include_router(text_router)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # WORKSPACE MODULAR AUDIO SERVICE
 # ══════════════════════════════════════════════════════════════════════════════
+from .audio import audio_router
 
-@router.get(
-    "/api/workspace/audio/soundtracks",
-    tags=["Audio"],
-    summary="Search Modular Soundtrack Providers",
-    operation_id="search_modular_soundtracks",
-    description="Live query to modular free audio providers: Jamendo (500K+ CC tracks), Wikimedia Commons, Internet Archive, and Free Music Archive. 100% dynamic live APIs with zero hardcoded data."
-)
-async def get_workspace_soundtracks_route(
-    q: str = "",
-    genre: str = "all",
-    provider: str = "all",
-    page: int = 1,
-    pageSize: int = 24,
-):
-    from .audio import search_soundtracks
-    return search_soundtracks(
-        query=q,
-        genre=genre,
-        provider=provider,
-        page=page,
-        page_size=pageSize,
-    )
+router.include_router(audio_router)
 
-
-@router.get(
-    "/api/workspace/audio/sfx",
-    tags=["Audio"],
-    summary="Search Modular Sound Effect Providers",
-    operation_id="search_modular_sfx",
-    description="Live query to modular free SFX providers: Open SFX Commons, Wikimedia Commons, and Internet Archive. 100% dynamic live APIs with zero hardcoded data."
-)
-async def get_workspace_sfx_route(
-    q: str = "whoosh",
-    category: str = "all",
-    provider: str = "all",
-    page: int = 1,
-    pageSize: int = 24,
-):
-    from .audio import search_sound_effects
-    return search_sound_effects(
-        query=q,
-        category=category,
-        provider=provider,
-        page=page,
-        page_size=pageSize,
-    )
-
-
-@router.get(
-    "/api/workspace/audio/providers",
-    tags=["Audio"],
-    summary="Get Modular Audio Providers Status",
-    operation_id="get_workspace_audio_providers",
-)
-async def get_workspace_audio_providers_route():
-    from .audio import get_audio_providers_status
-    return {
-        "success": True,
-        "providers": get_audio_providers_status(),
-    }
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STUDIO ELEMENTS & OVERLAYS SERVICE — 16 Live Providers
 # ══════════════════════════════════════════════════════════════════════════════
+from .elements import elements_router
 
-@router.get(
-    "/api/studio/elements/search",
-    response_model=ElementsCatalogResponse,
-    tags=["Elements"],
-    summary="Search Studio Elements & Overlays",
-    operation_id="search_studio_elements",
-    description="Live search across 16 modular vector, emoji, sticker, shape, and badge providers with zero hardcoded arrays."
-)
-async def get_search_studio_elements(
-    query: str = Query("", description="Keyword search term"),
-    category: str = Query("all", description="Element category: all, badges, icons, emojis, stickers, shapes, brands, progress, frames"),
-    provider: str = Query("all", description="Target provider or 'all'"),
-    page: int = Query(1, ge=1, description="Page number"),
-    pageSize: int = Query(24, ge=1, le=100, description="Items per page"),
-):
-    from .elements import search_elements
-    return search_elements(
-        query=query,
-        category=category,
-        provider=provider,
-        page=page,
-        page_size=pageSize,
-    )
-
-
-@router.get(
-    "/api/studio/elements/providers",
-    tags=["Elements"],
-    summary="Get Element Providers Status",
-    operation_id="get_studio_element_providers",
-    description="Returns availability status for all 16 live element providers."
-)
-async def get_studio_element_providers():
-    from .elements import get_element_providers_status
-    return {
-        "success": True,
-        "providers": get_element_providers_status(),
-    }
-
-
-@router.post(
-    "/api/studio/elements/custom-badge",
-    response_model=CreateCustomBadgeResponse,
-    tags=["Elements"],
-    summary="Create Custom Studio Badge",
-    operation_id="create_custom_studio_badge",
-    description="Generates a customized viral badge with gradient, styling, and text."
-)
-def post_create_custom_badge_route(payload: CreateCustomBadgeRequest):
-    from .elements import create_custom_badge
-    try:
-        return create_custom_badge(
-            text=payload.text,
-            gradient=payload.gradient,
-            icon=payload.icon
-        )
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+router.include_router(elements_router)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

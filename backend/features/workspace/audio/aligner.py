@@ -1,5 +1,5 @@
 """
-backend/features/workspace/audio_aligner.py
+backend/features/workspace/audio/aligner.py
 High-Precision Dynamic Audio-Word Alignment Engine for ApexMind AI.
 Aligns storyboard scenes and word-level karaoke subtitle timestamps
 to synthesized voiceover audio (Fenrir, Edge-TTS, Gemini TTS, ElevenLabs)
@@ -457,3 +457,4 @@ def align_storyboard_to_audio(
         aligned_scenes.append(aligned_scene)
 
     return aligned_scenes, all_words
+

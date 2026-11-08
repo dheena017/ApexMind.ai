@@ -33,6 +33,107 @@ def _fmt_vtt(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
 
+def generate_closed_captions(
+    text: str,
+    duration_seconds: float = 5.0,
+    style_preset: str = "sub-hormozi",
+    max_words_per_segment: int = 4,
+) -> Dict[str, Any]:
+    """
+    Generates word-level timed captions distributed across duration_seconds,
+    safe-zone chunked for mobile 9:16 screens, with SRT and WebVTT exports.
+    """
+    clean_text = (text or "").strip()
+    if not clean_text:
+        return {
+            "durationSeconds": 0.0,
+            "totalWords": 0,
+            "stylePreset": style_preset,
+            "segments": [],
+            "srtExport": "",
+            "vttExport": "WEBVTT\n\n",
+        }
+
+    raw_words = [w for w in clean_text.split() if w.strip()]
+    if not raw_words:
+        return {
+            "durationSeconds": 0.0,
+            "totalWords": 0,
+            "stylePreset": style_preset,
+            "segments": [],
+            "srtExport": "",
+            "vttExport": "WEBVTT\n\n",
+        }
+
+    weights = []
+    for w in raw_words:
+        weight = max(1, len(w))
+        if any(p in w for p in [".", "!", "?", ";", ":"]):
+            weight += 2.5
+        elif any(p in w for p in [",", "-", "—"]):
+            weight += 1.5
+        weights.append(weight)
+
+    total_weight = sum(weights) or 1
+    total_duration = max(1.0, float(duration_seconds))
+
+    word_timings = []
+    current_time = 0.0
+    for idx, w in enumerate(raw_words):
+        w_dur = (weights[idx] / total_weight) * total_duration
+        word_start = round(current_time, 2)
+        word_end = round(current_time + w_dur, 2)
+        word_timings.append({
+            "word": w,
+            "start": word_start,
+            "end": word_end,
+        })
+        current_time += w_dur
+
+    if word_timings:
+        word_timings[-1]["end"] = round(total_duration, 2)
+
+    segments = []
+    chunk_size = max(1, min(max_words_per_segment, 6))
+    for i in range(0, len(word_timings), chunk_size):
+        chunk = word_timings[i : i + chunk_size]
+        seg_start = chunk[0]["start"]
+        seg_end = chunk[-1]["end"]
+        seg_text = " ".join(c["word"] for c in chunk)
+        segments.append({
+            "segmentIndex": len(segments) + 1,
+            "start": seg_start,
+            "end": seg_end,
+            "text": seg_text,
+            "words": chunk,
+        })
+
+    srt_lines = []
+    for seg in segments:
+        srt_lines.append(str(seg["segmentIndex"]))
+        srt_lines.append(f"{_fmt_srt(seg['start'])} --> {_fmt_srt(seg['end'])}")
+        srt_lines.append(seg["text"])
+        srt_lines.append("")
+    srt_export = "\n".join(srt_lines)
+
+    vtt_lines = ["WEBVTT", ""]
+    for seg in segments:
+        vtt_lines.append(str(seg["segmentIndex"]))
+        vtt_lines.append(f"{_fmt_vtt(seg['start'])} --> {_fmt_vtt(seg['end'])}")
+        vtt_lines.append(seg["text"])
+        vtt_lines.append("")
+    vtt_export = "\n".join(vtt_lines)
+
+    return {
+        "durationSeconds": round(total_duration, 2),
+        "totalWords": len(raw_words),
+        "stylePreset": style_preset,
+        "segments": segments,
+        "srtExport": srt_export,
+        "vttExport": vtt_export,
+    }
+
+
 # ── Emphasis detection ─────────────────────────────────────────────────────────
 
 _EMPHASIS_PATTERNS = re.compile(
@@ -99,7 +200,7 @@ def _generate_scene_captions(
             return segments
 
     # Path B: Fallback phonetic syllable-weighted distribution
-    from .audio_aligner import compute_word_weight
+    from .audio import compute_word_weight
 
     weights = [
         compute_word_weight(w, is_first=(i == 0), is_last=(i == len(raw_words) - 1))
@@ -195,7 +296,6 @@ def run_studio_captions(
 
     # ── Fallback: flat narration text distributed over total duration ──────────
     elif full_narration_text:
-        from .captions_service import generate_closed_captions
         flat = generate_closed_captions(
             text=full_narration_text,
             duration_seconds=duration_seconds,
