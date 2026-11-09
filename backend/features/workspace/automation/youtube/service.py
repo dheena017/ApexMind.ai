@@ -143,7 +143,7 @@ def execute_automation_job(
             logger.info(f"[YouTube Automation/Stage-1] Writing script for '{theme}' with model '{ai_model}'")
             script_resp = run_studio_script(
                 category=theme,
-                topic=theme,
+                topic=f"{theme} (cinematic faceless B-roll)",
                 tone="motivational",
                 length=length_str,
                 model=ai_model,

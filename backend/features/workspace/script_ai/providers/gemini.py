@@ -20,6 +20,7 @@ from backend.shared.ai_models import (
     resolve_script_model,
 )
 from backend.shared.gemini import get_gemini_client, rate_tracker
+from backend.features.workspace.video import sanitize_faceless_query
 from .base import BaseScriptProvider
 
 logger = logging.getLogger("ApexMind.Workspace.ScriptAI.Gemini")
@@ -31,9 +32,13 @@ logger = logging.getLogger("ApexMind.Workspace.ScriptAI.Gemini")
 SCRIPT_SYSTEM_INSTRUCTION: str = (
     "You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer "
     "for viral YouTube Shorts, Instagram Reels, and Facebook Reels. Produce high-retention motivational "
-    "and inspirational short video plans with 3 viral hook variations, diverse cinematic footage queries "
+    "and inspirational faceless short video plans with 3 viral hook variations, diverse cinematic footage queries "
     "tailored to the theme (nature, urban, technology, fitness, space, luxury, architecture, lifestyle, abstract), "
     "and 5-layer broadcast sound design with dynamic sidechain ducking. "
+    "STRICT FACELESS VIDEO RULE: All generated videos MUST BE 100% FACELESS. Under no circumstances should any scene "
+    "feature or request close-up human faces, visible facial expressions, portraits, talking heads, front-facing people, "
+    "or selfies. All visual queries must specify aesthetic faceless B-roll, landscapes, architecture, abstract visuals, "
+    "objects, textures, or anonymous silhouettes viewed strictly from behind without any visible face. "
     "Strictly output only valid JSON matching the exact schema."
 )
 
@@ -410,8 +415,17 @@ VIRALITY & RETENTION ARCHITECTURE:
 3. DYNAMIC VISUAL DIRECTIVE (ALL KINDS OF CINEMATIC FOOTAGE):
    - Every scene MUST be a moving, cinematic VIDEO ("mediaType": "video").
    - ZERO DUPLICATE CLIPS across scene cuts.
-4. 5-LAYER BROADCAST SOUND DESIGN & SIDECHAIN DUCKING.
-5. SCRIPT-STORYBOARD CC PARITY & CLEAN CTA OVERLAY.
+4. MANDATORY FACELESS DIRECTIVE (ABSOLUTE REQUIREMENT):
+   - ZERO HUMAN FACES: Under NO circumstances should any scene feature close-up human faces, visible facial expressions, portraits, front-facing people looking at the camera, talking heads, or selfies!
+   - Every scene's "visualQuery" and "googleSearchQuery" MUST focus entirely on faceless visual metaphors:
+     * Dramatic nature: mountain ridges, stormy ocean waves, lightning clouds, waterfalls, deep pine forests, star timelapses.
+     * Cinematic cityscapes: glowing night skylines, rain on neon pavements, drone aerial sweeps, traffic light streaks.
+     * Objects & details: hourglass sand falling, stopwatch ticking, chess moves, luxury car driving away, weights lifted (hands/silhouettes only), vintage compass, burning flame.
+     * Anonymous silhouettes: figure viewed strictly from behind walking toward mountains/city, silhouette against sunset (NO visible face).
+   - "negativeTerms" for EVERY scene MUST explicitly list:
+     ["face", "human face", "portrait", "close up face", "talking head", "selfie", "smiling face", "person looking at camera", "facial"].
+5. 5-LAYER BROADCAST SOUND DESIGN & SIDECHAIN DUCKING.
+6. SCRIPT-STORYBOARD CC PARITY & CLEAN CTA OVERLAY.
 
 Output MUST be a single raw JSON object matching this exact schema:
 {{
@@ -550,19 +564,30 @@ Output MUST be a single raw JSON object matching this exact schema:
                     sc["visualQuery"] = f"cinematic {clean_theme} {target_aspect_ratio}"
                     sc["googleSearchQuery"] = f"cinematic {clean_theme} {target_aspect_ratio}"
                     sc["fallbackQueries"] = [
-                        f"cinematic {clean_theme} dramatic lighting {target_aspect_ratio}",
+                        f"cinematic {clean_theme} dramatic nature lighting {target_aspect_ratio}",
                         f"cinematic {clean_theme} epic atmosphere {target_aspect_ratio}",
                     ]
 
-                primary_query = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
-                google_q = sc.get("googleSearchQuery") or f"{primary_query} vertical 9:16"
-                fallback_list = sc.get("fallbackQueries") or []
+                raw_primary = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
+                primary_query = sanitize_faceless_query(raw_primary, fallback_theme=f"cinematic {category or 'nature'} landscape")
+                raw_google = sc.get("googleSearchQuery") or f"{primary_query} vertical {target_aspect_ratio}"
+                google_q = sanitize_faceless_query(raw_google, fallback_theme=f"cinematic {category or 'nature'} landscape {target_aspect_ratio}")
+                raw_fallbacks = sc.get("fallbackQueries") or []
+                sanitized_fallbacks = [
+                    sanitize_faceless_query(fb, fallback_theme=f"cinematic {category or 'nature'} b-roll")
+                    for fb in raw_fallbacks
+                ]
 
                 sc["visualQuery"] = primary_query
                 sc["googleSearchQuery"] = google_q
-                sc["fallbackQueries"] = fallback_list
+                sc["fallbackQueries"] = sanitized_fallbacks
                 sc["aspectRatio"] = target_aspect_ratio
                 sc["mediaStatus"] = "resolved" if sc.get("mediaUrl") and str(sc["mediaUrl"]).startswith("http") else "unresolved"
+
+                # Enforce mandatory faceless negative terms
+                existing_neg = sc.get("negativeTerms") or []
+                mandatory_neg = ["face", "human face", "portrait", "close up face", "talking head", "selfie", "smiling face"]
+                sc["negativeTerms"] = list(dict.fromkeys(mandatory_neg + existing_neg))
 
             storyboard = expand_storyboard_to_target_duration(
                 storyboard=storyboard,

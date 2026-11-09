@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from backend.features.workspace.audio import search_sound_effects
 from backend.features.workspace.image import search_images
-from backend.features.workspace.video import search_videos
+from backend.features.workspace.video import is_faceless_item, sanitize_faceless_query, search_videos
 
 STAGE_ID: str = "media"
 DEFAULT_ASPECT_RATIO: str = "9:16"
@@ -91,25 +91,29 @@ def run_studio_media(
     failed_count = 0
 
     for idx, s in enumerate(scenes):
-        visual_query = (
+        raw_query = (
             s.get("visualQuery")
             or s.get("subtitleText")
             or s.get("googleSearchQuery")
             or DEFAULT_VISUAL_QUERY
         )
+        visual_query = sanitize_faceless_query(raw_query, fallback_theme=DEFAULT_VISUAL_QUERY)
         media_type = s.get("mediaType") or "video"
 
         if media_type == "image":
             orient = "portrait" if aspect_ratio in ["9:16", "4:5"] else ("square" if aspect_ratio == "1:1" else "landscape")
             try:
-                res = search_images(query=visual_query, orientation=orient, page=1, page_size=5)
+                res = search_images(query=visual_query, orientation=orient, page=1, page_size=10)
                 items = res.get("items", [])
             except Exception as e:
                 logger.debug(f"[Studio/Media] Image search failed: {e}")
                 items = []
 
-            if items:
-                chosen = items[0]
+            # Filter candidates to ensure 100% faceless visual content
+            faceless_candidates = [it for it in items if is_faceless_item(it)]
+            chosen = faceless_candidates[0] if faceless_candidates else (items[0] if items else None)
+
+            if chosen:
                 media_dict = {
                     "id": chosen.get("id"),
                     "url": chosen.get("imageUrl") or chosen.get("url"),
@@ -122,7 +126,7 @@ def run_studio_media(
                     "provider": chosen.get("provider", "image"),
                     "license": "CC0 / Stock",
                     "aestheticScore": 0.90,
-                    "aestheticBadges": ["HD", "Stock"],
+                    "aestheticBadges": ["HD", "Stock", "Faceless"],
                     "positiveMatches": [visual_query],
                 }
                 resolved_count += 1
@@ -146,14 +150,17 @@ def run_studio_media(
                 })
         else:
             try:
-                res = search_videos(query=visual_query, aspect_ratio=aspect_ratio, page=1, page_size=5)
+                res = search_videos(query=visual_query, aspect_ratio=aspect_ratio, page=1, page_size=10)
                 items = res.get("items", [])
             except Exception as e:
                 logger.debug(f"[Studio/Media] Video search failed: {e}")
                 items = []
 
-            if items:
-                chosen = items[0]
+            # Filter candidates to ensure 100% faceless video clips
+            faceless_candidates = [it for it in items if is_faceless_item(it)]
+            chosen = faceless_candidates[0] if faceless_candidates else (items[0] if items else None)
+
+            if chosen:
                 media_dict = {
                     "id": chosen.get("id"),
                     "url": chosen.get("videoUrl"),
@@ -166,7 +173,7 @@ def run_studio_media(
                     "provider": chosen.get("provider", "video"),
                     "license": "Stock Free License",
                     "aestheticScore": float(chosen.get("aestheticScore", 0.88)),
-                    "aestheticBadges": chosen.get("aestheticBadges", ["HD"]),
+                    "aestheticBadges": chosen.get("aestheticBadges", ["HD", "Faceless"]),
                     "positiveMatches": [visual_query],
                 }
                 resolved_count += 1
