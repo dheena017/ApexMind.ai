@@ -31,6 +31,7 @@ import { DEFAULT_CREATOR_PROFILE, getCreatorProfile } from '@/src/features/profi
 import { addWorkspaceNotification } from '../utils/workspaceNotificationManager';
 import { getQueryParams, updateUrlQuery } from '@/src/app/routes';
 import { DEFAULT_SCRIPT_MODEL } from '@/src/shared/aiModels';
+import { getGenreConfig } from '../genreConfigs';
 
 interface WorkspacePageProps {
   onNavigate: (page: string) => void;
@@ -114,6 +115,7 @@ export default function WorkspacePage({
   // AI Model & Script Generation
   const [selectedModel, setSelectedModel] = useState(DEFAULT_SCRIPT_MODEL);
   const [selectedGenre, setSelectedGenre] = useState<string>('motivation');
+  const [visuals3DEngine, setVisuals3DEngine] = useState<string>('blender_hybrid');
   const [visuals3DSearchQuery, setVisuals3DSearchQuery] = useState<string>('');
   const [visuals3DProvider, setVisuals3DProvider] = useState<string>('all');
   const [topic, setTopic] = useState<string>('');
@@ -846,6 +848,8 @@ export default function WorkspacePage({
 
       const pipelineRes = await runPipeline({
         genre: selectedGenre,
+        render3DEngine: visuals3DEngine,
+        suggested3DProvider: visuals3DProvider && visuals3DProvider !== 'all' ? visuals3DProvider : undefined,
         category,
         topic: effectiveTopic,
         userPrompt: effectiveUserPrompt,
@@ -928,6 +932,11 @@ export default function WorkspacePage({
       const textToSpeak = storyboardTexts.length > 0
         ? storyboardTexts.join(' ')
         : [targetScript.hook, targetScript.quote, targetScript.cta].filter(Boolean).join(' ');
+
+      if (!textToSpeak.trim()) {
+        consoleLogger.info('Studio', `Voice profile updated to '${voiceName}'. No script to synthesize yet.`);
+        return;
+      }
 
       const res = await workspaceApi.generateVoiceover({
         text: textToSpeak,
@@ -2032,7 +2041,18 @@ export default function WorkspacePage({
             ) : activePane === 'prompt' || (activePane === 'script' && scriptSubPane === 'prompt') ? (
               <AIAgentCreatorPane
                 selectedGenre={selectedGenre}
-                onGenreChange={setSelectedGenre}
+                onGenreChange={(newGenreId) => {
+                  setSelectedGenre(newGenreId);
+                  const cfg = getGenreConfig(newGenreId);
+                  if (cfg) {
+                    if (cfg.default3DEngine) setVisuals3DEngine(cfg.default3DEngine);
+                    if (cfg.default3DProvider) setVisuals3DProvider(cfg.default3DProvider);
+                  }
+                }}
+                selected3DEngine={visuals3DEngine}
+                on3DEngineChange={setVisuals3DEngine}
+                selected3DProvider={visuals3DProvider}
+                on3DProviderChange={setVisuals3DProvider}
                 topic={topic}
                 onTopicChange={setTopic}
                 agentPrompt={agentPrompt}
@@ -2063,7 +2083,10 @@ export default function WorkspacePage({
                 selectedVoice={selectedVoice}
                 onVoiceChange={(vId) => {
                   setSelectedVoice(vId);
-                  handleSynthesizeVoice(script, vId);
+                  const hasContent = script.storyboard?.length || script.hook || script.quote || script.cta;
+                  if (hasContent) {
+                    handleSynthesizeVoice(script, vId);
+                  }
                 }}
                 voices={voices}
                 onTestVoice={handleTestVoice}
@@ -2467,7 +2490,10 @@ export default function WorkspacePage({
                 selectedVoice={selectedVoice}
                 onSelectVoice={(vId) => {
                   setSelectedVoice(vId);
-                  handleSynthesizeVoice(script, vId);
+                  const hasContent = script.storyboard?.length || script.hook || script.quote || script.cta;
+                  if (hasContent) {
+                    handleSynthesizeVoice(script, vId);
+                  }
                 }}
                 onPublish={handlePublish}
                 canPublish={canPublish}
@@ -2488,7 +2514,10 @@ export default function WorkspacePage({
                 selectedVoice={selectedVoice}
                 onSelectVoice={(vId) => {
                   setSelectedVoice(vId);
-                  handleSynthesizeVoice(script, vId);
+                  const hasContent = script.storyboard?.length || script.hook || script.quote || script.cta;
+                  if (hasContent) {
+                    handleSynthesizeVoice(script, vId);
+                  }
                 }}
                 onTestVoice={handleTestVoice}
                 testingVoiceId={testingVoiceId}

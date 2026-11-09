@@ -187,7 +187,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 h-11 shrink-0 z-30 w-full bg-[#111111]/98 backdrop-blur-2xl border-b border-[#242424] px-3 sm:px-4 max-[359px]:px-2 flex items-center justify-between gap-2.5 max-[439px]:gap-1 max-[359px]:gap-0 font-sans-studio select-none text-[#E5E5E5] shadow-sm">
+      <header className="sticky top-0 h-11 shrink-0 z-40 w-full bg-[#111111]/98 backdrop-blur-2xl border-b border-[#242424] px-3 sm:px-4 max-[359px]:px-2 flex items-center justify-between gap-2.5 max-[439px]:gap-1 max-[359px]:gap-0 font-sans-studio select-none text-[#E5E5E5] shadow-sm">
         {/* ── Left: Studio Title, Brand Logo, Breadcrumb, Title & Channel Switcher ── */}
         <div className="flex items-center gap-2.5 max-[439px]:gap-1 max-[359px]:gap-0 shrink-0 min-w-0">
           <button

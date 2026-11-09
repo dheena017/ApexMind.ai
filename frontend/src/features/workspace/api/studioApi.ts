@@ -45,6 +45,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 interface GenerateScriptParams {
   genre?: string;
   genrePreset?: string;
+  render3DEngine?: string;
   suggested3DProvider?: string;
   category: string;
   topic?: string;
@@ -89,6 +90,7 @@ export const studioApi = {
     const envelope = await post<StudioScriptEnvelope>('/api/studio/generate-script', {
       genre: params.genre || 'motivation',
       genrePreset: params.genrePreset || undefined,
+      render3DEngine: params.render3DEngine || undefined,
       suggested3DProvider: params.suggested3DProvider || undefined,
       category: params.category,
       topic: params.topic || params.category,

@@ -18,6 +18,12 @@ export interface GenreToneOption {
   desc: string;
 }
 
+export interface SampleStoryPrompt {
+  title: string;
+  badge: string;
+  prompt: string;
+}
+
 export interface GenreConfig {
   id: string;
   label: string;
@@ -28,11 +34,87 @@ export interface GenreConfig {
   defaultTone: string;
   defaultVoice: string;
   defaultSubtitlePreset: string;
+  default3DEngine: 'blender_hybrid' | 'blender_full' | 'motion_loop' | 'webgl';
   default3DProvider: 'roblox_creator_store' | 'poly_haven' | 'sketchfab' | 'sloyd_ai' | 'pixabay_3d';
   categories: GenreCategoryOption[];
   quickPromptChips: string[];
+  sampleStoryPrompts: SampleStoryPrompt[];
   tones: GenreToneOption[];
 }
+
+export interface RenderEngine3DOption {
+  value: 'blender_hybrid' | 'blender_full' | 'motion_loop' | 'webgl';
+  label: string;
+  badge: string;
+  description: string;
+}
+
+export const RENDER_3D_ENGINES: RenderEngine3DOption[] = [
+  {
+    value: 'blender_hybrid',
+    label: '⚡ Blender 3D Hybrid (~4-6s)',
+    badge: 'Recommended • Fast',
+    description: 'Blender 5.2 hero render + 2.5D multi-plane camera parallax & kinetic subtitles',
+  },
+  {
+    value: 'blender_full',
+    label: '🎨 Blender Full CGI Sequence',
+    badge: 'Blender 5.2 Workbench',
+    description: 'Headless frame-by-frame 3D animation render stitched with FFmpeg',
+  },
+  {
+    value: 'motion_loop',
+    label: '🔁 Motion Loops 3D Engine',
+    badge: 'Seamless 60fps Loop',
+    description: 'Ultra-fast (~2-3s) 3D motion loop generator with kinetic camera choreography',
+  },
+  {
+    value: 'webgl',
+    label: '🌐 WebGL 60 FPS (In-Browser GPU)',
+    badge: 'Three.js Viewport',
+    description: 'Client-side interactive Three.js 3D viewport normalized to broadcast MP4',
+  },
+];
+
+export interface AssetProvider3DOption {
+  value: 'roblox_creator_store' | 'sloyd_ai' | 'sketchfab' | 'poly_pizza' | 'poly_haven';
+  label: string;
+  badge: string;
+  description: string;
+}
+
+export const ASSET_3D_PROVIDERS: AssetProvider3DOption[] = [
+  {
+    value: 'roblox_creator_store',
+    label: '🧱 Roblox Creator Store',
+    badge: 'Official Avatars & Assets',
+    description: 'Roblox avatars, Brookhaven houses, Blox Fruits swords, accessories, game obbies',
+  },
+  {
+    value: 'sloyd_ai',
+    label: '⚡ Sloyd AI (Procedural Low-Poly)',
+    badge: 'Instant Game 3D',
+    description: 'Fast generative low-poly assets, stylized game weapons & vehicles',
+  },
+  {
+    value: 'sketchfab',
+    label: '🎨 Sketchfab (Free CC)',
+    badge: 'Millions of Models',
+    description: 'Massive library of community and professional 3D meshes and characters',
+  },
+  {
+    value: 'poly_pizza',
+    label: '🎮 Poly Pizza (Low-Poly)',
+    badge: 'Free CC0',
+    description: 'Vibrant low-poly game assets and everyday props',
+  },
+  {
+    value: 'poly_haven',
+    label: '🏛️ Poly Haven (CC0 Photoreal)',
+    badge: 'Photorealistic CC0',
+    description: '100% free CC0 photorealistic statues, stone busts & cinematic environments',
+  },
+];
 
 export const GENRE_CONFIGS: Record<string, GenreConfig> = {
   motivation: {
@@ -45,6 +127,7 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
     defaultTone: 'Aggressive Discipline',
     defaultVoice: 'Fenrir',
     defaultSubtitlePreset: 'sub-hormozi',
+    default3DEngine: 'blender_hybrid',
     default3DProvider: 'poly_haven',
     categories: [
       { value: 'Stoic Mindset & Discipline', label: '⛰️ Stoic Mindset & Mountain Peak' },
@@ -58,6 +141,23 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
       'Why Most Men Die at 25 and Get Buried at 75',
       'Silence is Your Deadliest Weapon',
       'Build in Silence, Shock Them with Success',
+    ],
+    sampleStoryPrompts: [
+      {
+        title: '⛰️ 4:00 AM Silent Rule',
+        badge: 'Stoic Discipline',
+        prompt: 'Focus on waking up at 4:00 AM in pitch black silence while the rest of the world is asleep. Speak with raw, stoic discipline. Explain that talking about your goals destroys your dopamine, and why 6 months of silent compounding gym work and study will shock everyone who ever doubted you. End with Marcus Aurelius wisdom.',
+      },
+      {
+        title: '🤫 Silence is Deadliest Weapon',
+        badge: 'Dark Moves',
+        prompt: 'A lion never explains his hunting strategy to the sheep. Frame the monologue around cutting out toxic friends, deleting distracting apps, and letting results speak instead of words. Use hard-hitting staccato pauses, deep bass drops, and faceless mountain visuals to create an intense feeling of unstoppable determination.',
+      },
+      {
+        title: '🛡️ Why Men Die at 25',
+        badge: 'Urgent Wake-Up',
+        prompt: 'Explain the psychological tragedy of dying at 25 and not getting buried until 75. Break down how modern comfort, endless scrolling, and settling for mediocrity slowly kills ambition. Deliver a high-retention psychological pattern interrupt demanding the viewer wake up and take control of their destiny today.',
+      },
     ],
     tones: [
       { value: 'Aggressive Discipline', label: '⚡ Aggressive Discipline', desc: 'Raw, urgent, unforgiving staccato cadence.' },
@@ -77,6 +177,7 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
     defaultTone: 'Cinematic Storyteller',
     defaultVoice: 'Puck',
     defaultSubtitlePreset: 'sub-beast',
+    default3DEngine: 'blender_hybrid',
     default3DProvider: 'roblox_creator_store',
     categories: [
       { value: 'Roblox Creepypasta & Myths', label: '👻 Roblox Creepypasta & Myths' },
@@ -91,6 +192,23 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
       'I Survived the World\'s Most Impossible 999-Stage Obby',
       'He Laughed at My Noob Avatar in Blox Fruits Until...',
       'The Legend of the Abandoned Roblox Server',
+    ],
+    sampleStoryPrompts: [
+      {
+        title: '👻 Brookhaven 3AM Ghost',
+        badge: 'Creepypasta',
+        prompt: 'My friend Alex and I joined an empty Brookhaven server at 3:00 AM. We saw a glitching avatar named "Null" standing outside the abandoned hospital window with glowing red eyes. When we tried to reset our characters, the escape menu locked and our chat filled with red letters spelling my real name. We hid inside the secret basement under the church, but then the footsteps started getting closer...',
+      },
+      {
+        title: '⚔️ Blox Fruits Betrayal',
+        badge: 'Anime Revenge',
+        prompt: 'I traded my legendary Leopard fruit to someone claiming to be my best friend in the second sea. The moment the trade timer reached zero, he blocked me on Discord, laughed in server chat, and left the game. 48 hours later, I rolled a permanent Kitsune fruit, mastered Godhuman, and tracked his crew down in the third sea to challenge him to a 1v1 duel in front of the whole server.',
+      },
+      {
+        title: '🏃 Impossible 999-Stage Obby',
+        badge: 'High Stakes Run',
+        prompt: 'I was on stage 99 of the world\'s hardest Roblox difficulty chart obby with only 3 lives remaining. No one had beaten this stage in over 4 years. With 15 seconds left before server maintenance, I had to execute the infamous backwards wraparound ladder flick over a pool of neon lava while my hands were shaking. Here is how I pulled off the impossible jump...',
+      },
     ],
     tones: [
       { value: 'Cinematic Storyteller', label: '🎬 Cinematic Storyteller', desc: 'Suspenseful, dramatic narrative pacing with SFX.' },
@@ -110,6 +228,7 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
     defaultTone: 'High-Energy Quiz Host',
     defaultVoice: 'Aoede',
     defaultSubtitlePreset: 'sub-neon',
+    default3DEngine: 'blender_hybrid',
     default3DProvider: 'roblox_creator_store',
     categories: [
       { value: 'Emoji & Symbol Odd One Out', label: '🧩 Emoji & Symbol Odd One Out' },
@@ -124,6 +243,23 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
       'Level 1 Easy, Level 2 Hard, Level 3 Impossible!',
       'Spot the Difference: Which 3D Item is Glitched?',
       'Can You Find the Odd One Out in 5 Seconds?',
+    ],
+    sampleStoryPrompts: [
+      {
+        title: '🎯 Spot the Glitched Blade',
+        badge: '5s Challenge',
+        prompt: 'Show four Roblox avatars lined up side by side with a prominent 5-second ticking countdown timer on the screen. Avatars 1, 2, and 4 are holding glowing blue katanas, but Avatar 3 has a glitched red dark blade with an inverted aura. Start with a viral voiceover challenge: "Only 1% of Roblox players can spot the fake in five seconds!" Build intense ticking audio suspense, then freeze-frame flash highlight on Avatar 3 on the buzzer.',
+      },
+      {
+        title: '🔎 Fake Brookhaven House',
+        badge: 'Visual Mystery',
+        prompt: 'Present four Brookhaven houses in a 2x2 grid. Three of the houses have normal white doors and streetlights, but house number two has a boarded-up window with a mysterious silhouette lurking inside. 5-second ticking countdown clock with heartbeats. On zero, play a loud victory chime and zoom right into the secret window.',
+      },
+      {
+        title: '🧩 Valkyrie Feather Imposter',
+        badge: 'IQ Test',
+        prompt: 'Display four golden Roblox Valkyrie helms rotating in 3D. Three are authentic high-tier valks, but the fourth has a broken horn feather on the left side. Challenge the viewer with quick visual deduction, count down from 5 to 1 with staccato cues, and reveal the exact difference before time runs out.',
+      },
     ],
     tones: [
       { value: 'High-Energy Quiz Host', label: '🎙️ High-Energy Quiz Host', desc: 'Fast-paced, countdown ticking challenge.' },

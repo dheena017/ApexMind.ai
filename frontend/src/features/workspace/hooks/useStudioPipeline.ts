@@ -100,6 +100,7 @@ export interface StudioPipelineResult {
 export interface RunPipelineParams {
   genre?: string;
   genrePreset?: string;
+  render3DEngine?: string;
   suggested3DProvider?: string;
   category: string;
   topic?: string;
@@ -170,6 +171,7 @@ export function useStudioPipeline() {
         const scriptData = await studioApi.generateScript({
           genre: params.genre || 'motivation',
           genrePreset: params.genrePreset,
+          render3DEngine: params.render3DEngine,
           suggested3DProvider: params.suggested3DProvider,
           category: params.category,
           topic: params.topic,

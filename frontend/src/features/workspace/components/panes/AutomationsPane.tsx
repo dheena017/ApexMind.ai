@@ -65,10 +65,14 @@ const ASPECT_RATIO_OPTIONS = [
 ];
 
 const LENGTH_OPTIONS = [
+  { value: '5 seconds', label: '5 Seconds (Micro / 5s Challenge)' },
   { value: '15 seconds', label: '15 Seconds (Fast Cut)' },
   { value: '30 seconds', label: '30 Seconds (Standard • Recommended)' },
-  { value: '45 seconds', label: '45 Seconds (Extended)' },
-  { value: '60 seconds', label: '60 Seconds (Deep Dive)' },
+  { value: '45 seconds', label: '45 Seconds (Extended Story)' },
+  { value: '60 seconds', label: '60 Seconds (1 Minute)' },
+  { value: '90 seconds', label: '90 Seconds (1.5 Minutes)' },
+  { value: '2 minutes', label: '2 Minutes (Mini Episode)' },
+  { value: '3 minutes', label: '3 Minutes (Deep Narrative)' },
 ];
 
 const VOICE_OPTIONS = [
