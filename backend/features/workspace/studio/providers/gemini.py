@@ -22,6 +22,7 @@ from backend.shared.ai_models import (
 )
 from backend.shared.gemini import get_gemini_client, rate_tracker
 from backend.features.workspace.video import sanitize_faceless_query
+from backend.features.workspace.studio.genre_registry import get_genre_definition
 from .base import BaseScriptProvider
 
 logger = logging.getLogger("ApexMind.Workspace.ScriptAI.Gemini")
@@ -238,6 +239,11 @@ class GeminiScriptProvider(BaseScriptProvider):
         target_aspect_ratio = aspect_ratio if aspect_ratio in ["9:16", "16:9", "1:1", "4:5", "21:9"] else (aspect_ratio or "9:16")
         catalog = available_assets or (creative_context.get("availableAssets") if creative_context else None) or {}
 
+        genre_id = kwargs.get("genre") or "motivation"
+        genre_def = get_genre_definition(genre_id)
+        effective_voice = voice_name or genre_def.default_voice
+        effective_audio_mood = audio_mood or genre_def.default_audio_mood
+
         raw_stock = catalog.get("stockVideos") or catalog.get("videoClips") or []
         avail_videos = [
             v for v in raw_stock
@@ -364,10 +370,12 @@ STRICT ENFORCEMENT RULES FOR THIS {target_seconds}-SECOND VIDEO:
 6. The sum of all scene durations in "storyboard" MUST EQUAL EXACTLY {target_seconds}.0 seconds!
 """
 
-        prompt = f"""You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer for viral YouTube Shorts, Instagram Reels, and Facebook Reels.
-Produce an inspiring, punchy, retention-optimized motivational video plan with full script, 3 viral hook variations, 5-layer sound design, and a multi-scene video storyboard with word-level karaoke timing.
+        prompt = f"""You are an elite Autonomous AI Video Director, Virality Strategist, and Master Sound Designer for viral YouTube Shorts, Instagram Reels, and TikTok.
+Produce an inspiring, punchy, retention-optimized video plan in the '{genre_def.label}' genre ({genre_def.id}) with full script, 3 viral hook variations, 5-layer sound design, and a multi-scene video storyboard with word-level karaoke timing.
 {user_prompt_section}
 {duration_enforcement_section}
+
+{genre_def.virality_guidelines}
 
 TARGET ASPECT RATIO: {target_aspect_ratio}
 ASPECT RATIO & COMPOSITION RULES:
@@ -516,7 +524,7 @@ Output MUST be a single raw JSON object matching this exact schema:
             result, used_model = _generate_script_with_fallback(
                 prompt=prompt,
                 target_model=target_model,
-                system_instruction=SCRIPT_SYSTEM_INSTRUCTION,
+                system_instruction=genre_def.system_instruction,
             )
 
             if result is None or not isinstance(result, dict):
@@ -570,14 +578,19 @@ Output MUST be a single raw JSON object matching this exact schema:
                     ]
 
                 raw_primary = sc.get("visualQuery") or sc.get("mediaName") or sc.get("subtitleText") or topic
-                primary_query = sanitize_faceless_query(raw_primary, fallback_theme=f"cinematic {category or 'nature'} landscape")
-                raw_google = sc.get("googleSearchQuery") or f"{primary_query} vertical {target_aspect_ratio}"
-                google_q = sanitize_faceless_query(raw_google, fallback_theme=f"cinematic {category or 'nature'} landscape {target_aspect_ratio}")
-                raw_fallbacks = sc.get("fallbackQueries") or []
-                sanitized_fallbacks = [
-                    sanitize_faceless_query(fb, fallback_theme=f"cinematic {category or 'nature'} b-roll")
-                    for fb in raw_fallbacks
-                ]
+                if genre_def.id in ("roblox_story", "odd_one_out"):
+                    primary_query = str(raw_primary).strip()
+                    google_q = sc.get("googleSearchQuery") or f"{primary_query} {target_aspect_ratio}"
+                    sanitized_fallbacks = sc.get("fallbackQueries") or [f"{primary_query} 3d model"]
+                else:
+                    primary_query = sanitize_faceless_query(raw_primary, fallback_theme=f"cinematic {category or 'nature'} landscape")
+                    raw_google = sc.get("googleSearchQuery") or f"{primary_query} vertical {target_aspect_ratio}"
+                    google_q = sanitize_faceless_query(raw_google, fallback_theme=f"cinematic {category or 'nature'} landscape {target_aspect_ratio}")
+                    raw_fallbacks = sc.get("fallbackQueries") or []
+                    sanitized_fallbacks = [
+                        sanitize_faceless_query(fb, fallback_theme=f"cinematic {category or 'nature'} b-roll")
+                        for fb in raw_fallbacks
+                    ]
 
                 sc["visualQuery"] = primary_query
                 sc["googleSearchQuery"] = google_q
@@ -585,10 +598,13 @@ Output MUST be a single raw JSON object matching this exact schema:
                 sc["aspectRatio"] = target_aspect_ratio
                 sc["mediaStatus"] = "resolved" if sc.get("mediaUrl") and str(sc["mediaUrl"]).startswith("http") else "unresolved"
 
-                # Enforce mandatory faceless negative terms
+                # Enforce mandatory faceless negative terms for non-gaming genres
                 existing_neg = sc.get("negativeTerms") or []
-                mandatory_neg = ["face", "human face", "portrait", "close up face", "talking head", "selfie", "smiling face"]
-                sc["negativeTerms"] = list(dict.fromkeys(mandatory_neg + existing_neg))
+                if genre_def.id == "motivation":
+                    mandatory_neg = ["face", "human face", "portrait", "close up face", "talking head", "selfie", "smiling face"]
+                    sc["negativeTerms"] = list(dict.fromkeys(mandatory_neg + existing_neg))
+                else:
+                    sc["negativeTerms"] = existing_neg
 
             storyboard = expand_storyboard_to_target_duration(
                 storyboard=storyboard,
@@ -733,6 +749,13 @@ Output MUST be a single raw JSON object matching this exact schema:
             if not result.get("outputFormat"):
                 result["outputFormat"] = f"{target_aspect_ratio} Vertical Video (1080x1920)" if target_aspect_ratio == "9:16" else f"{target_aspect_ratio} Video"
 
+            result["genre"] = genre_def.id
+            result["genreLabel"] = genre_def.label
+            result["suggested3DProvider"] = genre_def.recommended_3d_providers[0]
+            result["userPrompt"] = user_prompt or topic or ""
+            if not result.get("recommendedVoice"):
+                result["recommendedVoice"] = effective_voice
+
             logger.info(
                 f"<-- [API COMING] Gemini AI Generate Content | Model: '{target_model}' | Duration: {elapsed:.2f}s | "
                 f"Title: '{result.get('title')}' | Scenes: {len(storyboard)}"
@@ -755,13 +778,15 @@ Output MUST be a single raw JSON object matching this exact schema:
         target_duration_seconds: int = 30,
         user_prompt: Optional[str] = None,
         model: Optional[str] = None,
+        genre: Optional[str] = "motivation",
         **kwargs,
     ) -> Dict[str, Any]:
         """Generates viral hooks, main monologue, closing CTA, and assembled fullScript."""
         target_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
-        target_words = max(20, round(target_duration_seconds * 2.45))
-        min_words = round(target_duration_seconds * 2.1)
-        max_words = round(target_duration_seconds * 2.7)
+        genre_def = get_genre_definition(genre)
+        target_words = max(20, round(target_duration_seconds * genre_def.speech_rate))
+        min_words = round(target_duration_seconds * (genre_def.speech_rate - 0.3))
+        max_words = round(target_duration_seconds * (genre_def.speech_rate + 0.3))
 
         user_dir = ""
         if user_prompt and user_prompt.strip():
@@ -771,26 +796,29 @@ USER SPECIFIC CREATIVE DIRECTION (TOP PRIORITY):
 """
 
         prompt = f"""
-You are a viral YouTube Shorts and Instagram Reels scriptwriter specializing in high-retention motivational content.
+You are a viral YouTube Shorts and TikTok scriptwriter specializing in the '{genre_def.label}' genre ({genre_def.id}).
 Write a complete short video script for:
 CATEGORY: {category}
 TOPIC: {topic}
-TONE: {tone}
+TONE: {tone or 'high-retention'}
 TARGET DURATION: {target_duration_seconds} seconds
 TARGET WORD COUNT: Exactly {min_words} to {max_words} spoken words across the full speech.
 {user_dir}
+
+{genre_def.virality_guidelines}
+
 REQUIREMENTS:
-1. "hookOptions": Provide exactly 3 pattern-interrupt opening lines (first 2-3 seconds, 4 to 8 words) with distinct virality angles (Brutal Truth, Curiosity Gap, Direct Challenge).
+1. "hookOptions": Provide exactly 3 pattern-interrupt opening lines (first 2-3 seconds, 4 to 8 words) with distinct virality angles matching {genre_def.label}.
 2. "selectedHook": Select the single most viral hook from the options.
-3. "monologue": Write a profound, gripping narrative body ({min_words - 15} to {max_words - 12} words) maintaining escalating emotional tension.
-4. "cta": A sharp 1-sentence closing call-to-action (e.g. "Wake up earlier tomorrow. Save this before you forget.").
+3. "monologue": Write a profound, gripping narrative body ({min_words - 15} to {max_words - 12} words) maintaining escalating emotional tension. Include sound cues like [glitch sound], [ticking clock] or [subdrop] where appropriate.
+4. "cta": A sharp 1-sentence closing call-to-action tailored to {genre_def.label}.
 
 Output MUST be a single raw JSON object matching this exact schema:
 {{
   "hookOptions": [
-    {{ "id": "hook_1", "angle": "Brutal Truth", "text": "...", "viralityScore": 96 }},
-    {{ "id": "hook_2", "angle": "Curiosity Gap", "text": "...", "viralityScore": 92 }},
-    {{ "id": "hook_3", "angle": "Direct Challenge", "text": "...", "viralityScore": 89 }}
+    {{ "id": "hook_1", "angle": "Angle 1", "text": "...", "viralityScore": 96 }},
+    {{ "id": "hook_2", "angle": "Angle 2", "text": "...", "viralityScore": 92 }},
+    {{ "id": "hook_3", "angle": "Angle 3", "text": "...", "viralityScore": 89 }}
   ],
   "selectedHook": "...",
   "monologue": "...",
@@ -800,24 +828,41 @@ Output MUST be a single raw JSON object matching this exact schema:
         parsed, used_model = _generate_script_with_fallback(
             prompt=prompt,
             target_model=target_model,
-            system_instruction="You are an elite viral scriptwriter. Respond strictly with valid JSON only.",
+            system_instruction=genre_def.system_instruction,
         )
 
         if not parsed or not isinstance(parsed, dict):
-            # Fallback dynamic generator
-            selected_hook = f"While you were sleeping, someone took your future."
-            monologue = f"Comfort is the silent killer of your potential. In {category.lower()}, every single day counts. When you struggle to rise at dawn, remind yourself why you started."
-            cta = "Wake up earlier tomorrow. Save this for daily discipline."
-            hook_opts = [
-                {"id": "hook_1", "angle": "Brutal Truth", "text": selected_hook, "viralityScore": 95},
-                {"id": "hook_2", "angle": "Curiosity Gap", "text": f"The one rule of {topic or category} nobody tells you.", "viralityScore": 91},
-            ]
+            # Fallback dynamic generator by genre
+            if genre_def.id == "roblox_story":
+                selected_hook = f"Never buy the $1 house in Brookhaven."
+                monologue = f"Yesterday I spawned into a private server. At 3:00 AM, the lights turned red and my character froze. [glitch sound] In the chat, an unknown account typed my real name. I tried to reset my character, but the button was gone. [whispering] That's when I realized: someone else was controlling my avatar."
+                cta = "Comment your username if you would have survived this server!"
+                hook_opts = [
+                    {"id": "hook_1", "angle": "The Forbidden Warning", "text": selected_hook, "viralityScore": 97},
+                    {"id": "hook_2", "angle": "The 3AM Glitch", "text": "I found an abandoned server in Brookhaven...", "viralityScore": 94},
+                ]
+            elif genre_def.id == "odd_one_out":
+                selected_hook = f"Only 1% of people can find the odd one out in 5 seconds!"
+                monologue = f"Level 1: Look at these four avatars. [ticking clock 3s] 3... 2... 1... Time's up! [victory ding] Avatar number 3 has a reversed hat! Now Level 2, Hard Mode: [intense heartbeat] Spot the missing shadow before the timer expires. 3... 2... 1..."
+                cta = "Comment your score: did you pass Level 2? Subscribe for daily tests!"
+                hook_opts = [
+                    {"id": "hook_1", "angle": "The 1% IQ Test", "text": selected_hook, "viralityScore": 98},
+                    {"id": "hook_2", "angle": "5-Second Challenge", "text": "99% of people fail this eyes test before the buzzer!", "viralityScore": 93},
+                ]
+            else:
+                selected_hook = f"While you were sleeping, someone took your future."
+                monologue = f"Comfort is the silent killer of your potential. In {category.lower()}, every single day counts. When you struggle to rise at dawn, remind yourself why you started. Silence is your weapon."
+                cta = "Wake up earlier tomorrow. Save this for daily discipline."
+                hook_opts = [
+                    {"id": "hook_1", "angle": "Brutal Truth", "text": selected_hook, "viralityScore": 95},
+                    {"id": "hook_2", "angle": "Curiosity Gap", "text": f"The one rule of {topic or category} nobody tells you.", "viralityScore": 91},
+                ]
         else:
             selected_hook = str(parsed.get("selectedHook") or (parsed.get("hookOptions") or [{}])[0].get("text") or "Stop waiting for motivation.").strip()
             monologue = str(parsed.get("monologue") or parsed.get("quote") or "").strip()
             cta = str(parsed.get("cta") or "Save this video and stay focused.").strip()
             hook_opts = parsed.get("hookOptions") or [
-                {"id": "hook_1", "angle": "Brutal Truth", "text": selected_hook, "viralityScore": 95}
+                {"id": "hook_1", "angle": "Primary Hook", "text": selected_hook, "viralityScore": 95}
             ]
 
         full_script = f"{selected_hook} {monologue} {cta}".strip()

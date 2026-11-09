@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional
 
 from backend.database.repository import add_notification
 from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL, resolve_script_model
+from backend.features.workspace.studio.genre_registry import get_genre_definition
 from .providers import (
     GeminiMetadataProvider,
     GeminiScriptProvider,
@@ -59,6 +60,9 @@ def generate_script(
     creative_context: Optional[Dict[str, Any]] = None,
     available_assets: Optional[Dict[str, Any]] = None,
     user_prompt: Optional[str] = None,
+    genre: str = "motivation",
+    genre_preset: Optional[str] = None,
+    suggested_3d_provider: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Core script generation orchestrator.
@@ -85,6 +89,9 @@ def generate_script(
         creative_context=creative_context,
         available_assets=available_assets,
         user_prompt=user_prompt,
+        genre=genre,
+        genre_preset=genre_preset,
+        suggested_3d_provider=suggested_3d_provider,
     )
 
     scenes_count = len(data.get("storyboard") or data.get("scenes") or [])
@@ -197,6 +204,7 @@ def generate_script_content(
     target_duration_seconds: int = 30,
     user_prompt: Optional[str] = None,
     model: Optional[str] = None,
+    genre: str = "motivation",
 ) -> Dict[str, Any]:
     """Small API 1.1: Generates viral hooks, main monologue, closing CTA, and assembled fullScript."""
     effective_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
@@ -207,6 +215,7 @@ def generate_script_content(
         target_duration_seconds=target_duration_seconds,
         user_prompt=user_prompt,
         model=effective_model,
+        genre=genre,
     )
 
 
@@ -346,12 +355,16 @@ def orchestrate_stage1_script(
     creative_context: Optional[Dict[str, Any]] = None,
     available_assets: Optional[Dict[str, Any]] = None,
     user_prompt: Optional[str] = None,
+    genre: str = "motivation",
+    genre_preset: Optional[str] = None,
+    suggested_3d_provider: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Main Stage 1 Orchestrator:
     Contains zero duplicate logic; exclusively executes Small Functions 1.1 through 1.5 in order.
     """
     effective_model = resolve_script_model(model)
+    genre_def = get_genre_definition(genre)
     target_seconds = 30
     if length:
         import re
@@ -363,7 +376,7 @@ def orchestrate_stage1_script(
 
     logger.info(
         f"[Studio/Stage1] Orchestrating Stage 1 via Small Functions | "
-        f"category='{category}' topic='{effective_topic}' model={effective_model} target={target_seconds}s"
+        f"genre='{genre_def.id}' category='{category}' topic='{effective_topic}' model={effective_model} target={target_seconds}s"
     )
 
     # 1. Execute Small API 1.1: Script Content & Hooks
@@ -374,6 +387,7 @@ def orchestrate_stage1_script(
         target_duration_seconds=target_seconds,
         user_prompt=user_prompt,
         model=effective_model,
+        genre=genre,
     )
     full_script = content["fullScript"]
 
@@ -443,6 +457,11 @@ def orchestrate_stage1_script(
         "stageId": STAGE_ID,
         "data": {
             "title": title,
+            "userPrompt": user_prompt or effective_topic,
+            "genre": genre_def.id,
+            "genreLabel": genre_def.label,
+            "suggested3DProvider": suggested_3d_provider or genre_def.recommended_3d_providers[0],
+            "recommendedVoice": voice_name or genre_def.default_voice,
             "hook": content["selectedHook"],
             "quote": content["monologue"],
             "cta": content["cta"],

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { ScrollableTabs, TabItem } from '@/src/shared/ui/ScrollableTabs';
 import {
@@ -22,6 +22,7 @@ import {
   AlertCircle,
   X,
   Check,
+  ChevronDown,
   Film,
   Music,
   Type,
@@ -35,8 +36,18 @@ import { VoiceProfile } from '../../types';
 import { workspaceApi } from '../../api/workspaceApi';
 import { DEFAULT_SCRIPT_MODEL, DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/aiModels';
 import { useAvailableScriptModels } from '@/src/shared/hooks/useAvailableScriptModels';
+import {
+  GenreConfig,
+  getGenreConfig,
+  getAllGenreConfigs,
+  DEFAULT_GENRE_ID,
+} from '../../genreConfigs';
 
 export interface AIAgentCreatorPaneProps {
+  selectedGenre?: string;
+  onGenreChange?: (genreId: string) => void;
+  topic?: string;
+  onTopicChange?: (val: string) => void;
   agentPrompt: string;
   onPromptChange: (val: string) => void;
   category: string;
@@ -123,6 +134,10 @@ const MUSIC_MOODS = [
 ];
 
 export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
+  selectedGenre = DEFAULT_GENRE_ID,
+  onGenreChange,
+  topic = '',
+  onTopicChange,
   agentPrompt,
   onPromptChange,
   category,
@@ -160,6 +175,45 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
     instagram: true,
     facebook: true,
   });
+
+  const allGenres = getAllGenreConfigs();
+  const activeGenre = selectedGenre || DEFAULT_GENRE_ID;
+  const activeGenreConfig = getGenreConfig(activeGenre);
+
+  const [isGenreMenuOpen, setIsGenreMenuOpen] = useState(false);
+  const genreDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isGenreMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (genreDropdownRef.current && !genreDropdownRef.current.contains(e.target as Node)) {
+        setIsGenreMenuOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsGenreMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isGenreMenuOpen]);
+
+  const handleSelectGenre = (genreId: string) => {
+    onGenreChange?.(genreId);
+    const targetConfig = getGenreConfig(genreId);
+    if (targetConfig.categories.length > 0) {
+      onCategoryChange(targetConfig.categories[0].value);
+    }
+    if (targetConfig.tones.length > 0) {
+      onToneChange?.(targetConfig.tones[0].value);
+    }
+    if (targetConfig.defaultVoice) {
+      onVoiceChange?.(targetConfig.defaultVoice);
+    }
+  };
 
   const speechTone = (propTone as any) || 'authoritative';
   const handleSelectTone = (newTone: string) => {
@@ -206,22 +260,110 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#121215] text-[#E5E5E5] font-sans-studio select-none overflow-hidden rounded-none border-0">
       
-      {/* ── Top Bar: Active Mode Indicator & Switcher ── */}
-      <div className="relative h-11 px-3.5 bg-[#141418] border-b border-[#24242A] flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <Wand2 className="w-4 h-4 shrink-0 text-[#3B82F6]" />
-          <span className="text-xs font-bold text-white tracking-tight truncate">
+      {/* ── Top Bar: Active Mode Indicator & Header Genre Dropdown ── */}
+      <div className="relative h-11 px-3 bg-[#141418] border-b border-[#24242A] flex items-center justify-between gap-2 z-30 shrink-0">
+        {/* Left: Studio Title & Icon */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-6.5 h-6.5 rounded-lg bg-[#1E2538] border border-[#3B82F6]/30 flex items-center justify-center shadow-xs">
+            <Wand2 className="w-3.5 h-3.5 text-[#3B82F6]" />
+          </div>
+          <span className="text-xs font-bold text-white tracking-tight hidden xs:inline sm:inline">
             AI Script Studio
           </span>
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right Actions: Header Genre Dropdown + Studio Mode Buttons */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          {/* Header Genre Selector Dropdown */}
+          <div className="relative" ref={genreDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsGenreMenuOpen((prev) => !prev)}
+              className={`h-7 px-2.5 rounded-lg bg-[#18181C] hover:bg-[#202026] border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs select-none ${
+                isGenreMenuOpen
+                  ? 'border-[#3B82F6] ring-1 ring-[#3B82F6]/40 text-white bg-[#1A1E2E]'
+                  : 'border-[#27272A] hover:border-[#3B82F6]/60 text-zinc-200'
+              }`}
+              title="Switch AI Script Engine"
+            >
+              <span className="text-xs shrink-0">{activeGenreConfig.icon}</span>
+              <span className="text-[11px] font-bold tracking-tight text-white truncate max-w-[85px] sm:max-w-[125px]">
+                {activeGenreConfig.label.split(' ')[0]}
+              </span>
+              <ChevronDown
+                className={`w-3 h-3 text-zinc-400 transition-transform duration-200 shrink-0 ${
+                  isGenreMenuOpen ? 'rotate-180 text-[#3B82F6]' : ''
+                }`}
+              />
+            </button>
+
+            {/* Floating Dropdown Menu */}
+            {isGenreMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl bg-[#141418] border border-[#27272A] shadow-2xl p-1.5 z-50 animate-in fade-in-0 zoom-in-95 duration-100 backdrop-blur-md">
+                <div className="px-2.5 py-1.5 border-b border-[#202026] mb-1 flex items-center justify-between">
+                  <span className="text-[10px] font-mono-studio uppercase font-bold text-zinc-400 tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#3B82F6]" />
+                    <span>AI Script Engine</span>
+                  </span>
+                  <span className="text-[9px] font-mono text-zinc-500">
+                    {allGenres.length} presets
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  {allGenres.map((g) => {
+                    const isSelected = activeGenre === g.id;
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => {
+                          handleSelectGenre(g.id);
+                          setIsGenreMenuOpen(false);
+                        }}
+                        className={`w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#1E2538] border border-[#3B82F6]/40 text-white shadow-xs'
+                            : 'hover:bg-[#1A1A1F] text-zinc-300 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        <span className="text-base p-1 rounded-md bg-[#101014] border border-[#222228] shrink-0 mt-0.5">
+                          {g.icon}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-bold truncate">
+                              {g.label}
+                            </span>
+                            {isSelected && (
+                              <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-zinc-400 line-clamp-1 mt-0.5 leading-snug">
+                            {g.tagline}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#101014] text-zinc-400 border border-[#24242A]">
+                              {g.badgeText}
+                            </span>
+                            <span className="text-[9px] font-mono text-zinc-500">
+                              3D: {g.default3DProvider.replace('_', ' ')}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           {onStartNewVideo && (
             <button
               type="button"
               onClick={onStartNewVideo}
-              className="w-7 h-7 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#27272A] flex items-center justify-center shadow-xs"
+              className="w-7 h-7 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#27272A] flex items-center justify-center shadow-xs shrink-0"
               title="Start a new script from scratch"
             >
               <Plus className="w-3.5 h-3.5 text-zinc-300" />
@@ -233,11 +375,11 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             <button
               type="button"
               onClick={onSwitchToEditor}
-              className="h-7 flex items-center gap-1.5 px-2.5 rounded-lg bg-[#1E1E24] hover:bg-[#26262E] text-[11px] font-medium text-zinc-300 hover:text-white transition-all cursor-pointer border border-[#2A2A32] shadow-xs group"
+              className="h-7 flex items-center gap-1.5 px-2 rounded-lg bg-[#1E1E24] hover:bg-[#26262E] text-[11px] font-medium text-zinc-300 hover:text-white transition-all cursor-pointer border border-[#2A2A32] shadow-xs group shrink-0"
               title="Click to switch to Script Editor"
             >
               <Wand2 className="w-3.5 h-3.5 text-[#3B82F6]" />
-              <span className="truncate">AI Prompt</span>
+              <span className="truncate hidden xs:inline sm:inline">AI Prompt</span>
               <ArrowLeftRight className="w-3 h-3 text-zinc-500 group-hover:text-white transition-colors" />
             </button>
           )}
@@ -287,20 +429,97 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         */}
         {activeTab === 'prompt' && (
           <div className="space-y-4">
-            {/* Prompt Textarea */}
+            {/* 1. Video Topic / Headline */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
-                <span className="text-[#9CA3AF] font-semibold tracking-wider">TOPIC</span>
-                <span className="text-zinc-500 text-[10px]">What should this video be about?</span>
+                <span className="text-[#9CA3AF] font-semibold tracking-wider uppercase">Topic / Headline</span>
+                <span className="text-zinc-500 text-[10px]">Title concept or premise</span>
               </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => onTopicChange?.(e.target.value)}
+                  placeholder={
+                    activeGenre === 'roblox_story'
+                      ? 'e.g. The Legend of the Abandoned Roblox Server'
+                      : activeGenre === 'odd_one_out'
+                      ? 'e.g. Spot the Fake Roblox Avatar in 5 Seconds'
+                      : 'e.g. Why Most Men Die at 25 and Get Buried at 75'
+                  }
+                  className="w-full bg-[#16161A] border border-[#27272A] rounded-xl px-3 py-2.5 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] transition-all font-medium shadow-inner"
+                />
+                {topic.trim().length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onTopicChange?.('')}
+                    className="absolute top-2.5 right-2.5 p-1 rounded-md text-zinc-500 hover:text-white hover:bg-[#202026] transition-colors cursor-pointer"
+                    title="Clear topic"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Viral Starters Chips */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <span className="text-[#9CA3AF] uppercase font-semibold flex items-center gap-1">
+                  <Flame className="w-3 h-3 text-amber-500" />
+                  <span>Viral Starters ({activeGenreConfig.label})</span>
+                </span>
+                <span className="text-zinc-500 text-[9px]">Click to set topic</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {activeGenreConfig.quickPromptChips.map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      onTopicChange?.(chip);
+                      try {
+                        confetti({ particleCount: 20, spread: 50, origin: { y: 0.8 } });
+                      } catch {}
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-[#18181C] hover:bg-[#222228] border border-[#27272A] hover:border-[#3B82F6]/60 text-[11px] text-zinc-300 hover:text-white transition-all text-left cursor-pointer shadow-xs truncate max-w-full"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. User Prompt & Story Explanation (Explained by User) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <span className="text-white font-bold tracking-wider uppercase flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#3B82F6]" />
+                  <span>User Prompt (Explained by You)</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-[#1E2538] border border-[#3B82F6]/30 text-[#60A5FA] text-[9px] font-medium">
+                  Story &amp; Plot Director
+                </span>
+              </div>
+
+              <p className="text-[11px] text-zinc-400 leading-snug">
+                Explain your exact story plot, characters, rules, or message in your own words. The AI will craft the hooks, scenes, dialogue, and 3D visual cues directly around your explanation.
+              </p>
 
               <div className="relative">
                 <textarea
                   value={agentPrompt}
                   onChange={(e) => onPromptChange(e.target.value)}
-                  placeholder="Enter the core idea, message, or story for this video..."
+                  placeholder={
+                    activeGenre === 'roblox_story'
+                      ? 'Explain your Roblox story in detail (e.g. My friend Alex and I joined an abandoned Brookhaven server at 3:00 AM. We saw a glitching avatar named "Null" standing outside the hospital window. Suddenly the doors locked and our chat filled with red text...)'
+                      : activeGenre === 'odd_one_out'
+                      ? 'Explain your puzzle challenge in detail (e.g. Show four Roblox avatars in a lineup with a 5-second countdown timer. Avatars 1, 2, and 4 have regular swords, but avatar 3 has a glitched red dark blade...)'
+                      : 'Explain your message or story in detail (e.g. Focus on waking up early at 4 AM while everyone is asleep. Explain how 6 months of silent compounding discipline shocks everyone who doubted you, referencing Marcus Aurelius...)'
+                  }
                   rows={4}
-                  className="w-full bg-[#16161A] border border-[#27272A] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#2563EB] transition-all resize-none leading-relaxed shadow-inner"
+                  className="w-full bg-[#16161A] border border-[#27272A] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#3B82F6] transition-all resize-none leading-relaxed shadow-inner"
                 />
                 {agentPrompt.trim().length > 0 && (
                   <button
@@ -315,7 +534,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono-studio px-0.5">
-                <span>Include the main idea, hook, or lesson</span>
+                <span>The AI directs scenes directly based on your explanation</span>
                 <span>{agentPrompt.length} chars</span>
               </div>
             </div>
@@ -344,10 +563,10 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
             {/* Category / Niche Selection */}
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] tracking-wider font-semibold">
-                Niche
+                Niche ({activeGenreConfig.label})
               </label>
               <CustomSelect
-                options={CATEGORY_OPTIONS}
+                options={activeGenreConfig.categories}
                 value={category}
                 onChange={onCategoryChange}
                 className="w-full text-xs"
@@ -419,13 +638,12 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                   <span>Tone</span>
                 </label>
                 <CustomSelect
-                  options={DELIVERY_TONES.map((tone) => ({
-                    value: tone.id,
-                    label: tone.label,
-                    description: tone.desc,
-                    icon: <tone.icon className="w-3.5 h-3.5" />,
+                  options={activeGenreConfig.tones.map((t) => ({
+                    value: t.value,
+                    label: t.label,
+                    description: t.desc,
                   }))}
-                  value={speechTone}
+                  value={propTone || activeGenreConfig.defaultTone}
                   onChange={(val) => handleSelectTone(val)}
                   className="w-full"
                   buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"

@@ -113,6 +113,10 @@ export default function WorkspacePage({
 
   // AI Model & Script Generation
   const [selectedModel, setSelectedModel] = useState(DEFAULT_SCRIPT_MODEL);
+  const [selectedGenre, setSelectedGenre] = useState<string>('motivation');
+  const [visuals3DSearchQuery, setVisuals3DSearchQuery] = useState<string>('');
+  const [visuals3DProvider, setVisuals3DProvider] = useState<string>('all');
+  const [topic, setTopic] = useState<string>('');
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
   const [targetLength, setTargetLength] = useState('30 seconds');
@@ -837,10 +841,14 @@ export default function WorkspacePage({
         },
       };
 
+      const effectiveTopic = topic.trim() || targetAudience || agentPrompt.trim() || category;
+      const effectiveUserPrompt = agentPrompt.trim() || topic.trim() || undefined;
+
       const pipelineRes = await runPipeline({
+        genre: selectedGenre,
         category,
-        topic: targetAudience || undefined,
-        userPrompt: agentPrompt || undefined,
+        topic: effectiveTopic,
+        userPrompt: effectiveUserPrompt,
         tone: preferredTone || undefined,
         length: targetLength || '30 seconds',
         model: selectedModel || DEFAULT_SCRIPT_MODEL,
@@ -870,6 +878,12 @@ export default function WorkspacePage({
           ...pipelineRes.script,
           recommendedVoice: selectedVoice || pipelineRes.script.recommendedVoice || 'Fenrir',
         } as unknown as GeneratedScript);
+
+        if (pipelineRes.script.suggested3DProvider) {
+          setVisuals3DProvider(pipelineRes.script.suggested3DProvider);
+        } else if (selectedGenre === 'roblox_story') {
+          setVisuals3DProvider('roblox_creator_store');
+        }
 
         if (pipelineRes.script.aspectRatio && pipelineRes.script.aspectRatio !== canvasAspectRatio) {
           handleCanvasAspectRatioChange(pipelineRes.script.aspectRatio as CanvasAspectRatio);
@@ -2009,9 +2023,18 @@ export default function WorkspacePage({
                 currentTime={currentTime}
                 onSeek={handleSeek}
                 timelineDuration={timelineDuration || duration || 30}
+                onSearch3DVisuals={(query, provider) => {
+                  setVisuals3DSearchQuery(query);
+                  if (provider) setVisuals3DProvider(provider);
+                  onPaneChange?.('3d-visuals');
+                }}
               />
             ) : activePane === 'prompt' || (activePane === 'script' && scriptSubPane === 'prompt') ? (
               <AIAgentCreatorPane
+                selectedGenre={selectedGenre}
+                onGenreChange={setSelectedGenre}
+                topic={topic}
+                onTopicChange={setTopic}
                 agentPrompt={agentPrompt}
                 onPromptChange={(val) => {
                   setAgentPrompt(val);
@@ -2334,6 +2357,8 @@ export default function WorkspacePage({
               />
             ) : activePane === '3d-visuals' ? (
               <Visuals3DPane
+                initialQuery={visuals3DSearchQuery}
+                initialProvider={visuals3DProvider}
                 onSelect3DVisual={(url, name, isVideo, previewImageUrl) => {
                   setActiveCompound('video');
                   if (isVideo) {

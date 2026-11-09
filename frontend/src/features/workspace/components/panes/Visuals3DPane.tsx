@@ -73,6 +73,8 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
   activeVisualUrl,
   onSwitchToVideos,
   onSwitchToCanvas,
+  initialQuery = '',
+  initialProvider,
 }) => {
   // Navigation tabs (Catalog, URL, History)
   const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'history'>('catalog');
@@ -80,9 +82,21 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
   const [selectedOrientation, setSelectedOrientation] = useState<'portrait' | 'landscape' | 'squarish'>('portrait');
 
   // Search & Filtering
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(initialQuery || '');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedProvider, setSelectedProvider] = useState<string>('all');
+  const [selectedProvider, setSelectedProvider] = useState<string>(initialProvider || 'all');
+
+  useEffect(() => {
+    if (initialQuery !== undefined && initialQuery !== '') {
+      setSearchQuery(initialQuery);
+    }
+  }, [initialQuery]);
+
+  useEffect(() => {
+    if (initialProvider) {
+      setSelectedProvider(initialProvider);
+    }
+  }, [initialProvider]);
 
   // Live 3D Assets State
   const [items, setItems] = useState<Visual3DItem[]>([]);

@@ -19,6 +19,10 @@ import {
   Search,
   X,
   CheckCircle2,
+  Film,
+  Box,
+  Flame,
+  ExternalLink,
 } from 'lucide-react';
 import { GeneratedScript, ScriptSubtitle, HookOption } from '../../types';
 
@@ -30,6 +34,7 @@ export interface ScriptEditorPaneProps {
   currentTime?: number;
   onSeek?: (timeSec: number) => void;
   timelineDuration?: number;
+  onSearch3DVisuals?: (query: string, provider?: string) => void;
 }
 
 function formatTimecode(seconds: number): string {
@@ -56,8 +61,9 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
   currentTime = 0,
   onSeek,
   timelineDuration = 30,
+  onSearch3DVisuals,
 }) => {
-  const [activeTab, setActiveTab] = useState<'content' | 'subtitles'>('content');
+  const [activeTab, setActiveTab] = useState<'storyboard' | 'content' | 'subtitles'>('storyboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [activePlayingKey, setActivePlayingKey] = useState<string | null>(null);
@@ -338,15 +344,64 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
         </div>
       </div>
 
+      {/* ── Executive Metadata Ribbon ── */}
+      <div className="px-3.5 py-2 bg-[#141418] border-b border-[#24242A] flex items-center justify-between gap-2 flex-wrap shrink-0">
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border flex items-center gap-1 ${
+              script.genre === 'roblox_story' || (script.category || '').toLowerCase().includes('roblox')
+                ? 'text-cyan-400 border-cyan-500/40 bg-cyan-950/30'
+                : script.genre === 'odd_one_out' || (script.category || '').toLowerCase().includes('odd')
+                ? 'text-pink-400 border-pink-500/40 bg-pink-950/30'
+                : 'text-amber-400 border-amber-500/40 bg-amber-950/30'
+            }`}
+          >
+            <span>
+              {script.genre === 'roblox_story' || (script.category || '').toLowerCase().includes('roblox')
+                ? '🧱'
+                : script.genre === 'odd_one_out' || (script.category || '').toLowerCase().includes('odd')
+                ? '🎯'
+                : '🔥'}
+            </span>
+            <span>
+              {script.genreLabel ||
+                (script.genre === 'roblox_story'
+                  ? 'Roblox Story'
+                  : script.genre === 'odd_one_out'
+                  ? 'Odd One Out'
+                  : 'Motivation & Mindset')}
+            </span>
+          </span>
+
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#18181C] text-[#60A5FA] border border-[#27272A] flex items-center gap-1">
+            <Sparkles className="w-2.5 h-2.5 text-[#3B82F6]" />
+            <span>96% Virality</span>
+          </span>
+        </div>
+
+        {script.suggested3DProvider && onSearch3DVisuals && (
+          <button
+            type="button"
+            onClick={() => onSearch3DVisuals('', script.suggested3DProvider)}
+            className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer font-mono bg-[#18181C] px-2 py-0.5 rounded-md border border-[#27272A]"
+            title="Open recommended 3D visual provider"
+          >
+            <Box className="w-3 h-3 text-[#3B82F6]" />
+            <span>3D: {script.suggested3DProvider.replace(/_/g, ' ').toUpperCase()}</span>
+          </button>
+        )}
+      </div>
+
       {/* ── Subtabs Segmented Control (Standardized ScrollableTabs) ── */}
       <div className="p-2.5 bg-[#121215] border-b border-[#24242A] shrink-0">
         <ScrollableTabs
           tabs={[
-            { id: 'content', label: 'Script Content', icon: FileText },
+            { id: 'storyboard', label: 'Scenes & Storyboard', icon: Film, badge: script.storyboard?.length || 0 },
+            { id: 'content', label: 'Script & Hooks', icon: FileText },
             { id: 'subtitles', label: 'Subtitles', icon: Type, badge: script.subtitles?.length || 0 },
           ]}
           activeTab={activeTab}
-          onChange={(tab) => setActiveTab(tab)}
+          onChange={(tab) => setActiveTab(tab as 'storyboard' | 'content' | 'subtitles')}
           containerBgClassName="bg-[#18181C]"
         />
       </div>
@@ -363,7 +418,215 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
       <div className="workspace-script-editor-content flex-1 overflow-y-auto custom-scrollbar p-3.5 space-y-4">
         
         {/*
-            TAB 1: SCRIPT CONTENT
+            TAB 1: SCENES & STORYBOARD PRODUCTION VIEW
+        */}
+        {activeTab === 'storyboard' && (
+          <div className="space-y-4">
+            {/* Storyboard Header Control Strip */}
+            <div className="p-3 rounded-2xl bg-[#141418] border border-[#24242A] flex items-center justify-between gap-2 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Film className="w-4 h-4 text-[#3B82F6]" />
+                <span className="text-xs font-bold text-white tracking-wide">
+                  Production Storyboard
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#18181C] text-[#60A5FA] border border-[#27272A]">
+                  {script.storyboard?.length || 0} Scenes
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {onSearch3DVisuals && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSearch3DVisuals(
+                        '',
+                        script.suggested3DProvider ||
+                          (script.genre === 'roblox_story' ? 'roblox_creator_store' : 'poly_haven')
+                      )
+                    }
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 hover:text-white border border-[#27272A] text-[10px] font-medium transition-all cursor-pointer shadow-xs"
+                    title="Open 3D Visuals & CGI library"
+                  >
+                    <Box className="w-3 h-3 text-[#3B82F6]" />
+                    <span>Open 3D Catalog</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* User's Original Story Prompt Card */}
+            {script.userPrompt && (
+              <div className="p-3 rounded-xl bg-[#16161A] border border-[#27272A] space-y-1 shadow-xs">
+                <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                  <span className="text-[#9CA3AF] uppercase font-bold flex items-center gap-1.5 text-white">
+                    <Sparkles className="w-3 h-3 text-[#3B82F6]" />
+                    <span>Story / Prompt Explained by You</span>
+                  </span>
+                  <span className="text-[9px] text-zinc-500 font-mono">User Prompt</span>
+                </div>
+                <p className="text-xs text-zinc-300 italic leading-relaxed">
+                  "{script.userPrompt}"
+                </p>
+              </div>
+            )}
+
+            {/* Scene Cards Sequence */}
+            {!script.storyboard || script.storyboard.length === 0 ? (
+              <div className="bg-[#141418] border border-dashed border-[#24242A] rounded-2xl p-8 text-center space-y-3">
+                <Film className="w-8 h-8 text-zinc-600 mx-auto" />
+                <div className="text-xs text-zinc-400">
+                  No storyboard scenes generated yet for this script.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleGenerateCuesFromScript();
+                    setActiveTab('subtitles');
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold cursor-pointer shadow-xs transition-colors"
+                >
+                  Generate Cues from Script
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {script.storyboard.map((sc, scIdx) => {
+                  const sceneNum = sc.sceneNumber || scIdx + 1;
+                  const startTime = sc.start || 0;
+                  const duration = sc.duration || 3.0;
+                  const endTime = Number((startTime + duration).toFixed(1));
+                  const spokenText = sc.subtitleText || '';
+                  const visualPrompt = sc.visualQuery || sc.mediaName || '';
+
+                  return (
+                    <div
+                      key={scIdx}
+                      className="p-3.5 rounded-2xl bg-[#141418] border border-[#24242A] hover:border-[#383842] transition-all space-y-3 shadow-xs group"
+                    >
+                      {/* Scene Card Top Bar */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-[#1E2538] text-[#60A5FA] border border-[#3B82F6]/40">
+                            Scene #{sceneNum}
+                          </span>
+
+                          {sc.beat && (
+                            <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded-md bg-[#18181C] text-zinc-300 border border-[#27272A]">
+                              {sc.beat}
+                            </span>
+                          )}
+
+                          <span className="text-[11px] font-mono text-zinc-400">
+                            {formatTimecode(startTime)} → {formatTimecode(endTime)} ({duration.toFixed(1)}s)
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          {onSeek && (
+                            <button
+                              type="button"
+                              onClick={() => onSeek(startTime)}
+                              className="h-7 px-2 rounded-lg bg-[#18181C] hover:bg-[#222228] text-zinc-400 hover:text-white transition-colors cursor-pointer border border-[#27272A] flex items-center gap-1 text-[10px]"
+                              title="Seek playhead to this scene"
+                            >
+                              <Play className="w-3 h-3 text-[#3B82F6]" />
+                              <span>Seek</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Spoken Narration & Audio Audition */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-[#9CA3AF] uppercase font-mono-studio font-semibold">
+                            Spoken Narration / Dialogue
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => playTextPreview(spokenText, 1.0, `scene_${scIdx}`)}
+                            className="flex items-center gap-1 text-[9px] text-[#60A5FA] hover:text-[#93C5FD] cursor-pointer"
+                          >
+                            <Volume2 className="w-3 h-3" />
+                            <span>{activePlayingKey === `scene_${scIdx}` ? 'Stop' : 'Audition Voice'}</span>
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={spokenText}
+                          onChange={(e) => {
+                            const updated = [...(script.storyboard || [])];
+                            updated[scIdx] = { ...updated[scIdx], subtitleText: e.target.value };
+                            updateField('storyboard', updated);
+                          }}
+                          className="w-full bg-[#18181C] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/20 transition-all font-medium"
+                          placeholder="Spoken subtitle line for this scene..."
+                        />
+                      </div>
+
+                      {/* 3D Visual Footage Metaphor & 1-Click Search Button */}
+                      <div className="p-2.5 rounded-xl bg-[#18181C] border border-[#27272A] space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                          <span className="text-[#9CA3AF] uppercase font-semibold flex items-center gap-1.5">
+                            <Box className="w-3 h-3 text-[#3B82F6]" />
+                            <span>3D Visual / Footage Metaphor</span>
+                          </span>
+                          {onSearch3DVisuals && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const targetProvider =
+                                  script.suggested3DProvider ||
+                                  (script.genre === 'roblox_story' ? 'roblox_creator_store' : 'poly_haven');
+                                onSearch3DVisuals(visualPrompt, targetProvider);
+                                showTemporaryNotice(`Searching 3D catalog for "${visualPrompt.slice(0, 30)}..."`);
+                              }}
+                              className="px-2 py-0.8 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-[10px] transition-all cursor-pointer shadow-xs flex items-center gap-1"
+                              title="Load matching 3D models in Visuals 3D panel"
+                            >
+                              <Search className="w-2.5 h-2.5" />
+                              <span>Find 3D Asset</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="text-[11px] text-zinc-200 leading-relaxed break-words font-mono bg-[#141418] p-2 rounded-lg border border-[#24242A]">
+                          {visualPrompt || 'Cinematic 3D visual backdrop'}
+                        </div>
+                      </div>
+
+                      {/* Cinematic & Audio Tags Footer */}
+                      <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-mono pt-1">
+                        {sc.cameraMotion && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#18181C] border border-[#27272A] text-cyan-300 flex items-center gap-1">
+                            <Film className="w-2.5 h-2.5" />
+                            <span>{sc.cameraMotion}</span>
+                          </span>
+                        )}
+                        {sc.sfx && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#18181C] border border-[#27272A] text-amber-300 flex items-center gap-1">
+                            <Volume2 className="w-2.5 h-2.5" />
+                            <span>{sc.sfx}</span>
+                          </span>
+                        )}
+                        {sc.transition && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#18181C] border border-[#27272A] text-purple-300 flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5" />
+                            <span>{sc.transition}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/*
+            TAB 2: SCRIPT CONTENT & HOOKS
         */}
         {activeTab === 'content' && (
           <div className="space-y-4">

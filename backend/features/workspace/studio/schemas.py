@@ -19,6 +19,9 @@ from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 # ── Main Orchestrator (POST /api/studio/generate-script) ───────────────────────
 
 class StudioScriptRequest(BaseModel):
+    genre: Optional[str] = Field(default="motivation", description="Selected content genre ('motivation', 'roblox_story', 'odd_one_out')")
+    genrePreset: Optional[str] = Field(default=None, description="Specific sub-preset within the genre")
+    suggested3DProvider: Optional[str] = Field(default=None, description="Preferred 3D visual provider")
     category: str = Field(default="Stoic Mindset & Discipline", description="Motivational theme/niche")
     topic: Optional[str] = Field(default=None, description="Specific topic focus")
     userPrompt: Optional[str] = Field(default=None, description="Free-text creative direction from the user")
@@ -59,6 +62,8 @@ class StudioHookOption(BaseModel):
 
 
 class StudioScriptContentRequest(BaseModel):
+    genre: Optional[str] = Field(default="motivation", description="Selected content genre ('motivation', 'roblox_story', 'odd_one_out')")
+    genrePreset: Optional[str] = Field(default=None, description="Specific sub-preset within the genre")
     category: str = Field(default="Stoic Mindset & Discipline")
     topic: Optional[str] = Field(default=None)
     tone: Optional[str] = Field(default="aggressive")

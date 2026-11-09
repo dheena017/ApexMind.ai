@@ -13,6 +13,7 @@ import time
 from fastapi import APIRouter, HTTPException, status
 
 from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
+from backend.features.workspace.studio.genre_registry import list_available_genres
 from .captions_service import (
     chunk_subtitles_by_words,
     export_captions_srt,
@@ -142,6 +143,19 @@ def get_script_providers_route():
     }
 
 
+@router.get(
+    "/api/studio/genres",
+    tags=["Studio - AI & Discovery"],
+    summary="List Supported Content Genres",
+    description="Returns registered script production engines (Motivation, Roblox Story, Odd One Out, etc.).",
+)
+def get_studio_genres_route():
+    return {
+        "success": True,
+        "genres": list_available_genres(),
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # STAGE 1: DEDICATED SMALL REST APIs
 # ══════════════════════════════════════════════════════════════════════════════
@@ -162,6 +176,7 @@ def post_studio_script_content(payload: StudioScriptContentRequest):
             target_duration_seconds=payload.targetDurationSeconds,
             user_prompt=payload.userPrompt,
             model=payload.model,
+            genre=payload.genre or "motivation",
         )
     except Exception as e:
         logger.error(f"[Studio/ScriptContent] Error: {e}")
@@ -321,6 +336,9 @@ def post_studio_generate_script(payload: StudioScriptRequest):
             creative_context=payload.creativeContext,
             available_assets=payload.availableAssets,
             user_prompt=payload.userPrompt,
+            genre=payload.genre or "motivation",
+            genre_preset=payload.genrePreset,
+            suggested_3d_provider=payload.suggested3DProvider,
         )
     except Exception as e:
         logger.error(f"[Studio/Stage1] Script generation error: {e}")

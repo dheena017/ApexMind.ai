@@ -124,6 +124,10 @@ export interface StoryboardScene {
 
 export interface GeneratedScript {
   title: string;
+  userPrompt?: string;
+  genre?: string;
+  genreLabel?: string;
+  suggested3DProvider?: string;
   description?: string;
   titleIdeas?: { title: string; angle: string; viralityScore: number }[];
   hook: string;
@@ -394,4 +398,6 @@ export interface Visuals3DPaneProps {
   activeVisualUrl?: string;
   onSwitchToVideos?: () => void;
   onSwitchToCanvas?: () => void;
+  initialQuery?: string;
+  initialProvider?: string;
 }

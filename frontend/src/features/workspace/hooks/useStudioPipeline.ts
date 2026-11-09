@@ -98,6 +98,9 @@ export interface StudioPipelineResult {
 // ── Hook input params ──────────────────────────────────────────────────────
 
 export interface RunPipelineParams {
+  genre?: string;
+  genrePreset?: string;
+  suggested3DProvider?: string;
   category: string;
   topic?: string;
   userPrompt?: string;
@@ -165,6 +168,9 @@ export function useStudioPipeline() {
         consoleLogger.info('Studio', '[Pipeline] Stage 1 → /api/studio/generate-script');
 
         const scriptData = await studioApi.generateScript({
+          genre: params.genre || 'motivation',
+          genrePreset: params.genrePreset,
+          suggested3DProvider: params.suggested3DProvider,
           category: params.category,
           topic: params.topic,
           userPrompt: params.userPrompt,

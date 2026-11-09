@@ -43,6 +43,9 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 // ── Stage 1 ─────────────────────────────────────────────────────────────────
 
 interface GenerateScriptParams {
+  genre?: string;
+  genrePreset?: string;
+  suggested3DProvider?: string;
   category: string;
   topic?: string;
   userPrompt?: string;
@@ -84,6 +87,9 @@ export const studioApi = {
       `[Stage 1] Generating script | category="${params.category}" model=${params.model || DEFAULT_SCRIPT_MODEL_LABEL}`
     );
     const envelope = await post<StudioScriptEnvelope>('/api/studio/generate-script', {
+      genre: params.genre || 'motivation',
+      genrePreset: params.genrePreset || undefined,
+      suggested3DProvider: params.suggested3DProvider || undefined,
       category: params.category,
       topic: params.topic || params.category,
       userPrompt: params.userPrompt || undefined,
