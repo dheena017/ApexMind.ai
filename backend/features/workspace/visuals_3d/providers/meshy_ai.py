@@ -6,6 +6,7 @@ in GLB, FBX, and OBJ formats with full PBR textures and topology controls.
 Zero hardcoded data: connects dynamically to live APIs.
 """
 
+import base64
 import json
 import logging
 import os
@@ -55,6 +56,10 @@ class MeshyAI3DProvider(BaseVisual3DProvider):
                 "sort_by": "-likeCount",
                 "per_page": min(max(page_size, 10), 20),
             }
+
+            offset = (page - 1) * params["per_page"]
+            if offset > 0:
+                params["cursor"] = base64.b64encode(f"o={offset}".encode("utf-8")).decode("utf-8")
             url = f"https://api.sketchfab.com/v3/models?{urllib.parse.urlencode(params)}"
             req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(req, timeout=8.0) as resp:

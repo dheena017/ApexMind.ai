@@ -6,6 +6,7 @@ weapons, and game maps filtered strictly for free downloadable CC assets.
 Zero hardcoded data: 100% dynamic live queries.
 """
 
+import base64
 import json
 import logging
 import os
@@ -69,6 +70,11 @@ class Sketchfab3DProvider(BaseVisual3DProvider):
             "per_page": min(max(page_size, 10), 24),
         }
 
+        # Native base64 cursor pagination support for page > 1
+        offset = (page - 1) * params["per_page"]
+        if offset > 0:
+            params["cursor"] = base64.b64encode(f"o={offset}".encode("utf-8")).decode("utf-8")
+
         url = f"{SKETCHFAB_MODELS_ENDPOINT}?{urllib.parse.urlencode(params)}"
         headers = {
             "User-Agent": USER_AGENT,
@@ -107,16 +113,25 @@ class Sketchfab3DProvider(BaseVisual3DProvider):
                 license_info = model.get("license") or {}
                 license_label = license_info.get("label") or "Creative Commons"
 
-                # Check if archives contains gltf download link
+                # Extract archive details (file size, poly count, textures)
                 archives = model.get("archives", {})
-                gltf_data = archives.get("gltf", {})
-                download_url = gltf_data.get("url") or viewer_url
+                glb_archive = archives.get("glb") or archives.get("gltf") or {}
+                file_size_bytes = glb_archive.get("size")
+                file_size_mb = round(file_size_bytes / (1024 * 1024), 2) if file_size_bytes else None
+                poly_count = glb_archive.get("faceCount") or face_count
+                tex_res = glb_archive.get("textureMaxResolution")
+
+                download_url = f"{viewer_url}#download"
 
                 tags_list = [t.get("name", "") for t in model.get("tags", []) if isinstance(t, dict)]
 
-                badges = ["Sketchfab 3D", "Downloadable"]
-                if face_count:
-                    badges.append(f"{face_count:,} Polys")
+                badges = ["Sketchfab 3D", "Downloadable CC"]
+                if poly_count:
+                    badges.append(f"{poly_count:,} Polys")
+                if file_size_mb:
+                    badges.append(f"{file_size_mb} MB")
+                if tex_res:
+                    badges.append(f"{tex_res}p PBR")
                 if "roblox" in name.lower() or "roblox" in " ".join(tags_list).lower():
                     badges.append("Roblox Ready")
 
@@ -130,7 +145,9 @@ class Sketchfab3DProvider(BaseVisual3DProvider):
                         preview_url=chosen_thumb,
                         thumbnail_url=chosen_thumb,
                         format="glb",
-                        triangles=face_count,
+                        triangles=poly_count,
+                        file_size_mb=file_size_mb,
+                        resolution=f"{tex_res}p Texture" if tex_res else "1080p",
                         license=license_label,
                         author=author_name,
                         source_url=viewer_url,
@@ -143,5 +160,62 @@ class Sketchfab3DProvider(BaseVisual3DProvider):
 
         except Exception as e:
             logger.warning(f"[Sketchfab] Live query error for '{query}': {e}")
+            return []
+
+    def get_download_url(self, uid: str) -> Dict[str, Any]:
+        """
+        Queries official Sketchfab Download API:
+        GET https://api.sketchfab.com/v3/models/{uid}/download
+        Returns temporary signed S3 download links for glTF and USDZ.
+        If no API key is configured, falls back to direct model download page.
+        """
+        api_token = self.api_key or os.getenv("SKETCHFAB_API_KEY", "").strip()
+        download_endpoint = f"{SKETCHFAB_MODELS_ENDPOINT}/{uid}/download"
+        viewer_url = f"https://sketchfab.com/3d-models/{uid}"
+
+        if not api_token:
+            return {
+                "success": True,
+                "uid": uid,
+                "downloadUrl": f"{viewer_url}#download",
+                "directUrl": viewer_url,
+                "requiresKey": False,
+                "provider": "sketchfab",
+                "message": "Direct download link ready. Open on Sketchfab to download glTF/FBX/OBJ.",
+            }
+
+        headers = {
+            "User-Agent": USER_AGENT,
+            "Authorization": f"Token {api_token}",
+        }
+
+        try:
+            req = urllib.request.Request(download_endpoint, headers=headers)
+            with urllib.request.urlopen(req, timeout=8.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+
+            gltf_info = data.get("gltf", {})
+            usdz_info = data.get("usdz", {})
+            download_url = gltf_info.get("url") or usdz_info.get("url") or f"{viewer_url}#download"
+
+            return {
+                "success": True,
+                "uid": uid,
+                "downloadUrl": download_url,
+                "gltfUrl": gltf_info.get("url"),
+                "usdzUrl": usdz_info.get("url"),
+                "expires": gltf_info.get("expires", 300),
+                "sizeBytes": gltf_info.get("size"),
+                "provider": "sketchfab",
+            }
+        except Exception as e:
+            logger.debug(f"[Sketchfab] Download API note for {uid}: {e}")
+            return {
+                "success": True,
+                "uid": uid,
+                "downloadUrl": f"{viewer_url}#download",
+                "directUrl": viewer_url,
+                "provider": "sketchfab",
+            }
             return []
 

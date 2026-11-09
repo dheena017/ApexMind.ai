@@ -6,6 +6,7 @@ optimized for Roblox Studio and real-time game engines under CC-BY 4.0.
 Zero hardcoded data: queries live assets dynamically.
 """
 
+import base64
 import json
 import logging
 import os
@@ -51,6 +52,10 @@ class SloydAI3DProvider(BaseVisual3DProvider):
         }
         if clean_q:
             params["q"] = clean_q
+
+        offset = (page - 1) * params["per_page"]
+        if offset > 0:
+            params["cursor"] = base64.b64encode(f"o={offset}".encode("utf-8")).decode("utf-8")
 
         url = f"https://api.sketchfab.com/v3/models?{urllib.parse.urlencode(params)}"
         headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}

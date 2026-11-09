@@ -806,6 +806,23 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
                         </button>
                       )}
 
+                      {/* Sketchfab Copy Model UID */}
+                      {previewingItem.provider === 'sketchfab' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const rawUid = previewingItem.id.replace('sketchfab_', '');
+                            navigator.clipboard.writeText(rawUid);
+                            toast.success(`Copied Sketchfab Model UID: ${rawUid}`);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] text-zinc-200 font-medium flex items-center gap-1 transition cursor-pointer"
+                          title="Copy UID for Blender Sketchfab Add-on & API"
+                        >
+                          <Copy className="w-3 h-3 text-zinc-400" />
+                          <span>Copy UID</span>
+                        </button>
+                      )}
+
                       {/* Official Source Store / Creator Store Link */}
                       {previewingItem.sourceUrl && (
                         <a
@@ -840,7 +857,11 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
             </div>
 
             <div className="p-3.5 border-t border-[#2E2E34] flex items-center justify-between gap-2">
-              <span className="text-[11px] text-zinc-400">{previewingItem.license}</span>
+              <span className="text-[11px] text-zinc-400 truncate max-w-[260px]">
+                {previewingItem.provider === 'sketchfab'
+                  ? `By ${previewingItem.author} • ${previewingItem.license} • Sketchfab`
+                  : (previewingItem.license || 'Creative Commons')}
+              </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"

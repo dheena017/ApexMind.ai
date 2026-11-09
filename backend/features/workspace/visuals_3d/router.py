@@ -59,6 +59,7 @@ from .service import (
     save_webgl_recorded_stream,
     search_3d_assets,
 )
+from .providers import get_provider
 
 logger = logging.getLogger("ApexMind.Workspace.Visuals3D.Router")
 router = APIRouter(prefix="/api/workspace/3d-visuals", tags=["Studio Tools: 3D Visuals & CGI"])
@@ -98,6 +99,19 @@ def download_asset_endpoint(payload: Download3DAssetRequest):
     except Exception as e:
         logger.error(f"Download 3D asset error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/sketchfab/{uid}/download", summary="Resolve Sketchfab glTF Download URL via Official Download API")
+def get_sketchfab_download_endpoint(uid: str):
+    prov = get_provider("sketchfab")
+    if prov and hasattr(prov, "get_download_url"):
+        return prov.get_download_url(uid)
+    return {
+        "success": True,
+        "uid": uid,
+        "downloadUrl": f"https://sketchfab.com/3d-models/{uid}#download",
+        "directUrl": f"https://sketchfab.com/3d-models/{uid}",
+    }
 
 
 @router.get("/assets/local", response_model=Local3DAssetsListResponse, summary="List Local Cached .glb Assets")
