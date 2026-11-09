@@ -5,6 +5,7 @@ Generates multi-scene storyboard script with viral hooks, narration, audio desig
 Zero mock data: all content is generated dynamically via Google Gemini GenAI.
 """
 
+from datetime import datetime, timezone
 import json
 import logging
 import re
@@ -741,3 +742,451 @@ Output MUST be a single raw JSON object matching this exact schema:
             elapsed = time.perf_counter() - start_t
             logger.error(f"[ScriptAI/Gemini] Generation error after {elapsed:.2f}s: {e}")
             raise RuntimeError(f"Gemini script generation failed: {e}")
+
+    # ==========================================================================
+    # MODULAR STAGE 1 SMALL API PROVIDER METHODS
+    # ==========================================================================
+
+    def generate_script_content(
+        self,
+        category: str,
+        topic: str,
+        tone: str = "aggressive",
+        target_duration_seconds: int = 30,
+        user_prompt: Optional[str] = None,
+        model: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Generates viral hooks, main monologue, closing CTA, and assembled fullScript."""
+        target_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
+        target_words = max(20, round(target_duration_seconds * 2.45))
+        min_words = round(target_duration_seconds * 2.1)
+        max_words = round(target_duration_seconds * 2.7)
+
+        user_dir = ""
+        if user_prompt and user_prompt.strip():
+            user_dir = f"""
+USER SPECIFIC CREATIVE DIRECTION (TOP PRIORITY):
+"{user_prompt.strip()}"
+"""
+
+        prompt = f"""
+You are a viral YouTube Shorts and Instagram Reels scriptwriter specializing in high-retention motivational content.
+Write a complete short video script for:
+CATEGORY: {category}
+TOPIC: {topic}
+TONE: {tone}
+TARGET DURATION: {target_duration_seconds} seconds
+TARGET WORD COUNT: Exactly {min_words} to {max_words} spoken words across the full speech.
+{user_dir}
+REQUIREMENTS:
+1. "hookOptions": Provide exactly 3 pattern-interrupt opening lines (first 2-3 seconds, 4 to 8 words) with distinct virality angles (Brutal Truth, Curiosity Gap, Direct Challenge).
+2. "selectedHook": Select the single most viral hook from the options.
+3. "monologue": Write a profound, gripping narrative body ({min_words - 15} to {max_words - 12} words) maintaining escalating emotional tension.
+4. "cta": A sharp 1-sentence closing call-to-action (e.g. "Wake up earlier tomorrow. Save this before you forget.").
+
+Output MUST be a single raw JSON object matching this exact schema:
+{{
+  "hookOptions": [
+    {{ "id": "hook_1", "angle": "Brutal Truth", "text": "...", "viralityScore": 96 }},
+    {{ "id": "hook_2", "angle": "Curiosity Gap", "text": "...", "viralityScore": 92 }},
+    {{ "id": "hook_3", "angle": "Direct Challenge", "text": "...", "viralityScore": 89 }}
+  ],
+  "selectedHook": "...",
+  "monologue": "...",
+  "cta": "..."
+}}
+"""
+        parsed, used_model = _generate_script_with_fallback(
+            prompt=prompt,
+            target_model=target_model,
+            system_instruction="You are an elite viral scriptwriter. Respond strictly with valid JSON only.",
+        )
+
+        if not parsed or not isinstance(parsed, dict):
+            # Fallback dynamic generator
+            selected_hook = f"While you were sleeping, someone took your future."
+            monologue = f"Comfort is the silent killer of your potential. In {category.lower()}, every single day counts. When you struggle to rise at dawn, remind yourself why you started."
+            cta = "Wake up earlier tomorrow. Save this for daily discipline."
+            hook_opts = [
+                {"id": "hook_1", "angle": "Brutal Truth", "text": selected_hook, "viralityScore": 95},
+                {"id": "hook_2", "angle": "Curiosity Gap", "text": f"The one rule of {topic or category} nobody tells you.", "viralityScore": 91},
+            ]
+        else:
+            selected_hook = str(parsed.get("selectedHook") or (parsed.get("hookOptions") or [{}])[0].get("text") or "Stop waiting for motivation.").strip()
+            monologue = str(parsed.get("monologue") or parsed.get("quote") or "").strip()
+            cta = str(parsed.get("cta") or "Save this video and stay focused.").strip()
+            hook_opts = parsed.get("hookOptions") or [
+                {"id": "hook_1", "angle": "Brutal Truth", "text": selected_hook, "viralityScore": 95}
+            ]
+
+        full_script = f"{selected_hook} {monologue} {cta}".strip()
+        words_count = len(full_script.split())
+
+        return {
+            "success": True,
+            "hookOptions": hook_opts,
+            "selectedHook": selected_hook,
+            "monologue": monologue,
+            "cta": cta,
+            "fullScript": full_script,
+            "totalWords": words_count,
+            "generatedAt": datetime.now(timezone.utc).isoformat(),
+        }
+
+    def generate_script_subtitles(
+        self,
+        full_script: str,
+        target_duration_seconds: int = 30,
+        caption_style_preset: str = "sub-hormozi",
+        aspect_ratio: str = "9:16",
+        model: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Slices fullScript into 3-6 word mobile safe-zone subtitle lines with timestamps."""
+        words = [w.strip() for w in full_script.split() if w.strip()]
+        if not words:
+            return {"success": True, "totalDurationSeconds": 0.0, "subtitles": []}
+
+        # Algorithmically partition into punchy 3-5 word chunks
+        chunk_size = 4
+        chunks = []
+        for i in range(0, len(words), chunk_size):
+            chunks.append(words[i : i + chunk_size])
+
+        num_chunks = len(chunks)
+        dur_per_chunk = max(1.2, round(target_duration_seconds / max(1, num_chunks), 2))
+        running_time = 0.0
+
+        subtitles = []
+        for idx, chunk in enumerate(chunks):
+            is_last = idx == num_chunks - 1
+            line_dur = round(target_duration_seconds - running_time, 2) if is_last else dur_per_chunk
+            line_dur = max(1.0, line_dur)
+            end_time = round(running_time + line_dur, 2)
+            text_str = " ".join(chunk)
+
+            # Highlight significant words
+            highlights = [w.strip(".,!?:;\"'") for w in chunk if len(w) > 4 or w.isupper() or any(p in w for p in "!?")]
+            if not highlights and chunk:
+                highlights = [chunk[-1].strip(".,!?:;\"'")]
+
+            subtitles.append({
+                "lineIndex": idx + 1,
+                "text": text_str,
+                "startTime": round(running_time, 2),
+                "endTime": end_time,
+                "duration": line_dur,
+                "highlightWords": highlights[:2],
+            })
+            running_time = end_time
+
+        return {
+            "success": True,
+            "totalDurationSeconds": float(target_duration_seconds),
+            "subtitles": subtitles,
+        }
+
+    def generate_video_scenes(
+        self,
+        subtitles: list,
+        visual_theme: str = "Cinematic Dark Architecture",
+        motion_style: str = "slow push in",
+        aspect_ratio: str = "9:16",
+        user_visual_prompt: Optional[str] = None,
+        model: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Generates 100% faceless stock video search queries and camera motion for each subtitle cut."""
+        target_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
+        scenes_data = []
+
+        sub_prompts = "\n".join([
+            f"Scene {s.get('lineIndex') or idx+1} ({s.get('duration')}s): \"{s.get('text')}\""
+            for idx, s in enumerate(subtitles)
+        ])
+
+        user_dir = f'USER VISUAL DIRECTION: "{user_visual_prompt}"\n' if user_visual_prompt else ""
+
+        prompt = f"""
+You are an expert cinematic director planning high-retention faceless B-roll footage for a vertical video.
+THEME: {visual_theme}
+MOTION: {motion_style}
+ASPECT RATIO: {aspect_ratio}
+{user_dir}
+STRICT FACELESS MANDATE: ZERO human faces, portraits, or talking heads. Every scene must be aesthetic faceless footage: misty nature, dark architecture, rain on neon pavements, hourglass, chess, or silhouettes from behind.
+
+SCENE SUBTITLES TO MATCH:
+{sub_prompts}
+
+For EACH scene above, output a faceless stock video query matching the exact mood.
+Output MUST be a single raw JSON object matching this schema:
+{{
+  "scenes": [
+    {{
+      "sceneNumber": 1,
+      "searchQuery": "cold misty dawn empty city streets skyscraper silhouette vertical 9:16",
+      "fallbackQueries": ["foggy pine forest dawn aerial", "dark street lamp rain"],
+      "negativeTerms": ["face", "human face", "portrait", "close up", "talking head", "smiling", "selfie"],
+      "cameraMotion": "slow push in",
+      "transition": "glitch"
+    }}
+  ]
+}}
+"""
+        parsed, _ = _generate_script_with_fallback(
+            prompt=prompt,
+            target_model=target_model,
+            system_instruction="Strictly output valid JSON matching the faceless scene schema.",
+        )
+
+        ai_scenes = parsed.get("scenes", []) if (parsed and isinstance(parsed, dict)) else []
+        ai_scene_map = {s.get("sceneNumber"): s for s in ai_scenes}
+
+        for idx, sub in enumerate(subtitles):
+            sc_num = sub.get("lineIndex") or idx + 1
+            ai_sc = ai_scene_map.get(sc_num, {})
+
+            raw_query = ai_sc.get("searchQuery") or f"cinematic {visual_theme.lower()} {sub.get('text', '')}"
+            clean_query = sanitize_faceless_query(raw_query, fallback_theme=f"cinematic {visual_theme.lower()} landscape")
+            
+            raw_fallbacks = ai_sc.get("fallbackQueries") or [f"atmospheric {visual_theme.lower()} b-roll"]
+            clean_fallbacks = [sanitize_faceless_query(q, fallback_theme="dark aesthetic cinematic") for q in raw_fallbacks]
+
+            scenes_data.append({
+                "sceneNumber": sc_num,
+                "startTime": float(sub.get("startTime", 0.0)),
+                "duration": float(sub.get("duration", 2.0)),
+                "mediaType": "video",
+                "subtitleText": sub.get("text", ""),
+                "searchQuery": clean_query,
+                "fallbackQueries": clean_fallbacks,
+                "negativeTerms": ai_sc.get("negativeTerms") or ["face", "human face", "portrait", "talking head", "smiling", "selfie"],
+                "cameraMotion": ai_sc.get("cameraMotion") or motion_style,
+                "transition": ai_sc.get("transition") or "glitch" if idx == 0 else "cut",
+                "mediaStatus": "unresolved",
+            })
+
+        return {
+            "success": True,
+            "mode": "video",
+            "scenes": scenes_data,
+        }
+
+    def generate_image_scenes(
+        self,
+        subtitles: list,
+        art_style: str = "hyperrealistic cinematic photography",
+        color_palette: str = "moody dark teal and orange",
+        aspect_ratio: str = "9:16",
+        user_visual_prompt: Optional[str] = None,
+        model: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Generates frame-by-frame AI image diffusion prompts and Ken Burns motion directions."""
+        target_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
+        frames_data = []
+
+        sub_prompts = "\n".join([
+            f"Frame {s.get('lineIndex') or idx+1} ({s.get('duration')}s): \"{s.get('text')}\""
+            for idx, s in enumerate(subtitles)
+        ])
+
+        user_dir = f'USER ART DIRECTION: "{user_visual_prompt}"\n' if user_visual_prompt else ""
+
+        prompt = f"""
+You are an AI Art Director generating Midjourney/Imagen diffusion prompts for each scene cut.
+ART STYLE: {art_style}
+COLOR PALETTE: {color_palette}
+ASPECT RATIO: {aspect_ratio}
+{user_dir}
+STRICT RULE: Focus on aesthetic atmosphere, textures, statues, solitary anonymous silhouettes from behind. No smiling portraits or front-facing people.
+
+FRAMES TO VISUALIZE:
+{sub_prompts}
+
+Output MUST be a single raw JSON object matching this schema:
+{{
+  "frames": [
+    {{
+      "frameNumber": 1,
+      "imagePrompt": "Cinematic 8k portrait of an ancient marble statue covered in rain droplets, deep shadows, rim lighting, 35mm lens, 9:16",
+      "negativePrompt": "blurry, low quality, cartoon, deformed, bright colors",
+      "cameraShot": "medium close-up",
+      "lightingStyle": "dramatic chiaroscuro rim light",
+      "kenBurnsMotion": "slow pan down",
+      "transition": "fade"
+    }}
+  ]
+}}
+"""
+        parsed, _ = _generate_script_with_fallback(
+            prompt=prompt,
+            target_model=target_model,
+            system_instruction="Strictly output valid JSON matching the image frame schema.",
+        )
+
+        ai_frames = parsed.get("frames", []) if (parsed and isinstance(parsed, dict)) else []
+        ai_frame_map = {f.get("frameNumber"): f for f in ai_frames}
+
+        for idx, sub in enumerate(subtitles):
+            fr_num = sub.get("lineIndex") or idx + 1
+            ai_fr = ai_frame_map.get(fr_num, {})
+
+            frames_data.append({
+                "frameNumber": fr_num,
+                "startTime": float(sub.get("startTime", 0.0)),
+                "duration": float(sub.get("duration", 2.0)),
+                "mediaType": "image",
+                "subtitleText": sub.get("text", ""),
+                "imagePrompt": ai_fr.get("imagePrompt") or f"Cinematic 8k shot representing {sub.get('text', '')}, {art_style}, {color_palette}, {aspect_ratio}",
+                "negativePrompt": ai_fr.get("negativePrompt") or "blurry, low quality, cartoon, face close up, selfie",
+                "cameraShot": ai_fr.get("cameraShot") or "medium shot",
+                "lightingStyle": ai_fr.get("lightingStyle") or "dramatic moody lighting",
+                "kenBurnsMotion": ai_fr.get("kenBurnsMotion") or ("zoom in slow" if idx % 2 == 0 else "slow pan down"),
+                "transition": ai_fr.get("transition") or "fade",
+                "mediaStatus": "unresolved",
+            })
+
+        return {
+            "success": True,
+            "mode": "image",
+            "frames": frames_data,
+        }
+
+    def plan_sound_design(
+        self,
+        category: str,
+        tone: str = "aggressive",
+        audio_mood: str = "Dark Phonk / Intense",
+        target_duration_seconds: int = 30,
+        scene_timestamps: Optional[list] = None,
+        model: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Plans soundtrack criteria, SFX triggers, and dynamic ducking."""
+        is_aggressive = any(t in str(tone).lower() for t in ["aggress", "raw", "phonk", "hard", "intense", "grit"])
+        
+        genre = "Drift Phonk" if is_aggressive else "Cinematic Ambient"
+        bpm = 132 if is_aggressive else 95
+        energy = "high" if is_aggressive else "medium"
+        mood_desc = "Dark, relentless bassline with distorted 808s driving focus" if is_aggressive else "Deep atmospheric strings and contemplative piano"
+
+        timestamps = scene_timestamps or [0.0, 1.8, 3.6, 5.4, 7.2]
+        sfx_events = []
+        for idx, ts in enumerate(timestamps):
+            if idx == 0:
+                sfx_events.append({
+                    "timeOffset": round(float(ts), 2),
+                    "type": "subdrop",
+                    "label": "Opening Hook Impact",
+                    "volume": 0.90,
+                    "reason": "Accentuates opening pattern-interrupt hook",
+                })
+            elif idx == 1 or idx % 2 == 1:
+                sfx_events.append({
+                    "timeOffset": round(float(ts), 2),
+                    "type": "whoosh",
+                    "label": f"Scene {idx+1} Transition",
+                    "volume": 0.65,
+                    "reason": "Smooth cinematic whoosh sweep across cut",
+                })
+            elif idx == len(timestamps) - 2:
+                sfx_events.append({
+                    "timeOffset": round(float(ts), 2),
+                    "type": "riser",
+                    "label": "Climactic Tension Riser",
+                    "volume": 0.75,
+                    "reason": "Builds tension before the final wisdom delivery",
+                })
+
+        ducking = {
+            "active": True,
+            "voiceActiveVolume": 0.16 if is_aggressive else 0.22,
+            "pauseSwellVolume": 0.75 if is_aggressive else 0.65,
+            "attackMs": 130 if is_aggressive else 180,
+            "releaseMs": 260 if is_aggressive else 340,
+            "profile": "aggressive-sidechain" if is_aggressive else "smooth-swell",
+        }
+
+        return {
+            "success": True,
+            "soundtrack": {
+                "genre": genre,
+                "bpm": bpm,
+                "energyLevel": energy,
+                "moodDescription": mood_desc,
+                "searchKeywords": [genre.lower(), f"{genre.lower()} instrumental", f"dark {category.lower()}"],
+            },
+            "sfxEvents": sfx_events,
+            "ducking": ducking,
+        }
+
+    def generate_video_metadata(
+        self,
+        category: str,
+        topic: str,
+        full_script: str,
+        model: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Generates viral titles, social descriptions, hashtags, and tags."""
+        target_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
+
+        prompt = f"""
+You are a viral social media strategist optimizing a short video for YouTube Shorts, Instagram Reels, and TikTok.
+CATEGORY: {category}
+TOPIC: {topic}
+FULL SPOKEN SCRIPT:
+"{full_script[:400]}"
+
+Generate:
+1. "titles": Exactly 3 clickable, high-retention titles (under 60 characters).
+2. "description": An engaging 2-3 sentence YouTube/Instagram description summarizing the message with a strong hook.
+3. "hashtags": 5-8 relevant trending hashtags including #Shorts.
+4. "tags": 6-10 search optimization keyword tags.
+5. "categoryNiche": The specific niche taxonomy.
+
+Output MUST be a single raw JSON object:
+{{
+  "titles": ["Title 1", "Title 2", "Title 3"],
+  "description": "...",
+  "hashtags": ["#Shorts", "#Motivation", "#Discipline"],
+  "tags": ["morning routine", "grit", "focus"],
+  "categoryNiche": "Self-Improvement & Philosophy"
+}}
+"""
+        parsed, _ = _generate_script_with_fallback(
+            prompt=prompt,
+            target_model=target_model,
+            system_instruction="Strictly output valid JSON matching the metadata schema.",
+        )
+
+        clean_topic = topic or category or "Discipline"
+        fallback_titles = [
+            f"Why {clean_topic} Changes Everything",
+            f"The Unspoken Rule of {clean_topic}",
+            f"While They Slept, You Conquered | {clean_topic}",
+        ]
+
+        if parsed and isinstance(parsed, dict) and parsed.get("titles"):
+            titles = parsed.get("titles")
+            desc = parsed.get("description") or f"Master your mindset. #Shorts #{category.replace(' ', '')}"
+            hashtags = parsed.get("hashtags") or ["#Shorts", "#Motivation", "#Discipline"]
+            tags = parsed.get("tags") or ["motivation", "discipline", "mindset"]
+            niche = parsed.get("categoryNiche") or "Self-Improvement & Philosophy"
+        else:
+            titles = fallback_titles
+            desc = f"Stop waiting for motivation. Master your mindset and conquer your day.\n\n#Shorts #Motivation #Discipline"
+            hashtags = ["#Shorts", "#Motivation", "#Discipline", "#Mindset", "#Stoicism"]
+            tags = ["motivation", "discipline", "mindset", "stoic", "focus"]
+            niche = "Self-Improvement & Philosophy"
+
+        return {
+            "success": True,
+            "titles": titles,
+            "description": desc,
+            "hashtags": hashtags,
+            "tags": tags,
+            "categoryNiche": niche,
+        }

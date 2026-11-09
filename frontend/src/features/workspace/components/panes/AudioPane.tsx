@@ -699,7 +699,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
           }
 
           // Automatic resilient fallback to backend stream resolver if direct link 404s or has CORS
-          const fallbackUrl = `/api/media/audio-stream?id=${encodeURIComponent(track.id)}&url=${encodeURIComponent(initialUrl)}`;
+          const fallbackUrl = `/api/workspace/audio/stream?id=${encodeURIComponent(track.id)}&url=${encodeURIComponent(initialUrl)}`;
           const fallbackHref = new URL(fallbackUrl, window.location.href).href;
           if (audioEl.src !== fallbackHref) {
             audioEl.src = fallbackUrl;
@@ -770,7 +770,7 @@ export const AudioPane: React.FC<AudioPaneProps> = ({
             return;
           }
 
-          const fallbackUrl = `/api/media/audio-stream?id=${encodeURIComponent(sfx.id)}&url=${encodeURIComponent(initialUrl)}`;
+          const fallbackUrl = `/api/workspace/audio/stream?id=${encodeURIComponent(sfx.id)}&url=${encodeURIComponent(initialUrl)}`;
           const fallbackHref = new URL(fallbackUrl, window.location.href).href;
           if (sfxEl.src !== fallbackHref) {
             sfxEl.src = fallbackUrl;

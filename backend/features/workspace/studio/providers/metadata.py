@@ -30,6 +30,7 @@ class GeminiMetadataProvider:
         hook: str = "",
         quote: str = "",
         cta: str = "",
+        full_script: str = "",
         model: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate YouTube metadata with Gemini; fail explicitly if AI generation fails."""
@@ -40,9 +41,15 @@ class GeminiMetadataProvider:
         clean_quote = (quote or "").strip()
         clean_cta = (cta or "").strip()
         clean_title = (title or "").strip()
+        clean_script = (full_script or "").strip()
 
-        if not any((clean_topic, clean_title, clean_hook, clean_quote)):
-            raise ValueError("Provide a video title or script before generating metadata.")
+        if clean_script and not clean_quote:
+            clean_quote = clean_script[:500]
+        if not clean_topic:
+            clean_topic = clean_cat or "Stoic Mindset & Discipline"
+
+        if not any((clean_topic, clean_title, clean_hook, clean_quote, clean_script)):
+            raise ValueError("Provide a video title, topic, or script before generating metadata.")
 
         prompt = f"""You are an elite short-form video virality strategist for YouTube Shorts, Instagram Reels, and Facebook Reels.
 Generate title variations, an engaging description, and categorized hashtags using only the supplied video details. Do not invent people, quotes, events, or factual claims.
@@ -51,7 +58,7 @@ CATEGORY/THEME: {clean_cat or 'Not provided'}
 TOPIC: {clean_topic or 'Not provided'}
 CURRENT TITLE: {clean_title or 'Not provided'}
 OPENING HOOK: {clean_hook or 'Not provided'}
-CORE MONOLOGUE: {clean_quote or 'Not provided'}
+CORE MONOLOGUE: {clean_quote or clean_script[:400] or 'Not provided'}
 CALL TO ACTION: {clean_cta or 'Not provided'}
 
 CRITICAL MANDATE:
@@ -138,11 +145,16 @@ Output strictly a single raw JSON object matching:
                 tag for group in hashtags.values() for tag in group
             ))
 
+            title_list = [item["title"] for item in titles]
             return {
+                "success": True,
                 "titles": titles,
+                "titleList": title_list,
                 "description": description,
                 "hashtags": hashtags,
                 "allHashtags": all_tags,
+                "tags": all_tags,
+                "categoryNiche": clean_cat or "Self-Improvement & Philosophy",
             }
         except Exception:
             logger.exception("[ScriptAI/Metadata] Gemini metadata generation failed.")

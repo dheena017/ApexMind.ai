@@ -21,7 +21,7 @@ from .schemas import (
 )
 
 logger = logging.getLogger("ApexMind.features.videos")
-router = APIRouter(prefix="/api/studio-videos", tags=["Videos"])
+router = APIRouter(prefix="/api/studio-videos", tags=["Studio Tools 7: Videos"])
 
 @router.get(
     "",

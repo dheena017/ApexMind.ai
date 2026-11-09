@@ -173,6 +173,12 @@ def search_soundtracks(
         "pageSize": page_size,
         "items": deduped_items,
         "providers": get_audio_providers_status(),
+        "data": {
+            "items": deduped_items,
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+        },
     }
 
 
@@ -273,4 +279,10 @@ def search_sound_effects(
         "pageSize": page_size,
         "items": deduped_items,
         "providers": get_audio_providers_status(),
+        "data": {
+            "items": deduped_items,
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+        },
     }

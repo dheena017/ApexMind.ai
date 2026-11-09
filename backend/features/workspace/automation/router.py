@@ -22,7 +22,7 @@ from .service import (
 )
 
 logger = logging.getLogger("ApexMind.Workspace.Automation.Router")
-router = APIRouter(tags=["Schedules"])
+router = APIRouter(tags=["Studio Tools 10: Schedules"])
 
 
 def _require_session_user_id(

@@ -46,7 +46,7 @@ class CustomGradientRequest(BaseModel):
 
 @router.get(
     "/api/workspace/canvas/presets",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Get Canvas & Frame Studio Catalog",
     operation_id="get_canvas_studio_presets",
     description="Returns the unified catalog spanning all 5 subtabs: Ratio, LUTs, Solid, Gradient, and Build presets.",
@@ -57,7 +57,7 @@ async def get_canvas_presets_route():
 
 @router.get(
     "/api/workspace/canvas/ratios",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Get Target Output Platform Ratios",
     operation_id="get_canvas_platform_ratios",
     description="Returns all supported aspect ratios (9:16 Shorts/Reels, 16:9 YouTube, 1:1 Square, 4:5 Portrait, 21:9 Ultrawide).",
@@ -71,7 +71,7 @@ async def get_aspect_ratios_route():
 
 @router.get(
     "/api/workspace/canvas/luts",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Get 24 Cinematic Color LUT Presets",
     operation_id="get_canvas_color_luts",
     description="Returns the 24 cinematic color LUT presets with CSS filter and native FFmpeg filter clauses.",
@@ -88,7 +88,7 @@ async def get_color_luts_route(
 
 @router.get(
     "/api/workspace/canvas/solids",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Get Studio Solid Canvas Presets",
     operation_id="get_canvas_solids",
 )
@@ -101,7 +101,7 @@ async def get_studio_solids_route():
 
 @router.get(
     "/api/workspace/canvas/gradients",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Get Studio Gradient Canvas Presets",
     operation_id="get_canvas_gradients",
 )
@@ -114,7 +114,7 @@ async def get_studio_gradients_route():
 
 @router.get(
     "/api/workspace/canvas/frames",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Get Canvas & Frame Builder Presets",
     operation_id="get_canvas_frame_presets",
 )
@@ -127,7 +127,7 @@ async def get_canvas_frame_presets_route():
 
 @router.get(
     "/api/workspace/canvas/dimensions",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Calculate Canvas Dimensions",
     operation_id="get_canvas_dimensions",
     description="Calculates even (divisible by 2) width and height for video encoding given an aspect ratio and resolution limit.",
@@ -144,7 +144,7 @@ async def get_canvas_dimensions_route(
 
 @router.post(
     "/api/workspace/canvas/filter-chain",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Compile Video Filter Chain",
     operation_id="compile_canvas_filter_chain",
     description="Compiles UI color adjustments, blur, vignette, and LUT presets into native FFmpeg video filter clauses.",
@@ -155,7 +155,7 @@ async def post_compile_filter_chain(payload: FilterChainRequest):
 
 @router.post(
     "/api/workspace/canvas/custom-gradient",
-    tags=["Canvas"],
+    tags=["Studio Tools 6: Canvas"],
     summary="Generate Custom Gradient",
     operation_id="generate_canvas_custom_gradient",
 )

@@ -33,7 +33,7 @@ router = APIRouter()
 @router.get(
     "/api/studio/elements/search",
     response_model=ElementsCatalogResponse,
-    tags=["Elements"],
+    tags=["Studio Tools 4: Elements"],
     summary="Search Studio Elements & Overlays",
     operation_id="search_studio_elements",
     description="Live search across 16 modular vector, emoji, sticker, shape, and badge providers with zero hardcoded arrays.",
@@ -56,7 +56,7 @@ async def get_search_studio_elements(
 
 @router.get(
     "/api/studio/elements/providers",
-    tags=["Elements"],
+    tags=["Studio Tools 4: Elements"],
     summary="Get Element Providers Status",
     operation_id="get_studio_element_providers",
     description="Returns availability status for all 16 live element providers.",
@@ -71,7 +71,7 @@ async def get_studio_element_providers():
 @router.post(
     "/api/studio/elements/custom-badge",
     response_model=CreateCustomBadgeResponse,
-    tags=["Elements"],
+    tags=["Studio Tools 4: Elements"],
     summary="Create Custom Studio Badge",
     operation_id="create_custom_studio_badge",
     description="Generates a customized viral badge with gradient, styling, and text.",
@@ -96,7 +96,7 @@ def post_create_custom_badge(payload: CreateCustomBadgeRequest):
 @router.post(
     "/api/studio/elements/recommend",
     response_model=RecommendedElementsResponse,
-    tags=["Elements"],
+    tags=["Studio Tools 4: Elements"],
     summary="Get Contextual Recommended Elements",
     operation_id="get_recommended_studio_elements",
     description="Recommends visual elements tailored to the video's theme, topic, and tone.",

@@ -1,5 +1,6 @@
-from fastapi.openapi.utils import get_openapi
 from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
+
 
 def custom_openapi(app: FastAPI):
     if app.openapi_schema:
@@ -7,76 +8,96 @@ def custom_openapi(app: FastAPI):
     openapi_schema = get_openapi(
         title="ApexMind Studio AI API",
         version="2.0.0",
-        description="Comprehensive Python FastAPI backend for AI motivational YouTube Shorts automation, Gemini scriptwriting, and YouTube publishing.",
+        description="Comprehensive Python FastAPI backend for AI motivational YouTube Shorts automation, Gemini scriptwriting, neural voiceovers, media resolution, and multi-platform publishing.",
         routes=app.routes,
         tags=[
             {
                 "name": "Health",
-                "description": "Service health and uptime.",
+                "description": "Service health, telemetry, and uptime status.",
             },
             {
                 "name": "Dashboard",
-                "description": "Creator dashboard summary.",
+                "description": "Creator dashboard summary and performance metrics.",
             },
             {
                 "name": "Auth",
-                "description": "Sign-in and account identity.",
+                "description": "User sign-in, OAuth, and account identity.",
             },
             {
-                "name": "Studio",
-                "description": "Create scripts, voiceovers, and videos.",
+                "name": "Studio - Stage 1: Script & Storyboard",
+                "description": "Stage 1: Generate viral scripts, mobile safe-zone subtitles, faceless B-roll queries, sound design, and SEO metadata.",
             },
             {
-                "name": "Presets",
-                "description": "Built-in Studio presets.",
+                "name": "Studio - Stage 2: Voiceover",
+                "description": "Stage 2: 24kHz neural TTS voiceover synthesis and timeline synchronization.",
             },
             {
-                "name": "Stock Media",
-                "description": "Search stock videos and images.",
+                "name": "Studio - Stage 3: Media Resolution",
+                "description": "Stage 3: Live stock video resolution, AI image frames, sound effects, and background soundtracks.",
             },
             {
-                "name": "Audio",
-                "description": "Search music and sound effects.",
+                "name": "Studio - Stage 4: Captions",
+                "description": "Stage 4: Word-timed captions, visual style presets (Hormozi, Beast, Minimal), and SRT/VTT exports.",
             },
             {
-                "name": "Providers",
-                "description": "Check media provider status.",
+                "name": "Studio - Video Production",
+                "description": "FFmpeg timeline video rendering to Full HD MP4 and browser recording transcoding.",
             },
             {
-                "name": "Elements",
-                "description": "Create Studio badges and overlays.",
+                "name": "Studio - AI & Discovery",
+                "description": "Gemini AI models listing, connectivity status, and content generation tools.",
             },
             {
-                "name": "Videos",
-                "description": "Browse saved Studio videos.",
+                "name": "Studio Tools 1: Audio",
+                "description": "Live search across modular soundtrack and sound effect libraries.",
             },
             {
-                "name": "YouTube",
-                "description": "Connect and publish to YouTube.",
+                "name": "Studio Tools 2: Stock Videos",
+                "description": "Live search across stock video providers (Pexels, Pixabay, Mixkit, Coverr, Wikimedia).",
             },
             {
-                "name": "Schedules",
-                "description": "Manage scheduled jobs.",
+                "name": "Studio Tools 3: Stock Images",
+                "description": "Live search across stock photography providers (Unsplash, Pexels, Pixabay, Openverse, Flickr, Wikimedia).",
             },
             {
-                "name": "Social",
-                "description": "Connect accounts and publish across platforms.",
+                "name": "Studio Tools 4: Elements",
+                "description": "Studio visual elements, dynamic badges, and overlays.",
+            },
+            {
+                "name": "Studio Tools 5: Typography",
+                "description": "Live open-source font search across Google Fonts, Fontshare, Fontsource, and Bunny Fonts.",
+            },
+            {
+                "name": "Studio Tools 6: Canvas",
+                "description": "Canvas dimensions, platform aspect ratios, color LUTs, and gradient presets.",
+            },
+            {
+                "name": "Studio Tools 7: Videos",
+                "description": "Browse, manage, and retrieve saved Studio video projects.",
+            },
+            {
+                "name": "Studio Tools 8: YouTube",
+                "description": "Connect YouTube channels, fetch analytics, and publish videos.",
+            },
+            {
+                "name": "Studio Tools 9: Social",
+                "description": "Omnichannel publishing and account management for YouTube, Instagram, and Facebook.",
+            },
+            {
+                "name": "Studio Tools 10: Schedules",
+                "description": "Manage scheduled background video automation jobs and execution history.",
+            },
+            {
+                "name": "Studio - Media Streaming",
+                "description": "Direct streaming and playback of synthesized audio and rendered videos.",
             },
             {
                 "name": "Notifications",
-                "description": "Manage notifications.",
+                "description": "Manage user notifications and system activity alerts.",
             },
             {
                 "name": "Settings",
-                "description": "View app settings.",
-            },
-            {
-                "name": "Media Files",
-                "description": "Serve generated audio and video.",
-            },
-            {
-                "name": "Content Tools",
-                "description": "Generate titles and descriptions.",
+                "description": "View and manage app settings and API credentials.",
             },
         ],
     )

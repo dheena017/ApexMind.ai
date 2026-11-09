@@ -182,7 +182,7 @@ def create_app() -> FastAPI:
 
     @app.get(
         "/api/audio/{filename}",
-        tags=["Media Files"],
+        tags=["Studio - Media Streaming"],
         summary="Stream Audio File",
     )
     def get_audio_file(filename: str):
@@ -195,12 +195,12 @@ def create_app() -> FastAPI:
 
     @app.get(
         "/api/videos/{filename}",
-        tags=["Media Files"],
+        tags=["Studio - Media Streaming"],
         summary="Stream Rendered Video",
     )
     @app.get(
         "/api/media/{filename}",
-        tags=["Media Files"],
+        tags=["Studio - Media Streaming"],
         summary="Stream Rendered Video (alias)",
         include_in_schema=False,
     )

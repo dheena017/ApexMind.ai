@@ -24,10 +24,10 @@ from backend.database.repository import (
     update_automation_run_state,
 )
 from backend.features.notifications.service import create_notification
-from backend.features.workspace.script_ai import run_studio_script
 from backend.features.workspace.studio import (
     run_studio_captions,
     run_studio_media,
+    run_studio_script,
     run_studio_voice,
 )
 from backend.features.youtube.repository import insert_video

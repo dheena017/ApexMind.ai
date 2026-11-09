@@ -8,7 +8,7 @@ HTTP endpoints for workspace audio services:
 """
 
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Query
 from fastapi.responses import RedirectResponse
@@ -25,16 +25,23 @@ router = APIRouter()
 
 @router.get(
     "/api/workspace/audio/soundtracks",
-    tags=["Audio"],
+    tags=["Studio Tools 1: Audio"],
     summary="Search Modular Soundtrack Providers",
     operation_id="search_modular_soundtracks",
     description="Live query to modular free audio providers: Jamendo (500K+ CC tracks), Wikimedia Commons, Internet Archive, and Free Music Archive. 100% dynamic live APIs with zero hardcoded data.",
 )
 @router.get(
     "/api/workspace/audio/tracks",
-    tags=["Audio"],
+    tags=["Studio Tools 1: Audio"],
     summary="Search Modular Soundtrack Providers (Alias)",
     operation_id="search_modular_tracks_alias",
+    include_in_schema=False,
+)
+@router.get(
+    "/api/media/audio-search",
+    tags=["Studio Tools 1: Audio"],
+    summary="Search Modular Soundtrack Providers (Media Alias)",
+    operation_id="search_media_tracks_alias",
     include_in_schema=False,
 )
 async def get_workspace_soundtracks(
@@ -43,22 +50,31 @@ async def get_workspace_soundtracks(
     provider: str = Query("all", description="Specific audio provider or all"),
     page: int = Query(1, ge=1),
     pageSize: int = Query(24, ge=1, le=50),
+    limit: Optional[int] = Query(None, description="Limit alias for pageSize"),
 ):
+    eff_page_size = limit if limit is not None else pageSize
     return search_soundtracks(
         query=q,
         genre=genre,
         provider=provider,
         page=page,
-        page_size=pageSize,
+        page_size=eff_page_size,
     )
 
 
 @router.get(
     "/api/workspace/audio/sfx",
-    tags=["Audio"],
+    tags=["Studio Tools 1: Audio"],
     summary="Search Modular Sound Effect Providers",
     operation_id="search_modular_sfx",
     description="Live query to modular free SFX providers: Open SFX Commons, Wikimedia Commons, and Internet Archive. 100% dynamic live APIs with zero hardcoded data.",
+)
+@router.get(
+    "/api/media/sfx-search",
+    tags=["Studio Tools 1: Audio"],
+    summary="Search Modular Sound Effect Providers (Media Alias)",
+    operation_id="search_media_sfx_alias",
+    include_in_schema=False,
 )
 async def get_workspace_sfx(
     q: str = Query("whoosh", description="Sound effect search term"),
@@ -66,19 +82,21 @@ async def get_workspace_sfx(
     provider: str = Query("all", description="Specific audio provider or all"),
     page: int = Query(1, ge=1),
     pageSize: int = Query(24, ge=1, le=50),
+    limit: Optional[int] = Query(None, description="Limit alias for pageSize"),
 ):
+    eff_page_size = limit if limit is not None else pageSize
     return search_sound_effects(
         query=q,
         category=category,
         provider=provider,
         page=page,
-        page_size=pageSize,
+        page_size=eff_page_size,
     )
 
 
 @router.get(
     "/api/workspace/audio/providers",
-    tags=["Audio"],
+    tags=["Studio Tools 1: Audio"],
     summary="Get Modular Audio Providers Status",
     operation_id="get_workspace_audio_providers",
 )
@@ -91,10 +109,17 @@ async def get_workspace_audio_providers():
 
 @router.get(
     "/api/workspace/audio/stream",
-    tags=["Audio"],
+    tags=["Studio Tools 1: Audio"],
     summary="Resolve and Stream Direct Audio",
     operation_id="resolve_workspace_audio_stream",
     description="Resolves audio item identifier to a playable direct stream URL with HTTP redirect.",
+)
+@router.get(
+    "/api/media/audio-stream",
+    tags=["Studio Tools 1: Audio"],
+    summary="Resolve and Stream Direct Audio (Media Alias)",
+    operation_id="resolve_media_audio_stream_alias",
+    include_in_schema=False,
 )
 def get_workspace_audio_stream(
     id: str = Query(..., description="Audio track or SFX identifier"),

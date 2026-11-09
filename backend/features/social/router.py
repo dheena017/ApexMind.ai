@@ -25,7 +25,7 @@ from backend.features.auth.service import get_session_user_id
 
 logger = logging.getLogger("ApexMind.features.social")
 router = APIRouter(prefix="/api/social")
-platform_router = APIRouter(tags=["Social"])
+platform_router = APIRouter(tags=["Studio Tools 9: Social"])
 
 
 def _require_session_user_id(authorization: Optional[str]) -> str:
@@ -127,7 +127,7 @@ async def get_instagram_connect_url(
 @router.post(
     "/meta/oauth-callback",
     response_model=MetaOAuthCallbackResponse,
-    tags=["Social"],
+    tags=["Studio Tools 9: Social"],
     summary="Complete Facebook or Instagram Account OAuth",
     description="Validates the signed provider state and connects managed Facebook Pages or an Instagram professional account.",
 )
@@ -201,7 +201,7 @@ async def disconnect_instagram_account(
 @router.post(
     "/syndicate-publish",
     response_model=SyndicatePublishResponse,
-    tags=["Social"],
+    tags=["Studio Tools 9: Social"],
     summary="One-Click Omnichannel Syndication",
     description="Publishes a single generated video to multiple selected social destinations simultaneously in parallel.",
 )
@@ -236,7 +236,7 @@ async def post_syndicate_publish(
 @router.get(
     "/posts",
     response_model=PublishedPostsResponse,
-    tags=["Social"],
+    tags=["Studio Tools 9: Social"],
     summary="List Published Omnichannel Posts",
     description="Retrieves multi-platform published posts and tracking status.",
 )

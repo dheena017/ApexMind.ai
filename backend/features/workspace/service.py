@@ -1,6 +1,7 @@
 """
 backend/features/workspace/service.py
-Workspace Presets & Legacy Media Synthesis Helper Service.
+Workspace Presets & Media Synthesis Service.
+Provides centralized catalog access and backward-compatible voiceover routing.
 """
 
 import logging
@@ -10,9 +11,9 @@ from backend.database.repository import (
     add_notification,
     get_media_library as db_get_media_library,
 )
-from backend.shared.gemini import generate_gemini_voiceover
+from backend.features.workspace.studio.voice_service import synthesize_voice_audio
 
-logger = logging.getLogger("ApexMind.Workspace")
+logger = logging.getLogger("ApexMind.Workspace.Service")
 
 
 def synthesize_voiceover(
@@ -21,27 +22,31 @@ def synthesize_voiceover(
     model: Optional[str] = None,
     storyboard: Optional[list] = None,
 ) -> Dict[str, Any]:
-    """Synthesizes voiceover audio using the shared Gemini TTS engine."""
+    """
+    Synthesizes voiceover audio by delegating to the Studio Stage 2 Voice Service.
+    Maintains 100% backward compatibility for legacy /api/generate-voiceover callers.
+    """
     if not voice_name or not str(voice_name).strip():
         raise ValueError("Voice name is required. Please select a workspace voice before generating audio.")
 
-    logger.debug(
-        f"Synthesizing voiceover audio for voice '{voice_name}' | "
-        f"Length: {len(text)} characters | Model: {model or 'gemini'}"
-    )
-    result = generate_gemini_voiceover(
-        text=text,
+    clean_text = (text or "").strip()
+    if not clean_text:
+        raise ValueError("Text is required for voiceover synthesis.")
+
+    # Delegate to the modernized Studio Stage 2 voice synthesis engine
+    result = synthesize_voice_audio(
         voice_name=voice_name,
+        text=clean_text,
         model=model,
-        storyboard=storyboard,
     )
-    dur_display = result.get("durationFormatted") or (f"{result['duration']}s" if result.get("duration") else "0s")
-    logger.debug(f"Voiceover audio ready: voice '{voice_name}' | Duration: {dur_display}")
+
+    raw_sec = float(result.get("rawDurationSeconds", 0.0))
+    dur_display = f"{raw_sec:.1f}s" if raw_sec > 0 else "0s"
 
     try:
         add_notification(
             title="Voiceover Synthesized",
-            message=f"Voice track rendered using voice '{voice_name}'",
+            message=f"Voice track rendered using voice '{voice_name}' ({dur_display})",
             type="success",
             category="studio",
             action_url="/workspace",
@@ -49,7 +54,17 @@ def synthesize_voiceover(
     except Exception as e:
         logger.warning(f"Could not dispatch voiceover notification: {e}")
 
-    return result
+    return {
+        "success": True,
+        "voiceName": voice_name,
+        "mimeType": result.get("mimeType", "audio/wav"),
+        "audioBase64": result.get("audioBase64"),
+        "audioUrl": result.get("audioUrl"),
+        "duration": raw_sec,
+        "durationFormatted": dur_display,
+        "toneModulation": result.get("toneModulation"),
+        "message": "Voiceover synthesized successfully",
+    }
 
 
 def get_media_library() -> Dict[str, Any]:

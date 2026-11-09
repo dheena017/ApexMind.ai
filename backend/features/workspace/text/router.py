@@ -19,14 +19,14 @@ router = APIRouter()
 
 @router.get(
     "/api/media/font-search",
-    tags=["Typography"],
+    tags=["Studio Tools 5: Typography"],
     summary="Search Modular Font Providers",
     operation_id="search_modular_fonts",
     description="Live query to 5 modular open-source font providers: Google Fonts (1,950+ fonts), Fontshare ITF (100+ viral display fonts), Fontsource CDN (1,600+ fonts), Bunny Fonts (1,900+ fonts), and GWFH Open Fonts (1,500+ fonts). 100% dynamic live APIs with zero hardcoded data.",
 )
 @router.get(
     "/api/workspace/text/fonts",
-    tags=["Typography"],
+    tags=["Studio Tools 5: Typography"],
     summary="Search Modular Font Providers (Alias)",
     operation_id="search_workspace_fonts_alias",
     include_in_schema=False,
@@ -49,7 +49,7 @@ async def get_open_fonts(
 
 @router.get(
     "/api/workspace/text/providers",
-    tags=["Typography"],
+    tags=["Studio Tools 5: Typography"],
     summary="Get Typography Providers Status",
     operation_id="get_workspace_text_providers",
 )

@@ -52,14 +52,14 @@ class RenderVideoApiRequest(BaseModel):
 
 @router.get(
     "/api/media/video-search",
-    tags=["Stock Media"],
+    tags=["Studio Tools 2: Stock Videos"],
     summary="Video Search",
     operation_id="video_search",
     description="Searches stock video providers and returns workspace-specific fields such as videoUrl, posterUrl, and aesthetic badges.",
 )
 @router.get(
     "/api/workspace/video/search",
-    tags=["Stock Media"],
+    tags=["Studio Tools 2: Stock Videos"],
     summary="Video Search (Alias)",
     operation_id="video_search_alias",
     include_in_schema=False,
@@ -84,7 +84,7 @@ async def get_open_videos(
 
 @router.get(
     "/api/workspace/video/providers",
-    tags=["Stock Media"],
+    tags=["Studio Tools 2: Stock Videos"],
     summary="Get Video Providers Status",
     operation_id="get_workspace_video_providers",
 )
@@ -97,7 +97,7 @@ async def get_video_providers():
 
 @router.post(
     "/api/workspace/render-video",
-    tags=["Studio"],
+    tags=["Studio - Video Production"],
     summary="Render Timeline to Full HD MP4",
     description="Assembles multi-layer video clips, images, voiceover, music, sound effects, and karaoke subtitles into a 1080x1920 MP4 using native FFmpeg.",
 )
@@ -142,7 +142,7 @@ def post_render_video(payload: RenderVideoApiRequest):
 
 @router.post(
     "/api/workspace/convert-to-mp4",
-    tags=["Studio"],
+    tags=["Studio - Video Production"],
     summary="Transcode Browser Recording",
     description="Converts canvas-recorded video to the requested codec, container, resolution, and audio settings.",
 )

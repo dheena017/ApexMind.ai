@@ -2,16 +2,15 @@
 backend/features/workspace/router.py
 FastAPI central router for the Workspace feature:
 Aggregates and registers all modular workspace sub-packages:
-- Studio Production Pipeline (Stage 2: Voice, Stage 3: Media, Stage 4: Captions)
+- Studio Production Pipeline (Stage 1: Script, Stage 2: Voice, Stage 3: Media, Stage 4: Captions)
 - Text & Typography Service
 - Audio, Soundtracks & SFX Service
 - Elements & Overlays Service
 - Canvas & Frame Studio Service
 - Video Stock Service
 - Image Stock Service
-- Script & AI Engine (Stage 1)
 - Automation & Multi-Platform Schedules
-- Legacy Workspace Presets & Voiceover Routes
+- Workspace Presets & Media Library Routes
 """
 
 import logging
@@ -21,11 +20,9 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from .schemas import (
     GenerateVoiceoverRequest,
-    MediaLibraryResponse,
     VoiceoverResponse,
 )
 from .service import (
-    get_media_library,
     synthesize_voiceover,
 )
 
@@ -67,39 +64,11 @@ def post_generate_voiceover(payload: GenerateVoiceoverRequest):
         )
 
 
-@router.get(
-    "/api/media-library",
-    response_model=MediaLibraryResponse,
-    tags=["Presets"],
-    summary="Get Built-in Studio Presets",
-    description="Returns the Studio's preset catalog (music presets, visual backdrops, and voice profiles).",
-)
-async def get_media_library_route():
-    return get_media_library()
-
-
-@router.get(
-    "/api/media/provider-status",
-    tags=["Providers"],
-    summary="Check Stock Media Provider Availability",
-    operation_id="check_stock_media_provider_availability",
-    description="Reports whether supported live stock-media providers are available.",
-)
-async def get_open_media_providers_route():
-    from .image import get_image_providers_status
-    from .video import get_video_providers_status
-
-    provider_status: Dict[str, Any] = {}
-    provider_status.update(get_video_providers_status())
-    provider_status.update(get_image_providers_status())
-    return provider_status
-
-
 # ══════════════════════════════════════════════════════════════════════════════
 # WORKSPACE MODULAR SUB-PACKAGES (Unified Aggregation)
 # ══════════════════════════════════════════════════════════════════════════════
 
-# 1. Studio Production Pipeline (Voice, Media, Captions)
+# 1. Studio Production Pipeline (Stage 1: Script, Stage 2: Voice, Stage 3: Media, Stage 4: Captions)
 from .studio import studio_router
 router.include_router(studio_router)
 
@@ -127,10 +96,6 @@ router.include_router(video_router)
 from .image import image_router
 router.include_router(image_router)
 
-# 8. Script & AI Engine (Stage 1)
-from .script_ai import script_ai_router
-router.include_router(script_ai_router)
-
-# 9. Automation & Multi-Platform Schedules
+# 8. Automation & Multi-Platform Schedules
 from .automation import automation_router
 router.include_router(automation_router)

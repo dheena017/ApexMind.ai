@@ -51,8 +51,8 @@ from backend.features.auth.service import get_session_user_id
 
 logger = logging.getLogger("ApexMind.features.youtube")
 router = APIRouter()
-yt_router = APIRouter(tags=["YouTube"])
-yt_connection_router = APIRouter(tags=["Social"])
+yt_router = APIRouter(tags=["Studio Tools 8: YouTube"])
+yt_connection_router = APIRouter(tags=["Studio Tools 9: Social"])
 
 
 def _require_session_user_id(

@@ -18,14 +18,14 @@ router = APIRouter()
 
 @router.get(
     "/api/media/image-search",
-    tags=["Stock Media"],
+    tags=["Studio Tools 3: Stock Images"],
     summary="Image Search",
     operation_id="image_search",
     description="Searches stock image providers and returns workspace-specific fields such as imageUrl, thumbnail, author, and aspect ratio.",
 )
 @router.get(
     "/api/workspace/image/search",
-    tags=["Stock Media"],
+    tags=["Studio Tools 3: Stock Images"],
     summary="Image Search (Alias)",
     operation_id="image_search_alias",
     include_in_schema=False,
@@ -50,7 +50,7 @@ async def get_open_images(
 
 @router.get(
     "/api/workspace/image/providers",
-    tags=["Stock Media"],
+    tags=["Studio Tools 3: Stock Images"],
     summary="Get Image Providers Status",
     operation_id="get_workspace_image_providers",
 )

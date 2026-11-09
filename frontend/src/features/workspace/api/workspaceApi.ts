@@ -1,12 +1,14 @@
-import { MusicTrack, VisualBackdrop, VoiceProfile } from '../types';
+import { MusicTrack, VisualBackdrop, VoiceProfile, DEFAULT_VISUAL_BACKDROPS } from '../types';
 import { consoleLogger } from '@/src/shared/utils/logger';
 import { apiUrl } from '@/src/shared/utils/api';
 
-let mediaLibraryPromise: Promise<{
-  musicTracks: MusicTrack[];
-  visualBackdrops: VisualBackdrop[];
-  voiceProfiles: VoiceProfile[];
-}> | null = null;
+const DEFAULT_VOICES: VoiceProfile[] = [
+  { id: 'Fenrir', name: 'Fenrir (Deep, Stoic Leader)', gender: 'Male', style: 'Stoic Leader', speed: '0.95x' },
+  { id: 'Kore', name: 'Kore (Clear, Inspiring, Authoritative)', gender: 'Female', style: 'Inspiring Leader', speed: '1.0x' },
+  { id: 'Puck', name: 'Puck (High-Octane Motivational)', gender: 'Male', style: 'Energetic Coach', speed: '1.05x' },
+  { id: 'Aoede', name: 'Aoede (Poetic, Calm, Deep Thought)', gender: 'Female', style: 'Poetic Calm', speed: '0.9x' },
+  { id: 'Zephyr', name: 'Zephyr (Warm Cinematic Narrative)', gender: 'Male', style: 'Warm Cinematic', speed: '1.0x' },
+];
 
 export const workspaceApi = {
   // Generate high-CTR titles, optimized description, and categorized hashtags via AI
@@ -18,8 +20,10 @@ export const workspaceApi = {
     quote?: string;
     cta?: string;
     model?: string;
+    fullScript?: string;
   }): Promise<{
     titles: { title: string; angle: string; viralityScore: number }[];
+    titleList?: string[];
     description: string;
     hashtags: {
       trending: string[];
@@ -28,8 +32,10 @@ export const workspaceApi = {
       ai?: string[];
     };
     allHashtags: string[];
+    tags?: string[];
+    categoryNiche?: string;
   }> {
-    const res = await fetch(apiUrl('/api/workspace/generate-metadata'), {
+    const res = await fetch(apiUrl('/api/studio/video-metadata'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -70,13 +76,13 @@ export const workspaceApi = {
 
     consoleLogger.info('Gemini', `Synthesizing TTS audio for persona "${voice}"...`);
     const start = performance.now();
-    const res = await fetch(apiUrl('/api/generate-voiceover'), {
+    const res = await fetch(apiUrl('/api/studio/voice-tts'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, voiceName: voice, model }),
     });
     const duration = performance.now() - start;
-    consoleLogger.api('POST', '/api/generate-voiceover', res.status, duration);
+    consoleLogger.api('POST', '/api/studio/voice-tts', res.status, duration);
     const data = await res.json();
     if (!res.ok || data.error || data.detail) {
       const errMsg = data.detail || data.error || 'Failed to generate voiceover';
@@ -92,35 +98,17 @@ export const workspaceApi = {
     };
   },
 
-  // Fetch non-copyright media library (deduplicated in-flight & cached)
-  async getMediaLibrary(forceRefresh = false): Promise<{
+  // Fetch studio presets (built-in catalog)
+  async getMediaLibrary(_forceRefresh = false): Promise<{
     musicTracks: MusicTrack[];
     visualBackdrops: VisualBackdrop[];
     voiceProfiles: VoiceProfile[];
   }> {
-    if (mediaLibraryPromise && !forceRefresh) {
-      return mediaLibraryPromise;
-    }
-
-    mediaLibraryPromise = (async () => {
-      try {
-        const start = performance.now();
-        const res = await fetch(apiUrl('/api/media-library'), { cache: 'no-store' });
-        const duration = performance.now() - start;
-        consoleLogger.api('GET', '/api/media-library', res.status, duration);
-        const data = await res.json();
-        consoleLogger.info(
-          'Studio',
-          `Media library loaded (${data.data?.musicTracks?.length || 0} tracks, ${data.data?.visualBackdrops?.length || 0} backdrops)`
-        );
-        return data.data;
-      } catch (err) {
-        mediaLibraryPromise = null;
-        throw err;
-      }
-    })();
-
-    return mediaLibraryPromise;
+    return {
+      musicTracks: [],
+      visualBackdrops: DEFAULT_VISUAL_BACKDROPS,
+      voiceProfiles: DEFAULT_VOICES,
+    };
   },
 
 
@@ -295,17 +283,24 @@ export const workspaceApi = {
     return { success: false, items: [], total: 0 };
   },
 
-  // Check active status of stock media providers (Pexels, Pixabay, Unsplash, Google CSE)
+  // Check active status of stock media providers
   async getMediaProvidersStatus(): Promise<{ pexels: boolean; pixabay: boolean; unsplash: boolean; jamendo: boolean; google_cse?: boolean; [key: string]: any }> {
     try {
-      const res = await fetch(apiUrl('/api/media/provider-status'));
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      consoleLogger.warn('OpenMedia', `Provider status fetch error: ${e}`);
+      const [vRes, iRes] = await Promise.all([
+        fetch(apiUrl('/api/workspace/video/providers')).then((r) => r.json()).catch(() => ({})),
+        fetch(apiUrl('/api/workspace/image/providers')).then((r) => r.json()).catch(() => ({})),
+      ]);
+      return {
+        pexels: true,
+        pixabay: true,
+        unsplash: true,
+        jamendo: true,
+        ...(vRes.providers || {}),
+        ...(iRes.providers || {}),
+      };
+    } catch {
+      return { pexels: true, pixabay: true, unsplash: true, jamendo: true, google_cse: false };
     }
-    return { pexels: false, pixabay: false, unsplash: false, jamendo: false, google_cse: false };
   },
 
   async searchOpenTracks(
@@ -322,17 +317,18 @@ export const workspaceApi = {
       page: String(page),
       limit: String(limit),
     });
-    const res = await fetch(apiUrl(`/api/media/audio-search?${params.toString()}`));
+    const res = await fetch(apiUrl(`/api/workspace/audio/soundtracks?${params.toString()}`));
     const response = await res.json();
     if (!res.ok) {
       throw new Error(response.detail || 'Failed to search soundtrack tracks');
     }
 
-    const data = response.data;
+    const items = response.items || response.data?.items || [];
+    const total = response.total ?? response.data?.total ?? 0;
     return {
       success: response.success,
-      total: data?.total || 0,
-      items: (data?.items || []).map((track: any) => ({
+      total,
+      items: items.map((track: any) => ({
         id: track.id,
         title: track.title,
         artist: track.artist || '',
@@ -364,17 +360,18 @@ export const workspaceApi = {
       page: String(page),
       limit: String(limit),
     });
-    const res = await fetch(apiUrl(`/api/media/sfx-search?${params.toString()}`));
+    const res = await fetch(apiUrl(`/api/workspace/audio/sfx?${params.toString()}`));
     const response = await res.json();
     if (!res.ok) {
       throw new Error(response.detail || 'Failed to search sound effects');
     }
 
-    const data = response.data;
+    const items = response.items || response.data?.items || [];
+    const total = response.total ?? response.data?.total ?? 0;
     return {
       success: response.success,
-      total: data?.total || 0,
-      items: (data?.items || []).map((effect: any) => {
+      total,
+      items: items.map((effect: any) => {
         const cat = String(effect.category || '').toLowerCase();
         let formattedCat = 'Action';
         if (cat.includes('whoosh') || cat.includes('transition') || cat.includes('swoosh')) formattedCat = 'Transition';
