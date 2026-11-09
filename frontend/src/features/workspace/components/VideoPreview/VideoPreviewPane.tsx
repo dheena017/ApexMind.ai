@@ -84,6 +84,7 @@ const TRANSITION_NAMES: Record<string, string> = {
 
 const isImageMedia = (url?: string, type?: string) => {
   if (!url) return false;
+  if (/\.(glb|gltf|stl|obj|fbx|rbxm)(\?.*)?$/i.test(url)) return false;
   if (type === 'image') return true;
   return /\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i.test(url) || url.startsWith('data:image/');
 };
@@ -2614,6 +2615,9 @@ export const VideoPreviewPane: React.FC<VideoPreviewPaneProps> = ({
                       }}
                       loading="eager"
                       decoding="async"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.opacity = '0';
+                      }}
                     />
                   ) : (
                     <video

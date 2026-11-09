@@ -99,3 +99,8 @@ router.include_router(image_router)
 # 8. Automation & Multi-Platform Schedules
 from .automation import automation_router
 router.include_router(automation_router)
+
+# 9. 3D Visuals, Models & CGI Studio Service
+from .visuals_3d import visuals_3d_router
+router.include_router(visuals_3d_router)
+

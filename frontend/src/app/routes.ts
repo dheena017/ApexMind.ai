@@ -16,6 +16,7 @@ export type PageRoute =
   | 'workspace-automations'
   | 'workspace-image'
   | 'workspace-video'
+  | 'workspace-3d-visuals'
   | 'videos'
   | 'channels'
   | 'youtube'
@@ -63,6 +64,7 @@ export const APP_ROUTES: RouteConfig[] = [
   { id: 'workspace-prompt', path: '/workspace/prompt', title: 'AI Script Creator - ApexMind Studio', aliases: ['/studio/prompt'] },
   { id: 'workspace-script', path: '/workspace/script', title: 'Scene & Subtitles - ApexMind Studio', aliases: ['/workspace/editor', '/studio/editor', '/studio/script'] },
   { id: 'workspace-editor', path: '/workspace/editor', title: 'Scene & Subtitles - ApexMind Studio', aliases: ['/studio/editor'] },
+  { id: 'workspace-3d-visuals', path: '/workspace/3d-visuals', title: '3D Visuals & CGI - ApexMind Studio', aliases: ['/workspace-3d-visuals', '/studio/3d-visuals'] },
   { id: 'workspace-media', path: '/workspace/media', title: 'Media Assets & B-Roll - ApexMind Studio', aliases: ['/studio/media', '/workspace/photos', '/workspace/videos', '/studio/photos', '/studio/videos'] },
   { id: 'workspace-image', path: '/workspace/image', title: 'Stock Photos - ApexMind Studio', aliases: ['/studio/photos', '/workspace/photos'] },
   { id: 'workspace-video', path: '/workspace/video', title: 'Stock Videos - ApexMind Studio', aliases: ['/studio/videos', '/workspace/videos'] },
@@ -131,6 +133,7 @@ export function parseRoute(pathname: string): PageRoute {
 }
 
 export function routeToPath(page: string): string {
+  if (page === 'workspace') return '/workspace/script';
   const match = APP_ROUTES.find((r) => r.id === page);
   return match ? match.path : (page.startsWith('/') ? page : `/${page}`);
 }
@@ -211,7 +214,7 @@ export function updateUrlQuery(
 export const REDIRECT_STORAGE_KEY = 'apexmind_redirect_after_login';
 
 export function getPostLoginRedirect(): PageRoute {
-  if (typeof window === 'undefined') return 'dashboard';
+  if (typeof window === 'undefined') return 'workspace-script';
 
   try {
     const params = new URLSearchParams(window.location.search);
@@ -220,7 +223,7 @@ export function getPostLoginRedirect(): PageRoute {
       const cleaned = redirectParam.startsWith('/') ? redirectParam : `/${redirectParam}`;
       const parsed = parseRoute(cleaned);
       if (parsed !== '404' && parsed !== 'login' && parsed !== 'landing') {
-        return parsed;
+        return parsed === 'workspace' ? 'workspace-script' : parsed;
       }
     }
   } catch {}
@@ -231,12 +234,12 @@ export function getPostLoginRedirect(): PageRoute {
       const cleaned = saved.startsWith('/') ? saved : `/${saved}`;
       const parsed = parseRoute(cleaned);
       if (parsed !== '404' && parsed !== 'login' && parsed !== 'landing') {
-        return parsed;
+        return parsed === 'workspace' ? 'workspace-script' : parsed;
       }
     }
   } catch {}
 
-  return 'dashboard';
+  return 'workspace-script';
 }
 
 export function savePostLoginRedirect(targetRoute: string): void {

@@ -32,14 +32,24 @@ export default function App() {
   const { isAuthenticated } = useAuth();
 
   const [activePage, setActivePage] = useState<PageRoute>(() => {
-    const parsed = typeof window === 'undefined' ? 'landing' : parseRoute(window.location.pathname);
+    let parsed = typeof window === 'undefined' ? 'landing' : parseRoute(window.location.pathname);
+    if (parsed === 'workspace') {
+      parsed = 'workspace-script';
+    }
     canonicalizeRouteAlias(parsed);
-    // If user is already authenticated and visits '/' or '/login', send directly to workspace
+    // If user is already authenticated and visits '/' or '/login', send directly to workspace script
     if ((parsed === 'landing' || parsed === 'login') && typeof window !== 'undefined' && isSessionValid()) {
-      if (window.location.pathname !== '/workspace') {
-        window.history.replaceState({ page: 'workspace' }, '', '/workspace');
+      if (window.location.pathname !== '/workspace/script') {
+        window.history.replaceState({ page: 'workspace-script' }, '', '/workspace/script?inspector=video');
       }
-      return 'workspace';
+      return 'workspace-script';
+    }
+
+    if (parsed === 'workspace-script' && typeof window !== 'undefined') {
+      const q = getQueryParams();
+      if (!q.inspector) {
+        window.history.replaceState({ page: 'workspace-script' }, '', '/workspace/script?inspector=video');
+      }
     }
 
     // If an unauthenticated user opens directly to an internal studio page, store the intent and load login
@@ -68,7 +78,7 @@ export default function App() {
     if (parsed.startsWith('workspace-')) {
       return parsed.replace('workspace-', '') as WorkspaceTabType;
     }
-    return 'editor';
+    return 'script';
   });
 
   // Sync activeWorkspacePane if activePage changes to a workspace sub-path
@@ -107,11 +117,12 @@ export default function App() {
   // If already authenticated and on login or landing, send directly to Workspace Studio
   useEffect(() => {
     if (isAuthenticated && (activePage === 'login' || activePage === 'landing')) {
-      const destination = getPostLoginRedirect() || 'workspace';
+      const destination = getPostLoginRedirect() || 'workspace-script';
       clearPostLoginRedirect();
       consoleLogger.info('Auth', `Authenticated creator on [${activePage}] -> directing directly to Studio [${destination}]`);
       setActivePage(destination);
-      const targetPath = routeToPath(destination);
+      const targetParams = destination === 'workspace-script' ? { inspector: 'video' } : undefined;
+      const targetPath = buildRouteUrl(destination, targetParams);
       if (window.location.pathname !== targetPath) {
         window.history.replaceState({ page: destination }, '', targetPath);
       }
@@ -150,8 +161,8 @@ export default function App() {
       const params = getQueryParams();
       if (parsed.startsWith('workspace-')) {
         setActiveWorkspacePane(parsed.replace('workspace-', '') as WorkspaceTabType);
-      } else if (parsed === 'workspace' && params.tab) {
-        setActiveWorkspacePane(params.tab as WorkspaceTabType);
+      } else if (parsed === 'workspace') {
+        setActiveWorkspacePane((params.tab as WorkspaceTabType) || 'script');
       }
       consoleLogger.action('Router', `Browser History PopState detected -> navigating to: "${parsed}"`, params);
       setActivePage(parsed);
@@ -168,6 +179,11 @@ export default function App() {
       let targetRoute = APP_ROUTES.find((route) => route.id === pathPart)?.id;
       if (!targetRoute) {
         targetRoute = parseRoute(pathPart);
+      }
+
+      // Default 'workspace' navigation directly to 'workspace-script'
+      if (targetRoute === 'workspace') {
+        targetRoute = 'workspace-script';
       }
 
       const isPublicPage =
@@ -199,6 +215,11 @@ export default function App() {
         Object.assign(mergedParams, queryParams);
       }
 
+      // Ensure inspector defaults to 'video' for workspace-script
+      if (targetRoute === 'workspace-script' && !mergedParams.inspector) {
+        mergedParams.inspector = 'video';
+      }
+
       // If user tries to open a protected studio page without login, save intent and redirect to login
       if (!isAuthenticated && !isPublicPage) {
         const fullIntended = buildRouteUrl(targetRoute, mergedParams);
@@ -225,8 +246,10 @@ export default function App() {
       if (targetRoute.startsWith('workspace-')) {
         const pane = targetRoute.replace('workspace-', '') as WorkspaceTabType;
         setActiveWorkspacePane(pane);
-      } else if (targetRoute === 'workspace' && mergedParams.tab) {
+      } else if ((targetRoute as string) === 'workspace' && mergedParams.tab) {
         setActiveWorkspacePane(mergedParams.tab as WorkspaceTabType);
+      } else if (targetRoute === 'workspace-script') {
+        setActiveWorkspacePane('script');
       }
 
       const currentFullUrl = window.location.pathname + window.location.search;
@@ -244,6 +267,9 @@ export default function App() {
       setActivePage(targetRoute);
       // Preserve active query params (e.g. videoId) when changing tabs
       const currentParams = getQueryParams();
+      if (pane === 'script' && !currentParams.inspector) {
+        currentParams.inspector = 'video';
+      }
       const targetPath = buildRouteUrl(targetRoute, currentParams);
       const currentFullUrl = window.location.pathname + window.location.search;
       if (currentFullUrl !== targetPath) {

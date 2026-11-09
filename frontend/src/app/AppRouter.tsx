@@ -89,6 +89,7 @@ export default function AppRouter({
           case 'workspace-canvas':
           case 'workspace-image':
           case 'workspace-video':
+          case 'workspace-3d-visuals':
             return (
               <WorkspacePage
                 onNavigate={onNavigate}

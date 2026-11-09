@@ -315,11 +315,10 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
             <button
               type="button"
               onClick={onStartNewVideo}
-              className="h-7 px-2.5 rounded-lg bg-[#18181C] hover:bg-[#202026] text-[11px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#27272A] flex items-center gap-1 shadow-xs"
+              className="w-7 h-7 rounded-lg bg-[#18181C] hover:bg-[#202026] text-zinc-300 hover:text-white transition-colors cursor-pointer border border-[#27272A] flex items-center justify-center shadow-xs"
               title="Start a new script from scratch"
             >
-              <Plus className="w-3.5 h-3.5 text-[#3B82F6]" />
-              <span className="hidden sm:inline">New</span>
+              <Plus className="w-3.5 h-3.5 text-zinc-300" />
             </button>
           )}
 

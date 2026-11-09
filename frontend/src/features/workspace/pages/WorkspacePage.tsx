@@ -18,6 +18,7 @@ import {
   AudioPane,
   ImagePane,
   VideoStockPane,
+  Visuals3DPane,
   YouTubePane,
   AutomationsPane,
 } from '../components/panes';
@@ -137,13 +138,13 @@ export default function WorkspacePage({
   const [customBackdropVideo, setCustomBackdropVideo] = useState<string | undefined>(undefined);
   const [activeElementOverlay, setActiveElementOverlay] = useState<{ id?: string; name?: string; type: string; value: string; label?: string } | null>(null);
   const [activeCompound, setActiveCompound] = useState<CompoundType>(() => {
-    if (typeof window === 'undefined') return 'home';
+    if (typeof window === 'undefined') return 'video';
     const q = getQueryParams();
     const insp = q.inspector as CompoundType;
     if (['home', 'project', 'video', 'text', 'voice', 'music', 'overlay', 'transitions'].includes(insp)) {
       return insp;
     }
-    return 'home';
+    return 'video';
   });
   const [selectedClip, setSelectedClip] = useState<SelectedClip | null>(null);
   const [mobileView, setMobileView] = useState<MobileWorkspaceView>('tools');
@@ -151,9 +152,14 @@ export default function WorkspacePage({
   const [canvasOutputSize, setCanvasOutputSize] = useState<CanvasOutputSize>(() => getDefaultCanvasOutputSize('9:16'));
   const [canvasBackground, setCanvasBackground] = useState<string>('#050505');
   const [captionPreset, setCaptionPreset] = useState<WorkspaceDraftSnapshot['captionPreset']>(null);
-  const [scriptSubPane, setScriptSubPane] = useState<'prompt' | 'editor'>(
-    activePane === 'editor' ? 'editor' : 'prompt'
-  );
+  const [scriptSubPane, setScriptSubPane] = useState<'prompt' | 'editor'>(() => {
+    if (typeof window !== 'undefined') {
+      const q = getQueryParams();
+      if (q.tab === 'editor') return 'editor';
+      if (q.tab === 'prompt') return 'prompt';
+    }
+    return activePane === 'editor' ? 'editor' : 'prompt';
+  });
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -161,13 +167,17 @@ export default function WorkspacePage({
       setScriptSubPane('editor');
     } else if (activePane === 'prompt') {
       setScriptSubPane('prompt');
+    } else if (activePane === 'script') {
+      if (!script.hook && !script.quote) {
+        setScriptSubPane('prompt');
+      }
     }
     setMobileView('tools');
     window.dispatchEvent(new CustomEvent('workspace:set-mobile-view', { detail: 'tools' }));
   }, [activePane]);
 
   useEffect(() => {
-    updateUrlQuery({ inspector: activeCompound !== 'home' ? activeCompound : null }, true);
+    updateUrlQuery({ inspector: activeCompound }, true);
   }, [activeCompound]);
 
   useEffect(() => {
@@ -2321,6 +2331,37 @@ export default function WorkspacePage({
                 }}
                 activeVideoUrl={customBackdropVideo}
                 onSwitchToImages={() => onPaneChange?.('image')}
+              />
+            ) : activePane === '3d-visuals' ? (
+              <Visuals3DPane
+                onSelect3DVisual={(url, name, isVideo, previewImageUrl) => {
+                  setActiveCompound('video');
+                  if (isVideo) {
+                    setCustomBackdropVideo(url);
+                    setCustomBackdropImage('');
+                  } else {
+                    // For 3D meshes (GLB, GLTF, STL, etc.), the visual canvas backdrop must be the rendered 2D preview image!
+                    const visualUrl = previewImageUrl || (url.match(/\.(glb|gltf|stl|obj|fbx|rbxm)$/i) ? '' : url);
+                    setCustomBackdropImage(visualUrl);
+                    setCustomBackdropVideo('');
+                  }
+                  window.dispatchEvent(new CustomEvent('workspace:select-compound', { detail: 'video' }));
+                }}
+                onApplyToTimeline={(asset) => {
+                  if (asset.isVideo) {
+                    setCustomBackdropVideo(asset.assetUrl);
+                    setCustomBackdropImage('');
+                  } else {
+                    // Use the 3D rendered thumbnail/preview image for visual canvas playback so <img> never breaks on raw .glb binaries
+                    const visualUrl = asset.thumbnailUrl || asset.previewUrl || (asset.assetUrl.match(/\.(glb|gltf|stl|obj|fbx|rbxm)$/i) ? '' : asset.assetUrl);
+                    setCustomBackdropImage(visualUrl);
+                    setCustomBackdropVideo('');
+                  }
+                  toast.success(`Added 3D "${asset.title}" to video canvas track!`);
+                }}
+                activeVisualUrl={customBackdropVideo || customBackdropImage}
+                onSwitchToVideos={() => onPaneChange?.('video')}
+                onSwitchToCanvas={() => onPaneChange?.('canvas')}
               />
             ) : null}
           </div>

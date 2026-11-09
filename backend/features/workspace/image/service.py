@@ -11,8 +11,9 @@ Central stock photo service orchestrating 6 modular live image providers:
 Zero hardcoded arrays - 100% dynamic multi-provider image discovery and streaming.
 """
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait
 import logging
+import time
 from typing import Any, Dict, List, Set
 
 from .providers import (
@@ -36,6 +37,10 @@ _PROVIDERS: Dict[str, BaseImageProvider] = {
     "wikimedia": WikimediaImageProvider(),
 }
 
+# In-memory query cache for instant sub-millisecond tab switching
+_CACHE: Dict[str, tuple[float, Dict[str, Any]]] = {}
+_CACHE_TTL = 180.0  # 3 minutes
+
 
 def get_image_providers_status() -> Dict[str, bool]:
     """Returns active connectivity status for all 6 stock image providers."""
@@ -56,13 +61,20 @@ def search_images(
     """
     Search stock photos and images across modular live providers.
     Supports single provider queries or concurrent multi-provider search ('all').
+    Features in-memory cache and bounded non-blocking concurrent execution.
     """
-    has_user_query = bool((query or "").strip() and (query or "").strip().lower() not in ("all", "*"))
     clean_q = (query or "").strip()
     if clean_q.lower() in ("all", "*"):
         clean_q = ""
     if not clean_q and category and category.lower() not in ("all", "*"):
         clean_q = category.strip()
+
+    cache_key = f"{clean_q.lower()}:{category}:{provider}:{page}:{page_size}:{orientation}"
+    now = time.time()
+    if cache_key in _CACHE:
+        ts, cached_res = _CACHE[cache_key]
+        if now - ts < _CACHE_TTL:
+            return cached_res
 
     items: List[Dict[str, Any]] = []
     seen_urls: Set[str] = set()
@@ -101,7 +113,7 @@ def search_images(
                 seen_urls.add(url)
                 items.append(it)
 
-        return {
+        res = {
             "success": True,
             "page": page,
             "pageSize": len(items),
@@ -109,16 +121,19 @@ def search_images(
             "items": items,
             "providers": get_image_providers_status(),
         }
+        _CACHE[cache_key] = (now, res)
+        return res
 
-    # Multi-provider concurrent search
+    # Multi-provider concurrent search with timeout protection
     active_providers = [p for p in _PROVIDERS.values() if p.is_configured()]
     if not active_providers:
         active_providers = list(_PROVIDERS.values())
 
-    per_prov_limit = max(4, page_size // len(active_providers) + 2)
+    per_prov_limit = max(8, page_size // len(active_providers) + 4)
+    provider_results: Dict[str, List[Dict[str, Any]]] = {}
 
     with ThreadPoolExecutor(max_workers=min(len(active_providers), 6)) as executor:
-        futures = {
+        future_map = {
             executor.submit(
                 p.search,
                 query=clean_q,
@@ -129,28 +144,39 @@ def search_images(
             for p in active_providers
         }
 
-        for future in as_completed(futures):
-            p_name = futures[future]
+        # Wait at most 3.5s for fast providers to resolve without blocking UI
+        done, not_done = wait(future_map.keys(), timeout=3.5)
+        for fut in done:
+            p_name = future_map[fut]
             try:
-                cands = future.result()
-                for it in cands:
-                    url = it.get("imageUrl", "")
-                    if url and url not in seen_urls:
-                        seen_urls.add(url)
-                        items.append(it)
+                cands = fut.result()
+                if cands:
+                    provider_results[p_name] = cands
             except Exception as e:
                 logger.debug(f"Image provider {p_name} async search failed: {e}")
 
-    # Fallback ONLY when query was empty and no items were retrieved
-    if not items and not has_user_query:
+    # Balanced round-robin interleaving across provider pools
+    if provider_results:
+        pools = [list(cands) for cands in provider_results.values()]
+        max_len = max(len(p) for p in pools)
+        for idx in range(max_len):
+            for pool in pools:
+                if idx < len(pool):
+                    cand = pool[idx]
+                    url = cand.get("imageUrl", "")
+                    if url and url not in seen_urls:
+                        seen_urls.add(url)
+                        items.append(cand)
+
+    # Fallback when query was empty and no items were retrieved
+    if not items and not clean_q:
         try:
-            open_provs = [_PROVIDERS["openverse"], _PROVIDERS["wikimedia"], _PROVIDERS["flickr"]]
-            for op in open_provs:
+            for op in [_PROVIDERS["flickr"], _PROVIDERS["wikimedia"]]:
                 fb_cands = op.search(
-                    query="aesthetic landscape photography",
+                    query="cinematic landscape",
                     orientation=orientation,
                     page=1,
-                    page_size=page_size // 3,
+                    page_size=12,
                 )
                 for it in fb_cands:
                     url = it.get("imageUrl", "")
@@ -160,7 +186,7 @@ def search_images(
         except Exception as fb_err:
             logger.debug(f"Image fallback search failed: {fb_err}")
 
-    return {
+    result = {
         "success": True,
         "page": page,
         "pageSize": len(items),
@@ -168,4 +194,6 @@ def search_images(
         "items": items[:page_size],
         "providers": get_image_providers_status(),
     }
+    _CACHE[cache_key] = (now, result)
+    return result
 

@@ -9,4 +9,6 @@ export * from './ImagePane';
 export * from './VideoStockPane';
 export * from './YouTubePane';
 export * from './AutomationsPane';
+export * from './Visuals3DPane';
+
 

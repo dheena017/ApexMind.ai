@@ -12,6 +12,7 @@ import {
   Youtube,
   CalendarClock,
   LayoutDashboard,
+  Box,
 } from 'lucide-react';
 
 export type WorkspaceTabType =
@@ -22,6 +23,7 @@ export type WorkspaceTabType =
   | 'editor'
   | 'canvas'
   | 'media'
+  | '3d-visuals'
   | 'text'
   | 'elements'
   | 'audio'
@@ -48,6 +50,7 @@ export const WORKSPACE_SIDEBAR_ITEMS: Array<{
   { id: 'canvas', label: 'Canvas & Frame', shortLabel: 'Canvas', icon: LayoutTemplate },
   { id: 'media', label: 'Media Library', shortLabel: 'Media', icon: FolderOpen },
   { id: 'video', label: 'Stock Videos', shortLabel: 'Videos', icon: Film },
+  { id: '3d-visuals', label: '3D Visuals & CGI', shortLabel: '3D CGI', icon: Box },
   { id: 'image', label: 'Stock Photos', shortLabel: 'Photos', icon: ImageIcon },
   { id: 'audio', label: 'Audio & SFX', shortLabel: 'Audio', icon: Music },
   { id: 'text', label: 'Text & Captions', shortLabel: 'Text', icon: Type },

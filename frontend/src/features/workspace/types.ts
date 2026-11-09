@@ -299,3 +299,99 @@ export interface WorkspaceNotification {
   actionLabel?: string;
   progress?: number;
 }
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 3D VISUALS & CGI STUDIO TYPES
+// ══════════════════════════════════════════════════════════════════════════════
+
+export interface Visual3DItem {
+  id: string;
+  title: string;
+  category: 'brain' | 'characters' | 'environments' | 'loops' | 'props' | 'uploads' | string;
+  provider: 'poly_haven' | 'pixabay_3d' | 'poly_pizza' | 'wikimedia_3d' | 'apexmind_brain' | string;
+  assetUrl: string;
+  previewUrl?: string;
+  thumbnailUrl?: string;
+  format: 'glb' | 'gltf' | 'mp4' | 'webm' | 'blend' | string;
+  isVideo?: boolean;
+  duration?: number;
+  resolution?: string;
+  aspectRatio?: string;
+  triangles?: number;
+  fileSizeMb?: number;
+  license?: string;
+  author?: string;
+  sourceUrl?: string;
+  tags?: string[];
+  aestheticBadges?: string[];
+  isCached?: boolean;
+}
+
+export interface BrainColorway {
+  cortexColor: string;
+  synapseColor: string;
+  pulseGlowColor: string;
+  particleColor: string;
+}
+
+export interface BrainConfig {
+  id?: string;
+  name: string;
+  hemisphereSpacing: number;
+  sulciDepth: number;
+  synapseDensity: number;
+  pulseSpeedHz: number;
+  particleCount: number;
+  colorway: BrainColorway;
+  shadingStyle: 'hologram' | 'clay' | 'nebula' | 'gold' | 'cel' | string;
+  wireframeOverlay: boolean;
+  exportGlb: boolean;
+}
+
+export interface BrainPresetItem {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  thumbnailUrl: string;
+  config: BrainConfig;
+}
+
+export interface CameraRigConfig {
+  shotType: 'close_up' | 'low_angle_hero' | 'orbital_360' | 'vertigo_zoom' | 'drift' | 'wide_establishing' | string;
+  focalLengthMm: number;
+  fieldOfViewDeg: number;
+  depthOfField: boolean;
+  fStop?: number;
+  startLocation?: number[];
+  endLocation?: number[];
+  rotationEulerDeg?: number[];
+}
+
+export interface CameraPresetItem {
+  id: string;
+  name: string;
+  description: string;
+  motionType: string;
+  recommendedFor: string;
+  rig: CameraRigConfig;
+}
+
+export interface Visual3DProviderHealth {
+  name: string;
+  displayName: string;
+  type: 'asset' | 'engine';
+  status: 'healthy' | 'degraded' | 'offline';
+  isConfigured: boolean;
+  requiresKey: boolean;
+  description: string;
+}
+
+export interface Visuals3DPaneProps {
+  onSelect3DVisual: (url: string, name?: string, isVideo?: boolean, previewImageUrl?: string) => void;
+  onApplyToTimeline?: (asset: Visual3DItem) => void;
+  activeVisualUrl?: string;
+  onSwitchToVideos?: () => void;
+  onSwitchToCanvas?: () => void;
+}

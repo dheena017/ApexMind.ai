@@ -5,10 +5,16 @@ import {
   type ScriptModelOption,
 } from '@/src/shared/aiModels';
 
+const FALLBACK_SCRIPT_MODELS: ScriptModelOption[] = [
+  { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash' },
+  { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
+  { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview' },
+];
+
 export function useAvailableScriptModels() {
-  const [models, setModels] = useState<ScriptModelOption[]>([]);
-  const [defaultModel, setDefaultModel] = useState(DEFAULT_SCRIPT_MODEL);
-  const [loading, setLoading] = useState(true);
+  const [models, setModels] = useState<ScriptModelOption[]>(FALLBACK_SCRIPT_MODELS);
+  const [defaultModel, setDefaultModel] = useState(DEFAULT_SCRIPT_MODEL || 'gemini-3.8-flash');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

@@ -313,6 +313,7 @@ export const WorkspaceStatusBar: React.FC<WorkspaceStatusBarProps> = ({
     editor: 'Script & Subtitles',
     canvas: 'Canvas',
     media: 'Media Library',
+    '3d-visuals': '3D Visuals & CGI',
     text: 'Text & Titles',
     elements: 'Elements',
     audio: 'Audio & SFX',
