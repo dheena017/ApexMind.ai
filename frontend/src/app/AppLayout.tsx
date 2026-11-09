@@ -11,6 +11,7 @@ import {
   X,
   LogOut,
   Film,
+  SlidersHorizontal,
 } from 'lucide-react';
 import '@/src/shared/ui/common';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
@@ -144,6 +145,11 @@ export default function AppLayout({
       const view = (event as CustomEvent<typeof workspaceMobileView>).detail;
       if (view === 'tools' || view === 'preview' || view === 'inspector' || view === 'timeline') {
         setWorkspaceMobileView(view);
+        if (view === 'tools') {
+          setShowLeftPaneMobile(true);
+        } else {
+          setShowLeftPaneMobile(false);
+        }
       }
     };
     window.addEventListener('workspace:set-mobile-view', handleMobileViewChange);
@@ -367,8 +373,8 @@ export default function AppLayout({
               aria-label="Studio tools bottom bar"
               className="flex md:hidden w-full h-13 bg-[#0A0A0A] border-t border-[#222228] items-center px-2 shrink-0 z-30 select-none font-sans-studio backdrop-blur-xl relative"
             >
-              {/* Pinned Left: Studio Preview Button (Stays visible while scrolling tools) */}
-              <div className="shrink-0 flex items-center pr-1.5 bg-[#0A0A0A] z-10 border-r border-[#222228]">
+              {/* Pinned Left: Studio Preview & Properties Buttons (Stay visible while scrolling tools) */}
+              <div className="shrink-0 flex items-center gap-1 pr-1.5 bg-[#0A0A0A] z-10 border-r border-[#222228]">
                 <button
                   type="button"
                   onClick={() => {
@@ -383,16 +389,40 @@ export default function AppLayout({
                   }}
                   aria-label="Studio Preview"
                   title="Studio Preview & Timeline"
-                  aria-current={!showLeftPaneMobile ? 'page' : undefined}
-                  className={`flex flex-col items-center justify-center min-w-[60px] h-10 px-2 py-0.5 rounded-xl transition-all cursor-pointer gap-0.5 ${
-                    !showLeftPaneMobile
+                  aria-current={workspaceMobileView === 'preview' ? 'page' : undefined}
+                  className={`flex flex-col items-center justify-center min-w-[56px] h-10 px-1.5 py-0.5 rounded-xl transition-all cursor-pointer gap-0.5 ${
+                    workspaceMobileView === 'preview'
                       ? 'bg-blue-600 border border-blue-500 text-white font-semibold shadow-md shadow-blue-600/30'
                       : 'bg-[#121214] border border-[#222226] text-zinc-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <Film className={`h-4 w-4 shrink-0 ${!showLeftPaneMobile ? 'text-white' : 'text-zinc-400'}`} />
-                  <span className={`text-[9.5px] leading-tight tracking-tight whitespace-nowrap ${!showLeftPaneMobile ? 'text-white font-semibold' : 'text-zinc-400 font-medium'}`}>
+                  <Film className={`h-4 w-4 shrink-0 ${workspaceMobileView === 'preview' ? 'text-white' : 'text-zinc-400'}`} />
+                  <span className={`text-[9.5px] leading-tight tracking-tight whitespace-nowrap ${workspaceMobileView === 'preview' ? 'text-white font-semibold' : 'text-zinc-400 font-medium'}`}>
                     Preview
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLeftPaneMobile(false);
+                    setWorkspaceMobileView('inspector');
+                    window.dispatchEvent(
+                      new CustomEvent('workspace:set-mobile-view', { detail: 'inspector' })
+                    );
+                  }}
+                  aria-label="Studio Properties"
+                  title="Element & Clip Properties"
+                  aria-current={workspaceMobileView === 'inspector' ? 'page' : undefined}
+                  className={`flex flex-col items-center justify-center min-w-[56px] h-10 px-1.5 py-0.5 rounded-xl transition-all cursor-pointer gap-0.5 ${
+                    workspaceMobileView === 'inspector'
+                      ? 'bg-blue-600 border border-blue-500 text-white font-semibold shadow-md shadow-blue-600/30'
+                      : 'bg-[#121214] border border-[#222226] text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <SlidersHorizontal className={`h-4 w-4 shrink-0 ${workspaceMobileView === 'inspector' ? 'text-white' : 'text-zinc-400'}`} />
+                  <span className={`text-[9.5px] leading-tight tracking-tight whitespace-nowrap ${workspaceMobileView === 'inspector' ? 'text-white font-semibold' : 'text-zinc-400 font-medium'}`}>
+                    Properties
                   </span>
                 </button>
               </div>
@@ -401,7 +431,7 @@ export default function AppLayout({
               <div className="flex-1 flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pl-1.5 touch-pan-x">
                 {WORKSPACE_SIDEBAR_ITEMS.map((item) => {
                   const IconComp = item.icon;
-                  const isActive = showLeftPaneMobile && (item.isScriptGroup
+                  const isActive = workspaceMobileView === 'tools' && (item.isScriptGroup
                     ? activeWorkspacePane === 'script' || activeWorkspacePane === 'prompt' || activeWorkspacePane === 'editor'
                     : item.id === 'text'
                     ? activeWorkspacePane === 'text' || activeWorkspacePane === 'captions'

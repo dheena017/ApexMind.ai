@@ -190,6 +190,14 @@ export default function WorkspacePage({
       const view = (event as CustomEvent<MobileWorkspaceView>).detail;
       if (view === 'tools' || view === 'preview' || view === 'inspector' || view === 'timeline') {
         setMobileView(view);
+        if (view === 'inspector') {
+          setShowRightPane(true);
+        } else if (view === 'tools') {
+          setShowLeftPane(true);
+        } else if (view === 'preview') {
+          setShowLeftPane(false);
+          setShowTimeline(true);
+        }
         if (view === 'timeline') {
           window.dispatchEvent(new CustomEvent('workspace:expand-mobile-timeline'));
         }
