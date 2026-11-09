@@ -114,6 +114,34 @@ def get_sketchfab_download_endpoint(uid: str):
     }
 
 
+@router.post("/sloyd/generate", summary="Generate 3D Model via Official Sloyd AI API")
+def sloyd_generate_endpoint(payload: Dict[str, Any]):
+    prov = get_provider("sloyd_ai")
+    if prov and hasattr(prov, "generate_text_to_3d"):
+        prompt = payload.get("prompt", "lowpoly prop")
+        topology = payload.get("topology", "auto")
+        target_face_count = payload.get("targetFaceCount", 15000)
+        texture_resolution = payload.get("textureResolution", "2k")
+        t_pose = payload.get("tPose", False)
+        return prov.generate_text_to_3d(prompt, topology, target_face_count, texture_resolution, t_pose)
+    return {
+        "success": False,
+        "message": "Sloyd AI provider not available.",
+    }
+
+
+@router.get("/sloyd/jobs/{job_id}", summary="Check Sloyd AI 3D Generation Job Status")
+def sloyd_job_status_endpoint(job_id: str):
+    prov = get_provider("sloyd_ai")
+    if prov and hasattr(prov, "get_job_status"):
+        return prov.get_job_status(job_id)
+    return {
+        "success": False,
+        "jobId": job_id,
+        "message": "Sloyd AI provider not available.",
+    }
+
+
 @router.get("/assets/local", response_model=Local3DAssetsListResponse, summary="List Local Cached .glb Assets")
 def list_local_assets_endpoint(category: Optional[str] = Query(default=None)):
     return list_local_3d_assets(category)

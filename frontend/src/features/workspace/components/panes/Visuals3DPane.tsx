@@ -823,6 +823,23 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
                         </button>
                       )}
 
+                      {/* Sloyd AI Copy Model ID */}
+                      {previewingItem.provider === 'sloyd_ai' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const rawId = previewingItem.id.replace('sloyd_', '');
+                            navigator.clipboard.writeText(rawId);
+                            toast.success(`Copied Sloyd Asset ID: ${rawId}`);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] text-zinc-200 font-medium flex items-center gap-1 transition cursor-pointer"
+                          title="Copy Sloyd Model ID"
+                        >
+                          <Copy className="w-3 h-3 text-zinc-400" />
+                          <span>Copy ID</span>
+                        </button>
+                      )}
+
                       {/* Official Source Store / Creator Store Link */}
                       {previewingItem.sourceUrl && (
                         <a
@@ -857,9 +874,11 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
             </div>
 
             <div className="p-3.5 border-t border-[#2E2E34] flex items-center justify-between gap-2">
-              <span className="text-[11px] text-zinc-400 truncate max-w-[260px]">
+              <span className="text-[11px] text-zinc-400 truncate max-w-[280px]">
                 {previewingItem.provider === 'sketchfab'
                   ? `By ${previewingItem.author} • ${previewingItem.license} • Sketchfab`
+                  : previewingItem.provider === 'sloyd_ai'
+                  ? `By ${previewingItem.author} • Sloyd AI Low-Poly (CC-BY 4.0)`
                   : (previewingItem.license || 'Creative Commons')}
               </span>
               <div className="flex items-center gap-2">
