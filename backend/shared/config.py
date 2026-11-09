@@ -34,8 +34,13 @@ class Settings:
         return os.environ.get("DEFAULT_TTS_MODEL", "").strip()
 
     # Google Auth & Search
-    GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", "")
-    GOOGLE_CLIENT_SECRET: str = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+    @property
+    def GOOGLE_CLIENT_ID(self) -> str:
+        return os.environ.get("GOOGLE_CLIENT_ID", "").strip().strip("\"'")
+
+    @property
+    def GOOGLE_CLIENT_SECRET(self) -> str:
+        return os.environ.get("GOOGLE_CLIENT_SECRET", "").strip().strip("\"'")
     GOOGLE_SEARCH_API_KEY: str = os.environ.get("GOOGLE_SEARCH_API_KEY", "")
     GOOGLE_CSE_ID: str = os.environ.get("GOOGLE_CSE_ID", "")
 

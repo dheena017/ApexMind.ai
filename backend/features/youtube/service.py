@@ -76,7 +76,7 @@ def publish_video_to_shorts(
             # 2. Render broadcast-quality video using server-side Studio Video Render Engine
             if not video_file:
                 try:
-                    from backend.features.workspace.video_render_service import render_studio_video
+                    from backend.shared.video_renderer import render_studio_video
 
                     # Resolve narration audio; synthesize if not provided
                     audio_cand = kwargs.get("audioUrl") or kwargs.get("audio_url")

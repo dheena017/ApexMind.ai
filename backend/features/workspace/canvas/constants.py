@@ -1,0 +1,410 @@
+"""
+backend/features/workspace/canvas/constants.py
+Canvas & Frame Studio Presets:
+- Target Output Platform Ratios (Shorts, Reels, YouTube, Feed, Cinema)
+- 24 Cinematic Color LUT Presets with CSS & FFmpeg filter clauses
+- Studio Solid Canvas Backgrounds
+- Studio Gradient Canvas Backgrounds
+- Canvas Frame & Letterbox Build Presets
+"""
+
+from typing import Any, Dict, List
+
+# ── TARGET OUTPUT PLATFORMS & ASPECT RATIOS ────────────────────────────────────
+PLATFORM_RATIOS: List[Dict[str, Any]] = [
+    {
+        "id": "9:16",
+        "aspectRatio": "9:16",
+        "platform": "Shorts & Reels",
+        "label": "Vertical Video (9:16)",
+        "resolution": "1080 × 1920 HD",
+        "width": 1080,
+        "height": 1920,
+        "ratioValue": 9 / 16,
+        "recommendedFor": ["YouTube Shorts", "Instagram Reels", "TikTok"],
+        "icon": "RectangleVertical",
+    },
+    {
+        "id": "16:9",
+        "aspectRatio": "16:9",
+        "platform": "YouTube Standard",
+        "label": "Widescreen (16:9)",
+        "resolution": "1920 × 1080 HD",
+        "width": 1920,
+        "height": 1080,
+        "ratioValue": 16 / 9,
+        "recommendedFor": ["YouTube Long-Form", "Desktop Video", "TV"],
+        "icon": "RectangleHorizontal",
+    },
+    {
+        "id": "1:1",
+        "aspectRatio": "1:1",
+        "platform": "Instagram Feed",
+        "label": "Square Post (1:1)",
+        "resolution": "1080 × 1080 SQ",
+        "width": 1080,
+        "height": 1080,
+        "ratioValue": 1.0,
+        "recommendedFor": ["Instagram Post", "Facebook Feed", "LinkedIn"],
+        "icon": "Square",
+    },
+    {
+        "id": "4:5",
+        "aspectRatio": "4:5",
+        "platform": "IG & FB Feed",
+        "label": "Portrait Feed (4:5)",
+        "resolution": "1080 × 1350 PT",
+        "width": 1080,
+        "height": 1350,
+        "ratioValue": 4 / 5,
+        "recommendedFor": ["Instagram Carousel", "Facebook Mobile"],
+        "icon": "RectangleVertical",
+    },
+    {
+        "id": "21:9",
+        "aspectRatio": "21:9",
+        "platform": "Cinematic Cinema",
+        "label": "Ultrawide Film (21:9)",
+        "resolution": "2560 × 1080 UW",
+        "width": 2560,
+        "height": 1080,
+        "ratioValue": 21 / 9,
+        "recommendedFor": ["Cinematic Trailer", "Ultra-wide Displays"],
+        "icon": "RectangleHorizontal",
+    },
+]
+
+ASPECT_RATIO_MAP: Dict[str, float] = {
+    p["aspectRatio"]: p["ratioValue"] for p in PLATFORM_RATIOS
+}
+
+
+# ── 24 CINEMATIC COLOR LUT PRESETS ─────────────────────────────────────────────
+COLOR_LUTS: List[Dict[str, Any]] = [
+    {
+        "id": "lut-natural",
+        "name": "Natural Studio Balanced",
+        "desc": "Original balanced colorimetry with zero shift",
+        "category": "cinematic",
+        "cssFilter": "none",
+        "previewGradient": "from-zinc-800 to-zinc-900",
+        "ffmpegFilter": "",
+    },
+    {
+        "id": "lut-teal-orange",
+        "name": "Moody Teal & Orange",
+        "desc": "Hollywood blockbuster skin-to-sky contrast",
+        "category": "cinematic",
+        "cssFilter": "contrast(1.15) saturate(1.2) hue-rotate(-8deg)",
+        "previewGradient": "from-teal-900 via-zinc-900 to-amber-900",
+        "ffmpegFilter": "colorbalance=rs=0.08:gs=-0.02:bs=-0.06:rh=-0.05:gh=0.02:bh=0.08,eq=contrast=1.15:saturation=1.2",
+    },
+    {
+        "id": "lut-noir-1950",
+        "name": "Noir 1950 High Contrast",
+        "desc": "Deep crushed blacks & silver highlights",
+        "category": "moody",
+        "cssFilter": "grayscale(1) contrast(1.4) brightness(0.95)",
+        "previewGradient": "from-black via-zinc-600 to-white",
+        "ffmpegFilter": "hue=s=0,eq=contrast=1.35:brightness=-0.03",
+    },
+    {
+        "id": "lut-cyber-matrix",
+        "name": "Cyber Matrix Green-Cyan",
+        "desc": "Futuristic neon code tint in ambient shadows",
+        "category": "creative",
+        "cssFilter": "contrast(1.2) hue-rotate(35deg) saturate(1.1)",
+        "previewGradient": "from-emerald-950 via-zinc-900 to-cyan-900",
+        "ffmpegFilter": "colorbalance=rs=-0.06:gs=0.1:bs=0.08,eq=contrast=1.2:saturation=1.25",
+    },
+    {
+        "id": "lut-golden-hour",
+        "name": "Golden Hour Sunset",
+        "desc": "Warm rich amber glow on highlights",
+        "category": "cinematic",
+        "cssFilter": "sepia(0.25) contrast(1.1) saturate(1.25) brightness(1.05)",
+        "previewGradient": "from-amber-950 via-orange-900 to-yellow-800",
+        "ffmpegFilter": "colorbalance=rs=0.1:gs=0.04:bs=-0.1,eq=contrast=1.1:saturation=1.2:brightness=0.02",
+    },
+    {
+        "id": "lut-emerald-noir",
+        "name": "Emerald Noir Shadow",
+        "desc": "Deep forest shadows with cold neutral skin",
+        "category": "moody",
+        "cssFilter": "contrast(1.25) hue-rotate(25deg) brightness(0.9)",
+        "previewGradient": "from-emerald-950 via-slate-900 to-teal-950",
+        "ffmpegFilter": "colorbalance=rs=-0.04:gs=0.06:bs=0.02,eq=contrast=1.22:brightness=-0.03",
+    },
+    {
+        "id": "lut-bleach-bypass",
+        "name": "Bleach Bypass Thriller",
+        "desc": "Desaturated gritty battlefield silver emulsion",
+        "category": "cinematic",
+        "cssFilter": "saturate(0.4) contrast(1.4) brightness(1.05)",
+        "previewGradient": "from-zinc-900 via-stone-800 to-zinc-700",
+        "ffmpegFilter": "eq=contrast=1.38:saturation=0.45:brightness=0.02",
+    },
+    {
+        "id": "lut-kodachrome",
+        "name": "Vintage Kodachrome 70s",
+        "desc": "Rich analog warm film saturation & soft toe",
+        "category": "vintage",
+        "cssFilter": "sepia(0.3) saturate(1.3) contrast(1.1)",
+        "previewGradient": "from-red-950 via-amber-900 to-orange-800",
+        "ffmpegFilter": "colorbalance=rs=0.08:gs=0.02:bs=-0.06,eq=contrast=1.12:saturation=1.28",
+    },
+    {
+        "id": "lut-midnight-indigo",
+        "name": "Midnight Indigo Navy",
+        "desc": "Chilled deep blue night ambiance",
+        "category": "moody",
+        "cssFilter": "hue-rotate(-25deg) contrast(1.2) brightness(0.9)",
+        "previewGradient": "from-indigo-950 via-blue-950 to-slate-900",
+        "ffmpegFilter": "colorbalance=rs=-0.08:gs=-0.02:bs=0.12,eq=contrast=1.18:brightness=-0.04",
+    },
+    {
+        "id": "lut-savage-grit",
+        "name": "Savage Gym Grit",
+        "desc": "Extreme contrast & desaturated hardcore texture",
+        "category": "moody",
+        "cssFilter": "contrast(1.35) saturate(0.7) brightness(0.95)",
+        "previewGradient": "from-zinc-950 via-neutral-900 to-zinc-800",
+        "ffmpegFilter": "eq=contrast=1.35:saturation=0.72:brightness=-0.02",
+    },
+    {
+        "id": "lut-rose-gold",
+        "name": "Rose Gold Luxury",
+        "desc": "Champagne warmth and delicate blush tone",
+        "category": "creative",
+        "cssFilter": "sepia(0.2) hue-rotate(-15deg) contrast(1.08) saturate(1.15)",
+        "previewGradient": "from-rose-950 via-pink-900 to-amber-900",
+        "ffmpegFilter": "colorbalance=rs=0.08:gs=-0.01:bs=0.03,eq=contrast=1.08:saturation=1.15",
+    },
+    {
+        "id": "lut-cold-steel",
+        "name": "Cold Industrial Steel",
+        "desc": "Cyan monochrome with surgical silver reflections",
+        "category": "cinematic",
+        "cssFilter": "saturate(0.25) hue-rotate(-20deg) contrast(1.3)",
+        "previewGradient": "from-slate-950 via-zinc-900 to-cyan-950",
+        "ffmpegFilter": "colorbalance=rs=-0.08:gs=0.02:bs=0.08,eq=contrast=1.3:saturation=0.35",
+    },
+    {
+        "id": "lut-warm-amber",
+        "name": "Warm Mojave Amber",
+        "desc": "Golden desert sun with bronze skin tones",
+        "category": "cinematic",
+        "cssFilter": "sepia(0.35) contrast(1.12) saturate(1.2)",
+        "previewGradient": "from-amber-900 via-orange-950 to-stone-900",
+        "ffmpegFilter": "colorbalance=rs=0.12:gs=0.03:bs=-0.09,eq=contrast=1.12:saturation=1.2",
+    },
+    {
+        "id": "lut-arctic-ice",
+        "name": "Arctic Blue Freeze",
+        "desc": "Glacial blue highlights with pure white snow",
+        "category": "creative",
+        "cssFilter": "hue-rotate(18deg) contrast(1.2) brightness(1.04) saturate(1.1)",
+        "previewGradient": "from-sky-950 via-slate-900 to-blue-900",
+        "ffmpegFilter": "colorbalance=rs=-0.09:gs=0.02:bs=0.14,eq=contrast=1.18:brightness=0.02",
+    },
+    {
+        "id": "lut-film-grain",
+        "name": "Analog 35mm Prime",
+        "desc": "Cinematic Eastman color negative simulation",
+        "category": "vintage",
+        "cssFilter": "contrast(1.1) saturate(1.15) brightness(0.98)",
+        "previewGradient": "from-zinc-900 via-amber-950 to-zinc-800",
+        "ffmpegFilter": "colorbalance=rs=0.04:gs=0.01:bs=-0.02,eq=contrast=1.1:saturation=1.15",
+    },
+    {
+        "id": "lut-monochrome-silver",
+        "name": "Pure Silver Monochrome",
+        "desc": "Pristine black and white with silky midtones",
+        "category": "moody",
+        "cssFilter": "grayscale(1) contrast(1.2) brightness(1.02)",
+        "previewGradient": "from-zinc-950 via-zinc-700 to-zinc-100",
+        "ffmpegFilter": "hue=s=0,eq=contrast=1.2:brightness=0.01",
+    },
+    {
+        "id": "lut-sepia-vintage",
+        "name": "1920s Sepia Archival",
+        "desc": "Antique photograph warm brown silvering",
+        "category": "vintage",
+        "cssFilter": "sepia(0.85) contrast(1.15) brightness(0.92)",
+        "previewGradient": "from-amber-950 via-yellow-950 to-stone-900",
+        "ffmpegFilter": "colorbalance=rs=0.18:gs=0.08:bs=-0.15,eq=contrast=1.15:saturation=0.5",
+    },
+    {
+        "id": "lut-vaporwave",
+        "name": "Retro 80s Synthwave",
+        "desc": "Electric magenta and cyan neon split toning",
+        "category": "creative",
+        "cssFilter": "contrast(1.25) saturate(1.45) hue-rotate(-35deg)",
+        "previewGradient": "from-fuchsia-950 via-purple-900 to-cyan-950",
+        "ffmpegFilter": "colorbalance=rs=0.12:gs=-0.06:bs=0.14,eq=contrast=1.25:saturation=1.45",
+    },
+    {
+        "id": "lut-desert-dune",
+        "name": "Dune Sandstorm",
+        "desc": "Cinema scope yellow-orange atmospheric haze",
+        "category": "cinematic",
+        "cssFilter": "sepia(0.4) saturate(1.1) contrast(1.18)",
+        "previewGradient": "from-yellow-950 via-amber-900 to-orange-950",
+        "ffmpegFilter": "colorbalance=rs=0.11:gs=0.06:bs=-0.12,eq=contrast=1.18:saturation=1.1",
+    },
+    {
+        "id": "lut-neon-tokyo",
+        "name": "Neon Tokyo Night",
+        "desc": "Rainy street reflections with glowing signs",
+        "category": "creative",
+        "cssFilter": "contrast(1.3) saturate(1.4) hue-rotate(15deg)",
+        "previewGradient": "from-purple-950 via-rose-900 to-blue-950",
+        "ffmpegFilter": "colorbalance=rs=0.09:gs=-0.03:bs=0.11,eq=contrast=1.28:saturation=1.35",
+    },
+    {
+        "id": "lut-faded-pastels",
+        "name": "Faded Editorial Pastels",
+        "desc": "Low contrast soft fashion magazine editorial",
+        "category": "vintage",
+        "cssFilter": "contrast(0.9) brightness(1.08) saturate(0.85)",
+        "previewGradient": "from-slate-800 via-rose-950 to-indigo-950",
+        "ffmpegFilter": "eq=contrast=0.92:brightness=0.04:saturation=0.88",
+    },
+    {
+        "id": "lut-deep-space",
+        "name": "Deep Cosmic Obsidian",
+        "desc": "Crushed zero blacks with cold stellar whites",
+        "category": "moody",
+        "cssFilter": "contrast(1.45) brightness(0.88) saturate(1.05)",
+        "previewGradient": "from-black via-slate-950 to-blue-950",
+        "ffmpegFilter": "eq=contrast=1.42:brightness=-0.06:saturation=1.05",
+    },
+    {
+        "id": "lut-hollywood-prime",
+        "name": "Hollywood Prime 35mm",
+        "desc": "Standard cinema release dynamic range and skin tone",
+        "category": "cinematic",
+        "cssFilter": "contrast(1.12) saturate(1.18)",
+        "previewGradient": "from-zinc-900 via-amber-950 to-blue-950",
+        "ffmpegFilter": "colorbalance=rs=0.05:bs=-0.04,eq=contrast=1.12:saturation=1.18",
+    },
+    {
+        "id": "lut-action-blockbuster",
+        "name": "Action Punch Blockbuster",
+        "desc": "Explosive saturation and deep shadows for fast pace",
+        "category": "cinematic",
+        "cssFilter": "contrast(1.3) saturate(1.35) brightness(0.98)",
+        "previewGradient": "from-red-950 via-zinc-900 to-blue-950",
+        "ffmpegFilter": "colorbalance=rs=0.06:bs=-0.03,eq=contrast=1.28:saturation=1.32",
+    },
+]
+
+
+# ── STUDIO SOLID CANVAS BACKGROUNDS ────────────────────────────────────────────
+STUDIO_SOLIDS: List[Dict[str, str]] = [
+    {"id": "black", "value": "#000000", "name": "Pitch Black", "hex": "#000000"},
+    {"id": "obsidian", "value": "#0A0A0C", "name": "Obsidian", "hex": "#0A0A0C"},
+    {"id": "slate", "value": "#1E293B", "name": "Slate Gray", "hex": "#1E293B"},
+    {"id": "white", "value": "#FFFFFF", "name": "Studio White", "hex": "#FFFFFF"},
+    {"id": "crimson", "value": "#DC2626", "name": "Crimson", "hex": "#DC2626"},
+    {"id": "ember", "value": "#EA580C", "name": "Ember Orange", "hex": "#EA580C"},
+    {"id": "gold", "value": "#D97706", "name": "Imperial Gold", "hex": "#D97706"},
+    {"id": "emerald", "value": "#059669", "name": "Emerald", "hex": "#059669"},
+    {"id": "cyan", "value": "#0891B2", "name": "Electric Cyan", "hex": "#0891B2"},
+    {"id": "blue", "value": "#2563EB", "name": "Royal Blue", "hex": "#2563EB"},
+    {"id": "indigo", "value": "#4F46E5", "name": "Deep Indigo", "hex": "#4F46E5"},
+    {"id": "purple", "value": "#7C3AED", "name": "Cyber Purple", "hex": "#7C3AED"},
+    {"id": "rose", "value": "#E11D48", "name": "Rose Red", "hex": "#E11D48"},
+    {"id": "zinc", "value": "#27272A", "name": "Deep Zinc", "hex": "#27272A"},
+]
+
+
+# ── FEATURED STUDIO GRADIENTS ──────────────────────────────────────────────────
+STUDIO_GRADIENTS: List[Dict[str, str]] = [
+    {
+        "id": "grad-cyber",
+        "value": "linear-gradient(135deg, #09090b 0%, #1e1b4b 50%, #312e81 100%)",
+        "name": "Midnight Cyber",
+        "colors": ["#09090b", "#1e1b4b", "#312e81"],
+    },
+    {
+        "id": "grad-sunset",
+        "value": "linear-gradient(135deg, #4c0519 0%, #831843 50%, #ea580c 100%)",
+        "name": "Blood Sunset",
+        "colors": ["#4c0519", "#831843", "#ea580c"],
+    },
+    {
+        "id": "grad-gold",
+        "value": "linear-gradient(135deg, #1c1917 0%, #451a03 50%, #b45309 100%)",
+        "name": "Golden Vault",
+        "colors": ["#1c1917", "#451a03", "#b45309"],
+    },
+    {
+        "id": "grad-emerald",
+        "value": "linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%)",
+        "name": "Emerald Deep",
+        "colors": ["#022c22", "#064e3b", "#047857"],
+    },
+    {
+        "id": "grad-neon",
+        "value": "linear-gradient(135deg, #06B6D4 0%, #3B82F6 50%, #8B5CF6 100%)",
+        "name": "Neon Spectrum",
+        "colors": ["#06B6D4", "#3B82F6", "#8B5CF6"],
+    },
+    {
+        "id": "grad-violet",
+        "value": "linear-gradient(135deg, #581c87 0%, #3b0764 50%, #020617 100%)",
+        "name": "Dark Void",
+        "colors": ["#581c87", "#3b0764", "#020617"],
+    },
+    {
+        "id": "grad-titan",
+        "value": "linear-gradient(180deg, #18181b 0%, #09090b 100%)",
+        "name": "Titan Monochrome",
+        "colors": ["#18181b", "#09090b"],
+    },
+    {
+        "id": "grad-fire",
+        "value": "linear-gradient(135deg, #991b1b 0%, #b91c1c 50%, #f97316 100%)",
+        "name": "Inferno Forge",
+        "colors": ["#991b1b", "#b91c1c", "#f97316"],
+    },
+]
+
+
+# ── CANVAS & FRAME BUILDER PRESETS ─────────────────────────────────────────────
+CANVAS_FRAME_PRESETS: List[Dict[str, Any]] = [
+    {
+        "id": "frame-standard",
+        "name": "Standard Edge-to-Edge",
+        "desc": "Zero padding, full bleed composition",
+        "padding": 0,
+        "borderRadius": 0,
+        "shadow": "none",
+    },
+    {
+        "id": "frame-letterbox",
+        "name": "Cinematic Letterbox (Bars)",
+        "desc": "Cinematic black matte bars top and bottom",
+        "padding": 24,
+        "borderRadius": 0,
+        "shadow": "0 20px 40px rgba(0,0,0,0.8)",
+    },
+    {
+        "id": "frame-floating-pill",
+        "name": "Modern Floating Rounded",
+        "desc": "Curved corners with subtle studio drop shadow",
+        "padding": 32,
+        "borderRadius": 24,
+        "shadow": "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+    },
+    {
+        "id": "frame-device-mock",
+        "name": "Smartphone Device Bezel",
+        "desc": "Simulated mobile screen bezel with speaker notch",
+        "padding": 16,
+        "borderRadius": 36,
+        "shadow": "0 30px 60px rgba(0,0,0,0.9)",
+    },
+]
+

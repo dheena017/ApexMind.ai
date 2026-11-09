@@ -27,6 +27,51 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
   onLoading?.(true);
 
   if (typeof window !== 'undefined' && window.google?.accounts?.oauth2 && clientId) {
+    const runTokenClientFlow = () => {
+      try {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope:
+            'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload openid email profile',
+          prompt: 'consent',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse.error) {
+              onLoading?.(false);
+              const msg =
+                tokenResponse.error_description ||
+                tokenResponse.error ||
+                'Google authorization was closed';
+              onError?.(msg);
+              return;
+            }
+
+            try {
+              const accessToken = tokenResponse.access_token;
+              if (!accessToken) {
+                throw new Error('Google did not return an access token.');
+              }
+              const result = await youtubeApi.connectWithToken(accessToken);
+              if (result.channel) {
+                localStorage.setItem('apexmind_yt_active_channel', result.channel.handle);
+                onSuccess?.(result.channel);
+              } else {
+                onError?.('Channel connected, but no channel profile returned.');
+              }
+            } catch (apiErr: any) {
+              onError?.(apiErr.message || 'Failed to connect YouTube channel');
+            } finally {
+              onLoading?.(false);
+            }
+          },
+        });
+
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      } catch (err: any) {
+        onLoading?.(false);
+        onError?.(err.message || 'Google authorization failed');
+      }
+    };
+
     try {
       // 1. Prioritize initCodeClient for offline refresh_token access
       if (typeof (window.google.accounts.oauth2 as any).initCodeClient === 'function') {
@@ -57,13 +102,16 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
               if (result.channel) {
                 localStorage.setItem('apexmind_yt_active_channel', result.channel.handle);
                 onSuccess?.(result.channel);
-              } else {
-                onError?.('Channel connected, but no channel profile returned.');
+                onLoading?.(false);
+                return;
               }
-            } catch (apiErr: any) {
-              onError?.(apiErr.message || 'Failed to connect YouTube channel');
-            } finally {
+              onError?.('Channel connected, but no channel profile returned.');
               onLoading?.(false);
+            } catch (apiErr: any) {
+              console.warn('[YouTube] Offline code exchange failed, falling back to direct token authentication:', apiErr);
+              // Automatic resilient fallback: if backend cannot exchange offline code (e.g. Render missing GOOGLE_CLIENT_SECRET or redirect_uri mismatch),
+              // seamlessly switch to direct token flow so the user is never blocked.
+              runTokenClientFlow();
             }
           },
         });
@@ -73,43 +121,7 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
       }
 
       // 2. Fallback to initTokenClient if initCodeClient is unavailable
-      const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope:
-          'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload openid email profile',
-        prompt: 'consent',
-        callback: async (tokenResponse: any) => {
-          if (tokenResponse.error) {
-            onLoading?.(false);
-            const msg =
-              tokenResponse.error_description ||
-              tokenResponse.error ||
-              'Google authorization was closed';
-            onError?.(msg);
-            return;
-          }
-
-          try {
-            const accessToken = tokenResponse.access_token;
-            if (!accessToken) {
-              throw new Error('Google did not return an access token.');
-            }
-            const result = await youtubeApi.connectWithToken(accessToken);
-            if (result.channel) {
-              localStorage.setItem('apexmind_yt_active_channel', result.channel.handle);
-              onSuccess?.(result.channel);
-            } else {
-              onError?.('Channel connected, but no channel profile returned.');
-            }
-          } catch (apiErr: any) {
-            onError?.(apiErr.message || 'Failed to connect YouTube channel');
-          } finally {
-            onLoading?.(false);
-          }
-        },
-      });
-
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      runTokenClientFlow();
       return;
     } catch (gisErr: any) {
       console.error('Google Identity popup error:', gisErr);

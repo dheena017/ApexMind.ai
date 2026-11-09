@@ -1,17 +1,16 @@
 """
 backend/features/__init__.py
-Exports feature routers matching frontend modules exactly.
+Exports feature routers.
 """
 
+from .auth import auth_router
+from .dashboard import dashboard_router
+from .notifications import router as notifications_router
+from .settings import router as settings_router
+from .social import social_platform_router, social_router
+from .videos import videos_router
 from .workspace import router as workspace_router
 from .youtube import router as youtube_router
-from .notifications import router as notifications_router
-from .auth import auth_router
-from .settings import router as settings_router
-from .videos import videos_router
-from .dashboard import dashboard_router
-from .workspace.audio import audio_router as audio_search_router
-from .social import social_platform_router, social_router
 
 __all__ = [
     "workspace_router",
@@ -21,7 +20,6 @@ __all__ = [
     "settings_router",
     "videos_router",
     "dashboard_router",
-    "audio_search_router",
     "social_router",
     "social_platform_router",
 ]

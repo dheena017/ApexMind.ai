@@ -616,9 +616,8 @@ def get_automations(
     conn.close()
 
     try:
-        from backend.features.youtube.automation_service import _RUNNING_JOB_IDS, _JOB_LOCK
-        with _JOB_LOCK:
-            running_set = set(_RUNNING_JOB_IDS)
+        from backend.shared.job import get_running_job_ids
+        running_set = get_running_job_ids()
     except Exception:
         running_set = set()
 
@@ -705,7 +704,7 @@ def create_automation_job(
     job_id = f"job_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
     now_utc = datetime.now(timezone.utc)
     try:
-        from backend.features.youtube.automation_service import calculate_next_run_iso
+        from backend.shared.job import calculate_next_run_iso
         next_run = calculate_next_run_iso(publish_time=publish_time, schedule=schedule)
     except Exception:
         next_run = (now_utc + timedelta(days=1)).isoformat()
@@ -915,7 +914,7 @@ def toggle_automation(job_id: str, user_id: Optional[str] = None) -> List[Dict[s
         new_active = 0 if row["active"] == 1 else 1
         if new_active == 1:
             try:
-                from backend.features.youtube.automation_service import calculate_next_run_iso
+                from backend.shared.job import calculate_next_run_iso
                 next_run = calculate_next_run_iso(row["publish_time"], row["schedule"])
             except Exception:
                 next_run = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()

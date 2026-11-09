@@ -23,7 +23,6 @@ from backend.features import (
     youtube_router,
     notifications_router,
     auth_router,
-    audio_search_router,
     settings_router,
     videos_router,
     dashboard_router,
@@ -47,7 +46,7 @@ async def lifespan(app: FastAPI):
 
     # Launch background autonomous daily YouTube Shorts scheduler
     import asyncio
-    from backend.features.youtube.automation_service import automation_scheduler_loop
+    from backend.shared.job import automation_scheduler_loop
     scheduler_task = asyncio.create_task(automation_scheduler_loop())
 
     yield
@@ -82,7 +81,6 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(auth_router)
     app.include_router(workspace_router)
-    app.include_router(audio_search_router)
     app.include_router(videos_router)
     app.include_router(youtube_router)
     app.include_router(social_router)

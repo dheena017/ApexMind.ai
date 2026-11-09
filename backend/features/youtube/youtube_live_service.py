@@ -984,12 +984,20 @@ def generate_youtube_auth_url(redirect_uri: str) -> str:
 def exchange_code_for_tokens(code: str, redirect_uri: str) -> Dict[str, Any]:
     """Exchanges the authorization code for access & refresh tokens with Google."""
     cfg = get_google_oauth_config()
+    client_id = (cfg.get("client_id") or "").strip().strip("\"'")
+    client_secret = (cfg.get("client_secret") or "").strip().strip("\"'")
+
+    if not client_id:
+        raise ValueError("GOOGLE_CLIENT_ID is not configured in backend environment.")
+    if not client_secret:
+        raise ValueError("GOOGLE_CLIENT_SECRET is not configured in backend environment. Please set GOOGLE_CLIENT_SECRET in your Render settings.")
+
     token_url = "https://oauth2.googleapis.com/token"
 
     data = urllib.parse.urlencode({
         "code": code,
-        "client_id": cfg["client_id"],
-        "client_secret": cfg["client_secret"],
+        "client_id": client_id,
+        "client_secret": client_secret,
         "redirect_uri": redirect_uri,
         "grant_type": "authorization_code",
     }).encode("utf-8")
@@ -997,10 +1005,26 @@ def exchange_code_for_tokens(code: str, redirect_uri: str) -> Dict[str, Any]:
     req = urllib.request.Request(token_url, data=data, method="POST")
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
 
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        if resp.status != 200:
-            raise RuntimeError(f"Token exchange failed with status {resp.status}")
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            if resp.status != 200:
+                raise RuntimeError(f"Token exchange failed with status {resp.status}")
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as http_err:
+        raw_error = ""
+        try:
+            raw_error = http_err.read().decode("utf-8", errors="replace")
+            err_data = json.loads(raw_error)
+            err_code = err_data.get("error", "")
+            err_desc = err_data.get("error_description", "")
+            logger.error(f"[YouTube/OAuth] Google token endpoint error ({http_err.code}): {raw_error}")
+            if err_desc:
+                raise RuntimeError(f"{err_desc} ({err_code})")
+            if err_code:
+                raise RuntimeError(f"Google OAuth Error: {err_code}")
+        except json.JSONDecodeError:
+            pass
+        raise RuntimeError(f"Google token endpoint HTTP {http_err.code}: {raw_error or http_err.reason}")
 
 
 def fetch_authenticated_channel_details(access_token: str) -> Dict[str, Any]:
