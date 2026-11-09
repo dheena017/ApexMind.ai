@@ -42,7 +42,7 @@ class PixabayImageProvider(BaseImageProvider):
             "q": clean_q,
             "image_type": "photo",
             "orientation": orient_param,
-            "per_page": min(page_size, 30),
+            "per_page": max(3, min(page_size, 50)),
             "page": page,
             "safesearch": "true",
         }

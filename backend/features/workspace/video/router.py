@@ -70,7 +70,7 @@ async def get_open_videos(
     provider: str = Query("all", description="Target provider or 'all'"),
     page: int = Query(1, ge=1, description="Page number"),
     pageSize: int = Query(20, ge=1, le=50, description="Items per page"),
-    aspectRatio: str = Query("9:16", description="Target aspect ratio: 9:16, 16:9, etc."),
+    aspectRatio: str = Query("all", description="Target aspect ratio: all, 9:16, 16:9, etc."),
 ):
     return search_videos(
         query=q,

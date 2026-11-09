@@ -83,25 +83,37 @@ class MixkitVideoProvider(BaseVideoProvider):
                 # 2. Fallback to HTML regex matching for video preview elements
                 if not results:
                     video_matches = re.findall(
-                        r'<video[^>]+src=["\'](https://assets\.mixkit\.co/videos/preview/[^"\']+\.mp4)["\']',
+                        r'https://assets\.mixkit\.co/videos/[^"\'\s]+\.mp4',
                         html,
                         re.IGNORECASE,
                     )
-                    for idx, v_url in enumerate(video_matches[:page_size]):
+                    seen_m = set()
+                    unique_videos = []
+                    for m in video_matches:
+                        base_m = re.sub(r'-\d+\.mp4$', '-720.mp4', m)
+                        if base_m not in seen_m:
+                            seen_m.add(base_m)
+                            unique_videos.append(base_m)
+
+                    for idx, v_url in enumerate(unique_videos[:page_size]):
+                        v_id = re.search(r'/videos/(\d+)/', v_url)
+                        clip_id = v_id.group(1) if v_id else str(idx + 1)
+                        clean_title = f"Mixkit Motion {clean_q.capitalize()} {clip_id}" if clean_q else f"Mixkit Motion Loop {clip_id}"
+                        thumb_url = v_url.replace('.mp4', '.jpg')
                         results.append(
                             self.format_video(
-                                id=f"mixkit_html_{page}_{idx}",
-                                title=f"Mixkit Clip {idx + 1}",
+                                id=f"mixkit_html_{page}_{idx}_{clip_id}",
+                                title=clean_title,
                                 video_url=v_url,
                                 preview_url=v_url,
-                                poster_url=v_url.replace(".mp4", ".jpg"),
+                                poster_url=thumb_url,
                                 duration=12.0,
-                                resolution="1920x1080 HD",
-                                aspect_ratio=aspect_ratio,
+                                resolution="1080p FHD",
+                                aspect_ratio="16:9",
                                 provider="mixkit",
                                 aesthetic_badges=["Free License", "Clean Loop"],
                                 aesthetic_score=0.82,
-                                tags=["cinematic", "mixkit"],
+                                tags=["cinematic", "mixkit", clean_q],
                             )
                         )
 

@@ -15,6 +15,7 @@ import {
   Sparkles,
   Gauge,
   Sliders,
+  Clock,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { workspaceApi } from '../../api/workspaceApi';
@@ -23,16 +24,29 @@ import { toast } from 'sonner';
 export interface StockVideoItem {
   id: string;
   title: string;
-  category: 'gym' | 'clouds' | 'city' | 'ocean' | 'fire' | 'abstract' | 'minimal';
+  category: 'gym' | 'clouds' | 'city' | 'ocean' | 'fire' | 'abstract' | 'minimal' | string;
   videoUrl: string;
   posterUrl?: string;
   duration: string;
   resolution: string;
+  aspectRatio?: string;
   source?: string;
   tags?: string[];
   aestheticScore?: number;
   aestheticBadges?: string[];
 }
+
+export const formatVideoDuration = (duration: any): string => {
+  if (typeof duration === 'string' && (duration.includes(':') || duration.toLowerCase() === 'loop')) {
+    return duration;
+  }
+  const sec = typeof duration === 'number' ? duration : parseFloat(duration);
+  if (isNaN(sec) || sec <= 0) return '0:15';
+  const totalSec = Math.round(sec);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
 
 export interface VideoStockPaneProps {
   onSelectVideo: (videoUrl: string, posterUrl?: string) => void;
@@ -72,11 +86,12 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
   vid,
   isSelected,
   playbackSpeed,
-  aspectRatio = '9:16',
+  aspectRatio = 'all',
   onAddToTimeline,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [loadedDuration, setLoadedDuration] = useState<string | null>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -101,6 +116,13 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
     };
   }, []);
 
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const v = e.currentTarget;
+    if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+      setLoadedDuration(formatVideoDuration(v.duration));
+    }
+  };
+
   useEffect(() => {
     if (isHovered && videoRef.current) {
       videoRef.current.playbackRate = playbackSpeed;
@@ -109,12 +131,21 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
   }, [isHovered, playbackSpeed]);
 
   const hasPoster = Boolean(vid.posterUrl) && !imgError;
+  const displayDuration = loadedDuration || formatVideoDuration(vid.duration);
+
+  // Derive aspect ratio: if an explicit non-'all' filter is active, respect it;
+  // otherwise, use the video's native detected aspect ratio (defaulting to 16:9 for landscape footage).
+  const effectiveAspect =
+    aspectRatio && aspectRatio !== 'all'
+      ? aspectRatio
+      : vid.aspectRatio || '16:9';
+
   const cardAspectClass =
-    aspectRatio === '16:9'
-      ? 'aspect-video'
-      : aspectRatio === '1:1'
+    effectiveAspect === '9:16'
+      ? 'aspect-[9/16]'
+      : effectiveAspect === '1:1'
         ? 'aspect-square'
-        : 'aspect-[9/16]';
+        : 'aspect-video';
 
   return (
     <button
@@ -141,30 +172,42 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
           loop
           muted
           playsInline
+          onLoadedMetadata={handleLoadedMetadata}
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       ) : hasPoster ? (
-        <img
-          src={vid.posterUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onError={() => setImgError(true)}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
+        <div className="relative w-full h-full overflow-hidden bg-[#121214] flex items-center justify-center">
+          {/* Ambient blurred backdrop so letterboxing matches video tone seamlessly */}
+          <img
+            src={vid.posterUrl}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover blur-md opacity-35 scale-110 pointer-events-none"
+          />
+          <img
+            src={vid.posterUrl}
+            alt={vid.title}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onError={() => setImgError(true)}
+            className="relative z-1 max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
       ) : (
         <video
           src={vid.videoUrl}
-          preload="none"
+          preload="metadata"
           muted
           playsInline
+          onLoadedMetadata={handleLoadedMetadata}
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover"
         />
       )}
 
+      {/* Top Source & License Badges */}
       <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10 pointer-events-none">
         {vid.source && (
           <span className="media-source-badge">
@@ -183,18 +226,27 @@ const VideoCard: React.FC<VideoCardProps> = React.memo(({
           </span>
         )}
       </div>
+
+      {/* Prominent Duration Pill Badge */}
+      <div className="absolute bottom-2 right-2 z-20 pointer-events-none">
+        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/85 backdrop-blur-xs text-[10px] font-mono font-bold text-white border border-white/15 shadow-md">
+          <Clock className="w-2.5 h-2.5 text-blue-400" />
+          {displayDuration}
+        </span>
+      </div>
+
       {isSelected && (
         <span className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#3B82F6] text-white shadow-md">
           <Check className="h-3 w-3 stroke-[3]" />
         </span>
       )}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-85 transition-opacity group-hover:opacity-100" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-1.5 p-2.5">
-        <p className="truncate text-left text-[11px] font-bold leading-tight text-white drop-shadow-md" title={vid.title}>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-1 p-2.5">
+        <p className="truncate text-left text-[11px] font-bold leading-tight text-white drop-shadow-md pr-14" title={vid.title}>
           {vid.title}
         </p>
         <div className="flex items-center justify-between text-[9px] text-zinc-400">
-          <span>{[vid.duration, vid.resolution].filter(Boolean).join(' · ')}</span>
+          <span>{[displayDuration, vid.resolution].filter(Boolean).join(' · ')}</span>
           {vid.resolution?.includes('1080') && (
             <span className="px-1 py-0.2 rounded bg-white/10 text-zinc-300 font-mono text-[8px]">FHD</span>
           )}
@@ -213,7 +265,8 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
-  const [selectedAspectRatio, setSelectedAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
+  const [providerStatus, setProviderStatus] = useState<Record<string, boolean>>({});
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<'all' | '9:16' | '16:9' | '1:1'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [videos, setVideos] = useState<StockVideoItem[]>([]);
   const [savedVideos, setSavedVideos] = useState<StockVideoItem[]>([]);
@@ -282,13 +335,18 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             category: it.category || category,
             videoUrl: it.videoUrl,
             posterUrl: it.posterUrl || '',
-            duration: typeof it.duration === 'number' ? `${Math.round(it.duration)}s` : (it.duration || 'Loop'),
-            resolution: it.resolution || '1080x1920 HD',
+            duration: formatVideoDuration(it.duration),
+            resolution: it.resolution || '1080p FHD',
+            aspectRatio: it.aspectRatio || it.aspect_ratio || '16:9',
             source: it.source || it.provider || 'stock',
             tags: it.tags || [],
             aestheticScore: typeof it.aestheticScore === 'number' ? it.aestheticScore : undefined,
             aestheticBadges: Array.isArray(it.aestheticBadges) ? it.aestheticBadges : [],
           }));
+
+          if (res.providers) {
+            setProviderStatus(res.providers);
+          }
 
           setTotalClipsFound(res.total || formatted.length);
           setHasMore(formatted.length >= 6);
@@ -711,8 +769,9 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                     {/* Aspect Ratio Filter Pills */}
                     <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-[#242424]">
                       {[
-                        { id: '9:16', label: '9:16' },
+                        { id: 'all', label: 'All' },
                         { id: '16:9', label: '16:9' },
+                        { id: '9:16', label: '9:16' },
                         { id: '1:1', label: '1:1' },
                       ].map((ar) => (
                         <button
@@ -752,11 +811,11 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
                 </button>
               </div>
             ) : filteredVideos.length === 0 && isLoadingBackend ? (
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2.5 items-start">
                 {Array.from({ length: 6 }).map((_, idx) => (
                   <div
                     key={`vskel-${idx}`}
-                    className="rounded-none border-0 aspect-[9/16] bg-[#181818] animate-pulse flex flex-col justify-end p-2.5"
+                    className={`rounded-xl border border-[#242424] ${selectedAspectRatio === '9:16' ? 'aspect-[9/16]' : selectedAspectRatio === '1:1' ? 'aspect-square' : 'aspect-video'} bg-[#181818] animate-pulse flex flex-col justify-end p-2.5`}
                   >
                     <div className="h-3 w-3/4 bg-zinc-800 rounded mb-1" />
                     <div className="h-2.5 w-1/2 bg-zinc-800/60 rounded mb-2" />
@@ -771,7 +830,14 @@ export const VideoStockPane: React.FC<VideoStockPaneProps> = ({
             ) : (
               /* Video Grid & Pagination */
               <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-2.5">
+                {selectedProvider !== 'all' && providerStatus[selectedProvider] === false && (
+                  <div className="px-3 py-2 rounded-xl bg-blue-950/40 border border-blue-500/30 text-blue-200 text-[11px] flex items-center justify-between gap-2 shadow-sm">
+                    <span>
+                      <strong className="text-white capitalize">{selectedProvider}</strong> API key is not configured in <code>.env</code>. Showing open clips from Pixabay, Coverr &amp; Wikimedia.
+                    </span>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2.5 items-start">
                   {filteredVideos.map((vid) => (
                     <VideoCard
                       key={vid.id}

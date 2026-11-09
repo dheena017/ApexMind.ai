@@ -112,21 +112,22 @@ def search_videos(
     provider: str = "all",
     page: int = 1,
     page_size: int = 20,
-    aspect_ratio: str = "9:16",
+    aspect_ratio: str = "all",
 ) -> Dict[str, Any]:
     """
     Search royalty-free stock videos across modular live providers.
     Supports single provider queries or concurrent multi-provider search ('all').
-    Enforces 100% faceless video filtering to avoid human faces in generated clips.
+    Preserves exact user search keywords while enforcing faceless B-roll defaults when no query is specified.
     """
-    clean_q = (query or "").strip()
-    if clean_q.lower() in ("all", "*"):
-        clean_q = ""
-    if not clean_q and category and category.lower() not in ("all", "*"):
-        clean_q = category.strip()
+    raw_query = (query or "").strip()
+    has_user_query = bool(raw_query and raw_query.lower() not in ("all", "*"))
 
-    # Sanitize search query to strip face/portrait keywords
-    clean_q = sanitize_faceless_query(clean_q, fallback_theme="cinematic aesthetic landscape")
+    if has_user_query:
+        clean_q = raw_query.replace("#", "").strip()
+    elif category and category.lower() not in ("all", "*"):
+        clean_q = category.strip()
+    else:
+        clean_q = "cinematic aesthetic landscape"
 
     items: List[Dict[str, Any]] = []
     seen_urls: Set[str] = set()
@@ -134,22 +135,41 @@ def search_videos(
     # Single provider search
     if provider != "all" and provider in _PROVIDERS:
         prov_instance = _PROVIDERS[provider]
-        try:
-            candidates = prov_instance.search(
-                query=clean_q,
-                aspect_ratio=aspect_ratio,
-                page=page,
-                page_size=page_size * 2,
-            )
-            for it in candidates:
-                if not is_faceless_item(it):
-                    continue
-                url = it.get("videoUrl", "")
-                if url and url not in seen_urls:
-                    seen_urls.add(url)
-                    items.append(it)
-        except Exception as e:
-            logger.warning(f"Error querying video provider {provider}: {e}")
+        if not prov_instance.is_configured():
+            # Selected provider is not configured with an API key.
+            # Gracefully search active configured providers (Pixabay, Coverr, Wikimedia, Mixkit)
+            # so the user is never left with an empty screen.
+            candidates = []
+            for fallback_p in [p for p in _PROVIDERS.values() if p.is_configured()]:
+                try:
+                    cands = fallback_p.search(
+                        query=clean_q,
+                        aspect_ratio=aspect_ratio,
+                        page=page,
+                        page_size=max(page_size // 2, 8),
+                    )
+                    candidates.extend(cands)
+                except Exception:
+                    pass
+        else:
+            try:
+                candidates = prov_instance.search(
+                    query=clean_q,
+                    aspect_ratio=aspect_ratio,
+                    page=page,
+                    page_size=max(page_size, 10),
+                )
+            except Exception as e:
+                logger.warning(f"Error querying video provider {provider}: {e}")
+                candidates = []
+
+        for it in candidates:
+            if not has_user_query and not is_faceless_item(it):
+                continue
+            url = it.get("videoUrl", "")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                items.append(it)
 
         return {
             "success": True,
@@ -166,7 +186,7 @@ def search_videos(
     if not active_providers:
         active_providers = list(_PROVIDERS.values())
 
-    per_prov_limit = max(6, page_size // len(active_providers) + 4)
+    per_prov_limit = max(8, page_size // len(active_providers) + 4)
 
     with ThreadPoolExecutor(max_workers=min(len(active_providers), 6)) as executor:
         futures = {
@@ -185,7 +205,7 @@ def search_videos(
             try:
                 cands = future.result()
                 for it in cands:
-                    if not is_faceless_item(it):
+                    if not has_user_query and not is_faceless_item(it):
                         continue
                     url = it.get("videoUrl", "")
                     if url and url not in seen_urls:
@@ -194,20 +214,18 @@ def search_videos(
             except Exception as e:
                 logger.debug(f"Video provider {p_name} async search failed: {e}")
 
-    # Fallback to general aesthetic faceless background query if no results returned
-    if not items and clean_q != "cinematic aesthetic faceless nature vertical background":
+    # Fallback ONLY when query was empty and no items were retrieved
+    if not items and not has_user_query:
         try:
-            open_provs = [_PROVIDERS["mixkit"], _PROVIDERS["coverr"]]
+            open_provs = [_PROVIDERS["coverr"], _PROVIDERS["wikimedia"], _PROVIDERS["mixkit"]]
             for op in open_provs:
                 fb_cands = op.search(
-                    query="cinematic aesthetic faceless nature vertical background",
+                    query="cinematic aesthetic landscape",
                     aspect_ratio=aspect_ratio,
                     page=1,
                     page_size=page_size,
                 )
                 for it in fb_cands:
-                    if not is_faceless_item(it):
-                        continue
                     url = it.get("videoUrl", "")
                     if url and url not in seen_urls:
                         seen_urls.add(url)

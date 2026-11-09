@@ -57,6 +57,7 @@ def search_images(
     Search stock photos and images across modular live providers.
     Supports single provider queries or concurrent multi-provider search ('all').
     """
+    has_user_query = bool((query or "").strip() and (query or "").strip().lower() not in ("all", "*"))
     clean_q = (query or "").strip()
     if clean_q.lower() in ("all", "*"):
         clean_q = ""
@@ -69,20 +70,36 @@ def search_images(
     # Single provider search
     if provider != "all" and provider in _PROVIDERS:
         prov_instance = _PROVIDERS[provider]
-        try:
-            candidates = prov_instance.search(
-                query=clean_q,
-                orientation=orientation,
-                page=page,
-                page_size=page_size,
-            )
-            for it in candidates:
-                url = it.get("imageUrl", "")
-                if url and url not in seen_urls:
-                    seen_urls.add(url)
-                    items.append(it)
-        except Exception as e:
-            logger.warning(f"Error querying image provider {provider}: {e}")
+        if not prov_instance.is_configured():
+            candidates = []
+            for fallback_p in [p for p in _PROVIDERS.values() if p.is_configured()]:
+                try:
+                    cands = fallback_p.search(
+                        query=clean_q,
+                        orientation=orientation,
+                        page=page,
+                        page_size=max(page_size // 2, 8),
+                    )
+                    candidates.extend(cands)
+                except Exception:
+                    pass
+        else:
+            try:
+                candidates = prov_instance.search(
+                    query=clean_q,
+                    orientation=orientation,
+                    page=page,
+                    page_size=page_size,
+                )
+            except Exception as e:
+                logger.warning(f"Error querying image provider {provider}: {e}")
+                candidates = []
+
+        for it in candidates:
+            url = it.get("imageUrl", "")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                items.append(it)
 
         return {
             "success": True,
@@ -124,13 +141,13 @@ def search_images(
             except Exception as e:
                 logger.debug(f"Image provider {p_name} async search failed: {e}")
 
-    # Fallback to high-aesthetic default query if query produced no items
-    if not items and clean_q != "aesthetic wallpaper":
+    # Fallback ONLY when query was empty and no items were retrieved
+    if not items and not has_user_query:
         try:
             open_provs = [_PROVIDERS["openverse"], _PROVIDERS["wikimedia"], _PROVIDERS["flickr"]]
             for op in open_provs:
                 fb_cands = op.search(
-                    query="aesthetic portrait photography",
+                    query="aesthetic landscape photography",
                     orientation=orientation,
                     page=1,
                     page_size=page_size // 3,

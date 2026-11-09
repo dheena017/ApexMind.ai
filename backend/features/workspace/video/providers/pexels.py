@@ -89,6 +89,7 @@ class PexelsVideoProvider(BaseVideoProvider):
             w = chosen.get("width") or 1080
             h = chosen.get("height") or 1920
             res_str = f"{w}x{h}"
+            detected_aspect = "9:16" if h > w * 1.15 else "16:9" if w > h * 1.15 else "1:1"
 
             pictures = vid.get("video_pictures", [])
             poster_url = pictures[0].get("picture", "") if pictures else vid.get("image", "")
@@ -102,7 +103,7 @@ class PexelsVideoProvider(BaseVideoProvider):
                     poster_url=poster_url,
                     duration=float(vid.get("duration", 10.0)),
                     resolution=res_str,
-                    aspect_ratio=aspect_ratio,
+                    aspect_ratio=detected_aspect,
                     provider="pexels",
                     aesthetic_badges=["HD", "Curated"],
                     aesthetic_score=0.92,

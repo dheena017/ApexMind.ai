@@ -39,7 +39,7 @@ class PixabayVideoProvider(BaseVideoProvider):
             "key": api_key,
             "q": clean_q,
             "video_type": "film",
-            "per_page": min(page_size, 30),
+            "per_page": max(3, min(page_size, 50)),
             "page": page,
             "safesearch": "true",
         }
@@ -75,6 +75,7 @@ class PixabayVideoProvider(BaseVideoProvider):
             w = chosen.get("width") or 1920
             h = chosen.get("height") or 1080
             res_str = f"{w}x{h}"
+            detected_aspect = "9:16" if h > w * 1.15 else "16:9" if w > h * 1.15 else "1:1"
 
             results.append(
                 self.format_video(
@@ -85,7 +86,7 @@ class PixabayVideoProvider(BaseVideoProvider):
                     poster_url=poster_url,
                     duration=float(hit.get("duration", 10.0)),
                     resolution=res_str,
-                    aspect_ratio=aspect_ratio,
+                    aspect_ratio=detected_aspect,
                     provider="pixabay",
                     aesthetic_badges=["HD", "Free License"],
                     aesthetic_score=0.88,
