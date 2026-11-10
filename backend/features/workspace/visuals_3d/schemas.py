@@ -9,7 +9,21 @@ Unified Pydantic schemas and DTOs for the ApexMind 3D Visuals & CGI Studio Engin
 """
 
 from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+
+try:
+    from pydantic import BaseModel, Field
+except ImportError:
+    class BaseModel:  # type: ignore
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+        def model_dump(self):
+            return self.__dict__
+        def dict(self):
+            return self.__dict__
+
+    def Field(default=None, **kwargs):  # type: ignore
+        return default
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -243,6 +257,15 @@ class RenderMotionLoopRequest(BaseModel):
 
 class RenderBlenderHybridRequest(BaseModel):
     sceneId: str = "scene_01"
+    prompt: Optional[str] = None
+    query: Optional[str] = None
+    scenePrompt3D: Optional[str] = None
+    cameraMotion: Optional[str] = None
+    character: Optional[Dict[str, Any]] = None
+    objects: Optional[List[Dict[str, Any]]] = None
+    environment: Optional[Dict[str, Any]] = None
+    modelUrl: Optional[str] = None
+    animateMotion: Optional[bool] = True
     characterAssetId: Optional[str] = None
     environmentAssetId: Optional[str] = None
     propAssetIds: List[str] = Field(default_factory=list)
@@ -250,22 +273,33 @@ class RenderBlenderHybridRequest(BaseModel):
     cameraRig: Optional[CameraRigConfig] = None
     durationSeconds: float = 3.0
     aspectRatio: str = "9:16"
-    shadingStyle: Literal["hologram", "clay", "nebula", "gold", "cel"] = "nebula"
+    shadingStyle: str = "card_object_cloud"
     subtitles: Optional[SubtitleBurnConfig] = None
     audioTrackUrl: Optional[str] = None
 
 
 class RenderBlenderFullRequest(BaseModel):
     sceneId: str = "scene_01"
+    prompt: Optional[str] = None
+    query: Optional[str] = None
+    scenePrompt3D: Optional[str] = None
+    cameraMotion: Optional[str] = None
+    character: Optional[Dict[str, Any]] = None
+    objects: Optional[List[Dict[str, Any]]] = None
+    environment: Optional[Dict[str, Any]] = None
+    modelUrl: Optional[str] = None
+    animateMotion: Optional[bool] = True
     characterAssetId: Optional[str] = None
     environmentAssetId: Optional[str] = None
     propAssetIds: List[str] = Field(default_factory=list)
     brainConfig: Optional[BrainConfig] = None
     cameraRig: Optional[CameraRigConfig] = None
     durationSeconds: float = 3.0
-    fps: int = 30
+    fps: int = 24
     aspectRatio: str = "9:16"
-    shadingStyle: str = "nebula"
+    shadingStyle: str = "card_object_cloud"
+    subtitles: Optional[SubtitleBurnConfig] = None
+    audioTrackUrl: Optional[str] = None
 
 
 class RenderSceneResultResponse(BaseModel):

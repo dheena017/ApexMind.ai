@@ -14,6 +14,14 @@ import {
   History,
   Trash2,
   Copy,
+  Clapperboard,
+  Compass,
+  User,
+  Video,
+  Play,
+  Download,
+  Film,
+  Layers,
 } from 'lucide-react';
 import { CustomSelect } from '@/src/shared/ui/CustomSelect';
 import { toast } from 'sonner';
@@ -76,10 +84,24 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
   initialQuery = '',
   initialProvider,
 }) => {
-  // Navigation tabs (Catalog, URL, History)
-  const [activeTab, setActiveTab] = useState<'catalog' | 'url' | 'history'>('catalog');
+  // Navigation tabs (3D Studio, Catalog, URL, History)
+  const [activeTab, setActiveTab] = useState<'creator' | 'catalog' | 'url' | 'history'>('creator');
   const [mediaTypeFilter, setMediaTypeFilter] = useState<'all' | 'models' | 'loops'>('all');
   const [selectedOrientation, setSelectedOrientation] = useState<'portrait' | 'landscape' | 'squarish'>('portrait');
+
+  // ── 3D Motion Creator Studio State ──
+  const [charArchetype, setCharArchetype] = useState<string>('warrior_katana');
+  const [charMotion, setCharMotion] = useState<string>('attack');
+  const [charColor, setCharColor] = useState<string>('#E02424');
+  const [propType, setPropType] = useState<string>('katana');
+  const [customModelUrl, setCustomModelUrl] = useState<string>('');
+  const [envTheme, setEnvTheme] = useState<string>('ocean_naval');
+  const [camPath, setCamPath] = useState<string>('low_angle_hero');
+  const [studioDuration, setStudioDuration] = useState<number>(2.5);
+  const [studioSubtitle, setStudioSubtitle] = useState<string>('We sailed into the cursed sea and drew our blade!');
+  const [isRenderingMotion, setIsRenderingMotion] = useState<boolean>(false);
+  const [renderStepText, setRenderStepText] = useState<string>('');
+  const [renderedMotionVideo, setRenderedMotionVideo] = useState<any>(null);
 
   // Search & Filtering
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery || '');
@@ -265,8 +287,8 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
     toast.success(`Applied "${item.title}" to active 3D backdrop!`);
   };
 
-  const handleApplyTimeline = (item: Visual3DItem, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleApplyTimeline = (item: Visual3DItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     saveRecent(item);
     if (onApplyToTimeline) {
       onApplyToTimeline(item);
@@ -302,6 +324,46 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
     handleSelectAsset(customItem);
     setCustomUrl('');
     setCustomTitle('');
+  };
+
+  const handleGenerateMotionVideo = async () => {
+    setIsRenderingMotion(true);
+    setRenderStepText('Synthesizing dynamic 3D world in Blender 5.2...');
+    try {
+      const res = await visuals3dApi.renderBlenderFull({
+        prompt: `${charArchetype} in ${envTheme} doing ${charMotion}`,
+        character: {
+          archetype: charArchetype,
+          motion: charMotion,
+          outfitColorHex: charColor,
+          modelUrl: customModelUrl || undefined,
+        },
+        objects: [
+          {
+            type: propType,
+            modelUrl: customModelUrl || undefined,
+          },
+        ],
+        environment: {
+          theme: envTheme,
+        },
+        cameraMotion: camPath,
+        durationSeconds: studioDuration,
+        subtitles: studioSubtitle ? { text: studioSubtitle } : undefined,
+        animateMotion: true,
+      });
+
+      if (res && res.videoUrl) {
+        setRenderedMotionVideo(res);
+        toast.success('3D Motion Video rendered successfully in Blender 5.2!');
+      } else {
+        toast.error('Blender completed without returning a video URL.');
+      }
+    } catch (err: any) {
+      toast.error(`3D Motion render failed: ${err.message || 'Error occurred'}`);
+    } finally {
+      setIsRenderingMotion(false);
+    }
   };
 
   const aspectClass =
@@ -374,6 +436,7 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
       <div className="p-2.5 bg-[#111111] border-b border-[#242424] shrink-0">
         <ScrollableTabs
           tabs={[
+            { id: 'creator', label: '3D Studio', icon: Clapperboard, color: 'text-purple-400' },
             { id: 'catalog', label: 'Catalog', icon: Box, color: 'text-blue-400' },
             { id: 'url', label: 'URL', icon: ExternalLink, color: 'text-blue-400' },
             {
@@ -482,6 +545,342 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-3.5 space-y-4 custom-scrollbar"
       >
+        {/* TAB 0: 3D MOTION VIDEO STUDIO */}
+        {activeTab === 'creator' && (
+          <div className="flex flex-col gap-4 pb-6">
+            {/* Header intro */}
+            <div className="bg-gradient-to-r from-purple-900/30 via-indigo-900/20 to-blue-900/30 border border-purple-500/30 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                    <Clapperboard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      3D Motion Video Studio
+                      <span className="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">
+                        BLENDER 5.2 CGI
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-zinc-400">
+                      Configure characters, props, worlds, & true 3D keyframe motion.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Character & Action Section */}
+            <div className="bg-[#181818] border border-[#242424] rounded-2xl p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-purple-400" /> 1. Character & Avatar
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400">Rig Archetype</span>
+              </div>
+
+              {/* Character Archetype Pills */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'warrior_katana', label: '⚔️ Warrior', sub: 'Pirate Coat' },
+                  { id: 'null_glitch', label: '👾 Null Ghost', sub: 'Red Glitch Eyes' },
+                  { id: 'classic_avatar', label: '🧱 Roblox Noob', sub: 'Classic Yellow' },
+                  { id: 'multi_lineup', label: '👥 4-Avatar', sub: 'Team Lineup' },
+                  { id: 'explorer', label: '🤠 Adventurer', sub: 'Boonie Hat' },
+                  { id: 'custom', label: '✨ Custom', sub: 'Prompt Driven' },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCharArchetype(c.id)}
+                    className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col gap-0.5 ${
+                      charArchetype === c.id
+                        ? 'bg-purple-600/20 border-purple-500 text-white shadow-md shadow-purple-500/10'
+                        : 'bg-[#121214] border-[#242424] text-zinc-400 hover:text-white hover:border-[#383842]'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{c.label}</span>
+                    <span className="text-[9px] text-zinc-500">{c.sub}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Character 3D Motion Keyframe Type */}
+              <div className="mt-1 flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-mono text-zinc-400">Character 3D Action / Motion</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'walk', label: '🚶 Walk Cycle', desc: 'Legs & arms swing' },
+                    { id: 'attack', label: '⚔️ Sword Slash', desc: 'Powerful weapon arc' },
+                    { id: 'jump', label: '🦘 Parkour Leap', desc: 'Z-axis jump & tuck' },
+                    { id: 'hover', label: '👻 Glitch Hover', desc: 'Eerie floating float' },
+                    { id: 'idle', label: '🧍 Cinematic Idle', desc: 'Breathing & glance' },
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setCharMotion(m.id)}
+                      className={`p-2 rounded-lg border text-left transition cursor-pointer flex flex-col ${
+                        charMotion === m.id
+                          ? 'bg-blue-600/20 border-blue-500 text-white'
+                          : 'bg-[#121214] border-[#242424] text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-xs font-semibold">{m.label}</span>
+                      <span className="text-[9px] text-zinc-500">{m.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Color Tint Presets */}
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] uppercase font-mono text-zinc-400">Outfit Tint:</span>
+                <div className="flex items-center gap-1.5">
+                  {[
+                    { color: '#E02424', name: 'Crimson' },
+                    { color: '#2563EB', name: 'Cobalt' },
+                    { color: '#00F0FF', name: 'Cyan' },
+                    { color: '#10B981', name: 'Emerald' },
+                    { color: '#F59E0B', name: 'Gold' },
+                    { color: '#18181B', name: 'Obsidian' },
+                  ].map((tint) => (
+                    <button
+                      key={tint.color}
+                      type="button"
+                      onClick={() => setCharColor(tint.color)}
+                      style={{ backgroundColor: tint.color }}
+                      className={`w-5 h-5 rounded-full border transition cursor-pointer ${
+                        charColor === tint.color ? 'ring-2 ring-white scale-110 border-white' : 'border-black/40'
+                      }`}
+                      title={tint.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Objects & Hero Props */}
+            <div className="bg-[#181818] border border-[#242424] rounded-2xl p-4 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Box className="w-4 h-4 text-blue-400" /> 2. Hero Objects & Props
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'katana', label: '🗡️ Cyan Katana', desc: 'Glowing neon edge' },
+                  { id: 'ship', label: '⛵ Pirate Ship', desc: 'Hull, deck & mast' },
+                  { id: 'obby', label: '🧱 Neon Obby Pads', desc: 'Floating cyan/magenta' },
+                  { id: 'clock', label: '⏰ 3:00 AM Clock', desc: 'Glowing red digital' },
+                  { id: 'cards', label: '🃏 Falling Cards', desc: 'Tumbling 3D physics' },
+                  { id: 'custom_glb', label: '🌐 Custom .GLB', desc: 'User Model URL' },
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPropType(p.id)}
+                    className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col ${
+                      propType === p.id
+                        ? 'bg-blue-600/20 border-blue-500 text-white shadow-md shadow-blue-500/10'
+                        : 'bg-[#121214] border-[#242424] text-zinc-400 hover:text-white hover:border-[#383842]'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{p.label}</span>
+                    <span className="text-[9px] text-zinc-500">{p.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {propType === 'custom_glb' && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <label className="text-[10px] uppercase font-mono text-zinc-400">Custom 3D Model (.GLB / .GLTF URL or Path)</label>
+                  <input
+                    type="text"
+                    value={customModelUrl}
+                    onChange={(e) => setCustomModelUrl(e.target.value)}
+                    placeholder="https://.../model.glb or local filename"
+                    className="w-full bg-[#121214] border border-[#242424] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-500 outline-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Environment Theme */}
+            <div className="bg-[#181818] border border-[#242424] rounded-2xl p-4 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Compass className="w-4 h-4 text-emerald-400" /> 3. 3D Environment & World
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'ocean_naval', label: '🌊 Azure Ocean', desc: 'Rolling waves & foam' },
+                  { id: 'lava_obby', label: '🌋 Molten Lava', desc: 'Bubbling magma abyss' },
+                  { id: 'indoor_creepy', label: '🏥 Brookhaven Hospital', desc: 'Mint walls & gurney' },
+                  { id: 'celestial_sky', label: '🌌 Celestial Sky Void', desc: 'Vortex & golden ring' },
+                  { id: 'dungeon_temple', label: '🏛️ Stone Temple', desc: 'Pillars & ceremonial altar' },
+                  { id: 'city_suburb', label: '🏘️ City Street', desc: 'Brookhaven asphalt road' },
+                ].map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => setEnvTheme(e.id)}
+                    className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col ${
+                      envTheme === e.id
+                        ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-md shadow-emerald-500/10'
+                        : 'bg-[#121214] border-[#242424] text-zinc-400 hover:text-white hover:border-[#383842]'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{e.label}</span>
+                    <span className="text-[9px] text-zinc-500">{e.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Camera Motion & Duration */}
+            <div className="bg-[#181818] border border-[#242424] rounded-2xl p-4 flex flex-col gap-3">
+              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Video className="w-4 h-4 text-amber-400" /> 4. Camera Choreography & Duration
+              </span>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'low_angle_hero', label: '🎥 Low-Angle Hero Push', desc: 'Upward dynamic tilt' },
+                  { id: 'orbit_360', label: '🔄 360° Orbital Sweep', desc: 'Cinematic circular pan' },
+                  { id: 'overhead_crane', label: '🦅 Birds-Eye Crane Down', desc: 'High overview swoop' },
+                  { id: 'close_up_dolly', label: '🔍 Eye-Level Dolly', desc: 'Dramatic portrait focus' },
+                ].map((cp) => (
+                  <button
+                    key={cp.id}
+                    type="button"
+                    onClick={() => setCamPath(cp.id)}
+                    className={`p-2 rounded-xl border text-left transition cursor-pointer flex flex-col ${
+                      camPath === cp.id
+                        ? 'bg-amber-600/20 border-amber-500 text-white'
+                        : 'bg-[#121214] border-[#242424] text-zinc-400 hover:text-white hover:border-[#383842]'
+                    }`}
+                  >
+                    <span className="text-xs font-semibold">{cp.label}</span>
+                    <span className="text-[9px] text-zinc-500">{cp.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Duration Buttons */}
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#242424]">
+                <span className="text-[10px] uppercase font-mono text-zinc-400">Duration:</span>
+                <div className="flex items-center gap-1.5">
+                  {[1.5, 2.5, 3.5, 5.0].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setStudioDuration(d)}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                        studioDuration === d
+                          ? 'bg-amber-500 text-black shadow-xs'
+                          : 'bg-[#121214] border border-[#242424] text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {d}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Dialogue & Subtitles */}
+            <div className="bg-[#181818] border border-[#242424] rounded-2xl p-4 flex flex-col gap-2">
+              <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                💬 5. Spoken Dialogue / Kinetic Subtitles
+              </label>
+              <input
+                type="text"
+                value={studioSubtitle}
+                onChange={(e) => setStudioSubtitle(e.target.value)}
+                placeholder="Spoken subtitle text overlaid on the video..."
+                className="w-full bg-[#121214] border border-[#242424] focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-500 outline-none"
+              />
+              <span className="text-[10px] text-zinc-500">
+                Overlaid with viral yellow Impact typography and black outline.
+              </span>
+            </div>
+
+            {/* Action Button: Create 3D Motion Video */}
+            <button
+              type="button"
+              onClick={handleGenerateMotionVideo}
+              disabled={isRenderingMotion}
+              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 text-white font-bold text-sm shadow-xl shadow-purple-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isRenderingMotion ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>{renderStepText || 'Rendering 3D Motion Video in Blender 5.2...'}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                  <span>Generate 3D Motion Video</span>
+                </>
+              )}
+            </button>
+
+            {/* Render Result Preview Box */}
+            {renderedMotionVideo && (
+              <div className="bg-[#121214] border border-purple-500/40 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Check className="w-4 h-4 text-emerald-400" /> 3D Motion Video Ready!
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    {renderedMotionVideo.durationSeconds}s • {renderedMotionVideo.resolution}
+                  </span>
+                </div>
+
+                <div className="w-full aspect-[9/16] max-h-[380px] rounded-xl overflow-hidden bg-black flex items-center justify-center border border-[#242424]">
+                  <video
+                    src={renderedMotionVideo.videoUrl}
+                    controls
+                    autoPlay
+                    loop
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleApplyTimeline({
+                      id: renderedMotionVideo.sceneId,
+                      title: studioSubtitle || '3D Motion Scene',
+                      category: 'props',
+                      provider: 'blender_full',
+                      assetUrl: renderedMotionVideo.videoUrl,
+                      format: 'mp4',
+                      isVideo: true,
+                      duration: renderedMotionVideo.durationSeconds,
+                      license: 'Custom Created 3D Video',
+                      tags: ['blender_motion', charMotion, envTheme],
+                      aestheticBadges: ['3D CGI', 'Animated'],
+                    } as any)}
+                    className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-lg shadow-purple-600/30 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" /> Apply to Timeline
+                  </button>
+
+                  <a
+                    href={renderedMotionVideo.videoUrl}
+                    download="3d_motion_scene.mp4"
+                    className="py-2.5 px-3 rounded-xl bg-[#242424] hover:bg-[#323238] text-white text-xs font-semibold flex items-center justify-center gap-1 transition"
+                    title="Download MP4 video"
+                  >
+                    <Download className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* TAB 1: CATALOG GRID */}
         {activeTab === 'catalog' && (
           <div>
@@ -596,6 +995,21 @@ export const Visuals3DPane: React.FC<Visuals3DPaneProps> = ({
                                 title="Add to video timeline track"
                               >
                                 <Plus className="w-3.5 h-3.5" /> Timeline
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCustomModelUrl(item.assetUrl);
+                                  setPropType('custom_glb');
+                                  setActiveTab('creator');
+                                  toast.success(`Selected "${item.title}" for 3D Motion Studio!`);
+                                }}
+                                className="p-1.5 rounded-lg bg-purple-600/40 hover:bg-purple-600 text-purple-200 hover:text-white transition border border-purple-500/40 cursor-pointer"
+                                title="Animate in 3D Motion Studio"
+                              >
+                                <Clapperboard className="w-3.5 h-3.5" />
                               </button>
 
                               <button

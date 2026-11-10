@@ -180,6 +180,7 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
     default3DEngine: 'blender_hybrid',
     default3DProvider: 'roblox_creator_store',
     categories: [
+      { value: 'Surreal Lore & Sky Myths (Volze Style)', label: '🕳️ Surreal Lore & Sky Myths (Volze Style)' },
       { value: 'Roblox Creepypasta & Myths', label: '👻 Roblox Creepypasta & Myths' },
       { value: 'Roblox POV Drama & Betrayal', label: '🎭 Roblox POV Drama & Betrayal' },
       { value: 'Impossible 999-Stage Obby Challenge', label: '🏃 Impossible 999-Stage Obby Challenge' },
@@ -187,13 +188,19 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
       { value: 'Murder Mystery 2 Mindgames', label: '🕵️ Murder Mystery 2 Mindgames' },
     ],
     quickPromptChips: [
+      'Every 10 Years, The Sky Gives Back...',
       'Never Play Brookhaven at 3:00 AM Alone...',
+      'The Day Gravity Flipped for 60 Seconds...',
+      'Every 10 Years, The Ocean Splits Open...',
       'The Day My Best Friend Scammed My Dream Pet in Adopt Me',
-      'I Survived the World\'s Most Impossible 999-Stage Obby',
-      'He Laughed at My Noob Avatar in Blox Fruits Until...',
       'The Legend of the Abandoned Roblox Server',
     ],
     sampleStoryPrompts: [
+      {
+        title: '🕳️ Every 10 Years, The Sky Gives Back',
+        badge: 'Volze Viral Lore',
+        prompt: 'Every ten years, a glowing black hole opens in the sky above our town, and it rains down everything humanity has lost over the past decade. Car keys, wedding rings, old letters, and childhood memories tumble down from the clouds like a cosmic storm. But there is one rule everyone whispers: whatever hits the ground and isn\'t claimed before sunset gets sucked back into the void forever. Today, I looked up and saw a handwritten letter falling straight toward me...',
+      },
       {
         title: '👻 Brookhaven 3AM Ghost',
         badge: 'Creepypasta',

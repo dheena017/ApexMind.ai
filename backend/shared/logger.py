@@ -345,8 +345,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         m_color = method_colors.get(method, Colors.WHITE)
 
         is_poll = (
-            path in ("/api/health", "/api/settings/gemini", "/api/notifications")
-            or (path == "/api/notifications/manage" and request.query_params.get("action") == "unread_count")
+            path in ("/", "/api", "/api/", "/api/health", "/api/settings/gemini", "/api/notifications")
+            or request.query_params.get("action") == "unread_count"
         )
 
         query_str = str(request.url.query)

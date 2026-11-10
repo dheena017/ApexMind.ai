@@ -5,7 +5,10 @@ Exports modular 3D search, provider health status, Blender render execution,
 and the studio 3D APIRouter.
 """
 
-from .router import router as visuals_3d_router
+try:
+    from .router import router as visuals_3d_router
+except ImportError:
+    visuals_3d_router = None
 from .service import (
     get_available_3d_providers,
     search_3d_assets,

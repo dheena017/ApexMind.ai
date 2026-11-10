@@ -216,10 +216,32 @@ export const visuals3dApi = {
 
   async renderBlenderHybrid(payload: {
     sceneId?: string;
+    prompt?: string;
+    query?: string;
+    scenePrompt3D?: string;
+    cameraMotion?: string;
+    character?: {
+      archetype?: string;
+      name?: string;
+      motion?: string;
+      outfitColorHex?: string;
+      modelUrl?: string;
+    };
+    objects?: Array<{
+      type?: string;
+      name?: string;
+      motion?: string;
+      modelUrl?: string;
+    }>;
+    environment?: {
+      theme?: string;
+      atmosphere?: string;
+    };
     durationSeconds?: number;
     aspectRatio?: string;
     shadingStyle?: string;
     subtitles?: { text: string };
+    animateMotion?: boolean;
   }): Promise<RenderResultResponse> {
     const res = await fetch(`${BASE_URL}/render/blender-hybrid`, {
       method: 'POST',
@@ -227,6 +249,45 @@ export const visuals3dApi = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`Render Blender hybrid failed: ${res.statusText}`);
+    return res.json();
+  },
+
+  async renderBlenderFull(payload: {
+    sceneId?: string;
+    prompt?: string;
+    query?: string;
+    scenePrompt3D?: string;
+    cameraMotion?: string;
+    character?: {
+      archetype?: string;
+      name?: string;
+      motion?: string;
+      outfitColorHex?: string;
+      modelUrl?: string;
+    };
+    objects?: Array<{
+      type?: string;
+      name?: string;
+      motion?: string;
+      modelUrl?: string;
+    }>;
+    environment?: {
+      theme?: string;
+      atmosphere?: string;
+    };
+    durationSeconds?: number;
+    fps?: number;
+    aspectRatio?: string;
+    shadingStyle?: string;
+    subtitles?: { text: string };
+    animateMotion?: boolean;
+  }): Promise<RenderResultResponse> {
+    const res = await fetch(`${BASE_URL}/render/blender-full`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`Render Blender full CGI sequence failed: ${res.statusText}`);
     return res.json();
   },
 

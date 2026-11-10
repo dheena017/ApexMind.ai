@@ -108,10 +108,10 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
               onError?.('Channel connected, but no channel profile returned.');
               onLoading?.(false);
             } catch (apiErr: any) {
-              console.warn('[YouTube] Offline code exchange failed, falling back to direct token authentication:', apiErr);
-              // Automatic resilient fallback: if backend cannot exchange offline code (e.g. Render missing GOOGLE_CLIENT_SECRET or redirect_uri mismatch),
-              // seamlessly switch to direct token flow so the user is never blocked.
-              runTokenClientFlow();
+              console.error('[YouTube] Offline code exchange failed:', apiErr);
+              onLoading?.(false);
+              const errMsg = apiErr.message || 'Failed to connect YouTube channel';
+              onError?.(errMsg);
             }
           },
         });

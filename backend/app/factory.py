@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database.schema import init_db
@@ -87,6 +87,32 @@ def create_app() -> FastAPI:
     app.include_router(social_platform_router)
     app.include_router(notifications_router)
     app.include_router(settings_router)
+
+    @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+    def root_ping():
+        """Render deployment and uptime ping endpoint."""
+        return {
+            "status": "online",
+            "name": "ApexMind Studio AI API",
+            "version": "2.0.0",
+            "docs": "/api/docs",
+            "health": "/api/health",
+        }
+
+    @app.api_route("/api", methods=["GET", "POST", "HEAD"], include_in_schema=False)
+    @app.api_route("/api/", methods=["GET", "POST", "HEAD"], include_in_schema=False)
+    async def api_root(request: Request):
+        """API base router fallback & poller router."""
+        action = request.query_params.get("action")
+        if action == "unread_count":
+            from backend.features.notifications.service import get_unread_count
+            category = request.query_params.get("category")
+            return get_unread_count(category=category)
+        return {
+            "status": "online",
+            "api": "ApexMind Studio AI API v2.0",
+            "endpoints": "/api/docs",
+        }
 
     @app.get(
         "/api/health",

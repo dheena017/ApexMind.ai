@@ -105,7 +105,10 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip Gemini voiceover synthesis",
     )
-    return parser.parse_args()
+    raw_args = sys.argv[1:]
+    if "--" in raw_args:
+        raw_args = raw_args[raw_args.index("--") + 1:]
+    return parser.parse_args(raw_args)
 
 
 def synthesize_voice_track(full_script: str, voice_name: str, out_wav_path: Path) -> bool:
@@ -175,12 +178,26 @@ def main() -> int:
 
     # 2. Render each 3D Scene
     print(f"\n{Ansi.CYAN}[Stage 2/3]{Ansi.RESET} Rendering {len(storyboard)} 3D visual scenes using engine '{engine_name}'...")
-    from backend.features.workspace.visuals_3d.engines import get_engine
+    try:
+        from backend.features.workspace.visuals_3d.engines.blender_hybrid_engine import BlenderHybrid3DEngine
+        from backend.features.workspace.visuals_3d.engines.blender_full_engine import BlenderFull3DEngine
+        from backend.features.workspace.visuals_3d.engines.motion_loops_engine import MotionLoops3DEngine
+        from backend.features.workspace.visuals_3d.engines.webgl_engine import WebGLEngine
+        _local_engines = {
+            "blender_hybrid": BlenderHybrid3DEngine(),
+            "blender_full": BlenderFull3DEngine(),
+            "motion_loop": MotionLoops3DEngine(),
+            "webgl": WebGLEngine(),
+        }
+        engine = _local_engines.get(engine_name.lower().strip())
+    except Exception as eng_import_err:
+        from backend.features.workspace.visuals_3d.engines.blender_hybrid_engine import BlenderHybrid3DEngine
+        engine = BlenderHybrid3DEngine()
 
-    engine = get_engine(engine_name)
     if not engine or not engine.is_available():
-        print(f"  {Ansi.YELLOW}[Notice]{Ansi.RESET} Engine '{engine_name}' not available, falling back to 'motion_loop'")
-        engine = get_engine("motion_loop")
+        print(f"  {Ansi.YELLOW}[Notice]{Ansi.RESET} Engine '{engine_name}' not available, using 'blender_hybrid'")
+        from backend.features.workspace.visuals_3d.engines.blender_hybrid_engine import BlenderHybrid3DEngine
+        engine = BlenderHybrid3DEngine()
 
     rendered_scene_paths: list[Path] = []
     t_start = time.time()
@@ -198,12 +215,19 @@ def main() -> int:
         if scene_prompt:
             print(f"    Camera/Dir:  {Ansi.GRAY}{scene_prompt[:90]}...{Ansi.RESET}")
 
+        camera_motion = sc.get("cameraMotion", "")
+        genre = data.get("genre", "roblox_story")
         sc_payload = {
             "sceneId": f"scene_{sc_num}_{int(time.time())}",
+            "sceneNumber": sc_num,
             "query": visual_query,
+            "scenePrompt3D": scene_prompt,
+            "cameraMotion": camera_motion,
+            "topic": title,
+            "genre": genre,
             "durationSeconds": dur,
             "aspectRatio": "9:16",
-            "shadingStyle": "nebula",
+            "shadingStyle": "card_object_cloud",
             "subtitles": {
                 "text": sub_text,
                 "preset": "sub-hormozi",

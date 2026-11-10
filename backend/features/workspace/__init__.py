@@ -2,6 +2,9 @@
 backend/features/workspace/__init__.py
 """
 
-from .router import router
+try:
+    from .router import router
+except ImportError:
+    router = None
 
 __all__ = ["router"]

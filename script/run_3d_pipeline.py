@@ -69,13 +69,14 @@ class Ansi:
 
 SAMPLE_PROMPTS = {
     "roblox_story": {
-        "category": "Roblox Creepypasta & Myths",
-        "topic": "Brookhaven 3AM Ghost",
+        "category": "Surreal Lore & Sky Myths (Volze Style)",
+        "topic": "Every 10 Years, The Sky Gives Back",
         "prompt": (
-            "My friend Alex and I joined an empty Brookhaven server at 3:00 AM. "
-            "We saw a glitching avatar named 'Null' standing outside the hospital window with glowing red eyes. "
-            "When we tried to reset our characters, the escape menu locked and our chat filled with red letters "
-            "spelling my real name. We hid inside the secret basement under the church, but the footsteps kept getting closer."
+            "Every ten years, a massive glowing black hole opens in the sky above our town, and it rains down "
+            "everything humanity has lost over the past decade. Car keys, wedding rings, old letters, and childhood memories "
+            "tumble down from the clouds like a cosmic storm. But there is one rule everyone whispers: whatever hits the "
+            "ground and isn't claimed before sunset gets sucked back into the void forever. Today, I looked up and saw a "
+            "handwritten letter falling straight toward me..."
         ),
         "engine": "blender_hybrid",
         "provider": "roblox_creator_store",
@@ -195,7 +196,10 @@ Examples:
         default="backend/data/rendered_shorts/cli_3d_pipeline_output.json",
         help="File path to save the generated JSON script & storyboard",
     )
-    return parser.parse_args()
+    raw_args = sys.argv[1:]
+    if "--" in raw_args:
+        raw_args = raw_args[raw_args.index("--") + 1:]
+    return parser.parse_args(raw_args)
 
 
 def main() -> int:
@@ -298,7 +302,12 @@ def main() -> int:
             hero_scene = storyboard[0] if storyboard else {}
             render_payload = {
                 "sceneId": f"cli_{int(time.time())}",
+                "sceneNumber": 1,
                 "query": hero_scene.get("visualQuery") or topic,
+                "scenePrompt3D": hero_scene.get("scenePrompt3D", ""),
+                "cameraMotion": hero_scene.get("cameraMotion", ""),
+                "topic": topic,
+                "genre": args.genre,
                 "durationSeconds": float(hero_scene.get("duration", 3.0)),
                 "aspectRatio": "9:16",
                 "shadingStyle": "nebula",
