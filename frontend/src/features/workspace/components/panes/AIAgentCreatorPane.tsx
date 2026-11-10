@@ -289,7 +289,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         {activeTab === 'prompt' && (
           <div className="space-y-4">
             {/* Prompt Textarea */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
                 <span className="text-[#9CA3AF] font-semibold tracking-wider">TOPIC</span>
                 <span className="text-zinc-500 text-[10px]">What should this video be about?</span>
@@ -300,14 +300,14 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                   value={agentPrompt}
                   onChange={(e) => onPromptChange(e.target.value)}
                   placeholder="Enter the core idea, message, or story for this video..."
-                  rows={4}
-                  className="w-full bg-[#16161A] border border-[#27272A] rounded-xl p-3 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#2563EB] transition-all resize-none leading-relaxed shadow-inner"
+                  rows={2}
+                  className="w-full bg-[#16161A] border border-[#27272A] rounded-lg px-2.5 py-1.5 pr-7 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#2563EB] transition-all resize-none leading-normal shadow-inner"
                 />
                 {agentPrompt.trim().length > 0 && (
                   <button
                     type="button"
                     onClick={() => onPromptChange('')}
-                    className="absolute top-2.5 right-2.5 p-1 rounded-md text-zinc-500 hover:text-white hover:bg-[#202026] transition-colors cursor-pointer"
+                    className="absolute top-1.5 right-1.5 p-1 rounded-md text-zinc-500 hover:text-white hover:bg-[#202026] transition-colors cursor-pointer"
                     title="Clear prompt"
                   >
                     <X className="w-3 h-3" />
