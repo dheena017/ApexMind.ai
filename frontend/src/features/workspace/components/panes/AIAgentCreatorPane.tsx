@@ -353,41 +353,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               </div>
             </div>
 
-            {/* Aspect Ratio Selector */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
-                <Smartphone className="w-3 h-3 text-[#3B82F6]" />
-                <span>Format</span>
-              </label>
-              <CustomSelect
-                options={ASPECT_RATIO_OPTIONS.map((item) => ({
-                  value: item.value,
-                  label: item.label,
-                  description: item.res,
-                  badge: item.desc.split('/')[0].trim(),
-                  icon: <item.icon className="w-3.5 h-3.5" />,
-                }))}
-                value={aspectRatio}
-                onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
-                className="w-full"
-                buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
-              />
-            </div>
-
-            {/* Category / Niche Selection */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] tracking-wider font-semibold">
-                Niche
-              </label>
-              <CustomSelect
-                options={CATEGORY_OPTIONS}
-                value={category}
-                onChange={onCategoryChange}
-                className="w-full text-xs"
-              />
-            </div>
-
-            {/* ── Pacing & Model Configuration Card ── */}
+            {/* ── Pacing & Model Configuration Card (Creative Controls) ── */}
             <div className="bg-[#141418] border border-[#24242A] rounded-2xl p-3.5 space-y-3.5 shadow-sm">
               <div className="flex items-center justify-between pb-2 border-b border-[#24242A]">
                 <div className="flex items-center gap-2">
@@ -399,9 +365,45 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 </span>
               </div>
 
+              {/* Aspect Ratio Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
+                  <Smartphone className="w-3 h-3 text-[#3B82F6]" />
+                  <span>Format</span>
+                </label>
+                <CustomSelect
+                  options={ASPECT_RATIO_OPTIONS.map((item) => ({
+                    value: item.value,
+                    label: item.label,
+                    description: item.res,
+                    badge: item.desc.split('/')[0].trim(),
+                    icon: <item.icon className="w-3.5 h-3.5" />,
+                  }))}
+                  value={aspectRatio}
+                  onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
+                  className="w-full"
+                  buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                />
+              </div>
+
+              {/* Category / Niche Selection */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
+                  <Compass className="w-3 h-3 text-[#3B82F6]" />
+                  <span>Niche</span>
+                </label>
+                <CustomSelect
+                  options={CATEGORY_OPTIONS}
+                  value={category}
+                  onChange={onCategoryChange}
+                  className="w-full text-xs"
+                  buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                />
+              </div>
+
               {/* AI Model Selector */}
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold">
+                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
                   <Cpu className="w-3 h-3 text-[#3B82F6]" />
                   <span>Model</span>
                 </label>
@@ -411,6 +413,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                   onChange={(val) => onModelChange?.(val)}
                   disabled={modelsLoading || scriptModels.length === 0}
                   className="w-full text-xs"
+                  buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
                 />
                 {!modelsLoading && !modelsError && scriptModels.length > 0 && !currentModel && (
                   <p className="mt-1 text-[10px] text-[#737373]">Default: {defaultModel || DEFAULT_SCRIPT_MODEL_LABEL}</p>
