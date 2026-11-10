@@ -136,6 +136,8 @@ def _generate_script_with_fallback(
         if alt not in models_to_try and not is_unwanted_model(alt):
             models_to_try.append(alt)
 
+    models_to_try = models_to_try[:3]
+
     if not models_to_try:
         models_to_try = [resolve_script_model()]
 
@@ -959,9 +961,33 @@ Output MUST be a single raw JSON object matching this exact schema:
         target_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
         scenes_data = []
 
+        # Consolidate micro-subtitles into 4-8 cinematic visual scene beats (3.0s - 5.0s each)
+        visual_beats: list[dict[str, Any]] = []
+        cur_beat_text: list[str] = []
+        cur_beat_dur = 0.0
+        cur_beat_start = 0.0
+
+        for idx, s in enumerate(subtitles):
+            if not cur_beat_text:
+                cur_beat_start = float(s.get("startTime", 0.0))
+            cur_beat_text.append(str(s.get("text", "")).strip())
+            cur_beat_dur += float(s.get("duration", 2.0))
+            if cur_beat_dur >= 3.2 or idx == len(subtitles) - 1 or len(visual_beats) >= 7:
+                visual_beats.append({
+                    "beatIndex": len(visual_beats) + 1,
+                    "startTime": cur_beat_start,
+                    "duration": round(cur_beat_dur, 2),
+                    "text": " ".join(cur_beat_text).strip(),
+                })
+                cur_beat_text = []
+                cur_beat_dur = 0.0
+
+        if not visual_beats:
+            visual_beats = [{"beatIndex": 1, "startTime": 0.0, "duration": 4.0, "text": "Hook visual intro"}]
+
         sub_prompts = "\n".join([
-            f"Scene {s.get('lineIndex') or idx+1} ({s.get('duration')}s): \"{s.get('text')}\""
-            for idx, s in enumerate(subtitles)
+            f"Scene {b['beatIndex']} ({b['duration']}s): \"{b['text']}\""
+            for b in visual_beats
         ])
 
         user_dir = f'USER STORY / SCENE DIRECTION: "{user_visual_prompt}"\n' if user_visual_prompt else ""
@@ -1027,9 +1053,9 @@ Output MUST be a single raw JSON object matching this schema:
         ai_scenes = parsed.get("scenes", []) if (parsed and isinstance(parsed, dict)) else []
         ai_scene_map = {s.get("sceneNumber"): s for s in ai_scenes}
 
-        for idx, sub in enumerate(subtitles):
-            sc_num = sub.get("lineIndex") or idx + 1
-            ai_sc = ai_scene_map.get(sc_num, {})
+        for b_idx, beat in enumerate(visual_beats):
+            sc_num = beat["beatIndex"]
+            ai_sc = ai_scene_map.get(sc_num) or (ai_scenes[b_idx] if b_idx < len(ai_scenes) else {})
 
             if genre_id == "roblox_story":
                 default_theme = "roblox 3d game environment dark mystery"
@@ -1038,7 +1064,7 @@ Output MUST be a single raw JSON object matching this schema:
             else:
                 default_theme = f"cinematic {visual_theme.lower()} landscape"
 
-            raw_query = ai_sc.get("searchQuery") or ai_sc.get("visual3DQuery") or f"{default_theme} {sub.get('text', '')}"
+            raw_query = ai_sc.get("searchQuery") or ai_sc.get("visual3DQuery") or f"{default_theme} {beat.get('text', '')}"
             clean_query = sanitize_faceless_query(raw_query, fallback_theme=default_theme)
             
             raw_fallbacks = ai_sc.get("fallbackQueries") or [f"atmospheric {default_theme} b-roll"]
@@ -1046,10 +1072,10 @@ Output MUST be a single raw JSON object matching this schema:
 
             scenes_data.append({
                 "sceneNumber": sc_num,
-                "startTime": float(sub.get("startTime", 0.0)),
-                "duration": float(sub.get("duration", 2.0)),
+                "startTime": float(beat.get("startTime", 0.0)),
+                "duration": float(beat.get("duration", 3.5)),
                 "mediaType": "3d_visual",
-                "subtitleText": sub.get("text", ""),
+                "subtitleText": beat.get("text", ""),
                 "searchQuery": clean_query,
                 "visualQuery": ai_sc.get("visual3DQuery") or clean_query,
                 "scenePrompt3D": ai_sc.get("scenePrompt3D") or f"3D camera motion '{ai_sc.get('cameraMotion') or motion_style}' framing {clean_query}",
@@ -1058,7 +1084,7 @@ Output MUST be a single raw JSON object matching this schema:
                 "fallbackQueries": clean_fallbacks,
                 "negativeTerms": ai_sc.get("negativeTerms") or ["face", "human face", "portrait", "talking head"],
                 "cameraMotion": ai_sc.get("cameraMotion") or motion_style,
-                "transition": ai_sc.get("transition") or ("glitch" if idx == 0 else "cut"),
+                "transition": ai_sc.get("transition") or ("glitch" if b_idx == 0 else "cut"),
                 "mediaStatus": "unresolved",
             })
 

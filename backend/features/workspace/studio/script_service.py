@@ -387,7 +387,11 @@ def orchestrate_stage1_script(
         f"genre='{genre_def.id}' category='{category}' topic='{effective_topic}' model={effective_model} target={target_seconds}s"
     )
 
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
     # 1. Execute Small API 1.1: Script Content & Hooks
+    t1 = time.perf_counter()
     content = generate_script_content(
         category=category,
         topic=effective_topic,
@@ -398,8 +402,10 @@ def orchestrate_stage1_script(
         genre=genre,
     )
     full_script = content["fullScript"]
+    logger.info(f"[Studio/Stage1] Step 1.1 Complete in {time.perf_counter() - t1:.2f}s | words={content['totalWords']}")
 
     # 2. Execute Small API 1.2: Subtitles Slicing
+    t2 = time.perf_counter()
     subs_result = generate_script_subtitles(
         full_script=full_script,
         target_duration_seconds=target_seconds,
@@ -408,29 +414,45 @@ def orchestrate_stage1_script(
         model=effective_model,
     )
     subtitles = subs_result["subtitles"]
+    logger.info(f"[Studio/Stage1] Step 1.2 Subtitles ready in {time.perf_counter() - t2:.2f}s | cues={len(subtitles)}")
 
-    # 3. Execute Small API 1.3: Visual Scenes (Video or Image)
-    if video_style == "image":
-        scenes_result = generate_image_scenes(
-            subtitles=subtitles,
-            aspect_ratio=aspect_ratio or "9:16",
-            user_visual_prompt=user_prompt,
+    # 3 & 5. Execute Small API 1.3 (Visual Scenes) and Small API 1.5 (Viral Metadata) in parallel
+    logger.info("[Studio/Stage1] Executing Step 1.3 (Visual Scenes) and Step 1.5 (Metadata) concurrently...")
+    t3 = time.perf_counter()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        if video_style == "image":
+            future_scenes = executor.submit(
+                generate_image_scenes,
+                subtitles=subtitles,
+                aspect_ratio=aspect_ratio or "9:16",
+                user_visual_prompt=user_prompt,
+                model=effective_model,
+            )
+        else:
+            future_scenes = executor.submit(
+                generate_video_scenes,
+                subtitles=subtitles,
+                visual_theme=visual_theme or background_style or backdrop_id or "Cinematic Dark Architecture",
+                motion_style=motion_style or "slow push in",
+                aspect_ratio=aspect_ratio or "9:16",
+                user_visual_prompt=user_prompt,
+                model=effective_model,
+                genre=genre,
+                suggested_3d_provider=suggested_3d_provider,
+                render_3d_engine=render_3d_engine,
+            )
+        future_metadata = executor.submit(
+            generate_video_metadata,
+            category=category,
+            topic=effective_topic,
+            full_script=full_script,
             model=effective_model,
         )
-        storyboard = scenes_result["frames"]
-    else:
-        scenes_result = generate_video_scenes(
-            subtitles=subtitles,
-            visual_theme=visual_theme or background_style or backdrop_id or "Cinematic Dark Architecture",
-            motion_style=motion_style or "slow push in",
-            aspect_ratio=aspect_ratio or "9:16",
-            user_visual_prompt=user_prompt,
-            model=effective_model,
-            genre=genre,
-            suggested_3d_provider=suggested_3d_provider,
-            render_3d_engine=render_3d_engine,
-        )
-        storyboard = scenes_result["scenes"]
+
+        scenes_result = future_scenes.result()
+        metadata = future_metadata.result()
+        storyboard = scenes_result.get("frames" if video_style == "image" else "scenes", [])
+    logger.info(f"[Studio/Stage1] Parallel Steps 1.3 & 1.5 Complete in {time.perf_counter() - t3:.2f}s | scenes={len(storyboard)}")
 
     # 4. Execute Small API 1.4: Dynamic Sound Design
     scene_timestamps = [s.get("startTime", 0.0) for s in storyboard]
@@ -443,14 +465,6 @@ def orchestrate_stage1_script(
         model=effective_model,
     )
 
-    # 5. Execute Small API 1.5: Video Metadata & Viral SEO
-    metadata = generate_video_metadata(
-        category=category,
-        topic=effective_topic,
-        full_script=full_script,
-        model=effective_model,
-    )
-
     raw_titles = metadata.get("titleList") or metadata.get("titles") or []
     if raw_titles:
         first_t = raw_titles[0]
@@ -459,7 +473,7 @@ def orchestrate_stage1_script(
         title = f"Master Your {category}"
 
     logger.info(
-        f"[Studio/Stage1] Stage 1 Orchestration complete | title='{title}' "
+        f"[Studio/Stage1] Stage 1 Orchestration complete in {time.perf_counter() - t1:.2f}s total | title='{title}' "
         f"scenes={len(storyboard)} words={content['totalWords']}"
     )
 
