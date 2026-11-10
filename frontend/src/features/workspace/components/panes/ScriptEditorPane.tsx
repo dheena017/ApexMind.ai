@@ -692,24 +692,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               </div>
             )}
 
-            {/* Sync to Subtitles Banner */}
-            <div className="p-3 rounded-xl bg-[#141418] border border-[#24242A] flex items-center justify-between gap-3 shadow-xs">
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-white">Sync Script to Timeline Cues</div>
-                <div className="text-[10px] text-[#9CA3AF]">Convert hook, body, and CTA into short-form subtitle timings.</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  handleGenerateCuesFromScript();
-                  setActiveTab('subtitles');
-                }}
-                className="px-3 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-semibold transition-colors cursor-pointer shrink-0 shadow-xs flex items-center gap-1.5"
-              >
-                <span>Sync to Cues</span>
-                <ArrowLeftRight className="w-3 h-3" />
-              </button>
-            </div>
+
           </div>
         )}
 
