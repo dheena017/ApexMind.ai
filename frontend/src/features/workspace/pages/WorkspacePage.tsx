@@ -31,7 +31,7 @@ import { DEFAULT_CREATOR_PROFILE, getCreatorProfile } from '@/src/features/profi
 import { addWorkspaceNotification } from '../utils/workspaceNotificationManager';
 import { getQueryParams, updateUrlQuery } from '@/src/app/routes';
 import { DEFAULT_SCRIPT_MODEL } from '@/src/shared/aiModels';
-import { getGenreConfig } from '../genreConfigs';
+import { getGenreConfig, HIDE_3D_VISUALS } from '../genreConfigs';
 
 interface WorkspacePageProps {
   onNavigate: (page: string) => void;
@@ -362,6 +362,12 @@ export default function WorkspacePage({
 
   const [voiceTrackMuted, setVoiceTrackMuted] = useState(false);
   const [musicTrackMuted, setMusicTrackMuted] = useState(false);
+
+  useEffect(() => {
+    if (HIDE_3D_VISUALS && activePane === '3d-visuals') {
+      onPaneChange('script');
+    }
+  }, [activePane, onPaneChange]);
 
   useEffect(() => {
     const handleTimelineState = (e: Event) => {
@@ -2033,6 +2039,7 @@ export default function WorkspacePage({
                 onSeek={handleSeek}
                 timelineDuration={timelineDuration || duration || 30}
                 onSearch3DVisuals={(query, provider) => {
+                  if (HIDE_3D_VISUALS) return;
                   setVisuals3DSearchQuery(query);
                   if (provider) setVisuals3DProvider(provider);
                   onPaneChange?.('3d-visuals');
@@ -2378,7 +2385,7 @@ export default function WorkspacePage({
                 activeVideoUrl={customBackdropVideo}
                 onSwitchToImages={() => onPaneChange?.('image')}
               />
-            ) : activePane === '3d-visuals' ? (
+            ) : (!HIDE_3D_VISUALS && activePane === '3d-visuals') ? (
               <Visuals3DPane
                 initialQuery={visuals3DSearchQuery}
                 initialProvider={visuals3DProvider}

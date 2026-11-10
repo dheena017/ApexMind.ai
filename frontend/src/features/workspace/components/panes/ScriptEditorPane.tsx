@@ -27,6 +27,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { GeneratedScript, ScriptSubtitle, HookOption } from '../../types';
+import { HIDE_3D_VISUALS } from '../../genreConfigs';
 
 export interface ScriptEditorPaneProps {
   script: GeneratedScript;
@@ -381,7 +382,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
           </span>
         </div>
 
-        {script.suggested3DProvider && onSearch3DVisuals && (
+        {!HIDE_3D_VISUALS && script.suggested3DProvider && onSearch3DVisuals && (
           <button
             type="button"
             onClick={() => onSearch3DVisuals('', script.suggested3DProvider)}
@@ -437,7 +438,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                {onSearch3DVisuals && (
+                {!HIDE_3D_VISUALS && onSearch3DVisuals && (
                   <button
                     type="button"
                     onClick={() =>
@@ -567,14 +568,14 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                         />
                       </div>
 
-                      {/* 3D Visual Footage Metaphor & 1-Click Search Button */}
+                      {/* Visual Footage Directive */}
                       <div className="p-2.5 rounded-xl bg-[#18181C] border border-[#27272A] space-y-2">
                         <div className="flex items-center justify-between text-[10px] font-mono-studio">
                           <span className="text-[#9CA3AF] uppercase font-semibold flex items-center gap-1.5">
-                            <Box className="w-3 h-3 text-[#3B82F6]" />
-                            <span>3D Visual Asset Directive</span>
+                            <Film className="w-3 h-3 text-[#3B82F6]" />
+                            <span>{!HIDE_3D_VISUALS ? '3D Visual Asset Directive' : 'Visual Footage Directive'}</span>
                           </span>
-                          {onSearch3DVisuals && (
+                          {!HIDE_3D_VISUALS && onSearch3DVisuals && (
                             <button
                               type="button"
                               onClick={() => {
@@ -595,10 +596,10 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
                         </div>
 
                         <div className="text-[11px] text-zinc-200 leading-relaxed break-words font-mono bg-[#141418] p-2 rounded-lg border border-[#24242A]">
-                          {visualPrompt || 'Cinematic 3D visual backdrop'}
+                          {visualPrompt || 'Cinematic visual backdrop'}
                         </div>
 
-                        {sc.scenePrompt3D && (
+                        {!HIDE_3D_VISUALS && sc.scenePrompt3D && (
                           <div className="text-[10.5px] text-[#93C5FD] font-mono bg-[#1E2538]/60 p-2 rounded-lg border border-[#3B82F6]/30 flex items-start gap-1.5">
                             <Sparkles className="w-3 h-3 text-[#60A5FA] shrink-0 mt-0.5" />
                             <div className="leading-snug">
@@ -613,13 +614,13 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
 
                       {/* Cinematic & Audio Tags Footer */}
                       <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-mono pt-1">
-                        {(sc.render3DEngine || script.render3DEngine) && (
+                        {!HIDE_3D_VISUALS && (sc.render3DEngine || script.render3DEngine) && (
                           <span className="px-2 py-0.5 rounded-md bg-[#18181C] border border-[#27272A] text-blue-400 flex items-center gap-1">
                             <Boxes className="w-2.5 h-2.5" />
                             <span>Engine: {sc.render3DEngine || script.render3DEngine}</span>
                           </span>
                         )}
-                        {(sc.suggested3DProvider || script.suggested3DProvider) && (
+                        {!HIDE_3D_VISUALS && (sc.suggested3DProvider || script.suggested3DProvider) && (
                           <span className="px-2 py-0.5 rounded-md bg-[#18181C] border border-[#27272A] text-purple-400 flex items-center gap-1">
                             <Layers className="w-2.5 h-2.5" />
                             <span>Catalog: {sc.suggested3DProvider || script.suggested3DProvider}</span>

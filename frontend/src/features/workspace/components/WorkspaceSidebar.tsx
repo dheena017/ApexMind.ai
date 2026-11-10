@@ -32,6 +32,8 @@ export type WorkspaceTabType =
   | 'captions'
   | 'publish';
 
+import { HIDE_3D_VISUALS } from '../genreConfigs';
+
 export interface WorkspaceSidebarProps {
   activeTab: WorkspaceTabType;
   onTabChange: (tab: WorkspaceTabType) => void;
@@ -39,7 +41,7 @@ export interface WorkspaceSidebarProps {
   mode?: 'all' | 'desktop-only' | 'mobile-only';
 }
 
-export const WORKSPACE_SIDEBAR_ITEMS: Array<{
+const ALL_WORKSPACE_SIDEBAR_ITEMS: Array<{
   id: WorkspaceTabType;
   label: string;
   shortLabel: string;
@@ -58,6 +60,10 @@ export const WORKSPACE_SIDEBAR_ITEMS: Array<{
   { id: 'youtube', label: 'YouTube Studio', shortLabel: 'YouTube', icon: Youtube },
   { id: 'automations', label: 'Daily Automations', shortLabel: 'Auto', icon: CalendarClock },
 ];
+
+export const WORKSPACE_SIDEBAR_ITEMS = HIDE_3D_VISUALS
+  ? ALL_WORKSPACE_SIDEBAR_ITEMS.filter((item) => item.id !== '3d-visuals')
+  : ALL_WORKSPACE_SIDEBAR_ITEMS;
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   activeTab,

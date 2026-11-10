@@ -7,6 +7,12 @@
  * only requires appending an entry to `GENRE_CONFIGS`.
  */
 
+/**
+ * Temporary feature flag to hide all 3D visual studio & asset elements across the UI.
+ * Set to false when ready to unhide.
+ */
+export const HIDE_3D_VISUALS = true;
+
 export interface GenreCategoryOption {
   value: string;
   label: string;
@@ -122,7 +128,7 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
     label: 'Motivation & Mindset',
     icon: '🔥',
     badgeText: 'Stoic & Discipline',
-    tagline: 'Deep psychological pattern interrupts, staccato cadence, and faceless 3D cinematic CGI.',
+    tagline: 'Deep psychological pattern interrupts, staccato cadence, and stoic cinematic visuals.',
     accentColor: '#F59E0B',
     defaultTone: 'Aggressive Discipline',
     defaultVoice: 'Fenrir',
@@ -172,7 +178,7 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
     label: 'Roblox Storytelling',
     icon: '🧱',
     badgeText: 'Viral Gaming Drama',
-    tagline: 'First-person Roblox creepypastas, Brookhaven mysteries, trading scam drama, and impossible obbies.',
+    tagline: 'First-person creepypastas, Brookhaven mysteries, trading drama, and obby lore.',
     accentColor: '#06B6D4',
     defaultTone: 'Cinematic Storyteller',
     defaultVoice: 'Puck',
@@ -241,14 +247,14 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
       { value: 'Emoji & Symbol Odd One Out', label: '🧩 Emoji & Symbol Odd One Out' },
       { value: 'Roblox Avatar Spot the Difference', label: '🧱 Roblox Avatar Spot the Difference' },
       { value: 'Optical Illusion & IQ Test', label: '🧠 Optical Illusion & IQ Test' },
-      { value: 'Real vs Fake 3D Object', label: '🔍 Real vs Fake 3D Object' },
+      { value: 'Real vs Fake Object', label: '🔍 Real vs Fake Object' },
       { value: '5-Second Impossible Eyes Test', label: '⏱️ 5-Second Impossible Eyes Test' },
     ],
     quickPromptChips: [
       'Find the Fake Roblox Avatar in 5 Seconds!',
       'Only 1% Can Spot the Odd Emoji Before the Buzzer',
       'Level 1 Easy, Level 2 Hard, Level 3 Impossible!',
-      'Spot the Difference: Which 3D Item is Glitched?',
+      'Spot the Difference: Which Item is Glitched?',
       'Can You Find the Odd One Out in 5 Seconds?',
     ],
     sampleStoryPrompts: [
@@ -265,7 +271,7 @@ export const GENRE_CONFIGS: Record<string, GenreConfig> = {
       {
         title: '🧩 Valkyrie Feather Imposter',
         badge: 'IQ Test',
-        prompt: 'Display four golden Roblox Valkyrie helms rotating in 3D. Three are authentic high-tier valks, but the fourth has a broken horn feather on the left side. Challenge the viewer with quick visual deduction, count down from 5 to 1 with staccato cues, and reveal the exact difference before time runs out.',
+        prompt: 'Display four golden Roblox Valkyrie helms rotating smoothly on screen. Three are authentic high-tier valks, but the fourth has a broken horn feather on the left side. Challenge the viewer with quick visual deduction, count down from 5 to 1 with staccato cues, and reveal the exact difference before time runs out.',
       },
     ],
     tones: [
