@@ -1121,7 +1121,7 @@ export const ImagePane: React.FC<ImagePaneProps> = ({
             ) : (
               /* Image Grid */
               <div className="flex flex-col gap-3">
-                {selectedProvider !== 'all' && providerStatus[selectedProvider] === false && (
+                {selectedProvider !== 'all' && (providerStatus as Record<string, boolean | undefined>)[selectedProvider] === false && (
                   <div className="px-3 py-2 rounded-xl bg-blue-950/40 border border-blue-500/30 text-blue-200 text-[11px] flex items-center justify-between gap-2 shadow-sm">
                     <span>
                       <strong className="text-white capitalize">{selectedProvider}</strong> API key is not configured in <code>.env</code>. Showing open photos from Unsplash, Wikimedia &amp; Openverse.

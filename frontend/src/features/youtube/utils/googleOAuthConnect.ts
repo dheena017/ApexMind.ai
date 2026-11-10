@@ -29,7 +29,7 @@ export const connectYouTubeWithGoogle = async (options: ConnectOptions = {}): Pr
   if (typeof window !== 'undefined' && window.google?.accounts?.oauth2 && clientId) {
     const runTokenClientFlow = () => {
       try {
-        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
           client_id: clientId,
           scope:
             'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload openid email profile',

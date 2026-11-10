@@ -1478,10 +1478,19 @@ export default function WorkspacePage({
   }, []);
 
   useEffect(() => {
-    if (isDesktop) {
-      document.querySelector<HTMLElement>('.workspace-main-column')?.scrollTo({ left: 0 });
+    const mainCol = document.querySelector<HTMLElement>('.workspace-main-column');
+    if (!mainCol) return;
+    if (mainCol.scrollLeft !== 0) {
+      mainCol.scrollLeft = 0;
     }
-  }, [isDesktop]);
+    const handleScroll = () => {
+      if (mainCol.scrollLeft !== 0) {
+        mainCol.scrollLeft = 0;
+      }
+    };
+    mainCol.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainCol.removeEventListener('scroll', handleScroll);
+  }, [isDesktop, activePane]);
 
 
 

@@ -238,7 +238,7 @@ export default function AppLayout({
           />
 
           {/* Right Main Studio Column: Header at top, Panes in center, Status bar at bottom */}
-          <div className="workspace-main-column flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden">
+          <div className="workspace-main-column flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden overflow-x-hidden">
             {/* Studio Header sits to the right of the full-height left bar */}
             <WorkspaceHeader
               user={user}
@@ -362,8 +362,8 @@ export default function AppLayout({
             )}
 
             {/* Main Studio Body: Docked panes in center */}
-            <main className="workspace-main-content flex-1 min-w-0 min-h-0 p-0 overflow-hidden flex flex-col bg-[#0A0A0A]">
-              <div className="workspace-main-wrapper w-full h-full flex-1 min-h-0">
+            <main className="workspace-main-content flex-1 min-w-0 min-h-0 p-0 overflow-hidden overflow-x-hidden flex flex-col bg-[#0A0A0A]">
+              <div className="workspace-main-wrapper w-full h-full flex-1 min-h-0 overflow-hidden overflow-x-hidden">
                 {children}
               </div>
             </main>

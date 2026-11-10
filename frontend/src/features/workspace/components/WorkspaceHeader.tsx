@@ -312,7 +312,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             type="button"
             onClick={handleExport}
             disabled={exporting || !hasTimelineContent}
-            className={`hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg text-[10.5px] font-semibold transition-all border ${
+            className={`hidden md:flex items-center gap-1.5 h-7.5 px-3 rounded-lg text-[10.5px] font-semibold transition-all border ${
               !hasTimelineContent
                 ? 'bg-[#121212] text-[#52525B] border-[#1F1F1F] cursor-not-allowed'
                 : exporting
@@ -336,7 +336,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('workspace:save-to-library'))}
             disabled={!canPublish}
-            className={`hidden sm:flex items-center gap-1.5 h-7.5 px-3 rounded-lg text-[10.5px] font-semibold transition-all cursor-pointer border ${
+            className={`hidden md:flex items-center gap-1.5 h-7.5 px-3 rounded-lg text-[10.5px] font-semibold transition-all cursor-pointer border ${
               canPublish
                 ? 'bg-[#161616] hover:bg-[#202020] text-[#60A5FA] border-[#2A2A2A] hover:border-[#3B82F6]/40 shadow-xs'
                 : 'bg-[#121212] text-[#52525B] border-[#1F1F1F] cursor-not-allowed'

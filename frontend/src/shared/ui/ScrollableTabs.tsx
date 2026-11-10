@@ -14,6 +14,7 @@ export interface ScrollableTabContainerProps {
   children: React.ReactNode;
   className?: string;
   scrollStep?: number;
+  trackRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 /**
@@ -25,8 +26,10 @@ export const ScrollableTabContainer: React.FC<ScrollableTabContainerProps> = ({
   children,
   className = '',
   scrollStep,
+  trackRef: externalTrackRef,
 }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const internalScrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = externalTrackRef || internalScrollRef;
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -195,21 +198,25 @@ export function ScrollableTabs<T extends string = string>({
   scrollStep,
 }: ScrollableTabsProps<T>) {
   const activeTabRef = useRef<HTMLButtonElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll active tab gracefully to center of viewport
+  // Auto-scroll active tab gracefully inside its track ONLY (never scroll outer layout/page)
   useEffect(() => {
-    if (activeTabRef.current) {
-      activeTabRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
+    const tabEl = activeTabRef.current;
+    const trackEl = trackRef.current;
+    if (tabEl && trackEl) {
+      const tabRect = tabEl.getBoundingClientRect();
+      const trackRect = trackEl.getBoundingClientRect();
+      if (tabRect.left < trackRect.left || tabRect.right > trackRect.right) {
+        const offset = tabRect.left - trackRect.left - trackRect.width / 2 + tabRect.width / 2;
+        trackEl.scrollBy({ left: offset, behavior: 'smooth' });
+      }
     }
   }, [activeTab]);
 
   return (
     <div className={`p-1 ${containerBgClassName} rounded-xl border border-[#242424] min-w-0 relative ${className}`}>
-      <ScrollableTabContainer scrollStep={scrollStep}>
+      <ScrollableTabContainer scrollStep={scrollStep} trackRef={trackRef}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
