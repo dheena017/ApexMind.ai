@@ -114,6 +114,9 @@ export interface StoryboardScene {
   aspectRatio?: string;
   googleSearchQuery?: string;
   visualQuery?: string;
+  scenePrompt3D?: string;
+  render3DEngine?: string;
+  suggested3DProvider?: string;
   fallbackQueries?: string[];
   negativeTerms?: string[];
   words?: WordTimestamp[];
@@ -127,6 +130,7 @@ export interface GeneratedScript {
   userPrompt?: string;
   genre?: string;
   genreLabel?: string;
+  render3DEngine?: string;
   suggested3DProvider?: string;
   description?: string;
   titleIdeas?: { title: string; angle: string; viralityScore: number }[];

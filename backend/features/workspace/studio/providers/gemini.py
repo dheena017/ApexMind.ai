@@ -11,6 +11,11 @@ import logging
 import re
 import time
 from typing import Any, Dict, List, Optional
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="google.genai")
+warnings.filterwarnings("ignore", message=".*automatic function calling.*")
+warnings.filterwarnings("ignore", message=".*AFC.*")
 
 from google.genai import types
 
@@ -148,6 +153,11 @@ def _generate_script_with_fallback(
             if hasattr(types, "ThinkingConfig"):
                 try:
                     gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+                except Exception:
+                    pass
+            if hasattr(types, "AutomaticFunctionCallingConfig"):
+                try:
+                    gen_config["automatic_function_calling"] = types.AutomaticFunctionCallingConfig(disable=True)
                 except Exception:
                     pass
 
@@ -940,9 +950,12 @@ Output MUST be a single raw JSON object matching this exact schema:
         aspect_ratio: str = "9:16",
         user_visual_prompt: Optional[str] = None,
         model: Optional[str] = None,
+        genre: Optional[str] = "motivation",
+        suggested_3d_provider: Optional[str] = None,
+        render_3d_engine: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        """Generates 100% faceless stock video search queries and camera motion for each subtitle cut."""
+        """Generates 3D and stock video scene directives, asset queries, and camera choreography for each subtitle cut."""
         target_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
         scenes_data = []
 
@@ -951,29 +964,55 @@ Output MUST be a single raw JSON object matching this exact schema:
             for idx, s in enumerate(subtitles)
         ])
 
-        user_dir = f'USER VISUAL DIRECTION: "{user_visual_prompt}"\n' if user_visual_prompt else ""
+        user_dir = f'USER STORY / SCENE DIRECTION: "{user_visual_prompt}"\n' if user_visual_prompt else ""
+
+        genre_id = (genre or "motivation").lower()
+        if genre_id == "roblox_story":
+            genre_visual_mandate = """
+GENRE: ROBLOX 3D STORYTELLING & CREEPYPASTA
+VISUAL STYLE: 3D Roblox blocky game graphics, Brookhaven 3D maps, Brookhaven hospital, Blox Fruits swords, Roblox obbies, glitched Roblox avatars with glowing auras, dramatic 3D third-person game cameras.
+CATALOG SEARCH QUERY: Focus queries on Roblox 3D items, avatars, and places (e.g. "roblox avatar glitched dark blade", "brookhaven empty hospital 3d", "roblox obby lava obstacle 3d").
+ZERO human stock faces. Everything must be 3D Roblox game aesthetic.
+"""
+        elif genre_id == "odd_one_out":
+            genre_visual_mandate = """
+GENRE: FIND THE ODD ONE OUT (GAMIFIED 3D PERCEPTION TEST)
+VISUAL STYLE: Clean gamified visual challenges, 4 Roblox avatars or 3D items displayed side-by-side or in a 2x2 grid, with a visible 5-second ticking countdown timer bar, and a sudden freeze-frame highlight reveal on the buzzer pointing to the glitched / fake item.
+CATALOG SEARCH QUERY: Focus queries on 3D lineup items (e.g. "roblox 4 avatar lineup spot difference", "brookhaven house 2x2 grid visual test", "roblox valkyrie helmets spot fake").
+"""
+        else:
+            genre_visual_mandate = """
+GENRE: MOTIVATION & STOIC MINDSET
+VISUAL STYLE: Faceless 3D CGI, stoic Greek/Roman marble busts & statues, foggy mountain peaks with 2.5D multi-plane camera parallax, silhouetted men looking at skyscrapers, luxury minimalist architecture.
+CATALOG SEARCH QUERY: Focus queries on photorealistic CC0 statues, stone busts, and dramatic landscapes (e.g. "marcus aurelius marble statue bust 3d", "foggy mountain peak parallax 3d", "dark stoic statue volumetric fog").
+STRICT FACELESS MANDATE: ZERO human faces or smiling portraits.
+"""
 
         prompt = f"""
-You are an expert cinematic director planning high-retention faceless B-roll footage for a vertical video.
+You are an expert cinematic director planning high-retention 3D and vertical video scenes.
 THEME: {visual_theme}
 MOTION: {motion_style}
 ASPECT RATIO: {aspect_ratio}
+3D ENGINE: {render_3d_engine or 'blender_hybrid'}
+3D ASSET PROVIDER: {suggested_3d_provider or 'roblox_creator_store'}
 {user_dir}
-STRICT FACELESS MANDATE: ZERO human faces, portraits, or talking heads. Every scene must be aesthetic faceless footage: misty nature, dark architecture, rain on neon pavements, hourglass, chess, or silhouettes from behind.
+{genre_visual_mandate}
 
 SCENE SUBTITLES TO MATCH:
 {sub_prompts}
 
-For EACH scene above, output a faceless stock video query matching the exact mood.
+For EACH scene above, output a rich 3D scene visual query and 3D camera build direction matching the exact narration.
 Output MUST be a single raw JSON object matching this schema:
 {{
   "scenes": [
     {{
       "sceneNumber": 1,
-      "searchQuery": "cold misty dawn empty city streets skyscraper silhouette vertical 9:16",
-      "fallbackQueries": ["foggy pine forest dawn aerial", "dark street lamp rain"],
-      "negativeTerms": ["face", "human face", "portrait", "close up", "talking head", "smiling", "selfie"],
-      "cameraMotion": "slow push in",
+      "searchQuery": "roblox avatar standing outside dark brookhaven hospital window 3d",
+      "visual3DQuery": "roblox avatar brookhaven hospital 3d",
+      "scenePrompt3D": "3D Blender parallax camera slowly pushes in towards dark hospital window where a glitching avatar with glowing red eyes is standing",
+      "fallbackQueries": ["roblox dark street lamp rain 3d", "abandoned roblox room 3d"],
+      "negativeTerms": ["face", "human face", "portrait", "talking head"],
+      "cameraMotion": "slow push in 3d parallax",
       "transition": "glitch"
     }}
   ]
@@ -982,7 +1021,7 @@ Output MUST be a single raw JSON object matching this schema:
         parsed, _ = _generate_script_with_fallback(
             prompt=prompt,
             target_model=target_model,
-            system_instruction="Strictly output valid JSON matching the faceless scene schema.",
+            system_instruction="Strictly output valid JSON matching the 3D scene schema.",
         )
 
         ai_scenes = parsed.get("scenes", []) if (parsed and isinstance(parsed, dict)) else []
@@ -992,23 +1031,34 @@ Output MUST be a single raw JSON object matching this schema:
             sc_num = sub.get("lineIndex") or idx + 1
             ai_sc = ai_scene_map.get(sc_num, {})
 
-            raw_query = ai_sc.get("searchQuery") or f"cinematic {visual_theme.lower()} {sub.get('text', '')}"
-            clean_query = sanitize_faceless_query(raw_query, fallback_theme=f"cinematic {visual_theme.lower()} landscape")
+            if genre_id == "roblox_story":
+                default_theme = "roblox 3d game environment dark mystery"
+            elif genre_id == "odd_one_out":
+                default_theme = "4 roblox avatars lineup 5s countdown timer test 3d"
+            else:
+                default_theme = f"cinematic {visual_theme.lower()} landscape"
+
+            raw_query = ai_sc.get("searchQuery") or ai_sc.get("visual3DQuery") or f"{default_theme} {sub.get('text', '')}"
+            clean_query = sanitize_faceless_query(raw_query, fallback_theme=default_theme)
             
-            raw_fallbacks = ai_sc.get("fallbackQueries") or [f"atmospheric {visual_theme.lower()} b-roll"]
-            clean_fallbacks = [sanitize_faceless_query(q, fallback_theme="dark aesthetic cinematic") for q in raw_fallbacks]
+            raw_fallbacks = ai_sc.get("fallbackQueries") or [f"atmospheric {default_theme} b-roll"]
+            clean_fallbacks = [sanitize_faceless_query(q, fallback_theme=default_theme) for q in raw_fallbacks]
 
             scenes_data.append({
                 "sceneNumber": sc_num,
                 "startTime": float(sub.get("startTime", 0.0)),
                 "duration": float(sub.get("duration", 2.0)),
-                "mediaType": "video",
+                "mediaType": "3d_visual",
                 "subtitleText": sub.get("text", ""),
                 "searchQuery": clean_query,
+                "visualQuery": ai_sc.get("visual3DQuery") or clean_query,
+                "scenePrompt3D": ai_sc.get("scenePrompt3D") or f"3D camera motion '{ai_sc.get('cameraMotion') or motion_style}' framing {clean_query}",
+                "render3DEngine": render_3d_engine or "blender_hybrid",
+                "suggested3DProvider": suggested_3d_provider or ("roblox_creator_store" if genre_id in ("roblox_story", "odd_one_out") else "poly_haven"),
                 "fallbackQueries": clean_fallbacks,
-                "negativeTerms": ai_sc.get("negativeTerms") or ["face", "human face", "portrait", "talking head", "smiling", "selfie"],
+                "negativeTerms": ai_sc.get("negativeTerms") or ["face", "human face", "portrait", "talking head"],
                 "cameraMotion": ai_sc.get("cameraMotion") or motion_style,
-                "transition": ai_sc.get("transition") or "glitch" if idx == 0 else "cut",
+                "transition": ai_sc.get("transition") or ("glitch" if idx == 0 else "cut"),
                 "mediaStatus": "unresolved",
             })
 

@@ -178,7 +178,9 @@ export const OverlayTrackClip: React.FC<OverlayTrackClipProps> = ({
   }, [onColorLabel]);
 
   const handleCopyTimings = useCallback((clip: TimelineOverlayClip) => {
-    const text = `Start: ${clip.start.toFixed(2)}s | Duration: ${clip.duration.toFixed(2)}s | End: ${(clip.start + clip.duration).toFixed(2)}s`;
+    const start = Number(clip.start) || 0;
+    const dur = Number(clip.duration) || 0;
+    const text = `Start: ${start.toFixed(2)}s | Duration: ${dur.toFixed(2)}s | End: ${(start + dur).toFixed(2)}s`;
     navigator.clipboard.writeText(text).catch(() => {});
     onCopyTimings?.();
   }, [onCopyTimings]);

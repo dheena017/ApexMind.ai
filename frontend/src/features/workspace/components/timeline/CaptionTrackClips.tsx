@@ -77,25 +77,28 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
       className="box-border border-b border-[#242426] p-1 relative w-full transition-all"
       style={{ height: `${captionTrackHeight}px` }}
     >
-      {captionLanes.map((clip) => {
-        const index = clip.origIndex;
-        const clipDur = typeof clip.duration === 'number' && clip.duration > 0 ? clip.duration : 1.5;
-        const startPct = (clip.start / totalDuration) * 100;
-        const widthPct = Math.max(0.01, (clipDur / totalDuration) * 100);
+      {captionLanes.map((clip, clipIdx) => {
+        if (!clip) return null;
+        const index = typeof clip.origIndex === 'number' ? clip.origIndex : clipIdx;
+        const clipStart = typeof clip.start === 'number' && !isNaN(clip.start) ? clip.start : (Number(clip.start) || 0);
+        const clipDur = typeof clip.duration === 'number' && clip.duration > 0 ? clip.duration : (Number(clip.duration) || 1.5);
+        const safeTotalDur = totalDuration > 0 ? totalDuration : 15.0;
+        const startPct = (clipStart / safeTotalDur) * 100;
+        const widthPct = Math.max(0.01, (clipDur / safeTotalDur) * 100);
         const isAllSelected = selectedClip?.track === 'caption' && Boolean(selectedClip.all);
         const isSingleSelected = selectedClip?.track === 'caption' && !selectedClip.all && selectedClip.index === index;
         const isSelected = isAllSelected || isSingleSelected;
         const isEditing = editingClipIndex === index;
         const clipColor = clip.color || colorLabels[index] || '';
         // Lane 0 is base row (bottom), higher lanes are positioned ABOVE!
-        const topPos = 4 + (captionMaxLane - clip.lane) * (laneHeight + laneGap);
+        const topPos = 4 + (captionMaxLane - (clip.lane || 0)) * (laneHeight + laneGap);
 
         return (
           <div
-            key={`${index}-${clip.start.toFixed(2)}`}
+            key={`${index}-${clipStart.toFixed(2)}`}
             onClick={() => onSelectClip(index)}
             onDoubleClick={() => onDoubleClickClip(index, clip.text)}
-            onPointerDown={(e) => onPointerDownMove(e, index, clip.start, clipDur)}
+            onPointerDown={(e) => onPointerDownMove(e, index, clipStart, clipDur)}
             onContextMenu={(e) => handleContextMenu(e, index)}
             className={`timeline-clip-card absolute rounded-md px-1.5 flex items-center justify-between border select-none group cursor-grab active:cursor-grabbing transition-all overflow-hidden ${isSingleSelected
                 ? 'bg-[#0E3538] border-teal-300 text-white z-20'
@@ -117,7 +120,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
               <div
                 onPointerDown={(e) => {
                   e.stopPropagation();
-                  onPointerDownTrimLeft(e, index, clip.start, clipDur);
+                  onPointerDownTrimLeft(e, index, clipStart, clipDur);
                 }}
                 className="timeline-trim-handle-left bg-teal-400/40 hover:bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Drag to trim start time"
@@ -166,7 +169,7 @@ export const CaptionTrackClips: React.FC<CaptionTrackClipsProps> = ({
               <div
                 onPointerDown={(e) => {
                   e.stopPropagation();
-                  onPointerDownTrimRight(e, index, clip.start, clip.duration || 3);
+                  onPointerDownTrimRight(e, index, clipStart, clipDur);
                 }}
                 className="timeline-trim-handle-right bg-teal-400/40 hover:bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Drag to trim duration"

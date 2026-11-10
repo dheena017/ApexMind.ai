@@ -338,6 +338,7 @@ def post_studio_generate_script(payload: StudioScriptRequest):
             user_prompt=payload.userPrompt,
             genre=payload.genre or "motivation",
             genre_preset=payload.genrePreset,
+            render_3d_engine=payload.render3DEngine,
             suggested_3d_provider=payload.suggested3DProvider,
         )
     except Exception as e:

@@ -21,6 +21,7 @@ from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
 class StudioScriptRequest(BaseModel):
     genre: Optional[str] = Field(default="motivation", description="Selected content genre ('motivation', 'roblox_story', 'odd_one_out')")
     genrePreset: Optional[str] = Field(default=None, description="Specific sub-preset within the genre")
+    render3DEngine: Optional[str] = Field(default=None, description="Preferred 3D render engine ('blender_hybrid', 'blender_full', 'motion_loop', 'webgl')")
     suggested3DProvider: Optional[str] = Field(default=None, description="Preferred 3D visual provider")
     category: str = Field(default="Stoic Mindset & Discipline", description="Motivational theme/niche")
     topic: Optional[str] = Field(default=None, description="Specific topic focus")

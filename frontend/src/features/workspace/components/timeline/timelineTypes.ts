@@ -125,14 +125,20 @@ export function groupMicroCaptionsIntoPhrases(
 
 export const computeCaptionLanes = (clips: ScriptSubtitle[]): { lanes: LaneSubtitle[]; maxLane: number } => {
   if (!clips || clips.length === 0) return { lanes: [], maxLane: 0 };
-  const indexed = clips.map((c, i) => ({ ...c, origIndex: i, lane: 0 }));
-  const sorted = [...indexed].sort((a, b) => a.start - b.start);
+  const cleanClips = clips
+    .filter(Boolean)
+    .map((c, i) => {
+      const start = typeof c.start === 'number' && !isNaN(c.start) ? c.start : (Number(c.start) || 0);
+      const duration = typeof c.duration === 'number' && c.duration > 0 ? c.duration : (Number(c.duration) || 1.5);
+      return { ...c, start, duration, origIndex: i, lane: 0 };
+    });
+  const sorted = [...cleanClips].sort((a, b) => a.start - b.start);
 
   const laneEndTimes: number[] = [];
   const result: LaneSubtitle[] = [];
 
   for (const item of sorted) {
-    const itemEnd = item.start + (item.duration || 3);
+    const itemEnd = item.start + (item.duration || 1.5);
     let assignedLane = -1;
 
     for (let l = 0; l < laneEndTimes.length; l++) {
@@ -151,14 +157,14 @@ export const computeCaptionLanes = (clips: ScriptSubtitle[]): { lanes: LaneSubti
     result.push({ ...item, lane: assignedLane });
   }
 
-  // Preserve order by original index
+  // Preserve order by original index without sparse holes
   const byOrigIndex: LaneSubtitle[] = [];
   for (const r of result) {
     byOrigIndex[r.origIndex] = r;
   }
 
   return {
-    lanes: byOrigIndex,
+    lanes: byOrigIndex.filter(Boolean),
     maxLane: Math.max(0, laneEndTimes.length - 1),
   };
 };

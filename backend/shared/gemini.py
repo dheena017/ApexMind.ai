@@ -12,6 +12,11 @@ import time
 import wave
 import threading
 from typing import Any
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="google.genai")
+warnings.filterwarnings("ignore", message=".*automatic function calling.*")
+warnings.filterwarnings("ignore", message=".*AFC.*")
 
 from google import genai
 from google.genai import types

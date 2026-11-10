@@ -10,6 +10,8 @@
     "build": "vite build frontend --config frontend/vite.config.ts",
     "preview": "vite preview frontend --config frontend/vite.config.ts",
     "clean": "rm -rf dist frontend/dist server.js",
+    "test:3d": "python script/run_3d_pipeline.py",
+    "render:3d": "python script/render_video_from_json.py",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

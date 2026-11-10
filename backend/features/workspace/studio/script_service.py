@@ -62,6 +62,7 @@ def generate_script(
     user_prompt: Optional[str] = None,
     genre: str = "motivation",
     genre_preset: Optional[str] = None,
+    render_3d_engine: Optional[str] = None,
     suggested_3d_provider: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -244,8 +245,11 @@ def generate_video_scenes(
     aspect_ratio: str = "9:16",
     user_visual_prompt: Optional[str] = None,
     model: Optional[str] = None,
+    genre: str = "motivation",
+    suggested_3d_provider: Optional[str] = None,
+    render_3d_engine: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Small API 1.3A: Generates 100% faceless stock video search queries and camera motion."""
+    """Small API 1.3A: Generates 3D and stock video scene directives, asset queries, and camera choreography."""
     effective_model = resolve_script_model(model or DEFAULT_SCRIPT_MODEL)
     return _SCRIPT_PROVIDER.generate_video_scenes(
         subtitles=subtitles,
@@ -254,6 +258,9 @@ def generate_video_scenes(
         aspect_ratio=aspect_ratio,
         user_visual_prompt=user_visual_prompt,
         model=effective_model,
+        genre=genre,
+        suggested_3d_provider=suggested_3d_provider,
+        render_3d_engine=render_3d_engine,
     )
 
 
@@ -357,6 +364,7 @@ def orchestrate_stage1_script(
     user_prompt: Optional[str] = None,
     genre: str = "motivation",
     genre_preset: Optional[str] = None,
+    render_3d_engine: Optional[str] = None,
     suggested_3d_provider: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -418,6 +426,9 @@ def orchestrate_stage1_script(
             aspect_ratio=aspect_ratio or "9:16",
             user_visual_prompt=user_prompt,
             model=effective_model,
+            genre=genre,
+            suggested_3d_provider=suggested_3d_provider,
+            render_3d_engine=render_3d_engine,
         )
         storyboard = scenes_result["scenes"]
 
@@ -460,6 +471,7 @@ def orchestrate_stage1_script(
             "userPrompt": user_prompt or effective_topic,
             "genre": genre_def.id,
             "genreLabel": genre_def.label,
+            "render3DEngine": render_3d_engine or "blender_hybrid",
             "suggested3DProvider": suggested_3d_provider or genre_def.recommended_3d_providers[0],
             "recommendedVoice": voice_name or genre_def.default_voice,
             "hook": content["selectedHook"],
