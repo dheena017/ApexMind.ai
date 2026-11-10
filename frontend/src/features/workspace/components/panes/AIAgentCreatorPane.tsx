@@ -365,25 +365,54 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 </span>
               </div>
 
-              {/* Aspect Ratio Selector */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
-                  <Smartphone className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Format</span>
-                </label>
-                <CustomSelect
-                  options={ASPECT_RATIO_OPTIONS.map((item) => ({
-                    value: item.value,
-                    label: item.label,
-                    description: item.res,
-                    badge: item.desc.split('/')[0].trim(),
-                    icon: <item.icon className="w-3.5 h-3.5" />,
-                  }))}
-                  value={aspectRatio}
-                  onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
-                  className="w-full"
-                  buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
-                />
+              {/* Row: Format & Length side by side */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Aspect Ratio Selector */}
+                <div className="space-y-1.5 min-w-0">
+                  <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
+                    <Smartphone className="w-3 h-3 text-[#3B82F6]" />
+                    <span>Format</span>
+                  </label>
+                  <CustomSelect
+                    options={ASPECT_RATIO_OPTIONS.map((item) => ({
+                      value: item.value,
+                      label: item.label,
+                      description: item.res,
+                      badge: item.desc.split('/')[0].trim(),
+                      icon: <item.icon className="w-3.5 h-3.5" />,
+                    }))}
+                    value={aspectRatio}
+                    onChange={(val) => onAspectRatioChange?.(val as '9:16' | '16:9' | '1:1' | '4:5' | '21:9')}
+                    className="w-full"
+                    buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                  />
+                </div>
+
+                {/* Target Duration */}
+                <div className="space-y-1.5 min-w-0">
+                  <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
+                    <Gauge className="w-3 h-3 text-[#3B82F6]" />
+                    <span>Length</span>
+                  </label>
+                  <CustomSelect
+                    options={DURATION_PRESETS.map((opt) => ({
+                      value: opt.value,
+                      label: opt.label,
+                      description: opt.badge,
+                      badge: opt.badge,
+                    }))}
+                    value={
+                      DURATION_PRESETS.find((opt) =>
+                        targetLength === opt.value ||
+                        targetLength === opt.label ||
+                        targetLength.toLowerCase().includes(opt.label.toLowerCase().replace('s', ''))
+                      )?.value ?? '30 seconds'
+                    }
+                    onChange={(val) => onTargetLengthChange(val)}
+                    className="w-full"
+                    buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
+                  />
+                </div>
               </div>
 
               {/* Category / Niche Selection */}
@@ -420,32 +449,6 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                 )}
                 {modelsLoading && <p className="mt-1 text-[10px] text-[#737373]">Loading models from Google…</p>}
                 {modelsError && <p role="alert" className="mt-1 text-[10px] text-red-400">{modelsError}</p>}
-              </div>
-
-              {/* Target Duration */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-mono-studio text-[#9CA3AF] flex items-center gap-1.5 font-semibold tracking-wide">
-                  <Gauge className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Length</span>
-                </label>
-                <CustomSelect
-                  options={DURATION_PRESETS.map((opt) => ({
-                    value: opt.value,
-                    label: opt.label,
-                    description: opt.badge,
-                    badge: opt.badge,
-                  }))}
-                  value={
-                    DURATION_PRESETS.find((opt) =>
-                      targetLength === opt.value ||
-                      targetLength === opt.label ||
-                      targetLength.toLowerCase().includes(opt.label.toLowerCase().replace('s', ''))
-                    )?.value ?? '30 seconds'
-                  }
-                  onChange={(val) => onTargetLengthChange(val)}
-                  className="w-full"
-                  buttonClassName="bg-[#18181C] border-[#27272A] hover:border-[#60A5FA]/40"
-                />
               </div>
 
               {/* Delivery Tone */}
