@@ -37,6 +37,8 @@ import { DEFAULT_SCRIPT_MODEL, DEFAULT_SCRIPT_MODEL_LABEL } from '@/src/shared/a
 import { useAvailableScriptModels } from '@/src/shared/hooks/useAvailableScriptModels';
 
 export interface AIAgentCreatorPaneProps {
+  topic?: string;
+  onTopicChange?: (val: string) => void;
   agentPrompt: string;
   onPromptChange: (val: string) => void;
   category: string;
@@ -123,6 +125,8 @@ const MUSIC_MOODS = [
 ];
 
 export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
+  topic = '',
+  onTopicChange,
   agentPrompt,
   onPromptChange,
   category,
@@ -288,7 +292,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
         */}
         {activeTab === 'prompt' && (
           <div className="space-y-4">
-            {/* Prompt Textarea */}
+            {/* Topic Input */}
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[10px] font-mono-studio">
                 <span className="text-[#9CA3AF] font-semibold tracking-wider">TOPIC</span>
@@ -297,9 +301,37 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
 
               <div className="relative">
                 <textarea
+                  value={topic}
+                  onChange={(e) => onTopicChange?.(e.target.value)}
+                  placeholder="Enter the core idea, message, or story for this video..."
+                  rows={2}
+                  className="w-full bg-[#16161A] border border-[#27272A] rounded-lg px-2.5 py-1.5 pr-7 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#2563EB] transition-all resize-none leading-normal shadow-inner"
+                />
+                {topic.trim().length > 0 && onTopicChange && (
+                  <button
+                    type="button"
+                    onClick={() => onTopicChange('')}
+                    className="absolute top-1.5 right-1.5 p-1 rounded-md text-zinc-500 hover:text-white hover:bg-[#202026] transition-colors cursor-pointer"
+                    title="Clear topic"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* User Prompt (What things does it need) */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-mono-studio">
+                <span className="text-[#9CA3AF] font-semibold tracking-wider">USER PROMPT</span>
+                <span className="text-zinc-500 text-[10px]">What things does it need?</span>
+              </div>
+
+              <div className="relative">
+                <textarea
                   value={agentPrompt}
                   onChange={(e) => onPromptChange(e.target.value)}
-                  placeholder="Enter the core idea, message, or story for this video..."
+                  placeholder="Specify what things you need (e.g. key points, specific hook, quotes, scenes, or things to include/avoid)..."
                   rows={2}
                   className="w-full bg-[#16161A] border border-[#27272A] rounded-lg px-2.5 py-1.5 pr-7 text-xs text-white placeholder:text-[#52525B] outline-none focus:border-[#2563EB] transition-all resize-none leading-normal shadow-inner"
                 />
@@ -308,7 +340,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
                     type="button"
                     onClick={() => onPromptChange('')}
                     className="absolute top-1.5 right-1.5 p-1 rounded-md text-zinc-500 hover:text-white hover:bg-[#202026] transition-colors cursor-pointer"
-                    title="Clear prompt"
+                    title="Clear user prompt"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -316,7 +348,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono-studio px-0.5">
-                <span>Include the main idea, hook, or lesson</span>
+                <span>Include specific instructions, talking points, or must-haves</span>
                 <span>{agentPrompt.length} chars</span>
               </div>
             </div>

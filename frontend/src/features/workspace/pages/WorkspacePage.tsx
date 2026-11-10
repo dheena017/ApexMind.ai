@@ -41,6 +41,7 @@ interface WorkspaceDraftSnapshot {
   version: 1;
   savedAt: string;
   script: GeneratedScript;
+  topic?: string;
   agentPrompt: string;
   category: string;
   targetLength: string;
@@ -112,6 +113,7 @@ export default function WorkspacePage({
 
   // AI Model & Script Generation
   const [selectedModel, setSelectedModel] = useState(DEFAULT_SCRIPT_MODEL);
+  const [topic, setTopic] = useState('');
   const [agentPrompt, setAgentPrompt] = useState('');
   const [category, setCategory] = useState('Stoic Mindset & Discipline');
   const [targetLength, setTargetLength] = useState('30 seconds');
@@ -624,6 +626,7 @@ export default function WorkspacePage({
         }
 
         if (urlParams.topic) {
+          setTopic(urlParams.topic);
           setTargetAudience(urlParams.topic);
         }
         if (urlParams.category) {
@@ -796,7 +799,7 @@ export default function WorkspacePage({
 
       const creativeContext: Record<string, unknown> = {
         category,
-        topic: targetAudience || 'broad audience',
+        topic: topic || targetAudience || 'broad audience',
         tone: preferredTone || 'motivational',
         length: targetLength || '30 seconds',
         model: selectedModel,
@@ -829,7 +832,7 @@ export default function WorkspacePage({
 
       const pipelineRes = await runPipeline({
         category,
-        topic: targetAudience || undefined,
+        topic: topic || targetAudience || undefined,
         userPrompt: agentPrompt || undefined,
         tone: preferredTone || undefined,
         length: targetLength || '30 seconds',
@@ -1085,6 +1088,7 @@ export default function WorkspacePage({
   };
 
   const handleStartNewVideo = useCallback(() => {
+    setTopic('');
     setAgentPrompt('');
     setScriptSubPane('prompt');
     onPaneChange('prompt');
@@ -1546,6 +1550,7 @@ export default function WorkspacePage({
         version: 1,
         savedAt: new Date().toISOString(),
         script,
+        topic,
         agentPrompt,
         category,
         targetLength,
@@ -1585,6 +1590,7 @@ export default function WorkspacePage({
     return () => window.removeEventListener('workspace:save-draft', handleSaveDraft);
   }, [
     activeElementOverlay,
+    topic,
     agentPrompt,
     canvasAspectRatio,
     canvasOutputSize,
@@ -2011,6 +2017,11 @@ export default function WorkspacePage({
               />
             ) : activePane === 'prompt' || (activePane === 'script' && scriptSubPane === 'prompt') ? (
               <AIAgentCreatorPane
+                topic={topic}
+                onTopicChange={(val) => {
+                  setTopic(val);
+                  if (agentError) setAgentError(null);
+                }}
                 agentPrompt={agentPrompt}
                 onPromptChange={(val) => {
                   setAgentPrompt(val);
