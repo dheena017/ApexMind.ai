@@ -23,6 +23,10 @@ ENV/
 .pytest_cache/
 **/.pytest_cache/
 
+# Secrets & Credentials
+*credentials*.json
+gcp_credentials.json
+
 # SQLite Databases & Journal/Lock Files
 *.db
 *.db-journal

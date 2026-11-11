@@ -231,3 +231,20 @@ CREATE TABLE IF NOT EXISTS website_videos (
 
 CREATE INDEX IF NOT EXISTS idx_website_videos_created_at ON website_videos (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_website_videos_category ON website_videos (category);
+
+-- 9. AI Usage Quotas Table (Real Google Gemini API Rate Limits & Telemetry)
+CREATE TABLE IF NOT EXISTS ai_usage_quotas (
+    id TEXT PRIMARY KEY,
+    user_id TEXT UNIQUE NOT NULL,
+    requests_today INTEGER DEFAULT 0,
+    limit_daily INTEGER DEFAULT 20,
+    reset_daily_at TEXT NOT NULL,
+    requests_minute INTEGER DEFAULT 0,
+    limit_minute INTEGER DEFAULT 5,
+    reset_minute_at TEXT NOT NULL,
+    tokens_consumed INTEGER DEFAULT 0,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_usage_quotas_user ON ai_usage_quotas (user_id);
+

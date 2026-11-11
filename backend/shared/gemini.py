@@ -17,7 +17,6 @@ from google import genai
 from google.genai import types
 
 from .ai_models import (
-    get_tts_fallback_models,
     resolve_tts_model as resolve_available_tts_model,
 )
 from .config import settings
@@ -247,40 +246,34 @@ def generate_gemini_voiceover(
                 "Modulate vocal pacing, intensity, and pauses naturally between these distinct emotional beats. "
                 f"Script: {normalized_text}"
             )
-            unique_tts_models = [tts_model]
-            for m in get_tts_fallback_models(tts_model):
-                if m not in unique_tts_models:
-                    unique_tts_models.append(m)
-
-            for attempt_tts in unique_tts_models:
-                if hasattr(client, "interactions") and "tts" in attempt_tts.lower():
-                    try:
-                        tts_res = client.interactions.create(
-                            model=attempt_tts,
-                            input=[{
-                                "type": "user_input",
-                                "content": [{
-                                    "type": "text",
-                                    "text": normalized_text,
-                                    "annotations": [{
-                                        "type": "speech_metadata",
-                                        "style": "clear, authoritative, engaging motivational delivery",
-                                    }],
+            attempt_tts = tts_model
+            if hasattr(client, "interactions") and "tts" in attempt_tts.lower():
+                try:
+                    tts_res = client.interactions.create(
+                        model=attempt_tts,
+                        input=[{
+                            "type": "user_input",
+                            "content": [{
+                                "type": "text",
+                                "text": normalized_text,
+                                "annotations": [{
+                                    "type": "speech_metadata",
+                                    "style": "clear, authoritative, engaging motivational delivery",
                                 }],
                             }],
-                            response_format={"type": "audio"},
-                            generation_config={
-                                "speech_config": [
-                                    {"voice": voice_name},
-                                ]
-                            },
-                        )
-                        if tts_res and getattr(tts_res, "output_audio", None):
-                            break
-                    except Exception as e:
-                        last_tts_err = e
-                        logger.warning(f"[Studio/TTS] Interactions API model '{attempt_tts}' failed ({e}), trying next option...")
+                        }],
+                        response_format={"type": "audio"},
+                        generation_config={
+                            "speech_config": [
+                                {"voice": voice_name},
+                            ]
+                        },
+                    )
+                except Exception as e:
+                    last_tts_err = e
+                    logger.warning(f"[Studio/TTS] Interactions API model '{attempt_tts}' failed: {e}")
 
+            if tts_res is None or not getattr(tts_res, "output_audio", None):
                 try:
                     tts_res = client.models.generate_content(
                         model=attempt_tts,
@@ -296,11 +289,9 @@ def generate_gemini_voiceover(
                             ),
                         ),
                     )
-                    if tts_res:
-                        break
                 except Exception as e:
                     last_tts_err = e
-                    logger.warning(f"[Studio/TTS] Model '{attempt_tts}' failed ({e}), trying next TTS model...")
+                    logger.warning(f"[Studio/TTS] Model '{attempt_tts}' failed: {e}")
 
         if tts_res is not None:
             rate_tracker.record_request(attempt_tts)

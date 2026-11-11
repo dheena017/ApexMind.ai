@@ -361,7 +361,7 @@ export const ScriptEditorPane: React.FC<ScriptEditorPaneProps> = ({
       )}
 
       {/* ── Main Content Area ── */}
-      <div className="workspace-script-editor-content flex-1 overflow-y-auto custom-scrollbar p-3.5 space-y-4">
+      <div className="workspace-script-editor-content flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-3.5 space-y-4">
         
         {/*
             TAB 1: SCRIPT CONTENT

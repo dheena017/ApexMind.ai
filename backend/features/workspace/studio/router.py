@@ -10,9 +10,12 @@ FastAPI router for ApexMind Studio Production Pipeline:
 
 import logging
 import time
-from fastapi import APIRouter, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Header, status
 
 from backend.shared.ai_models import DEFAULT_SCRIPT_MODEL
+from backend.database.repository import get_ai_usage_summary
+from backend.features.auth.service import get_session_user_id
 from .captions_service import (
     chunk_subtitles_by_words,
     export_captions_srt,
@@ -126,6 +129,57 @@ def get_available_ai_models_route():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Could not load available Gemini models: {exc}",
+        ) from exc
+
+
+@router.get(
+    "/api/ai/usage",
+    tags=["Studio - AI & Discovery"],
+    summary="Get AI Model Quota & Usage",
+    description="Returns live usage telemetry, rate limit windows, and remaining percentage.",
+)
+def get_ai_usage_route(authorization: Optional[str] = Header(None)):
+    try:
+        scheme, _, token = (authorization or "").partition(" ")
+        user_id = get_session_user_id(token) if scheme.lower() == "bearer" and token else "default_user"
+        if not user_id:
+            user_id = "default_user"
+        return get_ai_usage_summary(user_id=user_id)
+    except Exception as exc:
+        logger.error(f"Could not load AI usage summary: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not load AI usage summary: {exc}",
+        ) from exc
+
+
+@router.get(
+    "/api/ai/overview",
+    tags=["Studio - AI & Discovery"],
+    summary="Get AI Models and Real Quota Telemetry Overview",
+    description="Unified API combining discovered Gemini models and real live usage telemetry in a single response.",
+)
+def get_ai_overview_route(authorization: Optional[str] = Header(None)):
+    try:
+        scheme, _, token = (authorization or "").partition(" ")
+        user_id = get_session_user_id(token) if scheme.lower() == "bearer" and token else "default_user"
+        if not user_id:
+            user_id = "default_user"
+
+        models_data = get_available_ai_models()
+        usage_data = get_ai_usage_summary(user_id=user_id)
+
+        return {
+            "success": True,
+            "models": models_data.get("models", []),
+            "defaultModel": models_data.get("defaultModel", ""),
+            "usage": usage_data,
+        }
+    except Exception as exc:
+        logger.error(f"Could not load AI overview: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not load AI overview: {exc}",
         ) from exc
 
 

@@ -285,7 +285,7 @@ export const AIAgentCreatorPane: React.FC<AIAgentCreatorPaneProps> = ({
       )}
 
       {/* ── Main Scrollable Content Area ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 space-y-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-3.5 space-y-4">
 
         {/*
             TAB 1: PROMPT & CONCEPT

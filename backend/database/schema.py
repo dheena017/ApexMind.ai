@@ -256,5 +256,27 @@ def init_db():
     except Exception as e:
         logger.debug(f"automation_history table initialization notice: {e}")
 
+    # 8. Verify ai_usage_quotas table (Real Google Gemini API Telemetry)
+    try:
+        cursor.execute("DROP TABLE IF EXISTS ai_usage_quotas;")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ai_usage_quotas (
+            id TEXT PRIMARY KEY,
+            user_id TEXT UNIQUE NOT NULL,
+            requests_today INTEGER DEFAULT 0,
+            limit_daily INTEGER DEFAULT 20,
+            reset_daily_at TEXT NOT NULL,
+            requests_minute INTEGER DEFAULT 0,
+            limit_minute INTEGER DEFAULT 5,
+            reset_minute_at TEXT NOT NULL,
+            tokens_consumed INTEGER DEFAULT 0,
+            updated_at TEXT NOT NULL
+        );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ai_usage_quotas_user ON ai_usage_quotas (user_id);")
+        logger.debug("AI usage quotas table verified")
+    except Exception as e:
+        logger.debug(f"ai_usage_quotas table initialization notice: {e}")
+
     conn.commit()
     conn.close()

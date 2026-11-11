@@ -33,6 +33,15 @@ class Settings:
     def DEFAULT_TTS_MODEL(self) -> str:
         return os.environ.get("DEFAULT_TTS_MODEL", "").strip()
 
+    # Google Cloud Project & Quotas API
+    @property
+    def GCP_PROJECT_ID(self) -> str:
+        return (os.environ.get("GCP_PROJECT_ID") or os.environ.get("GOOGLE_CLOUD_PROJECT") or "").strip()
+
+    @property
+    def GOOGLE_APPLICATION_CREDENTIALS(self) -> str:
+        return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+
     # Google Auth & Search
     @property
     def GOOGLE_CLIENT_ID(self) -> str:

@@ -243,6 +243,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           <span className="truncate">
             {selectedOption ? selectedOption.label : value || <span className="text-[#6B7280]">{placeholder}</span>}
           </span>
+          {selectedOption?.badge && (
+            <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-[#222226] border border-[#333338] text-[#9CA3AF] font-mono font-medium ml-0.5">
+              {selectedOption.badge}
+            </span>
+          )}
         </div>
 
         <ChevronDown

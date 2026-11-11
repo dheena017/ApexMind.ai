@@ -16,8 +16,6 @@ from google.genai import types
 
 from backend.shared.ai_models import (
     DEFAULT_SCRIPT_MODEL,
-    get_script_fallback_models,
-    is_unwanted_model,
     resolve_script_model,
 )
 from backend.shared.gemini import get_gemini_client, rate_tracker
@@ -113,80 +111,54 @@ def _generate_script_with_fallback(
     target_model: str,
     system_instruction: str,
 ) -> tuple[Optional[Dict[str, Any]], str]:
-    """Execute Gemini generate_content across configured fallback models with JSON extraction."""
+    """Execute Gemini generate_content directly on the requested model without silent model switching."""
     client = get_gemini_client()
     if not client:
         return None, "GEMINI_API_KEY is not configured in environment."
 
-    models_to_try: List[str] = []
-    if target_model and not is_unwanted_model(target_model):
-        models_to_try.append(target_model)
-    else:
-        resolved = resolve_script_model(target_model)
-        if resolved and not is_unwanted_model(resolved):
-            models_to_try.append(resolved)
+    selected_model = resolve_script_model(target_model)
+    if not selected_model:
+        return None, "No active Gemini script generation model available."
 
-    for alt in get_script_fallback_models(target_model):
-        if alt not in models_to_try and not is_unwanted_model(alt):
-            models_to_try.append(alt)
-
-    if not models_to_try:
-        models_to_try = [resolve_script_model()]
-
-    response = None
-    last_err: Optional[Exception] = None
-    used_model: str = models_to_try[0] if models_to_try else target_model
-
-    for attempt_model in models_to_try:
+    gen_config: Dict[str, Any] = {
+        "system_instruction": system_instruction,
+        "temperature": 0.6,
+        "response_mime_type": "application/json",
+    }
+    if hasattr(types, "ThinkingConfig"):
         try:
-            gen_config: Dict[str, Any] = {
-                "system_instruction": system_instruction,
-                "temperature": 0.6,
-                "response_mime_type": "application/json",
-            }
-            if hasattr(types, "ThinkingConfig"):
-                try:
-                    gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
-                except Exception:
-                    pass
+            gen_config["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
 
-            try:
-                response = client.models.generate_content(
-                    model=attempt_model,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(**gen_config),
-                )
-            except Exception as inner_err:
-                err_str = str(inner_err).lower()
-                if "thinking" in err_str and "thinking_config" in gen_config:
-                    gen_config.pop("thinking_config", None)
-                    response = client.models.generate_content(
-                        model=attempt_model,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(**gen_config),
-                    )
-                elif "503" in err_str or "unavailable" in err_str or "high demand" in err_str:
-                    logger.warning(f"[ScriptAI/Gemini] Model '{attempt_model}' experienced demand spike, retrying in 1.5s...")
-                    time.sleep(1.5)
-                    response = client.models.generate_content(
-                        model=attempt_model,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(**gen_config),
-                    )
-                else:
-                    raise inner_err
+    try:
+        response = client.models.generate_content(
+            model=selected_model,
+            contents=prompt,
+            config=types.GenerateContentConfig(**gen_config),
+        )
+    except Exception as inner_err:
+        err_str = str(inner_err).lower()
+        if "thinking" in err_str and "thinking_config" in gen_config:
+            gen_config.pop("thinking_config", None)
+            response = client.models.generate_content(
+                model=selected_model,
+                contents=prompt,
+                config=types.GenerateContentConfig(**gen_config),
+            )
+        else:
+            logger.error(f"[ScriptAI/Gemini] Model '{selected_model}' generation failed: {inner_err}")
+            raise inner_err
 
-            used_model = attempt_model
-            rate_tracker.record_request(attempt_model)
-            break
-        except Exception as e:
-            last_err = e
-            logger.warning(f"[ScriptAI/Gemini] Model '{attempt_model}' unavailable ({e}), trying next model...")
-            time.sleep(0.5)
-
-    if response is None:
-        logger.warning(f"[ScriptAI/Gemini] All Gemini models exhausted or quota-limited: {last_err}")
-        return None, f"exhausted: {last_err}"
+    rate_tracker.record_request(selected_model)
+    try:
+        tokens = 0
+        if hasattr(response, "usage_metadata") and response.usage_metadata:
+            tokens = getattr(response.usage_metadata, "total_token_count", 0) or 0
+        from backend.database.repository import record_ai_usage
+        record_ai_usage("default_user", tokens=tokens)
+    except Exception as usage_err:
+        logger.debug(f"AI telemetry record notice: {usage_err}")
 
     raw = response.text or "{}"
     if "```json" in raw:
@@ -199,6 +171,8 @@ def _generate_script_with_fallback(
     except json.JSONDecodeError as decode_err:
         logger.error(f"[ScriptAI/Gemini] Failed to parse response as JSON: {raw[:300]}")
         raise ValueError(f"Invalid JSON returned by Gemini: {decode_err}")
+
+    return parsed, selected_model
 
     return parsed, used_model
 

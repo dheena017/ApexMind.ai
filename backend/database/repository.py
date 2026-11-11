@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import time
+import uuid
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 from .connection import get_connection
@@ -1818,3 +1819,197 @@ def get_published_posts(
         }
         for r in rows
     ]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AI USAGE & RATE LIMITING TELEMETRY
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _format_time_delta_str(td: timedelta) -> str:
+    """Formats a timedelta into a concise string e.g. '5d 17h' or '42m'."""
+    total_seconds = max(0, int(td.total_seconds()))
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+
+    if days > 0:
+        return f"Resets in {days}d {hours}h"
+    if hours > 0:
+        return f"Resets in {hours}h {minutes}m"
+    if minutes > 0:
+        return f"Resets in {minutes}m"
+    return "Resets shortly"
+
+
+def get_or_create_ai_quota(user_id: str = "default_user") -> Dict[str, Any]:
+    """Retrieves or creates the user's AI quota record for Google Gemini rate limits."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+
+    # Google daily quota resets at 00:00 UTC (midnight)
+    midnight_utc = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    # Google minute rate limit rolls every 60s
+    minute_reset = (now + timedelta(seconds=60)).isoformat()
+
+    from backend.shared.ai_models import get_default_script_model, get_model_rate_limits
+    active_model = get_default_script_model() or "gemini-2.5-flash"
+    rate_info = get_model_rate_limits(active_model)["free"]
+    default_rpd = int(rate_info["rpd"]) if isinstance(rate_info["rpd"], (int, float)) else 20
+    default_rpm = int(rate_info["rpm"])
+
+    cursor.execute("SELECT * FROM ai_usage_quotas WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        quota_id = str(uuid.uuid4())
+        cursor.execute(
+            """
+            INSERT INTO ai_usage_quotas (
+                id, user_id, requests_today, limit_daily, reset_daily_at,
+                requests_minute, limit_minute, reset_minute_at,
+                tokens_consumed, updated_at
+            ) VALUES (?, ?, 0, ?, ?, 0, ?, ?, 0, ?)
+            """,
+            (quota_id, user_id, default_rpd, midnight_utc, default_rpm, minute_reset, now_iso),
+        )
+        conn.commit()
+        cursor.execute("SELECT * FROM ai_usage_quotas WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+
+    # Parse and check rollover windows
+    reset_daily_dt = datetime.fromisoformat(row["reset_daily_at"])
+    reset_minute_dt = datetime.fromisoformat(row["reset_minute_at"])
+
+    needs_update = False
+    requests_today = row["requests_today"]
+    new_reset_daily = row["reset_daily_at"]
+    if now >= reset_daily_dt:
+        requests_today = 0
+        new_reset_daily = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        needs_update = True
+
+    requests_minute = row["requests_minute"]
+    new_reset_minute = row["reset_minute_at"]
+    if now >= reset_minute_dt:
+        requests_minute = 0
+        new_reset_minute = (now + timedelta(seconds=60)).isoformat()
+        needs_update = True
+
+    if needs_update:
+        cursor.execute(
+            """
+            UPDATE ai_usage_quotas
+            SET requests_today = ?, reset_daily_at = ?,
+                requests_minute = ?, reset_minute_at = ?,
+                updated_at = ?
+            WHERE user_id = ?
+            """,
+            (requests_today, new_reset_daily, requests_minute, new_reset_minute, now_iso, user_id),
+        )
+        conn.commit()
+        cursor.execute("SELECT * FROM ai_usage_quotas WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+
+    conn.close()
+    return dict(row)
+
+
+def record_ai_usage(user_id: str = "default_user", tokens: int = 0) -> Dict[str, Any]:
+    """Records an AI request against Google Gemini rate limits."""
+    quota = get_or_create_ai_quota(user_id)
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    new_requests_today = quota["requests_today"] + 1
+    new_requests_minute = quota["requests_minute"] + 1
+    new_tokens = quota["tokens_consumed"] + max(0, tokens)
+
+    cursor.execute(
+        """
+        UPDATE ai_usage_quotas
+        SET requests_today = ?, requests_minute = ?, tokens_consumed = ?, updated_at = ?
+        WHERE user_id = ?
+        """,
+        (new_requests_today, new_requests_minute, new_tokens, now_iso, user_id),
+    )
+    conn.commit()
+    conn.close()
+    return get_or_create_ai_quota(user_id)
+
+
+def get_ai_usage_summary(user_id: str = "default_user") -> Dict[str, Any]:
+    """Returns REAL Google Gemini API rate limits (RPM, TPM, RPD) and live consumption."""
+    quota = get_or_create_ai_quota(user_id)
+    now = datetime.now(timezone.utc)
+
+    reset_daily_dt = datetime.fromisoformat(quota["reset_daily_at"])
+    reset_minute_dt = datetime.fromisoformat(quota["reset_minute_at"])
+
+    limit_daily = max(1, quota["limit_daily"])
+    limit_minute = max(1, quota["limit_minute"])
+
+    rem_daily = max(0, limit_daily - quota["requests_today"])
+    rem_minute = max(0, limit_minute - quota["requests_minute"])
+
+    pct_daily_left = max(0, min(100, int(round((rem_daily / limit_daily) * 100))))
+    pct_minute_left = max(0, min(100, int(round((rem_minute / limit_minute) * 100))))
+
+    td_daily = reset_daily_dt - now
+    daily_secs = max(0, int(td_daily.total_seconds()))
+    daily_hrs = daily_secs // 3600
+    daily_mins = (daily_secs % 3600) // 60
+    resets_daily_str = f"Resets in {daily_hrs}h {daily_mins}m (00:00 UTC)"
+
+    td_minute = reset_minute_dt - now
+    minute_secs = max(0, int(td_minute.total_seconds()))
+    resets_minute_str = f"Resets in {minute_secs}s (rolling 60s)"
+
+    from backend.shared.ai_models import get_default_script_model, get_model_rate_limits
+
+    active_model = get_default_script_model() or "gemini-2.5-flash"
+    rate_info = get_model_rate_limits(active_model)
+    free_limits = rate_info["free"]
+    category = "pro" if "pro" in active_model.lower() else "flash"
+
+    return {
+        "activeModel": active_model,
+        "category": category,
+        "limits": {
+            "rpm": free_limits["rpm"],
+            "tpm": free_limits["tpm"],
+            "rpd": free_limits["rpd"],
+        },
+        "groups": [
+            {
+                "groupName": f"Gemini ({active_model})",
+                "items": [
+                    {
+                        "label": "Daily Request Quota (RPD)",
+                        "resetsIn": resets_daily_str,
+                        "percentLeft": pct_daily_left,
+                        "used": quota["requests_today"],
+                        "limit": limit_daily,
+                        "unit": "req/day",
+                    },
+                    {
+                        "label": "Minute Speed Limit (RPM)",
+                        "resetsIn": resets_minute_str,
+                        "percentLeft": pct_minute_left,
+                        "used": quota["requests_minute"],
+                        "limit": limit_minute,
+                        "unit": "req/min",
+                    },
+                ],
+            },
+        ],
+        "summary": {
+            "percentLeft": pct_daily_left,
+            "requestsRemainingToday": rem_daily,
+            "requestsLimitDaily": limit_daily,
+            "requestsThisMinute": quota["requests_minute"],
+            "tokensConsumed": quota["tokens_consumed"],
+        },
+    }
