@@ -86,6 +86,44 @@ if (typeof window !== 'undefined') {
 
 import { AuthProvider } from './features/auth/context/AuthContext';
 
+const hiddenStatusLabels = [
+  'Free',
+  'Run Queue',
+  'Pinterest Connected',
+  'Pinterest: Credentials Active',
+  'Manually trigger scheduler to process due jobs',
+];
+
+const removeKnownStatusBadges = () => {
+  if (typeof document === 'undefined') return;
+
+  document.querySelectorAll('span, div, button, a').forEach((element) => {
+    const text = (element.textContent ?? '').trim();
+    const title = (element.getAttribute('title') ?? '').trim();
+    const ariaLabel = (element.getAttribute('aria-label') ?? '').trim();
+    const className = (element.getAttribute('class') ?? '').toLowerCase();
+
+    const shouldRemove = hiddenStatusLabels.some((label) => 
+      text === label || title === label || ariaLabel === label || title.includes(label) || ariaLabel.includes(label)
+    ) || (
+      (text === 'Free' || title === 'Free' || ariaLabel === 'Free') && /emerald-500\/15|text-emerald-400|border-emerald-500\/25|bg-zinc-900\/60|bg-zinc-800/.test(className)
+    );
+
+    if (shouldRemove) {
+      element.remove();
+    }
+  });
+};
+
+if (typeof window !== 'undefined') {
+  const observer = new MutationObserver(() => {
+    removeKnownStatusBadges();
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+  removeKnownStatusBadges();
+}
+
 createRoot(rootElement, {
 
   onRecoverableError(error, errorInfo) {
